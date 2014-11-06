@@ -1,3 +1,6 @@
+Git guide
+==============
+
 First of all, if you don't know git at all, take a look at this short guide:
 
 http://rogerdudler.github.io/git-guide/
