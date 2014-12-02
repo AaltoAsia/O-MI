@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sensor form</title>
+<link type="text/css" rel="stylesheet" href="CSS/form.css" />
+<script type="text/javascript" src="JS/jquery-2.1.1.js"></script>
+<script type="text/javascript" src="JS/submit.js"></script>
+</head>
+
+<body>
+	<form id="form" method="post" action="javascript:submit();">
+		<label>Sensor ID:</label><br> 
+		<input type="text" id="sensorId"><br> 
+		<label>Location</label><br>
+		<select name="location" id="location">
+			<option>T-Talo</option>
+			<option>Joku</option>
+		</select><br> <input type="submit" value="Submit" id="submit">
+	</form>
+
+	<canvas id="infoCanvas">
+	</canvas>
+</body>
+</html>

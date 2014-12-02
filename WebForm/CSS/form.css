@@ -1,0 +1,30 @@
+@charset "UTF-8";
+
+body {
+	background-color: #1BDBB8;
+}
+
+form {
+	float: left;
+	margin-left: 50px;
+	margin-top: 20px;
+	margin-left: 50px;
+}
+
+form label {
+	color: red;
+	font-size: 20px;
+	margin-bottom: 10px;
+}
+
+#infoCanvas {
+	width: 300px;
+	height: 300px;
+	background-color: blue;
+	border: 1px solid black;
+	margin-left: 200px;
+}
+
+#submit {
+	margin-top: 20px;
+}
