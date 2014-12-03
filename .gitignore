@@ -26,6 +26,11 @@ Session.vim
 *~
 
 #Eclipse
+# this might be allowed if we get it working nicely
+.project
+.classpath
+
+#
 *.pydevproject
 .metadata
 .gradle

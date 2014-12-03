@@ -24,3 +24,6 @@ libraryDependencies ++= {
 
 Revolver.settings
 
+// Eclipse
+EclipseKeys.withSource := true
+
