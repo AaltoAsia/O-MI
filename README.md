@@ -9,7 +9,7 @@ Setup development environment
 
 1. git clone
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
-3. (windows: restart)
+3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the project directory
 5. You can
     - run the project with `sbt run`
