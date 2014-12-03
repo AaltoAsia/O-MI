@@ -49,7 +49,23 @@ case class SensorMap(override val path: String) extends SensorNode(path){
           case _ => None;
       }
     }
-    def exist(pathTo: String):Boolean = { 
+    def getChilds(pathTo: String) : Array[String] = {
+      val spl = pathTo.split("/");
+      val key = spl.head;
+      val after = spl.tail;
+      require(isSensorMap(pathTo))
+      content.single.get(key) match {
+          case Some(sensor : SensorData[_]) => {Array.empty} //_ IS a basic numeric data type
+          case Some(sensormap : SensorMap) => {
+            if(after.isEmpty){
+              sensormap.content.single.keys.toArray
+            }else
+              sensormap.getChilds(after.mkString("/"));
+          }
+          case _ => Array.empty;
+      }
+    }
+    def exists(pathTo: String):Boolean = { 
       val spl = pathTo.split("/");
       val key = spl.head;
       val after = spl.tail; 
@@ -101,7 +117,7 @@ case class SensorMap(override val path: String) extends SensorNode(path){
       val spl = pathTo.split("/");
       val key = spl.head;
       val after = spl.tail;
-      require(exist(pathTo) && isSensor(pathTo))
+      require(isSensor(pathTo))
       content.single.get(key) match {
           case Some(sensor : SensorData[_]) => {content.single.update(pathTo,newsensor);} //_ IS a basic numeric data type
           case Some(sensormap : SensorMap) => {
@@ -114,7 +130,7 @@ case class SensorMap(override val path: String) extends SensorNode(path){
       val spl = pathTo.split("/");
       val key = spl.head;
       val after = spl.tail; 
-      require(!exist(pathTo))
+      require(!exists(pathTo))
       content.single.get(key) match{ 
         case Some(sensor : SensorData[_] ) => ;
         case Some(sensormap : SensorMap ) => {
@@ -128,7 +144,7 @@ case class SensorMap(override val path: String) extends SensorNode(path){
       val spl = pathTo.split("/");
       val key = spl.head;
       val after = spl.tail; 
-      require(!exist(pathTo))
+      require(!exists(pathTo))
       content.single.get(key) match{ 
         case Some(sensor : SensorData[_] ) => ;
         case Some(sensormap : SensorMap ) => {
@@ -156,7 +172,7 @@ case class SensorMap(override val path: String) extends SensorNode(path){
       val spl = pathTo.split("/");
       val key = spl.head;
       val after = spl.tail; 
-      require(isSensor(pathTo))
+      require(isSensorMap(pathTo))
       content.single.get(key) match{ 
         case Some(sensor : SensorData[_] ) => ;
         case Some(sensormap : SensorMap ) => {
