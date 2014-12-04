@@ -1,0 +1,10 @@
+language: scala
+scala:
+  - "2.11.2"
+branches:
+  only:
+    - master
+    - development
+    - travis
+before_script:
+  - cd "O-MI Node"
