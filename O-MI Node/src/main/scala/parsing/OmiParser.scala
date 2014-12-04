@@ -33,7 +33,7 @@ object OmiParser extends Parser{
       case "omi:write"  =>{
         (request\"@msgformat").text match{ 
           case "odf" => {
-            Some(OdfParser.parse( new PrettyPrinter(80,2).format((request\"{omi}msg").head))) 
+            Some(new SensorWrite(OdfParser.parse( new PrettyPrinter(80,2).format((request\"{omi}msg").head)))) 
           }
           case _ =>
             ???
