@@ -34,5 +34,7 @@ trait OmiService extends HttpService {
           }
         }
       }
-    }
+    } ~ pathPrefix("testclient"){
+	  getFromDirectory("html")
+	}
 }
