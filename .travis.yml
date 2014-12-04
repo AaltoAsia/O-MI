@@ -8,3 +8,5 @@ branches:
     - travis
 before_script:
   - cd "O-MI Node"
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION test
