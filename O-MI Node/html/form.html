@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sensor form</title>
+<script>
+	//Since the path might change, find the current path and append required CSS and JS here
+	var url = document.URL;
+	var path = url.substring(0, url.lastIndexOf("/"));
+
+	var script = document.createElement('script');
+	script.type = "text/javascript";
+	script.src = path + "/JS/jquery-2.1.1.js";
+	document.getElementsByTagName('head')[0].appendChild(script);
+	var script2 = document.createElement('script');
+	script2.type = "text/javascript";
+	script2.src = path + "/JS/submit.js";
+	document.getElementsByTagName('head')[0].appendChild(script2);
+	var css = document.createElement('link');
+	css.type = "text/css";
+	css.rel = "stylesheet";
+	css.href = path + "/CSS/form.css";
+	document.getElementsByTagName('head')[0].appendChild(css);
+</script>
+
+<!-- Appending on script -->
+<!--  
+<link type="text/css" rel="stylesheet" href="/testclient/CSS/form.css" />
+<script type="text/javascript" src="/testclient/JS/jquery-2.1.1.js"></script>
+-->
+</head>
+
+<body>
+
+	<script>
+		
+	</script>
+	
+	<form id="form" method="post" action="javascript:submit();">
+		<label>Sensor ID:</label><br> <input type="text" id="sensorId"><br>
+		<label>Location</label><br> <select name="location" id="location">
+			<option>test</option>
+		</select><br> <input type="submit" value="Get Data" id="submit">
+	</form>
+
+	<canvas id="infoCanvas">
+	</canvas>
+</body>
+</html>
