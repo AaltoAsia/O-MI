@@ -1,4 +1,4 @@
-package SensorDataStructure
+package sensorDataStructure
 
 import scala.concurrent.stm._
 import java.util.Date;
@@ -14,18 +14,16 @@ abstract sealed class SensorNode(val path: String) {
 /**
  * Data structure for storing sensor data. a leaf.
  *
- * @tparam Numeric basic data type of actual sensor value
  * @param Path to were sensor is. Last part is kye for this.
+ * @param Actual value from sensor
  * @param SI unit
  *        Should be in UCUM format.
  *        Empty if unknown.
- * @param Actual value from sensor
  */
-case class SensorData[T](
+case class SensorData(
   override val path: String,
-  val unit: String,
-  val value: T, // is a basic numeric data type
-  val timestamp: Date // find better one if possible...
+  val value: String, // is a basic numeric data type
+  val dateTime: String // find better one if possible...
   ) extends SensorNode(path)
 /**
  * Data structure were sensors exist. a node.
@@ -40,7 +38,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val key = spl.head
     val after = spl.tail
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => Some(sensor)  //_ IS a basic numeric data type
+      case Some(sensor: SensorData) => Some(sensor)  //_ IS a basic numeric data type
       case Some(sensormap: SensorMap) => {
         if (after.isEmpty) {
           Some(sensormap)
@@ -56,7 +54,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val after = spl.tail
     require(isSensorMap(pathTo))
     content.single.get(key) match {
-        case Some(sensor: SensorData[_]) => Array.empty //_ IS a basic numeric data type
+        case Some(sensor: SensorData) => Array.empty //_ IS a basic numeric data type
         case Some(sensormap: SensorMap) => {
           if(after.isEmpty){
             sensormap.content.single.keys.toArray
@@ -72,7 +70,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val key = spl.head
     val after = spl.tail
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => true
+      case Some(sensor: SensorData) => true
       case Some(sensormap: SensorMap) => {
         if (after.isEmpty)
           true
@@ -88,7 +86,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val key = spl.head
     val after = spl.tail
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => true
+      case Some(sensor: SensorData) => true
       case Some(sensormap: SensorMap) => {
         if (after.isEmpty)
           false
@@ -104,7 +102,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val key = spl.head
     val after = spl.tail
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => false
+      case Some(sensor: SensorData) => false
       case Some(sensormap: SensorMap) => {
         if (after.isEmpty)
           true
@@ -114,26 +112,26 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
       case _ => false
     }
   }
-  def updateSensor(pathTo: String, newsensor: SensorData[_]): Unit = {
+  def updateSensor(pathTo: String, newsensor: SensorData): Unit = {
       val spl = pathTo.split("/")
       val key = spl.head
       val after = spl.tail
       require(isSensor(pathTo))
       content.single.get(key) match {
-        case Some(sensor: SensorData[_]) => { content.single.update(pathTo, newsensor) } //_ IS a basic numeric data type
+        case Some(sensor: SensorData) => { content.single.update(pathTo, newsensor) } //_ IS a basic numeric data type
         case Some(sensormap: SensorMap) => {
           sensormap.updateSensor(after.mkString("/"), newsensor)
         }
         case _ => 
       }
     }
-  def insertSensor(pathTo: String, newsensor: SensorData[_]): Unit = {
+  def insertSensor(pathTo: String, newsensor: SensorData): Unit = {
     val spl = pathTo.split("/")
     val key = spl.head
     val after = spl.tail
     require(!exists(pathTo))
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => 
+      case Some(sensor: SensorData) => 
       case Some(sensormap: SensorMap) => {
         if (!after.isEmpty)
           sensormap.insertSensor(after.mkString("/"), newsensor)
@@ -141,13 +139,13 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
       case _ => content.single.put(pathTo, newsensor)
     }
   }
-  def insertSensorMap(pathTo: String, newsensormap: SensorData[_]): Unit = {
+  def insertSensorMap(pathTo: String, newsensormap: SensorData): Unit = {
     val spl = pathTo.split("/")
     val key = spl.head
     val after = spl.tail
     require(!exists(pathTo))
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => 
+      case Some(sensor: SensorData) => 
       case Some(sensormap: SensorMap) => {
         if (!after.isEmpty)
           sensormap.insertSensorMap(after.mkString("/"), newsensormap)
@@ -161,7 +159,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val after = spl.tail
     require(isSensor(pathTo))
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => content.single.remove(key)
+      case Some(sensor: SensorData) => content.single.remove(key)
       case Some(sensormap: SensorMap) => {
         if (!after.isEmpty)
           sensormap.removeSensor(after.mkString("/"))
@@ -175,7 +173,7 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val after = spl.tail
     require(isSensorMap(pathTo))
     content.single.get(key) match {
-      case Some(sensor: SensorData[_]) => 
+      case Some(sensor: SensorData) => 
       case Some(sensormap: SensorMap) => {
         if (!after.isEmpty)
           sensormap.removeSensor(after.mkString("/"))
