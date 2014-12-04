@@ -1,5 +1,5 @@
 
-/** Function to convert sensor path and data to OM-I write request
+/** Class to convert sensor path and data to OM-I write request
   * 
   * @tparam type of sensor data
   * @param Path to were sensor is. Last part is used as ID
