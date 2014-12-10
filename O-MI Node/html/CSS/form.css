@@ -5,7 +5,7 @@ body {
 }
 
 form {
-	float: left;
+	display: inline-block;
 	margin-left: 50px;
 	margin-top: 20px;
 	margin-left: 50px;
@@ -17,7 +17,8 @@ form label {
 	margin-bottom: 10px;
 }
 
-#infoCanvas {
+.info {
+	vertical-align: top;
 	display: inline-block;
 	width: 300px;
 	height: 300px;
@@ -25,7 +26,6 @@ form label {
 	border: 1px solid black;
 	margin-left: 200px;
 }
-
 #submit {
 	margin-top: 20px;
 }

@@ -1,109 +1,111 @@
-/* What to do with the form submissal */
-function submit() {
+/* Initial test; Check that Ajax request works */
+function submitTest() {
 	var sensorID = $("#sensorId").val();
 	var loc = $("#location").val();
+	
+	//Get the current path of the file (since it might change depending on the server)
 	var url = document.URL;
 	var path = url.substring(0, url.lastIndexOf("/"));
-
-	/* Test */
-	var readRequest = '<?xml version="1.0" encoding="UTF-8"?>'
-			+ '<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-			+ 'xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">'
-			+ '<omi:read msgformat="omi.xsd">'
-	'<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">'
-			+ '<Objects>' + '<Object>' + '<id>' + sensorID + '</id>'
-	'<InfoItem name="PowerConsumption">' + '</InfoItem>' + '</Object>'
-			+ '</Objects>' + '</omi:msg>' + '</omi:read>'
-			+ '</omi:omiEnvelope>';
-
 	
+	//Make the GET request with ajax
 	$.ajax({
 		type : "GET",
-		url : path + "/SensorData/test" + sensorID + ".html", //this needs to be changed in the future
-		data: "json", //TO be changed (omi-response = xml ?)
+		url : path + "/SensorData/" + loc + sensorID + ".html", //Request data from an existing html file
 		success : function(d) {
 			console.log("SUCCESS");
-			handleData(d);
+			console.log(d);
+			$("#box1").html(d); //Write the data to the box, if it's xml, it's automatically parsed
 		},
 		error : function(error, textStatus, et) {
-			console.log("error");
-			//TODO: fix for the canvas -> div implementation
-			//handleError(error);
+			//Probably specified file not found
+			handleError(error);
 		}
 	});
 }
 
-/* Not used yet */
-function handleOMI(d) {
-	var xml = "<rss version='2.0'><channel><title>RSS Title</title></channel></rss>",
-		xmlDoc = $.parseXML( xml ),
-		$xml = $( xmlDoc ),
-		$title = $xml.find( "title" );
-		
-	// Append "RSS Title" to #someElement
-	$( "#infoCanvas" ).html($title.text());
-}
+/* Send O-MI read request using HTTP GET */
+function submitGet() {
+	var url = document.URL;
+	var path = url.substring(0, url.lastIndexOf("/"));
+	var objectPath = $("#objectPath").val();
 
-function handleData(d) {
-	// Expecting the data to be json; formatting
-	var data = (d.split("")).map(function(c) {
-		if (c === "," || c === "{")
-			return c + "<br>";
-		else if (c === "}")
-			return "<br>" + c;
-		else
-			return c;
-	}).join(""); 
-	console.log(data);
-
-	$("#infoCanvas").html(data);
-	/*
-	// Visualize the data (?), currently writing to canvas
-	var canvas = document.getElementById("infoCanvas");
-	var ctx = canvas.getContext("2d");
-	readyFillText(canvas, ctx);
-	wrapText(ctx, data, 20, 20, canvas.width, 15); */
-}
-
-function handleError(error) {
-	var canvas = document.getElementById("infoCanvas");
-	var ctx = canvas.getContext("2d");
-	readyFillText(ctx);
-	ctx.fillText("Sensor not found", 20, 20);
-}
-
-function wrapText(context, text, x, y, maxWidth, lineHeight) {
-	var lines = text.split("\n");
-
-	for (var ii = 0; ii < lines.length; ii++) {
-		var line = "";
-		var words = lines[ii].split(" ");
-		for (var n = 0; n < words.length; n++) {
-			var testLine = line + words[n] + " ";
-			var metrics = context.measureText(testLine);
-			var testWidth = metrics.width;
-			if (testWidth > maxWidth) {
-				context.fillText(line, x, y);
-				line = words[n] + " ";
-				y += lineHeight;
-			} else {
-				line = testLine;
-			}
+	/* Full path should be something like localhost:8080/qlm/Objects
+	   and the <Objects> (XML(?)) should be prepared by the server;
+	   we could use this property (getting available objects) in creating the POST form
+	*/
+	$.ajax({
+		type : "GET",
+		url : path + "/qlm/" + objectPath, 
+		success : function(d) {
+			console.log("SUCCESS");
+			console.log(d);
+			$("#box2").html(d);
+		},
+		error : function(error, textStatus, et) {
+			handleError(error);
 		}
-		context.fillText(line, x, y);
-		y += lineHeight;
-	}
+	});
 }
 
-//Initializes the text drawing properties
-function readyFillText(canvas, ctx){
-	clearCtx(canvas, ctx); 
-	ctx.fillStyle = "Yellow";
-	ctx.font = "12px Arial";
+/* Send O-MI read request using HTTP POST */
+function submitPost() {
+	var url = document.URL;
+	var path = url.substring(0, url.lastIndexOf("/"));
+	
+	//Construct the read request
+	var omiData = getRequestXml();
+	
+	console.log("Posting O-MI Read Request: ");
+	console.log(omiData);
+	
+	$.ajax({
+		type : "POST",
+		url : "server",
+		data: omiData,
+		contentType: "text/xml",
+		dataType: "text",
+		success : parseOmiResponse,
+		error : function(error, textStatus, et) {
+			handleError(error);
+		}
+	});
 }
 
-//Clear canvas
-function clearCtx(canvas, ctx) {
-	ctx.fillStyle = "Blue";
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+/* Construct the O-MI read request for the ajax POST */
+function getRequestXml(){
+	var checked = [$("#Object1"), $("#Object2"), $("#Object3"), $("#Object4")].filter(function(checkBox){
+		return checkBox.is(":checked");
+	});
+
+	
+	var objectStr = "<Objects>";
+	
+	//Append the Object-elements to the xml
+	checked.forEach(function(box){
+		//Note: The id's of the checkboxes should be the same as the labels following them
+		objectStr += "<Object><id>" + box.attr("id") + "</id></Object>";
+	});
+	objectStr += "</Objects>";
+	
+	var request = "<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+			+ "xmlns:omi=\"omi.xsd\" xsi:schemaLocation=\"omi.xsd omi.xsd\" version=\"1.0\" ttl=\"10\">" 
+				+ "<omi:read msgformat=\"omi.xsd\">"
+					+ "<omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">"
+						+ objectStr
+					+ "</omi:msg>"
+				+ "</omi:read>"
+		+ "</omi:omiEnvelope>";
+		
+	return request;
+}
+
+/* Parse the O-MI response from the POST */
+function parseOmiResponse(data) {
+	
+}
+
+/* How to handle error? */
+function handleError(error) {
+	console.log("ERROR!");
+	console.log(error);
 }
