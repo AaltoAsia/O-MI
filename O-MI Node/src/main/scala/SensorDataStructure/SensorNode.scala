@@ -25,7 +25,7 @@ case class SensorData[T](
   override val path: String,
   val unit: String,
   val value: T, // is a basic numeric data type
-  val timestamp: Date // find better one if possible...
+  val timestamp: String // find better one if possible...
   ) extends SensorNode(path)
 /**
  * Data structure were sensors exist. a node.
