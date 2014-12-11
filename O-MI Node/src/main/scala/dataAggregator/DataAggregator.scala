@@ -1,5 +1,16 @@
 package dataAggregator
+import akka.actor.Actor
 import SensorDataStructure.SensorData
+import akka.actor.ActorRef
+
+class DataAggregator extends Actor {
+
+  def receive = ???
+  
+  def send(omidata:scala.xml.Elem,target:ActorRef) ={
+    target ! omidata
+  }
+}
 /**
  * Class to convert sensor path and data to OM-I write request
  *
@@ -24,6 +35,10 @@ object DataAggregator{
     return writeRequest
   }
 }
- 
+
+
+
+
+
 
 
