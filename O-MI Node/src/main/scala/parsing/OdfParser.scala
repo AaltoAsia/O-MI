@@ -17,7 +17,9 @@ object OdfParser extends Parser{
   case class MetaData() extends ODFNodeType   
 
   case class ODFNode( path: String, nodeType: ODFNodeType, value: Option[String], meta: Option[_])
+
   type ParseResult = Either[ ParseError, ODFNode ]
+  
   private def parseNode( obj: Node, currentPath: String ) : Seq[ ParseResult ] = {
     val path = currentPath + obj.label
     obj.label match {
