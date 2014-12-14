@@ -60,7 +60,7 @@ function submitPost() {
 	
 	$.ajax({
 		type : "POST",
-		url : "server",
+		url : "server", //server url here
 		data: omiData,
 		contentType: "text/xml",
 		dataType: "text",
