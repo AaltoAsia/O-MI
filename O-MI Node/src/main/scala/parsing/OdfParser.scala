@@ -16,7 +16,7 @@ object OdfParser extends Parser{
   case class Infoitem() extends ODFNodeType   
   case class MetaData() extends ODFNodeType   
 
-  case class ODFNode( path: String, nodeType: ODFNodeType, value: Option[String], meta: Option[_])
+  case class ODFNode( path: String, nodeType: ODFNodeType, data: Node)
 
   type ParseResult = Either[ ParseError, ODFNode ]
   
@@ -27,7 +27,7 @@ object OdfParser extends Parser{
         val subobjs = obj \ "Object"
         val infoitems = obj \ "Infoitem"
         if( infoitems.isEmpty && subobjs.isEmpty ){
-          Seq( Right( new ODFNode( path, new Object, None, None ) ) )
+          Seq( Right( new ODFNode( path, new Object, obj ) ) )
         } else {
           val eithers : Seq[ ParseResult ] = 
             subobjs.flatMap{
@@ -41,7 +41,7 @@ object OdfParser extends Parser{
       case "Infoitem" => {
         val values = ( obj \ "value" ).headOption.map( _.text )
         val metadata = ( obj \ "MetaData" ).headOption
-        Seq( Right( new ODFNode( path, new Infoitem, values, metadata ) ) )    
+        Seq( Right( new ODFNode( path, new Infoitem, obj) ) )    
       }
       case _ => Seq( Left( new ParseError( "Unknown node in O-DF. " + path ) ) )
     }
