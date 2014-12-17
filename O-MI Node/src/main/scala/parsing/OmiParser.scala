@@ -4,20 +4,23 @@ import sensorDataStructure._
 import scala.xml._
 
 object OmiParser extends Parser{
-  private def parseODF(msg:Node) = OdfParser.parse( new PrettyPrinter( 80, 2 ).format( msg ) )
+  private val implementedRequest = Seq("read","write","cancel", "response")
+  private def parseODF(msg:Node) = {
+    OdfParser.parse( new PrettyPrinter( 80, 2 ).format( msg ) )
+  }
   def parse(xml_msg: String): Seq[ ParseMsg ] ={
     val root = XML.loadString( xml_msg )
-    if( root.label != "omi:omiEnvelope" )
+    if( root.label != "Envelope" )
       Some( new ParseError( "XML's root isn't omi:Envelope" ) )
 
     if( root.headOption.isEmpty )
       Some( new ParseError( "omi:Envelope doesn't contain request" ) )
 
-    val request = root.head
+    val requests = root.child.filter( n => implementedRequest.contains( n.label ) )
     val ttl = ( root \ "@ttl" ).headOption.getOrElse{
       return Seq( new ParseError("No ttl present in O-MI Envelope" ) )  
     }.text
-    parseNode(request, ttl) 
+    parseNode(requests.head, ttl)
   }
 
   private def parseNode(node: Node, ttl: String ): Seq[ ParseMsg ]  = {
@@ -25,23 +28,26 @@ object OmiParser extends Parser{
       /*
         Write request 
       */
-      case "omi:write"  => {
+      case "write"  => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq( new ParseError( "No msgformat in write request" ) )  
         ).text
         msgformat match{ 
           case "odf" => {
-            val msg = ( node \ "{omi}msg" ).headOption.getOrElse{
+            val msg = ( node \ "msg" ).headOption.getOrElse{
               return Seq( new ParseError( "No message node found in read node." ) ) 
             }
-            val odf = parseODF( msg )
-            val errorsandOdf = errorsAndOdf(odf)
+            val odf = parseODF( ( msg \ "Objects" ).headOption.getOrElse( 
+              return Seq( new ParseError( "No Objects node found in msg node." ) ) 
+            ) )
+            val left = odf.filter(_.isLeft)
+            val right = odf.filter(_.isRight)
 
-            if ( errorsandOdf( true ).isEmpty ) {
-              Seq( Write(ttl, errorsandOdf( false ).map( _.right.get ) ) ) 
-            } else {
-              errorsandOdf( true ).map( _.left.get )  
-            }
+            if ( left.isEmpty && !right.isEmpty ) {
+              Seq( Write(ttl, right.map( _.right.get ) ) ) 
+            } else if ( !left.isEmpty ) {
+              left.map( _.left.get )  
+            } else { Seq( ParseError( "No odf or errors found ln 46" ) ) }
           }
           case _ => Seq( new ParseError( "Unknown message format." ) ) 
         }        
@@ -50,31 +56,32 @@ object OmiParser extends Parser{
       /*
         Read request 
       */
-      case "omi:read"  => {
+      case "read"  => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq( new ParseError( "No msgformat in read request" ) )  
         ).text
 
         msgformat match { 
           case "odf" => {
-            val msg = ( node \ "{omi}msg" ).headOption.getOrElse{
+            val msg = ( node \ "msg" ).headOption.getOrElse{
               return Seq( new ParseError( "No message node found in read node." ) ) 
             }
             val interval = ( node \ "@interval" ).headOption
-            val odf = parseODF( msg )
-            val errorsandOdf = errorsAndOdf(odf)
+            val odf = parseODF( ( msg \ "Objects" ).headOption.getOrElse( 
+              return Seq( new ParseError( "No Objects node found in msg node." ) ) 
+            ) )
+            val left = odf.filter(_.isLeft)
+            val right = odf.filter(_.isRight)
 
-            if ( errorsandOdf( true ).isEmpty ) {
-
+            if ( left.isEmpty && !right.isEmpty ) {
               if ( interval.isEmpty ){
-                Seq( OneTimeRead(ttl, errorsandOdf( false ).map( _.right.get ) ) ) 
+                Seq( OneTimeRead(ttl, right.map( _.right.get ) ) ) 
               } else {
-                Seq( Subscription( ttl, interval.get.text, errorsandOdf( false ).map( _.right.get ) ) ) 
+                Seq( Subscription( ttl, interval.get.text, right.map( _.right.get ) ) ) 
               }
-
-            } else {
-              errorsandOdf( true ).map( _.left.get )  
-            }
+            } else if ( !left.isEmpty ) {
+              left.map( _.left.get )  
+            } else { Seq( ParseError( "No odf or errors found ln 78" ) ) }
           }
 
           case _ => Seq( new ParseError( "Unknown message format." ) ) 
@@ -84,13 +91,13 @@ object OmiParser extends Parser{
       /*
         Cancel request 
       */
-      case "omi:cancel"  => Seq( new ParseError( "Unimplemented O-MI node." ) )  
+      case "cancel"  => Seq( new ParseError( "Unimplemented O-MI node." ) )  
       
       /*
         Response 
       */
-      case "omi:response"  => {
-        parseNode( ( node \ "{omi}result" ).headOption.getOrElse( 
+      case "response"  => {
+        parseNode( ( node \ "result" ).headOption.getOrElse( 
           return Seq( new ParseError( "No result node in response node" ) ) 
         ), ttl ) 
       }
@@ -98,26 +105,30 @@ object OmiParser extends Parser{
       /*
         Response's Result 
       */
-      case "omi:result" => {
+      case "result" => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq( new ParseError( "No return node in result node" ) )  
         ).text
-        val returnValue = ( node \ "{omi}return" ).headOption.getOrElse(
+        val returnValue = ( node \ "return" ).headOption.getOrElse(
           return Seq( new ParseError( "No return node in result node" ) )  
         ).text
-        val msgOp = ( node \ "{omi}msg" ).headOption
+        val msgOp = ( node \ "msg" ).headOption
         if(msgOp.isEmpty)
           return  Seq( Result(returnValue, None) ) 
         else{
           msgformat match{
             case "odf" => {
-              val odf = parseODF( msgOp.get )
-              val errorsandOdf = errorsAndOdf(odf)
+              val odf = parseODF( ( msgOp.get \ "Objects" ).headOption.getOrElse( 
+                return Seq( new ParseError( "No Objects node found in msg node." ) ) 
+              ) )
+              val left = odf.filter(_.isLeft)
+              val right = odf.filter(_.isRight)
 
-              if ( errorsandOdf( true ).isEmpty ) 
-                return Seq( Result( returnValue, Some( errorsandOdf( false ).map( _.right.get ) ) ) ) 
-              else
-                return errorsandOdf( true ).map( _.left.get )
+              if ( left.isEmpty && !right.isEmpty ) {
+                return Seq( Result( returnValue, Some( right.map( _.right.get ) ) ) ) 
+              } else if ( !left.isEmpty ) {
+                left.map( _.left.get )  
+              } else { Seq( ParseError( "No odf or errors found ln 123" ) ) }
 
             }
             case _ => return Seq( new ParseError( "Unknown smgformat in result" ) ) 
