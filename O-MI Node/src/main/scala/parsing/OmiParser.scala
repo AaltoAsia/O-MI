@@ -9,6 +9,10 @@ object OmiParser extends Parser{
     val root = XML.loadString( xml_msg )
     if( root.label != "omi:omiEnvelope" )
       Some( new ParseError( "XML's root isn't omi:Envelope" ) )
+
+    if( root.headOption.isEmpty )
+      Some( new ParseError( "omi:Envelope doesn't contain request" ) )
+
     val request = root.head
     val ttl = ( root \ "@ttl" ).headOption.getOrElse{
       return Seq( new ParseError("No ttl present in O-MI Envelope" ) )  
