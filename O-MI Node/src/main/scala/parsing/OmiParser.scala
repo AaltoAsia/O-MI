@@ -7,25 +7,27 @@ object OmiParser extends Parser{
   private def parseODF(msg:Node) = OdfParser.parse( new PrettyPrinter( 80, 2 ).format( msg ) )
   def parse(xml_msg: String): Seq[ ParseMsg ] ={
     val root = XML.loadString( xml_msg )
-    if( root.label != "omi:omiEnvelope" )
-      Some( new ParseError( "XML's root isn't omi:Envelope" ) )
+    if( root.prefix + ":" + root.label != "omi:Envelope" )
+      return Seq( new ParseError( "XML's root isn't omi:Envelope" ))
+      
+    val request = root.child.tail    
+    if( request.headOption.isEmpty )
+      return Seq( new ParseError( "omi:Envelope doesn't contain request" ))
 
-    if( root.headOption.isEmpty )
-      Some( new ParseError( "omi:Envelope doesn't contain request" ) )
-
-    val request = root.head
-    val ttl = ( root \ "@ttl" ).headOption.getOrElse{
-      return Seq( new ParseError("No ttl present in O-MI Envelope" ) )  
-    }.text
-    parseNode(request, ttl) 
+    val ttl = root \ "@ttl"
+    if(ttl.isEmpty){
+      return Seq( new ParseError("No ttl present in O-MI Envelope" ) )
+    }
+    parseNode(request.head, ttl.text) 
   }
 
   private def parseNode(node: Node, ttl: String ): Seq[ ParseMsg ]  = {
+    //TODO: test for correct node.prefix ( node.prefix = "omi")
   node.label match {
       /*
         Write request 
       */
-      case "omi:write"  => {
+      case "write"  => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq( new ParseError( "No msgformat in write request" ) )  
         ).text
@@ -50,7 +52,7 @@ object OmiParser extends Parser{
       /*
         Read request 
       */
-      case "omi:read"  => {
+      case "read"  => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq( new ParseError( "No msgformat in read request" ) )  
         ).text
@@ -84,12 +86,12 @@ object OmiParser extends Parser{
       /*
         Cancel request 
       */
-      case "omi:cancel"  => Seq( new ParseError( "Unimplemented O-MI node." ) )  
+      case "cancel"  => Seq( new ParseError( "Unimplemented O-MI node." ) )  
       
       /*
         Response 
       */
-      case "omi:response"  => {
+      case "response"  => {
         parseNode( ( node \ "{omi}result" ).headOption.getOrElse( 
           return Seq( new ParseError( "No result node in response node" ) ) 
         ), ttl ) 
@@ -98,7 +100,7 @@ object OmiParser extends Parser{
       /*
         Response's Result 
       */
-      case "omi:result" => {
+      case "result" => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq( new ParseError( "No return node in result node" ) )  
         ).text
