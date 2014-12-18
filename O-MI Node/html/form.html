@@ -10,6 +10,7 @@
 	
 	<link type="text/css" rel="stylesheet" href="CSS/form.css" />
 	<script type="text/javascript" src="JS/jquery-2.1.1.js"></script>
+	<script type="text/javascript" src="JS/submit.js"></script>
 </head>
 
 <body>
@@ -19,13 +20,14 @@
 			<fieldset>
 				<legend align="center"> O-DF request selection </legend>
 				<label class="left">Select operation: </label>
-				<div id="operation-select" class="right"></div>
-				<br><br>
+				<div id="operation-select"></div>
+				<br><br><br><br>
 				<label class="left">TTL: </label> <input type="text" id="ttl" class="right"><br><br>
 				<label class="left">Interval: </label> <input type="text" id="interval" class="right"><br><br>
-				<button onclick="getObjects()">Get Available Objects</button>
+				<button onclick="javascript:getObjects();">Get Available Objects</button>
 			</fieldset>
 		</div>
+		<div id="testbox"><p><b>Test</b></p></div>
 	</div>
 </body>
 </html>

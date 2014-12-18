@@ -9,6 +9,7 @@ body {
 	margin-left: 5%;
 	padding-bottom: 1%;
 	background-color: #F0F0F0;
+	float: left;
 }
 
 #form h1{
@@ -20,6 +21,7 @@ body {
 	width: 40%;
 	background-color: white;
 	margin: 1%;
+	float: left;
 }
 
 fieldset {
@@ -44,4 +46,18 @@ legend {
 	width: 65%;
 	margin-left: 1%;
 	float: left;
+}
+
+#operation-select{
+	float: left;
+	margin-left: 2%;
+}
+
+#testbox{
+	width: 55%;
+	background-color: white;
+	margin: 1%;
+	float: left;
+	border: 1px solid green;
+	text-align: center;
 }

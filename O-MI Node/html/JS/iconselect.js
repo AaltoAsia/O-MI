@@ -26,7 +26,7 @@ IconSelect.DEFAULT.BOX_ICON_SPACE = 1;
 IconSelect.DEFAULT.HORIZONTAL_ICON_NUMBER = 3;
 IconSelect.DEFAULT.VECTORAL_ICON_NUMBER = 3;
 
-IconSelect.COMPONENT_ICON_FILE_PATH = "images/control/icon-select/arrow.png";
+IconSelect.COMPONENT_ICON_FILE_PATH = "../Resources/arrow.png";
 
 function IconSelect($$elementID, $$parameters) {
     
