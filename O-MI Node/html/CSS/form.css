@@ -1,31 +1,47 @@
 @charset "UTF-8";
 
 body {
-	background-color: #CCFFFF;
+	background-image: url("../Resources/testbg.png"); 
 }
 
-form {
-	display: inline-block;
-	margin-left: 50px;
-	margin-top: 20px;
-	margin-left: 50px;
+#form {
+	width: 90%;
+	margin-left: 5%;
+	padding-bottom: 1%;
+	background-color: #F0F0F0;
 }
 
-form label {
-	color: red;
-	font-size: 20px;
-	margin-bottom: 10px;
+#form h1{
+	text-align: center;
+	padding-top: 2%;
 }
 
-.info {
-	vertical-align: top;
-	display: inline-block;
-	width: 300px;
-	height: 300px;
+#selectionBox {
+	width: 40%;
 	background-color: white;
-	border: 1px solid black;
-	margin-left: 200px;
+	margin: 1%;
 }
-#submit {
-	margin-top: 20px;
+
+fieldset {
+	position: relative;
+	border-width: 5px;
+	border-style: groove;
+	border-color: red green yellow blue;
+}
+
+legend {
+	font-size: 22px;
+	color: red;
+}
+
+.left {
+	width: 30%;
+	float: left;
+	text-align: right;
+}
+
+.right{
+	width: 65%;
+	margin-left: 1%;
+	float: left;
 }

@@ -1,27 +1,18 @@
-/* Initial test; Check that Ajax request works */
-function submitTest() {
-	var sensorID = $("#sensorId").val();
-	var loc = $("#location").val();
+var iconSelect;
+
+window.onload = function(){
+	iconSelect = new IconSelect("operation-select", 
+				{'vectoralIconNumber':4,
+                'horizontalIconNumber':4});
+
+	var icons = [];
+	icons.push({'iconFilePath':'Resources/icons/read.png', 'iconValue':'read'});
+	icons.push({'iconFilePath':'Resources/icons/write.png', 'iconValue':'write'});
+	icons.push({'iconFilePath':'Resources/icons/subscribe.png', 'iconValue':'subscribe'});
+	icons.push({'iconFilePath':'Resources/icons/cancel.png', 'iconValue':'cancel'});
 	
-	//Get the current path of the file (since it might change depending on the server)
-	var url = document.URL;
-	var path = url.substring(0, url.lastIndexOf("/"));
-	
-	//Make the GET request with ajax
-	$.ajax({
-		type : "GET",
-		url : path + "/SensorData/" + loc + sensorID + ".html", //Request data from an existing html file
-		success : function(d) {
-			console.log("SUCCESS");
-			console.log(d);
-			$("#box1").html(d); //Write the data to the box, if it's xml, it's automatically parsed
-		},
-		error : function(error, textStatus, et) {
-			//Probably specified file not found
-			handleError(error);
-		}
-	});
-}
+	iconSelect.refresh(icons);
+};
 
 /* Send O-MI read request using HTTP GET */
 function submitGet() {
@@ -97,15 +88,4 @@ function getRequestXml(){
 		+ "</omi:omiEnvelope>";
 		
 	return request;
-}
-
-/* Parse the O-MI response from the POST */
-function parseOmiResponse(data) {
-	
-}
-
-/* How to handle error? */
-function handleError(error) {
-	console.log("ERROR!");
-	console.log(error);
 }

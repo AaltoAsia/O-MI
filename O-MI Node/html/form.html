@@ -1,65 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Sensor form</title>
-<script>
-	//Since the path might change, find the current path and try to append required CSS and JS here
-	var url = document.URL;
-	var path = url.substring(0, url.lastIndexOf("/"));
-
-	var script = document.createElement('script');
-	script.src = path + "/JS/jquery-2.1.1.js";
-	var script2 = document.createElement('script');
-	script2.src = path + "/JS/submit.js";
-	var css = document.createElement('link');
-	css.type = "text/css";
-	css.rel = "stylesheet";
-	css.href = path + "/CSS/form.css";
+	<meta charset="UTF-8">
+	<title>Sensor form</title>
+	<!-- IconSelect library -->
+	<link type="text/css" rel="stylesheet" href="CSS/iconselect.css" >
+	<script type="text/javascript" src="JS/iconselect.js"></script> 
+    <script type="text/javascript" src="JS/iscroll.js"></script>
 	
-	document.getElementsByTagName('head')[0].appendChild(script);
-	document.getElementsByTagName('head')[0].appendChild(script2);
-	document.getElementsByTagName('head')[0].appendChild(css);
-</script>
-
-<!-- Appending on script -->
-<!--  
-<link type="text/css" rel="stylesheet" href="/testclient/CSS/form.css" />
-<script type="text/javascript" src="/testclient/JS/jquery-2.1.1.js"></script>
--->
+	<link type="text/css" rel="stylesheet" href="CSS/form.css" />
+	<script type="text/javascript" src="JS/jquery-2.1.1.js"></script>
 </head>
 
 <body>
-	<h2>Test</h2>
-	<form id="form" method="post" action="javascript:submitTest();">
-		<label>Sensor ID:</label><br> <input type="text" id="sensorId"><br>
-		<label>Location</label><br> <select name="location" id="location">
-			<option>test</option>
-		</select><br> <input type="submit" value="Get Data" id="submit">
-	</form>
-
-	<div class="info" id="box1">
-	</div>
-	
-	
-	<h2>GET-request form</h2>
-	<form id="getForm" method="get" action="javascript:submitGet();">
-		<label>Object Path</label><br> <input type="text" id="objectPath"><br>
-		</select><br> <input type="submit" value="Get Data" id="submit">
-	</form>
-	<div class="info" id="box2">
-	</div>
-	
-	
-	<h2>POST-request form</h2>
-	<form id="postForm" method="post" action="javascript:submitPost();">
-		<input type="checkbox" id="Object1"> Object1<br>
-		<input type="checkbox" id="Object2"> Object2<br>
-		<input type="checkbox" id="Object3"> Object3<br>
-		<input type="checkbox" id="Object4"> Object4<br>
-		</select><br> <input type="submit" value="Get Data" id="submit">
-	</form>
-	<div class="info" id="box3">
+	<div id="form">
+		<h1>O-DF/O-MI Form</h1>
+		<div id="selectionBox">
+			<fieldset>
+				<legend align="center"> O-DF request selection </legend>
+				<label class="left">Select operation: </label>
+				<div id="operation-select" class="right"></div>
+				<br><br>
+				<label class="left">TTL: </label> <input type="text" id="ttl" class="right"><br><br>
+				<label class="left">Interval: </label> <input type="text" id="interval" class="right"><br><br>
+				<button onclick="getObjects()">Get Available Objects</button>
+			</fieldset>
+		</div>
 	</div>
 </body>
 </html>
