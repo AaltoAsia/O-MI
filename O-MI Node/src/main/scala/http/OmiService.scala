@@ -34,5 +34,7 @@ trait OmiService extends HttpService {
           }
         }
       }
-    }
+    } ~ pathPrefix(""){ //Get the files from the html directory; http://localhost:8080/form.html
+	  getFromDirectory("html")
+	}
 }
