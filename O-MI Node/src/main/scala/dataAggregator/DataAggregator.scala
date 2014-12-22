@@ -2,20 +2,32 @@ package dataAggregator
 import akka.actor.Actor
 import SensorDataStructure.SensorData
 import akka.actor.ActorRef
+import spray.routing._
+import spray.http._
 
-class DataAggregator extends Actor {
+class DataAggregator extends Actor with SensorService {
+  implicit val system = context.system
+  def receive = runRoute(myRoute)
 
-  def receive = ???
-  
-  def send(omidata:scala.xml.Elem,target:ActorRef) ={
+  def send(omidata: scala.xml.Elem, target: ActorRef) = {
     target ! omidata
   }
+  def actorRefFactory = context
 }
+trait SensorService extends HttpService {
+  val myRoute =
+    path("") { // Root
+      post {
+    	  
+      }
+    }
+}
+
 /**
  * Class to convert sensor path and data to OM-I write request
  *
  */
-object DataAggregator{
+object DataAggregator {
   def getWriteRequest(sensorData: SensorData[_]): scala.xml.Elem = {
     var writeRequest =
       <omi:omiEnvelope ttl="0" version="1.0">
