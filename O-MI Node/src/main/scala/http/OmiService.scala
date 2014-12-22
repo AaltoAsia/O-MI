@@ -6,8 +6,9 @@ import spray.http._
 import MediaTypes._
 
 import parsing._
+import sensorDataStructure.SensorMap
 
-class OmiServiceActor extends Actor with OmiService {
+class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
@@ -30,6 +31,7 @@ trait OmiService extends HttpService {
       getFromDirectory("html")
     }
 
+  // should be removed
   val helloWorld = 
     path("") { // Root
       get {
@@ -52,6 +54,7 @@ trait OmiService extends HttpService {
       }
     }
 
+  // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
 
 }
