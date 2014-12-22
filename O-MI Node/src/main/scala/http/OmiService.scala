@@ -51,7 +51,7 @@ trait OmiService extends HttpService {
     path(Rest){ path =>
       get {
         complete {
-          Read.generateODF(path)
+          Read.generateODF(path, sensormap)
         }
       }
     }
