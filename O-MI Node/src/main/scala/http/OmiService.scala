@@ -50,7 +50,9 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
-        complete(s"got path: $path") // path test, TODO: connect to memory
+        complete {
+          Read.generateODF(path)
+        }
       }
     }
 
