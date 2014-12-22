@@ -3,31 +3,55 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Sensor form</title>
+	
+	<!-- JQuery -->
+	<script type="text/javascript" src="JS/jquery-2.1.1.js"></script>
+	
+	<!-- XML Writer -->
+	<script type="text/javascript" src="JS/XMLWriter-1.0.0-min.js"></script>
+	
 	<!-- IconSelect library -->
 	<link type="text/css" rel="stylesheet" href="CSS/iconselect.css" >
 	<script type="text/javascript" src="JS/iconselect.js"></script> 
     <script type="text/javascript" src="JS/iscroll.js"></script>
 	
 	<link type="text/css" rel="stylesheet" href="CSS/form.css" />
-	<script type="text/javascript" src="JS/jquery-2.1.1.js"></script>
 	<script type="text/javascript" src="JS/submit.js"></script>
 </head>
 
 <body>
 	<div id="form">
 		<h1>O-DF/O-MI Form</h1>
-		<div id="selectionBox">
+		
+		<div class="box">
+			<fieldset>
+				<legend align="center"> Object List </legend>
+				<button onclick="javascript:getObjects();">Get Available Objects</button>
+				<div id="objectList"></div>
+			</fieldset>
+		</div>
+		
+		<div class="box">
 			<fieldset>
 				<legend align="center"> O-DF request selection </legend>
 				<label class="left">Select operation: </label>
 				<div id="operation-select"></div>
 				<br><br><br><br>
 				<label class="left">TTL: </label> <input type="text" id="ttl" class="right"><br><br>
-				<label class="left">Interval: </label> <input type="text" id="interval" class="right"><br><br>
-				<button onclick="javascript:getObjects();">Get Available Objects</button>
+				<label class="left">Interval: </label> <input type="text" id="interval" class="right"><br><br>	
+				<button onclick="javascript:generateRequest();">Generate Request</button>
 			</fieldset>
 		</div>
-		<div id="testbox"><p><b>Test</b></p></div>
+		
+		<div class="box">
+			<fieldset>
+				<legend align="center"> The O-DF request </legend>
+				<div id="requestBox">
+					<p id="testp"></p>
+				</div>
+				<button onclick="javascript:sendRequest();">Send Request</button>
+			</fieldset>
+		</div>
 	</div>
 </body>
 </html>

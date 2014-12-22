@@ -5,8 +5,8 @@ body {
 }
 
 #form {
-	width: 90%;
-	margin-left: 5%;
+	width: 80%;
+	margin-left: 10%;
 	padding-bottom: 1%;
 	background-color: #F0F0F0;
 	float: left;
@@ -17,11 +17,11 @@ body {
 	padding-top: 2%;
 }
 
-#selectionBox {
-	width: 40%;
+.box {
+	width: 60%;
 	background-color: white;
-	margin: 1%;
-	float: left;
+	margin-left: 20%;
+	padding: 1%;
 }
 
 fieldset {
@@ -48,16 +48,19 @@ legend {
 	float: left;
 }
 
+
 #operation-select{
 	float: left;
 	margin-left: 2%;
 }
 
-#testbox{
-	width: 55%;
-	background-color: white;
-	margin: 1%;
-	float: left;
-	border: 1px solid green;
-	text-align: center;
+#objectList {
+	border: 1px solid black;
+	margin-top: 15px;
+}
+
+#requestBox {
+	border: 1px solid black;
+	margin-top: 15px;
+	margin-bottom: 15px;
 }

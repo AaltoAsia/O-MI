@@ -23,10 +23,10 @@ IconSelect.DEFAULT.SELECTED_BOX_PADDING_RIGHT = 12;
 IconSelect.DEFAULT.ICONS_WIDTH = 32;
 IconSelect.DEFAULT.ICONS_HEIGHT = 32;
 IconSelect.DEFAULT.BOX_ICON_SPACE = 1;
-IconSelect.DEFAULT.HORIZONTAL_ICON_NUMBER = 3;
-IconSelect.DEFAULT.VECTORAL_ICON_NUMBER = 3;
+IconSelect.DEFAULT.HORIZONTAL_ICON_NUMBER = 4;
+IconSelect.DEFAULT.VECTORAL_ICON_NUMBER = 1;
 
-IconSelect.COMPONENT_ICON_FILE_PATH = "../Resources/arrow.png";
+IconSelect.COMPONENT_ICON_FILE_PATH = "Resources/arrow.png";
 
 function IconSelect($$elementID, $$parameters) {
     
@@ -89,7 +89,6 @@ function IconSelect($$elementID, $$parameters) {
         }
         
         var horizontalIconNumber = Math.round(($icons.length) / $$parameters.vectoralIconNumber);
-        
         _View.boxElement.style.height = (($$parameters.iconsHeight + 2) * horizontalIconNumber) + 
                 ((horizontalIconNumber + 1) * $$parameters.boxIconSpace);
         this.setSelectedIndex(0);
