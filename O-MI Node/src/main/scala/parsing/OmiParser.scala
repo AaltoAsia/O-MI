@@ -2,13 +2,13 @@ package parsing
 
 import sensorDataStructure._
 import scala.xml._
-
 object OmiParser extends Parser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
   private def parseODF(msg: Node) = {
     OdfParser.parse(new PrettyPrinter(80, 2).format(msg))
   }
   def parse(xml_msg: String): Seq[ParseMsg] = {
+    //TODO: try-catch for invalid xml
     val root = XML.loadString(xml_msg)
 
     if (root.prefix != "omi")
@@ -42,7 +42,7 @@ object OmiParser extends Parser {
         msgformat match {
           case "odf" => {
             val msg = (node \ "msg").headOption.getOrElse {
-              return Seq(new ParseError("No message node found in read node."))
+              return Seq(new ParseError("No message node found in write node."))
             }
             val odf = parseODF((msg \ "Objects").headOption.getOrElse(
               return Seq(new ParseError("No Objects node found in msg node."))))
@@ -110,7 +110,7 @@ object OmiParser extends Parser {
       */
       case "result" => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
-          return Seq(new ParseError("No return node in result node"))).text
+          return Seq(new ParseError("No msgformat in result message"))).text
         val returnValue = (node \ "return").headOption.getOrElse(
           return Seq(new ParseError("No return node in result node"))).text
         val msgOp = (node \ "msg").headOption
@@ -131,7 +131,7 @@ object OmiParser extends Parser {
               } else { Seq(ParseError("No odf or errors found ln 123")) }
 
             }
-            case _ => return Seq(new ParseError("Unknown smgformat in result"))
+            case _ => return Seq(new ParseError("Unknown message format."))
           }
         }
       }
