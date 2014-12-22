@@ -54,6 +54,7 @@ case class SensorData(
  */
 case class SensorMap(override val path: String) extends SensorNode(path) {
   val content: TMap[String, SensorNode] = TMap.empty
+  val label: String = ???
 
   def get(pathTo: String): Option[SensorNode] = {
     val spl = pathTo.split("/")
