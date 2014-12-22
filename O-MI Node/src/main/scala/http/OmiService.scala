@@ -19,12 +19,14 @@ class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
   // other things here, like request stream processing
   // or timeout handling
   def receive = runRoute(myRoute)
+
 }
 
 
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
 
+  val sensormap: SensorMap
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
@@ -52,7 +54,7 @@ trait OmiService extends HttpService {
     path(Rest){ path =>
       get {
         complete {
-          Read.generateODF(path, sensormap)
+          Read.generateODF(path, getSensormap)
         }
       }
     }
