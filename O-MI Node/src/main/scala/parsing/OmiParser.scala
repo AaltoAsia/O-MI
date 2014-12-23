@@ -54,7 +54,7 @@ object OmiParser extends Parser {
               Seq(Write(ttl, right.map(_.right.get)))
             } else if (!left.isEmpty) {
               left.map(_.left.get)
-            } else { Seq(ParseError("No odf or errors found ln 46")) }
+            } else { Seq(ParseError("No Objects to parse")) }
           }
           case _ => Seq(new ParseError("Unknown message format."))
         }
@@ -86,7 +86,7 @@ object OmiParser extends Parser {
               }
             } else if (!left.isEmpty) {
               left.map(_.left.get)
-            } else { Seq(ParseError("No odf or errors found ln 78")) }
+            } else { Seq(ParseError("No Objects to parse")) }
           }
 
           case _ => Seq(new ParseError("Unknown message format."))
@@ -129,7 +129,7 @@ object OmiParser extends Parser {
                 return Seq(Result(returnValue, Some(right.map(_.right.get))))
               } else if (!left.isEmpty) {
                 left.map(_.left.get)
-              } else { Seq(ParseError("No odf or errors found ln 123")) }
+              } else { Seq(ParseError("No Objects to parse")) }
 
             }
             case _ => return Seq(new ParseError("Unknown message format."))
@@ -148,9 +148,4 @@ object OmiParser extends Parser {
 
 }
 
-abstract sealed trait ParseMsg
-case class ParseError(msg: String) extends ParseMsg
-case class OneTimeRead(ttl: String, sensors: Seq[OdfParser.ODFNode]) extends ParseMsg
-case class Write(ttl: String, sensors: Seq[OdfParser.ODFNode]) extends ParseMsg
-case class Subscription(ttl: String, interval: String, sensors: Seq[OdfParser.ODFNode]) extends ParseMsg
-case class Result(value: String, parseMsgOp: Option[Seq[OdfParser.ODFNode]]) extends ParseMsg
+
