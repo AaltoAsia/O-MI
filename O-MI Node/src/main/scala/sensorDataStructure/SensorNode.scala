@@ -43,9 +43,9 @@ abstract sealed class SensorNode(val path: String) {
  */
 case class SensorData(
   override val path: String,
-  val xmlElem: xml.Node 
-  //val value: String, // is a basic numeric data type
-  //val dateTime: String // find better one if possible...
+  //val xmlElem: xml.Node 
+  val value: String, // is a basic numeric data type
+  val dateTime: String // find better one if possible...
   ) extends SensorNode(path)
 /**
  * Data structure were sensors exist. a node.

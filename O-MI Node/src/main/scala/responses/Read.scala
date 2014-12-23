@@ -9,7 +9,7 @@ object Read {
 	def generateODF(path: String, root: SensorMap): Option[xml.Node] = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {
-				return Some(sensor.xmlElem)
+				return Some(<InfoItem name={sensor.id}><value dateTime={sensor.dateTime}>{sensor.value}</value></InfoItem>)
 			}
 
 			case Some(sensormap: SensorMap) => {
