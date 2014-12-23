@@ -1,0 +1,8 @@
+<Objects>
+    <Object>
+	<id>SmartFridge22334411</id>
+	<InfoItem name="PowerConsumption">
+	    <value type="xs:int" unixTime="5453563">43</value>
+	</InfoItem>
+    </Object>
+</Objects>
