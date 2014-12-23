@@ -2,14 +2,15 @@ package parsing
 
 import sensorDataStructure._
 import scala.xml._
+import scala.util.Try
 object OmiParser extends Parser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
   private def parseODF(msg: Node) = {
     OdfParser.parse(new PrettyPrinter(80, 2).format(msg))
   }
   def parse(xml_msg: String): Seq[ParseMsg] = {
-    //TODO: try-catch for invalid xml
-    val root = XML.loadString(xml_msg)
+
+    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
 
     if (root.prefix != "omi")
       return Seq(new ParseError("Incorrect prefix"))

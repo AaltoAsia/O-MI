@@ -13,9 +13,9 @@ class ParserTest extends Specification {
   lazy val omi_response_test_file = Source.fromFile("src/test/scala/omi_response_test.xml").getLines.mkString("\n")
 
   def is = s2"""
-  This is Specification to check the O-MI Parser
+  This is Specification to check the parsing functionality.
 
-  Parser should give certain result for
+  OmiParser should give certain result for
     message with
       incorrect xml       $e1
       incorrect prefix    $e2
@@ -32,7 +32,6 @@ class ParserTest extends Specification {
       correct message     $e200
       missing msgformat   $e201
       wrong msgformat     $e202
-      missing omi:msg     $e203
       missing Objects     $e204
       missing result node $e205
     read request with
@@ -118,12 +117,12 @@ class ParserTest extends Specification {
     }
   }
 
-  def e203 = {
-    OmiParser.parse(omi_response_test_file.replace("omi:msg", "omi:msn")) match {
-      case ParseError("No message node found in response node.") :: _ => true
-      case _ => false
-    }
-  }
+//  def e203 = {
+//    OmiParser.parse(omi_response_test_file.replace("omi:msg", "omi:msn")) match {
+//      case ParseError("No message node found in response node.") :: _ => true
+//      case _ => false
+//    }
+//  }
 
   def e204 = {
     OmiParser.parse(
@@ -161,7 +160,12 @@ class ParserTest extends Specification {
         ODFNode("/Objects/SmartCottage", Object(), None, None, None))))
   }
 
-  def e1 = false //TODO
+  def e1 = {
+    OmiParser.parse("incorrect xml") match {
+      case ParseError("Invalid XML") :: _ => true
+      case _ => false
+    }
+  }
 
   /*
    * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
