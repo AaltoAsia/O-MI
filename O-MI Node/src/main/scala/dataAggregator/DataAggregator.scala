@@ -7,7 +7,7 @@ import spray.http._
 
 class DataAggregator extends Actor with SensorService {
   implicit val system = context.system
-  def receive = runRoute(myRoute)
+  def receive = ???//runRoute(myRoute)
 
   def send(omidata: scala.xml.Elem, target: ActorRef) = {
     target ! omidata
@@ -15,12 +15,12 @@ class DataAggregator extends Actor with SensorService {
   def actorRefFactory = context
 }
 trait SensorService extends HttpService {
-  val myRoute =
-    path("") { // Root
-      post {
-    	  
-      }
-    }
+ // val myRoute =
+//    path("") { // Root
+//      post {
+//    	  
+//      }
+//    }
 }
 
 /**
