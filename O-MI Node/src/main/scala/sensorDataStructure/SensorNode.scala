@@ -37,9 +37,7 @@ abstract sealed class SensorNode(val path: String) {
  *
  * @param Path to were sensor is. Last part is key for this.
  * @param Actual value from sensor
- * @param SI unit
- *        Should be in UCUM format.
- *        Empty if unknown.
+ * @param Datetime when recorded
  */
 case class SensorData(
   override val path: String,
@@ -55,6 +53,12 @@ case class SensorData(
 case class SensorMap(override val path: String) extends SensorNode(path) {
   val content: TMap[String, SensorNode] = TMap.empty
 
+/**
+ * Easy access getter function..
+ *
+ * @param Path to were you want to get sensor or map. Last part is id/key for it.
+ * @return If found a SensorMap or a SensorData returns it, else returns None.
+ */
   def get(pathTo: String): Option[SensorNode] = {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -71,6 +75,13 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+/**
+ * Easy access setter function..
+ *
+ * @param Path to were you want to set or update sensor or map.
+ * @param Node to insert or update.
+ * @return If successful return succes SDSMsg else an error.
+ */
   def set(pathTo: String, node: SensorNode): SDSMsg = {
     node match {
       case data: SensorData => {
@@ -89,6 +100,12 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+/**
+ * Getter function for map's childs.
+ *
+ * @param Path to map were  you want to get childs.
+ * @return If found a SensorMap return childs/keys else empty array.
+ */
   def getChilds(pathTo: String): Array[String] = {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -105,6 +122,12 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+/**
+ * Checker function for ecistence of path.
+ *
+ * @param Path you want confirm to exists.
+ * @return If path exists, true else false.
+ */
   def exists(pathTo: String): Boolean = {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -121,6 +144,12 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+/**
+ * Checker function for sensor of path.
+ *
+ * @param Path you want confirm to be to Sensor.
+ * @return If path is to sensor, true else false.
+ */
   def isSensor(pathTo: String): Boolean = {
 
     val spl = pathTo.split("/")
@@ -138,6 +167,12 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+/**
+ * Checker function for sensormap of path.
+ *
+ * @param Path you want confirm to be to SensorMap.
+ * @return If path is to SensorMap, true else false.
+ */
   def isSensorMap(pathTo: String): Boolean = {
 
     val spl = pathTo.split("/")
@@ -155,6 +190,13 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+  /**
+    * Function for updating existing Sensor in struncture.
+    *
+    * @param Path to Sensor wanted to be updated.
+    * @param New Sensor
+    * @return SDSmsg, UpdateSuccess on success. 
+    **/
   private def updateSensor(pathTo: String, newsensor: SensorData): SDSMsg= {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -181,6 +223,14 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
 
+
+  /**
+    * Function for inserting new  Sensor to struncture.
+    *
+    * @param Path to Sensor wanted to be inserted.
+    * @param New Sensor
+    * @return SDSmsg, SensorInsertionSuccess on success. 
+    **/
   private def insertSensor(pathTo: String, newsensor: SensorData): SDSMsg= {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -211,6 +261,13 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
   
+  /**
+    * Function for inserting new SensorMap to struncture.
+    *
+    * @param Path to SensorMap wanted to be inserted.
+    * @param New SensorMap
+    * @return SDSmsg, SensorMapInsertionSuccess on success. 
+    **/
   private def insertSensorMap(pathTo: String, newsensormap: SensorMap): SDSMsg = {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -238,7 +295,13 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
       }
     }
   }
-  
+ 
+  /**
+    * Function for removing Sensor from struncture.
+    *
+    * @param Path to sensor wanted to be removed.
+    * @return SDSmsg, SensorRemoveSuccess on success. 
+    **/
   def removeSensor(pathTo: String): SDSMsg = {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
@@ -263,6 +326,12 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     }
   }
   
+  /**
+    * Function for removing SensorMap from struncture.
+    *
+    * @param Path to SensorMap wanted to be removed.
+    * @return SDSmsg, SensorMapRemoveSuccess on success. 
+    **/
   def removeSensorMap(pathTo: String): SDSMsg = {
     val spl = pathTo.split("/")
     val key = if( spl.head == id) spl.tail.head else spl.head
