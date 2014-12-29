@@ -5,7 +5,7 @@ import scala.xml._
 import scala.util.Try
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
-object OdfParser extends Parser {
+object OdfParser {
   
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
   type ParseResult = Either[ParseError, ODFNode]

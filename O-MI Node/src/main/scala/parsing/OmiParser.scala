@@ -5,7 +5,7 @@ import scala.xml._
 import scala.util.Try
 
 /** Parsing object for parsing messages with O-MI protocol*/
-object OmiParser extends Parser {
+object OmiParser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
   
   /** This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
