@@ -24,30 +24,10 @@ body {
 	padding: 1%;
 }
 
-fieldset {
-	position: relative;
-	border-width: 5px;
-	border-style: groove;
-	border-color: red green yellow blue;
-}
-
 legend {
 	font-size: 22px;
 	color: red;
 }
-
-.left {
-	width: 30%;
-	float: left;
-	text-align: right;
-}
-
-.right{
-	width: 65%;
-	margin-left: 1%;
-	float: left;
-}
-
 
 #operation-select{
 	float: left;
@@ -55,7 +35,9 @@ legend {
 }
 
 #objectList {
-	border: 1px solid black;
+	border-width: 5px;
+	border-style: groove;
+	border-color: red green yellow blue;
 	margin-top: 15px;
 }
 

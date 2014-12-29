@@ -16,7 +16,12 @@ window.onload = function(){
 	icons.push({'iconFilePath':'Resources/icons/cancel.png', 'iconValue':'cancel'});
 	
 	iconSelect.refresh(icons);
-};
+}; 
+
+/* Click eents for buttons */
+$(document).on('click', '#object-button', getObjects);
+$(document).on('click', '#request-gen', generateRequest);
+$(document).on('click', '#request-send', sendRequest);
 
 function getObjects() {
 	//Get the current path of the file
@@ -27,6 +32,7 @@ function getObjects() {
 	
 	$.ajax({
         type: "GET",
+		dataType: "xml",
         url: path + "/SensorData/objects",
         success: displayObjects,
 		error: handleError
@@ -73,7 +79,7 @@ function generateRequest(){
 	
 	console.log("Generated the O-DF request");
 	
-	$("#testp").text((request));
+    $("#request").text((request));
 }
 
 function writeXML(objects, operation, ttl, interval, callback){
@@ -117,9 +123,47 @@ function writeXML(objects, operation, ttl, interval, callback){
     return qlmreq;
 }
 
+
+var server = 'http://localhost:8080';
 //TODO:
-function sendRequest(){
-	console.log("not doing anything yet");
+function sendRequest()
+{
+    var request = $('#request').val();
+	
+    if(request.indexOf("subscribe") >= 0)
+        startSubscriptionEventListener(request);
+    else
+    {
+        $.ajax({
+            type: "POST",
+            url: server, //TODO: the real server here
+            data: {msg : request},
+            dataType: "text",
+            success: printResponse,
+			error: function(a, b,c){
+				console.log("Error sending request");
+			}
+        });
+    } 
+}
+
+//HTML 5 Server Sent Event communication
+function startSubscriptionEventListener(request) {
+    var source = new EventSource(server+"?msg="+request);
+
+    source.onmessage = function(event)
+    {
+        printResponse(event.data);
+    };
+    source.onerror = function(event) {
+        source.close();
+        console.log("Subscription TTL Expired");
+    };
+}
+
+function printResponse(response){
+//TODO: print the response somewhere on the page
+	console.log((response));
 }
 
 function handleError(jqXHR, errortype, exc) {
