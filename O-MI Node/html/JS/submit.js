@@ -1,7 +1,8 @@
-/* IconSelect */
+/* IconSelect object */
 var iconSelect;
 
 window.onload = function(){
+	//IconSelect settings
 	iconSelect = new IconSelect("operation-select", 
                 {'selectedIconWidth':36,
                 'selectedIconHeight':36,
@@ -10,6 +11,7 @@ window.onload = function(){
                 'vectoralIconNumber':1,
                 'horizontalIconNumber':4});
 
+	//Pushing the icons
 	var icons = [];
 	icons.push({'iconFilePath':'Resources/icons/read.png', 'iconValue':'read'});
 	icons.push({'iconFilePath':'Resources/icons/write.png', 'iconValue':'write'});
@@ -24,12 +26,14 @@ $(document).on('click', '#object-button', getObjects);
 $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
 
+
+/* Get the objects through ajax get */
 function getObjects() {
 	//Get the current path of the file
 	var url = document.URL;
 	var path = url.substring(0, url.lastIndexOf("/"));
 	
-	console.log("Sending AJAX GET for the objects");
+	console.log("Sending AJAX GET for the objects...");
 	
 	//Sent ajax get-request for the objects
 	$.ajax({
@@ -41,50 +45,46 @@ function getObjects() {
     });
 }
 
-/* Display the objects as checkboxes; Currently received data is in XML-format */
+/* Display the objects as checkboxes in objectList 
+* @param {XML Object} the received XML data
+*/
 function displayObjects(data) {
 	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
 	//Clear the list beforehand, in case objects is changed in between the button clicks
 	$("#objectList").empty();
 	
+	//Append objects as checkboxes to the webpage
 	$(data).find('Objects').each(function(){
 		$(this).find("Object").each(function(){
 			var id = $(this).find("id").text();
 			
-			$('<input type="checkbox" name="' + id + '">' + id + '<br>').appendTo("#objectList"); 
+			$('<label><input type="checkbox" class="checkbox" id="' + id + '/">' + id + '</label><br>').appendTo("#objectList"); 
 		});
 	});
 }
 
 /* Generate the O-DF request */
 function generateRequest(){
-	var ttl = $("#ttl").val();
+	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
-	var operation = iconSelect.getSelectedValue();
-
-	if($("#objectList").is(":empty")){
-		alert("No requested objects");
-		return;
-	} 
-	if(!($.isNumeric(ttl) && $.isNumeric(interval))){
-		alert("Please specify TTL (Time to live) and Interval as integers");
-		return;
-	} 
-	
-	var selectedObjects = $("#objectList").find("input").filter(":checked");
-	if(selectedObjects.length == 0){
-		alert("No objects selected");
-		return;
-	}
+	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
+	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
 	var request = writeXML(selectedObjects, operation, ttl, interval);
 	
 	console.log("Generated the O-DF request");
 	
-    $("#request").text((request));
+    $("#request").text((request)); //Update the request textbox on the webpage
 }
 
-/* Write the O-DF message (XML) based on form input */
+/* 
+* Write the O-DF message (XML) based on form input
+* @param {Array} Array of objects, that have their 
+* @param {String} the O-DF operation (read, write, cancel, subscribe)
+* @param {Number} Time to live 
+* @param {Number} Message interval
+* @param {function} Callback function
+*/
 function writeXML(objects, operation, ttl, interval, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
@@ -93,7 +93,6 @@ function writeXML(objects, operation, ttl, interval, callback){
     writer.indentation = 2;
 	
 	writer.writeStartDocument();
-	
 	//(first line)
 	writer.writeStartElement('omi:omiEnvelope');
 	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
@@ -121,21 +120,21 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeEndElement();
     writer.writeEndDocument();
 
-    var qlmreq = writer.flush();
+    var request = writer.flush();
 
-    return qlmreq;
+    return request;
 }
 
-
+// Server URL
 var server = 'http://localhost:8080';
 
-/* Send the O-DF request */
+/* Send the O-DF request using AJAX */
 function sendRequest()
 {
-    var request = $('#request').val();
+    var request = $('#request').val(); //Get the request string
 	
     if(request.indexOf("subscribe") >= 0)
-        startSubscriptionEventListener(request);
+        startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
     else
     {
         $.ajax({
@@ -151,7 +150,7 @@ function sendRequest()
     } 
 }
 
-//HTML 5 Server Sent Event communication
+/* HTML 5 Server Sent Event communication */
 function startSubscriptionEventListener(request) {
     var source = new EventSource(server+"?msg="+request);
 
@@ -167,11 +166,26 @@ function startSubscriptionEventListener(request) {
 
 /* Do something with the response from the server */
 function printResponse(response){
-//TODO: print the response somewhere on the page
+	//TODO: print the response somewhere on the page
 	console.log((response));
 }
 
 /* Handle the AJAX errors */
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
+}
+
+/* Returns whether the input on the 1st page is valid (at least 1 object selected)*/
+function page1Verified(){
+	return $("#objectList").find("input").filter(":checked").length > 0;
+}
+
+/* Returns whether the input on the 2nd page is valid (numerical TTL & interval) */
+function page2Verified(){
+	return ($.isNumeric($("#ttl").val()) && $.isNumeric($("#interval").val()));
+}
+
+/* Returns whether the input on the 3rd page is valid (message generated) */
+function page3Verified(){
+	return !($('#request').is(':empty'));
 }

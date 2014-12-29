@@ -4,31 +4,6 @@ body {
 	background-image: url("../Resources/testbg.png"); 
 }
 
-#form {
-	width: 80%;
-	margin-left: 10%;
-	padding-bottom: 1%;
-	background-color: #F0F0F0;
-	float: left;
-}
-
-#form h1{
-	text-align: center;
-	padding-top: 2%;
-}
-
-.box {
-	width: 60%;
-	background-color: white;
-	margin-left: 20%;
-	padding: 1%;
-}
-
-legend {
-	font-size: 22px;
-	color: red;
-}
-
 #operation-select{
 	float: left;
 	margin-left: 2%;
@@ -37,8 +12,26 @@ legend {
 #objectList {
 	border-width: 5px;
 	border-style: groove;
-	border-color: red green yellow blue;
 	margin-top: 15px;
+	margin-bottom: 15px;
+	padding-top: 15px;
+	padding-bottom: 15px;
+}
+
+#objectList label {
+    display: inline-block;
+	padding-left: 33%;
+	float: left;
+}
+#objectList input {
+	float: left;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    *overflow: hidden;
 }
 
 #requestBox {
