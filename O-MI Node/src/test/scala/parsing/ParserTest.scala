@@ -1,9 +1,6 @@
-package specs2
+package parsing
 
 import org.specs2._
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-
 import scala.io.Source
 import parsing._
 import parsing.OdfParser._
@@ -17,9 +14,9 @@ import parsing.OdfParser._
  * tests e400 - e499 are for testing OdfParser class
  */
 class ParserTest extends Specification {
-  lazy val omi_read_test_file = Source.fromFile("src/test/scala/omi_read_test.xml").getLines.mkString("\n")
-  lazy val omi_write_test_file = Source.fromFile("src/test/scala/omi_write_test.xml").getLines.mkString("\n")
-  lazy val omi_response_test_file = Source.fromFile("src/test/scala/omi_response_test.xml").getLines.mkString("\n")
+  lazy val omi_read_test_file = Source.fromFile("src/test/scala/parsing/omi_read_test.xml").getLines.mkString("\n")
+  lazy val omi_write_test_file = Source.fromFile("src/test/scala/parsing/omi_write_test.xml").getLines.mkString("\n")
+  lazy val omi_response_test_file = Source.fromFile("src/test/scala/parsing/omi_response_test.xml").getLines.mkString("\n")
 
   def is = s2"""
   This is Specification to check the parsing functionality.
