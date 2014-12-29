@@ -7,6 +7,15 @@ import org.specs2.runner.JUnitRunner
 import scala.io.Source
 import parsing._
 import parsing.OdfParser._
+
+/*
+ * Test class for testing parsing parsing package
+ * tests e1   - e99 are for testing OmiParser general methods
+ * tests e100 - e199 are for testing write request
+ * tests e200 - e299 are for testing response messages
+ * tests e300 - e399 are for testing read requests
+ * tests e400 - e499 are for testing OdfParser class
+ */
 class ParserTest extends Specification {
   lazy val omi_read_test_file = Source.fromFile("src/test/scala/omi_read_test.xml").getLines.mkString("\n")
   lazy val omi_write_test_file = Source.fromFile("src/test/scala/omi_write_test.xml").getLines.mkString("\n")
@@ -22,6 +31,7 @@ class ParserTest extends Specification {
       incorrect label     $e3
       missing request     $e4
       missing ttl         $e5
+      unknown omi message $e6
     write request with
       correct message     $e100
       missing msgformat   $e101
@@ -52,6 +62,54 @@ class ParserTest extends Specification {
 
       
     """
+
+  def e1 = {
+    OmiParser.parse("incorrect xml") match {
+      case ParseError("Invalid XML") :: _ => true
+      case _ => false
+    }
+  }
+
+  /*
+   * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
+   */
+  def e2 = {
+    OmiParser.parse(omi_read_test_file.replace("omi:Envelope", "pmi:Envelope")) match {
+      case ParseError("Incorrect prefix") :: _ => true
+      case _ => false
+    }
+  }
+
+  def e3 = {
+    OmiParser.parse(omi_read_test_file.replace("omi:Envelope", "omi:envelope")) match {
+      case ParseError("XML's root isn't omi:Envelope") :: _ => true
+      case _ => false
+    }
+  }
+
+  def e4 = {
+    OmiParser.parse(
+      """<omi:Envelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         </omi:Envelope>
+      """) match {
+        case ParseError("omi:Envelope doesn't contain request") :: _ => true
+        case _ => false
+      }
+  }
+
+  def e5 = {
+    OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl=""""")) match {
+      case ParseError("No ttl present in O-MI Envelope") :: _ => true
+      case _ => false
+    }
+  }
+
+  def e6 = {
+    OmiParser.parse(omi_response_test_file.replace("omi:response", "omi:respnse")) match {
+      case ParseError("Unknown node.") :: _ => true
+      case _ => false
+    }
+  }
 
   def e100 = {
     OmiParser.parse(omi_write_test_file) == List(
@@ -208,47 +266,6 @@ class ParserTest extends Specification {
         ODFNode("/Objects/SmartCottage", NodeObject, None, None, None))))
   }
 
-  def e1 = {
-    OmiParser.parse("incorrect xml") match {
-      case ParseError("Invalid XML") :: _ => true
-      case _ => false
-    }
-  }
-
-  /*
-   * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
-   */
-  def e2 = {
-    OmiParser.parse(omi_read_test_file.replace("omi:Envelope", "pmi:Envelope")) match {
-      case ParseError("Incorrect prefix") :: _ => true
-      case _ => false
-    }
-  }
-
-  def e3 = {
-    OmiParser.parse(omi_read_test_file.replace("omi:Envelope", "omi:envelope")) match {
-      case ParseError("XML's root isn't omi:Envelope") :: _ => true
-      case _ => false
-    }
-  }
-
-  def e4 = {
-    OmiParser.parse(
-      """<omi:Envelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-         </omi:Envelope>
-      """) match {
-        case ParseError("omi:Envelope doesn't contain request") :: _ => true
-        case _ => false
-      }
-  }
-
-  def e5 = {
-    OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl=""""")) match {
-      case ParseError("No ttl present in O-MI Envelope") :: _ => true
-      case _ => false
-    }
-  }
-
   def e301 = {
     OmiParser.parse(omi_read_test_file.replace("""omi:read msgformat="odf"""", "omi:read")) match {
       case ParseError("No msgformat in read request") :: _ => true
@@ -301,13 +318,13 @@ class ParserTest extends Specification {
         case _ => false
       }
   }
-  
+
   def e401 = {
     OdfParser.parse("incorrect xml") match {
       case Left(ParseError("Invalid XML")) :: _ => true
       case _ => false
     }
-    
+
   }
   def e402 = {
     OdfParser.parse("""<Object>
@@ -353,13 +370,13 @@ class ParserTest extends Specification {
         </InfoItem>
         </Object>
     </Objects>
-""") match{
+""") match {
       case Left(ParseError("No name for InfoItem.")) :: _ => true
       case _ => false
-      
+
     }
   }
-//  def e405 = false
+  //  def e405 = false
 
 }
 

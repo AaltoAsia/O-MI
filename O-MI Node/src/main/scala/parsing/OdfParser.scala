@@ -4,7 +4,17 @@ import sensorDataStructure._
 import scala.xml._
 import scala.util.Try
 
+/** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser {
+  
+  /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
+  type ParseResult = Either[ParseError, ODFNode]
+  
+  /** Public method for parsing the xml string into seq of ParseResults.
+   *  
+   *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
+   *  @return Seq of ParseResults
+   */
   def parse(xml_msg: String): Seq[ParseResult] = {
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(Left(ParseError("Invalid XML"))))
     if (root.label != "Objects")
@@ -15,10 +25,16 @@ object OdfParser extends Parser {
       })
   }
 
-  type ParseResult = Either[ParseError, ODFNode]
-
+  /** Private method that is called recursively to parse the given obj Node
+   *  
+   * @param obj scala.xml.Node that should have Object or InfoItem as label
+   * @param currectPath String that contains the path to the current object
+   *        e.g. "/Objects/SmartHouse/SmartFridge"
+   * @return Seq of ParseResults.
+   */
   private def parseNode(obj: Node, currentPath: String): Seq[ParseResult] = {
     obj.label match {
+      /* Found an Object*/
       case "Object" => {
         val id = (obj \ "id").text
         if (id.isEmpty()) 
@@ -39,6 +55,7 @@ object OdfParser extends Parser {
         }
       }
       //TODO check this!!
+      /* Found an InfoItem*/
       case "InfoItem" => {
         val name = (obj \ "@name").text
         if (name.isEmpty())
