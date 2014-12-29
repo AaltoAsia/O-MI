@@ -28,15 +28,35 @@ $(document).on('click', '#request-send', sendRequest);
 
 /* Eventlistener for object tree updating */
 $(document).on('click', '.checkbox', function(){
-	var ref = $(this);
+	var ref = $(this); //Reference (jquery object) of the clicked button
 	var id = ref.attr('id');
 	
+	//Parent item clicked
 	if(id){
-		$("#objectList").find("input").filter(function(){
-			return $(this).attr('class').indexOf(id) > -1;
-		}).each(function(){
+		//Find child items and mark their value the same as their parent
+		getChildren(id).each(function(){
 			$(this).prop('checked', ref.is(':checked'));
 		});
+	} else { 
+		//childItem clicked
+		var parentId = ref.attr('class').split(' ').find(function(element, index, array){
+			return element != "checkbox" && element != "lower";
+		});
+	
+		//Change parent item check value
+		$(jq("#", parentId)).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+	}
+	
+	/* Temp function (inside current function), returns an array of children with the given id (as their class) */
+	function getChildren(id){
+		return $("#objectList").find("input").filter(function(){
+			return $(this).attr('class').indexOf(id) > -1;
+		});
+	}
+	
+	/* Temp function, allows special characters pass through jquery */
+	function jq(prefix, myid) {
+		return prefix + myid.replace( /(:|\.|\[|\]|\/)/g, "\\$1" );
 	}
 });
 
@@ -72,11 +92,13 @@ function displayObjects(data) {
 		$(this).find("Object").each(function(){
 			var id = $(this).find("id").text();
 			
-			$('<label><input type="checkbox" class="checkbox" id="' + id + '/">' + id + '</label><br>').appendTo("#objectList"); 
+			$('<label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label><br>').appendTo("#objectList"); 
 			$(this).find("InfoItem").each(function(){
 				var name = $(this).attr('name');
 				
-				$('<label><input type="checkbox" class="checkbox lower ' + id + '/">' + name + '</label><br>').appendTo("#objectList"); 
+				$('<label>' + 
+				'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
+				'</label><br>').appendTo("#objectList"); 
 			});
 		});
 	});
@@ -131,9 +153,17 @@ function writeXML(objects, operation, ttl, interval, callback){
 	//Payload
 	for (var i = 0; i < objects.length; i++)
 	{
-		writer.writeStartElement( 'Object');
-		writer.writeElementString('id', objects[i].name);
-		writer.writeEndElement();
+		if(objects[i].id) {
+			//Object
+			writer.writeStartElement('Object');
+			writer.writeElementString('id', objects[i].id);
+			writer.writeEndElement();
+		} else {
+			//InfoItem
+			writer.writeStartElement('InfoItem');
+			writer.writeAttributeString('class', objects[i].name);
+			writer.writeEndElement();
+		}
 	}
 	writer.writeEndElement();
     writer.writeEndDocument();
@@ -161,9 +191,7 @@ function sendRequest()
             data: {msg : request},
             dataType: "text",
             success: printResponse,
-			error: function(a, b,c){
-				console.log("Error sending request");
-			}
+			handleError
         });
     } 
 }
@@ -191,19 +219,4 @@ function printResponse(response){
 /* Handle the AJAX errors */
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
-}
-
-/* Returns whether the input on the 1st page is valid (at least 1 object selected)*/
-function page1Verified(){
-	return $("#objectList").find("input").filter(":checked").length > 0;
-}
-
-/* Returns whether the input on the 2nd page is valid (numerical TTL & interval) */
-function page2Verified(){
-	return ($.isNumeric($("#ttl").val()) && $.isNumeric($("#interval").val()));
-}
-
-/* Returns whether the input on the 3rd page is valid (message generated) */
-function page3Verified(){
-	return !($('#request').is(':empty'));
 }
