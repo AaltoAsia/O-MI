@@ -26,6 +26,19 @@ $(document).on('click', '#object-button', getObjects);
 $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
 
+/* Eventlistener for object tree updating */
+$(document).on('click', '.checkbox', function(){
+	var ref = $(this);
+	var id = ref.attr('id');
+	
+	if(id){
+		$("#objectList").find("input").filter(function(){
+			return $(this).attr('class').indexOf(id) > -1;
+		}).each(function(){
+			$(this).prop('checked', ref.is(':checked'));
+		});
+	}
+});
 
 /* Get the objects through ajax get */
 function getObjects() {
@@ -60,6 +73,11 @@ function displayObjects(data) {
 			var id = $(this).find("id").text();
 			
 			$('<label><input type="checkbox" class="checkbox" id="' + id + '/">' + id + '</label><br>').appendTo("#objectList"); 
+			$(this).find("InfoItem").each(function(){
+				var name = $(this).attr('name');
+				
+				$('<label><input type="checkbox" class="checkbox lower ' + id + '/">' + name + '</label><br>').appendTo("#objectList"); 
+			});
 		});
 	});
 }

@@ -34,6 +34,10 @@ body {
     *overflow: hidden;
 }
 
+#objectList .lower {
+	margin-left: 25px;
+}
+
 #requestBox {
 	border: 1px solid black;
 	margin-top: 15px;
