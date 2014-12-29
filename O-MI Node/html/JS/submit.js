@@ -1,3 +1,4 @@
+/* IconSelect */
 var iconSelect;
 
 window.onload = function(){
@@ -18,7 +19,7 @@ window.onload = function(){
 	iconSelect.refresh(icons);
 }; 
 
-/* Click eents for buttons */
+/* Click events for buttons */
 $(document).on('click', '#object-button', getObjects);
 $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
@@ -30,6 +31,7 @@ function getObjects() {
 	
 	console.log("Sending AJAX GET for the objects");
 	
+	//Sent ajax get-request for the objects
 	$.ajax({
         type: "GET",
 		dataType: "xml",
@@ -39,7 +41,7 @@ function getObjects() {
     });
 }
 
-/* Display the objects as checkboxes; Currently data in XML-format */
+/* Display the objects as checkboxes; Currently received data is in XML-format */
 function displayObjects(data) {
 	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
@@ -82,6 +84,7 @@ function generateRequest(){
     $("#request").text((request));
 }
 
+/* Write the O-DF message (XML) based on form input */
 function writeXML(objects, operation, ttl, interval, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
@@ -125,7 +128,8 @@ function writeXML(objects, operation, ttl, interval, callback){
 
 
 var server = 'http://localhost:8080';
-//TODO:
+
+/* Send the O-DF request */
 function sendRequest()
 {
     var request = $('#request').val();
@@ -161,11 +165,13 @@ function startSubscriptionEventListener(request) {
     };
 }
 
+/* Do something with the response from the server */
 function printResponse(response){
 //TODO: print the response somewhere on the page
 	console.log((response));
 }
 
+/* Handle the AJAX errors */
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
 }
