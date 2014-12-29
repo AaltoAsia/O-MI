@@ -4,8 +4,12 @@ import akka.actor.Actor
 import spray.routing._
 import spray.http._
 import MediaTypes._
+import responses._
 
-class OmiServiceActor extends Actor with OmiService {
+import parsing._
+import sensorDataStructure.SensorMap
+
+class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
@@ -15,13 +19,23 @@ class OmiServiceActor extends Actor with OmiService {
   // other things here, like request stream processing
   // or timeout handling
   def receive = runRoute(myRoute)
+
 }
 
 
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
 
-  val myRoute =
+  val sensormap: SensorMap
+
+  //Get the files from the html directory; http://localhost:8080/html/form.html
+  val staticHtml =
+    pathPrefix("html"){
+      getFromDirectory("html")
+    }
+
+  // should be removed
+  val helloWorld = 
     path("") { // Root
       get {
         respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
@@ -34,7 +48,19 @@ trait OmiService extends HttpService {
           }
         }
       }
-    } ~ pathPrefix(""){ //Get the files from the html directory; http://localhost:8080/form.html
-	  getFromDirectory("html")
-	}
+    }
+
+  val getDataDiscovery = 
+    path(Rest){ path =>
+      get {
+        complete {
+          Read.generateODF(path, sensormap)
+        }
+      }
+    }
+
+  // Combine all handlers
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
+
 }
+
