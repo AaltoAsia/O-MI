@@ -12,5 +12,6 @@ before_script:
   - cd "O-MI Node"
 script:
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
+after_success:
   - sbt coveralls
   
