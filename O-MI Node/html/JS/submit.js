@@ -4,10 +4,10 @@ var iconSelect;
 window.onload = function(){
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select", 
-                {'selectedIconWidth':36,
-                'selectedIconHeight':36,
-                'iconsWidth':36,
-                'iconsHeight':36,
+                {'selectedIconWidth':48,
+                'selectedIconHeight':48,
+                'iconsWidth':48,
+                'iconsHeight':48,
                 'vectoralIconNumber':1,
                 'horizontalIconNumber':4});
 
@@ -191,7 +191,9 @@ function sendRequest()
             data: {msg : request},
             dataType: "text",
             success: printResponse,
-			handleError
+			error: function(a, b, c){
+				$("#responseBox").text("Error sending message");
+			}
         });
     } 
 }
@@ -214,6 +216,8 @@ function startSubscriptionEventListener(request) {
 function printResponse(response){
 	//TODO: print the response somewhere on the page
 	console.log((response));
+	
+	$("#responseBox").text(response);
 }
 
 /* Handle the AJAX errors */
