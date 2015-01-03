@@ -1,7 +1,7 @@
 Code-Gardeners
 ==============
 
-<a href='https://coveralls.io/r/SnowblindFatal/Code-Gardeners'><img src='https://coveralls.io/repos/SnowblindFatal/Code-Gardeners/badge.png?branch=travis' alt='Coverage Status' /></a>
+<a href='https://coveralls.io/r/SnowblindFatal/Code-Gardeners?branch=development'><img src='https://coveralls.io/repos/SnowblindFatal/Code-Gardeners/badge.png?branch=development' alt='Coverage Status' /></a>
 
 [![Build Status](https://travis-ci.org/SnowblindFatal/Code-Gardeners.svg?branch=development)](https://travis-ci.org/SnowblindFatal/Code-Gardeners)
 
