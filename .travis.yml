@@ -13,5 +13,6 @@ before_script:
 script:
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
 after_success:
+  - ln -s ../.git
   - sbt coveralls
   
