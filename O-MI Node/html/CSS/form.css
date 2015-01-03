@@ -1,31 +1,45 @@
 @charset "UTF-8";
 
 body {
-	background-color: #CCFFFF;
+	background-image: url("../Resources/testbg.png"); 
 }
 
-form {
+#operation-select{
 	float: left;
-	margin-left: 50px;
-	margin-top: 20px;
-	margin-left: 50px;
+	margin-left: 2%;
 }
 
-form label {
-	color: red;
-	font-size: 20px;
-	margin-bottom: 10px;
+#objectList {
+	border-width: 5px;
+	border-style: groove;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	padding-top: 15px;
+	padding-bottom: 15px;
 }
 
-#infoCanvas {
-	display: inline-block;
-	width: 300px;
-	height: 300px;
-	background-color: white;
+#objectList label {
+    display: inline-block;
+	padding-left: 33%;
+	float: left;
+}
+#objectList input {
+	float: left;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    *overflow: hidden;
+}
+
+#objectList .lower {
+	margin-left: 25px;
+}
+
+#requestBox {
 	border: 1px solid black;
-	margin-left: 200px;
-}
-
-#submit {
-	margin-top: 20px;
+	margin-top: 15px;
+	margin-bottom: 15px;
 }

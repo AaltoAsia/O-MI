@@ -1,49 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Sensor form</title>
-<script>
-	//Since the path might change, find the current path and append required CSS and JS here
-	var url = document.URL;
-	var path = url.substring(0, url.lastIndexOf("/"));
+	<meta charset="UTF-8">
+	<title>Sensor form</title>
+	
+	<!-- JQuery -->
+	<script type="text/javascript" src="JS/jquery-2.1.1.js"></script>
+	<script type="text/javascript" src="JS/jquery.easing.min.js"></script>
+	<!-- XML Writer -->
+	<script type="text/javascript" src="JS/XMLWriter-1.0.0-min.js"></script>
+	
+	<!-- IconSelect library -->
+	<link type="text/css" rel="stylesheet" href="CSS/iconselect.css" >
+	<script type="text/javascript" src="JS/iconselect.js"></script> 
+    <script type="text/javascript" src="JS/iscroll.js"></script>
 
-	var script = document.createElement('script');
-	script.type = "text/javascript";
-	script.src = path + "/JS/jquery-2.1.1.js";
-	document.getElementsByTagName('head')[0].appendChild(script);
-	var script2 = document.createElement('script');
-	script2.type = "text/javascript";
-	script2.src = path + "/JS/submit.js";
-	document.getElementsByTagName('head')[0].appendChild(script2);
-	var css = document.createElement('link');
-	css.type = "text/css";
-	css.rel = "stylesheet";
-	css.href = path + "/CSS/form.css";
-	document.getElementsByTagName('head')[0].appendChild(css);
-</script>
-
-<!-- Appending on script -->
-<!--  
-<link type="text/css" rel="stylesheet" href="/testclient/CSS/form.css" />
-<script type="text/javascript" src="/testclient/JS/jquery-2.1.1.js"></script>
--->
+	<link type="text/css" rel="stylesheet" href="CSS/css3form.css" />
+	<link type="text/css" rel="stylesheet" href="CSS/form.css" />
+	
+	<script type="text/javascript" src="JS/multiform.js"></script>
+	<script type="text/javascript" src="JS/format.js"></script>
+	<script type="text/javascript" src="JS/submit.js"></script>
+	<script type="text/javascript" src="JS/verify.js"></script>
 </head>
 
 <body>
-
-	<script>
-		
-	</script>
-	
-	<form id="form" method="post" action="javascript:submit();">
-		<label>Sensor ID:</label><br> <input type="text" id="sensorId"><br>
-		<label>Location</label><br> <select name="location" id="location">
-			<option>test</option>
-		</select><br> <input type="submit" value="Get Data" id="submit">
+	<form id="msform">
+		<!-- progressbar -->
+		<ul id="progressbar">
+			<li class="active">Query objects</li>
+			<li>O-DF request selection</li>
+			<li>Request generation</li>
+			<li>Request sending</li>
+		</ul>
+		<fieldset>
+			<h2 class="fs-title">Query for objects</h2>
+			<h3 class="fs-subtitle">This is step 1</h3>
+			<input type="button" name="objects" id="object-button" class="action-button" value="Get Objects" />
+			<div id="objectList"></div>
+			<input type="button" name="next" id="next1" class="next action-button" value="Next" />
+		</fieldset>
+		<fieldset>
+			<h2 class="fs-title">O-DF Request selection</h2>
+			<h3 class="fs-subtitle">Select which operation you want to use</h3>
+			<div id="operation-select"></div><br><br><br><br>
+			<input type="text" name="ttl" id="ttl" placeholder="TTL" />
+			<input type="text" name="interval" id="interval" placeholder="Interval" />
+			<input type="button" name="previous" class="previous action-button" value="Previous" />
+			<input type="button" name="next" id="next2" class="next action-button" value="Next" />
+		</fieldset>
+		<fieldset>
+			<h2 class="fs-title">Request generation</h2>
+			<h3 class="fs-subtitle">See the generated request</h3>
+			<input type="button" name="objects" id="request-gen" class="action-button" value="Generate" />
+			<div id="requestBox">
+				<p id="request"></p>
+			</div>
+			<input type="button" name="previous" class="previous action-button" value="Previous" />
+			<input type="button" name="next" id="next3" class="next action-button" value="Next" />
+		</fieldset>
+		<fieldset>
+			<h2 class="fs-title">Request sending</h2>
+			<h3 class="fs-subtitle">Send the request and see the response</h3>
+			<input type="button" name="previous" class="previous action-button" value="Previous" />
+			<input type="button" name="objects" id="request-send" class="action-button" value="Send" />
+			<div>
+				<p id="responseBox"></p>
+			</div>
+		</fieldset>
 	</form>
 
-	<div id="infoCanvas">
-	</div>
 </body>
 </html>
