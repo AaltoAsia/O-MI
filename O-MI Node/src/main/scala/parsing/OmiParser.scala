@@ -2,14 +2,33 @@ package parsing
 
 import sensorDataStructure._
 import scala.xml._
-object OmiParser extends Parser {
+import scala.util.Try
+
+/** Parsing object for parsing messages with O-MI protocol*/
+object OmiParser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
+  
+  /** This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
+   *  this method converts the Node message to xml string.
+   *  
+   *  @param msg scala.xml.Node that contains the data in O-DF format
+   *  @return sequence of ParseResults, type ParseResult is defined in the OdfParser class.
+   */
   private def parseODF(msg: Node) = {
     OdfParser.parse(new PrettyPrinter(80, 2).format(msg))
   }
+  
+  /** Parse the given XML string into sequence of ParseMsg classes
+   * 
+   * @param xml_msg O-MI formatted message that is to be parsed
+   * @return sequence of ParseMsg classes, different message types are defined in
+   *         the TypeClasses.scala file
+   */
   def parse(xml_msg: String): Seq[ParseMsg] = {
-    //TODO: try-catch for invalid xml
-    val root = XML.loadString(xml_msg)
+
+
+    /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
+    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
 
     if (root.prefix != "omi")
       return Seq(new ParseError("Incorrect prefix"))
@@ -29,6 +48,13 @@ object OmiParser extends Parser {
 
   }
 
+  /** Private method that is called inside parse method. This method checks which O-MI message
+   *  type the message contains and handles them.
+   *  
+   *  @param node scala.xml.Node that should contain the message to be parsed e.g. read or write messages
+   *  @param ttl ttl of the omiEnvalope as string. ttl is in seconds.
+   * 
+   */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
     if (node.prefix != "omi")
       return Seq(new ParseError("Incorrect prefix"))
@@ -53,8 +79,10 @@ object OmiParser extends Parser {
               Seq(Write(ttl, right.map(_.right.get)))
             } else if (!left.isEmpty) {
               left.map(_.left.get)
-            } else { Seq(ParseError("No odf or errors found ln 46")) }
+            } else { Seq(ParseError("No Objects to parse")) }
           }
+          
+          /* default case */
           case _ => Seq(new ParseError("Unknown message format."))
         }
       }
@@ -85,7 +113,7 @@ object OmiParser extends Parser {
               }
             } else if (!left.isEmpty) {
               left.map(_.left.get)
-            } else { Seq(ParseError("No odf or errors found ln 78")) }
+            } else { Seq(ParseError("No Objects to parse")) }
           }
 
           case _ => Seq(new ParseError("Unknown message format."))
@@ -128,7 +156,7 @@ object OmiParser extends Parser {
                 return Seq(Result(returnValue, Some(right.map(_.right.get))))
               } else if (!left.isEmpty) {
                 left.map(_.left.get)
-              } else { Seq(ParseError("No odf or errors found ln 123")) }
+              } else { Seq(ParseError("No Objects to parse")) }
 
             }
             case _ => return Seq(new ParseError("Unknown message format."))
@@ -147,9 +175,4 @@ object OmiParser extends Parser {
 
 }
 
-abstract sealed trait ParseMsg
-case class ParseError(msg: String) extends ParseMsg
-case class OneTimeRead(ttl: String, sensors: Seq[OdfParser.ODFNode]) extends ParseMsg
-case class Write(ttl: String, sensors: Seq[OdfParser.ODFNode]) extends ParseMsg
-case class Subscription(ttl: String, interval: String, sensors: Seq[OdfParser.ODFNode]) extends ParseMsg
-case class Result(value: String, parseMsgOp: Option[Seq[OdfParser.ODFNode]]) extends ParseMsg
+
