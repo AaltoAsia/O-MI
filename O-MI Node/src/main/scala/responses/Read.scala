@@ -14,7 +14,7 @@ object Read {
 
 			case Some(sensormap: SensorMap) => {
 				var xmlreturn = Buffer[xml.Node]()
-				xmlreturn += <id>{sensormap.id}</id>
+				xmlreturn += <id>{sensormap.id}</id>  //right now even host/Objects returns an id which it shouldnt
 				for(item <- sensormap.content.single.values) {
 					item match {
 						case sensor: SensorData => {
@@ -33,7 +33,7 @@ object Read {
 			}
 
 			case None => {
-				return None
+				return Some(<error>No object found</error>)
 			}
 		}
 	}

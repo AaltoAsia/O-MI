@@ -54,9 +54,11 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
+        respondWithMediaType(`text/xml`) {
         complete {
           Read.generateODF(path, sensormap)
         }
+      }
       }
     }
 
