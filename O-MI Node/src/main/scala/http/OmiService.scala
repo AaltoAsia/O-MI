@@ -68,10 +68,10 @@ trait OmiService extends HttpService {
       complete{
       parsed.head match {
         case ParseError(msg: String) => ???
-        case OneTimeRead(ttl: String, sensors: Seq[OdfParser.ODFNode]) => Read.generateODF(sensors.head.path, sensormap)
-        case Write(ttl: String, sensors: Seq[OdfParser.ODFNode]) => ???
-        case Subscription(ttl: String, interval: String, sensors: Seq[OdfParser.ODFNode]) => ???
-        case Result(value: String, parseMsgOp: Option[Seq[OdfParser.ODFNode]]) => ???
+        case OneTimeRead(ttl: String, sensors: Seq[ODFNode]) => Read.generateODF(sensors.head.path, sensormap)
+        case Write(ttl: String, sensors: Seq[ODFNode]) => ???
+        case Subscription(ttl: String, interval: String, sensors: Seq[ODFNode]) => ???
+        case Result(value: String, parseMsgOp: Option[Seq[ODFNode]]) => ???
       
       }
     }
