@@ -7,6 +7,7 @@ import MediaTypes._
 import responses._
 
 import parsing._
+import xml._
 import sensorDataStructure.SensorMap
 
 class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
@@ -58,6 +59,22 @@ trait OmiService extends HttpService {
         }
       }
     }
+
+  val getXmlResponse= entity(as[NodeSeq]) { 
+    xml => {
+      val parsed = OmiParser.parse(new PrettyPrinter(80, 2).format(xml.head)) 
+      complete{
+      parsed.head match {
+        case ParseError(msg: String) => ???
+        case OneTimeRead(ttl: String, sensors: Seq[OdfParser.ODFNode]) => Read.generateODF(sensors.head.path, sensormap)
+        case Write(ttl: String, sensors: Seq[OdfParser.ODFNode]) => ???
+        case Subscription(ttl: String, interval: String, sensors: Seq[OdfParser.ODFNode]) => ???
+        case Result(value: String, parseMsgOp: Option[Seq[OdfParser.ODFNode]]) => ???
+      
+      }
+    }
+    }
+  } 
 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
