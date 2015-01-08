@@ -12,7 +12,10 @@ object Read {
 	def generateODF(path: String, root: SensorMap): Option[xml.Node] = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {
-				return Some(
+        if (sensor.id == "value")
+          return Some(xml.PCData(sensor.value))
+        else
+          return Some(
           <InfoItem name={sensor.id}>
             <value dateTime={sensor.dateTime}>
               {sensor.value}
@@ -42,6 +45,7 @@ object Read {
 					}
 				}
 
+        // add if for objects
 				return Some(<Object>{xmlreturn}</Object>)
 
 			}
