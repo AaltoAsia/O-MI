@@ -10,10 +10,13 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 
 import sensorDataStructure._
+import responses._
+import parsing._
 
 object Boot extends App {
 
   // Create our in-memory sensor database
+
   val sensormap: SensorMap = new SensorMap("")
 
   sensormap.set("Objects", new SensorMap("Objects"))
@@ -22,8 +25,15 @@ object Boot extends App {
   val date = new Date();
   val formatDate = new SimpleDateFormat ("yyyy-MM-dd'T'hh:mm:ss");
   sensormap.set("Objects/Refrigerator123/PowerConsumption", new SensorData("Objects/Refrigerator123/PowerConsumption", "0.123", formatDate.format(date)))
-  sensormap.set("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", new SensorData("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", "Nothing wrong with door", formatDate.format(date)))
-  sensormap.set("Objects/Refrigerator123/RefrigeratorProbeFault", new SensorData("Objects/Refrigerator123/RefrigeratorProbeFault", "Nothing wrong with probe", formatDate.format(date)))
+  sensormap.set("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", new SensorData("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", "0", formatDate.format(date)))
+  sensormap.set("Objects/Refrigerator123/RefrigeratorProbeFault", new SensorData("Objects/Refrigerator123/RefrigeratorProbeFault", "0", formatDate.format(date)))
+
+/*  val lista = List(
+        ODFNode("Objects/Refrigerator123/PowerConsumption", InfoItem, None, None, None),
+        ODFNode("Objects/Refrigerator123/RefrigeratorProbeFault", InfoItem, None, None, None),
+        ODFNode("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", InfoItem, None, None, None))
+
+  println(Read.OMIReadResponse(sensormap, 1, lista))*/
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-spray-can")
