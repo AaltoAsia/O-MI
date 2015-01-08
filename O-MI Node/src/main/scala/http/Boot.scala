@@ -10,10 +10,13 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 
 import sensorDataStructure.{SensorMap,SensorData}
+import responses._
+import parsing._
 
 object Boot extends App {
 
   // Create our in-memory sensor database
+
   val sensormap: SensorMap = new SensorMap("")
 
   sensormap.set("Objects", new SensorMap("Objects"))
@@ -32,6 +35,7 @@ object Boot extends App {
   for ((path, value) <- testData){
     sensormap.set(path, new SensorData(path, value, formatDate.format(date)))
   }
+
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-spray-can")
