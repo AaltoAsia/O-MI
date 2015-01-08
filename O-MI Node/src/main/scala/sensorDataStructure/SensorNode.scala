@@ -64,7 +64,10 @@ case class SensorMap(override val path: String) extends SensorNode(path) {
     val key = if( spl.head == id) spl.tail.head else spl.head
     val after = spl.tail
     content.single.get(key) match {
-      case Some(sensor: SensorData) => Some(sensor) //_ IS a basic numeric data type
+      case Some(sensor: SensorData) => { //_ IS a basic numeric data type
+        if (after.isEmpty || after.forall(_ == "")) Some(sensor)
+        else None
+      }
       case Some(sensormap: SensorMap) => {
         if (after.isEmpty) {
           Some(sensormap)

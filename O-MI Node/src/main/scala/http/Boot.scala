@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
-import sensorDataStructure._
+import sensorDataStructure.{SensorMap,SensorData}
 
 object Boot extends App {
 
@@ -18,12 +18,20 @@ object Boot extends App {
 
   sensormap.set("Objects", new SensorMap("Objects"))
   sensormap.set("Objects/Refrigerator123", new SensorMap("Objects/Refrigerator123"))
+  sensormap.set("Objects/RoomSensors1", new SensorMap("Objects/RoomSensors1"))
 
   val date = new Date();
   val formatDate = new SimpleDateFormat ("yyyy-MM-dd'T'hh:mm:ss");
-  sensormap.set("Objects/Refrigerator123/PowerConsumption", new SensorData("Objects/Refrigerator123/PowerConsumption", "0.123", formatDate.format(date)))
-  sensormap.set("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", new SensorData("Objects/Refrigerator123/RefrigeratorDoorOpenWarning", "Nothing wrong with door", formatDate.format(date)))
-  sensormap.set("Objects/Refrigerator123/RefrigeratorProbeFault", new SensorData("Objects/Refrigerator123/RefrigeratorProbeFault", "Nothing wrong with probe", formatDate.format(date)))
+  val testData = Map(
+    "Objects/Refrigerator123/PowerConsumption" -> "0.123",
+    "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
+    "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
+    "Objects/RoomSensors1/Temperature" -> "21.2",
+    "Objects/RoomSensors1/CarbonDioxide" -> "too much"
+    )
+  for ((path, value) <- testData){
+    sensormap.set(path, new SensorData(path, value, formatDate.format(date)))
+  }
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-spray-can")

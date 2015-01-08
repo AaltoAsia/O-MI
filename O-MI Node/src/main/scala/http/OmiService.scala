@@ -7,7 +7,6 @@ import MediaTypes._
 import responses._
 
 import parsing._
-import xml._
 import sensorDataStructure.SensorMap
 
 class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
@@ -43,7 +42,7 @@ trait OmiService extends HttpService {
           complete {
             <html>
               <body>
-                <h1>Say hello to <i>spray-routing</i> on <i>spray-can</i>!</h1>
+                <h1>Say hello to <i>O-MI Node service</i>!</h1>
               </body>
             </html>
           }
@@ -55,28 +54,13 @@ trait OmiService extends HttpService {
     path(Rest){ path =>
       get {
         respondWithMediaType(`text/xml`) {
-        complete {
-          Read.generateODF(path, sensormap)
+          Read.generateODF(path, sensormap) match {
+            case Some(data) => complete(data)
+            case None       => complete(404, <error>No object found</error>)
+          }
         }
       }
-      }
     }
-
-  val getXmlResponse= entity(as[NodeSeq]) { 
-    xml => {
-      val parsed = OmiParser.parse(new PrettyPrinter(80, 2).format(xml.head)) 
-      complete{
-      parsed.head match {
-        case ParseError(msg: String) => ???
-        case OneTimeRead(ttl: String, sensors: Seq[ODFNode]) => Read.generateODF(sensors.head.path, sensormap)
-        case Write(ttl: String, sensors: Seq[ODFNode]) => ???
-        case Subscription(ttl: String, interval: String, sensors: Seq[ODFNode]) => ???
-        case Result(value: String, parseMsgOp: Option[Seq[ODFNode]]) => ???
-      
-      }
-    }
-    }
-  } 
 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery

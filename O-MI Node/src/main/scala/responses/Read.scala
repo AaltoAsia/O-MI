@@ -9,13 +9,24 @@ object Read {
 	def generateODF(path: String, root: SensorMap): Option[xml.Node] = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {
-				return Some(<InfoItem name={sensor.id}><value dateTime={sensor.dateTime}>{sensor.value}</value></InfoItem>)
+				return Some(
+          <InfoItem name={sensor.id}>
+            <value dateTime={sensor.dateTime}>
+              {sensor.value}
+            </value>
+          </InfoItem>
+        )
 			}
 
 			case Some(sensormap: SensorMap) => {
 				var xmlreturn = Buffer[xml.Node]()
-				xmlreturn += <id>{sensormap.id}</id>  //right now even host/Objects returns an id which it shouldnt
-				for(item <- sensormap.content.single.values) {
+
+        val mapId = sensormap.id
+        if (mapId != "Objects"){
+          xmlreturn += <id>{mapId}</id>
+        }
+
+				for (item <- sensormap.content.single.values) {
 					item match {
 						case sensor: SensorData => {
 							xmlreturn += <InfoItem name={sensor.id}/>
@@ -32,9 +43,7 @@ object Read {
 
 			}
 
-			case None => {
-				return Some(<error>No object found</error>)
-			}
+			case None => return None
 		}
 	}
 
