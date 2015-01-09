@@ -3,6 +3,8 @@ package agentSystemInterface
 import akka.actor.{ Actor, ActorRef, Props  }
 import akka.io.{ IO, Tcp  }
 import akka.util.ByteString
+import akka.actor.ActorLogging
+import java.net.InetSocketAddress
 import java.util.Date
 import java.text.SimpleDateFormat
 
@@ -10,36 +12,45 @@ import sensorDataStructure.{SensorMap, SensorData}
 import parsing.OdfParser
 
 
-class AgentListener(dataStore: SensorMap) extends Actor {
+class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
    
   import Tcp._
    
   def receive = {
     case Bound(localAddress) =>
-      // TODO: do some logging? or setup?
-      println(s"Agent connected from $localAddress")
+      // TODO: do some setup?
    
-    case CommandFailed(_: Bind) => context stop self
+    case CommandFailed(b: Bind) =>
+      log.warning(s"Agent connection failed: $b")
+      context stop self
    
     case Connected(remote, local) =>
       val connection = sender()
+      log.info(s"Agent connected from $remote to $local")
+
       val handler = context.actorOf(
-        Props(classOf[InputDataHandler], connection, dataStore)
+        Props(classOf[InputDataHandler], remote, dataStore),
+        "agent-handler"
       )
       connection ! Register(handler)
   }
 }
 
 
-class InputDataHandler(connection: ActorRef, dataStore: SensorMap) extends Actor {
+class InputDataHandler(
+    sourceAddress: InetSocketAddress,
+    dataStore: SensorMap
+  ) extends Actor with ActorLogging {
+
   import Tcp._
 
-  val formatDate = new SimpleDateFormat ("yyyy-MM-dd'T'hh:mm:ss")
+  val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
 
   def receive = {
     case Received(data) => 
       val dataString = data.decodeString("UTF-8")
-      println(s"Got data $dataString")
+
+      log.debug("Got data \n" + dataString)
 
       val parsedEntries = OdfParser.parse(dataString)
 
@@ -59,19 +70,24 @@ class InputDataHandler(connection: ActorRef, dataStore: SensorMap) extends Actor
             val pathfix = if (path.startsWith("/")) path.tail else path
             val sensorData = oTime match {
               case Some(time) => new SensorData(pathfix, value, time)
-              case None => new SensorData(pathfix, value, formatDate.format(new Date()))
+              case None =>
+                val currentTime = dateFormat.format(new Date())
+                new SensorData(pathfix, value, currentTime)
             }
-            println(s"Saving to path $pathfix")
+            log.debug(s"Saving to path $pathfix")
+
             dataStore.set(pathfix, sensorData)
 
           case Left(error) => 
-            println(s"Warning: Malformed odf received from agent ${sender()}: ${error.msg}")
+            log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
 
           case Right(node: parsing.ODFNode) =>
-            println("Warning: Throwing away node: " + node)
+            log.warning("Throwing away node: " + node)
         }
       }
-    case PeerClosed => context stop self
+    case PeerClosed =>
+      log.info(s"Agent disconnected: $sourceAddress")
+      context stop self
   }
 }
 
