@@ -6,18 +6,41 @@ import spray.can.Http
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
+import java.util.Date;
+import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
 
-import sensorDataStructure.SensorMap
+import sensorDataStructure.{SensorMap,SensorData}
 import agentSystemInterface.AgentListener
+import responses._
+import parsing._
 
 object Boot extends App {
 
+  // Create our in-memory sensor database
+
+  val sensormap: SensorMap = new SensorMap("")
+
+  sensormap.set("Objects", new SensorMap("Objects"))
+  sensormap.set("Objects/Refrigerator123", new SensorMap("Objects/Refrigerator123"))
+  sensormap.set("Objects/RoomSensors1", new SensorMap("Objects/RoomSensors1"))
+
+  val date = new Date();
+  val formatDate = new SimpleDateFormat ("yyyy-MM-dd'T'hh:mm:ss");
+  val testData = Map(
+    "Objects/Refrigerator123/PowerConsumption" -> "0.123",
+    "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
+    "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
+    "Objects/RoomSensors1/Temperature" -> "21.2",
+    "Objects/RoomSensors1/CarbonDioxide" -> "too much"
+    )
+  for ((path, value) <- testData){
+    sensormap.set(path, new SensorData(path, value, formatDate.format(date)))
+  }
+
+
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-spray-can")
-
-  // Create our in-memory sensor database
-  val sensormap: SensorMap = new SensorMap("")
 
   // create and start our service actor
   val omiService = system.actorOf(Props(classOf[OmiServiceActor], sensormap), "omi-service")

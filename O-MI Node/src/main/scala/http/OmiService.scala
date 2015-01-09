@@ -42,7 +42,7 @@ trait OmiService extends HttpService {
           complete {
             <html>
               <body>
-                <h1>Say hello to <i>spray-routing</i> on <i>spray-can</i>!</h1>
+                <h1>Say hello to <i>O-MI Node service</i>!</h1>
               </body>
             </html>
           }
@@ -53,8 +53,11 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
-        complete {
-          Read.generateODF(path, sensormap)
+        respondWithMediaType(`text/xml`) {
+          Read.generateODF(path, sensormap) match {
+            case Some(data) => complete(data)
+            case None       => complete(404, <error>No object found</error>)
+          }
         }
       }
     }

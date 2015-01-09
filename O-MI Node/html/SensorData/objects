@@ -1,0 +1,16 @@
+<Objects>
+ <Object>
+	<id>Refrigerator123</id>
+	<InfoItem name="Temperature" />
+	<InfoItem name="Weight" />
+	<InfoItem name="????" />
+	<InfoItem name="asdf" />
+ </Object>
+ <Object>
+	<id>HeatingController321</id>
+ </Object>
+ <Object>
+	<id>WeatherStation651</id>
+	<InfoItem name="Temperature" />
+ </Object>
+</Objects>
