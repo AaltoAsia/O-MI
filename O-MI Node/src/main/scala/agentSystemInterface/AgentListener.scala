@@ -38,9 +38,11 @@ class InputDataHandler(connection: ActorRef, dataStore: SensorMap) extends Actor
 
   def receive = {
     case Received(data) => 
-      println(s"Got data $data")
+      val dataString = data.decodeString("UTF-8")
+      println(s"Got data $dataString")
 
-      val parsedEntries = OdfParser.parse(data.decodeString("UTF-8"))
+      val parsedEntries = OdfParser.parse(dataString)
+
 
       for (parsed <- parsedEntries) {
         parsed match {
@@ -54,11 +56,13 @@ class InputDataHandler(connection: ActorRef, dataStore: SensorMap) extends Actor
               _  // metadata
             )
           ) =>
+            val pathfix = if (path.startsWith("/")) path.tail else path
             val sensorData = oTime match {
-              case Some(time) => new SensorData(path, value, time)
-              case None => new SensorData(path, value, formatDate.format(new Date()))
+              case Some(time) => new SensorData(pathfix, value, time)
+              case None => new SensorData(pathfix, value, formatDate.format(new Date()))
             }
-            dataStore.set(path, sensorData)
+            println(s"Saving to path $pathfix")
+            dataStore.set(pathfix, sensorData)
 
           case Left(error) => 
             println(s"Warning: Malformed odf received from agent ${sender()}: ${error.msg}")
