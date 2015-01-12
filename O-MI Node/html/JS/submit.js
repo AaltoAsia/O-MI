@@ -38,10 +38,8 @@ $(document).on('click', '.checkbox', function(){
 			$(this).prop('checked', ref.is(':checked'));
 		});
 	} else { 
-		//ChildItem clicked
-		var parentId = ref.attr('class').split(' ').find(function(element, index, array){
-			return element != "checkbox" && element != "lower";
-		});
+		//ChildItem clicked;
+		var parentId = ref.attr('class').split(' ').find(isParent);
 	
 		//Change parent item check value
 		$(jq("#", parentId)).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
@@ -57,6 +55,10 @@ $(document).on('click', '.checkbox', function(){
 	/* Temp function, allows special characters pass through jQuery */
 	function jq(prefix, myid) {
 		return prefix + myid.replace( /(:|\.|\[|\]|\/)/g, "\\$1" );
+	}
+	
+	function isParent(element, index, array){
+		return element != "checkbox" && element != "lower";
 	}
 });
 
@@ -114,7 +116,7 @@ function generateRequest(){
 	var request = writeXML(selectedObjects, operation, ttl, interval);
 	
 	console.log("Generated the O-DF request");
-	
+	console.log(request);
     $("#request").text((request)); //Update the request textbox on the webpage
 }
 
@@ -175,7 +177,7 @@ function writeXML(objects, operation, ttl, interval, callback){
 }
 
 // Server URL
-var server = 'http://localhost:8080'; //TODO: the real server here
+var server = window.location.host; 
 
 /* Send the O-DF request using AJAX */
 function sendRequest()
@@ -194,6 +196,7 @@ function sendRequest()
             success: printResponse,
 			error: function(a, b, c){
 				$("#responseBox").text("Error sending message");
+				handleError(a, b, c);
 			}
         });
     } 
