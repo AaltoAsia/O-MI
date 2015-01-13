@@ -8,6 +8,7 @@ import responses._
 
 import parsing._
 import sensorDataStructure.SensorMap
+import xml._
 
 class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
 
@@ -26,7 +27,7 @@ class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
 
-  val sensormap: SensorMap
+  val sensorDataStorage: SensorMap
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
@@ -54,7 +55,7 @@ trait OmiService extends HttpService {
     path(Rest){ path =>
       get {
         respondWithMediaType(`text/xml`) {
-          Read.generateODF(path, sensormap) match {
+          Read.generateODF(path, sensorDataStorage) match {
             case Some(data) => complete(data)
             case None       => complete(404, <error>No object found</error>)
           }
@@ -62,6 +63,25 @@ trait OmiService extends HttpService {
       }
     }
 
+  val getXMLResponse = entity(as[NodeSeq]) { xml => 
+    val omi = OmiParser.parse(xml.toString)
+    val requests = omi.filter(r => r != ParseError)
+    val errors = omi.filter(e => e == ParseError)
+    if(errors.isEmpty) {
+      complete{
+        requests.map
+        {
+          case oneTimeRead: OneTimeRead => Read.OMIReadResponse( sensorDataStorage, oneTimeRead)
+          case write: Write => ???
+          case subscription: Subscription => ??? 
+        }
+      }
+    } else {
+      complete {
+        ???
+      }
+    }
+  } 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
 
