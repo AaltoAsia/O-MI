@@ -3,11 +3,13 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
+
 object SQLite{
   
   val dbPath = "./test.sqlite3"
   val init = !new File(dbPath).exists()
   val latestValues = TableQuery[DBData]
+  val objects = TableQuery[DBNode]
   val db = Database.forURL("jdbc:sqlite:"+dbPath, driver = "org.sqlite.JDBC")
   db withSession{ implicit session =>
     if(init){
@@ -15,7 +17,8 @@ object SQLite{
     }
   }
   
-def setLatest(data:DBSensor) =
+
+def set(data:DBSensor)=
 {
    db withSession{ implicit session =>
      val pathQuery = for{
@@ -34,17 +37,16 @@ def setLatest(data:DBSensor) =
    }
 }
 
-def removeData(path:String)
+
+def remove(path:String)
 {
   db withSession{ implicit session =>
   val pathQuery = latestValues.filter(_.path === path)
-    if(pathQuery.list.length > 0)
-    {
-     pathQuery.delete
-    }
+  pathQuery.delete
   }
-  }
-def getLatest(path:String):Option[DBSensor]=
+ }
+
+def get(path:String):Option[DBSensor]=
 {
   var result:Option[DBSensor] = None 
   db withSession{ implicit session =>
@@ -62,7 +64,10 @@ def getLatest(path:String):Option[DBSensor]=
   }
   result
 }
-
+def addObjects(path:String)
+{
+  
+}
 def initialize()(implicit session: Session)=
 {
  latestValues.ddl.create
@@ -70,6 +75,7 @@ def initialize()(implicit session: Session)=
 }
 
 class DBSensor(val path:String,var value:String,var time:java.sql.Timestamp)
+class DBObject(val path:String)
 
 class DBData(tag: Tag)
   extends Table[(String, String,java.sql.Timestamp)](tag, "Latestvalues") {
@@ -79,4 +85,13 @@ class DBData(tag: Tag)
   def timestamp = column[java.sql.Timestamp]("TIME")
   // Every table needs a * projection with the same type as the table's type parameter
   def * : ProvenShape[(String, String,java.sql.Timestamp)] = (path,value,timestamp)
+}
+class DBNode(tag: Tag)
+  extends Table[(String,String)](tag, "Objects") {
+  // This is the primary key column:
+  def parentPath = column[String]("PARENTPATH", O.PrimaryKey)
+  def key = column[String]("PATH")
+  
+  // Every table needs a * projection with the same type as the table's type parameter
+  def * : ProvenShape[(String,String)] = (key,parentPath)
 }
