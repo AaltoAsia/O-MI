@@ -67,7 +67,7 @@ object Read {
 
 
 
-	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
+	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: Seq[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 	/*	val OMIresponseStart = <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
 				<omi:response>
  					<omi:result msgformat="odf">
@@ -91,7 +91,7 @@ object Read {
  				val odfxml = generateODFresponse(node.path, root)
 
  				odfxml match {
- 					case Some(xmlstuff) => xmlreturn += xmlstuff.mkString
+ 					case Some(Right(xmlstuff)) => xmlreturn += xmlstuff.mkString
  					case None => ???
  				}
 
@@ -120,7 +120,7 @@ object Read {
  				val odfxml = generateODFresponse(key, root)
 
  				odfxml match {
- 					case Some(xmlstuff) => {
+ 					case Some(Right(xmlstuff)) => {
  						xmlreturn += "<Object>"
  						xmlreturn += xmlstuff.mkString
  						xmlreturn += OMIReadResponse(root, depth+1, value.toList)
