@@ -59,3 +59,7 @@ Thumbs.db
 desktop.ini
 # TeXlipse plugin
 .texlipse
+
+# We don't want that every commit has changes to some db
+*.sqlite3
+*.sqlite
