@@ -9,45 +9,54 @@ import scala.collection.mutable.Map
 
 
 object Read {
-	def generateODF(path: String, root: SensorMap): Option[xml.Node] = {
+  /**
+   * Generates ODF containing only specified paths children (with path as root)
+   * or if path ends with "value" it returns only that value.
+   *
+   * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
+   */
+	def generateODF(path: String, root: SensorMap): Option[Either[String,xml.Node]] = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {
         if (sensor.id == "value")
-          return Some(xml.PCData(sensor.value))
+          return Some(Left(sensor.value))
         else
-          return Some(
+          return Some(Right(
           <InfoItem name={sensor.id}>
             <value dateTime={sensor.dateTime}>
               {sensor.value}
             </value>
           </InfoItem>
-        )
+        ))
 			}
 
 			case Some(sensormap: SensorMap) => {
-				var xmlreturn = Buffer[xml.Node]()
+				var resultChildren = Buffer[xml.Node]()
 
-        val mapId = sensormap.id
-        if (mapId != "Objects"){
-          xmlreturn += <id>{mapId}</id>
-        }
 
 				for (item <- sensormap.content.single.values) {
 					item match {
 						case sensor: SensorData => {
-							xmlreturn += <InfoItem name={sensor.id}/>
+							resultChildren += <InfoItem name={sensor.id}/>
 						}
 
 						case subobject: SensorMap => {
-							xmlreturn += <Object><id>{subobject.id}</id></Object>
+							resultChildren += <Object><id>{subobject.id}</id></Object>
 						}
 
 					}
 				}
 
-        // add if for objects
-				return Some(<Object>{xmlreturn}</Object>)
+        val mapId = sensormap.id
+        val xmlReturn =
+          if (mapId == "Objects") {
+            <Objects>{resultChildren}</Objects>
+          } else {
+            resultChildren.prepend(<id>{mapId}</id>)
+            <Object>{resultChildren}</Object>
+          }
 
+        return Some(Right(xmlReturn))
 			}
 
 			case None => return None

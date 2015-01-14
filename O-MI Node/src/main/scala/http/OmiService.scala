@@ -34,11 +34,11 @@ trait OmiService extends HttpService {
       getFromDirectory("html")
     }
 
-  // should be removed
+  // should be removed?
   val helloWorld = 
     path("") { // Root
       get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
+        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
           complete {
             <html>
               <body>
@@ -53,11 +53,19 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
-        respondWithMediaType(`text/xml`) {
-          Read.generateODF(path, sensormap) match {
-            case Some(data) => complete(data)
-            case None       => complete(404, <error>No object found</error>)
-          }
+        Read.generateODF(path, sensormap) match {
+          case Some(Left(value)) =>
+            respondWithMediaType(`text/plain`) {
+              complete(value)
+            }
+          case Some(Right(xmlData)) => 
+            respondWithMediaType(`text/xml`) {
+              complete(xmlData)
+            }
+          case None =>
+            respondWithMediaType(`text/xml`) {
+              complete(404, <error>No object found</error>)
+            }
         }
       }
     }
