@@ -1,10 +1,18 @@
-{
-	"Sensor": {
-		"id": 1,
-		"data": {
-			"Temp": 24,
-			"Hum": 0.56,
-			"X": "Y"
-		}
-	}
-}
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+	<omi:response>
+		<omi:result msgformat="odf">
+			<omi:return returnCode="200"></omi:return>
+			<omi:requestId>REQ654534</omi:requestId>
+			<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+			<Objects>
+				<Object>
+					<id>SmartFridge12</id>
+						<InfoItem name="PowerConsumption">
+							<value type="xs:int" unixTime="5453563">55</value>
+						</InfoItem>
+				</Object>
+			</Objects>
+			</omi:msg>
+		</omi:result>
+	</omi:response>
+</omi:omiEnvelope>
