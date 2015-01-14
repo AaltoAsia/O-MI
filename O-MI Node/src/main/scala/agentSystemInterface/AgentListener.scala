@@ -18,7 +18,8 @@ class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
    
   def receive = {
     case Bound(localAddress) =>
-      // TODO: do some setup?
+      // TODO: do something?
+      // It seems that this branch was not executed?
    
     case CommandFailed(b: Bind) =>
       log.warning(s"Agent connection failed: $b")
@@ -44,6 +45,7 @@ class InputDataHandler(
 
   import Tcp._
 
+  // timestamp format to use when data doesn't have its own
   val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
 
   def receive = {
@@ -64,7 +66,7 @@ class InputDataHandler(
               parsing.InfoItem,
               Some(value),
               oTime,
-              _  // metadata
+              _  // TODO: FIXME: don't ignore metadata
             )
           ) =>
             val pathfix = if (path.startsWith("/")) path.tail else path
@@ -86,7 +88,7 @@ class InputDataHandler(
         }
       }
     case PeerClosed =>
-      log.info(s"Agent disconnected: $sourceAddress")
+      log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
 }

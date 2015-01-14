@@ -14,6 +14,7 @@ object GenericAgentClient {
   Props(classOf[GenericAgentClient], remote)
 }
 
+
 class GenericAgentClient(remote: InetSocketAddress) extends Actor{
  import Tcp._
  import context.system
@@ -30,12 +31,18 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor{
       println(c.toString)
       val connection = sender()
       connection ! Register(self)
+
       context become {
         case data: Node=> 
-          connection ! Write( ByteString( new PrettyPrinter( 80, 2 ).format( data ) ) )
+          connection ! Write(
+            ByteString(
+              new PrettyPrinter( 80, 2 ).format( data )
+            )
+          )
         case CommandFailed(w: Write) => 
-        // O/S buffer was full
+          // O/S buffer was full
           println("write failed")
+
         case Received(data) =>
           println(data.toString)
         case "close" =>
@@ -47,12 +54,16 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor{
       }
   }
 }
+
+
 class GenericAgent(path: Seq[String], client: ActorRef) extends Actor {
 
+  // XXX: infinite event loop hack!
   self ! "Run"
   def receive = {
     case "Run" => run()
   }
+
   def run() = {
     if(System.in.available() != 0){
       val value = StdIn.readLine
@@ -64,26 +75,37 @@ class GenericAgent(path: Seq[String], client: ActorRef) extends Actor {
 
   def genODF( path: Seq[String], value: String) : Elem ={
     if(path.length == 1)
-      <InfoItem name={path.head}><value>{value}</value></InfoItem>
+      <InfoItem name={path.head}>
+        <value>{value}</value>
+      </InfoItem>
     else
-       <Object><id>{path.head}</id>{genODF(path.tail,value)}</Object>
+       <Object>
+         <id>{path.head}</id>
+         {genODF(path.tail,value)}
+       </Object>
   }
 }
 object GenericMain {
   def main(args: Array[String]) = {
     import scala.concurrent.ExecutionContext.Implicits.global
+
     if(args.length < 3){
-      println("arguments are <address> <port> <sensor's path>")
+      println("arguments are <address> <port> <path of this sensor>")
+
     } else {
       val address = new InetSocketAddress( args(0),args(1).toInt)
-      var path = args(2).split("/")
+      var path = args(2).split("/").filterNot(_.isEmpty)
       
       if(path.head == "Objects")
         path = path.tail
+
       implicit val timeout = Timeout(5.seconds)
       implicit val system = ActorSystem("on-generic-agent")
-      val client = system.actorOf(GenericAgentClient.props(address), "generic-agent-client")  
-      val agent = system.actorOf(Props[GenericAgent](new GenericAgent(path,client)), "generic-agent")
+
+      val client = system.actorOf(
+        GenericAgentClient.props(address), "generic-agent-client")  
+      val agent = system.actorOf(
+        Props(new GenericAgent(path,client)), "generic-agent")
     }
   }
 }
