@@ -38,25 +38,27 @@ $(document).on('click', '.checkbox', function(){
 			$(this).prop('checked', ref.is(':checked'));
 		});
 	} else { 
-		//childItem clicked
-		var parentId = ref.attr('class').split(' ').find(function(element, index, array){
-			return element != "checkbox" && element != "lower";
-		});
+		//ChildItem clicked;
+		var parentId = ref.attr('class').split(' ').find(isParent);
 	
 		//Change parent item check value
 		$(jq("#", parentId)).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
 	}
 	
-	/* Temp function (inside current function), returns an array of children with the given id (as their class) */
+	/* Temp function, returns an array of children with the given id (as their class) */
 	function getChildren(id){
 		return $("#objectList").find("input").filter(function(){
 			return $(this).attr('class').indexOf(id) > -1;
 		});
 	}
 	
-	/* Temp function, allows special characters pass through jquery */
+	/* Temp function, allows special characters pass through jQuery */
 	function jq(prefix, myid) {
 		return prefix + myid.replace( /(:|\.|\[|\]|\/)/g, "\\$1" );
+	}
+	
+	function isParent(element, index, array){
+		return element != "checkbox" && element != "lower";
 	}
 });
 
@@ -96,6 +98,7 @@ function displayObjects(data) {
 			$(this).find("InfoItem").each(function(){
 				var name = $(this).attr('name');
 				
+				//Append InfoItem as checkbox
 				$('<label>' + 
 				'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
 				'</label><br>').appendTo("#objectList"); 
@@ -113,7 +116,7 @@ function generateRequest(){
 	var request = writeXML(selectedObjects, operation, ttl, interval);
 	
 	console.log("Generated the O-DF request");
-	
+	console.log(request);
     $("#request").text((request)); //Update the request textbox on the webpage
 }
 
@@ -123,7 +126,7 @@ function generateRequest(){
 * @param {String} the O-DF operation (read, write, cancel, subscribe)
 * @param {Number} Time to live 
 * @param {Number} Message interval
-* @param {function} Callback function
+* @param {function} Callback function (not used atm)
 */
 function writeXML(objects, operation, ttl, interval, callback){
 	//Using the same format as in demo
@@ -139,7 +142,7 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
 	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
 	writer.writeAttributeString('version', '1.0');
-	writer.writeAttributeString('ttl', ttl);
+	if(ttl) writer.writeAttributeString('ttl', ttl);
 	//(second line)
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
@@ -174,7 +177,7 @@ function writeXML(objects, operation, ttl, interval, callback){
 }
 
 // Server URL
-var server = 'http://localhost:8080';
+var server = window.location.host; 
 
 /* Send the O-DF request using AJAX */
 function sendRequest()
@@ -193,6 +196,7 @@ function sendRequest()
             success: printResponse,
 			error: function(a, b, c){
 				$("#responseBox").text("Error sending message");
+				handleError(a, b, c);
 			}
         });
     } 
@@ -214,13 +218,13 @@ function startSubscriptionEventListener(request) {
 
 /* Do something with the response from the server */
 function printResponse(response){
-	//TODO: print the response somewhere on the page
-	console.log((response));
+	console.log("Got response!");
+	console.log(response);
 	
 	$("#responseBox").text(response);
 }
 
-/* Handle the AJAX errors */
+/* Handle the ajax errors */
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
 }
