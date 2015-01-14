@@ -10,7 +10,7 @@ import parsing._
 import sensorDataStructure.SensorMap
 import xml._
 
-class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiService {
+class OmiServiceActor extends Actor with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
@@ -27,7 +27,6 @@ class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiSe
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
 
-  val sensorDataStorage: SensorMap
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
@@ -54,7 +53,7 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
-        Read.generateODFresponse(path, sensorDataStorage) match {
+        Read.generateODFresponse(path) match {
           case Some(Left(value)) =>
             respondWithMediaType(`text/plain`) {
               complete(value)
@@ -73,8 +72,14 @@ trait OmiService extends HttpService {
 
   val getXMLResponse = entity(as[NodeSeq]) { xml => 
     val omi = OmiParser.parse(xml)
-    val requests = omi.filter(r => r != ParseError)
-    val errors = omi.filter(e => e == ParseError)
+    val requests = omi.filter{
+      case ParseError(_) => false
+      case _ => true
+    }
+    val errors = omi.filter{ 
+      case ParseError(_) => true
+      case _ => false
+    }
     if(errors.isEmpty) {
       complete{
         requests.map{
