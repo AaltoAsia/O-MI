@@ -72,7 +72,7 @@ trait OmiService extends HttpService {
     }
 
   val getXMLResponse = entity(as[NodeSeq]) { xml => 
-    val omi = OmiParser.parse(xml.toString)
+    val omi = OmiParser.parse(xml)
     val requests = omi.filter(r => r != ParseError)
     val errors = omi.filter(e => e == ParseError)
     if(errors.isEmpty) {
@@ -84,6 +84,7 @@ trait OmiService extends HttpService {
         }.mkString("\n")
       }
     } else {
+      //Error found
       complete {
         ???
       }
