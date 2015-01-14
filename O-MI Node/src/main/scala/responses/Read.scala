@@ -15,7 +15,8 @@ object Read {
    *
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-	def generateODF(path: String, root: SensorMap): Option[Either[String,xml.Node]] = {
+
+	def generateODFresponse(path: String, root: SensorMap): Option[Either[String,xml.Node]] = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {
         if (sensor.id == "value")
@@ -63,23 +64,8 @@ object Read {
 		}
 	}
 
-	def generateODFresponse(path: String, root: SensorMap): Option[xml.Node] = {
-		root.get(path) match {
-			case Some(sensor: SensorData) => {
-				return Some(<InfoItem name={sensor.id}><value dateTime={sensor.dateTime}>{sensor.value}</value></InfoItem>)
-			}
 
-			case Some(sensormap: SensorMap) => {
-				
-				return Some(<id>{sensormap.id}</id>)
 
-			}
-
-			case None => {
-				return Some(<error>No object found</error>)
-			}
-		}
-	}
 
 	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 	/*	val OMIresponseStart = <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
