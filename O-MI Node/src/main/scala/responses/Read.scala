@@ -9,13 +9,14 @@ import scala.collection.mutable.Map
 
 
 object Read {
+
   /**
-   * Generates ODF containing only specified paths children (with path as root)
+   * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
    *
+   * @param path The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-
 	def generateODFresponse(path: String, root: SensorMap): Option[Either[String,xml.Node]] = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {

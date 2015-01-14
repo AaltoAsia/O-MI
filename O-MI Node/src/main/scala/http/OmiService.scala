@@ -78,7 +78,7 @@ trait OmiService extends HttpService {
     if(errors.isEmpty) {
       complete{
         requests.map{
-          case oneTimeRead: OneTimeRead => Read.OMIReadResponse( sensorDataStorage, 1, oneTimeRead.sensors)
+          case oneTimeRead: OneTimeRead => ???
           case write: Write => ???
           case subscription: Subscription => ??? 
         }.mkString("\n")
