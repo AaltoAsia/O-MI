@@ -10,15 +10,17 @@ import java.text.SimpleDateFormat
 
 import sensorDataStructure.{SensorMap, SensorData}
 import parsing.OdfParser
+import database._
 
 
-class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
+class AgentListener extends Actor with ActorLogging {
    
   import Tcp._
    
   def receive = {
     case Bound(localAddress) =>
-      // TODO: do some setup?
+      // TODO: do something?
+      // It seems that this branch was not executed?
    
     case CommandFailed(b: Bind) =>
       log.warning(s"Agent connection failed: $b")
@@ -29,7 +31,7 @@ class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
       log.info(s"Agent connected from $remote to $local")
 
       val handler = context.actorOf(
-        Props(classOf[InputDataHandler], remote, dataStore),
+        Props(classOf[InputDataHandler], remote),
         "agent-handler"
       )
       connection ! Register(handler)
@@ -38,12 +40,12 @@ class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
 
 
 class InputDataHandler(
-    sourceAddress: InetSocketAddress,
-    dataStore: SensorMap
+    sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
 
   import Tcp._
 
+  // timestamp format to use when data doesn't have its own
   val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
 
   def receive = {
@@ -64,19 +66,22 @@ class InputDataHandler(
               parsing.InfoItem,
               Some(value),
               oTime,
-              _  // metadata
+              _  // TODO: FIXME: don't ignore metadata
             )
           ) =>
             val pathfix = if (path.startsWith("/")) path.tail else path
             val sensorData = oTime match {
-              case Some(time) => new SensorData(pathfix, value, time)
+              case Some(time) => 
+                //TODO: FIX get real time, not current
+                val time = new java.sql.Timestamp(new Date().getTime())
+                new DBSensor(pathfix, value, time)
               case None =>
-                val currentTime = dateFormat.format(new Date())
-                new SensorData(pathfix, value, currentTime)
+                val currentTime = new java.sql.Timestamp(new Date().getTime())
+                new DBSensor(pathfix, value, currentTime)
             }
             log.debug(s"Saving to path $pathfix")
 
-            dataStore.set(pathfix, sensorData)
+            SQLite.set(sensorData)
 
           case Left(error) => 
             log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
@@ -86,7 +91,7 @@ class InputDataHandler(
         }
       }
     case PeerClosed =>
-      log.info(s"Agent disconnected: $sourceAddress")
+      log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
 }
