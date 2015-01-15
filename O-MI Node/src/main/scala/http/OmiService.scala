@@ -10,6 +10,8 @@ import parsing._
 import sensorDataStructure.SensorMap
 import xml._
 
+import cors._
+
 class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiService {
 
   // the HttpService trait defines only one abstract member, which
@@ -23,20 +25,19 @@ class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiSe
 
 }
 
-
 // this trait defines our service behavior independently from the service actor
-trait OmiService extends HttpService {
+trait OmiService extends HttpService with CORSSupport {
 
   val sensorDataStorage: SensorMap
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
-    pathPrefix("html"){
+    pathPrefix("html") {
       getFromDirectory("html")
     }
 
   // should be removed?
-  val helloWorld = 
+  val helloWorld =
     path("") { // Root
       get {
         respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
@@ -51,15 +52,15 @@ trait OmiService extends HttpService {
       }
     }
 
-  val getDataDiscovery = 
-    path(Rest){ path =>
+  val getDataDiscovery =
+    path(Rest) { path =>
       get {
         Read.generateODFresponse(path, sensorDataStorage) match {
           case Some(Left(value)) =>
             respondWithMediaType(`text/plain`) {
               complete(value)
             }
-          case Some(Right(xmlData)) => 
+          case Some(Right(xmlData)) =>
             respondWithMediaType(`text/xml`) {
               complete(xmlData)
             }
@@ -71,16 +72,16 @@ trait OmiService extends HttpService {
       }
     }
 
-  val getXMLResponse = entity(as[NodeSeq]) { xml => 
+  val getXMLResponse = entity(as[NodeSeq]) { xml =>
     val omi = OmiParser.parse(xml.toString)
     val requests = omi.filter(r => r != ParseError)
     val errors = omi.filter(e => e == ParseError)
-    if(errors.isEmpty) {
-      complete{
-        requests.map{
+    if (errors.isEmpty) {
+      complete {
+        requests.map {
           case oneTimeRead: OneTimeRead => ???
           case write: Write => ???
-          case subscription: Subscription => ??? 
+          case subscription: Subscription => ???
         }.mkString("\n")
       }
     } else {
@@ -88,9 +89,26 @@ trait OmiService extends HttpService {
         ???
       }
     }
-  } 
+  }
+
+  val corsRoute: Route =
+    cors { //how to handle path
+      path("") {
+        get {
+          complete {
+            "GET"
+          }
+        } ~
+          put {
+            complete {
+              "PUT"
+            }
+          }
+      }
+    }
+  
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ corsRoute
 
 }
 
