@@ -2,6 +2,7 @@ package responses
 
 import sensorDataStructure._
 import parsing._
+import database._
 import scala.xml
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
@@ -9,45 +10,60 @@ import scala.collection.mutable.Map
 
 
 object Read {
-	def generateODF(path: String, root: SensorMap): Option[xml.Node] = {
-		root.get(path) match {
-			case Some(sensor: SensorData) => {
-        if (sensor.id == "value")
-          return Some(xml.PCData(sensor.value))
+
+  /**
+   * Generates ODF containing only children of the specified path's (with path as root)
+   * or if path ends with "value" it returns only that value.
+   *
+   * @param path The path as String, elements split by a slash "/"
+   * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
+   */
+	def generateODFresponse(path: String): Option[Either[String,xml.Node]] = {
+    var wasValue = false
+    val npath = if(path.split("/").last == "value"){
+      wasValue =true
+      path.dropRight(5) 
+    }else path
+		SQLite.get(path) match {
+			case Some(sensor: DBSensor) => {
+        if (wasValue)
+          return Some(Left(sensor.value))
         else
-          return Some(
-          <InfoItem name={sensor.id}>
-            <value dateTime={sensor.dateTime}>
+          return Some(Right(
+          <InfoItem name={sensor.path.split("/").last}>
+            <value dateTime={sensor.time.toString}>
               {sensor.value}
             </value>
           </InfoItem>
-        )
+        ))
 			}
 
-			case Some(sensormap: SensorMap) => {
-				var xmlreturn = Buffer[xml.Node]()
+			case Some(sensormap: DBObject) => {
+				var resultChildren = Buffer[xml.Node]()
 
-        		val mapId = sensormap.id
-        		if (mapId != "Objects") {
-          			xmlreturn += <id>{mapId}</id>
-        		}
-
-				for (item <- sensormap.content.single.values) {
+				for (item <- sensormap.childs) {
 					item match {
-						case sensor: SensorData => {
-							xmlreturn += <InfoItem name={sensor.id}/>
+						case sensor: DBSensor => {
+							resultChildren += <InfoItem name={sensor.path.split("/").last}/>
 						}
 
-						case subobject: SensorMap => {
-							xmlreturn += <Object><id>{subobject.id}</id></Object>
+						case subobject: DBObject => {
+							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
 						}
 
 					}
 				}
 
-        // add if for objects
-				return Some(<Object>{xmlreturn}</Object>)
+        val mapId = sensormap.path.split("/").last
+        val xmlReturn =
+          if (mapId == "Objects") {
+            <Objects>{resultChildren}</Objects>
+          } else {
+            resultChildren.prepend(<id>{mapId}</id>)
+            <Object>{resultChildren}</Object>
+          }
 
+        return Some(Right(xmlReturn))
 			}
 
 			case None => return None
@@ -83,7 +99,6 @@ object Read {
  			var spl = node.path.stripPrefix("/").split("/")
 
  			if(depth < spl.length) {
-
  				var thispath = spl.slice(0, depth).mkString("/")
  				var prevpath = previousSpl.slice(0, depth).mkString("/")
 

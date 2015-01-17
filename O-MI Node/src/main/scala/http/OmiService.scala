@@ -10,7 +10,7 @@ import parsing._
 import sensorDataStructure.SensorMap
 import xml._
 
-class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
+class OmiServiceActor extends Actor with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
@@ -27,7 +27,6 @@ class OmiServiceActor(val sensormap: SensorMap) extends Actor with OmiService {
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
 
-  val sensorDataStorage: SensorMap
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
@@ -35,11 +34,11 @@ trait OmiService extends HttpService {
       getFromDirectory("html")
     }
 
-  // should be removed
+  // should be removed?
   val helloWorld = 
     path("") { // Root
       get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
+        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
           complete {
             <html>
               <body>
@@ -54,29 +53,43 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
-        respondWithMediaType(`text/xml`) {
-          Read.generateODF(path, sensorDataStorage) match {
-            case Some(data) => complete(data)
-            case None       => complete(404, <error>No object found</error>)
-          }
+        Read.generateODFresponse(path) match {
+          case Some(Left(value)) =>
+            respondWithMediaType(`text/plain`) {
+              complete(value)
+            }
+          case Some(Right(xmlData)) => 
+            respondWithMediaType(`text/xml`) {
+              complete(xmlData)
+            }
+          case None =>
+            respondWithMediaType(`text/xml`) {
+              complete(404, <error>No object found</error>)
+            }
         }
       }
     }
 
   val getXMLResponse = entity(as[NodeSeq]) { xml => 
-    val omi = OmiParser.parse(xml.toString)
-    val requests = omi.filter(r => r != ParseError)
-    val errors = omi.filter(e => e == ParseError)
+    val omi = OmiParser.parse(xml)
+    val requests = omi.filter{
+      case ParseError(_) => false
+      case _ => true
+    }
+    val errors = omi.filter{ 
+      case ParseError(_) => true
+      case _ => false
+    }
     if(errors.isEmpty) {
       complete{
-        requests.map
-        {
-          case oneTimeRead: OneTimeRead => Read.OMIReadResponse( sensorDataStorage, oneTimeRead)
+        requests.map{
+          case oneTimeRead: OneTimeRead => ???
           case write: Write => ???
           case subscription: Subscription => ??? 
-        }
+        }.mkString("\n")
       }
     } else {
+      //Error found
       complete {
         ???
       }
