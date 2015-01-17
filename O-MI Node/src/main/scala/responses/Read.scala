@@ -27,10 +27,10 @@ object Read {
 			case Some(sensormap: SensorMap) => {
 				var xmlreturn = Buffer[xml.Node]()
 
-        val mapId = sensormap.id
-        if (mapId != "Objects"){
-          xmlreturn += <id>{mapId}</id>
-        }
+        		val mapId = sensormap.id
+        		if (mapId != "Objects") {
+          			xmlreturn += <id>{mapId}</id>
+        		}
 
 				for (item <- sensormap.content.single.values) {
 					item match {
@@ -54,93 +54,97 @@ object Read {
 		}
 	}
 
-	def generateODFresponse(path: String, root: SensorMap): Option[xml.Node] = {
+	def generateODFresponse(path: String, root: SensorMap): String = {
 		root.get(path) match {
 			case Some(sensor: SensorData) => {
-				return Some(<InfoItem name={sensor.id}><value dateTime={sensor.dateTime}>{sensor.value}</value></InfoItem>)
+				val id = path.split("/").last
+				val xmlreturn = <InfoItem name={id}><value dateTime={sensor.dateTime}>{sensor.value}</value></InfoItem>
+				return xmlreturn.toString
 			}
 
 			case Some(sensormap: SensorMap) => {
 				
-				return Some(<id>{sensormap.id}</id>)
-
+				val xmlreturn = <id>{sensormap.id}</id>
+				return xmlreturn.toString
 			}
 
-			case None => {
-				return Some(<error>No object found</error>)
-			}
+			case None => return "No object or value found"
 		}
 	}
 
-	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
-	/*	val OMIresponseStart = <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-				<omi:response>
- 					<omi:result msgformat="odf">
- 						<omi:return returnCode="200"></omi:return>
- 						<omi:requestId>REQ654534</omi:requestId>
- 						<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">*/
+	def OMIReadGenerate(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 
- 		//NOT READY, missing the OMI starting thing (above), also not sure what to do if user asks for an Object instead of a value (Infoitem)
-
- 		//starting from depth 1, go through the nodes' paths from start to depth and divide those who have the same path start to their own groups
- 		//and go through these groups recursively, adding depth until we are at the 'bottom'
- 		//needs to be done like this because unlike in RESTful interface, read response has to return the whole hierarchy and multiple values, if asked.
-
- 		val nodemap = Map[String, ListBuffer[ODFNode]]()
+ 		ODFnodes.sortWith(_.path < _.path)
  		var xmlreturn = Buffer[String]()
+ 		var nextnodes = Buffer[ODFNode]()
+ 		var previousSpl = ODFnodes(0).path.stripPrefix("/").split("/").slice(0, depth)		//stripPrefix just a quick fix since parser returns with a starting /.
 
  		for (node <- ODFnodes) {
- 			val spl = node.path.split("/")
+ 			var spl = node.path.stripPrefix("/").split("/")
 
- 			if(spl.length <= depth) {	//we're at the last part of the path, eg. it's a value the user wants
- 				val odfxml = generateODFresponse(node.path, root)
+ 			if(depth < spl.length) {
 
- 				odfxml match {
- 					case Some(xmlstuff) => xmlreturn += xmlstuff.mkString
- 					case None => ???
+ 				var thispath = spl.slice(0, depth).mkString("/")
+ 				var prevpath = previousSpl.slice(0, depth).mkString("/")
+
+ 				if(thispath != prevpath) {
+ 					
+ 					xmlreturn += "<Object>"
+ 					xmlreturn += generateODFresponse(prevpath, root)
+ 					xmlreturn += OMIReadGenerate(root, depth+1, nextnodes.toList)
+ 					xmlreturn += "</Object>"
+ 					nextnodes.clear
+
  				}
+
+ 				nextnodes += node
 
  			}
 
- 			else {		// we're not at the bottom, and add it to a list of others who have the same starting path
-
- 			val head = spl.slice(0, depth).mkString("/")
- 			val mapping = nodemap.get(head)
-
- 			mapping match {
- 				case Some(nodelist) => nodelist += node
- 				case None => {
- 					nodemap += (head -> ListBuffer[ODFNode]())
- 					nodemap(head) += node
- 					}
-
- 				}
+ 			else {
+ 				xmlreturn += generateODFresponse(node.path, root)
  			}
+
+ 			previousSpl = spl
 
  		}
 
- 		for((key, value) <- nodemap) {		//key is Objects always first, then in the next recursion for example Objects/Refrigerator123
- 			if(key == "Objects") xmlreturn += "<Objects>" + OMIReadResponse(root, depth+1, value.toList) + "</Objects>"
- 			else {
- 				val odfxml = generateODFresponse(key, root)
-
- 				odfxml match {
- 					case Some(xmlstuff) => {
- 						xmlreturn += "<Object>"
- 						xmlreturn += xmlstuff.mkString
- 						xmlreturn += OMIReadResponse(root, depth+1, value.toList)
- 						xmlreturn += "</Object>"
- 					}
-
- 					case None => ???
- 				}
-
- 			}
-
+ 		if(nextnodes.isEmpty == false) {	//because the loop uses previous elements, theres sometimes more left in the list
+ 			var thispath = nextnodes(0).path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
+ 			xmlreturn += "<Object>"
+ 			xmlreturn += generateODFresponse(thispath, root)
+ 			xmlreturn += OMIReadGenerate(root, depth+1, nextnodes.toList)
+ 			xmlreturn += "</Object>"
  		}
 
  		return xmlreturn.mkString
 
+	}
+
+	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {
+		val OMIresponseStart = 
+		"""
+		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+				<omi:response>
+ 					<omi:result msgformat="odf">
+ 						<omi:return returnCode="200"></omi:return>
+ 						<omi:requestId>REQ654534</omi:requestId>
+ 						<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+ 							<Objects>
+ 		"""
+
+ 		val OMIelements = OMIReadGenerate(root, depth, ODFnodes)
+
+ 		val OMIresponseEnd = 
+ 		"""
+ 							</Objects>
+ 						</omi:msg>
+ 					</omi:result>
+ 				</omi:response>
+		</omi:omiEnvelope>
+		"""
+
+		return OMIresponseStart + OMIelements + OMIresponseEnd
 	}
 
 }
