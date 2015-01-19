@@ -18,7 +18,7 @@ object Read {
    * @param path The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-	def generateODFresponse(path: String): Option[Either[String,xml.Node]] = {
+	def generateODFREST(path: String): Option[Either[String,xml.Node]] = {
     var wasValue = false
     val npath = if(path.split("/").last == "value"){
       wasValue =true
@@ -70,17 +70,17 @@ object Read {
 		}
 	}
 
-	def generateODFresponse(path: String, root: SensorMap): String = {
-		root.get(path) match {
-			case Some(sensor: SensorData) => {
+	def generateODFresponse(path: String): String = {
+		SQLite.get(path) match {
+			case Some(sensor: DBSensor) => {
 				val id = path.split("/").last
-				val xmlreturn = <InfoItem name={id}><value dateTime={sensor.dateTime}>{sensor.value}</value></InfoItem>
+				val xmlreturn = <InfoItem name={id}><value dateTime={sensor.time.toString}>{sensor.value}</value></InfoItem>
 				return xmlreturn.toString
 			}
 
-			case Some(sensormap: SensorMap) => {
-				
-				val xmlreturn = <id>{sensormap.id}</id>
+			case Some(sensormap: DBObject) => {
+				val mapId = sensormap.path.split("/").last
+				val xmlreturn = <id>{mapId}</id>
 				return xmlreturn.toString
 			}
 
@@ -88,7 +88,7 @@ object Read {
 		}
 	}
 
-	def OMIReadGenerate(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
+	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 
  		ODFnodes.sortWith(_.path < _.path)
  		var xmlreturn = Buffer[String]()
@@ -105,8 +105,8 @@ object Read {
  				if(thispath != prevpath) {
  					
  					xmlreturn += "<Object>"
- 					xmlreturn += generateODFresponse(prevpath, root)
- 					xmlreturn += OMIReadGenerate(root, depth+1, nextnodes.toList)
+ 					xmlreturn += generateODFresponse(prevpath)
+ 					xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
  					xmlreturn += "</Object>"
  					nextnodes.clear
 
@@ -117,7 +117,7 @@ object Read {
  			}
 
  			else {
- 				xmlreturn += generateODFresponse(node.path, root)
+ 				xmlreturn += generateODFresponse(node.path.stripPrefix("/"))
  			}
 
  			previousSpl = spl
@@ -127,8 +127,8 @@ object Read {
  		if(nextnodes.isEmpty == false) {	//because the loop uses previous elements, theres sometimes more left in the list
  			var thispath = nextnodes(0).path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
  			xmlreturn += "<Object>"
- 			xmlreturn += generateODFresponse(thispath, root)
- 			xmlreturn += OMIReadGenerate(root, depth+1, nextnodes.toList)
+ 			xmlreturn += generateODFresponse(thispath)
+ 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
  			xmlreturn += "</Object>"
  		}
 
@@ -136,19 +136,18 @@ object Read {
 
 	}
 
-	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: List[ODFNode]): String = {
+	def OMIReadResponse(depth: Int, ODFnodes: List[ODFNode]): String = {
 		val OMIresponseStart = 
 		"""
 		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
 				<omi:response>
  					<omi:result msgformat="odf">
  						<omi:return returnCode="200"></omi:return>
- 						<omi:requestId>REQ654534</omi:requestId>
  						<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
  							<Objects>
  		"""
 
- 		val OMIelements = OMIReadGenerate(root, depth, ODFnodes)
+ 		val OMIelements = OMIReadGenerate(depth, ODFnodes)
 
  		val OMIresponseEnd = 
  		"""
