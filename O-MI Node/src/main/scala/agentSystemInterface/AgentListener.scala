@@ -8,14 +8,23 @@ import java.net.InetSocketAddress
 import java.util.Date
 import java.text.SimpleDateFormat
 
-import sensorDataStructure.{SensorMap, SensorData}
 import parsing.OdfParser
+import database._
 
+/** AgentListener handles connections from agents.
+  */
 
-class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
+class AgentListener extends Actor with ActorLogging {
    
   import Tcp._
-   
+  //Orginally a hack for getting different names for actors.
+  private var agentCounter : Int = 0 
+  /** Get function for count of all ever connected agents.
+    * Check that can't be modified via this.
+    */
+  def agentCount = agentCounter
+  /** Partial function for handling received messages.
+    */
   def receive = {
     case Bound(localAddress) =>
       // TODO: do something?
@@ -30,24 +39,28 @@ class AgentListener(dataStore: SensorMap) extends Actor with ActorLogging {
       log.info(s"Agent connected from $remote to $local")
 
       val handler = context.actorOf(
-        Props(classOf[InputDataHandler], remote, dataStore),
-        "agent-handler"
+        Props(classOf[InputDataHandler], remote),
+        "agent-handler-"+agentCounter
       )
+      agentCounter += 1
       connection ! Register(handler)
   }
 }
 
+/** A handler for data received from a agent.
+  * @param Agent's adress 
+  */
 
 class InputDataHandler(
-    sourceAddress: InetSocketAddress,
-    dataStore: SensorMap
+    sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
 
   import Tcp._
 
   // timestamp format to use when data doesn't have its own
   val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
-
+  /** Partial function for handling received messages.
+    */
   def receive = {
     case Received(data) => 
       val dataString = data.decodeString("UTF-8")
@@ -71,14 +84,17 @@ class InputDataHandler(
           ) =>
             val pathfix = if (path.startsWith("/")) path.tail else path
             val sensorData = oTime match {
-              case Some(time) => new SensorData(pathfix, value, time)
+              case Some(time) => 
+                //TODO: FIX get real time, not current
+                val time = new java.sql.Timestamp(new Date().getTime())
+                new DBSensor(pathfix, value, time)
               case None =>
-                val currentTime = dateFormat.format(new Date())
-                new SensorData(pathfix, value, currentTime)
+                val currentTime = new java.sql.Timestamp(new Date().getTime())
+                new DBSensor(pathfix, value, currentTime)
             }
             log.debug(s"Saving to path $pathfix")
 
-            dataStore.set(pathfix, sensorData)
+            SQLite.set(sensorData)
 
           case Left(error) => 
             log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
