@@ -120,15 +120,24 @@ trait OmiService extends HttpService with CORSDirectives
       complete{
         requests.map{
           case oneTimeRead: OneTimeRead => 
-          case write: Write => ???
-          case subscription: Subscription => ???
-          case a => ???
+            log.warning("Not yet impelemented")
+            "Not yet implemented"
+          case write: Write =>
+            log.warning("Not yet impelemented")
+            "Not yet implemented"
+          case subscription: Subscription =>
+            log.warning("Not yet impelemented")
+            "Not yet implemented"
+          case a =>
+            log.warning("Unknown O-MI request " + a.toString)
+            "Unknown O-MI request"
         }.mkString("\n")
       }
     } else {
       //Error found
       complete {
-        ???
+        // TODO: make error response generator in responses package
+        <error> {errors.mkString("; ")} </error>
       }
     }
   }
