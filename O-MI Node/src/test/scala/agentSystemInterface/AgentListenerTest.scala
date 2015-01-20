@@ -7,6 +7,7 @@ import org.specs2.specification.Scope
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
 import akka.io.Tcp._
+import scala.io.Source
 
 class AgentListenerTest extends Specification {
 
@@ -16,6 +17,7 @@ class AgentListenerTest extends Specification {
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)
+  lazy val testOdf = Source.fromFile("src/test/scala/testOdf.xml").getLines().mkString("")
 
   "AgentListener" should {
 
@@ -56,7 +58,7 @@ class AgentListenerTest extends Specification {
         actor.tell(CommandFailed(bind), probe.ref)
       }
     }
-    
+
     "reply with Register messages to multiple actors" in new Actors {
       val actor = system.actorOf(Props[AgentListener])
       val probe1 = TestProbe()
@@ -70,7 +72,7 @@ class AgentListenerTest extends Specification {
       actor.tell(Connected(local, remote), probe3.ref)
       actor.tell(Connected(local, remote), probe4.ref)
       actor.tell(Connected(local, remote), probe5.ref)
-      
+
       probe1.expectMsgType[Register]
       probe2.expectMsgType[Register]
       probe3.expectMsgType[Register]
@@ -79,14 +81,17 @@ class AgentListenerTest extends Specification {
     }
   }
 
-  
   "InputDataHandler" should {
 
-        "do something" in new Actors {
-          val actor = system.actorOf(Props(classOf[InputDataHandler], local))
-          val probe = TestProbe()
-          actor.tell(Received, probe.ref)
-        }
+    "receive sended data" in new Actors {
+      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val probe = TestProbe()
+      EventFilter.debug(message = "Got data \n" + testOdf) intercept {
+        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+      }
+    }
+    
+    
 
     "write info to log when it receives PeerClosed message" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
