@@ -53,51 +53,40 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
             }
           }
         }
-      }
-    }
-
-  val cors = defaultCORSHeaders {
-    options {
-      complete {
-        StatusCodes.OK
-      }
-    } ~
-      post {
-        path("path") {
+      } ~
+        post {
           respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
             respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-              corsFilter(List[String]("*")) {
-                complete {
-                  <html>
-                    <body>
-                      <h1>Say hello to <i>O-MI Node service</i>!</h1>
-                    </body>
-                  </html>
-                }
+              complete {
+                /* Test response  */
+                <html>
+                  <body>
+                    <h1>Say hello to <i>O-MI Node service</i>!</h1>
+                  </body>
+                </html>
               }
             }
           }
         }
-      }
-  }
+    }
 
   val getDataDiscovery =
     path(Rest) { path =>
       get {
         respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
-        Read.generateODFresponse(path, sensorDataStorage) match {
-          case Some(Left(value)) =>
-            respondWithMediaType(`text/plain`) {
-              complete(value)
-            }
-          case Some(Right(xmlData)) =>
-            respondWithMediaType(`text/xml`) {
-              complete(xmlData)
-            }
-          case None =>
-            respondWithMediaType(`text/xml`) {
-              complete(404, <error>No object found</error>)
-            }
+          Read.generateODFresponse(path, sensorDataStorage) match {
+            case Some(Left(value)) =>
+              respondWithMediaType(`text/plain`) {
+                complete(value)
+              }
+            case Some(Right(xmlData)) =>
+              respondWithMediaType(`text/xml`) {
+                complete(xmlData)
+              }
+            case None =>
+              respondWithMediaType(`text/xml`) {
+                complete(404, <error>No object found</error>)
+              }
           }
         }
       }
@@ -123,5 +112,5 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
   }
 
   // Combine all handlers
-  val myRoute = helloWorld ~ cors ~ staticHtml ~ getDataDiscovery
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
 }
