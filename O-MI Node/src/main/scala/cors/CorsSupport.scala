@@ -1,32 +1,47 @@
 package cors
 
-import spray.http.{ HttpMethods, HttpMethod, HttpResponse, AllOrigins }
-import spray.http.HttpHeaders._
-import spray.http.HttpMethods._
+import spray.http._
 import spray.routing._
-
-// see also https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
-trait CORSSupport {
-  this: HttpService =>
-
-  private val allowOriginHeader = `Access-Control-Allow-Origin`(AllOrigins)
-  private val optionsCorsHeaders = List(
-    `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent"),
-    `Access-Control-Max-Age`(1728000))
-
-  def cors[T]: Directive0 = mapRequestContext { ctx =>
-    ctx.withRouteResponseHandling({
-      //It is an option requeset for a resource that responds to some other method
-      case Rejected(x) if (ctx.request.method.equals(HttpMethods.OPTIONS) && !x.filter(_.isInstanceOf[MethodRejection]).isEmpty) => {
-        val allowedMethods: List[HttpMethod] = x.filter(_.isInstanceOf[MethodRejection]).map(rejection => {
-          rejection.asInstanceOf[MethodRejection].supported
-        })
-        ctx.complete(HttpResponse().withHeaders(
-          `Access-Control-Allow-Methods`(OPTIONS, allowedMethods: _*) :: allowOriginHeader ::
-            optionsCorsHeaders))
+import spray.http.HttpHeaders._
+ 
+trait CORSDirectives  { this: HttpService =>
+  private def respondWithCORSHeaders(origin: String) =
+    respondWithHeaders(     
+      HttpHeaders.`Access-Control-Allow-Origin`(SomeOrigins(List(origin))),
+      HttpHeaders.`Access-Control-Allow-Credentials`(true)
+    )
+  private def respondWithCORSHeadersAllOrigins =
+    respondWithHeaders(     
+      HttpHeaders.`Access-Control-Allow-Origin`(AllOrigins),
+      HttpHeaders.`Access-Control-Allow-Credentials`(true)
+    )
+ 
+  def corsFilter(origins: List[String])(route: Route) =
+    if (origins.contains("*"))
+      respondWithCORSHeadersAllOrigins(route)
+    else
+      optionalHeaderValueByName("Origin") {
+        case None =>
+          route       
+        case Some(clientOrigin) => {
+          if (origins.contains(clientOrigin))
+            respondWithCORSHeaders(clientOrigin)(route)
+          else {
+            // Maybe, a Rejection will fit better
+            complete(StatusCodes.Forbidden, "Invalid origin")
+          }     
+        }
       }
-    }).withHttpResponseHeadersMapped { headers =>
-      allowOriginHeader :: headers
-    }
-  }
+}
+
+trait DefaultCORSDirectives { this: Directives =>
+  def defaultCORSHeaders = respondWithHeaders(
+      `Access-Control-Allow-Origin`(AllOrigins),
+      `Access-Control-Allow-Methods`(HttpMethods.GET, HttpMethods.POST, HttpMethods.OPTIONS, HttpMethods.DELETE,
+      HttpMethods.CONNECT, HttpMethods.DELETE, HttpMethods.HEAD, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.TRACE),
+      `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host," +
+    " Referer, User-Agent, Overwrite, Destination, Depth, X-Token, X-File-Size, If-Modified-Since, X-File-Name, Cache-Control"),
+      `Access-Control-Allow-Credentials`(true),
+      `Access-Control-Max-Age`(3600)
+    )
 }

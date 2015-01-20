@@ -2,6 +2,7 @@ package responses
 
 import sensorDataStructure._
 import parsing._
+import database._
 import scala.xml
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
@@ -17,39 +18,44 @@ object Read {
    * @param path The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-	def generateODFresponse(path: String, root: SensorMap): Option[Either[String,xml.Node]] = {
-		root.get(path) match {
-			case Some(sensor: SensorData) => {
-        if (sensor.id == "value")
+	def generateODFresponse(path: String): Option[Either[String,xml.Node]] = {
+    var wasValue = false
+    val npath = if(path.split("/").last == "value"){
+      wasValue =true
+      path.dropRight(5) 
+    }else path
+		SQLite.get(path) match {
+			case Some(sensor: DBSensor) => {
+        if (wasValue)
           return Some(Left(sensor.value))
         else
           return Some(Right(
-          <InfoItem name={sensor.id}>
-            <value dateTime={sensor.dateTime}>
+          <InfoItem name={sensor.path.split("/").last}>
+            <value dateTime={sensor.time.toString}>
               {sensor.value}
             </value>
           </InfoItem>
         ))
 			}
 
-			case Some(sensormap: SensorMap) => {
+			case Some(sensormap: DBObject) => {
 				var resultChildren = Buffer[xml.Node]()
 
 
-				for (item <- sensormap.content.single.values) {
+				for (item <- sensormap.childs) {
 					item match {
-						case sensor: SensorData => {
-							resultChildren += <InfoItem name={sensor.id}/>
+						case sensor: DBSensor => {
+							resultChildren += <InfoItem name={sensor.path.split("/").last}/>
 						}
 
-						case subobject: SensorMap => {
-							resultChildren += <Object><id>{subobject.id}</id></Object>
+						case subobject: DBObject => {
+							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
 						}
 
 					}
 				}
 
-        val mapId = sensormap.id
+        val mapId = sensormap.path.split("/").last
         val xmlReturn =
           if (mapId == "Objects") {
             <Objects>{resultChildren}</Objects>
@@ -68,7 +74,7 @@ object Read {
 
 
 
-	def OMIReadResponse(root: SensorMap, depth: Int, ODFnodes: Seq[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
+	def OMIReadResponse( depth: Int, ODFnodes: Seq[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 	/*	val OMIresponseStart = <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
 				<omi:response>
  					<omi:result msgformat="odf">
@@ -89,7 +95,7 @@ object Read {
  			val spl = node.path.split("/")
 
  			if(spl.length <= depth) {	//we're at the last part of the path, eg. it's a value the user wants
- 				val odfxml = generateODFresponse(node.path, root)
+ 				val odfxml = generateODFresponse(node.path)
 
  				odfxml match {
  					case Some(Right(xmlstuff)) => xmlreturn += xmlstuff.mkString
@@ -116,15 +122,15 @@ object Read {
  		}
 
  		for((key, value) <- nodemap) {		//key is Objects always first, then in the next recursion for example Objects/Refrigerator123
- 			if(key == "Objects") xmlreturn += "<Objects>" + OMIReadResponse(root, depth+1, value.toList) + "</Objects>"
+ 			if(key == "Objects") xmlreturn += "<Objects>" + OMIReadResponse(depth+1, value.toList) + "</Objects>"
  			else {
- 				val odfxml = generateODFresponse(key, root)
+ 				val odfxml = generateODFresponse(key)
 
  				odfxml match {
  					case Some(Right(xmlstuff)) => {
  						xmlreturn += "<Object>"
  						xmlreturn += xmlstuff.mkString
- 						xmlreturn += OMIReadResponse(root, depth+1, value.toList)
+ 						xmlreturn += OMIReadResponse(depth+1, value.toList)
  						xmlreturn += "</Object>"
  					}
 

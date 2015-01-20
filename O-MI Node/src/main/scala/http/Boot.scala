@@ -14,19 +14,14 @@ import sensorDataStructure.{SensorMap,SensorData}
 import agentSystemInterface.AgentListener
 import responses._
 import parsing._
+import database.SQLite
+import database._
 
 object Boot extends App {
 
   // Create our in-memory sensor database
 
-  val sensormap: SensorMap = new SensorMap("")
-
-  sensormap.set("Objects", new SensorMap("Objects"))
-  sensormap.set("Objects/Refrigerator123", new SensorMap("Objects/Refrigerator123"))
-  sensormap.set("Objects/RoomSensors1", new SensorMap("Objects/RoomSensors1"))
-
   val date = new Date();
-  val formatDate = new SimpleDateFormat ("yyyy-MM-dd'T'hh:mm:ss");
   val testData = Map(
     "Objects/Refrigerator123/PowerConsumption" -> "0.123",
     "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
@@ -35,18 +30,17 @@ object Boot extends App {
     "Objects/RoomSensors1/CarbonDioxide" -> "too much"
     )
   for ((path, value) <- testData){
-    sensormap.set(path, new SensorData(path, value, formatDate.format(date)))
+    SQLite.set(new DBSensor(path, value,new java.sql.Timestamp(date.getTime) ))
   }
-
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
 
   // create and start our service actor
-  val omiService = system.actorOf(Props(classOf[OmiServiceActor], sensormap), "omi-service")
+  val omiService = system.actorOf(Props(classOf[OmiServiceActor]), "omi-service")
 
   // create and start sensor data listener
-  val sensorDataListener = system.actorOf(Props(classOf[AgentListener], sensormap), "agent-listener")
+  val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
 
   implicit val timeout = Timeout(5.seconds)
 

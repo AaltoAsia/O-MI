@@ -29,16 +29,30 @@ object OmiParser {
 
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
+    parse(root)
+  }
+
+  /** Parse the given XML string into sequence of ParseMsg classes
+   * 
+   * @param xml_msg O-MI formatted message that is to be parsed
+   * @return sequence of ParseMsg classes, different message types are defined in
+   *         the TypeClasses.scala file
+   */
+  def parse(xml_msg: NodeSeq): Seq[ParseMsg] = {
+
+
+    /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
+    val root = xml_msg.head
 
     if (root.prefix != "omi")
       return Seq(new ParseError("Incorrect prefix"))
-    if (root.label != "Envelope")
-      return Seq(new ParseError("XML's root isn't omi:Envelope"))
+    if (root.label != "omiEnvelope")
+      return Seq(new ParseError("XML's root isn't omi:omiEnvelope"))
 
     val request = root.child.collect {
       case el: Elem => el
     }.headOption.getOrElse(
-      return Seq(new ParseError("omi:Envelope doesn't contain request")))
+      return Seq(new ParseError("omi:omiEnvelope doesn't contain request")))
 
     val ttl = (root \ "@ttl").text
     if (ttl.isEmpty())
