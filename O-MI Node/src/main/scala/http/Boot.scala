@@ -20,12 +20,6 @@ object Boot extends App {
 
   // Create our in-memory sensor database
 
-  //val sensormap: SensorMap = new SensorMap("")
-
-  //sensormap.set("Objects", new SensorMap("Objects"))
-  SQLite.addObjects("Objects/Refrigerator123")
-  SQLite.addObjects("Objects/RoomSensors1")
-  SQLite.addObjects("Objects/Roomsensors1/Temperature")
 
   val date = new Date();
   val testtime = new java.sql.Timestamp(date.getTime)

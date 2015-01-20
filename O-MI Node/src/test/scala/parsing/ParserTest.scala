@@ -71,25 +71,25 @@ class ParserTest extends Specification {
    * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
    */
   def e2 = {
-    OmiParser.parse(omi_read_test_file.replace("omi:Envelope", "pmi:Envelope")) match {
+    OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "pmi:omiEnvelope")) match {
       case ParseError("Incorrect prefix") :: _ => true
       case _ => false
     }
   }
 
   def e3 = {
-    OmiParser.parse(omi_read_test_file.replace("omi:Envelope", "omi:envelope")) match {
-      case ParseError("XML's root isn't omi:Envelope") :: _ => true
+    OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "omi:Envelope")) match {
+      case ParseError("XML's root isn't omi:omiEnvelope") :: _ => true
       case _ => false
     }
   }
 
   def e4 = {
     OmiParser.parse(
-      """<omi:Envelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-         </omi:Envelope>
+      """<omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         </omi:omiEnvelope>
       """) match {
-        case ParseError("omi:Envelope doesn't contain request") :: _ => true
+        case ParseError("omi:omiEnvelope doesn't contain request") :: _ => true
         case _ => false
       }
   }
@@ -144,12 +144,12 @@ class ParserTest extends Specification {
   def e104 = {
     OmiParser.parse(
       """
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:write msgformat="odf" >
       <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       </omi:msg>
   </omi:write>
-</omi:Envelope>
+</omi:omiEnvelope>
 """) match {
         case ParseError("No Objects node found in msg node.") :: _ => true
         case _ => false
@@ -159,14 +159,14 @@ class ParserTest extends Specification {
   def e105 = {
     OmiParser.parse(
       """<?xml version="1.0" encoding="UTF-8"?>
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:write msgformat="odf" >
       <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
     <Objects>
     </Objects>
       </omi:msg>
   </omi:write>
-</omi:Envelope>
+</omi:omiEnvelope>
 """) match {
         case ParseError("No Objects to parse") :: _ => true
         case _ => false
@@ -210,7 +210,7 @@ class ParserTest extends Specification {
   def e204 = {
     OmiParser.parse(
       """
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:response>
       <omi:result msgformat="odf" > 
       <omi:return></omi:return> 
@@ -218,7 +218,7 @@ class ParserTest extends Specification {
       </omi:msg>
       </omi:result> 
   </omi:response>
-</omi:Envelope>
+</omi:omiEnvelope>
 """) match {
         case ParseError("No Objects node found in msg node.") :: _ => true
         case _ => false
@@ -235,7 +235,7 @@ class ParserTest extends Specification {
   def e206 = {
     OmiParser.parse(
       """<?xml version="1.0" encoding="UTF-8"?>
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:response>
       <omi:result msgformat="odf" > 
       <omi:return></omi:return> 
@@ -245,7 +245,7 @@ class ParserTest extends Specification {
       </omi:msg>
       </omi:result> 
   </omi:response>
-</omi:Envelope>
+</omi:omiEnvelope>
 """) match {
         case ParseError("No Objects to parse") :: _ => true
         case _ => false
@@ -287,12 +287,12 @@ class ParserTest extends Specification {
   def e304 = {
     OmiParser.parse(
       """
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:read msgformat="odf" >
       <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       </omi:msg>
   </omi:read>
-</omi:Envelope>
+</omi:omiEnvelope>
 """) match {
         case ParseError("No Objects node found in msg node.") :: _ => true
         case _ => false
@@ -302,14 +302,14 @@ class ParserTest extends Specification {
   def e305 = {
     OmiParser.parse(
       """<?xml version="1.0" encoding="UTF-8"?>
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:read msgformat="odf" >
       <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
     <Objects>
     </Objects>
       </omi:msg>
   </omi:read>
-</omi:Envelope>
+</omi:omiEnvelope>
 """) match {
         case ParseError("No Objects to parse") :: _ => true
         case _ => false

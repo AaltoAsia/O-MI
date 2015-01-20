@@ -21,7 +21,7 @@ class ReadTest extends Specification {
     //SQLite.addObjects("Objects/RoomSensors1")
     //SQLite.addObjects("Objects/Roomsensors1/Temperature")
 
-    val date = new Date();
+    val date = new Date(1421775723); //static date for testing
     val testtime = new java.sql.Timestamp(date.getTime)
     val testData = Map(
         "Objects/Refrigerator123/PowerConsumption" -> "0.123",
@@ -44,6 +44,7 @@ class ReadTest extends Specification {
       Correct XML with one value       		    $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
+      Correct 
 
     """
 
@@ -52,6 +53,7 @@ class ReadTest extends Specification {
     def e1 = {
     	val testliste1 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
+
         OmiParser.parse(Read.OMIReadResponse(2, testliste1)) == List(
             Result("", Some(testliste1)))
 
@@ -59,8 +61,7 @@ class ReadTest extends Specification {
 
     def e2 = {
 
-        //fails right now due to some semantic errors
-        //(changed the parser to not put "dateTime" at the start for a while)
+        //(changed the parser to not put "dateTime" at the start for a while), failed before it
 
         val testliste2 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None),
@@ -69,21 +70,26 @@ class ReadTest extends Specification {
         ODFNode("/Objects/RoomSensors1/Temperature/Inside", InfoItem, Some("21.2"), Some(testtime.toString), None),
         ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some(testtime.toString), None))
 
-        println(testliste2)
-        println("")
-        println(Read.OMIReadResponse(2, testliste2))
-
         OmiParser.parse(Read.OMIReadResponse(2, testliste2)) == List(
             Result("", Some(testliste2)))
 
     }
 
     def e3 = {
+        
+    }
+
+    def e4 = {
         val odfnodes = OmiParser.parse(simpletestfile)
-        //println(odfnodes)
-        //OmiParser.parse(Read.OMIReadResponse(2, odfnodes)) == List(
-        //    Result("", Some(odfnodes)))
-        1 == 1
+        var listofnodes = odfnodes.collect {
+            case OneTimeRead(_,c) => c
+        }
+
+        val nodelist = listofnodes.head
+        
+        OmiParser.parse(Read.OMIReadResponse(2, nodelist.toList)) == List(  //nodelist should already be a list but for some reason its Seq
+              Result("", Some(nodelist.toList)))
+
     }
 }
 
