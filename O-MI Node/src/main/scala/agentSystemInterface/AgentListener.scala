@@ -8,15 +8,23 @@ import java.net.InetSocketAddress
 import java.util.Date
 import java.text.SimpleDateFormat
 
-import sensorDataStructure.{SensorMap, SensorData}
 import parsing.OdfParser
 import database._
 
+/** AgentListener handles connections from agents.
+  */
 
 class AgentListener extends Actor with ActorLogging {
    
   import Tcp._
-   
+  //Orginally a hack for getting different names for actors.
+  private var agentCounter : Int = 0 
+  /** Get function for count of all ever connected agents.
+    * Check that can't be modified via this.
+    */
+  def agentCount = agentCounter
+  /** Partial function for handling received messages.
+    */
   def receive = {
     case Bound(localAddress) =>
       // TODO: do something?
@@ -32,12 +40,16 @@ class AgentListener extends Actor with ActorLogging {
 
       val handler = context.actorOf(
         Props(classOf[InputDataHandler], remote),
-        "agent-handler"
+        "agent-handler-"+agentCounter
       )
+      agentCounter += 1
       connection ! Register(handler)
   }
 }
 
+/** A handler for data received from a agent.
+  * @param Agent's adress 
+  */
 
 class InputDataHandler(
     sourceAddress: InetSocketAddress
@@ -47,7 +59,8 @@ class InputDataHandler(
 
   // timestamp format to use when data doesn't have its own
   val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
-
+  /** Partial function for handling received messages.
+    */
   def receive = {
     case Received(data) => 
       val dataString = data.decodeString("UTF-8")
