@@ -54,14 +54,18 @@ object SQLiteTest extends Specification {
     }
     
     "return correct value for deleted path" in {
-      database.SQLite.remove("path/to/sensor/temp1")
-       database.SQLite.get("path/to/sensor/temp1") shouldEqual None
+      database.SQLite.remove("path/to/sensor1/temp1")
+       database.SQLite.get("path/to/sensor1/temp1") shouldEqual None
     }
-    "find added object" in{
-      database.SQLite.hasObject("path") shouldEqual true
+    "return correct value for deleted path" in {
+      database.SQLite.remove("path/to/sensor1/temp2")
+       database.SQLite.get("path/to/sensor1/temp2") shouldEqual None
     }
-    "find added object" in{
-      database.SQLite.hasObject("path/to") shouldEqual true
+    "return correct value for deleted path" in {
+       database.SQLite.get("path/to/sensor1") shouldEqual None
+    }
+    "return correct value for deleted path" in {
+       database.SQLite.get("path/to") shouldNotEqual None
     }
     
   }

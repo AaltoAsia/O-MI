@@ -37,6 +37,24 @@ object SQLite {
     db withSession { implicit session =>
       val pathQuery = latestValues.filter(_.path === path)
       pathQuery.delete
+      var pathParts = path.split("/")
+      while(!pathParts.isEmpty)
+      {
+        var testPath = pathParts.mkString("/")
+        if(getChilds(testPath).length == 0)
+        {
+          //only leaf nodes have 0 childs. 
+          var pathQueryObjects = objects.filter(_.path === testPath)
+          pathQueryObjects.delete
+          pathParts.dropRight(1)
+        }
+        else
+        {
+          //if object still has childs after we deleted one, stop deleting objects
+          //exit while loop
+          pathParts = Array[String]()
+        }
+      }
     }
   }
 
@@ -66,9 +84,7 @@ object SQLite {
       }
       result
     }
-  def addObjects(path: String) {
-    db withSession
-      { implicit session =>
+  def addObjects(path: String)(implicit session:Session) {
         var pathparts = path.split("/")
         var curpath = ""
         var fullpath = ""
@@ -83,13 +99,11 @@ object SQLite {
           }
           curpath = fullpath
         }
-      }
   }
- def getChilds(path:String):Array[DBItem]=
+ def getChilds(path:String)(implicit session:Session):Array[DBItem]=
  {
    var childs = Array[DBItem]()
-   db withSession{
-      implicit Session =>
+   
       val objectQuery = for{
         c <- objects if c.parentPath === path
       }yield(c.path)
@@ -100,16 +114,13 @@ object SQLite {
           childs(index) = DBObject(path)
           index+=1
       } 
-    }
+    
    childs
  }
- def hasObject(path:String): Boolean =
+ def hasObject(path:String)(implicit session:Session): Boolean =
     {
-    db withSession{
-      implicit Session =>
       var objectQuery = objects.filter(_.path === path)
       objectQuery.list.length > 0
-    }
     }
   def initialize()(implicit session: Session) =
     {
