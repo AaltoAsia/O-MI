@@ -3,6 +3,7 @@ package http
 import akka.actor.Actor
 import spray.routing._
 import spray.http._
+import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
 import responses._
 
@@ -10,7 +11,6 @@ import parsing._
 import sensorDataStructure.SensorMap
 import xml._
 import cors._
-import scala.collection.immutable.List;
 
 class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiService {
 
@@ -26,7 +26,7 @@ class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiSe
 }
 
 // this trait defines our service behavior independently from the service actor
-trait OmiService extends HttpService with CORSDirectives {
+trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirectives {
 
   val sensorDataStorage: SensorMap
 
@@ -40,19 +40,46 @@ trait OmiService extends HttpService with CORSDirectives {
   val helloWorld =
     path("") { // Root
       get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-          corsFilter(List[String]("*")) {
-            complete {
-              <html>
-                <body>
-                  <h1>Say hello to <i>O-MI Node service</i>!</h1>
-                </body>
-              </html>
+        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+          respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
+            corsFilter(List[String]("*")) {
+              complete {
+                <html>
+                  <body>
+                    <h1>Say hello to <i>O-MI Node service</i>!</h1>
+                  </body>
+                </html>
+              }
             }
           }
         }
       }
     }
+
+  val cors = defaultCORSHeaders {
+    options {
+      complete {
+        StatusCodes.OK
+      }
+    } ~
+      post {
+        path("path") {
+          respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+            respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
+              corsFilter(List[String]("*")) {
+                complete {
+                  <html>
+                    <body>
+                      <h1>Say hello to <i>O-MI Node service</i>!</h1>
+                    </body>
+                  </html>
+                }
+              }
+            }
+          }
+        }
+      }
+  }
 
   val getDataDiscovery =
     path(Rest) { path =>
@@ -94,7 +121,5 @@ trait OmiService extends HttpService with CORSDirectives {
   }
 
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
-
+  val myRoute = helloWorld ~ cors ~ staticHtml ~ getDataDiscovery
 }
-

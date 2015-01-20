@@ -74,9 +74,17 @@ function getObjects() {
 	$.ajax({
         type: "GET",
 		dataType: "xml",
-        url: path + "/SensorData/objects",
+        url: "pesutykki.mooo.com:8080/Objects",
         success: displayObjects,
-		error: handleError
+		error: function(a, b, c){
+			console.log("Error accessing data discovery");
+			$.ajax({
+				type: "GET",
+				dataType: "xml",
+				url: path + "/SensorData/objects",
+				success: displayObjects
+			});
+		}
     });
 }
 

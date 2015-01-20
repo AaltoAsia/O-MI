@@ -33,3 +33,15 @@ trait CORSDirectives  { this: HttpService =>
         }
       }
 }
+
+trait DefaultCORSDirectives { this: Directives =>
+  def defaultCORSHeaders = respondWithHeaders(
+      `Access-Control-Allow-Origin`(AllOrigins),
+      `Access-Control-Allow-Methods`(HttpMethods.GET, HttpMethods.POST, HttpMethods.OPTIONS, HttpMethods.DELETE,
+      HttpMethods.CONNECT, HttpMethods.DELETE, HttpMethods.HEAD, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.TRACE),
+      `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host," +
+    " Referer, User-Agent, Overwrite, Destination, Depth, X-Token, X-File-Size, If-Modified-Since, X-File-Name, Cache-Control"),
+      `Access-Control-Allow-Credentials`(true),
+      `Access-Control-Max-Age`(3600)
+    )
+}
