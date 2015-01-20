@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<omi:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
 	<omi:response>
 	    <omi:result msgformat="odf" > 
 	    <omi:return></omi:return> 
@@ -48,4 +48,4 @@
 	    </omi:msg>
 	    </omi:result> 
 	</omi:response>
-</omi:Envelope>
+</omi:omiEnvelope>
