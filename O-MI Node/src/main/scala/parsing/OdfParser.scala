@@ -17,16 +17,6 @@ object OdfParser {
    */
   def parse(xml_msg: String): Seq[ParseResult] = {
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(Left(ParseError("Invalid XML"))))
-    parse(root)
-  }
-
-  /** Public method for parsing the xml string into seq of ParseResults.
-   *  
-   *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
-   *  @return Seq of ParseResults
-   */
-  def parse(xml_msg: NodeSeq): Seq[ParseResult] = {
-    val root = xml_msg.head
     if (root.label != "Objects")
       return Seq(Left(ParseError("ODF doesn't have Objects as root.")))
     else
@@ -101,5 +91,3 @@ object OdfParser {
     }
   }
 }
-
-
