@@ -177,7 +177,7 @@ function writeXML(objects, operation, ttl, interval, callback){
 }
 
 // Server URL
-var server = window.location.host; 
+var server = "http://pesutykki.mooo.com:8080";
 
 /* Send the O-DF request using AJAX */
 function sendRequest()

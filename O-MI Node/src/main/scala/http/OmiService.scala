@@ -9,8 +9,8 @@ import responses._
 import parsing._
 import sensorDataStructure.SensorMap
 import xml._
-
 import cors._
+import scala.collection.immutable.List;
 
 class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiService {
 
@@ -26,7 +26,7 @@ class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiSe
 }
 
 // this trait defines our service behavior independently from the service actor
-trait OmiService extends HttpService with CORSSupport {
+trait OmiService extends HttpService with CORSDirectives {
 
   val sensorDataStorage: SensorMap
 
@@ -41,12 +41,14 @@ trait OmiService extends HttpService with CORSSupport {
     path("") { // Root
       get {
         respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-          complete {
-            <html>
-              <body>
-                <h1>Say hello to <i>O-MI Node service</i>!</h1>
-              </body>
-            </html>
+          corsFilter(List[String]("*")) {
+            complete {
+              <html>
+                <body>
+                  <h1>Say hello to <i>O-MI Node service</i>!</h1>
+                </body>
+              </html>
+            }
           }
         }
       }
@@ -91,24 +93,8 @@ trait OmiService extends HttpService with CORSSupport {
     }
   }
 
-  val corsRoute: Route =
-    cors { //how to handle path
-      path("") {
-        get {
-          complete {
-            "GET"
-          }
-        } ~
-          put {
-            complete {
-              "PUT"
-            }
-          }
-      }
-    }
-  
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ corsRoute
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
 
 }
 
