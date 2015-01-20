@@ -32,13 +32,13 @@ object OmiParser {
 
     if (root.prefix != "omi")
       return Seq(new ParseError("Incorrect prefix"))
-    if (root.label != "Envelope")
-      return Seq(new ParseError("XML's root isn't omi:Envelope"))
+    if (root.label != "omiEnvelope")
+      return Seq(new ParseError("XML's root isn't omi:omiEnvelope"))
 
     val request = root.child.collect {
       case el: Elem => el
     }.headOption.getOrElse(
-      return Seq(new ParseError("omi:Envelope doesn't contain request")))
+      return Seq(new ParseError("omi:omiEnvelope doesn't contain request")))
 
     val ttl = (root \ "@ttl").text
     if (ttl.isEmpty())
