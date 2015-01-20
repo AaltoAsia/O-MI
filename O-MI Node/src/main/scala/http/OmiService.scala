@@ -84,6 +84,7 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
   val getDataDiscovery =
     path(Rest) { path =>
       get {
+        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
         Read.generateODFresponse(path, sensorDataStorage) match {
           case Some(Left(value)) =>
             respondWithMediaType(`text/plain`) {
@@ -97,6 +98,7 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
             respondWithMediaType(`text/xml`) {
               complete(404, <error>No object found</error>)
             }
+          }
         }
       }
     }
