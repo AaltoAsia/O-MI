@@ -53,7 +53,7 @@ trait OmiService extends HttpService {
   val getDataDiscovery = 
     path(Rest){ path =>
       get {
-        Read.generateODFresponse(path) match {
+        Read.generateODFREST(path) match {
           case Some(Left(value)) =>
             respondWithMediaType(`text/plain`) {
               complete(value)
