@@ -1,6 +1,8 @@
 package http
 
 import akka.actor.Actor
+import akka.event.LoggingAdapter
+import akka.actor.ActorLogging
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
@@ -12,7 +14,7 @@ import sensorDataStructure.SensorMap
 import xml._
 import cors._
 
-class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiService {
+class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with ActorLogging with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
@@ -27,6 +29,7 @@ class OmiServiceActor(val sensorDataStorage: SensorMap) extends Actor with OmiSe
 
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirectives {
+  def log: LoggingAdapter
 
   val sensorDataStorage: SensorMap
 
