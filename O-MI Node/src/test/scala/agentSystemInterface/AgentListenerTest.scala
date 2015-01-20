@@ -56,16 +56,37 @@ class AgentListenerTest extends Specification {
         actor.tell(CommandFailed(bind), probe.ref)
       }
     }
+    
+    "reply with Register messages to multiple actors" in new Actors {
+      val actor = system.actorOf(Props[AgentListener])
+      val probe1 = TestProbe()
+      val probe2 = TestProbe()
+      val probe3 = TestProbe()
+      val probe4 = TestProbe()
+      val probe5 = TestProbe()
+
+      actor.tell(Connected(local, remote), probe1.ref)
+      actor.tell(Connected(local, remote), probe2.ref)
+      actor.tell(Connected(local, remote), probe3.ref)
+      actor.tell(Connected(local, remote), probe4.ref)
+      actor.tell(Connected(local, remote), probe5.ref)
+      
+      probe1.expectMsgType[Register]
+      probe2.expectMsgType[Register]
+      probe3.expectMsgType[Register]
+      probe4.expectMsgType[Register]
+      probe5.expectMsgType[Register]
+    }
   }
 
   
   "InputDataHandler" should {
 
-    //    "do something" in new Actors {
-    //      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
-    //      val probe = TestProbe()
-    //      actor.tell(Received, probe.ref)
-    //    }
+        "do something" in new Actors {
+          val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+          val probe = TestProbe()
+          actor.tell(Received, probe.ref)
+        }
 
     "write info to log when it receives PeerClosed message" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
