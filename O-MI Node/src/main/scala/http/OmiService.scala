@@ -28,7 +28,6 @@ class OmiServiceActor extends Actor with OmiService {
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirectives {
 
-
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
     pathPrefix("html") {
@@ -39,70 +38,81 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
   val helloWorld =
     path("") { // Root
       get {
-        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) { //Handles CORS
           respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-            corsFilter(List[String]("*")) {
-              complete {
-                <html>
-                  <body>
-                    <h1>Say hello to <i>O-MI Node service</i>!</h1>
-                  </body>
-                </html>
-              }
+            complete {
+              <html>
+                <body>
+                  <h1>Say hello to <i>O-MI Node service</i>!</h1>
+                </body>
+              </html>
             }
           }
         }
       }
+
     }
 
   val getDataDiscovery =
     path(Rest) { path =>
       get {
         respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
-        Read.generateODFREST(path) match {
-          case Some(Left(value)) =>
-            respondWithMediaType(`text/plain`) {
-              complete(value)
-            }
-          case Some(Right(xmlData)) =>
-            respondWithMediaType(`text/xml`) {
-              complete(xmlData)
-            }
-          case None =>
-            respondWithMediaType(`text/xml`) {
-              complete(404, <error>No object found</error>)
-            }
+          Read.generateODFREST(path) match {
+            case Some(Left(value)) =>
+              respondWithMediaType(`text/plain`) {
+                complete(value)
+              }
+            case Some(Right(xmlData)) =>
+              respondWithMediaType(`text/xml`) {
+                complete(xmlData)
+              }
+            case None =>
+              respondWithMediaType(`text/xml`) {
+                complete(404, <error>No object found</error>)
+              }
           }
         }
       }
     }
 
-  val getXMLResponse = entity(as[NodeSeq]) { xml => 
-    val omi = OmiParser.parse(xml)
-    val requests = omi.filter{
-      case ParseError(_) => false
-      case _ => true
-    }
-    val errors = omi.filter{ 
-      case ParseError(_) => true
-      case _ => false
-    }
-    if(errors.isEmpty) {
-      complete{
-        requests.map{
-          case oneTimeRead: OneTimeRead => ???
-          case write: Write => ???
-          case subscription: Subscription => ???
-        }.mkString("\n")
-      }
-    } else {
-      //Error found
-      complete {
-        ???
+  val getXMLResponse = path("") {
+    (post | parameter('method ! "post")) { // Handle POST requests from the client
+      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+        entity(as[NodeSeq]) { xml =>
+          val omi = OmiParser.parse(xml)
+          val requests = omi.filter {
+            case ParseError(_) => false
+            case _ => true
+          }
+          val errors = omi.filter {
+            case ParseError(_) => true
+            case _ => false
+          }
+          println(requests)
+          println("Errors: ")
+          println(errors)
+          
+          if (errors.isEmpty) {
+            complete {
+              requests.map {
+                case oneTimeRead: OneTimeRead => println("read"); Read.OMIReadResponse(2, requests.toList)
+                case write: Write => println("write"); ???
+                case subscription: Subscription => println("sub"); ???
+              }.mkString("\n")
+            }
+          } else {
+            //Error found
+            complete {
+              println("ERROR")
+              ???
+            }
+          }
+        }
       }
     }
   }
 
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
+
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
 }

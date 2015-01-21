@@ -74,7 +74,7 @@ function getObjects() {
 	$.ajax({
         type: "GET",
 		dataType: "xml",
-        url: "http://pesutykki.mooo.com:8080/Objects/",
+        url: path + "SensorData/objects",
         success: displayObjects,
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
@@ -180,12 +180,13 @@ function writeXML(objects, operation, ttl, interval, callback){
 }
 
 // Server URL
-var server = "http://pesutykki.mooo.com:8080";
+var server = "http://localhost:8080";
 
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
-    var request = $('#request').val(); //Get the request string
+    var request = $('#request').text(); //Get the request string
+	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
         startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
@@ -194,7 +195,9 @@ function sendRequest()
         $.ajax({
             type: "POST",
             url: server, //TODO: the real server here
-            data: {msg : request},
+            data: request,
+			contentType: "text/xml",
+			processData: false,
             dataType: "text",
             success: printResponse,
 			error: function(a, b, c){

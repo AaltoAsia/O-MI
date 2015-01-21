@@ -107,9 +107,11 @@ object OmiParser {
       case "read" => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq(new ParseError("No msgformat in read request"))).text
-
+        
+       println("fomrat: " + msgformat)
+        
         msgformat match {
-          case "odf" => {
+          case "omi" => {
             val msg = (node \ "msg").headOption.getOrElse {
               return Seq(new ParseError("No message node found in read node."))
             }
