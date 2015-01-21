@@ -52,16 +52,14 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
           }
         }
       } ~
-        post { // Handle POST requests from the client
+      (post | parameter('method ! "post")) { // Handle POST requests from the client
           respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
-            respondWithMediaType(`text/html`) { 
+            /* TODO: Return proper response  */
+            entity(as[NodeSeq]){ data =>
               complete {
-                /* TODO: Return proper response  */
-                <html>
-                  <body>
-                    <h1>Say hello to <i>O-MI Node service</i>!</h1>
-                  </body>
-                </html>
+                /* TODO: Generate response from the data */
+                println(data)
+                data
               }
             }
           }
@@ -94,6 +92,7 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
     val omi = OmiParser.parse(xml.toString)
     val requests = omi.filter(r => r != ParseError)
     val errors = omi.filter(e => e == ParseError)
+    println("asss")
     if (errors.isEmpty) {
       complete {
         requests.map {
