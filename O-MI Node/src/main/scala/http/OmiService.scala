@@ -75,6 +75,7 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
       }
     }
 
+  /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = path("") {
     (post | parameter('method ! "post")) { // Handle POST requests from the client
       respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
@@ -88,9 +89,6 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
             case ParseError(_) => true
             case _ => false
           }
-          println(requests)
-          println("Errors: ")
-          println(errors)
           
           if (errors.isEmpty) {
             complete {

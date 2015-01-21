@@ -1,22 +1,16 @@
 /* IconSelect object */
 var iconSelect;
 
-window.onload = function(){
+window.onload = function() {
 	//IconSelect settings
-	iconSelect = new IconSelect("operation-select", 
-                {'selectedIconWidth':48,
-                'selectedIconHeight':48,
-                'iconsWidth':48,
-                'iconsHeight':48,
-                'vectoralIconNumber':1,
-                'horizontalIconNumber':4});
+	iconSelect = new IconSelect("operation-select");
 
 	//Pushing the icons
 	var icons = [];
-	icons.push({'iconFilePath':'Resources/icons/read.png', 'iconValue':'read'});
-	icons.push({'iconFilePath':'Resources/icons/write.png', 'iconValue':'write'});
-	icons.push({'iconFilePath':'Resources/icons/subscribe.png', 'iconValue':'subscribe'});
-	icons.push({'iconFilePath':'Resources/icons/cancel.png', 'iconValue':'cancel'});
+	icons.push({'iconFilePath': 'Resources/icons/read.png', 'iconValue': 'read'});
+	icons.push({'iconFilePath': 'Resources/icons/write.png', 'iconValue': 'write'});
+	icons.push({'iconFilePath': 'Resources/icons/subscribe.png', 'iconValue': 'subscribe'});
+	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
 	iconSelect.refresh(icons);
 }; 
@@ -27,7 +21,7 @@ $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
 
 /* Eventlistener for object tree updating */
-$(document).on('click', '.checkbox', function(){
+$(document).on('click', '.checkbox', function() {
 	var ref = $(this); //Reference (jquery object) of the clicked button
 	var id = ref.attr('id');
 	
@@ -75,7 +69,9 @@ function getObjects() {
         type: "GET",
 		dataType: "xml",
         url: "http://localhost:8080/Objects" /*path + "SensorData/objects"*/,
-        success: displayObjects,
+        success: function(data) {
+			displayObjects(data, 0);
+		},
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
 			
@@ -86,27 +82,62 @@ function getObjects() {
 /* Display the objects as checkboxes in objectList 
 * @param {XML Object} the received XML data
 */
-function displayObjects(data) {
+function displayObjects(data, indent) {
 	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
-	//Clear the list beforehand, in case objects is changed in between the button clicks
-	$("#objectList").empty();
-	
-	//Append objects as checkboxes to the webpage
-	$(data).find('Objects').each(function(){
-		$(this).find("Object").each(function(){
-			var id = $(this).find("id").text();
-			
-			$('<label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label><br>').appendTo("#objectList"); 
-			$(this).find("InfoItem").each(function(){
-				var name = $(this).attr('name');
+	// Basic objects
+	if(indent === 0){
+		//Clear the list beforehand, in case objects is changed in between the button clicks
+		$("#objectList").empty();
+		
+		//Append objects as checkboxes to the webpage
+		$(data).find('Objects').each(function(){
+			$(this).find("Object").each(function(){
+				var id = $(this).find("id").text();
 				
-				//Append InfoItem as checkbox
-				$('<label>' + 
-				'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
-				'</label><br>').appendTo("#objectList"); 
+				$('<li><label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label></li>').appendTo("#objectList"); 
+				$('<ul id="list-' + id + '"></ul>').appendTo("#objectList");
+				addInfoItems(this, id);
+				
+				//Get lower hierarchy values
+				$.ajax({
+					type: "GET",
+					dataType: "xml",
+					url: "http://localhost:8080/Objects/" + id,
+					success: function(data) {
+						displayObjects(data, 1);
+					},
+					error: function(a, b, c){
+						console.log("No lower hierarchy for " + id);
+					}
+				});
 			});
 		});
+	} else {
+		$(data).find("Object").each(function(){
+			var id = $($(this).find("id")[0]).text();
+			
+			$(this).find("Object").each(function(){
+				var name = $(this).find("id").text();
+				
+				/* Temp solution: Object as infoitem, id as value name */
+				$('<li><label>' + 
+				'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
+				'</label><br></li>').appendTo("#list-" + id);
+			});
+			addInfoItems(this, id);
+		});
+	}
+}
+
+function addInfoItems(parent, id) {
+	$(parent).find("InfoItem").each(function(){
+		var name = $(this).attr('name');
+		
+		//Append InfoItem as checkbox
+		$('<li><label>' + 
+		'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
+		'</label></li>').appendTo("#list-" + id); 
 	});
 }
 
@@ -159,20 +190,29 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 	writer.writeStartElement('Objects');
 	//Payload
-	for (var i = 0; i < objects.length; i++)
+	if(objects.length > 0){
+		writer.writeStartElement('Object');
+		writer.writeElementString('id', objects[0].id);
+	}
+
+	for (var i = 1; i < objects.length; i++)
 	{
 		if(objects[i].id) {
+			writer.writeEndElement();
 			//Object
 			writer.writeStartElement('Object');
 			writer.writeElementString('id', objects[i].id);
-			writer.writeEndElement();
 		} else {
 			//InfoItem
 			writer.writeStartElement('InfoItem');
-			writer.writeAttributeString('class', objects[i].name);
+			writer.writeAttributeString('name', objects[i].name);
 			writer.writeEndElement();
 		}
 	}
+	if(objects.length > 0) {
+		writer.writeEndElement();
+	}
+	
 	writer.writeEndElement();
     writer.writeEndDocument();
 
