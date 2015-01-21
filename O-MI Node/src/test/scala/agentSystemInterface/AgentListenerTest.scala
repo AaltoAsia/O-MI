@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
 import akka.io.Tcp._
 import scala.io.Source
+import database._
 
 class AgentListenerTest extends Specification {
 
@@ -90,8 +91,29 @@ class AgentListenerTest extends Specification {
         actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       }
     }
-    
-    
+
+    "save sent data into database" in new Actors {
+      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val probe = TestProbe()
+      actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+      SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)
+    }
+
+    "log warning when it encounters node with no information" in new Actors {
+      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val probe = TestProbe()
+      EventFilter.warning(start = "Throwing away node: ", occurrences = 3) intercept {
+        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+      }
+    }
+
+    "log warning when sending malformed data" in new Actors {
+      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val probe = TestProbe()
+      EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML", occurrences = 1) intercept {
+        actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
+      }
+    }
 
     "write info to log when it receives PeerClosed message" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
