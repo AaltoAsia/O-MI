@@ -117,7 +117,18 @@ object Read {
  			}
 
  			else {
- 				xmlreturn += generateODFresponse(node.path.stripPrefix("/"))
+ 				val xmltree = generateODFREST(node.path.stripPrefix("/"))
+ 				if(!xmltree.isEmpty){
+ 					xmltree.get match {
+ 						case (eetteri: Either[String,xml.Node]) => {
+ 						eetteri match {
+ 							case Right(xmlstuff) => xmlreturn += xmlstuff.toString
+ 						}
+ 					}
+
+ 					}
+ 				}
+ 				
  			}
 
  			previousSpl = spl

@@ -44,6 +44,7 @@ class ReadTest extends Specification {
       Correct XML with one value       		    $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
+      Random small tests                         $e4
 
     """
 
@@ -91,6 +92,9 @@ class ReadTest extends Specification {
 
     }
 
+    def e4 = {
+        
+    }
 
 }
 
