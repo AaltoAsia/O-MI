@@ -216,20 +216,34 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 	writer.writeStartElement('Objects');
 	//Payload
+	var ids = [];
 	if(objects.length > 0){
 		writer.writeStartElement('Object');
 		writer.writeElementString('id', objects[0].id);
+		ids.push(objects[0].id);
 	}
 
 	for (var i = 1; i < objects.length; i++)
 	{
+		var classes = $(objects[i]).attr("class").split(" ");
+		var cl = classes[classes.length - 1];
+		
 		if(objects[i].id) {
-			writer.writeEndElement();
+			
+			if(cl != ids[ids.length - 1]){
+				ids.pop();
+				writer.writeEndElement();
+			}			
 			//Object
+			ids.push(objects[i].id);
 			writer.writeStartElement('Object');
 			writer.writeElementString('id', objects[i].id);
 		} else {
 			//InfoItem
+			if(cl != ids[ids.length - 1]){
+				ids.pop();
+				writer.writeEndElement();
+			}
 			writer.writeStartElement('InfoItem');
 			writer.writeAttributeString('name', objects[i].name);
 			writer.writeEndElement();
