@@ -44,7 +44,6 @@ class ReadTest extends Specification {
       Correct XML with one value       		    $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
-      Correct 
 
     """
 
@@ -76,10 +75,6 @@ class ReadTest extends Specification {
     }
 
     def e3 = {
-        
-    }
-
-    def e4 = {
         val odfnodes = OmiParser.parse(simpletestfile)
         var listofnodes = odfnodes.collect {
             case OneTimeRead(_,c) => c
