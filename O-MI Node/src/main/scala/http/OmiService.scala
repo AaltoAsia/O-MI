@@ -55,31 +55,6 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
       }
     }
 
-  val cors = defaultCORSHeaders {
-    options {
-      complete {
-        StatusCodes.OK
-      }
-    } ~
-      post {
-        path("path") {
-          respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
-            respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-              corsFilter(List[String]("*")) {
-                complete {
-                  <html>
-                    <body>
-                      <h1>Say hello to <i>O-MI Node service</i>!</h1>
-                    </body>
-                  </html>
-                }
-              }
-            }
-          }
-        }
-      }
-  }
-
   val getDataDiscovery =
     path(Rest) { path =>
       get {
@@ -129,5 +104,5 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
   }
 
   // Combine all handlers
-  val myRoute = helloWorld ~ cors ~ staticHtml ~ getDataDiscovery
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
 }
