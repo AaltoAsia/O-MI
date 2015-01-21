@@ -135,9 +135,9 @@ function addInfoItems(parent, id) {
 		var name = $(this).attr('name');
 		
 		//Append InfoItem as checkbox
-		$('<label>' + 
+		$('<li><label>' + 
 		'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
-		'</label><br>').appendTo("#" + id); 
+		'</label></li>').appendTo("#list-" + id); 
 	});
 }
 
