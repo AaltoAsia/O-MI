@@ -74,7 +74,7 @@ function getObjects() {
 	$.ajax({
         type: "GET",
 		dataType: "xml",
-        url: path + "SensorData/objects",
+        url: "http://localhost:8080/Objects" /*path + "SensorData/objects"*/,
         success: displayObjects,
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
@@ -120,7 +120,9 @@ function generateRequest(){
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
-    $("#request").text((request)); //Update the request textbox on the webpage
+	
+	var formattedXML = formatXml(request);
+    $("#request").html(formattedXML.value); //Update the request textbox on the webpage
 }
 
 /* 
@@ -149,7 +151,7 @@ function writeXML(objects, operation, ttl, interval, callback){
 	//(second line)
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
-	if(interval) writer.writeAttributeString('interval', interval);
+	if(interval > 0) writer.writeAttributeString('interval', interval);
 	if(callback) writer.writeAttributeString('callback', callback);
 	//(third line)
 	writer.writeStartElement('omi:msg');
@@ -227,7 +229,11 @@ function printResponse(response){
 	console.log("Got response!");
 	console.log(response);
 	
-	$("#responseBox").text(response);
+	var formattedXML = formatXml(response);
+	console.log(formattedXML);
+    $("#responseBox").html(formattedXML.value);
+	
+	//$("#responseBox").text(response);
 }
 
 /* Handle the ajax errors */
