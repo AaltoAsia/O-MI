@@ -27,16 +27,21 @@ $(document).on('click', '.checkbox', function() {
 	
 	//Parent item clicked
 	if(id){
-		//Find child items and mark their value the same as their parent
-		getChildren(id).each(function(){
-			$(this).prop('checked', ref.is(':checked'));
-		});
+		propChildren(id);
 	} else { 
 		//ChildItem clicked;
 		var parentId = ref.attr('class').split(' ').find(isParent);
 	
 		//Change parent item check value
 		$(jq("#", parentId)).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+	}
+	
+	function propChildren(id){
+		//Find child items and mark their value the same as their parent
+		getChildren(id).each(function(){
+			$(this).prop('checked', ref.is(':checked'));
+			propChildren($(this).attr("id"));
+		});
 	}
 	
 	/* Temp function, returns an array of children with the given id (as their class) */
@@ -70,7 +75,7 @@ function getObjects() {
 		dataType: "xml",
         url: "http://localhost:8080/Objects" /*path + "SensorData/objects"*/,
         success: function(data) {
-			displayObjects(data, 0);
+			displayObjects(data, 0, "http://localhost:8080/Objects");
 		},
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
@@ -82,7 +87,7 @@ function getObjects() {
 /* Display the objects as checkboxes in objectList 
 * @param {XML Object} the received XML data
 */
-function displayObjects(data, indent) {
+function displayObjects(data, indent, url, listId) {
 	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
 	// Basic objects
@@ -97,15 +102,15 @@ function displayObjects(data, indent) {
 				
 				$('<li><label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label></li>').appendTo("#objectList"); 
 				$('<ul id="list-' + id + '"></ul>').appendTo("#objectList");
-				addInfoItems(this, id);
+				addInfoItems(this, id, indent + 1);
 				
 				//Get lower hierarchy values
 				$.ajax({
 					type: "GET",
 					dataType: "xml",
-					url: "http://localhost:8080/Objects/" + id,
+					url: url + "/" + id,
 					success: function(data) {
-						displayObjects(data, 1);
+						displayObjects(data, indent + 1, url + "/" + id, "list-" + id);
 					},
 					error: function(a, b, c){
 						console.log("No lower hierarchy for " + id);
@@ -114,30 +119,51 @@ function displayObjects(data, indent) {
 			});
 		});
 	} else {
+		var margin = indent * 20 + "px";
+		
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
 			
 			$(this).find("Object").each(function(){
 				var name = $(this).find("id").text();
+				var str = '<li><label><input type="checkbox" class="checkbox ' + id + '" id="' + name + '"/>' + name + '</label></li>';
 				
-				/* Temp solution: Object as infoitem, id as value name */
-				$('<li><label>' + 
-				'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
-				'</label><br></li>').appendTo("#list-" + id);
+				$(str).appendTo("#" + listId); 
+				$("#" + listId).last().css({ marginLeft: margin });
+				$('<ul id="list-' + name + '"></ul>').appendTo("#" + listId);
+				$("#" + listId).last().css({ marginLeft: margin });
+				
+				$.ajax({
+					type: "GET",
+					dataType: "xml",
+					url: url + "/" + name,
+					success: function(data) {
+						displayObjects(data, indent + 1, url + "/" + name);
+					},
+					error: function(a, b, c){
+						console.log("No lower hierarchy for " + id);
+					}
+				});
+				$("#" + listId + ":last-child").css({ marginLeft:margin });
 			});
-			addInfoItems(this, id);
+			addInfoItems(this, id, indent + 1);
 		});
 	}
 }
 
-function addInfoItems(parent, id) {
+function addInfoItems(parent, id, indent) {
+	var margin = indent * 20 + "px";
+
 	$(parent).find("InfoItem").each(function(){
 		var name = $(this).attr('name');
 		
 		//Append InfoItem as checkbox
 		$('<li><label>' + 
-		'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
+		'<input type="checkbox" class="checkbox ' + id + '" name="' + name + '"/>' + name +
 		'</label></li>').appendTo("#list-" + id); 
+		
+		//Styling (margin)
+		$("#list-" + id).last().css({ marginLeft: margin });
 	});
 }
 
