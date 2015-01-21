@@ -42,12 +42,12 @@ object Read {
 				var resultChildren = Buffer[xml.Node]()
 
 				for (item <- sensormap.childs) {
-					item match {
-						case sensor: DBSensor => {
+					SQLite.get(item.path) match {
+						case Some(sensor: DBSensor) => {
 							resultChildren += <InfoItem name={sensor.path.split("/").last}/>
 						}
 
-						case subobject: DBObject => {
+						case Some(subobject: DBObject) => {
 							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
 						}
 
