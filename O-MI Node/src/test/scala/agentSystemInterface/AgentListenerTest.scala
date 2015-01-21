@@ -96,13 +96,14 @@ class AgentListenerTest extends Specification {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+      Thread.sleep(1000)
       SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)
     }
 
     "log warning when it encounters node with no information" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
-      EventFilter.warning(start = "Throwing away node: ", occurrences = 3) intercept {
+      EventFilter.warning(start = "Throwing away node: ") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       }
     }
