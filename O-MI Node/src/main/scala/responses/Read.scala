@@ -136,7 +136,7 @@ object Read {
 
 	}
 
-	def OMIReadResponse(depth: Int, ODFnodes: List[OneTimeRead]): String = {
+	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg]): String = {
 		val OMIresponseStart = 
 		"""
 		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
