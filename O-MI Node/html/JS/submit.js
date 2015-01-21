@@ -27,21 +27,35 @@ $(document).on('click', '.checkbox', function() {
 	
 	//Parent item clicked
 	if(id){
-		propChildren(id);
+		propChildren(ref);
+		propParent(ref);
 	} else { 
-		//ChildItem clicked;
-		var parentId = ref.attr('class').split(' ').find(isParent);
-	
-		//Change parent item check value
-		$(jq("#", parentId)).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+		propParent(ref);
+	}
+
+	function propChildren(parent){
+		var parentId = $(parent).attr("id");
+		//Find child items and mark their value the same as their parent
+		getChildren(parentId).each(function(){
+			$(this).prop('checked', parent.is(':checked'));
+			propChildren($(this));
+		});
 	}
 	
-	function propChildren(id){
-		//Find child items and mark their value the same as their parent
-		getChildren(id).each(function(){
-			$(this).prop('checked', ref.is(':checked'));
-			propChildren($(this).attr("id"));
-		});
+	/* Child is a jquery object */
+	function propParent(child){
+		//ChildItem clicked;
+		var parentId = child.attr('class').split(' ').find(isParent);
+		if(parentId){
+			var jqId = jq("#", parentId);
+
+			//Change parent item check value
+			$(jqId).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+			
+			if(!isRootBox(jqId)){
+				propParent($(jqId));
+			}
+		}
 	}
 	
 	/* Temp function, returns an array of children with the given id (as their class) */
@@ -58,6 +72,10 @@ $(document).on('click', '.checkbox', function() {
 	
 	function isParent(element, index, array){
 		return element != "checkbox" && element != "lower";
+	}
+	
+	function isRootBox(jqid){
+		return $(jqid).attr('class').split(' ').length == 1;
 	}
 });
 
@@ -79,7 +97,6 @@ function getObjects() {
 		},
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
-			
 		}
     });
 }
