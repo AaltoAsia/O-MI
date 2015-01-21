@@ -49,19 +49,8 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
             }
           }
         }
-      } /*~
-        (post | parameter('method ! "post")) { // Handle POST requests from the client
-          respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
-            /* TODO: Return proper response  */
-            entity(as[NodeSeq]) { data =>
-              complete {
-                /* TODO: Generate response from the data */
-                println(data)
-                data
-              }
-            }
-          }
-        }*/
+      }
+
     }
 
   val getDataDiscovery =
@@ -122,5 +111,6 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
   }
 
   // Combine all handlers
+
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
 }

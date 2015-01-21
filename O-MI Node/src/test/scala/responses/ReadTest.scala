@@ -44,17 +44,18 @@ class ReadTest extends Specification {
       Correct XML with one value       		    $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
-      Correct 
 
     """
 
     //Error message when applicable			$e3
 
     def e1 = {
-    	val testliste1 = List(
-        ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
 
-        OmiParser.parse(Read.OMIReadResponse(2, testliste1)) == List(
+        val testliste1 = List(
+        ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
+    	val testliste1forread = List(OneTimeRead("10", testliste1))
+
+        OmiParser.parse(Read.OMIReadResponse(2, testliste1forread)) == List(
             Result("", Some(testliste1)))
 
     }
@@ -70,16 +71,14 @@ class ReadTest extends Specification {
         ODFNode("/Objects/RoomSensors1/Temperature/Inside", InfoItem, Some("21.2"), Some(testtime.toString), None),
         ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some(testtime.toString), None))
 
-        OmiParser.parse(Read.OMIReadResponse(2, testliste2)) == List(
+        val testliste2forread = List(OneTimeRead("10", testliste2))
+
+        OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)) == List(
             Result("", Some(testliste2)))
 
     }
 
     def e3 = {
-        
-    }
-
-    def e4 = {
         val odfnodes = OmiParser.parse(simpletestfile)
         var listofnodes = odfnodes.collect {
             case OneTimeRead(_,c) => c
@@ -87,10 +86,12 @@ class ReadTest extends Specification {
 
         val nodelist = listofnodes.head
         
-        OmiParser.parse(Read.OMIReadResponse(2, nodelist.toList)) == List(  //nodelist should already be a list but for some reason its Seq
+        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList)) == List(  //nodelist should already be a list but for some reason its Seq
               Result("", Some(nodelist.toList)))
 
     }
+
+
 }
 
 

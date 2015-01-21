@@ -42,12 +42,12 @@ object Read {
 				var resultChildren = Buffer[xml.Node]()
 
 				for (item <- sensormap.childs) {
-					item match {
-						case sensor: DBSensor => {
+					SQLite.get(item.path) match {
+						case Some(sensor: DBSensor) => {
 							resultChildren += <InfoItem name={sensor.path.split("/").last}/>
 						}
 
-						case subobject: DBObject => {
+						case Some(subobject: DBObject) => {
 							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
 						}
 
@@ -146,12 +146,13 @@ object Read {
  						<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
  							<Objects>
  		"""
-		var listofnodes = ODFnodes.collect {
-		  case OneTimeRead(_,c) => c
-		}  
-		  
-		val nodelist = listofnodes.head
-		
+
+ 		var listofnodes = ODFnodes.collect {
+            case OneTimeRead(_,c) => c
+        }
+
+        val nodelist = listofnodes.head
+
  		val OMIelements = OMIReadGenerate(depth, nodelist.toList)
 
  		val OMIresponseEnd = 
