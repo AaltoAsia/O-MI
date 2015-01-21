@@ -15,7 +15,12 @@ body {
 	margin-top: 15px;
 	margin-bottom: 15px;
 	padding-top: 15px;
-	padding-bottom: 15px;
+	padding-bottom: 60px;
+	list-style-type: none;
+}
+
+#objectList ul {
+	list-style-type: none;
 }
 
 #objectList label {
