@@ -246,11 +246,13 @@ function writeXML(objects, operation, ttl, interval, callback){
 		var cl = classes[classes.length - 1];
 		
 		if(objects[i].id) {
-			
 			if(cl != ids[ids.length - 1]){
-				ids.pop();
-				writer.writeEndElement();
-			}			
+				while(ids.length > 0){
+					ids.pop();
+					writer.writeEndElement();
+				}			
+			}
+			
 			//Object
 			ids.push(objects[i].id);
 			writer.writeStartElement('Object');
