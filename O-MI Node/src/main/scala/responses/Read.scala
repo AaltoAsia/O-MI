@@ -31,9 +31,7 @@ object Read {
         else
           return Some(Right(
           <InfoItem name={sensor.path.split("/").last}>
-            <value dateTime={sensor.time.toString}>
-              {sensor.value}
-            </value>
+            <value dateTime={sensor.time.toString}>{sensor.value}</value>
           </InfoItem>
         ))
 			}
@@ -98,29 +96,40 @@ object Read {
  		for (node <- ODFnodes) {
  			var spl = node.path.stripPrefix("/").split("/")
 
- 			if(depth < spl.length) {
- 				var thispath = spl.slice(0, depth).mkString("/")
- 				var prevpath = previousSpl.slice(0, depth).mkString("/")
+ 			if(depth < spl.length) {		//we're not at the depth the user is asking for
 
- 				if(thispath != prevpath) {
- 					
- 					xmlreturn += "<Object>"
- 					xmlreturn += generateODFresponse(prevpath)
- 					xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
- 					xmlreturn += "</Object>"
- 					nextnodes.clear
+ 				if(nextnodes.isEmpty == false) {
+ 					var lastnodepath = nextnodes.last.path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
+ 					var thisnodepath = node.path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
 
+ 					if(lastnodepath != thisnodepath) {
+ 						xmlreturn += "<Object>"
+ 						xmlreturn += generateODFresponse(lastnodepath)
+ 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 						xmlreturn += "</Object>"
+ 						nextnodes.clear
+ 					}
  				}
 
  				nextnodes += node
 
  			}
 
- 			else {
- 				xmlreturn += generateODFresponse(node.path.stripPrefix("/"))
+ 			else {		//now we are at the depth and return the infoitem if its a value and the object and its childrens names if its an object
+ 				val xmltree = generateODFREST(node.path.stripPrefix("/"))
+ 				if(!xmltree.isEmpty) {
+ 					xmltree.get match {
+ 						case (eetteri: Either[String,xml.Node]) => {
+ 						eetteri match {
+ 							case Right(xmlstuff) => xmlreturn += xmlstuff.toString
+ 						}
+ 					}
+
+ 					}
+ 				}
+ 				
  			}
 
- 			previousSpl = spl
 
  		}
 
@@ -136,7 +145,7 @@ object Read {
 
 	}
 
-	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg]): String = {
+	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg]): String = {			//takes the return value of OmiParser straight
 		val OMIresponseStart = 
 		"""
 		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">

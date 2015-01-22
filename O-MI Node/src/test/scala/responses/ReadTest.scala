@@ -17,10 +17,6 @@ class ReadTest extends Specification {
 
 	// Create our in-memory sensor database
 
-    //SQLite.addObjects("Objects/Refrigerator123")
-    //SQLite.addObjects("Objects/RoomSensors1")
-    //SQLite.addObjects("Objects/Roomsensors1/Temperature")
-
     val date = new Date(1421775723); //static date for testing
     val testtime = new java.sql.Timestamp(date.getTime)
     val testData = Map(
@@ -41,15 +37,15 @@ class ReadTest extends Specification {
 
   	Read.OMIReadResponse should return correct XML when given a list of values.
 
-      Correct XML with one value       		    $e1
+      Correct XML with one value                $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
-
+      Random small tests                        $e4
     """
 
-    //Error message when applicable			$e3
-
     def e1 = {
+
+        //failaa talla hetkella koska tassa pitaisi olla "datetime=" edessa mutta en jaksa viela katsoa miten korjaa :D
 
         val testliste1 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
@@ -62,7 +58,7 @@ class ReadTest extends Specification {
 
     def e2 = {
 
-        //(changed the parser to not put "dateTime" at the start for a while), failed before it
+        //failaa talla hetkella koska tassa pitaisi olla "datetime=" edessa mutta en jaksa viela katsoa miten korjaa :D
 
         val testliste2 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None),
@@ -85,12 +81,15 @@ class ReadTest extends Specification {
         }
 
         val nodelist = listofnodes.head
-        
+
         OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList)) == List(  //nodelist should already be a list but for some reason its Seq
               Result("", Some(nodelist.toList)))
 
     }
 
+    def e4 = {
+        1 == 1
+    }
 
 }
 
