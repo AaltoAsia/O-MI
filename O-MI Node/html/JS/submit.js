@@ -49,11 +49,15 @@ $(document).on('click', '.checkbox', function() {
 		if(parentId){
 			var jqId = jq("#", parentId);
 
-			//Change parent item check value
-			$(jqId).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+			var checked = $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0;
 			
-			if(!isRootBox(jqId)){
-				propParent($(jqId));
+			if(checked){
+				//Change parent item check value
+				$(jqId).prop('checked', true);
+				
+				if(!isRootBox(jqId)){
+					propParent($(jqId));
+				}
 			}
 		}
 	}
