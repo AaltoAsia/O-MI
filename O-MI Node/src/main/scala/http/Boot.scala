@@ -22,15 +22,18 @@ object Boot extends App {
   // Create our in-memory sensor database
 
   val date = new Date();
+  val testtime = new java.sql.Timestamp(date.getTime)
   val testData = Map(
-    "Objects/Refrigerator123/PowerConsumption" -> "0.123",
-    "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
-    "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
-    "Objects/RoomSensors1/Temperature" -> "21.2",
-    "Objects/RoomSensors1/CarbonDioxide" -> "too much"
+        "Objects/Refrigerator123/PowerConsumption" -> "0.123",
+        "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
+        "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
+        "Objects/RoomSensors1/Temperature/Inside" -> "21.2",
+        "Objects/RoomSensors1/CarbonDioxide" -> "too much",
+        "Objects/RoomSensors1/Temperature/Outside" -> "12.2"
     )
+
   for ((path, value) <- testData){
-    SQLite.set(new DBSensor(path, value,new java.sql.Timestamp(date.getTime) ))
+      SQLite.set(new DBSensor(path, value,new java.sql.Timestamp(date.getTime) ))
   }
 
   // we need an ActorSystem to host our application in

@@ -21,6 +21,10 @@
 	<script type="text/javascript" src="JS/multiform.js"></script>
 	<script type="text/javascript" src="JS/submit.js"></script>
 	<script type="text/javascript" src="JS/verify.js"></script>
+	<script type="text/javascript" src="JS/format.js"></script>
+	
+	<link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/vs.min.css">
+    <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
 </head>
 
 <body>
@@ -36,7 +40,9 @@
 			<h2 class="fs-title">Query for objects</h2>
 			<h3 class="fs-subtitle">This is step 1</h3>
 			<input type="button" name="objects" id="object-button" class="action-button" value="Get Objects" />
-			<div id="objectList"></div>
+			<div id="objectContainer">
+				<ul id="objectList"></ul>
+			</div>
 			<input type="button" name="next" id="next1" class="next action-button" value="Next" />
 		</fieldset>
 		<fieldset>
@@ -53,7 +59,7 @@
 			<h3 class="fs-subtitle">See the generated request</h3>
 			<input type="button" name="objects" id="request-gen" class="action-button" value="Generate" />
 			<div id="requestBox">
-				<p id="request"></p>
+				<pre class="xml" id="request"></p>
 			</div>
 			<input type="button" name="previous" class="previous action-button" value="Previous" />
 			<input type="button" name="next" id="next3" class="next action-button" value="Next" />
@@ -63,8 +69,9 @@
 			<h3 class="fs-subtitle">Send the request and see the response</h3>
 			<input type="button" name="previous" class="previous action-button" value="Previous" />
 			<input type="button" name="objects" id="request-send" class="action-button" value="Send" />
-			<div>
-				<p id="responseBox"></p>
+			<div style="border: 1px solid black; width: auto;">
+				<pre class="xml" id="responseBox">
+				</pre>
 			</div>
 		</fieldset>
 	</form>
