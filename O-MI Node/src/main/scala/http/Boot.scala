@@ -10,7 +10,6 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
 
-import sensorDataStructure.{SensorMap,SensorData}
 import agentSystemInterface.AgentListener
 import responses._
 import parsing._

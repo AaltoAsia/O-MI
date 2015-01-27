@@ -1,6 +1,5 @@
 package responses
 
-import sensorDataStructure._
 import parsing._
 import database._
 import scala.xml

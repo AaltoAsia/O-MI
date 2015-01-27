@@ -10,7 +10,6 @@ import MediaTypes._
 import responses._
 
 import parsing._
-import sensorDataStructure.SensorMap
 import xml._
 import cors._
 

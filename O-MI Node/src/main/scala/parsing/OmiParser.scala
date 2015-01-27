@@ -1,6 +1,5 @@
 package parsing
 
-import sensorDataStructure._
 import scala.xml._
 import scala.util.Try
 
