@@ -107,6 +107,9 @@ object OmiParser {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq(new ParseError("No msgformat in read request"))).text
         
+        val begin = (node \ "@begin").headOption
+        val end = (node \ "@end").headOption
+          
         msgformat match {
           case "odf" => {
             val msg = (node \ "msg").headOption.getOrElse {
