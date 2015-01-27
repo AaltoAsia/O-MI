@@ -117,9 +117,11 @@ function addInfoItems(parent, id, indent) {
 function generateRequest(){
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
+	var begin = $("#begin").val();
+	var end = $("#end").val();
 	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval);
+	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end);
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
@@ -136,7 +138,7 @@ function generateRequest(){
 * @param {Number} Message interval
 * @param {function} Callback function (not used atm)
 */
-function writeXML(objects, operation, ttl, interval, callback){
+function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
