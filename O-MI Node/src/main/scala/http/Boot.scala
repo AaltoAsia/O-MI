@@ -38,6 +38,10 @@ object Boot extends App {
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
 
+  val settings = Settings(system)
+  // TODO:
+  //system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
+
   // create and start our service actor
   val omiService = system.actorOf(Props(classOf[OmiServiceActor]), "omi-service")
 
