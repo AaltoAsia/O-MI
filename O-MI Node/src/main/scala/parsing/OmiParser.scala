@@ -3,18 +3,19 @@ package parsing
 import scala.xml._
 import scala.util.Try
 
-import java.io.File;
-import java.io.StringBufferInputStream;
-import java.io.IOException;
+import java.io.File
+import java.io.StringReader
+import java.io.StringBufferInputStream
+import java.io.IOException
 
 //Schema validation
-import javax.xml.XMLConstants;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
+import javax.xml.XMLConstants
+import javax.xml.transform.stream.StreamSource
+import javax.xml.validation.Schema
+import javax.xml.validation.SchemaFactory
+import javax.xml.validation.Validator
  
-import org.xml.sax.SAXException;
+import org.xml.sax.SAXException
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
@@ -336,10 +337,10 @@ object OmiParser {
     try {
       val xsdPath = "./src/main/resources/omischema.xsd"
       val factory : SchemaFactory =
-        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-      val schema: Schema = factory.newSchema(new File(xsdPath));
-      val validator: Validator = schema.newValidator();
-      validator.validate(new StreamSource(new StringBufferInputStream(xml)));
+        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+      val schema: Schema = factory.newSchema(new File(xsdPath))
+      val validator: Validator = schema.newValidator()
+      validator.validate(new StreamSource(new StringReader(xml)))
     } catch { 
       case e: IOException => 
         Seq( ParseError(e.getMessage() ) )
