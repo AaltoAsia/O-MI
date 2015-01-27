@@ -1,44 +1,46 @@
 package parsing
 
+import java.sql.Timestamp
 import scala.xml._
 import scala.util.Try
 
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
-  
-  /** This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
+
+  /**
+   * This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
    *  this method converts the Node message to xml string.
-   *  
+   *
    *  @param msg scala.xml.Node that contains the data in O-DF format
    *  @return sequence of ParseResults, type ParseResult is defined in the OdfParser class.
    */
   private def parseODF(msg: Node) = {
     OdfParser.parse(new PrettyPrinter(80, 2).format(msg))
   }
-  
-  /** Parse the given XML string into sequence of ParseMsg classes
-   * 
+
+  /**
+   * Parse the given XML string into sequence of ParseMsg classes
+   *
    * @param xml_msg O-MI formatted message that is to be parsed
    * @return sequence of ParseMsg classes, different message types are defined in
    *         the TypeClasses.scala file
    */
   def parse(xml_msg: String): Seq[ParseMsg] = {
 
-
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
     parse(root)
   }
 
-  /** Parse the given XML string into sequence of ParseMsg classes
-   * 
+  /**
+   * Parse the given XML string into sequence of ParseMsg classes
+   *
    * @param xml_msg O-MI formatted message that is to be parsed
    * @return sequence of ParseMsg classes, different message types are defined in
    *         the TypeClasses.scala file
    */
   def parse(xml_msg: NodeSeq): Seq[ParseMsg] = {
-
 
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val root = xml_msg.head
@@ -61,12 +63,13 @@ object OmiParser {
 
   }
 
-  /** Private method that is called inside parse method. This method checks which O-MI message
+  /**
+   * Private method that is called inside parse method. This method checks which O-MI message
    *  type the message contains and handles them.
-   *  
+   *
    *  @param node scala.xml.Node that should contain the message to be parsed e.g. read or write messages
    *  @param ttl ttl of the omiEnvalope as string. ttl is in seconds.
-   * 
+   *
    */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
     if (node.prefix != "omi")
@@ -94,7 +97,7 @@ object OmiParser {
               left.map(_.left.get)
             } else { Seq(ParseError("No Objects to parse")) }
           }
-          
+
           /* default case */
           case _ => Seq(new ParseError("Unknown message format."))
         }
@@ -106,10 +109,18 @@ object OmiParser {
       case "read" => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq(new ParseError("No msgformat in read request"))).text
-        
-        val begin = (node \ "@begin").headOption
-        val end = (node \ "@end").headOption
-          
+
+        var begin: Option[Timestamp] = None
+        var end: Option[Timestamp] = None
+        val (bText, eText) = ((node \ "@begin").text, (node \ "@end").text)
+
+        try {
+          begin = Some(Timestamp.valueOf(bText.replace('T', ' ')))
+          end = Some(Timestamp.valueOf(eText.replace('T', ' ')))
+        } catch {
+          case e: IllegalArgumentException => println("Illegal start and/or end values, values ignored")
+        }
+
         msgformat match {
           case "odf" => {
             val msg = (node \ "msg").headOption.getOrElse {
@@ -123,7 +134,7 @@ object OmiParser {
 
             if (left.isEmpty && !right.isEmpty) {
               if (interval.isEmpty) {
-                Seq(OneTimeRead(ttl, right.map(_.right.get)))
+                Seq(OneTimeRead(ttl, begin, end, right.map(_.right.get)))
               } else {
                 Seq(Subscription(ttl, interval.get.text, right.map(_.right.get)))
               }
@@ -131,7 +142,7 @@ object OmiParser {
               left.map(_.left.get)
             } else { Seq(ParseError("No Objects to parse")) }
           }
-          
+
           case "omi.xsd" => {
             val msg = (node \ "msg").headOption.getOrElse {
               return Seq(new ParseError("No message node found in read node."))
@@ -144,7 +155,7 @@ object OmiParser {
 
             if (left.isEmpty && !right.isEmpty) {
               if (interval.isEmpty) {
-                Seq(OneTimeRead(ttl, right.map(_.right.get)))
+                Seq(OneTimeRead(ttl, begin, end, right.map(_.right.get)))
               } else {
                 Seq(Subscription(ttl, interval.get.text, right.map(_.right.get)))
               }

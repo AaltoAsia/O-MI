@@ -1,7 +1,5 @@
 package parsing
 
-import java.sql.Timestamp
-
 abstract sealed trait ParseMsg
 
 /** case class that represents parsing error
@@ -19,7 +17,7 @@ case object NodeObject extends ODFNodeType
 case object InfoItem extends ODFNodeType   
 case object MetaData extends ODFNodeType   
 
-/** case class that represents an node in ther O-DF
+/** case class that represents an node in the O-DF
  *  
  *  @param path path to the node as a String e.g. "/Objects/SmartHouse/SmartFridge/PowerConsumption"
  *  @param ODFNodeType type of node can be NodeObject, InfoItem or MetaData
