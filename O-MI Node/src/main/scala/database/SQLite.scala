@@ -5,7 +5,7 @@ import java.io.File
 import scala.collection.mutable.Map
 
 object SQLite {
-
+  var historyLength = 10
   //path where the file is stored
   val dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
@@ -36,8 +36,10 @@ object SQLite {
           d <- latestValues if d.path === data.path
         } yield (d.value, d.timestamp)
         //if found a row with same path update else add new data
-        if (pathQuery.list.length > 0) {
-          pathQuery.update(data.value, data.time)
+        var count = pathQuery.list.length
+        if (count >= historyLength) {
+          val sorted = pathQuery.sortBy(_._2)
+          sorted.take(1).update(data.value, data.time)
           false
         } else {
           latestValues += (data.path, data.value, data.time)
@@ -109,15 +111,16 @@ object SQLite {
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
         //if path is found from latest values it must be Sensor otherwise check if it is an object
-        if (pathQuery.list.length > 0) {
+        var count = pathQuery.list.length
+        if (count > 0) {
           //path is sensor
           //case class matching
-          for (sensordata <- pathQuery) {
-            sensordata match {
+          val latest = pathQuery.sortBy(_.timestamp).drop(count-1)
+            latest.first match {
               case (path: String, value: String, time: java.sql.Timestamp) =>
                 result = Some(DBSensor(path, value, time))
             }
-          }
+          
         } else {
           var childs = getChilds(path)
           //childs is empty only if given path does not exist or ends in sensor.
@@ -134,6 +137,10 @@ object SQLite {
       }
       result
     }
+  def getInterval()={
+    
+    
+  }
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
@@ -232,13 +239,14 @@ case class DBObject(pathto: String) extends DBItem(pathto) {
  * used internally by the object SQLite
  */
 class DBData(tag: Tag)
-  extends Table[(String, String, java.sql.Timestamp)](tag, "Latestvalues") {
+  extends Table[(String, String, java.sql.Timestamp)](tag, "Values") {
   // This is the primary key column:
-  def path = column[String]("PATH", O.PrimaryKey)
+  def path = column[String]("PATH")
   def value = column[String]("VALUE")
   def timestamp = column[java.sql.Timestamp]("TIME")
   // Every table needs a * projection with the same type as the table's type parameter
   def * : ProvenShape[(String, String, java.sql.Timestamp)] = (path, value, timestamp)
+  def pk = primaryKey("pk_DBData",(path,timestamp))
 }
 /**
  * class DBNode to store object hierarchy

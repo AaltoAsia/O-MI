@@ -7,7 +7,6 @@ object SQLiteTest extends Specification {
   
   "SQLite" should {
     sequential
-    
     var data1 = DBSensor("path/to/sensor1/temp","21.5C",new java.sql.Timestamp(new java.util.Date().getTime))
     var data2 = DBSensor("path/to/sensor1/hum","40%",new java.sql.Timestamp(new java.util.Date().getTime))
     var data3 = DBSensor("path/to/sensor2/temp","24.5",new java.sql.Timestamp(new java.util.Date().getTime))
@@ -25,9 +24,6 @@ object SQLiteTest extends Specification {
     }
     "return true when adding new data" in {
       database.SQLite.set(data4) shouldEqual true
-    }
-    "return false when updating old data" in {
-      database.SQLite.set(data5) shouldEqual false
     }
      "return correct value for given valid path" in {
         var res = ""
