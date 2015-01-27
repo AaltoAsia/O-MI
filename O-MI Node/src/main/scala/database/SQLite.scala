@@ -115,7 +115,7 @@ object SQLite {
         if (count > 0) {
           //path is sensor
           //case class matching
-          val latest = pathQuery.sortBy(_.timestamp).drop(count-1)
+          val latest = pathQuery.sortBy(_.timestamp).take(1)
             latest.first match {
               case (path: String, value: String, time: java.sql.Timestamp) =>
                 result = Some(DBSensor(path, value, time))

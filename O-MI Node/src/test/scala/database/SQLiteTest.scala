@@ -25,6 +25,9 @@ object SQLiteTest extends Specification {
     "return true when adding new data" in {
       database.SQLite.set(data4) shouldEqual true
     }
+    "return true when adding new data" in {
+      database.SQLite.set(data5) shouldEqual true
+    }
      "return correct value for given valid path" in {
         var res = ""
         
