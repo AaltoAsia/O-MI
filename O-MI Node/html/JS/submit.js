@@ -152,12 +152,24 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
 	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
 	writer.writeAttributeString('version', '1.0');
+	
 	if(ttl) writer.writeAttributeString('ttl', ttl);
+	
 	//(second line)
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
+	
 	if(interval > 0) writer.writeAttributeString('interval', interval);
+	
+	if(begin && end){
+		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
+			writer.writeAttributeString('begin', begin);
+			writer.writeAttributeString('end', end);
+		}
+	}
+	
 	if(callback) writer.writeAttributeString('callback', callback);
+	
 	//(third line)
 	writer.writeStartElement('omi:msg');
 	writer.writeAttributeString( 'xmlns', 'omi.xsd');
