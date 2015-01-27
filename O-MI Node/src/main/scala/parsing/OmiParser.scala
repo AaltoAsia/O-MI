@@ -90,126 +90,209 @@ object OmiParser {
         Write request 
       */
       case "write" => {
-        val msgformat = (node \ "@msgformat").headOption.getOrElse(
-          return Seq(new ParseError("No msgformat in write request"))).text
-        msgformat match {
-          case "odf" => {
-            val msg = (node \ "msg").headOption.getOrElse {
-              return Seq(new ParseError("No message node found in write node."))
-            }
-            val odf = parseODF((msg \ "Objects").headOption.getOrElse(
-              return Seq(new ParseError("No Objects node found in msg node."))))
-            val left = odf.filter(_.isLeft)
-            val right = odf.filter(_.isRight)
+        val msgformat = getParameter(node,"msgformat")
+        if( msgformat.isLeft )
+          return Seq( msgformat.left.get)
 
-            if (left.isEmpty && !right.isEmpty) {
-              Seq(Write(ttl, right.map(_.right.get)))
-            } else if (!left.isEmpty) {
-              left.map(_.left.get)
-            } else { Seq(ParseError("No Objects to parse")) }
-          }
-          
-          /* default case */
-          case _ => Seq(new ParseError("Unknown message format."))
-        }
+        val msg = getChild(node, "msg")
+        if( msg.isLeft )
+          return Seq( msg.left.get)
+
+        val objs = getChild(msg.right.get.head, "Objects")
+        if( objs.isLeft )
+          return Seq( objs.left.get)
+        
+        val requestIds = getChild( node, "requestId", true, true)
+        if( requestIds.isLeft )
+          return Seq( requestIds.left.get)
+
+        val callback = getParameter( node, "callback", true)
+        if( callback.isLeft )
+          return Seq( callback.left.get)
+
+        val odf = parseODF(objs.right.get.head)
+        val left = odf.filter(_.isLeft)
+        val right = odf.filter(_.isRight)
+
+        if (left.isEmpty && !right.isEmpty) {
+          Seq( Write( ttl,
+                      right.map(_.right.get),
+                      callback.right.get, 
+                      requestIds.right.get.map{
+                        id => id.text
+                      }
+                    ) )
+        } else if (!left.isEmpty) {
+          left.map(_.left.get)
+        } else { Seq(ParseError("No Objects to parse")) }
       }
 
       /*
         Read request 
       */
       case "read" => {
-        val msgformat = (node \ "@msgformat").headOption.getOrElse(
-          return Seq(new ParseError("No msgformat in read request"))).text
-        
-        msgformat match {
-          case "odf" => {
-            val msg = (node \ "msg").headOption.getOrElse {
-              return Seq(new ParseError("No message node found in read node."))
-            }
-            val interval = (node \ "@interval").headOption
-            val odf = parseODF((msg \ "Objects").headOption.getOrElse(
-              return Seq(new ParseError("No Objects node found in msg node."))))
-            val left = odf.filter(_.isLeft)
-            val right = odf.filter(_.isRight)
+        val msgformat = getParameter(node,"msgformat")
+        if( msgformat.isLeft )
+          return Seq( msgformat.left.get)
 
-            if (left.isEmpty && !right.isEmpty) {
-              if (interval.isEmpty) {
-                Seq(OneTimeRead(ttl, right.map(_.right.get)))
-              } else {
-                Seq(Subscription(ttl, interval.get.text, right.map(_.right.get)))
-              }
-            } else if (!left.isEmpty) {
-              left.map(_.left.get)
-            } else { Seq(ParseError("No Objects to parse")) }
+        val msg = getChild(node, "msg")
+        if( msg.isLeft )
+          return Seq( msg.left.get)
+
+        val objs = getChild(msg.right.get.head, "Objects")
+        if( objs.isLeft )
+          return Seq( objs.left.get)
+
+        val interval = getParameter( node, "interval", true)
+        if( interval.isLeft )
+          return Seq( interval.left.get)
+
+        val begin = getParameter( node, "begin", true)
+        if( begin.isLeft )
+          return Seq( begin.left.get)
+
+        val end = getParameter( node, "end", true)
+        if( end.isLeft )
+          return Seq( end.left.get)
+
+        val newest = getParameter( node, "newest", true)
+        if( newest.isLeft )
+          return Seq( newest.left.get)
+
+        val oldest = getParameter( node, "oldest", true)
+        if( oldest.isLeft )
+          return Seq( oldest.left.get)
+
+        val requestIds = getChild( node, "requestId", true, true)
+        if( requestIds.isLeft )
+          return Seq( requestIds.left.get)
+
+        val callback = getParameter( node, "callback", true)
+        if( callback.isLeft )
+          return Seq( callback.left.get)
+
+        val odf = parseODF(objs.right.get.head)
+        val left = odf.filter(_.isLeft)
+        val right = odf.filter(_.isRight)
+
+        if (left.isEmpty && !right.isEmpty) {
+          if (interval.right.get.isEmpty) {
+            Seq( OneTimeRead( ttl,
+                              right.map( _.right.get),
+                              begin.right.get,
+                              end.right.get,
+                              newest.right.get,
+                              oldest.right.get,
+                              callback.right.get, 
+                              requestIds.right.get.map{
+                                id => id.text
+                              }
+                            ) )
+          } else {
+            Seq( Subscription(  ttl,
+                                interval.right.get,
+                                right.map( _.right.get),
+                                begin.right.get,
+                                end.right.get,
+                                newest.right.get,
+                                oldest.right.get,
+                                callback.right.get, 
+                                requestIds.right.get.map{
+                                  id => id.text
+                                }
+                              ) )
           }
+        } else if (!left.isEmpty) {
+          left.map(_.left.get)
+        } else { Seq( ParseError( "No Objects to parse" ) ) }
           
-          case "omi.xsd" => {
-            val msg = (node \ "msg").headOption.getOrElse {
-              return Seq(new ParseError("No message node found in read node."))
-            }
-            val interval = (node \ "@interval").headOption
-            val odf = parseODF((msg \ "Objects").headOption.getOrElse(
-              return Seq(new ParseError("No Objects node found in msg node."))))
-            val left = odf.filter(_.isLeft)
-            val right = odf.filter(_.isRight)
-
-            if (left.isEmpty && !right.isEmpty) {
-              if (interval.isEmpty) {
-                Seq(OneTimeRead(ttl, right.map(_.right.get)))
-              } else {
-                Seq(Subscription(ttl, interval.get.text, right.map(_.right.get)))
-              }
-            } else if (!left.isEmpty) {
-              left.map(_.left.get)
-            } else { Seq(ParseError("No Objects to parse")) }
-          }
-
-          case _ => Seq(new ParseError("Unknown message format."))
-        }
       }
 
       /*
         Cancel request 
       */
-      case "cancel" => Seq(new ParseError("Unimplemented O-MI node."))
+      case "cancel" => {
+        val requestIds = getChild( node, "requestId", false, true)
+        if( requestIds.isLeft )
+          return Seq( requestIds.left.get)
+        
+        
+        return Seq( Cancel( ttl, 
+          requestIds.right.get.map{
+            id => id.text
+          }
+        ) )
+      }
 
       /*
         Response 
       */
       case "response" => {
-        parseNode((node \ "result").headOption.getOrElse(
-          return Seq(new ParseError("No result node in response node"))), ttl)
+        val results = getChild(node, "result", false, true)
+        if( results.isLeft )
+          return Seq( results.left.get)
+        var parseMsgs : Seq[ ParseMsg] = Seq.empty
+        for( result <- results.right.get )
+          parseMsgs ++= parseNode(result, ttl)
+
+        parseMsgs
       }
 
-      /*
-        Response's Result 
-      */
       case "result" => {
-        val msgformat = (node \ "@msgformat").headOption.getOrElse(
-          return Seq(new ParseError("No msgformat in result message"))).text
-        val returnValue = (node \ "return").headOption.getOrElse(
-          return Seq(new ParseError("No return node in result node"))).text
-        val msgOp = (node \ "msg").headOption
-        if (msgOp.isEmpty)
-          return Seq(Result(returnValue, None))
-        else {
-          msgformat match {
-            case "odf" => {
-              val odf = parseODF((msgOp.get \ "Objects").headOption.getOrElse(
-                return Seq(new ParseError("No Objects node found in msg node."))))
-              val left = odf.filter(_.isLeft)
-              val right = odf.filter(_.isRight)
+        val msgformat = getParameter(node,"msgformat", true)
+        if( msgformat.isLeft )
+          return Seq( msgformat.left.get)
 
-              if (left.isEmpty && !right.isEmpty) {
-                return Seq(Result(returnValue, Some(right.map(_.right.get))))
-              } else if (!left.isEmpty) {
-                left.map(_.left.get)
-              } else { Seq(ParseError("No Objects to parse")) }
+        val msg = getChild(node, "msg", true)
+        if( msg.isLeft )
+          return Seq( msg.left.get)
+        
+        val returnValue = getChild(node, "return")
+        if( returnValue.isLeft )
+          return Seq( returnValue.left.get)
 
-            }
-            case _ => return Seq(new ParseError("Unknown message format."))
-          }
-        }
+        val returnCode = getParameter(returnValue.right.get.head, "returnCode", true)
+        if( returnCode.isLeft )
+          return Seq( returnCode.left.get)
+
+        val requestIds = getChild( node, "requestId", true, true)
+        if( requestIds.isLeft )
+          return Seq( requestIds.left.get)
+
+        val callback = getParameter( node, "callback", true)
+        if( callback.isLeft )
+          return Seq( callback.left.get)
+
+        if( msg.right.get.isEmpty )
+          return Seq( Result( returnValue.right.get.text,
+                              returnCode.right.get,
+                              None,
+                              callback.right.get,
+                              requestIds.right.get.map{
+                                id => id.text
+                              }
+                            ) )
+          
+        val objs = getChild(msg.right.get.head, "Objects")
+        if( objs.isLeft )
+          return Seq( objs.left.get)
+
+        val odf = parseODF(objs.right.get.head)
+        val left = odf.filter(_.isLeft)
+        val right = odf.filter(_.isRight)
+
+        if (left.isEmpty && !right.isEmpty) {
+          return Seq( Result( returnValue.right.get.text,
+                              returnCode.right.get,
+                              Some( right.map( _.right.get) ),
+                              callback.right.get,
+                              requestIds.right.get.map{
+                                id => id.text
+                              }
+                            ) )
+        } else if (!left.isEmpty) {
+          left.map(_.left.get)
+        } else { Seq(ParseError("No Objects to parse")) }
       }
 
       /*
@@ -233,6 +316,20 @@ object OmiParser {
       return Right( parameter )
     else
       return Left( ParseError( "Invalid $paramName parameter" ) )
+  }
+
+  private def getChild( node: Node, 
+                    childName: String,
+                    tolerateEmpty: Boolean = false, 
+                    tolerateMultiple: Boolean = false) 
+                  : Either[ ParseError, Seq[ Node] ] = {
+    val childs = ( node \ "$childName" )
+    if(!tolerateEmpty && childs.isEmpty )
+      return Left( ParseError( "No $childName child found in " + node.label ) )
+    else if( !tolerateMultiple && childs.size > 1  )
+      return Left( ParseError( "Multiple $childName childs found in " + node.label ) )
+    else
+      return Right( childs )
   }
 
   def validateOmiSchema( xml: String) : Seq[ ParseError] = {
