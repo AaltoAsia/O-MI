@@ -161,9 +161,12 @@ object OdfParser {
       validator.validate(new StreamSource(new StringReader(xml)))
     } catch { 
       case e: IOException => 
-        Seq( ParseError(e.getMessage() ) )
+        //TODO: log these instead of println
+        println(e.getMessage()) 
+        Seq( ParseError("Invalid XML, schema failure") )
       case e: SAXException =>
-        Seq( ParseError(e.getMessage() ) )
+        println(e.getMessage()) 
+        Seq( ParseError("Invalid XML, schema failure") )
     }
     return Seq.empty;
    }
