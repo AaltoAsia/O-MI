@@ -1,22 +1,16 @@
 /* IconSelect object */
 var iconSelect;
 
-window.onload = function(){
+window.onload = function() {
 	//IconSelect settings
-	iconSelect = new IconSelect("operation-select", 
-                {'selectedIconWidth':48,
-                'selectedIconHeight':48,
-                'iconsWidth':48,
-                'iconsHeight':48,
-                'vectoralIconNumber':1,
-                'horizontalIconNumber':4});
+	iconSelect = new IconSelect("operation-select");
 
 	//Pushing the icons
 	var icons = [];
-	icons.push({'iconFilePath':'Resources/icons/read.png', 'iconValue':'read'});
-	icons.push({'iconFilePath':'Resources/icons/write.png', 'iconValue':'write'});
-	icons.push({'iconFilePath':'Resources/icons/subscribe.png', 'iconValue':'subscribe'});
-	icons.push({'iconFilePath':'Resources/icons/cancel.png', 'iconValue':'cancel'});
+	icons.push({'iconFilePath': 'Resources/icons/read.png', 'iconValue': 'read'});
+	icons.push({'iconFilePath': 'Resources/icons/write.png', 'iconValue': 'write'});
+	icons.push({'iconFilePath': 'Resources/icons/subscribe.png', 'iconValue': 'subscribe'});
+	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
 	iconSelect.refresh(icons);
 }; 
@@ -27,22 +21,41 @@ $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
 
 /* Eventlistener for object tree updating */
-$(document).on('click', '.checkbox', function(){
+$(document).on('click', '.checkbox', function() {
 	var ref = $(this); //Reference (jquery object) of the clicked button
 	var id = ref.attr('id');
 	
 	//Parent item clicked
 	if(id){
-		//Find child items and mark their value the same as their parent
-		getChildren(id).each(function(){
-			$(this).prop('checked', ref.is(':checked'));
-		});
+		propChildren(ref);
+		propParent(ref);
 	} else { 
-		//ChildItem clicked;
-		var parentId = ref.attr('class').split(' ').find(isParent);
+		propParent(ref);
+	}
+
+	function propChildren(parent){
+		var parentId = $(parent).attr("id");
+		//Find child items and mark their value the same as their parent
+		getChildren(parentId).each(function(){
+			$(this).prop('checked', parent.is(':checked'));
+			propChildren($(this));
+		});
+	}
 	
-		//Change parent item check value
-		$(jq("#", parentId)).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+	/* Child is a jquery object */
+	function propParent(child){
+		//ChildItem clicked;
+		var parentId = child.attr('class').split(' ').find(isParent);
+		if(parentId){
+			var jqId = jq("#", parentId);
+
+			//Change parent item check value
+			$(jqId).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
+			
+			if(!isRootBox(jqId)){
+				propParent($(jqId));
+			}
+		}
 	}
 	
 	/* Temp function, returns an array of children with the given id (as their class) */
@@ -60,6 +73,10 @@ $(document).on('click', '.checkbox', function(){
 	function isParent(element, index, array){
 		return element != "checkbox" && element != "lower";
 	}
+	
+	function isRootBox(jqid){
+		return $(jqid).attr('class').split(' ').length == 1;
+	}
 });
 
 /* Get the objects through ajax get */
@@ -74,11 +91,12 @@ function getObjects() {
 	$.ajax({
         type: "GET",
 		dataType: "xml",
-        url: "http://pesutykki.mooo.com:8080/Objects/",
-        success: displayObjects,
+        url: "http://localhost:8080/Objects" /*path + "SensorData/objects"*/,
+        success: function(data) {
+			displayObjects(data, 0, "http://localhost:8080/Objects");
+		},
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
-			
 		}
     });
 }
@@ -86,27 +104,83 @@ function getObjects() {
 /* Display the objects as checkboxes in objectList 
 * @param {XML Object} the received XML data
 */
-function displayObjects(data) {
+function displayObjects(data, indent, url, listId) {
 	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
-	//Clear the list beforehand, in case objects is changed in between the button clicks
-	$("#objectList").empty();
-	
-	//Append objects as checkboxes to the webpage
-	$(data).find('Objects').each(function(){
-		$(this).find("Object").each(function(){
-			var id = $(this).find("id").text();
-			
-			$('<label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label><br>').appendTo("#objectList"); 
-			$(this).find("InfoItem").each(function(){
-				var name = $(this).attr('name');
+	// Basic objects
+	if(indent === 0){
+		//Clear the list beforehand, in case objects is changed in between the button clicks
+		$("#objectList").empty();
+		
+		//Append objects as checkboxes to the webpage
+		$(data).find('Objects').each(function(){
+			$(this).find("Object").each(function(){
+				var id = $(this).find("id").text();
 				
-				//Append InfoItem as checkbox
-				$('<label>' + 
-				'<input type="checkbox" class="checkbox lower ' + id + '" name="' + name + '"/>' + name +
-				'</label><br>').appendTo("#objectList"); 
+				$('<li><label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label></li>').appendTo("#objectList"); 
+				$('<ul id="list-' + id + '"></ul>').appendTo("#objectList");
+				addInfoItems(this, id, indent + 1);
+				
+				//Get lower hierarchy values
+				$.ajax({
+					type: "GET",
+					dataType: "xml",
+					url: url + "/" + id,
+					success: function(data) {
+						displayObjects(data, indent + 1, url + "/" + id, "list-" + id);
+					},
+					error: function(a, b, c){
+						console.log("No lower hierarchy for " + id);
+					}
+				});
 			});
 		});
+	} else {
+		var margin = indent * 20 + "px";
+		
+		$(data).find("Object").each(function(){
+			var id = $($(this).find("id")[0]).text();
+			
+			$(this).find("Object").each(function(){
+				var name = $(this).find("id").text();
+				var str = '<li><label><input type="checkbox" class="checkbox ' + id + '" id="' + name + '"/>' + name + '</label></li>';
+				
+				$(str).appendTo("#" + listId); 
+				$("#" + listId).last().css({ marginLeft: margin });
+				$('<ul id="list-' + name + '"></ul>').appendTo("#" + listId);
+				$("#" + listId).last().css({ marginLeft: margin });
+				
+				$.ajax({
+					type: "GET",
+					dataType: "xml",
+					url: url + "/" + name,
+					success: function(data) {
+						displayObjects(data, indent + 1, url + "/" + name);
+					},
+					error: function(a, b, c){
+						console.log("No lower hierarchy for " + id);
+					}
+				});
+				$("#" + listId + ":last-child").css({ marginLeft:margin });
+			});
+			addInfoItems(this, id, indent + 1);
+		});
+	}
+}
+
+function addInfoItems(parent, id, indent) {
+	var margin = indent * 20 + "px";
+
+	$(parent).find("InfoItem").each(function(){
+		var name = $(this).attr('name');
+		
+		//Append InfoItem as checkbox
+		$('<li><label>' + 
+		'<input type="checkbox" class="checkbox ' + id + '" name="' + name + '"/>' + name +
+		'</label></li>').appendTo("#list-" + id); 
+		
+		//Styling (margin)
+		$("#list-" + id).last().css({ marginLeft: margin });
 	});
 }
 
@@ -120,7 +194,9 @@ function generateRequest(){
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
-    $("#request").text((request)); //Update the request textbox on the webpage
+	
+	var formattedXML = formatXml(request);
+    $("#request").html(formattedXML.value); //Update the request textbox on the webpage
 }
 
 /* 
@@ -149,7 +225,7 @@ function writeXML(objects, operation, ttl, interval, callback){
 	//(second line)
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
-	if(interval) writer.writeAttributeString('interval', interval);
+	if(interval > 0) writer.writeAttributeString('interval', interval);
 	if(callback) writer.writeAttributeString('callback', callback);
 	//(third line)
 	writer.writeStartElement('omi:msg');
@@ -157,20 +233,43 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 	writer.writeStartElement('Objects');
 	//Payload
-	for (var i = 0; i < objects.length; i++)
+	var ids = [];
+	if(objects.length > 0){
+		writer.writeStartElement('Object');
+		writer.writeElementString('id', objects[0].id);
+		ids.push(objects[0].id);
+	}
+
+	for (var i = 1; i < objects.length; i++)
 	{
+		var classes = $(objects[i]).attr("class").split(" ");
+		var cl = classes[classes.length - 1];
+		
 		if(objects[i].id) {
+			
+			if(cl != ids[ids.length - 1]){
+				ids.pop();
+				writer.writeEndElement();
+			}			
 			//Object
+			ids.push(objects[i].id);
 			writer.writeStartElement('Object');
 			writer.writeElementString('id', objects[i].id);
-			writer.writeEndElement();
 		} else {
 			//InfoItem
+			if(cl != ids[ids.length - 1]){
+				ids.pop();
+				writer.writeEndElement();
+			}
 			writer.writeStartElement('InfoItem');
-			writer.writeAttributeString('class', objects[i].name);
+			writer.writeAttributeString('name', objects[i].name);
 			writer.writeEndElement();
 		}
 	}
+	if(objects.length > 0) {
+		writer.writeEndElement();
+	}
+	
 	writer.writeEndElement();
     writer.writeEndDocument();
 
@@ -180,12 +279,13 @@ function writeXML(objects, operation, ttl, interval, callback){
 }
 
 // Server URL
-var server = "http://pesutykki.mooo.com:8080";
+var server = "http://localhost:8080";
 
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
-    var request = $('#request').val(); //Get the request string
+    var request = $('#request').text(); //Get the request string
+	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
         startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
@@ -194,7 +294,9 @@ function sendRequest()
         $.ajax({
             type: "POST",
             url: server, //TODO: the real server here
-            data: {msg : request},
+            data: request,
+			contentType: "text/xml",
+			processData: false,
             dataType: "text",
             success: printResponse,
 			error: function(a, b, c){
@@ -224,7 +326,11 @@ function printResponse(response){
 	console.log("Got response!");
 	console.log(response);
 	
-	$("#responseBox").text(response);
+	var formattedXML = formatXml(response);
+	console.log(formattedXML);
+    $("#responseBox").html(formattedXML.value);
+	
+	//$("#responseBox").text(response);
 }
 
 /* Handle the ajax errors */

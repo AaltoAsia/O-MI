@@ -1,6 +1,5 @@
 package parsing
 
-import sensorDataStructure._
 import scala.xml._
 import scala.util.Try
 
@@ -107,9 +106,30 @@ object OmiParser {
       case "read" => {
         val msgformat = (node \ "@msgformat").headOption.getOrElse(
           return Seq(new ParseError("No msgformat in read request"))).text
-
+        
         msgformat match {
           case "odf" => {
+            val msg = (node \ "msg").headOption.getOrElse {
+              return Seq(new ParseError("No message node found in read node."))
+            }
+            val interval = (node \ "@interval").headOption
+            val odf = parseODF((msg \ "Objects").headOption.getOrElse(
+              return Seq(new ParseError("No Objects node found in msg node."))))
+            val left = odf.filter(_.isLeft)
+            val right = odf.filter(_.isRight)
+
+            if (left.isEmpty && !right.isEmpty) {
+              if (interval.isEmpty) {
+                Seq(OneTimeRead(ttl, right.map(_.right.get)))
+              } else {
+                Seq(Subscription(ttl, interval.get.text, right.map(_.right.get)))
+              }
+            } else if (!left.isEmpty) {
+              left.map(_.left.get)
+            } else { Seq(ParseError("No Objects to parse")) }
+          }
+          
+          case "omi.xsd" => {
             val msg = (node \ "msg").headOption.getOrElse {
               return Seq(new ParseError("No message node found in read node."))
             }
