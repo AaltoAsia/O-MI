@@ -5,7 +5,6 @@ import scala.io.Source
 import responses._
 import parsing._
 import database._
-import sensorDataStructure.{SensorMap,SensorData}
 import parsing.OdfParser._
 import java.util.Date;
 import java.text.SimpleDateFormat;
