@@ -41,6 +41,7 @@ class ReadTest extends Specification {
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
       Random small tests                        $e4
+      
     """
 
     def e1 = {
@@ -51,8 +52,11 @@ class ReadTest extends Specification {
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
     	val testliste1forread = List(OneTimeRead("10", testliste1))
 
+        val testliste1check = List(
+        ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
+
         OmiParser.parse(Read.OMIReadResponse(2, testliste1forread)) == List(
-            Result("", Some(testliste1)))
+            Result("", Some(testliste1check)))
 
     }
 
@@ -67,10 +71,22 @@ class ReadTest extends Specification {
         ODFNode("/Objects/RoomSensors1/Temperature/Inside", InfoItem, Some("21.2"), Some(testtime.toString), None),
         ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some(testtime.toString), None))
 
+        val testliste2check = List(
+        ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None),
+        ODFNode("/Objects/Refrigerator123/RefrigeratorDoorOpenWarning", InfoItem, Some("door closed"), Some("dateTime=" + "\"" + testtime.toString + "\""), None),
+        ODFNode("/Objects/Refrigerator123/RefrigeratorProbeFault", InfoItem, Some("Nothing wrong with probe"), Some("dateTime=" + "\"" + testtime.toString + "\""), None),
+        ODFNode("/Objects/RoomSensors1/Temperature/Inside", InfoItem, Some("21.2"), Some("dateTime=" + "\"" + testtime.toString + "\""), None),
+        ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
+
         val testliste2forread = List(OneTimeRead("10", testliste2))
 
+        println(OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)))
+        println("")
+        println(testliste2check)
+
+
         OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)) == List(
-            Result("", Some(testliste2)))
+            Result("", Some(testliste2check)))
 
     }
 
