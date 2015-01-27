@@ -1,9 +1,20 @@
 package parsing
 
-import sensorDataStructure._
 import scala.xml._
 import scala.util.Try
 
+import java.io.File;
+import java.io.StringBufferInputStream;
+import java.io.IOException;
+
+//Schema validation
+import javax.xml.XMLConstants;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
+ 
+import org.xml.sax.SAXException;
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
@@ -25,9 +36,11 @@ object OmiParser {
    *         the TypeClasses.scala file
    */
   def parse(xml_msg: String): Seq[ParseMsg] = {
-
-
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
+    val schema_err = validateOmiSchema(xml_msg)
+    if( schema_err.nonEmpty )
+      return schema_err
+
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
     parse(root)
   }
@@ -208,6 +221,36 @@ object OmiParser {
 
   private def errorsAndOdf(odf: Seq[OdfParser.ParseResult]) = odf.groupBy(_.isLeft)
 
+  private def getParameter( node: Node, 
+                    paramName: String,
+                    tolerateEmpty: Boolean = false, 
+                    validation: String => Boolean = _ => true) 
+                  : Either[ ParseError, String ] = {
+    val parameter = ( node \ "@$paramName" ).text
+    if( parameter.isEmpty && !tolerateEmpty )
+      return Left( ParseError( "No $paramName parameter found in " + node.label ) )
+    else if( validation( parameter ) )
+      return Right( parameter )
+    else
+      return Left( ParseError( "Invalid $paramName parameter" ) )
+  }
+
+  def validateOmiSchema( xml: String) : Seq[ ParseError] = {
+    try {
+      val xsdPath = "./src/main/resources/omischema.xsd"
+      val factory : SchemaFactory =
+        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+      val schema: Schema = factory.newSchema(new File(xsdPath));
+      val validator: Validator = schema.newValidator();
+      validator.validate(new StreamSource(new StringBufferInputStream(xml)));
+    } catch { 
+      case e: IOException => 
+        Seq( ParseError(e.getMessage() ) )
+      case e: SAXException =>
+        Seq( ParseError(e.getMessage() ) )
+    }
+    return Seq.empty;
+   }
 }
 
 

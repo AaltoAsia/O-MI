@@ -1,14 +1,27 @@
 package parsing
 
-import sensorDataStructure._
+import scala.collection.mutable.Map
 import scala.xml._
 import scala.util.Try
+ 
+import java.io.File;
+import java.io.StringBufferInputStream;
+import java.io.IOException;
+
+//Schema validation
+import javax.xml.XMLConstants;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
+ 
+import org.xml.sax.SAXException;
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser {
   
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
-  type ParseResult = Either[ParseError, ODFNode]
+  type ParseResult = Either[ParseError, OdfNode]
   
   /** Public method for parsing the xml string into seq of ParseResults.
    *  
@@ -16,12 +29,16 @@ object OdfParser {
    *  @return Seq of ParseResults
    */
   def parse(xml_msg: String): Seq[ParseResult] = {
-    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(Left(ParseError("Invalid XML"))))
+    val schema_err = validateOdfSchema(xml_msg)
+       if( schema_err.nonEmpty )
+         return schema_err.map{ e => Left(e)}
+
+   val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(Left(ParseError("Invalid XML"))))
     if (root.label != "Objects")
       return Seq(Left(ParseError("ODF doesn't have Objects as root.")))
     else
       (root \ "Object").flatMap(obj => {
-        parseNode(obj, "/Objects")
+        parseNode(obj, Seq(root.label))
       })
   }
 
@@ -32,50 +49,43 @@ object OdfParser {
    *        e.g. "/Objects/SmartHouse/SmartFridge"
    * @return Seq of ParseResults.
    */
-  private def parseNode(obj: Node, currentPath: String): Seq[ParseResult] = {
-    obj.label match {
+  private def parseNode(node: Node, currentPath: Seq[String]): Seq[ParseResult] = {
+    node.label match {
       /* Found an Object*/
       case "Object" => {
-        val id = (obj \ "id").text
-        if (id.isEmpty()) 
-          return Seq(Left(ParseError("No id for Object.")))
-        val path = currentPath + "/" + id
-        val subobjs = obj \ "Object"
-        val infoitems = obj \ "InfoItem"
-        if (infoitems.isEmpty && subobjs.isEmpty) {
-          Seq(Right(new ODFNode(path, NodeObject, None, None, None)))
-        } else {
-          val eithers: Seq[ParseResult] =
-            subobjs.flatMap {
-              sub: Node => parseNode(sub, path)
-            }
-          eithers ++ infoitems.flatMap { item: Node =>
-            parseNode(item, path)
-          }
-        }
+        parseObject(node, currentPath)
       }
       //TODO check this!!
       /* Found an InfoItem*/
       case "InfoItem" => {
-        val name = (obj \ "@name").text
-        if (name.isEmpty())
-          return Seq(Left(ParseError("No name for InfoItem.")))
-        val path = currentPath + "/" + name
-        val values = (obj \ "value").headOption match {
-          case Some(node: Node) => {
-            Some(node.text)
-          }
-          case None => None
+        parseInfoItem(node, currentPath)
+      }
+      //Unreachable code?
+      case _ => Seq( Left( ParseError( "Unknown node in O-DF at path: " + currentPath.mkString( "/") ) ) )
+    }
+  }
+
+  private type InfoItemResult = Either[ParseError, OdfInfoItem]
+  private def parseInfoItem(obj: Node, currentPath: Seq[String])
+                            : Seq[ Either[ ParseError, OdfInfoItem] ] = {
+         var parameters: Map[String, Either[ ParseError, String ]] = Map(
+          "name" -> getParameter( obj, "name")
+        )
+
+        val path = parameters( "name") match{
+          case Right( name : String) =>
+            currentPath :+ name
+          case Left( err: ParseError) =>
+            return Seq( Left( err) )
         }
-        val time = (obj \ "value").headOption match {
-          case None => None
-          case Some(v) => (v \ "@dateTime").headOption match {
-            case Some(t) => Some("dateTime=\"" + t.text + "\"")
-            case None => (v \ "@unixTime").headOption match {
-              case Some(u) => Some("unixtime=\"" + u.text + "\"")
-              case None => None
-            }
-          }
+
+        val values = obj \ "value" 
+        val timedValues: Seq[ TimedValue] = values.toSeq.map{ value : Node => 
+          val time = getParameter(value, "unixTime", true).right.get 
+          if( time.isEmpty )
+            TimedValue( getParameter(value, "dateTime", true).right.get , value.text ) 
+          else 
+            TimedValue( time, value.text )
         }
 
         val metadata = (obj \ "MetaData").headOption match {
@@ -84,10 +94,78 @@ object OdfParser {
           }
           case None => None
         }
-        Seq(Right(new ODFNode(path, InfoItem, values, time, metadata)))
+        Seq( Right( OdfInfoItem( path, timedValues, metadata) ) )
+  }
+      
+
+
+
+
+  private type ObjectResult = Either[ParseError, OdfObject]
+  private def parseObject(obj: Node, currentPath: Seq[String])
+                            : Seq[ ObjectResult ] = {
+    val id = (obj \ "id")
+    if ( id.isEmpty ) 
+      return Seq( Left( ParseError( "No id for Object.") ) )
+    val path = currentPath :+ id.head.text
+    val subobjs = obj \ "Object"
+    val infoitems = obj \ "InfoItem"
+    if (infoitems.isEmpty && subobjs.isEmpty) {
+      Seq( Right( OdfObject( path, Seq.empty[ OdfObject], Seq.empty[ OdfInfoItem], None) ) )
+    } else {
+      val eithersObjects: Seq[ ObjectResult] = subobjs.flatMap { 
+        sub: Node => parseObject(sub, path) 
       }
-      //Unreachable code?
-      case _ => Seq(Left(new ParseError("Unknown node in O-DF. " + currentPath)))
+      val eithersInfoItems: Seq[ InfoItemResult] = infoitems.flatMap { item: Node =>
+        parseInfoItem(item, path)
+      }
+      val errors: Seq[ Either[ ParseError, OdfObject] ] = 
+        eithersObjects.filter{res => res.isLeft}.map{ left => Left( left.left.get) } ++ 
+        eithersInfoItems.filter{res => res.isLeft}.map{ left => Left( left.left.get) }
+      val childs : Seq[ OdfObject ] =
+        eithersObjects.filter{res => res.isRight}.map{ right => right.right.get }
+      val sensors : Seq[ OdfInfoItem ] =
+        eithersInfoItems.filter{res => res.isRight}.map{ right => right.right.get }
+      if( errors.nonEmpty)
+        return errors
+      else
+        return Seq( Right( OdfObject( path, childs, sensors, None) ) )
     }
   }
+
+
+
+
+
+  private def getParameter( node: Node, 
+                    paramName: String,
+                    tolerateEmpty: Boolean = false, 
+                    validation: String => Boolean = _ => true) 
+                  : Either[ ParseError, String ] = {
+    val parameter = ( node \ "@$paramName" ).text
+    if( parameter.isEmpty && !tolerateEmpty )
+      return Left( ParseError( "No $paramName parameter found in " + node.label ) )
+    else if( validation( parameter ) )
+      return Right( parameter )
+    else
+      return Left( ParseError( "Invalid $paramName parameter" ) )
+  }
+
+  def validateOdfSchema( xml: String) : Seq[ ParseError] = {
+    try {
+      val xsdPath = "./src/main/resources/odfschema.xsd"
+      val factory : SchemaFactory =
+        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+      val schema: Schema = factory.newSchema(new File(xsdPath));
+      val validator: Validator = schema.newValidator();
+      validator.validate(new StreamSource(new StringBufferInputStream(xml)));
+    } catch { 
+      case e: IOException => 
+        Seq( ParseError(e.getMessage() ) )
+      case e: SAXException =>
+        Seq( ParseError(e.getMessage() ) )
+    }
+    return Seq.empty;
+   }
+
 }

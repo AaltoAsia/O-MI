@@ -6,10 +6,10 @@ abstract sealed trait ParseMsg
  *  @param msg error message that describes the problem.
  */
 case class ParseError(msg: String) extends ParseMsg
-case class OneTimeRead(ttl: String, sensors: Seq[ODFNode]) extends ParseMsg
-case class Write(ttl: String, sensors: Seq[ODFNode]) extends ParseMsg
-case class Subscription(ttl: String, interval: String, sensors: Seq[ODFNode]) extends ParseMsg
-case class Result(value: String, parseMsgOp: Option[Seq[ODFNode]]) extends ParseMsg
+case class OneTimeRead(ttl: String, sensors: Seq[OdfNode]) extends ParseMsg
+case class Write(ttl: String, sensors: Seq[OdfNode]) extends ParseMsg
+case class Subscription(ttl: String, interval: String, sensors: Seq[OdfNode]) extends ParseMsg
+case class Result(value: String, parseMsgOp: Option[Seq[OdfNode]]) extends ParseMsg
 
 trait ODFNodeType
 case object NodeObject extends ODFNodeType 
@@ -26,4 +26,10 @@ case object MetaData extends ODFNodeType
  *         metadata can contain e.g. value type, units or similar information
  */
 case class ODFNode( path: String, nodeType: ODFNodeType, value: Option[String], time: Option[String], metadata: Option[String])
+
+case class TimedValue(time: String, value: String)
+
+abstract sealed trait OdfNode
+case class OdfInfoItem( path: Seq[String], timedValues: Seq[TimedValue], metadata: Option[String] )extends OdfNode
+case class OdfObject( path: Seq[String], childs: Seq[OdfObject], sensors: Seq[OdfInfoItem], metadata: Option[String] ) extends OdfNode
 
