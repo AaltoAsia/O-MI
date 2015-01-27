@@ -14,12 +14,12 @@ import sensorDataStructure.{SensorMap,SensorData}
 import agentSystemInterface.AgentListener
 import responses._
 import parsing._
+import database.SQLite
 import database._
 
 object Boot extends App {
 
   // Create our in-memory sensor database
-
 
   val date = new Date();
   val testtime = new java.sql.Timestamp(date.getTime)
@@ -35,7 +35,6 @@ object Boot extends App {
   for ((path, value) <- testData){
       SQLite.set(new DBSensor(path, value,new java.sql.Timestamp(date.getTime) ))
   }
-
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")

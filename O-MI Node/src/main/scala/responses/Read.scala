@@ -11,6 +11,12 @@ import scala.collection.mutable.Map
 
 object Read {
 
+  def normalizePath(path: String): String = 
+    if (path.endsWith("/")) path.init
+    else path
+
+  private val valueLength = "/value".length
+
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
@@ -19,13 +25,25 @@ object Read {
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
 	def generateODFREST(path: String): Option[Either[String,xml.Node]] = {
-    var wasValue = false
-    val npath = if(path.split("/").last == "value"){
-      wasValue =true
-      path.dropRight(5) 
-    }else path
+
+    // Returns (normalizedPath, isValueQuery)
+    def restNormalizePath(path: String): (String, Boolean) = {
+
+      val npath = normalizePath(path)
+
+      if (npath.split("/").last == "value") {
+        val pathWithoutVal = npath.dropRight(valueLength)
+        (pathWithoutVal, true) 
+      } else
+        (npath, false)
+    }
+
+
+    val (npath, wasValue) = restNormalizePath(path)
+
+
 		SQLite.get(path) match {
-			case Some(sensor: DBSensor) => {
+			case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
         else
@@ -34,9 +52,9 @@ object Read {
             <value dateTime={sensor.time.toString}>{sensor.value}</value>
           </InfoItem>
         ))
-			}
 
-			case Some(sensormap: DBObject) => {
+
+			case Some(sensormap: DBObject) =>
 				var resultChildren = Buffer[xml.Node]()
 
 				for (item <- sensormap.childs) {
@@ -62,7 +80,6 @@ object Read {
           }
 
         return Some(Right(xmlReturn))
-			}
 
 			case None => return None
 		}
@@ -122,6 +139,7 @@ object Read {
  						case (eetteri: Either[String,xml.Node]) => {
  						eetteri match {
  							case Right(xmlstuff) => xmlreturn += xmlstuff.toString
+              case _ =>  // nop
  						}
  					}
 

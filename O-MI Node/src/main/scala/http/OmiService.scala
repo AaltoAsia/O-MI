@@ -1,6 +1,8 @@
 package http
 
 import akka.actor.Actor
+import akka.event.LoggingAdapter
+import akka.actor.ActorLogging
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
@@ -12,7 +14,7 @@ import sensorDataStructure.SensorMap
 import xml._
 import cors._
 
-class OmiServiceActor extends Actor with OmiService {
+class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
@@ -26,7 +28,9 @@ class OmiServiceActor extends Actor with OmiService {
 }
 
 // this trait defines our service behavior independently from the service actor
-trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirectives {
+trait OmiService extends HttpService with CORSDirectives
+                                     with DefaultCORSDirectives {
+  def log: LoggingAdapter
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
@@ -75,6 +79,40 @@ trait OmiService extends HttpService with CORSDirectives with DefaultCORSDirecti
       }
     }
 
+  /*
+  val getXMLResponse = entity(as[NodeSeq]) { xml => 
+    val omi = OmiParser.parse(xml)
+    val requests = omi.filter{
+      case ParseError(_) => false
+      case _ => true
+    }
+    val errors = omi.filter{ 
+      case ParseError(_) => true
+      case _ => false
+    }
+    if(errors.isEmpty) {
+      complete{
+        requests.map{
+          case oneTimeRead: OneTimeRead => 
+            log.warning("Not yet impelemented")
+            "Not yet implemented"
+          case write: Write =>
+            log.warning("Not yet impelemented")
+            "Not yet implemented"
+          case subscription: Subscription =>
+            log.warning("Not yet impelemented")
+            "Not yet implemented"
+          case a =>
+            log.warning("Unknown O-MI request " + a.toString)
+            "Unknown O-MI request"
+        }.mkString("\n")
+      }
+    } else {
+      //Error found
+      complete {
+        // TODO: make error response generator in responses package
+        <error> {errors.mkString("; ")} </error>
+        */
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = path("") {
     (post | parameter('method ! "post")) { // Handle POST requests from the client

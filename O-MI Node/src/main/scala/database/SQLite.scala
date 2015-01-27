@@ -6,7 +6,7 @@ import scala.collection.mutable.Map
 
 object SQLite {
 
-  //path where the fle is stored
+  //path where the file is stored
   val dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
   val init = !new File(dbPath).exists()
@@ -241,7 +241,7 @@ class DBData(tag: Tag)
   def * : ProvenShape[(String, String, java.sql.Timestamp)] = (path, value, timestamp)
 }
 /**
- * class DBData to store object hierarchy
+ * class DBNode to store object hierarchy
  * used internally by the object SQLite
  */
 class DBNode(tag: Tag)
