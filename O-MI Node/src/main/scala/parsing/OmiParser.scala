@@ -112,12 +112,16 @@ object OmiParser {
 
         var begin: Option[Timestamp] = None
         var end: Option[Timestamp] = None
+        
+        // Attributes begin/end of the current node
         val (bText, eText) = ((node \ "@begin").text, (node \ "@end").text)
 
         try {
+          //Replace the character 'T' (Unix format) with space (java.sql.Timestamp format)
           begin = Some(Timestamp.valueOf(bText.replace('T', ' ')))
           end = Some(Timestamp.valueOf(eText.replace('T', ' ')))
         } catch {
+          // ParseError or ignore values?
           case e: IllegalArgumentException => println("Illegal start and/or end values, values ignored")
         }
 
