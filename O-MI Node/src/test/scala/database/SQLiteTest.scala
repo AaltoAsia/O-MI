@@ -7,12 +7,12 @@ object SQLiteTest extends Specification {
   
   "SQLite" should {
     sequential
-    var data1 = DBSensor("path/to/sensor1/temp","21.5C",new java.sql.Timestamp(new java.util.Date().getTime))
-    var data2 = DBSensor("path/to/sensor1/hum","40%",new java.sql.Timestamp(new java.util.Date().getTime))
-    var data3 = DBSensor("path/to/sensor2/temp","24.5",new java.sql.Timestamp(new java.util.Date().getTime))
-    var data4= DBSensor("path/to/sensor2/hum","60%",new java.sql.Timestamp(new java.util.Date().getTime))
-    var data5 = DBSensor("path/to/sensor1/temp","21.6C",new java.sql.Timestamp(new java.util.Date().getTime))
-   
+    var data1 = DBSensor("path/to/sensor1/temp","21.5C",new java.sql.Timestamp(1000))
+    var data2 = DBSensor("path/to/sensor1/hum","40%",new java.sql.Timestamp(2000))
+    var data3 = DBSensor("path/to/sensor2/temp","24.5",new java.sql.Timestamp(3000))
+    var data4= DBSensor("path/to/sensor2/hum","60%",new java.sql.Timestamp(4000))
+    var data5 = DBSensor("path/to/sensor1/temp","21.6C",new java.sql.Timestamp(5000))
+     var data6 = DBSensor("path/to/sensor1/temp","21.7C",new java.sql.Timestamp(6000))
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
     }
@@ -26,6 +26,7 @@ object SQLiteTest extends Specification {
       database.SQLite.set(data4) shouldEqual true
     }
     "return true when adding new data" in {
+      database.SQLite.set(data6)
       database.SQLite.set(data5) shouldEqual true
     }
      "return correct value for given valid path" in {
@@ -56,7 +57,7 @@ object SQLiteTest extends Specification {
         case None =>
           res = "not found"
        }
-       res shouldEqual "21.6C"
+       res shouldEqual "21.7C"
     }
     
     "return correct childs for given valid path" in {
@@ -80,6 +81,12 @@ object SQLiteTest extends Specification {
     }
     "return None for given invalid path" in {
       database.SQLite.get("path/to/nosuchsensor") shouldEqual None
+    }
+    
+    "return correct values for given valid path and timestamps" in {
+        var sensrs = database.SQLite.getInterval("path/to/sensor1/temp",new java.sql.Timestamp(900),new java.sql.Timestamp(5500))
+        var values = sensrs.map { x => x.value }
+       values.length == 2 && values.contains("21.5C") && values.contains("21.6C") shouldEqual true
     }
     
     "return true when removing valid path" in{

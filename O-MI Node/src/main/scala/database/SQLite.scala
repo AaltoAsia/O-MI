@@ -3,6 +3,7 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
+import scala.collection.mutable.Buffer
 
 object SQLite {
   var historyLength = 10
@@ -115,7 +116,7 @@ object SQLite {
         if (count > 0) {
           //path is sensor
           //case class matching
-          val latest = pathQuery.sortBy(_.timestamp).take(1)
+          val latest = pathQuery.sortBy(_.timestamp).drop(count-1)
             latest.first match {
               case (path: String, value: String, time: java.sql.Timestamp) =>
                 result = Some(DBSensor(path, value, time))
@@ -137,9 +138,22 @@ object SQLite {
       }
       result
     }
-  def getInterval()={
-    
-    
+  def getInterval(path:String,start:java.sql.Timestamp,end:java.sql.Timestamp):Array[DBSensor]={
+    var result = Buffer[DBSensor]()
+    db withSession { implicit session =>
+      val pathQuery = latestValues.filter(_.path === path)
+        //if path is found from latest values it must be Sensor otherwise check if it is an object
+        var count = pathQuery.list.length
+        if (count > 0) {
+         val sorted = pathQuery.sortBy(_.timestamp)
+         pathQuery foreach {
+           case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
+             if(dbtime.after(start) && dbtime.before(end))
+               result+=new DBSensor(dbpath,dbvalue,dbtime)     
+         }
+        }
+    }
+    result.toArray
   }
   /**
    * Adds missing objects(if any) to hierarchy based on given path
