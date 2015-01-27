@@ -53,7 +53,7 @@ class ReadTest extends Specification {
         val testliste1check = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
 
-        OmiParser.parse(Read.OMIReadResponse(2, None, None, testliste1forread)) == List(
+        OmiParser.parse(Read.OMIReadResponse(2, testliste1forread, None, None)) == List(
             Result("", Some(testliste1check)))
 
     }
