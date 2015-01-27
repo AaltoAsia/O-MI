@@ -48,12 +48,12 @@ class ReadTest extends Specification {
 
         val testliste1 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
-    	val testliste1forread = List(OneTimeRead("10", testliste1))
+    	val testliste1forread = List(OneTimeRead("10", None, None, testliste1))
 
         val testliste1check = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
 
-        OmiParser.parse(Read.OMIReadResponse(2, testliste1forread)) == List(
+        OmiParser.parse(Read.OMIReadResponse(2, None, None, testliste1forread)) == List(
             Result("", Some(testliste1check)))
 
     }
@@ -75,9 +75,9 @@ class ReadTest extends Specification {
         ODFNode("/Objects/RoomSensors1/Temperature/Inside", InfoItem, Some("21.2"), Some("dateTime=" + "\"" + testtime.toString + "\""), None),
         ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
 
-        val testliste2forread = List(OneTimeRead("10", testliste2))
+        val testliste2forread = List(OneTimeRead("10", None, None, testliste2))
 
-        OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)) == List(
+        OmiParser.parse(Read.OMIReadResponse(2, testliste2forread, None, None)) == List(
             Result("", Some(testliste2check)))
 
     }
@@ -85,12 +85,12 @@ class ReadTest extends Specification {
     def e3 = {
         val odfnodes = OmiParser.parse(simpletestfile)
         var listofnodes = odfnodes.collect {
-            case OneTimeRead(_,c) => c
+            case OneTimeRead(_,_,_,c) => c
         }
 
         val nodelist = listofnodes.head
 
-        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList)) == List(  //nodelist should already be a list but for some reason its Seq
+        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList, None, None)) == List(  //nodelist should already be a list but for some reason its Seq
               Result("", Some(nodelist.toList)))
 
     }
