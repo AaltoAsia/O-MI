@@ -22,6 +22,13 @@ libraryDependencies ++= {
   )
 }
 
+//slick
+libraryDependencies ++= List(
+"com.typesafe.slick"  %%  "slick" % "2.1.0",
+"org.slf4j" % "slf4j-nop" % "1.6.4",
+"org.xerial" % "sqlite-jdbc" % "3.7.2"
+)
+
 Revolver.settings
 
 // Eclipse

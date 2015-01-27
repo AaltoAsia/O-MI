@@ -9,13 +9,21 @@ body {
 	margin-left: 2%;
 }
 
-#objectList {
+#objectContainer{
 	border-width: 5px;
 	border-style: groove;
 	margin-top: 15px;
 	margin-bottom: 15px;
 	padding-top: 15px;
-	padding-bottom: 15px;
+	display: inline-block;
+}
+
+#objectList {
+	list-style-type: none;
+}
+
+#objectList ul {
+	list-style-type: none;
 }
 
 #objectList label {
@@ -42,4 +50,8 @@ body {
 	border: 1px solid black;
 	margin-top: 15px;
 	margin-bottom: 15px;
+}
+
+pre.xml {
+	text-align: left;
 }
