@@ -194,5 +194,59 @@ object Read {
 		return OMIresponseStart + OMIelements + OMIresponseEnd
 	}
 
+  def odfObjectGeneration(objects: Seq[ parsing.OdfObject]) : String = {
+    var node : xml.NodeSeq = xml.NodeSeq.Empty 
+    for(obj <- objects){
+      node ++= <Object>
+        <id> {obj.path.last} </id>
+        {
+          if(obj.childs.nonEmpty || obj.sensors.nonEmpty) {
+            odfObjectGeneration(obj.childs)
+            odfInfoItemGeneration(obj.sensors)     
+          } else {
+            val childs : Array[ DBItem]  = SQLite.get( obj.path.mkString( "/") ) match {
+              case Some(infoItem: database.DBSensor) =>
+                println("Found DBSensor instead of DBObject, when should not be possible.")
+                ???
+              case Some(subobj: database.DBObject) =>
+                subobj.childs
+              case None => 
+                println("DBObject not found, when should not be possible.")
+                ???
+            }
+            for( child  <- childs){
+              child match{
+                case infoItem: database.DBSensor =>
+                  <InfoItem name={infoItem.path.split("/").last}></InfoItem>
+                case subobj: database.DBObject =>
+                  <Object><id>{subobj.path.split("/").last}</id></Object>
+              }
+            }
+          }
+        }
+        <MetaData>{obj.metadata}</MetaData>
+      </Object>
+    }
+    node.toString
+  }
+
+  def odfInfoItemGeneration(infoItems: Seq[ parsing.OdfInfoItem]) : String = {
+    var node : xml.NodeSeq = xml.NodeSeq.Empty 
+    for(infoItem <- infoItems){
+      node ++= <InfoItem name={infoItem.path.last}>
+        {
+            val item = SQLite.get(infoItem.path.mkString("/"))
+            item match{
+              case Some( sensor : database.DBSensor) =>
+              <value unixTime={sensor.time.toString}>{sensor.value}</value>
+              case Some( obj : database.DBObject) =>
+                println("WARN: Object found in InfoItem in DB!")
+            }
+        }
+        <MetaData>{infoItem.metadata}</MetaData>
+      </InfoItem>
+    }
+    node.toString
+  }
 }
 
