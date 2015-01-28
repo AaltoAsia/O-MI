@@ -33,7 +33,7 @@ object OdfParser {
        if( schema_err.nonEmpty )
          return schema_err.map{ e => Left(e)}
 
-   val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(Left(ParseError("Invalid XML"))))
+   val root = XML.loadString(xml_msg)
     if (root.label != "Objects")
       return Seq(Left(ParseError("ODF doesn't have Objects as root.")))
     else
@@ -65,9 +65,16 @@ object OdfParser {
     }
   }
 
+  /** private helper type for parseInfoItem
+    *
+    */
   private type InfoItemResult = Either[ParseError, OdfInfoItem]
+  /** private helper function for parsing an InfoItem
+    * @param node to parse, should be InfoItem
+    * @param current path parsed from xml
+    */
   private def parseInfoItem(node: Node, currentPath: Seq[String])
-                            : Seq[ Either[ ParseError, OdfInfoItem] ] = {
+                            : Seq[ InfoItemResult ] = {
         var parameters: Map[String, Either[ ParseError, String ]] = Map(
           "name" -> getParameter( node, "name")
         )
@@ -97,9 +104,15 @@ object OdfParser {
       
 
 
-
-
+  /** private helper type for parseObject
+    *
+    */
   private type ObjectResult = Either[ParseError, OdfObject]
+
+  /** private helper function for parsing an Object, recursive
+    * @param node to parse, should be an Object
+    * @param current path parsed from xml
+    */
   private def parseObject(node: Node, currentPath: Seq[String])
                             : Seq[ ObjectResult ] = {
     val subnodes = Map(
@@ -138,7 +151,14 @@ object OdfParser {
   }
 
 
-
+  /** private helper function for getting child of an node.
+    * Handles error cases.
+    * @param node were parameter should be.
+    * @param child's label
+    * @param is nonexisting childs accepted, is child's existent mandatory
+    * @param is multiple childs accepted
+    * @return Either ParseError or sequence of childs found
+    */
   private def getChild( node: Node, 
                     childName: String,
                     tolerateEmpty: Boolean = false, 
@@ -154,7 +174,14 @@ object OdfParser {
   }
 
 
-
+  /** private helper function for getting parameter of an node.
+    * Handles error cases.
+    * @param node were parameter should be.
+    * @param parameter's label
+    * @param is nonexisting parameter accepted, is parameter's existent mandatory
+    * @param validation function if parameter musth confor some format
+    * @return Either ParseError or parameter as String
+    */
   private def getParameter( node: Node, 
                     paramName: String,
                     tolerateEmpty: Boolean = false, 
@@ -169,6 +196,10 @@ object OdfParser {
       return Left( ParseError( "Invalid $paramName parameter" ) )
   }
 
+  /** function for checking does given string confort O-DF schema
+    * @param String to check
+    * @return ParseErrors found while checking, if empty, successful
+    */
   def validateOdfSchema( xml: String) : Seq[ ParseError] = {
     try {
       val xsdPath = "./src/main/resources/odfschema.xsd"

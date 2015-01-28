@@ -118,7 +118,7 @@ trait OmiService extends HttpService with CORSDirectives
     (post | parameter('method ! "post")) { // Handle POST requests from the client
       respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
         entity(as[NodeSeq]) { xml =>
-          val omi = OmiParser.parse(xml)
+          val omi = OmiParser.parse(xml.toString)
           val requests = omi.filter {
             case ParseError(_) => false
             case _ => true

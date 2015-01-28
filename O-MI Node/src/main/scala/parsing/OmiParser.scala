@@ -43,7 +43,7 @@ object OmiParser {
     if( schema_err.nonEmpty )
       return schema_err
 
-    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
+    val root = XML.loadString(xml_msg)
     parse(root)
   }
 
@@ -53,7 +53,7 @@ object OmiParser {
    * @return sequence of ParseMsg classes, different message types are defined in
    *         the TypeClasses.scala file
    */
-  def parse(xml_msg: NodeSeq): Seq[ParseMsg] = {
+  private def parse(xml_msg: NodeSeq): Seq[ParseMsg] = {
 
 
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
@@ -81,7 +81,7 @@ object OmiParser {
    *  type the message contains and handles them.
    *  
    *  @param node scala.xml.Node that should contain the message to be parsed e.g. read or write messages
-   *  @param ttl ttl of the omiEnvalope as string. ttl is in seconds.
+   *  @param ttl of the omiEnvalope as string. ttl is in seconds.
    * 
    */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
@@ -282,6 +282,14 @@ object OmiParser {
 
   private def errorsAndOdf(odf: Seq[OdfParser.ParseResult]) = odf.groupBy(_.isLeft)
 
+  /** private helper function for getting parameter of an node.
+    * Handles error cases.
+    * @param node were parameter should be.
+    * @param parameter's label
+    * @param is nonexisting parameter accepted, is parameter's existent mandatory
+    * @param validation function if parameter musth confor some format
+    * @return Either ParseError or parameter as String
+    */
   private def getParameter( node: Node, 
                     paramName: String,
                     tolerateEmpty: Boolean = false, 
@@ -296,6 +304,14 @@ object OmiParser {
       return Left( ParseError( "Invalid $paramName parameter" ) )
   }
 
+  /** private helper function for getting child of an node.
+    * Handles error cases.
+    * @param node were parameter should be.
+    * @param child's label
+    * @param is nonexisting childs accepted, is child's existent mandatory
+    * @param is multiple childs accepted
+    * @return Either ParseError or sequence of childs found
+    */
   private def getChild( node: Node, 
                     childName: String,
                     tolerateEmpty: Boolean = false, 
@@ -309,7 +325,10 @@ object OmiParser {
     else
       return Right( childs )
   }
-
+  /** function for checking does given string confort O-MI schema
+    * @param String to check
+    * @return ParseErrors found while checking, if empty, successful
+    */
   def validateOmiSchema( xml: String) : Seq[ ParseError] = {
     try {
       val xsdPath = "./src/main/resources/omischema.xsd"

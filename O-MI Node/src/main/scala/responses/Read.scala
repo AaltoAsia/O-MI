@@ -193,10 +193,18 @@ object Read {
 
 		return OMIresponseStart + OMIelements + OMIresponseEnd
 	}
+  /** helper function for generating whold O-DF xml.
+    * @param nodes in Objects node to be generated
+    * @return generated O-DF xml as String
+    */
   def odfGeneration(objects: Seq[ parsing.OdfObject]) : String = {
     (<Objects>{odfObjectGeneration(objects)}</Objects>).toString
   }
 
+  /** helper function for generating O-DF's Object nodes, recursive
+    * @param nodes to generate
+    * @return generated xml as String
+    */
   def odfObjectGeneration(objects: Seq[ parsing.OdfObject]) : String = {
     var node : xml.NodeSeq = xml.NodeSeq.Empty 
     for(obj <- objects){
@@ -233,6 +241,10 @@ object Read {
     node.toString
   }
 
+  /** helper function for generating O-DF's InfoItem nodes
+    * @param nodes to generate
+    * @return generated xml as String
+    */
   def odfInfoItemGeneration(infoItems: Seq[ parsing.OdfInfoItem]) : String = {
     var node : xml.NodeSeq = xml.NodeSeq.Empty 
     for(infoItem <- infoItems){
