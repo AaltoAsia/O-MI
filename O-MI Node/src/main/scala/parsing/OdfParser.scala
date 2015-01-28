@@ -21,7 +21,7 @@ import org.xml.sax.SAXException;
 object OdfParser {
   
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
-  type ParseResult = Either[ParseError, OdfNode]
+  type ParseResult = Either[ParseError, OdfObject]
   
   /** Public method for parsing the xml string into seq of ParseResults.
    *  
@@ -54,11 +54,6 @@ object OdfParser {
       /* Found an Object*/
       case "Object" => {
         parseObject(node, currentPath)
-      }
-      //TODO check this!!
-      /* Found an InfoItem*/
-      case "InfoItem" => {
-        parseInfoItem(node, currentPath)
       }
       //Unreachable code?
       case _ => Seq( Left( ParseError( "Unknown node in O-DF at path: " + currentPath.mkString( "/") ) ) )
@@ -212,7 +207,7 @@ object OdfParser {
       case e: IOException => 
         //TODO: log these instead of println
         println(e.getMessage()) 
-        Seq( ParseError("Invalid XML, schema failure") )
+        Seq( ParseError("Invalid XML, IO failure") )
       case e: SAXException =>
         println(e.getMessage()) 
         Seq( ParseError("Invalid XML, schema failure") )

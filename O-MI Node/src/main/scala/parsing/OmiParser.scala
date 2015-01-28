@@ -341,7 +341,7 @@ object OmiParser {
       case e: IOException => 
         //TODO: log these instead of println
         println(e.getMessage()) 
-        Seq( ParseError("Invalid XML, schema failure") )
+        Seq( ParseError("Invalid XML, IO failure") )
       case e: SAXException =>
         println(e.getMessage()) 
         Seq( ParseError("Invalid XML, schema failure") )

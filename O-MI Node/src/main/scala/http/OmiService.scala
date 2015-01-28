@@ -131,7 +131,7 @@ trait OmiService extends HttpService with CORSDirectives
           if (errors.isEmpty) {
             complete {
               requests.map {
-                case oneTimeRead: OneTimeRead => println("read"); Read.OMIReadResponse(2, requests.toList)
+                case oneTimeRead: OneTimeRead => println("read"); Read.OMIReadResponse(requests.toList)
                 case write: Write => println("write"); ???
                 case subscription: Subscription => println("sub"); ???
               }.mkString("\n")
