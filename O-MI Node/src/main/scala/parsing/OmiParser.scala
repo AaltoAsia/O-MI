@@ -108,7 +108,7 @@ object OmiParser {
         if( errors.nonEmpty)
           return errors.toSeq 
 
-        val odf = parseODF(subnodes("objs").right.get.head)
+        val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
@@ -116,7 +116,7 @@ object OmiParser {
           Seq( Write( ttl,
                       right.map(_.right.get),
                       parameters("callback").right.get, 
-                      subnodes("requestIds").right.get.map{
+                      subnodes("requestId").right.get.map{
                         id => id.text
                       }
                     ) )
@@ -295,13 +295,13 @@ object OmiParser {
                     tolerateEmpty: Boolean = false, 
                     validation: String => Boolean = _ => true) 
                   : Either[ ParseError, String ] = {
-    val parameter = ( node \ "@$paramName" ).text
+    val parameter = ( node \ s"@$paramName" ).text
     if( parameter.isEmpty && !tolerateEmpty )
-      return Left( ParseError( "No $paramName parameter found in " + node.label ) )
+      return Left( ParseError( s"No $paramName parameter found in " + node.label ) )
     else if( validation( parameter ) )
       return Right( parameter )
     else
-      return Left( ParseError( "Invalid $paramName parameter" ) )
+      return Left( ParseError( s"Invalid $paramName parameter" ) )
   }
 
   /** private helper function for getting child of an node.
@@ -317,11 +317,11 @@ object OmiParser {
                     tolerateEmpty: Boolean = false, 
                     tolerateMultiple: Boolean = false) 
                   : Either[ ParseError, Seq[ Node] ] = {
-    val childs = ( node \ "$childName" )
+    val childs = ( node \ s"$childName" )
     if(!tolerateEmpty && childs.isEmpty )
-      return Left( ParseError( "No $childName child found in " + node.label ) )
+      return Left( ParseError( s"No $childName child found in " + node.label ) )
     else if( !tolerateMultiple && childs.size > 1  )
-      return Left( ParseError( "Multiple $childName childs found in " + node.label ) )
+      return Left( ParseError( s"Multiple $childName childs found in " + node.label ) )
     else
       return Right( childs )
   }

@@ -159,11 +159,11 @@ object OdfParser {
                     tolerateEmpty: Boolean = false, 
                     tolerateMultiple: Boolean = false) 
                   : Either[ ParseError, Seq[ Node] ] = {
-    val childs = ( node \ "$childName" )
+    val childs = ( node \ s"$childName" )
     if(!tolerateEmpty && childs.isEmpty )
-      return Left( ParseError( "No $childName child found in " + node.label ) )
+      return Left( ParseError( s"No $childName child found in " + node.label ) )
     else if( !tolerateMultiple && childs.size > 1  )
-      return Left( ParseError( "Multiple $childName childs found in " + node.label ) )
+      return Left( ParseError( s"Multiple $childName childs found in " + node.label ) )
     else
       return Right( childs )
   }
@@ -182,13 +182,13 @@ object OdfParser {
                     tolerateEmpty: Boolean = false, 
                     validation: String => Boolean = _ => true) 
                   : Either[ ParseError, String ] = {
-    val parameter = ( node \ "@$paramName" ).text
+    val parameter = ( node \ s"@$paramName" ).text
     if( parameter.isEmpty && !tolerateEmpty )
-      return Left( ParseError( "No $paramName parameter found in " + node.label ) )
+      return Left( ParseError( s"No $paramName parameter found in " + node.label ) )
     else if( validation( parameter ) )
       return Right( parameter )
     else
-      return Left( ParseError( "Invalid $paramName parameter" ) )
+      return Left( ParseError( s"Invalid $paramName parameter" ) )
   }
 
   /** function for checking does given string confort O-DF schema
@@ -211,6 +211,8 @@ object OdfParser {
       case e: SAXException =>
         println(e.getMessage()) 
         Seq( ParseError("Invalid XML, schema failure") )
+      case e: Exception =>
+        Seq( ParseError("Unknown exception: " + e.getMessage))
     }
     return Seq.empty;
    }
