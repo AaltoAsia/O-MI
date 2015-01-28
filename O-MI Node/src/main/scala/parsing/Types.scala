@@ -64,11 +64,11 @@ case class TimedValue(time: String, value: String)
 abstract sealed trait OdfNode
 case class OdfInfoItem( path: Seq[ String],
                         timedValues: Seq[ TimedValue],
-                        metadata: Option[String] 
+                        metadata: String 
                       ) extends OdfNode
 case class OdfObject( path: Seq[String],
                       childs: Seq[OdfObject],
                       sensors: Seq[OdfInfoItem],
-                      metadata: Option[String]
+                      metadata: String
                     ) extends OdfNode
 

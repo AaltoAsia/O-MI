@@ -66,21 +66,25 @@ object OdfParser {
   }
 
   private type InfoItemResult = Either[ParseError, OdfInfoItem]
-  private def parseInfoItem(obj: Node, currentPath: Seq[String])
+  private def parseInfoItem(node: Node, currentPath: Seq[String])
                             : Seq[ Either[ ParseError, OdfInfoItem] ] = {
-         var parameters: Map[String, Either[ ParseError, String ]] = Map(
-          "name" -> getParameter( obj, "name")
+        var parameters: Map[String, Either[ ParseError, String ]] = Map(
+          "name" -> getParameter( node, "name")
         )
 
-        val path = parameters( "name") match{
-          case Right( name : String) =>
-            currentPath :+ name
-          case Left( err: ParseError) =>
-            return Seq( Left( err) )
-        }
 
-        val values = obj \ "value" 
-        val timedValues: Seq[ TimedValue] = values.toSeq.map{ value : Node => 
+        val subnodes = Map(
+          "value"       -> getChild( node, "value", true, true),
+          "MetaData" -> getChild( node, "MetaData", true, true)
+        )
+        
+        val errors = parameters.filter( _._2.isLeft).map( _._2.left.get) ++ subnodes.filter( _._2.isLeft ).map( _._2.left.get)
+        if( errors.nonEmpty)
+          return errors.map(e => Left(e)).toSeq 
+
+        val path = currentPath :+ parameters( "name").right.get 
+            
+        val timedValues: Seq[ TimedValue] = subnodes("value").right.get.toSeq.map{ value : Node => 
           val time = getParameter(value, "unixTime", true).right.get 
           if( time.isEmpty )
             TimedValue( getParameter(value, "dateTime", true).right.get , value.text ) 
@@ -88,13 +92,7 @@ object OdfParser {
             TimedValue( time, value.text )
         }
 
-        val metadata = (obj \ "MetaData").headOption match {
-          case Some(node: Node) => {
-            Some(node.text)
-          }
-          case None => None
-        }
-        Seq( Right( OdfInfoItem( path, timedValues, metadata) ) )
+        Seq( Right( OdfInfoItem( path, timedValues, subnodes("MetaData").right.get.text) ) )
   }
       
 
@@ -102,21 +100,27 @@ object OdfParser {
 
 
   private type ObjectResult = Either[ParseError, OdfObject]
-  private def parseObject(obj: Node, currentPath: Seq[String])
+  private def parseObject(node: Node, currentPath: Seq[String])
                             : Seq[ ObjectResult ] = {
-    val id = (obj \ "id")
-    if ( id.isEmpty ) 
-      return Seq( Left( ParseError( "No id for Object.") ) )
-    val path = currentPath :+ id.head.text
-    val subobjs = obj \ "Object"
-    val infoitems = obj \ "InfoItem"
-    if (infoitems.isEmpty && subobjs.isEmpty) {
-      Seq( Right( OdfObject( path, Seq.empty[ OdfObject], Seq.empty[ OdfInfoItem], None) ) )
+    val subnodes = Map(
+      "id"        -> getChild( node, "id"),
+      "Object"    -> getChild( node, "Object", true, true),
+      "InfoItem"  -> getChild( node, "InfoItem", true, true),
+      "MetaData"  -> getChild( node, "MetaData", true)
+    )
+
+    val errors = subnodes.filter( _._2.isLeft ).map( _._2.left.get)
+    if( errors.nonEmpty)
+      return errors.map(e => Left(e) ).toSeq 
+
+    val path = currentPath :+ subnodes( "id").right.get.text 
+    if (subnodes("InfoItem").right.get.isEmpty && subnodes("Object").right.get.isEmpty) {
+      Seq( Right( OdfObject( path, Seq.empty[ OdfObject], Seq.empty[ OdfInfoItem], subnodes("MetaData").right.get.text) ) )
     } else {
-      val eithersObjects: Seq[ ObjectResult] = subobjs.flatMap { 
+      val eithersObjects: Seq[ ObjectResult] = subnodes("Object").right.get.flatMap { 
         sub: Node => parseObject(sub, path) 
       }
-      val eithersInfoItems: Seq[ InfoItemResult] = infoitems.flatMap { item: Node =>
+      val eithersInfoItems: Seq[ InfoItemResult] = subnodes("InfoItem").right.get.flatMap { item: Node =>
         parseInfoItem(item, path)
       }
       val errors: Seq[ Either[ ParseError, OdfObject] ] = 
@@ -129,11 +133,25 @@ object OdfParser {
       if( errors.nonEmpty)
         return errors
       else
-        return Seq( Right( OdfObject( path, childs, sensors, None) ) )
+        return Seq( Right( OdfObject( path, childs, sensors, subnodes("MetaData").right.get.text) ) )
     }
   }
 
 
+
+  private def getChild( node: Node, 
+                    childName: String,
+                    tolerateEmpty: Boolean = false, 
+                    tolerateMultiple: Boolean = false) 
+                  : Either[ ParseError, Seq[ Node] ] = {
+    val childs = ( node \ "$childName" )
+    if(!tolerateEmpty && childs.isEmpty )
+      return Left( ParseError( "No $childName child found in " + node.label ) )
+    else if( !tolerateMultiple && childs.size > 1  )
+      return Left( ParseError( "Multiple $childName childs found in " + node.label ) )
+    else
+      return Right( childs )
+  }
 
 
 

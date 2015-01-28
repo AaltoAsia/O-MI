@@ -2,6 +2,7 @@ package parsing
 
 import scala.xml._
 import scala.util.Try
+import scala.collection.mutable.Map
 
 import java.io.File
 import java.io.StringReader
@@ -91,35 +92,31 @@ object OmiParser {
         Write request 
       */
       case "write" => {
-        val msgformat = getParameter(node,"msgformat")
-        if( msgformat.isLeft )
-          return Seq( msgformat.left.get)
+        val parameters = Map(
+          "msgformat" -> getParameter( node, "msgformat"),
+          "callback"  -> getParameter( node, "callback", true)
+        )
+        val subnodes = Map(
+          "msg"       -> getChild( node, "msg"),
+          "requestId" -> getChild( node, "requestId", true, true)
+        )
 
-        val msg = getChild(node, "msg")
-        if( msg.isLeft )
-          return Seq( msg.left.get)
+        if( subnodes("msg").isRight )
+          subnodes += "Objects"   -> getChild( subnodes("msg").right.get.head, "Objects")
 
-        val objs = getChild(msg.right.get.head, "Objects")
-        if( objs.isLeft )
-          return Seq( objs.left.get)
-        
-        val requestIds = getChild( node, "requestId", true, true)
-        if( requestIds.isLeft )
-          return Seq( requestIds.left.get)
+        val errors = parameters.filter( _._2.isLeft).map( _._2.left.get) ++ subnodes.filter( _._2.isLeft ).map( _._2.left.get)
+        if( errors.nonEmpty)
+          return errors.toSeq 
 
-        val callback = getParameter( node, "callback", true)
-        if( callback.isLeft )
-          return Seq( callback.left.get)
-
-        val odf = parseODF(objs.right.get.head)
+        val odf = parseODF(subnodes("objs").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
         if (left.isEmpty && !right.isEmpty) {
           Seq( Write( ttl,
                       right.map(_.right.get),
-                      callback.right.get, 
-                      requestIds.right.get.map{
+                      parameters("callback").right.get, 
+                      subnodes("requestIds").right.get.map{
                         id => id.text
                       }
                     ) )
@@ -132,73 +129,54 @@ object OmiParser {
         Read request 
       */
       case "read" => {
-        val msgformat = getParameter(node,"msgformat")
-        if( msgformat.isLeft )
-          return Seq( msgformat.left.get)
+        val parameters = Map(
+          "msgformat" -> getParameter( node, "msgformat"),
+          "interval"  -> getParameter( node, "interval", true),
+          "begin"     -> getParameter( node, "begin", true),
+          "end"       -> getParameter( node, "end", true),
+          "newest"    -> getParameter( node, "newest", true),
+          "oldest"    -> getParameter( node, "oldest", true),
+          "callback"  -> getParameter( node, "callback", true)
+        )
+        val subnodes = Map(
+          "msg"       -> getChild( node, "msg"),
+          "requestId" -> getChild( node, "requestId", true, true)
+        )
 
-        val msg = getChild(node, "msg")
-        if( msg.isLeft )
-          return Seq( msg.left.get)
+        if( subnodes("msg").isRight )
+          subnodes += "Objects"   -> getChild( subnodes("msg").right.get.head, "Objects")
 
-        val objs = getChild(msg.right.get.head, "Objects")
-        if( objs.isLeft )
-          return Seq( objs.left.get)
+        val errors = parameters.filter( _._2.isLeft).map( _._2.left.get) ++ subnodes.filter( _._2.isLeft ).map( _._2.left.get)
+        if( errors.nonEmpty)
+          return errors.toSeq 
 
-        val interval = getParameter( node, "interval", true)
-        if( interval.isLeft )
-          return Seq( interval.left.get)
-
-        val begin = getParameter( node, "begin", true)
-        if( begin.isLeft )
-          return Seq( begin.left.get)
-
-        val end = getParameter( node, "end", true)
-        if( end.isLeft )
-          return Seq( end.left.get)
-
-        val newest = getParameter( node, "newest", true)
-        if( newest.isLeft )
-          return Seq( newest.left.get)
-
-        val oldest = getParameter( node, "oldest", true)
-        if( oldest.isLeft )
-          return Seq( oldest.left.get)
-
-        val requestIds = getChild( node, "requestId", true, true)
-        if( requestIds.isLeft )
-          return Seq( requestIds.left.get)
-
-        val callback = getParameter( node, "callback", true)
-        if( callback.isLeft )
-          return Seq( callback.left.get)
-
-        val odf = parseODF(objs.right.get.head)
+        val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
         if (left.isEmpty && !right.isEmpty) {
-          if (interval.right.get.isEmpty) {
+          if (parameters("interval").right.get.isEmpty) {
             Seq( OneTimeRead( ttl,
                               right.map( _.right.get),
-                              begin.right.get,
-                              end.right.get,
-                              newest.right.get,
-                              oldest.right.get,
-                              callback.right.get, 
-                              requestIds.right.get.map{
+                              parameters("begin").right.get,
+                              parameters("end").right.get,
+                              parameters("newest").right.get,
+                              parameters("oldest").right.get,
+                              parameters("callback").right.get, 
+                              subnodes("requestId").right.get.map{
                                 id => id.text
                               }
                             ) )
           } else {
             Seq( Subscription(  ttl,
-                                interval.right.get,
+                                parameters("interval").right.get,
                                 right.map( _.right.get),
-                                begin.right.get,
-                                end.right.get,
-                                newest.right.get,
-                                oldest.right.get,
-                                callback.right.get, 
-                                requestIds.right.get.map{
+                                parameters("begin").right.get,
+                                parameters("end").right.get,
+                                parameters("newest").right.get,
+                                parameters("oldest").right.get,
+                                parameters("callback").right.get, 
+                                subnodes("requestId").right.get.map{
                                   id => id.text
                                 }
                               ) )
@@ -232,6 +210,7 @@ object OmiParser {
         val results = getChild(node, "result", false, true)
         if( results.isLeft )
           return Seq( results.left.get)
+
         var parseMsgs : Seq[ ParseMsg] = Seq.empty
         for( result <- results.right.get )
           parseMsgs ++= parseNode(result, ttl)
@@ -240,60 +219,58 @@ object OmiParser {
       }
 
       case "result" => {
-        val msgformat = getParameter(node,"msgformat", true)
-        if( msgformat.isLeft )
-          return Seq( msgformat.left.get)
+        val parameters = Map(
+          "msgformat"   -> getParameter( node, "msgformat"),
+          "callback"    -> getParameter( node, "callback", true)
+        )
+        val subnodes = Map(
+          "return"    -> getChild( node, "return"),
+          "msg"       -> getChild( node, "msg"),
+          "requestId" -> getChild( node, "requestId", true, true)
+        )
 
-        val msg = getChild(node, "msg", true)
-        if( msg.isLeft )
-          return Seq( msg.left.get)
-        
-        val returnValue = getChild(node, "return")
-        if( returnValue.isLeft )
-          return Seq( returnValue.left.get)
+        if( subnodes("msg").isRight )
+          subnodes += "Objects"   -> getChild( subnodes("msg").right.get.head, "Objects", true)
 
-        val returnCode = getParameter(returnValue.right.get.head, "returnCode", true)
-        if( returnCode.isLeft )
-          return Seq( returnCode.left.get)
+        if( subnodes("return").isRight )
+          parameters += "returnCode"   -> getParameter( subnodes("return").right.get.head, "returnCode", true)
 
-        val requestIds = getChild( node, "requestId", true, true)
-        if( requestIds.isLeft )
-          return Seq( requestIds.left.get)
+        val errors = parameters.filter( _._2.isLeft).map( _._2.left.get) ++ subnodes.filter( _._2.isLeft ).map( _._2.left.get)
+        if( errors.nonEmpty)
+          return errors.toSeq 
 
-        val callback = getParameter( node, "callback", true)
-        if( callback.isLeft )
-          return Seq( callback.left.get)
-
-        if( msg.right.get.isEmpty )
-          return Seq( Result( returnValue.right.get.text,
-                              returnCode.right.get,
+        if( subnodes("msg").right.get.isEmpty )
+          return Seq( Result( subnodes("return").right.get.text,
+                              parameters("returnCode").right.get,
                               None,
-                              callback.right.get,
-                              requestIds.right.get.map{
+                              parameters("callback").right.get,
+                              subnodes("requestId").right.get.map{
                                 id => id.text
                               }
                             ) )
-          
-        val objs = getChild(msg.right.get.head, "Objects")
-        if( objs.isLeft )
-          return Seq( objs.left.get)
+        
+        if(subnodes("Objects").right.get.nonEmpty){
+          val odf = parseODF(subnodes("Objects").right.get.head)
+          val left = odf.filter(_.isLeft)
+          val right = odf.filter(_.isRight)
 
-        val odf = parseODF(objs.right.get.head)
-        val left = odf.filter(_.isLeft)
-        val right = odf.filter(_.isRight)
-
-        if (left.isEmpty && !right.isEmpty) {
-          return Seq( Result( returnValue.right.get.text,
-                              returnCode.right.get,
-                              Some( right.map( _.right.get) ),
-                              callback.right.get,
-                              requestIds.right.get.map{
-                                id => id.text
-                              }
-                            ) )
-        } else if (!left.isEmpty) {
-          left.map(_.left.get)
-        } else { Seq(ParseError("No Objects to parse")) }
+          if (left.isEmpty && !right.isEmpty) {
+            return Seq( Result( subnodes("return").right.get.text,
+                                parameters("returnCode").right.get,
+                                Some( right.map( _.right.get) ),
+                                parameters("callback").right.get,
+                                subnodes("requestId").right.get.map{
+                                  id => id.text
+                                }
+                              ) )
+          } else if (!left.isEmpty) {
+            left.map(_.left.get)
+          } else { 
+            Seq( ParseError( "No Objects to parse") ) 
+          }
+        } else {
+            Seq( ParseError( "No Objects node in msg, possible but not implemented") ) 
+        }
       }
 
       /*
