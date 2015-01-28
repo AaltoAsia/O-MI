@@ -7,7 +7,7 @@ object SQLiteTest extends Specification {
   
   "SQLite" should {
     sequential
-    
+    database.SQLite.clearDB()
     var data1 = DBSensor("path/to/sensor1/temp","21.5C",new java.sql.Timestamp(new java.util.Date().getTime))
     var data2 = DBSensor("path/to/sensor1/hum","40%",new java.sql.Timestamp(new java.util.Date().getTime))
     var data3 = DBSensor("path/to/sensor2/temp","24.5",new java.sql.Timestamp(new java.util.Date().getTime))
