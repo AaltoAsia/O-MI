@@ -193,6 +193,9 @@ object Read {
 
 		return OMIresponseStart + OMIelements + OMIresponseEnd
 	}
+  def odfGeneration(objects: Seq[ parsing.OdfObject]) : String = {
+    (<Objects>{odfObjectGeneration(objects)}</Objects>).toString
+  }
 
   def odfObjectGeneration(objects: Seq[ parsing.OdfObject]) : String = {
     var node : xml.NodeSeq = xml.NodeSeq.Empty 
