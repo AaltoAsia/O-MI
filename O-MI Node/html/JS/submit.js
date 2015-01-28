@@ -20,15 +20,15 @@ $(document).on('click', '#object-button', getObjects);
 $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
 
+var objectUrl;
+
 /* Get the objects through ajax get */
 function getObjects() {
-	//Get the current path of the file
-	var url = document.URL;
-	var path = url.substring(0, url.lastIndexOf("/"));
-	
 	console.log("Sending AJAX GET for the objects...");
 	
-	var objectUrl = $("#url-field").val();
+	objectUrl = $("#url-field").val();
+	
+	$("#send-field").val(objectUrl.replace("/Objects", ""));
 	
 	//Sent ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
@@ -223,8 +223,6 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
     return request;
 }
 
-
-
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
@@ -235,6 +233,7 @@ function sendRequest()
 	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
+		//TODO:
         startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
     else
     {
