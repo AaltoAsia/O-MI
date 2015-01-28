@@ -2,41 +2,8 @@
 <Objects>
    <Object>
       <id>SmartHouse</id>
-      <Object>
-         <id>SmartFridge</id>
-         <InfoItem name="PowerConsumption">
-            <value dateTime="2014-12-186T15:34:52">56</value>
-         </InfoItem>
-      </Object>
-      <Object>
-         <id>SmartOven</id>
-         <InfoItem name="PowerOn">
-            <value dateTime="2014-12-186T15:34:52">1</value>
-         </InfoItem>
-      </Object>
-      <InfoItem name="PowerConsumption">
-         <value dateTime="2014-12-186T15:34:52">180</value>
-      </InfoItem>
       <InfoItem name="Moisture">
          <value dateTime="2014-12-186T15:34:52">0.20</value>
       </InfoItem>
-   </Object>
-   <Object>
-      <id>SmartCar</id>
-      <InfoItem name="Fuel">
-         <value dateTime="2014-12-186T15:34:52">30</value>
-      </InfoItem>
-   </Object>
-   <Object>
-      <id>SmartCottage</id>
-      <Object>
-         <id>Heater</id>
-      </Object>
-      <Object>
-         <id>Sauna</id>
-      </Object>
-      <Object>
-         <id>Weather</id>
-      </Object>
    </Object>
 </Objects>
