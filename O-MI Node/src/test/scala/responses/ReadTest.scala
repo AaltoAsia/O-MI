@@ -94,7 +94,7 @@ class ReadTest extends Specification {
 
         val nodelist = listofnodes.head
 
-        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList)) should be equalTo( List(  //nodelist should already be a list but for some reason its Seq
+        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList, None, None)) should be equalTo( List(  //nodelist should already be a list but for some reason its Seq
               Result("",Some(List(ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))))))
             //Result("", Some(nodelist.toList))))
 
