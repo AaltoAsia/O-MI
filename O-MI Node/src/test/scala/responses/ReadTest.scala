@@ -7,6 +7,7 @@ import parsing._
 import database._
 import parsing.OdfParser._
 import java.util.Date;
+import java.util.Calendar;
 import java.text.SimpleDateFormat;
 
 
@@ -18,6 +19,8 @@ class ReadTest extends Specification {
 
     val date = new Date(1421775723); //static date for testing
     val testtime = new java.sql.Timestamp(date.getTime)
+    val calendar = Calendar.getInstance()
+    calendar.setTimeInMillis(testtime.getTime())
     val testData = Map(
         "Objects/Refrigerator123/PowerConsumption" -> "0.123",
         "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
@@ -92,7 +95,8 @@ class ReadTest extends Specification {
         val nodelist = listofnodes.head
 
         OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList)) should be equalTo( List(  //nodelist should already be a list but for some reason its Seq
-              Result("", Some(nodelist.toList))))
+              Result("",Some(List(ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))))))
+//Result("", Some(nodelist.toList))))
 
     }
 
