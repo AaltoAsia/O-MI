@@ -42,7 +42,8 @@ class ReadTest extends Specification {
       Correct XML with one value                $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
-      Random small tests                        $e4
+      REST works with /value                    $e4
+      REST works with trailing /                $e5
       
     """
 
@@ -100,7 +101,19 @@ class ReadTest extends Specification {
     }
 
     def e4 = {
-        1 == 1
+        val RESTXML = Read.generateODFREST("Objects/Refrigerator123/PowerConsumption/value")
+
+        RESTXML should be equalTo(Some(Left("0.123")))
+    }
+
+    def e5 = {
+        val RESTXML = Read.generateODFREST("Objects/RoomSensors1/")
+
+        val rightXML = <Object><id>RoomSensors1</id><InfoItem name="CarbonDioxide"/><Object>
+                  <id>Temperature</id>
+                </Object></Object>
+
+        RESTXML should be equalTo(Some(Right(rightXML)))
     }
 
 }
