@@ -111,7 +111,7 @@ class AgentListenerTest extends Specification {
     "log warning when sending malformed data" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
-      EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML", occurrences = 1) intercept {
+      EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
       }
     }
