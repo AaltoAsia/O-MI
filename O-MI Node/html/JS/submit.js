@@ -1,7 +1,7 @@
 /* IconSelect object */
 var iconSelect;
 
-window.onload = function() {
+$(function() {
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select");
 
@@ -13,13 +13,16 @@ window.onload = function() {
 	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
 	iconSelect.refresh(icons);
-}; 
 
-/* Click events for buttons */
-$(document).on('click', '#object-button', getObjects);
-$(document).on('click', '#request-gen', generateRequest);
-$(document).on('click', '#request-send', sendRequest);
 
+        /* Click events for buttons */
+        $(document).on('click', '#object-button', getObjects);
+        $(document).on('click', '#request-gen', generateRequest);
+        $(document).on('click', '#request-send', sendRequest);
+
+        $("#url-field").val('http://' + window.location.host + "/Objects");
+
+}); 
 var objectUrl;
 
 /* Get the objects through ajax get */
