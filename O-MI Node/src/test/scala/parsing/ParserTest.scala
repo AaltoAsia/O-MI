@@ -628,7 +628,7 @@ temp.head should be equalTo(Left(ParseError("ODF doesn't have Objects as root.")
         </Object>
     </Objects>
 """) 
-temp.head should be equalTo(Left(ParseError("No id for Object.")))
+temp.head should be equalTo(Left(ParseError("id's value not found in Object.")))
 
   }
   def e404 = {
@@ -641,7 +641,7 @@ temp.head should be equalTo(Left(ParseError("No id for Object.")))
         </Object>
     </Objects>
 """) 
-temp.head should be equalTo(Left(ParseError("No name for InfoItem.")))
+temp.head should be equalTo(Left(ParseError("No name parameter found in InfoItem.")))
 
   }
   //  def e405 = false

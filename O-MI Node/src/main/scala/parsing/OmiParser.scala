@@ -287,11 +287,24 @@ object OmiParser {
     validation: String => Boolean = _ => true): Either[ParseError, String] = {
     val parameter = (node \ s"@$paramName").text
     if (parameter.isEmpty && !tolerateEmpty)
-      return Left(ParseError(s"No $paramName parameter found in " + node.label))
+      return Left(ParseError(s"No $paramName parameter found in ${node.label}."))
     else if (validation(parameter))
       return Right(parameter)
     else
-      return Left(ParseError(s"Invalid $paramName parameter"))
+      return Left(ParseError(s"Invalid $paramName parameter in ${node.label}."))
+  }
+
+  private def getChild(node: Node,
+    childName: String,
+    tolerateEmpty: Boolean = false,
+    tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
+    val childs = (node \ s"$childName")
+    if (!tolerateNonexist && childs.isEmpty)
+      return Left(ParseError(s"No $childName child found in ${node.label}."))
+    else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
+      return Left(ParseError(s"$childName's value not found in ${node.label}."))
+    else
+      return Right(childs)
   }
 
   /**
@@ -299,22 +312,27 @@ object OmiParser {
    * Handles error cases.
    * @param node were parameter should be.
    * @param child's label
+   * @param is child allowed to have empty value
    * @param is nonexisting childs accepted, is child's existent mandatory
    * @param is multiple childs accepted
    * @return Either ParseError or sequence of childs found
    */
-  private def getChild(node: Node,
+  private def getChilds(node: Node,
     childName: String,
     tolerateEmpty: Boolean = false,
+    tolerateNonexist: Boolean = false,
     tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
     val childs = (node \ s"$childName")
-    if (!tolerateEmpty && childs.isEmpty)
-      return Left(ParseError(s"No $childName child found in " + node.label))
+    if (!tolerateNonexist && childs.isEmpty)
+      return Left(ParseError(s"No $childName child found in ${node.label}."))
     else if (!tolerateMultiple && childs.size > 1)
-      return Left(ParseError(s"Multiple $childName childs found in " + node.label))
+      return Left(ParseError(s"Multiple $childName childs found in ${node.label}."))
+    else if (!tolerateEmpty && childs.nonEmpty && childs.contains{ n: Node => n.text.isEmpty }  )
+      return Left(ParseError(s"$childName's value not found in ${node.label}."))
     else
       return Right(childs)
   }
+
   /**
    * function for checking does given string confort O-MI schema
    * @param String to check

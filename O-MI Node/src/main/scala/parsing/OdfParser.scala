@@ -77,7 +77,7 @@ object OdfParser {
       "name" -> getParameter(node, "name"))
 
     val subnodes = Map(
-      "value" -> getChild(node, "value", true, true),
+      "value" -> getChilds(node, "value", false, true, true),
       "MetaData" -> getChild(node, "MetaData", true, true))
 
     val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
@@ -111,9 +111,9 @@ object OdfParser {
   private def parseObject(node: Node, currentPath: Seq[String]): Seq[ObjectResult] = {
     val subnodes = Map(
       "id" -> getChild(node, "id"),
-      "Object" -> getChild(node, "Object", true, true),
-      "InfoItem" -> getChild(node, "InfoItem", true, true),
-      "MetaData" -> getChild(node, "MetaData", true))
+      "Object" -> getChilds(node, "Object", true, true, true),
+      "InfoItem" -> getChilds(node, "InfoItem", true, true, true),
+      "MetaData" -> getChild(node, "MetaData", true, true))
 
     val errors = subnodes.filter(_._2.isLeft).map(_._2.left.get)
     if (errors.nonEmpty)
@@ -144,28 +144,6 @@ object OdfParser {
   }
 
   /**
-   * private helper function for getting child of an node.
-   * Handles error cases.
-   * @param node were parameter should be.
-   * @param child's label
-   * @param is nonexisting childs accepted, is child's existent mandatory
-   * @param is multiple childs accepted
-   * @return Either ParseError or sequence of childs found
-   */
-  private def getChild(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName")
-    if (!tolerateEmpty && childs.isEmpty)
-      return Left(ParseError(s"No $childName child found in " + node.label))
-    else if (!tolerateMultiple && childs.size > 1)
-      return Left(ParseError(s"Multiple $childName childs found in " + node.label))
-    else
-      return Right(childs)
-  }
-
-  /**
    * private helper function for getting parameter of an node.
    * Handles error cases.
    * @param node were parameter should be.
@@ -180,11 +158,59 @@ object OdfParser {
     validation: String => Boolean = _ => true): Either[ParseError, String] = {
     val parameter = (node \ s"@$paramName").text
     if (parameter.isEmpty && !tolerateEmpty)
-      return Left(ParseError(s"No $paramName parameter found in " + node.label))
+      return Left(ParseError(s"No $paramName parameter found in ${node.label}."))
     else if (validation(parameter))
       return Right(parameter)
     else
-      return Left(ParseError(s"Invalid $paramName parameter"))
+      return Left(ParseError(s"Invalid $paramName parameter in ${node.label}."))
+  }
+
+  /**
+   * private helper function for getting child of an node.
+   * Handles error cases.
+   * @param node were parameter should be.
+   * @param child's label
+   * @param is child allowed to have empty value
+   * @param is nonexisting childs accepted, is child's existent mandatory
+   * @return Either ParseError or sequence of childs found
+   */
+  private def getChild(node: Node,
+    childName: String,
+    tolerateEmpty: Boolean = false,
+    tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
+    val childs = (node \ s"$childName")
+    if (!tolerateNonexist && childs.isEmpty)
+      return Left(ParseError(s"No $childName child found in ${node.label}."))
+    else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
+      return Left(ParseError(s"$childName's value not found in ${node.label}."))
+    else
+      return Right(childs)
+  }
+
+  /**
+   * private helper function for getting child of an node.
+   * Handles error cases.
+   * @param node were parameter should be.
+   * @param child's label
+   * @param is child allowed to have empty value
+   * @param is nonexisting childs accepted, is child's existent mandatory
+   * @param is multiple childs accepted
+   * @return Either ParseError or sequence of childs found
+   */
+  private def getChilds(node: Node,
+    childName: String,
+    tolerateEmpty: Boolean = false,
+    tolerateNonexist: Boolean = false,
+    tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
+    val childs = (node \ s"$childName")
+    if (!tolerateNonexist && childs.isEmpty)
+      return Left(ParseError(s"No $childName child found in ${node.label}."))
+    else if (!tolerateMultiple && childs.size > 1)
+      return Left(ParseError(s"Multiple $childName childs found in ${node.label}."))
+    else if (!tolerateEmpty && childs.nonEmpty && childs.contains{ n: Node => n.text.isEmpty }  )
+      return Left(ParseError(s"$childName's value not found in ${node.label}."))
+    else
+      return Right(childs)
   }
 
   /**
