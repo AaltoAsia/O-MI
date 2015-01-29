@@ -68,47 +68,46 @@ class InputDataHandler(
       log.debug("Got data \n" + dataString)
 
       val parsedEntries = OdfParser.parse(dataString)
+      val errors = parsedEntries.filter( _.isLeft ).map( e => e.left.get) 
+      val corrects = parsedEntries.filter( _.isRight ).map( c => c.right.get) 
 
-
-      for (parsed <- parsedEntries) {
-        parsed match {
-/*
-          case Right(
-            parsing.ODFNode(
-              path,
-              parsing.InfoItem,
-              Some(value),
-              oTime,
-              _  // TODO: FIXME: don't ignore metadata
-            )
-          ) =>
-            val pathfix = if (path.startsWith("/")) path.tail else path
-            val sensorData = oTime match {
-              case Some(time) => 
-                //TODO: FIX get real time, not current
-                val time = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(pathfix, value, time)
-              case None =>
-                val currentTime = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(pathfix, value, currentTime)
-            }
-            log.debug(s"Saving to path $pathfix")
-
-            SQLite.set(sensorData)
-*/
-          case Left(error) => 
-            log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
-/*
-          case Right(node: parsing.ODFNode) =>
-            log.warning("Throwing away node: " + node)
-  */      }
+      for (error <- errors) {
+        log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
       }
+
+      handleObjects(corrects)
     case PeerClosed =>
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
-}
+  private def handleObjects( objs: Seq[parsing.OdfObject] ) : Unit = {
+    for(obj <- objs){
+      if(obj.childs.nonEmpty)
+        handleObjects(obj.childs)
+      if(obj.sensors.nonEmpty)
+        handleInfoItems(obj.sensors)
+    }
+  }
+  private def handleInfoItems( infoitems: Seq[parsing.OdfInfoItem]) : Unit = {
+    for( info <- infoitems ){
+      for(timedValue <- info.timedValues){
+          val sensorData = timedValue.time match {
+              case "" =>
+                val currentTime = new java.sql.Timestamp(new Date().getTime())
+                new DBSensor(info.path.mkString("/"), timedValue.value, currentTime)
+              case _ => 
+                //TODO: FIX get real time, not current
+                val currentTime = new java.sql.Timestamp(new Date().getTime())
+                new DBSensor(info.path.mkString("/"), timedValue.value,  currentTime)
+            }
+            log.debug(s"Saving to path ${info.path.mkString("/")}")
 
+            SQLite.set(sensorData)
+      }  
+    }
+  } 
+
+}
 
 
 
