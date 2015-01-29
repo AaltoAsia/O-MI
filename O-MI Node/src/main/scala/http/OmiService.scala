@@ -70,6 +70,7 @@ trait OmiService extends HttpService with CORSDirectives
                 complete(xmlData)
               }
             case None =>
+              log.debug(s"Url Discovery fail: $path")
               respondWithMediaType(`text/xml`) {
                 complete(404, <error>No object found</error>)
               }
