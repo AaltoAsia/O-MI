@@ -9,7 +9,10 @@ import com.typesafe.config.Config
  
 class OmiConfigExtension(config: Config) extends Extension {
   val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
+  val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
 }
+
+
 
 
 object Settings extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {

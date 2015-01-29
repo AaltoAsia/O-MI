@@ -21,7 +21,7 @@ object Boot extends App {
   // Create our in-memory sensor database
 
   val date = new Date();
-  val testtime = new java.sql.Timestamp(date.getTime)
+  val testTime = new java.sql.Timestamp(date.getTime)
   val testData = Map(
         "Objects/Refrigerator123/PowerConsumption" -> "0.123",
         "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
@@ -32,15 +32,19 @@ object Boot extends App {
     )
 
   for ((path, value) <- testData){
-      SQLite.set(new DBSensor(path, value,new java.sql.Timestamp(date.getTime) ))
+      SQLite.set(new DBSensor(path, value, testTime))
   }
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
 
+
   val settings = Settings(system)
   // TODO:
-  //system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
+  system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
+  SQLite.set(new DBSensor(
+    settings.settingsOdfPath + "num-latest-values-stored", settings.numLatestValues.toString, testTime))
+
 
   // create and start our service actor
   val omiService = system.actorOf(Props(classOf[OmiServiceActor]), "omi-service")
