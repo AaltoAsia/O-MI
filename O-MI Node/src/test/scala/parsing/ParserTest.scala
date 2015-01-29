@@ -62,7 +62,8 @@ class ParserTest extends Specification {
 
   def e1 = {
     val temp = OmiParser.parse("incorrect xml") 
-    temp.head should be equalTo(ParseError("Invalid XML"))
+    temp.head.asInstanceOf[ParseError].msg must startWith(
+        "Invalid XML, schema failure: Content is not allowed in prolog")
 
   }
 
@@ -71,13 +72,14 @@ class ParserTest extends Specification {
    */
   def e2 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "pmi:omiEnvelope"))
-    temp.head should be equalTo(ParseError("Incorrect prefix"))
+    temp.head.asInstanceOf[ParseError].msg must startWith("Invalid XML, schema failure: The prefix \"pmi\" for")
 
   }
 
   def e3 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "omi:Envelope")) 
-    temp.head should be equalTo(ParseError("XML's root isn't omi:omiEnvelope"))
+    temp.head.asInstanceOf[ParseError].msg must endWith(
+        "Cannot find the declaration of element 'omi:Envelope'.")
 
   }
 
@@ -86,19 +88,19 @@ class ParserTest extends Specification {
       """<omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
          </omi:omiEnvelope>
       """) 
-      temp.head should be equalTo(ParseError("omi:omiEnvelope doesn't contain request"))
+      temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
   def e5 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl=""""")) 
-    temp.head should be equalTo(ParseError("No ttl present in O-MI Envelope"))
+    temp.head.asInstanceOf[ParseError].msg must endWith("'' is not a valid value for 'double'.")
 
   }
 
   def e6 = {
     val temp = OmiParser.parse(omi_response_test_file.replace("omi:response", "omi:respnse")) 
-    temp.head should be equalTo(ParseError("Unknown node."))
+    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
