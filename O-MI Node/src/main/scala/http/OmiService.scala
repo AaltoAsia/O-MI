@@ -58,7 +58,6 @@ trait OmiService extends HttpService with CORSDirectives
           }
         }
       }
-
     }
 
   val getDataDiscovery =
@@ -138,7 +137,7 @@ trait OmiService extends HttpService with CORSDirectives
               requests.map {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
-                  Read.OMIReadResponse(2, requests.toList)
+                  Read.OMIReadResponse(2, requests.toList, oneTimeRead.begin, oneTimeRead.end)
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write

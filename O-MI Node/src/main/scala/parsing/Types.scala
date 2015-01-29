@@ -6,7 +6,8 @@ abstract sealed trait ParseMsg
  *  @param msg error message that describes the problem.
  */
 case class ParseError(msg: String) extends ParseMsg
-case class OneTimeRead(ttl: String, sensors: Seq[ODFNode]) extends ParseMsg
+case class OneTimeRead(ttl: String, begin: Option[java.sql.Timestamp], end: Option[java.sql.Timestamp],
+    sensors: Seq[ODFNode]) extends ParseMsg
 case class Write(ttl: String, sensors: Seq[ODFNode]) extends ParseMsg
 case class Subscription(ttl: String, interval: String, sensors: Seq[ODFNode]) extends ParseMsg
 case class Result(value: String, parseMsgOp: Option[Seq[ODFNode]]) extends ParseMsg
@@ -16,7 +17,7 @@ case object NodeObject extends ODFNodeType
 case object InfoItem extends ODFNodeType   
 case object MetaData extends ODFNodeType   
 
-/** case class that represents an node in ther O-DF
+/** case class that represents an node in the O-DF
  *  
  *  @param path path to the node as a String e.g. "/Objects/SmartHouse/SmartFridge/PowerConsumption"
  *  @param ODFNodeType type of node can be NodeObject, InfoItem or MetaData

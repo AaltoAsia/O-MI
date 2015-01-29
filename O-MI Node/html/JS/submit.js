@@ -20,15 +20,15 @@ $(document).on('click', '#object-button', getObjects);
 $(document).on('click', '#request-gen', generateRequest);
 $(document).on('click', '#request-send', sendRequest);
 
+var objectUrl;
+
 /* Get the objects through ajax get */
 function getObjects() {
-	//Get the current path of the file
-	var url = document.URL;
-	var path = url.substring(0, url.lastIndexOf("/"));
-	
 	console.log("Sending AJAX GET for the objects...");
 	
-	var objectUrl = $("#url-field").val();
+	objectUrl = $("#url-field").val();
+	
+	$("#send-field").val(objectUrl.replace("/Objects", ""));
 	
 	//Sent ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
@@ -117,9 +117,11 @@ function addInfoItems(parent, id, indent) {
 function generateRequest(){
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
+	var begin = $("#begin").val();
+	var end = $("#end").val();
 	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval);
+	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end);
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
@@ -136,7 +138,7 @@ function generateRequest(){
 * @param {Number} Message interval
 * @param {function} Callback function (not used atm)
 */
-function writeXML(objects, operation, ttl, interval, callback){
+function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -150,12 +152,24 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
 	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
 	writer.writeAttributeString('version', '1.0');
+	
 	if(ttl) writer.writeAttributeString('ttl', ttl);
+	
 	//(second line)
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
+	
 	if(interval > 0) writer.writeAttributeString('interval', interval);
+	
+	if(begin && end){
+		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
+			writer.writeAttributeString('begin', begin);
+			writer.writeAttributeString('end', end);
+		}
+	}
+	
 	if(callback) writer.writeAttributeString('callback', callback);
+	
 	//(third line)
 	writer.writeStartElement('omi:msg');
 	writer.writeAttributeString( 'xmlns', 'omi.xsd');
@@ -209,8 +223,6 @@ function writeXML(objects, operation, ttl, interval, callback){
     return request;
 }
 
-
-
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
@@ -221,6 +233,7 @@ function sendRequest()
 	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
+		//TODO:
         startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
     else
     {
