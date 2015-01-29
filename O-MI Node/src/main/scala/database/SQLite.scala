@@ -207,7 +207,7 @@ object SQLite {
  *
  */
 
-abstract class DBItem(val path: String)
+sealed abstract class DBItem(val path: String)
 /**
  * case class DBSensor for the actual sensor data
  * @param pathto path to sensor

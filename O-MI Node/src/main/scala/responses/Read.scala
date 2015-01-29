@@ -63,11 +63,12 @@ object Read {
 						}
 
 						case Some(subobject: DBObject) => {
-							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
+							resultChildren +=
+                <Object>
+                  <id>{subobject.path.split("/").last}</id>
+                </Object>
 						}
-            
-            case _ =>
-
+            case None => return None
 					}
 				}
 
@@ -82,7 +83,7 @@ object Read {
 
         return Some(Right(xmlReturn))
 
-			case _ => return None
+			case None => return None
 		}
 	}
 
@@ -100,7 +101,7 @@ object Read {
 				return xmlreturn.toString
 			}
 
-			case _ => return "No object or value found" //default case (when db returns None)
+			case None => return "No object or value found"
 		}
 	}
 
