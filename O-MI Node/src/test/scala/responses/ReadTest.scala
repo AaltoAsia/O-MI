@@ -11,8 +11,8 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 
 
+/*
 class ReadTest extends Specification {
-
     lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
 
 	// Create our in-memory sensor database
@@ -90,7 +90,7 @@ class ReadTest extends Specification {
     def e4 = {
         1 == 1
     }
-
 }
 
+*/
 

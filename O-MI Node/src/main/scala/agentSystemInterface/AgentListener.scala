@@ -72,7 +72,7 @@ class InputDataHandler(
 
       for (parsed <- parsedEntries) {
         parsed match {
-
+/*
           case Right(
             parsing.ODFNode(
               path,
@@ -95,13 +95,13 @@ class InputDataHandler(
             log.debug(s"Saving to path $pathfix")
 
             SQLite.set(sensorData)
-
+*/
           case Left(error) => 
             log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
-
+/*
           case Right(node: parsing.ODFNode) =>
             log.warning("Throwing away node: " + node)
-        }
+  */      }
       }
     case PeerClosed =>
       log.info(s"Agent disconnected from $sourceAddress")
