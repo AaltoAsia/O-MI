@@ -197,7 +197,7 @@ object OdfParser {
     */
   def validateOdfSchema( xml: String) : Seq[ ParseError] = {
     try {
-      val xsdPath = "./src/main/resources/odfschema.xsd"
+      val xsdPath = "./src/main/resources/odf.xsd"
       val factory : SchemaFactory =
         SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
       val schema: Schema = factory.newSchema(new File(xsdPath))

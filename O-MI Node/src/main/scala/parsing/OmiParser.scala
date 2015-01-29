@@ -331,7 +331,7 @@ object OmiParser {
     */
   def validateOmiSchema( xml: String) : Seq[ ParseError] = {
     try {
-      val xsdPath = "./src/main/resources/omischema.xsd"
+      val xsdPath = "./src/main/resources/omi.xsd"
       val factory : SchemaFactory =
         SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
       val schema: Schema = factory.newSchema(new File(xsdPath))
