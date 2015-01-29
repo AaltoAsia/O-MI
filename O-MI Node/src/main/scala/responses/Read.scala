@@ -41,7 +41,7 @@ object Read {
     val (npath, wasValue) = restNormalizePath(path)
 
 
-		SQLite.get(path) match {
+		SQLite.get(npath) match {
 			case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
