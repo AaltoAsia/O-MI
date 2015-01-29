@@ -55,6 +55,7 @@ object Boot extends App {
   implicit val timeout = Timeout(5.seconds)
 
   // start a new HTTP server on port 8080 with our service actor as the handler
-  IO(Http) ? Http.Bind(omiService, interface = "0.0.0.0", port = 8080)
-  IO(Tcp)  ? Tcp.Bind(sensorDataListener, new InetSocketAddress("localhost", 8181))
+  IO(Http) ? Http.Bind(omiService, interface = settings.interface, port = settings.port)
+  IO(Tcp)  ? Tcp.Bind(sensorDataListener,
+    new InetSocketAddress("localhost", settings.agentPort))
 }
