@@ -21,7 +21,8 @@ object Boot extends App {
   // Create our in-memory sensor database
 
   val date = new Date();
-  val testTime = new java.sql.Timestamp(date.getTime)
+  //val testTime = new java.sql.Timestamp(date.getTime)
+  val testTime = java.sql.Timestamp.valueOf("2015-12-18 15:34:52")
   val testData = Map(
         "Objects/Refrigerator123/PowerConsumption" -> "0.123",
         "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",

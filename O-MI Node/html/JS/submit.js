@@ -141,7 +141,7 @@ function generateRequest(){
 * @param {Number} Message interval
 * @param {function} Callback function (not used atm)
 */
-function writeXML(objects, operation, ttl, interval, begin, end, callback){
+function writeXML(items, operation, ttl, interval, begin, end, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -180,18 +180,31 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	writer.writeStartElement('Objects');
 	//Payload
 	var ids = [];
-	if(objects.length > 0){
+	var objects = [];
+	
+	var rootItems = items.filter(function(e){
+		return $(e).attr('class') === 'checkbox';
+	});
+	
+	for(var i = 0; i < rootItems.length; i++){
+		var obj = new Object(rootItems[i].id);
+		addChildren(obj, items);
+		objects.push(obj);
+	}
+	
+	
+	if(items.length > 0){
 		writer.writeStartElement('Object');
-		writer.writeElementString('id', objects[0].id);
-		ids.push(objects[0].id);
+		writer.writeElementString('id', items[0].id);
+		ids.push(items[0].id);
 	}
 
-	for (var i = 1; i < objects.length; i++)
+	for (var i = 1; i < items.length; i++)
 	{
-		var classes = $(objects[i]).attr("class").split(" ");
+		var classes = $(items[i]).attr("class").split(" ");
 		var cl = classes[classes.length - 1];
 		
-		if(objects[i].id) {
+		if(items[i].id) {
 			if(cl != ids[ids.length - 1]){
 				while(ids.length > 0){
 					ids.pop();
@@ -201,8 +214,9 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
 			
 			//Object
 			ids.push(objects[i].id);
+			
 			writer.writeStartElement('Object');
-			writer.writeElementString('id', objects[i].id);
+			writer.writeElementString('id', items[i].id);
 		} else {
 			//InfoItem
 			if(cl != ids[ids.length - 1]){
@@ -210,11 +224,11 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
 				writer.writeEndElement();
 			}
 			writer.writeStartElement('InfoItem');
-			writer.writeAttributeString('name', objects[i].name);
+			writer.writeAttributeString('name', items[i].name);
 			writer.writeEndElement();
 		}
 	}
-	if(objects.length > 0) {
+	if(items.length > 0) {
 		writer.writeEndElement();
 	}
 	

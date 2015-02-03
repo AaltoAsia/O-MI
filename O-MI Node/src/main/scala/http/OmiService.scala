@@ -152,6 +152,7 @@ trait OmiService extends HttpService with CORSDirectives
             //Error found
             complete {
               log.error("ERROR")
+              println(errors)
               ??? // TODO handle error
             }
           }

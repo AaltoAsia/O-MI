@@ -7,6 +7,8 @@ import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
+import java.sql.Timestamp
+
 object Read {
 
   def normalizePath(path: String): String =
@@ -281,7 +283,7 @@ object Read {
    * @param nodes to generate
    * @return generated xml as String
    */
-  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): String = {
+  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem]): String = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
     for (infoItem <- infoItems) {
       node ++= <InfoItem name={ infoItem.path.last }>
@@ -298,6 +300,44 @@ object Read {
                </InfoItem>
     }
     node.toString
+  }
+
+  /**
+   * helper function for generating O-DF's InfoItem nodes
+   * @param nodes to generate
+   * @param the start time of the time interval from where to get sensors
+   * @param the end time of the time interval from where to get sensors
+   * @return generated xml as String
+   */
+  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): String = {
+
+    try {
+      var beginTime = Timestamp.valueOf(begin.replace('T', ' '))
+      var endTime = Timestamp.valueOf(end.replace('T', ' '))
+
+      var node: xml.NodeSeq = xml.NodeSeq.Empty
+      for (infoItem <- infoItems) {
+        node ++= <InfoItem name={ infoItem.path.last }>
+                   {
+                     val items = SQLite.getInterval(infoItem.path.mkString("/"), beginTime, endTime)
+                     items match {
+                       case sensors: Array[DBSensor] =>
+                         for (sensor <- sensors) {
+                           <value unixTime={ sensor.time.toString }>{ sensor.value }</value>
+                         }
+                       case _ =>
+                         println("Error in interval read")
+                     }
+                   }
+                   <MetaData>{ infoItem.metadata }</MetaData>
+                 </InfoItem>
+      }
+      node.toString
+    } catch {
+      case e: IllegalArgumentException =>
+        println("invalid begin and/or end parameter; ignoring")
+        odfInfoItemGeneration(infoItems)
+    }
   }
 }
 
