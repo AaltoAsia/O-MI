@@ -344,11 +344,3 @@ object Read {
     }
   }
 }
-
-
-
-/*List(OdfObject(List(Objects, Refrigerator123),List(),List(OdfInfoItem(List(Objects, Refrigerator123, PowerConsumption)
-  ,List(),)),), OdfObject(List(Objects, RoomSensors1),List(OdfObject(List
-  (Objects, RoomSensors1, Temperature),List(),List(OdfInfoItem(List(Objects, RoomSensors1, Temperature, Inside),List(),)),)),List(),))
-
-*/
