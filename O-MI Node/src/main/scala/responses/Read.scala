@@ -218,6 +218,8 @@ object Read {
                 val OMIelements = odfGeneration(
                   listofnodes.flatMap(
                     node => node), begin, end)
+                    
+                OMIelements
               }
             </omi:msg>
           </omi:result>
@@ -231,8 +233,8 @@ object Read {
    * @param nodes in Objects node to be generated
    * @return generated O-DF xml as String
    */
-  def odfGeneration(objects: List[parsing.OdfObject], begin: String, end: String): String = {
-    (<Objects>{ odfObjectGeneration(objects, begin, end) }</Objects>).toString
+  def odfGeneration(objects: List[parsing.OdfObject], begin: String, end: String): xml.NodeSeq = {
+    (<Objects>{ odfObjectGeneration(objects, begin, end) }</Objects>)
   }
 
   /**
@@ -240,7 +242,7 @@ object Read {
    * @param nodes to generate
    * @return generated xml as String
    */
-  def odfObjectGeneration(objects: List[parsing.OdfObject], begin: String, end: String): String = {
+  def odfObjectGeneration(objects: List[parsing.OdfObject], begin: String, end: String): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
     for (obj <- objects) {
       node ++=
@@ -275,14 +277,14 @@ object Read {
           <MetaData>{ obj.metadata }</MetaData>
         </Object>
     }
-    node.toString
+    node
   }
 
   /** helper function for generating O-DF's InfoItem nodes
     * @param nodes to generate
     * @return generated xml as String
     */
-  def odfInfoItemGeneration(infoItems: List[ parsing.OdfInfoItem]) : String = {
+  def odfInfoItemGeneration(infoItems: List[ parsing.OdfInfoItem]) : xml.NodeSeq = {
     var node : xml.NodeSeq = xml.NodeSeq.Empty 
     for(infoItem <- infoItems){
       node ++= <InfoItem name={infoItem.path.last}>
@@ -299,7 +301,7 @@ object Read {
         <MetaData>{infoItem.metadata}</MetaData>
       </InfoItem>
     }
-    node.toString
+    node
   }
 
   /**
@@ -309,7 +311,7 @@ object Read {
    * @param the end time of the time interval from where to get sensors
    * @return generated xml as String
    */
-  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): String = {
+  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): xml.NodeSeq = {
 
     try {
       var beginTime = Timestamp.valueOf(begin.replace('T', ' '))
@@ -332,7 +334,7 @@ object Read {
                    <MetaData>{ infoItem.metadata }</MetaData>
                  </InfoItem>
       }
-      node.toString
+      node
     } catch {
       case e: IllegalArgumentException =>
         println("invalid begin and/or end parameter; ignoring")

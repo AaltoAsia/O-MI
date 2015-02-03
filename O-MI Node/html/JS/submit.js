@@ -165,6 +165,8 @@ function writeXML(items, operation, ttl, interval, begin, end, callback){
 	if(interval > 0) writer.writeAttributeString('interval', interval);
 	
 	if(begin && end){
+		console.log(new Date(begin).getTime());
+		console.log(new Date(end).getTime());
 		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
 			writer.writeAttributeString('end', end);
@@ -208,7 +210,6 @@ function addChildren(object, items){
 	var children = [];
 	
 	for(var i = 0; i < items.length; i++){
-		console.log($(items[i]).attr('class') + "/" + object.id);
 		if($(items[i]).attr('class').contains(object.id)){
 			children.push(items[i]);
 		}
@@ -255,7 +256,6 @@ function sendRequest()
 	var server = $("#send-field").val();
 
     var request = $('#request').text(); //Get the request string
-	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
 		//TODO:
