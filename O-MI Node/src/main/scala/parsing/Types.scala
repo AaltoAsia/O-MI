@@ -125,4 +125,5 @@ object Path {
   import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 
   implicit def PathAsSeq(p: Path): Seq[String] = p.toSeq
+  implicit def SeqAsPath(s: Seq[String]): Path = Path(s)
 }
