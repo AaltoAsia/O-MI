@@ -46,6 +46,7 @@ object OmiParser {
       return schema_err
 
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
+    
     parse(root)
   }
 
@@ -76,7 +77,7 @@ object OmiParser {
       return Seq(new ParseError("No ttl present in O-MI Envelope"))
 
     parseNode(request, ttl)
-
+    
   }
 
   /**
@@ -109,6 +110,10 @@ object OmiParser {
         if (errors.nonEmpty)
           return errors.toSeq
 
+        // EDIT: Checking msgformat
+        if(parameters("msgformat").right.get != "odf")
+          return Seq(new ParseError("Unknown message format."))
+          
         val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
@@ -145,9 +150,14 @@ object OmiParser {
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
 
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
+        
         if (errors.nonEmpty)
           return errors.toSeq
 
+        // EDIT: Checking msgformat
+        if(parameters("msgformat").right.get != "odf")
+          return Seq(new ParseError("Unknown message format."))
+          
         val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
@@ -298,7 +308,7 @@ object OmiParser {
     childName: String,
     tolerateEmpty: Boolean = false,
     tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName")
+    val childs = (node \ s"$childName") map (stripNamespaces)
     if (!tolerateNonexist && childs.isEmpty)
       return Left(ParseError(s"No $childName child found in ${node.label}."))
     else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
@@ -323,6 +333,7 @@ object OmiParser {
     tolerateNonexist: Boolean = false,
     tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
     val childs = (node \ s"$childName")
+
     if (!tolerateNonexist && childs.isEmpty)
       return Left(ParseError(s"No $childName child found in ${node.label}."))
     else if (!tolerateMultiple && childs.size > 1)
@@ -362,6 +373,17 @@ object OmiParser {
     }
     return Seq.empty;
   }
+  
+  /**
+   * Temp function for fixing tests
+   */
+  def stripNamespaces(node : Node) : Node = {
+     node match {
+         case e : Elem => 
+             e.copy(scope = TopScope, child = e.child map (stripNamespaces))
+         case _ => node;
+     }
+ }
 }
 
 
