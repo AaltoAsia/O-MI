@@ -182,54 +182,18 @@ function writeXML(items, operation, ttl, interval, begin, end, callback){
 	var ids = [];
 	var objects = [];
 	
-	var rootItems = items.filter(function(e){
-		return $(e).attr('class') === 'checkbox';
-	});
-	
-	for(var i = 0; i < rootItems.length; i++){
-		var obj = new Object(rootItems[i].id);
-		addChildren(obj, items);
-		objects.push(obj);
-	}
-	
-	
-	if(items.length > 0){
-		writer.writeStartElement('Object');
-		writer.writeElementString('id', items[0].id);
-		ids.push(items[0].id);
-	}
-
-	for (var i = 1; i < items.length; i++)
-	{
-		var classes = $(items[i]).attr("class").split(" ");
-		var cl = classes[classes.length - 1];
+	for(var i = 0; i < items.length; i++){
+		var cl = $(items[i]).attr("class");
 		
-		if(items[i].id) {
-			if(cl != ids[ids.length - 1]){
-				while(ids.length > 0){
-					ids.pop();
-					writer.writeEndElement();
-				}			
-			}
-			
-			//Object
-			ids.push(objects[i].id);
-			
-			writer.writeStartElement('Object');
-			writer.writeElementString('id', items[i].id);
-		} else {
-			//InfoItem
-			if(cl != ids[ids.length - 1]){
-				ids.pop();
-				writer.writeEndElement();
-			}
-			writer.writeStartElement('InfoItem');
-			writer.writeAttributeString('name', items[i].name);
-			writer.writeEndElement();
+		if(cl === "checkbox"){
+			var obj = new OdfObject(items[i].id);
+			addChildren(obj, items);
+			objects.push(obj);
 		}
 	}
-	if(items.length > 0) {
-		writer.writeEndElement();
+	
+	for(var i = 0; i < objects.length; i++){
+		writeObject(objects[i], writer);
 	}
 	
 	writer.writeEndElement();
@@ -239,6 +203,50 @@ function writeXML(items, operation, ttl, interval, begin, end, callback){
 
     return request;
 }
+
+function addChildren(object, items){
+	var children = [];
+	
+	for(var i = 0; i < items.length; i++){
+		console.log($(items[i]).attr('class') + "/" + object.id);
+		if($(items[i]).attr('class').contains(object.id)){
+			children.push(items[i]);
+		}
+	}
+	
+	for(var i = 0; i < children.length; i++){
+		var child = children[i];
+		if(child.id){ //Object
+			var subobj = new OdfObject(child.id);
+			addChildren(subobj, items);
+			object.subObjects.push(subobj);
+		} else {
+			var infoitem = new InfoItem(child.name);
+			object.infoItems.push(infoitem);
+		}
+	}
+}
+
+/* Writes an object and its children to the xml */
+function writeObject(object, writer){
+	writer.writeStartElement('Object');
+	writer.writeElementString('id', object.id);
+	
+	// Write InfoItems BEFORE SubObjects
+	for(var i = 0; i < object.infoItems.length; i++){
+		writer.writeStartElement('InfoItem');
+		writer.writeAttributeString('name', object.infoItems[i].name);
+		writer.writeEndElement();
+	}
+	
+	// Write subobjects
+	for(var i = 0; i < object.subObjects.length; i++){
+		writeObject(object.subObjects[i], writer);
+	}
+	
+	writer.writeEndElement();
+}
+
 
 /* Send the O-DF request using AJAX */
 function sendRequest()

@@ -1,4 +1,4 @@
-function Object(id){
+function OdfObject(id){
 	this.id = id;
 	this.subObjects = [];
 	this.infoItems = [];
