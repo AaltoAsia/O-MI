@@ -123,7 +123,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue("2014-12-186T15:34:52", "56")),
+                    TimedValue("2014-12-18T15:34:52", "56")),
                   "")),
               ""),
             OdfObject(
@@ -140,7 +140,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue("2014-12-186T15:34:52", "1")),
+                    TimedValue("2014-12-18T15:34:52", "1")),
                   "")),
               "")),
           List(
@@ -150,7 +150,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue("2014-12-186T15:34:52", "180")),
+                TimedValue("2014-12-18T15:34:52", "180")),
               ""),
             OdfInfoItem(
               List(
@@ -158,7 +158,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue("2014-12-186T15:34:52", "0.20")),
+                TimedValue("2014-12-18T15:34:52", "0.20")),
               "")),
           ""),
         OdfObject(
@@ -173,7 +173,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue("2014-12-186T15:34:52", "30")),
+                TimedValue("2014-12-18T15:34:52", "30")),
               "")),
           ""),
         OdfObject(
@@ -288,7 +288,7 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue("2014-12-186T15:34:52", "56")),
+                    TimedValue("2014-12-18T15:34:52", "56")),
                   "")),
               ""),
             OdfObject(
@@ -305,7 +305,7 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue("2014-12-186T15:34:52", "1")),
+                    TimedValue("2014-12-18T15:34:52", "1")),
                   "")),
               "")),
           List(
@@ -315,7 +315,7 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue("2014-12-186T15:34:52", "180")),
+                TimedValue("2014-12-18T15:34:52", "180")),
               ""),
             OdfInfoItem(
               List(
@@ -323,7 +323,7 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue("2014-12-186T15:34:52", "0.20")),
+                TimedValue("2014-12-18T15:34:52", "0.20")),
               "")),
           ""),
         OdfObject(
@@ -338,7 +338,7 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue("2014-12-186T15:34:52", "30")),
+                TimedValue("2014-12-18T15:34:52", "30")),
               "")),
           ""),
         OdfObject(
@@ -457,7 +457,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue("2014-12-186T15:34:52", "56")),
+                    TimedValue("2014-12-18T15:34:52", "56")),
                   "")),
               ""),
             OdfObject(
@@ -474,7 +474,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue("2014-12-186T15:34:52", "1")),
+                    TimedValue("2014-12-18T15:34:52", "1")),
                   "")),
               "")),
           List(
@@ -484,7 +484,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue("2014-12-186T15:34:52", "180")),
+                TimedValue("2014-12-18T15:34:52", "180")),
               ""),
             OdfInfoItem(
               List(
@@ -492,7 +492,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue("2014-12-186T15:34:52", "0.20")),
+                TimedValue("2014-12-18T15:34:52", "0.20")),
               "")),
           ""),
         OdfObject(
@@ -507,7 +507,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue("2014-12-186T15:34:52", "30")),
+                TimedValue("2014-12-18T15:34:52", "30")),
               "")),
           ""),
         OdfObject(
