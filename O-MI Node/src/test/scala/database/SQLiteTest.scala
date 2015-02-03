@@ -7,12 +7,16 @@ object SQLiteTest extends Specification {
   
   "SQLite" should {
     sequential
+
     var data1 = DBSensor("path/to/sensor1/temp","21.5C",new java.sql.Timestamp(1000))
     var data2 = DBSensor("path/to/sensor1/hum","40%",new java.sql.Timestamp(2000))
     var data3 = DBSensor("path/to/sensor2/temp","24.5",new java.sql.Timestamp(3000))
     var data4= DBSensor("path/to/sensor2/hum","60%",new java.sql.Timestamp(4000))
     var data5 = DBSensor("path/to/sensor1/temp","21.6C",new java.sql.Timestamp(5000))
     var data6 = DBSensor("path/to/sensor1/temp","21.7C",new java.sql.Timestamp(6000))
+
+    //database.SQLite.clearDB()
+
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
     }

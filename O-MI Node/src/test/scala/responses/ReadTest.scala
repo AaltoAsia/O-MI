@@ -45,7 +45,6 @@ class ReadTest extends Specification {
 
     def e1 = {
 
-        //failaa talla hetkella koska tassa pitaisi olla "datetime=" edessa mutta en jaksa viela katsoa miten korjaa :D
 
         val testliste1 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
@@ -61,7 +60,6 @@ class ReadTest extends Specification {
 
     def e2 = {
 
-        //failaa talla hetkella koska tassa pitaisi olla "datetime=" edessa mutta en jaksa viela katsoa miten korjaa :D
 
         val testliste2 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None),
@@ -78,11 +76,6 @@ class ReadTest extends Specification {
         ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
 
         val testliste2forread = List(OneTimeRead("10", testliste2))
-
-        println(OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)))
-        println("")
-        println(testliste2check)
-
 
         OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)) == List(
             Result("", Some(testliste2check)))
