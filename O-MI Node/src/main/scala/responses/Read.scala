@@ -247,11 +247,13 @@ object Read {
     for (obj <- objects) {
       node ++=
         <Object>
-          <id> { obj.path.last } </id>
+          <id>{ obj.path.last }</id>
           {
             if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
+
+              odfInfoItemGeneration(obj.sensors.toList, begin, end) ++ 
               odfObjectGeneration(obj.childs.toList, begin, end)
-              odfInfoItemGeneration(obj.sensors.toList, begin, end)
+
             } else {
               //TODO: sqlite get begin to end
               val childs: Array[DBItem] = SQLite.get(obj.path.mkString("/")) match {
@@ -343,3 +345,10 @@ object Read {
   }
 }
 
+
+
+/*List(OdfObject(List(Objects, Refrigerator123),List(),List(OdfInfoItem(List(Objects, Refrigerator123, PowerConsumption)
+  ,List(),)),), OdfObject(List(Objects, RoomSensors1),List(OdfObject(List
+  (Objects, RoomSensors1, Temperature),List(),List(OdfInfoItem(List(Objects, RoomSensors1, Temperature, Inside),List(),)),)),List(),))
+
+*/
