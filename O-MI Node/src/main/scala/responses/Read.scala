@@ -62,8 +62,8 @@ object Read {
             }
 
             case None => return None
-					}
-				}
+          }
+        }
 
         val mapId = sensormap.path.split("/").last
         val xmlReturn =
@@ -98,7 +98,7 @@ object Read {
     }
   }
 
-/*
+  /*
 	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 
  		ODFnodes.sortWith(_.path < _.path)
@@ -193,7 +193,7 @@ object Read {
 	}
 */
 
-  def OMIReadResponse(requests: List[ParseMsg], begin : String, end : String): String = { //takes the return value of OmiParser straight
+  def OMIReadResponse(requests: List[ParseMsg], begin: String, end: String): String = { //takes the return value of OmiParser straight
     val xml =
       <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
         <omi:response>
@@ -229,7 +229,7 @@ object Read {
    * @param nodes in Objects node to be generated
    * @return generated O-DF xml as String
    */
-  def odfGeneration(objects: List[parsing.OdfObject], begin : String, end : String): String = {
+  def odfGeneration(objects: List[parsing.OdfObject], begin: String, end: String): String = {
     (<Objects>{ odfObjectGeneration(objects, begin, end) }</Objects>).toString
   }
 
@@ -238,7 +238,7 @@ object Read {
    * @param nodes to generate
    * @return generated xml as String
    */
-  def odfObjectGeneration(objects: List[parsing.OdfObject], begin : String, end : String): String = {
+  def odfObjectGeneration(objects: List[parsing.OdfObject], begin: String, end: String): String = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
     for (obj <- objects) {
       node ++=
@@ -281,7 +281,7 @@ object Read {
    * @param nodes to generate
    * @return generated xml as String
    */
-  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin : String, end : String): String = {
+  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): String = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
     for (infoItem <- infoItems) {
       node ++= <InfoItem name={ infoItem.path.last }>
