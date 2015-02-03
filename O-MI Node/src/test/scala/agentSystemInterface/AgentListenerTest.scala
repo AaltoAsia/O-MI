@@ -10,10 +10,11 @@ import akka.io.Tcp._
 import scala.io.Source
 import database._
 
+
 class AgentListenerTest extends Specification with Before {
 
   def before = SQLite.init
-
+  
   class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """))) with Scope
@@ -101,8 +102,6 @@ class AgentListenerTest extends Specification with Before {
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
       awaitCond(SQLite.get("Objects/SmartHouse/Moisture") != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
-
-      
     }
 
     "log warning when it encounters node with no information" in new Actors {
@@ -116,7 +115,7 @@ class AgentListenerTest extends Specification with Before {
     "log warning when sending malformed data" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
-      EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML", occurrences = 1) intercept {
+      EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
       }
     }

@@ -104,8 +104,8 @@ object Read {
 			case None => return "No object or value found"
 		}
 	}
-
-	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode], begin : Option[java.sql.Timestamp], end : Option[java.sql.Timestamp]): String = {	//parsing is done somewhere and the possible result sent here
+/*
+	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 
  		ODFnodes.sortWith(_.path < _.path)
  		var xmlreturn = Buffer[String]()
@@ -164,9 +164,10 @@ object Read {
  		return xmlreturn.mkString
 
 	}
+  */
 
-	//takes the return value of OmiParser straight
-	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg], begin : Option[java.sql.Timestamp], end : Option[java.sql.Timestamp]): String = {		
+/*
+	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg]): String = {			//takes the return value of OmiParser straight
 		val OMIresponseStart = 
 		"""
 		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
@@ -196,6 +197,108 @@ object Read {
 
 		return OMIresponseStart + OMIelements + OMIresponseEnd
 	}
+*/
+	def OMIReadResponse(requests: List[ParseMsg]): String = {			//takes the return value of OmiParser straight
+  val xml =
+		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+				<omi:response>
+ 					<omi:result msgformat="odf">
+ 						<omi:return returnCode="200"></omi:return>
+ 						<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+            {
+              var listofnodes = requests.collect {
+                  case OneTimeRead( ttl: String,
+                                  sensors: Seq[ OdfObject],
+                                  begin: String,
+                                  end: String,
+                                  newest: String,
+                                  oldest: String,
+                                  callback: String,
+                                  requstId: Seq[ String]
+                                ) => sensors
+                  }
 
+                val OMIelements = odfGeneration(
+                  listofnodes.flatMap(
+                    node => node)
+                ) 
+              }
+              </omi:msg>
+            </omi:result>
+          </omi:response>
+      </omi:omiEnvelope>
+      xml.toString
+    }
+    /** helper function for generating whold O-DF xml.
+      * @param nodes in Objects node to be generated
+      * @return generated O-DF xml as String
+      */
+    def odfGeneration(objects: List[ parsing.OdfObject]) : String = {
+      (<Objects>{odfObjectGeneration(objects)}</Objects>).toString
+    }
+
+    /** helper function for generating O-DF's Object nodes, recursive
+      * @param nodes to generate
+      * @return generated xml as String
+      */
+    def odfObjectGeneration(objects: List[ parsing.OdfObject]) : String = {
+    var node : xml.NodeSeq = xml.NodeSeq.Empty 
+    for(obj <- objects){
+      node ++=
+        <Object>
+          <id> {obj.path.last} </id>
+          {
+            if(obj.childs.nonEmpty || obj.sensors.nonEmpty) {
+              odfObjectGeneration(obj.childs.toList)
+              odfInfoItemGeneration(obj.sensors.toList)     
+            } else {
+              val childs : Array[ DBItem]  = SQLite.get( obj.path.mkString( "/") ) match {
+                case Some(infoItem: database.DBSensor) =>
+                  println("Found DBSensor instead of DBObject, when should not be possible.")
+                  ???
+                case Some(subobj: database.DBObject) =>
+                  subobj.childs
+                case None => 
+                  println("DBObject not found, when should not be possible.")
+                  ???
+              }
+              for( child  <- childs){
+                child match{
+                  case infoItem: database.DBSensor =>
+                    <InfoItem name={infoItem.path.split("/").last}></InfoItem>
+                  case subobj: database.DBObject =>
+                    <Object><id>{subobj.path.split("/").last}</id></Object>
+                }
+              }
+            }
+          }
+          <MetaData>{obj.metadata}</MetaData>
+        </Object>
+    }
+    node.toString
+  }
+
+  /** helper function for generating O-DF's InfoItem nodes
+    * @param nodes to generate
+    * @return generated xml as String
+    */
+  def odfInfoItemGeneration(infoItems: List[ parsing.OdfInfoItem]) : String = {
+    var node : xml.NodeSeq = xml.NodeSeq.Empty 
+    for(infoItem <- infoItems){
+      node ++= <InfoItem name={infoItem.path.last}>
+        {
+            val item = SQLite.get(infoItem.path.mkString("/"))
+            item match{
+              case Some( sensor : database.DBSensor) =>
+              <value unixTime={sensor.time.toString}>{sensor.value}</value>
+              case Some( obj : database.DBObject) =>
+                println("WARN: Object found in InfoItem in DB!")
+            }
+        }
+        <MetaData>{infoItem.metadata}</MetaData>
+      </InfoItem>
+    }
+    node.toString
+  }
 }
 

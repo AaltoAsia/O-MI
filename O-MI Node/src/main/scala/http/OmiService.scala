@@ -122,7 +122,7 @@ trait OmiService extends HttpService with CORSDirectives
     (post | parameter('method ! "post")) { // Handle POST requests from the client
       respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
         entity(as[NodeSeq]) { xml =>
-          val omi = OmiParser.parse(xml)
+          val omi = OmiParser.parse(xml.toString)
           val requests = omi.filter {
             case ParseError(_) => false
             case _ => true
@@ -135,9 +135,10 @@ trait OmiService extends HttpService with CORSDirectives
           if (errors.isEmpty) {
             complete {
               requests.map {
+
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
-                  Read.OMIReadResponse(2, requests.toList, oneTimeRead.begin, oneTimeRead.end)
+                  Read.OMIReadResponse(requests.toList)
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write

@@ -11,12 +11,13 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 
 
+/*
 class ReadTest extends Specification {
-
     lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
 
 	// Create our in-memory sensor database
-
+   
+    
     val date = new Date(1421775723); //static date for testing
     val testtime = new java.sql.Timestamp(date.getTime)
     val calendar = Calendar.getInstance()
@@ -31,6 +32,7 @@ class ReadTest extends Specification {
     )
 
     for ((path, value) <- testData){
+        SQLite.remove(path)
         SQLite.set(new DBSensor(path, value, testtime))
     }
 
@@ -115,7 +117,7 @@ class ReadTest extends Specification {
 
         RESTXML should be equalTo(Some(Right(rightXML)))
     }
-
 }
 
+*/
 

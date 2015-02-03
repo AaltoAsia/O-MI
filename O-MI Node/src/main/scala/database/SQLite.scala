@@ -3,16 +3,17 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
+import scala.collection.mutable.Buffer
 
 object SQLite {
-
+  private var historyLength = 10
   //path where the file is stored
-  val dbPath = "./sensorDB.sqlite3"
+  private val dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
   val init = !new File(dbPath).exists()
   //tables for latest values and hierarchy
-  val latestValues = TableQuery[DBData]
-  val objects = TableQuery[DBNode]
+  private val latestValues = TableQuery[DBData]
+  private val objects = TableQuery[DBNode]
   
   //initializing database
   val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
@@ -21,7 +22,7 @@ object SQLite {
       initialize()
     }
   }
-
+  
   /**
    * Used to set values to database. If data already exists for the path, updates existing data,
    *  otherwise creates new data and all the missing objects to the hierarchy.
@@ -31,14 +32,17 @@ object SQLite {
    */
   def set(data: DBSensor) =
     {
+    var count = 0
+    //try{
       db withSession { implicit session =>
         //search database for sensor's path
-        val pathQuery = for {
-          d <- latestValues if d.path === data.path
-        } yield (d.value, d.timestamp)
+       val pathQuery = latestValues.filter(_.path === data.path)
         //if found a row with same path update else add new data
-        if (pathQuery.list.length > 0) {
-          pathQuery.update(data.value, data.time)
+        count = pathQuery.list.length
+        if (count >= historyLength) {
+          latestValues += (data.path, data.value, data.time)
+          val oldtime = pathQuery.sortBy(_.timestamp).first._3
+          pathQuery.filter(_.timestamp === oldtime).delete
           false
         } else {
           latestValues += (data.path, data.value, data.time)
@@ -48,8 +52,18 @@ object SQLite {
         }
         
       }
+    //}
+    //catch{
+      //case e: Exception => 
+        //just fail silently when something bad happens
+        //e.g does nothing when trying to add same path and timestamp multiple times
+    //}
+    
     }
-
+   def setHistoryLength(newLength:Int)
+   {
+     historyLength=newLength
+   }
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects along the path too.
    * 
@@ -111,15 +125,16 @@ object SQLite {
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
         //if path is found from latest values it must be Sensor otherwise check if it is an object
-        if (pathQuery.list.length > 0) {
+        var count = pathQuery.list.length
+        if (count > 0) {
           //path is sensor
           //case class matching
-          for (sensordata <- pathQuery) {
-            sensordata match {
+          val latest = pathQuery.sortBy(_.timestamp).drop(count-1)
+            latest.first match {
               case (path: String, value: String, time: java.sql.Timestamp) =>
                 result = Some(DBSensor(path, value, time))
             }
-          }
+          
         } else {
           var childs = getChilds(path)
           //childs is empty only if given path does not exist or ends in sensor.
@@ -136,6 +151,28 @@ object SQLite {
       }
       result
     }
+  /**
+   * getInterval returns Array of DBSensors that are on given path and between given timestamps
+   * @param path path to sensor whose values are of interest
+   * @param start 
+   */
+  def getInterval(path:String,start:java.sql.Timestamp,end:java.sql.Timestamp):Array[DBSensor]={
+    var result = Buffer[DBSensor]()
+    db withSession { implicit session =>
+      val pathQuery = latestValues.filter(_.path === path)
+        //if path is found from latest values it must be Sensor otherwise check if it is an object
+        var count = pathQuery.list.length
+        if (count > 0) {
+         val sorted = pathQuery.sortBy(_.timestamp)
+         pathQuery foreach {
+           case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
+             if(dbtime.after(start) && dbtime.before(end))
+               result+=new DBSensor(dbpath,dbvalue,dbtime)     
+         }
+        }
+    }
+    result.toArray
+  }
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
@@ -156,13 +193,60 @@ object SQLite {
       curpath = fullpath
     }
   }
-  //empties all content from the tables
+  /**
+   * returns n latest values from sensor at given path as Array[DBSensor]
+   * returns all stored values if n is greater than number of values stored
+   * @param path path to sensor
+   * @param n number of values to return
+   * @param return returns Array[DBSensor]
+   */
+  def getNLatest(path:String,n:Int) = getN(path,n,true):Array[DBSensor]
+  /**
+   * returns n oldest values from sensor at given path as Array[DBSensor]
+   * returns all stored values if n is greater than number of values stored
+   * @param path path to sensor
+   * @param n number of values to return
+   * @param return returns Array[DBSensor]
+   */
+  def getNOldest(path:String,n:Int) = getN(path,n,false):Array[DBSensor]
+  /**
+   * returns n latest or oldest values from sensor at given path as Array[DBSensor]
+   * returns all stored values if n is greater than number of values stored
+   * @param path path to sensor
+   * @param n number of values to return
+   * @param latest boolean return latest? if false returns oldest
+   * @param return returns Array[DBSensor]
+   */
+  private def getN(path:String,n:Int,latest:Boolean):Array[DBSensor]=
+  {
+   var result = Buffer[DBSensor]()
+    db withSession { implicit session =>
+      val pathQuery = latestValues.filter(_.path === path)
+        var count = pathQuery.list.length
+        if (count > 0) {
+         val sorted = pathQuery.sortBy(_.timestamp)
+         val limited = if(latest){sorted.drop(math.max(count-n,0))}else{sorted.take(math.min(count,n))}
+         limited foreach{
+           case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
+               result+=new DBSensor(dbpath,dbvalue,dbtime)     
+         }
+        }
+    }
+    result.toArray
+  }
+  
+
+  /**
+   * Empties all the data from the database
+   * 
+   */
   def clearDB()={
     db withSession { implicit session =>
     latestValues.delete
     objects.delete
     }
   }
+
   /**
    * Used to get childs of an object with given path
    * @param path path to object whose childs are needed
@@ -172,7 +256,6 @@ object SQLite {
   private def getChilds(path: String)(implicit session: Session): Array[DBItem] =
     {
       var childs = Array[DBItem]()
-
       val objectQuery = for {
         c <- objects if c.parentPath === path
       } yield (c.path)
@@ -240,13 +323,14 @@ case class DBObject(pathto: String) extends DBItem(pathto) {
  * used internally by the object SQLite
  */
 class DBData(tag: Tag)
-  extends Table[(String, String, java.sql.Timestamp)](tag, "Latestvalues") {
+  extends Table[(String, String, java.sql.Timestamp)](tag, "Values") {
   // This is the primary key column:
-  def path = column[String]("PATH", O.PrimaryKey)
+  def path = column[String]("PATH")
   def value = column[String]("VALUE")
   def timestamp = column[java.sql.Timestamp]("TIME")
   // Every table needs a * projection with the same type as the table's type parameter
   def * : ProvenShape[(String, String, java.sql.Timestamp)] = (path, value, timestamp)
+  def pk = primaryKey("pk_DBData",(path,timestamp))
 }
 /**
  * class DBNode to store object hierarchy
