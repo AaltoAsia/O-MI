@@ -7,6 +7,9 @@ import akka.actor.ActorLogging
 import java.net.InetSocketAddress
 import java.util.Date
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.lang.Exception
+import scala.util.control._
 
 import parsing.OdfParser
 import database._
@@ -95,10 +98,16 @@ class InputDataHandler(
               case "" =>
                 val currentTime = new java.sql.Timestamp(new Date().getTime())
                 new DBSensor(info.path.mkString("/"), timedValue.value, currentTime)
-              case _ => 
-                //TODO: FIX get real time, not current
-                val currentTime = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(info.path.mkString("/"), timedValue.value,  currentTime)
+              case date =>
+                try{
+                  val stamp : Long = date.toLong
+                  val currentTime = new java.sql.Timestamp(stamp)
+                  new DBSensor(info.path.mkString("/"), timedValue.value,  currentTime)
+                } catch{
+                  case e: Exception =>
+                    val currentTime = new java.sql.Timestamp(dateFormat.parse(date).getTime)
+                    new DBSensor(info.path.mkString("/"), timedValue.value,  currentTime)
+                }
             }
             log.debug(s"Saving to path ${info.path.mkString("/")}")
 
