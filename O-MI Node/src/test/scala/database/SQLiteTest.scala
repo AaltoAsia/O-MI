@@ -116,6 +116,16 @@ object SQLiteTest extends Specification {
         var values = sensrs.map { x => x.value }
        values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
     }
+    "return correct values for N latest values" in {
+        var sensrs = database.SQLite.getNLatest("path/to/sensor3/temp",3)
+        var values = sensrs.map { x => x.value }
+       values.length == 3 && values.contains("21.5C") && values.contains("21.6C") shouldEqual true
+    }
+    "return correct values for N oldest values" in {
+        var sensrs = database.SQLite.getNOldest("path/to/sensor3/temp",12)
+        var values = sensrs.map { x => x.value }
+       values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
+    }
     "return correct values for N oldest values" in {
         var sensrs = database.SQLite.getNOldest("path/to/sensor3/temp",2)
         var values = sensrs.map { x => x.value }

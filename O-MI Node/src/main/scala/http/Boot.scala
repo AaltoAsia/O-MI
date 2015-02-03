@@ -18,6 +18,13 @@ import database._
 
 object Boot extends App {
 
+  // we need an ActorSystem to host our application in
+  implicit val system = ActorSystem("on-core")
+
+
+  val settings = Settings(system)
+  SQLite.setHistoryLength(settings.numLatestValues)
+  
   // Create our in-memory sensor database
 
   val date = new Date();
@@ -35,11 +42,7 @@ object Boot extends App {
       SQLite.set(new DBSensor(path, value, testTime))
   }
 
-  // we need an ActorSystem to host our application in
-  implicit val system = ActorSystem("on-core")
-
-
-  val settings = Settings(system)
+  
   // TODO:
   system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
   SQLite.set(new DBSensor(
