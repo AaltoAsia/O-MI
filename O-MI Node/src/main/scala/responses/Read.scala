@@ -293,6 +293,7 @@ object Read {
               <value unixTime={sensor.time.toString}>{sensor.value}</value>
               case Some( obj : database.DBObject) =>
                 println("WARN: Object found in InfoItem in DB!")
+              case _ => println("unhandled case") //TODO Any better ideas?
             }
         }
         <MetaData>{infoItem.metadata}</MetaData>
