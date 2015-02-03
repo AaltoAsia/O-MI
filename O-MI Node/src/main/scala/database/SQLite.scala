@@ -6,14 +6,14 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 
 object SQLite {
-  var historyLength = 10
+  private var historyLength = 10
   //path where the file is stored
-  val dbPath = "./sensorDB.sqlite3"
+  private val dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
   val init = !new File(dbPath).exists()
   //tables for latest values and hierarchy
-  val latestValues = TableQuery[DBData]
-  val objects = TableQuery[DBNode]
+  private val latestValues = TableQuery[DBData]
+  private val objects = TableQuery[DBNode]
   
   //initializing database
   val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
@@ -60,7 +60,10 @@ object SQLite {
     //}
     
     }
-
+   def setHistoryLength(newLength:Int)
+   {
+     historyLength=newLength
+   }
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects along the path too.
    * 
@@ -148,6 +151,11 @@ object SQLite {
       }
       result
     }
+  /**
+   * getInterval returns Array of DBSensors that are on given path and between given timestamps
+   * @param path path to sensor whose values are of interest
+   * @param start 
+   */
   def getInterval(path:String,start:java.sql.Timestamp,end:java.sql.Timestamp):Array[DBSensor]={
     var result = Buffer[DBSensor]()
     db withSession { implicit session =>
@@ -185,10 +193,30 @@ object SQLite {
       curpath = fullpath
     }
   }
+  /**
+   * returns n latest values from sensor at given path as Array[DBSensor]
+   * returns all stored values if n is greater than number of values stored
+   * @param path path to sensor
+   * @param n number of values to return
+   * @param return returns Array[DBSensor]
+   */
   def getNLatest(path:String,n:Int) = getN(path,n,true):Array[DBSensor]
-  
+  /**
+   * returns n oldest values from sensor at given path as Array[DBSensor]
+   * returns all stored values if n is greater than number of values stored
+   * @param path path to sensor
+   * @param n number of values to return
+   * @param return returns Array[DBSensor]
+   */
   def getNOldest(path:String,n:Int) = getN(path,n,false):Array[DBSensor]
-  
+  /**
+   * returns n latest or oldest values from sensor at given path as Array[DBSensor]
+   * returns all stored values if n is greater than number of values stored
+   * @param path path to sensor
+   * @param n number of values to return
+   * @param latest boolean return latest? if false returns oldest
+   * @param return returns Array[DBSensor]
+   */
   private def getN(path:String,n:Int,latest:Boolean):Array[DBSensor]=
   {
    var result = Buffer[DBSensor]()
@@ -208,7 +236,10 @@ object SQLite {
   }
   
 
-  //empties all content from the tables
+  /**
+   * Empties all the data from the database
+   * 
+   */
   def clearDB()={
     db withSession { implicit session =>
     latestValues.delete
