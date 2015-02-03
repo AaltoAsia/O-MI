@@ -1,6 +1,5 @@
 package responses
 
-import sensorDataStructure._
 import parsing._
 import database._
 import scala.xml
@@ -62,8 +61,9 @@ object Read {
               resultChildren += <Object><id>{ subobject.path.split("/").last }</id></Object>
             }
 
-          }
-        }
+            case None => return None
+					}
+				}
 
         val mapId = sensormap.path.split("/").last
         val xmlReturn =
@@ -97,7 +97,8 @@ object Read {
       case None => return "No object or value found"
     }
   }
-  /*
+
+/*
 	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
 
  		ODFnodes.sortWith(_.path < _.path)
@@ -116,8 +117,8 @@ object Read {
 
  					if(lastnodepath != thisnodepath) {
  						xmlreturn += "<Object>"
- 						xmlreturn += generateODFresponse(lastnodepath)
- 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 						xmlreturn += generateODFresponse(lastnodepath, begin, end)
+ 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList, begin, end)
  						xmlreturn += "</Object>"
  						nextnodes.clear
  					}
@@ -149,8 +150,8 @@ object Read {
  		if(nextnodes.isEmpty == false) {	//because the loop uses previous elements, theres sometimes more left in the list
  			var thispath = nextnodes(0).path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
  			xmlreturn += "<Object>"
- 			xmlreturn += generateODFresponse(thispath)
- 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 			xmlreturn += generateODFresponse(thispath, begin, end)
+ 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList, begin, end)
  			xmlreturn += "</Object>"
  		}
 
@@ -172,12 +173,12 @@ object Read {
  		"""
 
  		var listofnodes = ODFnodes.collect {
-            case OneTimeRead(_,c) => c
+            case OneTimeRead(_,_,_,c) => c
         }
 
         val nodelist = listofnodes.head
 
- 		val OMIelements = OMIReadGenerate(depth, nodelist.toList)
+ 		val OMIelements = OMIReadGenerate(depth, nodelist.toList, begin, end)
 
  		val OMIresponseEnd = 
  		"""

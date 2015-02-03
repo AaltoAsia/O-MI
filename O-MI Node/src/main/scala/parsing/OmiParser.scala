@@ -1,5 +1,6 @@
 package parsing
 
+import java.sql.Timestamp
 import scala.xml._
 import scala.util.Try
 import scala.collection.mutable.Map

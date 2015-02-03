@@ -1,7 +1,7 @@
 /* IconSelect object */
 var iconSelect;
 
-window.onload = function() {
+$(function() {
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select");
 
@@ -13,87 +13,37 @@ window.onload = function() {
 	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
 	iconSelect.refresh(icons);
-}; 
 
-/* Click events for buttons */
-$(document).on('click', '#object-button', getObjects);
-$(document).on('click', '#request-gen', generateRequest);
-$(document).on('click', '#request-send', sendRequest);
 
-/* Eventlistener for object tree updating */
-$(document).on('click', '.checkbox', function() {
-	var ref = $(this); //Reference (jquery object) of the clicked button
-	var id = ref.attr('id');
-	
-	//Parent item clicked
-	if(id){
-		propChildren(ref);
-		propParent(ref);
-	} else { 
-		propParent(ref);
-	}
+        /* Click events for buttons */
+        $(document).on('click', '#object-button', getObjects);
+        $(document).on('click', '#request-gen', generateRequest);
+        $(document).on('click', '#request-send', sendRequest);
 
-	function propChildren(parent){
-		var parentId = $(parent).attr("id");
-		//Find child items and mark their value the same as their parent
-		getChildren(parentId).each(function(){
-			$(this).prop('checked', parent.is(':checked'));
-			propChildren($(this));
-		});
-	}
-	
-	/* Child is a jquery object */
-	function propParent(child){
-		//ChildItem clicked;
-		var parentId = child.attr('class').split(' ').find(isParent);
-		if(parentId){
-			var jqId = jq("#", parentId);
+        $("#url-field").val('http://' + window.location.host + "/Objects");
 
-			//Change parent item check value
-			$(jqId).prop('checked', $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0);
-			
-			if(!isRootBox(jqId)){
-				propParent($(jqId));
-			}
-		}
-	}
-	
-	/* Temp function, returns an array of children with the given id (as their class) */
-	function getChildren(id){
-		return $("#objectList").find("input").filter(function(){
-			return $(this).attr('class').indexOf(id) > -1;
-		});
-	}
-	
-	/* Temp function, allows special characters pass through jQuery */
-	function jq(prefix, myid) {
-		return prefix + myid.replace( /(:|\.|\[|\]|\/)/g, "\\$1" );
-	}
-	
-	function isParent(element, index, array){
-		return element != "checkbox" && element != "lower";
-	}
-	
-	function isRootBox(jqid){
-		return $(jqid).attr('class').split(' ').length == 1;
-	}
-});
+}); 
+var objectUrl;
 
 /* Get the objects through ajax get */
 function getObjects() {
-	//Get the current path of the file
-	var url = document.URL;
-	var path = url.substring(0, url.lastIndexOf("/"));
-	
 	console.log("Sending AJAX GET for the objects...");
 	
+	objectUrl = $("#url-field").val();
+	
+	$("#send-field").val(objectUrl.replace("/Objects", ""));
+	
 	//Sent ajax get-request for the objects
+	ajaxGet(0, objectUrl, "");
+}
+
+function ajaxGet(indent, url, listId){
 	$.ajax({
         type: "GET",
 		dataType: "xml",
-        url: "http://localhost:8080/Objects" /*path + "SensorData/objects"*/,
+        url: url,
         success: function(data) {
-			displayObjects(data, 0, "http://localhost:8080/Objects");
+			displayObjects(data, indent, url, listId);
 		},
 		error: function(a, b, c){
 			console.log("Error accessing data discovery");
@@ -122,20 +72,11 @@ function displayObjects(data, indent, url, listId) {
 				addInfoItems(this, id, indent + 1);
 				
 				//Get lower hierarchy values
-				$.ajax({
-					type: "GET",
-					dataType: "xml",
-					url: url + "/" + id,
-					success: function(data) {
-						displayObjects(data, indent + 1, url + "/" + id, "list-" + id);
-					},
-					error: function(a, b, c){
-						console.log("No lower hierarchy for " + id);
-					}
-				});
+				ajaxGet(indent + 1, url + "/" + id, "list-" + id)
 			});
 		});
 	} else {
+		// Subobjects/Infoitems
 		var margin = indent * 20 + "px";
 		
 		$(data).find("Object").each(function(){
@@ -150,17 +91,8 @@ function displayObjects(data, indent, url, listId) {
 				$('<ul id="list-' + name + '"></ul>').appendTo("#" + listId);
 				$("#" + listId).last().css({ marginLeft: margin });
 				
-				$.ajax({
-					type: "GET",
-					dataType: "xml",
-					url: url + "/" + name,
-					success: function(data) {
-						displayObjects(data, indent + 1, url + "/" + name);
-					},
-					error: function(a, b, c){
-						console.log("No lower hierarchy for " + id);
-					}
-				});
+				ajaxGet(indent + 1, url + "/" + name);
+				
 				$("#" + listId + ":last-child").css({ marginLeft:margin });
 			});
 			addInfoItems(this, id, indent + 1);
@@ -188,9 +120,11 @@ function addInfoItems(parent, id, indent) {
 function generateRequest(){
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
+	var begin = $("#begin").val();
+	var end = $("#end").val();
 	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval);
+	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end);
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
@@ -207,7 +141,7 @@ function generateRequest(){
 * @param {Number} Message interval
 * @param {function} Callback function (not used atm)
 */
-function writeXML(objects, operation, ttl, interval, callback){
+function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -221,12 +155,24 @@ function writeXML(objects, operation, ttl, interval, callback){
 	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
 	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
 	writer.writeAttributeString('version', '1.0');
+	
 	if(ttl) writer.writeAttributeString('ttl', ttl);
+	
 	//(second line)
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
+	
 	if(interval > 0) writer.writeAttributeString('interval', interval);
+	
+	if(begin && end){
+		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
+			writer.writeAttributeString('begin', begin);
+			writer.writeAttributeString('end', end);
+		}
+	}
+	
 	if(callback) writer.writeAttributeString('callback', callback);
+	
 	//(third line)
 	writer.writeStartElement('omi:msg');
 	writer.writeAttributeString( 'xmlns', 'omi.xsd');
@@ -246,11 +192,13 @@ function writeXML(objects, operation, ttl, interval, callback){
 		var cl = classes[classes.length - 1];
 		
 		if(objects[i].id) {
-			
 			if(cl != ids[ids.length - 1]){
-				ids.pop();
-				writer.writeEndElement();
-			}			
+				while(ids.length > 0){
+					ids.pop();
+					writer.writeEndElement();
+				}			
+			}
+			
 			//Object
 			ids.push(objects[i].id);
 			writer.writeStartElement('Object');
@@ -278,16 +226,17 @@ function writeXML(objects, operation, ttl, interval, callback){
     return request;
 }
 
-// Server URL
-var server = "http://localhost:8080";
-
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
+	// Server URL
+	var server = $("#send-field").val();
+
     var request = $('#request').text(); //Get the request string
 	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
+		//TODO:
         startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
     else
     {
