@@ -15,7 +15,8 @@ class ReadTest extends Specification {
     lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
 
 	// Create our in-memory sensor database
-
+   
+    
     val date = new Date(1421775723); //static date for testing
     val testtime = new java.sql.Timestamp(date.getTime)
     val testData = Map(
@@ -28,6 +29,7 @@ class ReadTest extends Specification {
     )
 
     for ((path, value) <- testData){
+        SQLite.remove(path)
         SQLite.set(new DBSensor(path, value, testtime))
     }
 

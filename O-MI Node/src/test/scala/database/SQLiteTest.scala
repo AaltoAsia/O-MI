@@ -121,28 +121,28 @@ object SQLiteTest extends Specification {
         var values = sensrs.map { x => x.value }
        values.length == 2 && values.contains("21.1C") && values.contains("21.2C") shouldEqual true
     }
-//    "return true when removing valid path" in{
-//      database.SQLite.remove("path/to/sensor3/temp")
-//      database.SQLite.remove("path/to/sensor1/hum") shouldEqual true
-//    }
-//    "return true when removing valid path" in{
-//      database.SQLite.remove("path/to/sensor1/temp") shouldEqual true
-//    }
-//    "return false when trying to remove object from the middle" in{
-//      database.SQLite.remove("path/to/sensor2") shouldEqual false
-//    }
-//    "return true when removing valid path" in{
-//      database.SQLite.remove("path/to/sensor2/temp") shouldEqual true
-//    }
-//    "return true when removing valid path" in{
-//      database.SQLite.remove("path/to/sensor2/hum") shouldEqual true
-//    }
-//     "return None when searching non existent object" in{
-//      database.SQLite.get("path/to/sensor2") shouldEqual None
-//    }
-//     "return None when searching non existent object" in{
-//      database.SQLite.get("path/to/sensor1") shouldEqual None
-//    }
+    "return true when removing valid path" in{
+      database.SQLite.remove("path/to/sensor3/temp")
+      database.SQLite.remove("path/to/sensor1/hum") shouldEqual true
+    }
+    "return true when removing valid path" in{
+      database.SQLite.remove("path/to/sensor1/temp") shouldEqual true
+    }
+    "return false when trying to remove object from the middle" in{
+      database.SQLite.remove("path/to/sensor2") shouldEqual false
+    }
+    "return true when removing valid path" in{
+      database.SQLite.remove("path/to/sensor2/temp") shouldEqual true
+    }
+    "return true when removing valid path" in{
+      database.SQLite.remove("path/to/sensor2/hum") shouldEqual true
+    }
+     "return None when searching non existent object" in{
+      database.SQLite.get("path/to/sensor2") shouldEqual None
+    }
+     "return None when searching non existent object" in{
+      database.SQLite.get("path/to/sensor1") shouldEqual None
+    }
    
     
   }
