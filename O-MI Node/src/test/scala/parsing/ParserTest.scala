@@ -32,14 +32,12 @@ class ParserTest extends Specification {
     write request with
       correct message     $e100
       missing msgformat   $e101
-      wrong msgformat     $e102
       missing omi:msg     $e103
       missing Objects     $e104 
       no objects to parse $e105
     response message with
       correct message     $e200
       missing msgformat   $e201
-      wrong msgformat     $e202
       missing Objects     $e204
       missing result node $e205
       no objects to parse $e206
@@ -47,7 +45,6 @@ class ParserTest extends Specification {
     read request with
       correct message     $e300
       missing msgformat   $e301
-      wrong msgformat     $e302
       missing omi:msg     $e303
       missing Objects     $e304
       no objects to parse $e305
@@ -229,10 +226,10 @@ class ParserTest extends Specification {
 
   }
 
-  def e102 = {
-    val temp = OmiParser.parse(omi_write_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-    temp.head should be equalTo (ParseError("Unknown message format."))
-  }
+//  def e102 = {
+//    val temp = OmiParser.parse(omi_write_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+//    temp.head should be equalTo (ParseError("Unknown message format."))
+//  }
 
   def e103 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("omi:msg", "omi:msn"))
@@ -383,11 +380,11 @@ class ParserTest extends Specification {
 
   }
 
-  def e202 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-    temp.head should be equalTo (ParseError("Unknown message format."))
-
-  }
+//  def e202 = {
+//    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+//    temp.head should be equalTo (ParseError("Unknown message format."))
+//
+//  }
 
   //  def e203 = {
   //    OmiParser.parse(omi_response_test_file.replace("omi:msg", "omi:msn")) match {
@@ -532,11 +529,11 @@ class ParserTest extends Specification {
 
   }
 
-  def e302 = {
-    val temp = OmiParser.parse(omi_read_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-    temp.head should be equalTo (ParseError("Unknown message format."))
-
-  }
+//  def e302 = {
+//    val temp = OmiParser.parse(omi_read_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+//    temp.head should be equalTo (ParseError("Unknown message format."))
+//
+//  }
 
   def e303 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:msg", "omi:msn"))
