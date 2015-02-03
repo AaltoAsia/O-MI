@@ -21,7 +21,7 @@ object SQLite {
       initialize()
     }
   }
-
+  
   /**
    * Used to set values to database. If data already exists for the path, updates existing data,
    *  otherwise creates new data and all the missing objects to the hierarchy.
@@ -31,16 +31,17 @@ object SQLite {
    */
   def set(data: DBSensor) =
     {
+    var count = 0
+    //try{
       db withSession { implicit session =>
         //search database for sensor's path
-        val pathQuery = for {
-          d <- latestValues if d.path === data.path
-        } yield (d.value, d.timestamp)
+       val pathQuery = latestValues.filter(_.path === data.path)
         //if found a row with same path update else add new data
-        var count = pathQuery.list.length
+        count = pathQuery.list.length
         if (count >= historyLength) {
-          val sorted = pathQuery.sortBy(_._2)
-          sorted.take(1).update(data.value, data.time)
+          latestValues += (data.path, data.value, data.time)
+          val oldtime = pathQuery.sortBy(_.timestamp).first._3
+          pathQuery.filter(_.timestamp === oldtime).delete
           false
         } else {
           latestValues += (data.path, data.value, data.time)
@@ -50,6 +51,13 @@ object SQLite {
         }
         
       }
+    //}
+    //catch{
+      //case e: Exception => 
+        //just fail silently when something bad happens
+        //e.g does nothing when trying to add same path and timestamp multiple times
+    //}
+    
     }
 
   /**
@@ -175,7 +183,28 @@ object SQLite {
       curpath = fullpath
     }
   }
-
+  def getNLatest(path:String,n:Int) = getN(path,n,true):Array[DBSensor]
+  
+  def getNOldest(path:String,n:Int) = getN(path,n,false):Array[DBSensor]
+  
+  private def getN(path:String,n:Int,latest:Boolean):Array[DBSensor]=
+  {
+   var result = Buffer[DBSensor]()
+    db withSession { implicit session =>
+      val pathQuery = latestValues.filter(_.path === path)
+        var count = pathQuery.list.length
+        if (count > 0) {
+         val sorted = pathQuery.sortBy(_.timestamp)
+         val limited = if(latest){sorted.drop(math.max(count-n,0))}else{sorted.take(math.min(count,n))}
+         limited foreach{
+           case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
+               result+=new DBSensor(dbpath,dbvalue,dbtime)     
+         }
+        }
+    }
+    result.toArray
+  }
+  
   /**
    * Used to get childs of an object with given path
    * @param path path to object whose childs are needed
@@ -185,7 +214,6 @@ object SQLite {
   private def getChilds(path: String)(implicit session: Session): Array[DBItem] =
     {
       var childs = Array[DBItem]()
-
       val objectQuery = for {
         c <- objects if c.parentPath === path
       } yield (c.path)
