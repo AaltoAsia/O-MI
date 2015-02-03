@@ -43,6 +43,7 @@ class ParserTest extends Specification {
       missing Objects     $e204
       missing result node $e205
       no objects to parse $e206
+      missing return code $e207
     read request with
       correct message     $e300
       missing msgformat   $e301
@@ -61,8 +62,8 @@ class ParserTest extends Specification {
     """
 
   def e1 = {
-    val temp = OmiParser.parse("incorrect xml") 
-    temp.head should be equalTo(ParseError("Invalid XML, schema failure: Content is not allowed in prolog."))
+    val temp = OmiParser.parse("incorrect xml")
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: Content is not allowed in prolog."))
 
   }
 
@@ -76,9 +77,9 @@ class ParserTest extends Specification {
   }
 
   def e3 = {
-    val temp = OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "omi:Envelope")) 
+    val temp = OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "omi:Envelope"))
     temp.head.asInstanceOf[ParseError].msg must endWith(
-        "Cannot find the declaration of element 'omi:Envelope'.")
+      "Cannot find the declaration of element 'omi:Envelope'.")
 
   }
 
@@ -86,25 +87,25 @@ class ParserTest extends Specification {
     val temp = OmiParser.parse(
       """<omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
          </omi:omiEnvelope>
-      """) 
-      temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+      """)
+    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
   def e5 = {
-    val temp = OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl=""""")) 
+    val temp = OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl="""""))
     temp.head.asInstanceOf[ParseError].msg must endWith("'' is not a valid value for 'double'.")
 
   }
 
   def e6 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("omi:response", "omi:respnse")) 
+    val temp = OmiParser.parse(omi_response_test_file.replace("omi:response", "omi:respnse"))
     temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
   def e100 = {
-    OmiParser.parse(omi_write_test_file) should be equalTo(List(
+    OmiParser.parse(omi_write_test_file) should be equalTo (List(
       Write("10", List(
         OdfObject(
           List("Objects", "SmartHouse"),
@@ -224,18 +225,18 @@ class ParserTest extends Specification {
   }
   def e101 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("""omi:write msgformat="odf"""", "omi:write"))
-    temp.head should be equalTo(ParseError("No msgformat parameter found in write."))
+    temp.head should be equalTo (ParseError("No msgformat parameter found in write."))
 
   }
 
   def e102 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-    temp.head should be equalTo(ParseError("Unknown message format."))
+    temp.head should be equalTo (ParseError("Unknown message format."))
   }
 
   def e103 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("omi:msg", "omi:msn"))
-    temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
   }
 
   def e104 = {
@@ -247,8 +248,8 @@ class ParserTest extends Specification {
       </omi:msg>
   </omi:write>
 </omi:omiEnvelope>
-""") 
-temp.head should be equalTo(ParseError("No Objects child found in msg."))
+""")
+    temp.head should be equalTo (ParseError("No Objects child found in msg."))
 
   }
 
@@ -263,14 +264,14 @@ temp.head should be equalTo(ParseError("No Objects child found in msg."))
       </omi:msg>
   </omi:write>
 </omi:omiEnvelope>
-""") 
-temp.head should be equalTo(ParseError("No Objects to parse"))
+""")
+    temp.head should be equalTo (ParseError("No Objects to parse"))
 
   }
 
   def e200 = {
-    OmiParser.parse(omi_response_test_file) should be equalTo(List(
-      Write("10", List(
+    OmiParser.parse(omi_response_test_file) should be equalTo (List(
+      Result("", "200", Some(List(
         OdfObject(
           List("Objects", "SmartHouse"),
           List(
@@ -371,20 +372,20 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
               List(),
               "")),
           List(),
-          "")),
+          ""))),
         "",
         List())))
   }
 
   def e201 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("""omi:result msgformat="odf"""", "omi:result")) 
-    temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'."))
+    val temp = OmiParser.parse(omi_response_test_file.replace("""omi:result msgformat="odf"""", "omi:result"))
+    temp.head should be equalTo (ParseError("No msgformat parameter found in result."))
 
   }
 
   def e202 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf"""")) 
-    temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'."))
+    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+    temp.head should be equalTo (ParseError("Unknown message format."))
 
   }
 
@@ -401,20 +402,20 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:response>
       <omi:result msgformat="odf" > 
-      <omi:return></omi:return> 
+      <omi:return returnCode="200" /> 
       <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       </omi:msg>
       </omi:result> 
   </omi:response>
 </omi:omiEnvelope>
-""") 
-temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'."))
+""")
+    temp.head should be equalTo (ParseError("No Objects child found in msg."))
 
   }
 
   def e205 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("<omi:return></omi:return>", "")) 
-    temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msg'. One of '{\"omi.xsd\":return}' is expected."))
+    val temp = OmiParser.parse(omi_response_test_file.replace("<omi:return returnCode=\"200\" />", ""))
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msg'. One of '{\"omi.xsd\":return}' is expected."))
 
   }
 
@@ -424,7 +425,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
   <omi:response>
       <omi:result msgformat="odf" > 
-      <omi:return></omi:return> 
+      <omi:return returnCode="200" />
       <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
     <Objects>
     </Objects>
@@ -432,14 +433,19 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
       </omi:result> 
   </omi:response>
 </omi:omiEnvelope>
-""") 
-temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'."))
+""")
+    temp.head should be equalTo (ParseError("No Objects to parse"))
 
   }
 
+  def e207 = {
+    val temp = OmiParser.parse(omi_response_test_file.replace("returnCode=\"200\"", ""))
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'."))
+  }
+
   def e300 = {
-    OmiParser.parse(omi_read_test_file) should be equalTo(List(
-      Write("10", List(
+    OmiParser.parse(omi_read_test_file) should be equalTo (List(
+      OneTimeRead("10", List(
         OdfObject(
           List("Objects", "SmartHouse"),
           List(
@@ -456,8 +462,7 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                     "SmartHouse",
                     "SmartFridge",
                     "PowerConsumption"),
-                  List(
-                    TimedValue("2014-12-18T15:34:52", "56")),
+                  List(),
                   "")),
               ""),
             OdfObject(
@@ -472,9 +477,8 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                     "Objects",
                     "SmartHouse",
                     "SmartOven",
-                    "PowerOn"),
-                  List(
-                    TimedValue("2014-12-18T15:34:52", "1")),
+                    "PowerConsumption"),
+                  List(),
                   "")),
               "")),
           List(
@@ -483,16 +487,14 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                 "Objects",
                 "SmartHouse",
                 "PowerConsumption"),
-              List(
-                TimedValue("2014-12-18T15:34:52", "180")),
+              List(),
               ""),
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "Moisture"),
-              List(
-                TimedValue("2014-12-18T15:34:52", "0.20")),
+              List(),
               "")),
           ""),
         OdfObject(
@@ -506,60 +508,39 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
                 "Objects",
                 "SmartCar",
                 "Fuel"),
-              List(
-                TimedValue("2014-12-18T15:34:52", "30")),
+              List(),
               "")),
           ""),
         OdfObject(
           List(
             "Objects",
             "SmartCottage"),
-          List(
-            OdfObject(
-              List(
-                "Objects",
-                "SmartCottage",
-                "Heater"),
-              List(),
-              List(),
-              ""),
-            OdfObject(
-              List(
-                "Objects",
-                "SmartCottage",
-                "Sauna"),
-              List(),
-              List(),
-              ""),
-            OdfObject(
-              List(
-                "Objects",
-                "SmartCottage",
-                "Weather"),
-              List(),
-              List(),
-              "")),
+          List(),
           List(),
           "")),
+        "",
+        "",
+        "",
+        "",
         "",
         List())))
   }
 
   def e301 = {
-    val temp = OmiParser.parse(omi_read_test_file.replace("""omi:read msgformat="odf"""", "omi:read")) 
-    temp.head should be equalTo(ParseError("No msgformat parameter found in read."))
+    val temp = OmiParser.parse(omi_read_test_file.replace("""omi:read msgformat="odf"""", "omi:read"))
+    temp.head should be equalTo (ParseError("No msgformat parameter found in read."))
 
   }
 
   def e302 = {
-    val temp = OmiParser.parse(omi_read_test_file.replace("""msgformat="odf"""", """msgformat="pdf"""")) 
-    temp.head should be equalTo(ParseError("Unknown message format."))
+    val temp = OmiParser.parse(omi_read_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+    temp.head should be equalTo (ParseError("Unknown message format."))
 
   }
 
   def e303 = {
-    val temp = OmiParser.parse(omi_read_test_file.replace("omi:msg", "omi:msn")) 
-    temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
+    val temp = OmiParser.parse(omi_read_test_file.replace("omi:msg", "omi:msn"))
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
 
   }
 
@@ -572,8 +553,8 @@ temp.head should be equalTo(ParseError("Invalid XML, schema failure: cvc-complex
       </omi:msg>
   </omi:read>
 </omi:omiEnvelope>
-""") 
-temp.head should be equalTo(ParseError("No Objects child found in msg."))
+""")
+    temp.head should be equalTo (ParseError("No Objects child found in msg."))
 
   }
 
@@ -588,15 +569,14 @@ temp.head should be equalTo(ParseError("No Objects child found in msg."))
       </omi:msg>
   </omi:read>
 </omi:omiEnvelope>
-""") 
-temp.head should be equalTo(ParseError("No Objects to parse"))
+""")
+    temp.head should be equalTo (ParseError("No Objects to parse"))
 
   }
 
   def e401 = {
-    val temp = OdfParser.parse("incorrect xml") 
-    temp.head should be equalTo(Left(ParseError("Invalid XML, schema failure: Content is not allowed in prolog.")))
-
+    val temp = OdfParser.parse("incorrect xml")
+    temp.head should be equalTo (Left(ParseError("Invalid XML, schema failure: Content is not allowed in prolog.")))
 
   }
   def e402 = {
@@ -617,8 +597,8 @@ temp.head should be equalTo(ParseError("No Objects to parse"))
       <id>SmartCottage</id>
         </Object>
     </Object>
-""") 
-temp.head should be equalTo(Left(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'Object'. One of '{id}' is expected.")))
+""")
+    temp.head should be equalTo (Left(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'Object'. One of '{id}' is expected.")))
 
   }
   def e403 = {
@@ -628,8 +608,8 @@ temp.head should be equalTo(Left(ParseError("Invalid XML, schema failure: cvc-co
         <id></id>
         </Object>
     </Objects>
-""") 
-temp.head should be equalTo(Left(ParseError("id's value not found in Object.")))
+""")
+    temp.head should be equalTo (Left(ParseError("id's value not found in Object.")))
 
   }
   def e404 = {
@@ -641,8 +621,8 @@ temp.head should be equalTo(Left(ParseError("id's value not found in Object.")))
         </InfoItem>
         </Object>
     </Objects>
-""") 
-temp.head should be equalTo(Left(ParseError("No name parameter found in InfoItem.")))
+""")
+    temp.head should be equalTo (Left(ParseError("No name parameter found in InfoItem.")))
 
   }
   //  def e405 = false

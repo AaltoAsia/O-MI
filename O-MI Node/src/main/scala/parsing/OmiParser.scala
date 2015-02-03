@@ -227,7 +227,7 @@ object OmiParser {
           "msgformat" -> getParameter(node, "msgformat"),
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
-          "return" -> getChild(node, "return"),
+          "return" -> getChild(node, "return",tolerateEmpty = true),
           "msg" -> getChild(node, "msg"),
           "requestId" -> getChild(node, "requestId", true, true))
 
@@ -250,6 +250,9 @@ object OmiParser {
               id => id.text
             }))
 
+            // EDIT: Checking msgformat
+        if(parameters("msgformat").right.get != "odf")
+          return Seq(new ParseError("Unknown message format."))
         if (subnodes("Objects").right.get.nonEmpty) {
           val odf = parseODF(subnodes("Objects").right.get.head)
           val left = odf.filter(_.isLeft)
@@ -288,7 +291,7 @@ object OmiParser {
    * @param node were parameter should be.
    * @param parameter's label
    * @param is nonexisting parameter accepted, is parameter's existent mandatory
-   * @param validation function if parameter musth confor some format
+   * @param validation function if parameter must confor some format
    * @return Either ParseError or parameter as String
    */
   private def getParameter(node: Node,
@@ -311,8 +314,10 @@ object OmiParser {
     val childs = (node \ s"$childName") map (stripNamespaces)
     if (!tolerateNonexist && childs.isEmpty)
       return Left(ParseError(s"No $childName child found in ${node.label}."))
-    else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
+    else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty ){
       return Left(ParseError(s"$childName's value not found in ${node.label}."))
+    }
+      
     else
       return Right(childs)
   }
