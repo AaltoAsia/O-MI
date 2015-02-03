@@ -10,8 +10,10 @@ import akka.io.Tcp._
 import scala.io.Source
 import database._
 
-class AgentListenerTest extends Specification {
+class AgentListenerTest extends Specification with Before{
 
+  def before = SQLite.init
+  
   class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """))) with Scope
@@ -83,7 +85,7 @@ class AgentListenerTest extends Specification {
   }
 
   "InputDataHandler" should {
-
+    sequential
     "receive sended data" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
@@ -96,8 +98,8 @@ class AgentListenerTest extends Specification {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
-      Thread.sleep(1000)
-      SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)
+      //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
+      awaitCond(SQLite.get("Objects/SmartHouse/Moisture") != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
     }
 
     "log warning when it encounters node with no information" in new Actors {
