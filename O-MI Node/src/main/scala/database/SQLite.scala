@@ -14,6 +14,7 @@ object SQLite {
   //tables for latest values and hierarchy
   private val latestValues = TableQuery[DBData]
   private val objects = TableQuery[DBNode]
+  private val subs = TableQuery[DBSubscription]
   
   //initializing database
   val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
@@ -288,16 +289,40 @@ object SQLite {
     {
       latestValues.ddl.create
       objects.ddl.create
+      subs.ddl.create
+    }
+
+    def saveSub(sub:DBSub)
+    {
+      db withSession { implicit session =>
+        val id = getNextId()
+        val time = new java.sql.Timestamp(new java.util.Date().getTime)
+        subs += (id,sub.joined,time,sub.ttl,sub.interval,sub.callback)
+      }
+    }
+    private def getNextId()(implicit session: Session):Int={
+      var len = subs.list.length
+      if(len > 0)
+      {
+       subs.sortBy(_.ID).drop(len - 1).first._1 + 1
+      }
+      else
+      {
+        0
+      }
     }
 }
 
+class DBSub(paths:Array[String],val ttl:Int,val interval:Int,val callback:Option[String])
+{
+  val joined = paths.mkString(";")
+}
 /**
  * Abstract base class for sensors' data structure
  *
  * @param path to where node is. Last part is key for this.
  *
  */
-
 sealed abstract class DBItem(val path: String)
 /**
  * case class DBSensor for the actual sensor data
@@ -346,3 +371,14 @@ class DBNode(tag: Tag)
   // Every table needs a * projection with the same type as the table's type parameter
   def * : ProvenShape[(String, String, String)] = (path, parentPath, key)
 }
+  class DBSubscription(tag: Tag)
+    extends Table[(Int,String, java.sql.Timestamp, Int,Int,Option[String])](tag, "subscriptions") {
+    // This is the primary key column:
+    def ID = column[Int]("ID", O.PrimaryKey)
+    def paths = column[String]("PATHS")
+    def start = column[java.sql.Timestamp]("START")
+    def TTL = column[Int]("TTL")
+    def interval = column[Int]("INTERVAL")
+    def callback = column[Option[String]]("CALLBACK")
+    def * : ProvenShape[(Int,String,java.sql.Timestamp,Int,Int,Option[String])] = (ID,paths,start,TTL,interval,callback)
+  }

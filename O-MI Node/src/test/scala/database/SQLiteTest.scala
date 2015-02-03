@@ -14,7 +14,13 @@ object SQLiteTest extends Specification {
     var data4= DBSensor("path/to/sensor2/hum","60%",new java.sql.Timestamp(4000))
     var data5 = DBSensor("path/to/sensor1/temp","21.6C",new java.sql.Timestamp(5000))
     var data6 = DBSensor("path/to/sensor1/temp","21.7C",new java.sql.Timestamp(6000))
-
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,1,None))
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,2,None))
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,2,None))
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,3,None))
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,4,None))
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,5,None))
+    SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),10,6,None))
     //database.SQLite.clearDB()
 
     "return true when adding new data" in {
@@ -153,6 +159,7 @@ object SQLiteTest extends Specification {
      "return None when searching non existent object" in{
       database.SQLite.get("path/to/sensor1") shouldEqual None
     }
+     
    
     
   }
