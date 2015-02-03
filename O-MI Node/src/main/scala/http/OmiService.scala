@@ -10,7 +10,6 @@ import MediaTypes._
 import responses._
 
 import parsing._
-import sensorDataStructure.SensorMap
 import xml._
 import cors._
 
@@ -29,7 +28,7 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService with CORSDirectives
-                                     with DefaultCORSDirectives {
+  with DefaultCORSDirectives {
   def log: LoggingAdapter
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
@@ -71,6 +70,7 @@ trait OmiService extends HttpService with CORSDirectives
                 complete(xmlData)
               }
             case None =>
+              log.debug(s"Url Discovery fail: $path")
               respondWithMediaType(`text/xml`) {
                 complete(404, <error>No object found</error>)
               }
@@ -127,20 +127,28 @@ trait OmiService extends HttpService with CORSDirectives
             case ParseError(_) => true
             case _ => false
           }
-          
+
           if (errors.isEmpty) {
             complete {
               requests.map {
-                case oneTimeRead: OneTimeRead => println("read"); Read.OMIReadResponse(requests.toList)
-                case write: Write => println("write"); ???
-                case subscription: Subscription => println("sub"); ???
+
+                case oneTimeRead: OneTimeRead =>
+                  log.debug("read")
+                  Read.OMIReadResponse(requests.toList)
+                case write: Write => 
+                  log.debug("write") 
+                  ??? //TODO handle Write
+                case subscription: Subscription => 
+                  log.debug("sub") 
+                  ??? //TODO handle sub
+                case _ => log.warning("Unknown request")
               }.mkString("\n")
             }
           } else {
             //Error found
             complete {
-              println("ERROR")
-              ???
+              log.error("ERROR")
+              ??? // TODO handle error
             }
           }
         }

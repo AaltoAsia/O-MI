@@ -13,6 +13,7 @@ object SQLite {
   //tables for latest values and hierarchy
   val latestValues = TableQuery[DBData]
   val objects = TableQuery[DBNode]
+  
   //initializing database
   val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
   db withSession { implicit session =>
@@ -105,6 +106,7 @@ object SQLite {
   def get(path: String): Option[DBItem] =
     {
       var result: Option[DBItem] = None
+      
       db withSession { implicit session =>
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
@@ -154,7 +156,13 @@ object SQLite {
       curpath = fullpath
     }
   }
-
+  //empties all content from the tables
+  def clearDB()={
+    db withSession { implicit session =>
+    latestValues.delete
+    objects.delete
+    }
+  }
   /**
    * Used to get childs of an object with given path
    * @param path path to object whose childs are needed
@@ -207,7 +215,7 @@ object SQLite {
  *
  */
 
-abstract class DBItem(val path: String)
+sealed abstract class DBItem(val path: String)
 /**
  * case class DBSensor for the actual sensor data
  * @param pathto path to sensor

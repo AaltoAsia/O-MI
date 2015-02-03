@@ -2,6 +2,7 @@
 <Objects>
    <Object>
       <id>SmartHouse</id>
+<<<<<<< HEAD
       <InfoItem name="PowerConsumption">
          <value dateTime="2014-12-18T15:34:52">180</value>
       </InfoItem>
@@ -39,4 +40,10 @@
          <id>Weather</id>
       </Object>
    </Object>
+=======
+      <InfoItem name="Moisture">
+         <value dateTime="2014-12-186T15:34:52">0.20</value>
+      </InfoItem>
+   </Object>
+>>>>>>> development
 </Objects>

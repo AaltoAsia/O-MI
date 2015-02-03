@@ -1,6 +1,5 @@
 package responses
 
-import sensorDataStructure._
 import parsing._
 import database._
 import scala.xml
@@ -64,9 +63,12 @@ object Read {
 						}
 
 						case Some(subobject: DBObject) => {
-							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
+							resultChildren +=
+                <Object>
+                  <id>{subobject.path.split("/").last}</id>
+                </Object>
 						}
-
+            case None => return None
 					}
 				}
 
