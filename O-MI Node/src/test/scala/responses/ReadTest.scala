@@ -16,7 +16,8 @@ class ReadTest extends Specification {
     lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
 
 	// Create our in-memory sensor database
-
+   
+    
     val date = new Date(1421775723); //static date for testing
     val testtime = new java.sql.Timestamp(date.getTime)
     val calendar = Calendar.getInstance()
@@ -31,6 +32,7 @@ class ReadTest extends Specification {
     )
 
     for ((path, value) <- testData){
+        SQLite.remove(path)
         SQLite.set(new DBSensor(path, value, testtime))
     }
 
@@ -42,7 +44,8 @@ class ReadTest extends Specification {
       Correct XML with one value                $e1
       Correct XML with multiple values          $e2
       Correct answer from real request          $e3
-      Random small tests                        $e4
+      REST works with /value                    $e4
+      REST works with trailing /                $e5
       
     """
 
@@ -51,12 +54,12 @@ class ReadTest extends Specification {
 
         val testliste1 = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some(testtime.toString), None))
-    	val testliste1forread = List(OneTimeRead("10", testliste1))
+    	val testliste1forread = List(OneTimeRead("10", None, None, testliste1))
 
         val testliste1check = List(
         ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
 
-        OmiParser.parse(Read.OMIReadResponse(2, testliste1forread)) == List(
+        OmiParser.parse(Read.OMIReadResponse(2, testliste1forread, None, None)) == List(
             Result("", Some(testliste1check)))
 
     }
@@ -78,9 +81,9 @@ class ReadTest extends Specification {
         ODFNode("/Objects/RoomSensors1/Temperature/Inside", InfoItem, Some("21.2"), Some("dateTime=" + "\"" + testtime.toString + "\""), None),
         ODFNode("/Objects/RoomSensors1/CarbonDioxide", InfoItem, Some("too much"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))
 
-        val testliste2forread = List(OneTimeRead("10", testliste2))
+        val testliste2forread = List(OneTimeRead("10", None, None, testliste2))
 
-        OmiParser.parse(Read.OMIReadResponse(2, testliste2forread)) == List(
+        OmiParser.parse(Read.OMIReadResponse(2, testliste2forread, None, None)) == List(
             Result("", Some(testliste2check)))
 
     }
@@ -88,19 +91,31 @@ class ReadTest extends Specification {
     def e3 = {
         val odfnodes = OmiParser.parse(simpletestfile)
         var listofnodes = odfnodes.collect {
-            case OneTimeRead(_,c) => c
+            case OneTimeRead(_,_,_,c) => c
         }
 
         val nodelist = listofnodes.head
 
-        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList)) should be equalTo( List(  //nodelist should already be a list but for some reason its Seq
+        OmiParser.parse(Read.OMIReadResponse(2, odfnodes.toList, None, None)) should be equalTo( List(  //nodelist should already be a list but for some reason its Seq
               Result("",Some(List(ODFNode("/Objects/Refrigerator123/PowerConsumption", InfoItem, Some("0.123"), Some("dateTime=" + "\"" + testtime.toString + "\""), None))))))
-//Result("", Some(nodelist.toList))))
+            //Result("", Some(nodelist.toList))))
 
     }
 
     def e4 = {
-        1 == 1
+        val RESTXML = Read.generateODFREST("Objects/Refrigerator123/PowerConsumption/value")
+
+        RESTXML should be equalTo(Some(Left("0.123")))
+    }
+
+    def e5 = {
+        val RESTXML = Read.generateODFREST("Objects/RoomSensors1/")
+
+        val rightXML = <Object><id>RoomSensors1</id><InfoItem name="CarbonDioxide"/><Object>
+                  <id>Temperature</id>
+                </Object></Object>
+
+        RESTXML should be equalTo(Some(Right(rightXML)))
     }
 }
 

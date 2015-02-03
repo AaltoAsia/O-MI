@@ -41,7 +41,7 @@ object Read {
     val (npath, wasValue) = restNormalizePath(path)
 
 
-		SQLite.get(path) match {
+		SQLite.get(npath) match {
 			case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
@@ -87,7 +87,7 @@ object Read {
 		}
 	}
 
-	def generateODFresponse(path: String): String = {
+	def generateODFresponse(path: String, begin : Option[java.sql.Timestamp], end : Option[java.sql.Timestamp]): String = {
 		SQLite.get(path) match {
 			case Some(sensor: DBSensor) => {
 				val id = path.split("/").last
@@ -123,8 +123,8 @@ object Read {
 
  					if(lastnodepath != thisnodepath) {
  						xmlreturn += "<Object>"
- 						xmlreturn += generateODFresponse(lastnodepath)
- 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 						xmlreturn += generateODFresponse(lastnodepath, begin, end)
+ 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList, begin, end)
  						xmlreturn += "</Object>"
  						nextnodes.clear
  					}
@@ -156,8 +156,8 @@ object Read {
  		if(nextnodes.isEmpty == false) {	//because the loop uses previous elements, theres sometimes more left in the list
  			var thispath = nextnodes(0).path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
  			xmlreturn += "<Object>"
- 			xmlreturn += generateODFresponse(thispath)
- 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 			xmlreturn += generateODFresponse(thispath, begin, end)
+ 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList, begin, end)
  			xmlreturn += "</Object>"
  		}
 
@@ -179,12 +179,12 @@ object Read {
  		"""
 
  		var listofnodes = ODFnodes.collect {
-            case OneTimeRead(_,c) => c
+            case OneTimeRead(_,_,_,c) => c
         }
 
         val nodelist = listofnodes.head
 
- 		val OMIelements = OMIReadGenerate(depth, nodelist.toList)
+ 		val OMIelements = OMIReadGenerate(depth, nodelist.toList, begin, end)
 
  		val OMIresponseEnd = 
  		"""
