@@ -41,7 +41,7 @@ object Read {
     val (npath, wasValue) = restNormalizePath(path)
 
 
-		SQLite.get(path) match {
+		SQLite.get(npath) match {
 			case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
@@ -63,11 +63,12 @@ object Read {
 						}
 
 						case Some(subobject: DBObject) => {
-							resultChildren += <Object><id>{subobject.path.split("/").last}</id></Object>
+							resultChildren +=
+                <Object>
+                  <id>{subobject.path.split("/").last}</id>
+                </Object>
 						}
-            
-            case _ =>
-
+            case None => return None
 					}
 				}
 
@@ -82,11 +83,11 @@ object Read {
 
         return Some(Right(xmlReturn))
 
-			case _ => return None
+			case None => return None
 		}
 	}
 
-	def generateODFresponse(path: String): String = {
+	def generateODFresponse(path: String, begin : Option[java.sql.Timestamp], end : Option[java.sql.Timestamp]): String = {
 		SQLite.get(path) match {
 			case Some(sensor: DBSensor) => {
 				val id = path.split("/").last
@@ -100,11 +101,11 @@ object Read {
 				return xmlreturn.toString
 			}
 
-			case _ => return "No object or value found" //default case (when db returns None)
+			case None => return "No object or value found"
 		}
 	}
 
-	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode]): String = {	//parsing is done somewhere and the possible result sent here
+	def OMIReadGenerate(depth: Int, ODFnodes: List[ODFNode], begin : Option[java.sql.Timestamp], end : Option[java.sql.Timestamp]): String = {	//parsing is done somewhere and the possible result sent here
 
  		ODFnodes.sortWith(_.path < _.path)
  		var xmlreturn = Buffer[String]()
@@ -122,8 +123,8 @@ object Read {
 
  					if(lastnodepath != thisnodepath) {
  						xmlreturn += "<Object>"
- 						xmlreturn += generateODFresponse(lastnodepath)
- 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 						xmlreturn += generateODFresponse(lastnodepath, begin, end)
+ 						xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList, begin, end)
  						xmlreturn += "</Object>"
  						nextnodes.clear
  					}
@@ -155,8 +156,8 @@ object Read {
  		if(nextnodes.isEmpty == false) {	//because the loop uses previous elements, theres sometimes more left in the list
  			var thispath = nextnodes(0).path.stripPrefix("/").split("/").slice(0, depth).mkString("/")
  			xmlreturn += "<Object>"
- 			xmlreturn += generateODFresponse(thispath)
- 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList)
+ 			xmlreturn += generateODFresponse(thispath, begin, end)
+ 			xmlreturn += OMIReadGenerate(depth+1, nextnodes.toList, begin, end)
  			xmlreturn += "</Object>"
  		}
 
@@ -164,7 +165,8 @@ object Read {
 
 	}
 
-	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg]): String = {			//takes the return value of OmiParser straight
+	//takes the return value of OmiParser straight
+	def OMIReadResponse(depth: Int, ODFnodes: List[ParseMsg], begin : Option[java.sql.Timestamp], end : Option[java.sql.Timestamp]): String = {		
 		val OMIresponseStart = 
 		"""
 		<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
@@ -176,12 +178,12 @@ object Read {
  		"""
 
  		var listofnodes = ODFnodes.collect {
-            case OneTimeRead(_,c) => c
+            case OneTimeRead(_,_,_,c) => c
         }
 
         val nodelist = listofnodes.head
 
- 		val OMIelements = OMIReadGenerate(depth, nodelist.toList)
+ 		val OMIelements = OMIReadGenerate(depth, nodelist.toList, begin, end)
 
  		val OMIresponseEnd = 
  		"""

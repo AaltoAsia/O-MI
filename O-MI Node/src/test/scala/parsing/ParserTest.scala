@@ -254,7 +254,7 @@ class ParserTest extends Specification {
 
   def e300 = {
     OmiParser.parse(omi_read_test_file) == List(
-      OneTimeRead("10", List(
+      OneTimeRead("10", None, None, List(
         ODFNode("/Objects/SmartHouse/SmartFridge/PowerConsumption", InfoItem, None, None, None),
         ODFNode("/Objects/SmartHouse/SmartOven/PowerConsumption", InfoItem, None, None, None),
         ODFNode("/Objects/SmartHouse/PowerConsumption", InfoItem, None, None, None),
