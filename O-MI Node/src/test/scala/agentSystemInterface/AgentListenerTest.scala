@@ -101,7 +101,7 @@ class AgentListenerTest extends Specification with Before {
       SQLite.clearDB()
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
-      awaitCond(SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None), scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
+      awaitCond(SQLite.get("Objects/SmartHouse/Moisture") != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
     }
 
     "log warning when it encounters node with no information" in new Actors {

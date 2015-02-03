@@ -278,26 +278,26 @@ object Read {
     node.toString
   }
 
-  /**
-   * helper function for generating O-DF's InfoItem nodes
-   * @param nodes to generate
-   * @return generated xml as String
-   */
-  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem]): String = {
-    var node: xml.NodeSeq = xml.NodeSeq.Empty
-    for (infoItem <- infoItems) {
-      node ++= <InfoItem name={ infoItem.path.last }>
-                 {
-                   val item = SQLite.get(infoItem.path.mkString("/"))
-                   item match {
-                     case Some(sensor: database.DBSensor) =>
-                       <value unixTime={ sensor.time.toString }>{ sensor.value }</value>
-                     case Some(obj: database.DBObject) =>
-                       println("WARN: Object found in InfoItem in DB!")
-                   }
-                 }
-                 <MetaData>{ infoItem.metadata }</MetaData>
-               </InfoItem>
+  /** helper function for generating O-DF's InfoItem nodes
+    * @param nodes to generate
+    * @return generated xml as String
+    */
+  def odfInfoItemGeneration(infoItems: List[ parsing.OdfInfoItem]) : String = {
+    var node : xml.NodeSeq = xml.NodeSeq.Empty 
+    for(infoItem <- infoItems){
+      node ++= <InfoItem name={infoItem.path.last}>
+        {
+            val item = SQLite.get(infoItem.path.mkString("/"))
+            item match{
+              case Some( sensor : database.DBSensor) =>
+              <value unixTime={sensor.time.toString}>{sensor.value}</value>
+              case Some( obj : database.DBObject) =>
+                println("WARN: Object found in InfoItem in DB!")
+              case _ => println("unhandled case") //TODO Any better ideas?
+            }
+        }
+        <MetaData>{infoItem.metadata}</MetaData>
+      </InfoItem>
     }
     node.toString
   }
