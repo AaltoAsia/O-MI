@@ -1,6 +1,9 @@
 /* IconSelect object */
 var iconSelect;
 
+/* Url to get the objects from */
+var objectUrl;
+
 $(function() {
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select");
@@ -9,21 +12,19 @@ $(function() {
 	var icons = [];
 	icons.push({'iconFilePath': 'Resources/icons/read.png', 'iconValue': 'read'});
 	icons.push({'iconFilePath': 'Resources/icons/write.png', 'iconValue': 'write'});
-	icons.push({'iconFilePath': 'Resources/icons/subscribe.png', 'iconValue': 'subscribe'});
 	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
 	iconSelect.refresh(icons);
 
 
-        /* Click events for buttons */
-        $(document).on('click', '#object-button', getObjects);
-        $(document).on('click', '#request-gen', generateRequest);
-        $(document).on('click', '#request-send', sendRequest);
+	/* Click events for buttons */
+	$(document).on('click', '#object-button', getObjects);
+	$(document).on('click', '#request-gen', generateRequest);
+	$(document).on('click', '#request-send', sendRequest);
 
-        $("#url-field").val('http://' + window.location.host + "/Objects");
+	$("#url-field").val('http://' + window.location.host + "/Objects");
 
 }); 
-var objectUrl;
 
 /* Get the objects through ajax get */
 function getObjects() {
@@ -278,7 +279,7 @@ function sendRequest()
     } 
 }
 
-/* HTML 5 Server Sent Event communication */
+/* HTML 5 Server Sent Event communication (NOT USED ATM) */
 function startSubscriptionEventListener(request) {
     var source = new EventSource(server+"?msg="+request);
 
