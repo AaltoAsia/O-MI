@@ -11,9 +11,9 @@ import scala.io.Source
 import database._
 
 
-class AgentListenerTest extends Specification with Before {
+class AgentListenerTest extends Specification {
 
-  def before = SQLite.init
+  //def before = SQLite.init
   
   class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
