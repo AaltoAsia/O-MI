@@ -10,14 +10,14 @@ object SQLite {
   //path where the file is stored
   private val dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
-  val init = !new File(dbPath).exists()
+  private val init = !new File(dbPath).exists()
   //tables for latest values and hierarchy
   private val latestValues = TableQuery[DBData]
   private val objects = TableQuery[DBNode]
   private val subs = TableQuery[DBSubscription]
   
   //initializing database
-  val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
+  private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
   db withSession { implicit session =>
     if (init) {
       initialize()
@@ -291,8 +291,19 @@ object SQLite {
       objects.ddl.create
       subs.ddl.create
     }
+  /**
+   * Check whether subscription with given ID has expired. i.e if subscription has been in database for
+   * longer than its ttl value in seconds.
+   * 
+   * @param id id number that was generated during saving
+   * 
+   * @param return returns boolean whether subscription with given id has expired
+   */
     def isExpired(id:Int):Boolean=
     {
+      //gets time when subscibe was added,
+      // adds ttl amount of seconds to it,
+      //and compares to current time
       db withSession { implicit session =>
         val sub = subs.filter(_.ID === id).first
         if(sub._4 > 0)
@@ -309,20 +320,32 @@ object SQLite {
         }
       }
     }
-
+    /**
+     * Removes subscription information from database for given ID
+     * @param id id number that was generated during saving
+     * 
+     */
     def removeSub(id:Int)
     {
       db withSession { implicit session =>
         subs.filter(_.ID === id).delete
       }
     }
+    /**
+     * Returns DBSub object wrapped in Option for given id.
+     * Returns None if no subscription data matches the id
+     * @param id id number that was generated during saving 
+     * 
+     * @param return returns Some(BDSub) if found element with given id None otherwise
+     */
     def getSub(id:Int):Option[DBSub]=
     {
-     var res:Option[DBSub] = None
+       var res:Option[DBSub] = None
       db withSession { implicit session =>
         val query = subs.filter(_.ID === id)
         if(query.list.length > 0)
         {
+          //creates DBSub object based on saved information
           var head = query.first
           var sub = new DBSub(Array(),head._4,head._5,head._6)
           sub.paths = head._2.split(";")
@@ -334,20 +357,37 @@ object SQLite {
       }
       res
     }
+    /**
+     * Saves subscription information to database
+     * adds timestamp at current time to help keep track of expiring
+     * adds unique id number to differentiate between elements and
+     * to provide easy query parameter
+     * 
+     * @param sub DBSub object to be stored
+     * 
+     * @param return id number that is used for querying the elements
+     */
     def saveSub(sub:DBSub):Int=
     {
-      sub.startTime=new java.sql.Timestamp(new java.util.Date().getTime)
       db withSession { implicit session =>
         val id = getNextId()
+        //these two assignments are just to make things look less messy
         sub.id=id
+        sub.startTime=new java.sql.Timestamp(new java.util.Date().getTime)
         subs += (sub.id,sub.paths.mkString(";"),sub.startTime,sub.ttl,sub.interval,sub.callback)
+        //returns the id for reference
         id
       }
     }
+    /**
+     * Private helper method to find next free id number
+     * @param return the next free id number
+     */
     private def getNextId()(implicit session: Session):Int={
       var len = subs.list.length
       if(len > 0)
       {
+        //find the element with greatest id value and add 1 to it
        subs.sortBy(_.ID).drop(len - 1).first._1 + 1
       }
       else
@@ -356,7 +396,13 @@ object SQLite {
       }
     }
 }
-
+/**
+ * DBSub class to represent subscription information
+ * @param paths Array of paths representing all the sensors the subscription needs
+ * @param ttl time to live. in seconds. subscription expires after ttl seconds
+ * @param interval to store the interval value to DB
+ * @param callback optional callback adress. use None if no adress is needed
+ */
 class DBSub(var paths:Array[String],val ttl:Int,val interval:Int,val callback:Option[String])
 {
   //these are not needed when saving, but they are set in getSub
@@ -417,6 +463,9 @@ class DBNode(tag: Tag)
   // Every table needs a * projection with the same type as the table's type parameter
   def * : ProvenShape[(String, String, String)] = (path, parentPath, key)
 }
+/**
+ * Storing the subscription information to DB
+ */
   class DBSubscription(tag: Tag)
     extends Table[(Int,String, java.sql.Timestamp, Int,Int,Option[String])](tag, "subscriptions") {
     // This is the primary key column:
