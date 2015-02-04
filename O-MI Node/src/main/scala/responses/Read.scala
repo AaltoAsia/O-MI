@@ -40,7 +40,7 @@ object Read {
 
     val (npath, wasValue) = restNormalizePath(path)
 
-    SQLite.get(path) match {
+    SQLite.get(npath) match {
       case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
@@ -82,24 +82,6 @@ object Read {
     }
   }
 
-  def generateODFresponse(path: String): String = {
-    SQLite.get(path) match {
-      case Some(sensor: DBSensor) => {
-        val id = path.split("/").last
-        val xmlreturn = <InfoItem name={ id }><value dateTime={ sensor.time.toString }>{ sensor.value }</value></InfoItem>
-        return xmlreturn.toString
-      }
-
-      case Some(sensormap: DBObject) => {
-        val mapId = sensormap.path.split("/").last
-        val xmlreturn = <id>{ mapId }</id>
-        return xmlreturn.toString
-      }
-
-      case None => return "No object or value found"
-    }
-  }
-
   def OMIReadResponse(read: OneTimeRead): xml.Node = { //takes the return value of OmiParser straight
     val xml =
       <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
@@ -108,8 +90,6 @@ object Read {
             <omi:return returnCode="200"></omi:return>
             <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
               {
-                
-
                 val OMIelements = odfGeneration(read)                    
                 OMIelements
               }
