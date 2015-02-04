@@ -29,6 +29,7 @@ object Boot extends App {
 
   val date = new Date();
   val testTime = new java.sql.Timestamp(date.getTime)
+  
   val testData = Map(
         "Objects/Refrigerator123/PowerConsumption" -> "0.123",
         "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",

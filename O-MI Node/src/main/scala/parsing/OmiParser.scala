@@ -110,10 +110,6 @@ object OmiParser {
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
-
-        // EDIT: Checking msgformat
-        if(parameters("msgformat").right.get != "odf")
-          return Seq(new ParseError("Unknown message format."))
           
         val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
@@ -155,10 +151,6 @@ object OmiParser {
         if (errors.nonEmpty)
           return errors.toSeq
 
-        // EDIT: Checking msgformat
-        if(parameters("msgformat").right.get != "odf")
-          return Seq(new ParseError("Unknown message format."))
-          
         val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
@@ -251,9 +243,6 @@ object OmiParser {
               id => id.text
             }))
 
-            // EDIT: Checking msgformat
-        if(parameters("msgformat").right.get != "odf")
-          return Seq(new ParseError("Unknown message format."))
         if (subnodes("Objects").right.get.nonEmpty) {
           val odf = parseODF(subnodes("Objects").right.get.head)
           val left = odf.filter(_.isLeft)

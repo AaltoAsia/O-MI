@@ -1,16 +1,23 @@
 package responses
 
-import org.specs2._
-import scala.io.Source
-import responses._
-import parsing._
-import database._
-import parsing.OdfParser._
-import java.util.Date;
-import java.util.Calendar;
-import java.text.SimpleDateFormat;
+import org.specs2.mutable._
+//import scala.io.Source
+//import responses._
+//import parsing._
+//import database._
+//import parsing.OdfParser._
+//import java.util.Date;
+//import java.util.Calendar;
+//import java.text.SimpleDateFormat;
 
-
+class ReadTest extends Specification with Before {
+  def before = //save data
+  "Read response" should {
+    "temp test" in {
+      1 should be equalTo(1)
+    }
+  }
+}
 /*
 class ReadTest extends Specification {
     lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")

@@ -55,9 +55,11 @@ object SQLiteTest extends Specification {
           obj match{
             case DBSensor(p:String,v:String,t:java.sql.Timestamp) =>
               res = v
+            case _ => throw new Exception("unhandled case") //TODO any better ideas?
           }
         case None =>
           res = "not found"
+        case _ => throw new Exception("unhandled case")
        }
        res shouldEqual "40%"
     }
@@ -70,9 +72,11 @@ object SQLiteTest extends Specification {
           obj match{
             case DBSensor(p:String,v:String,t:java.sql.Timestamp) =>
               res = v
+            case _ => throw new Exception("unhandled case") //TODO any better ideas?
           }
         case None =>
           res = "not found"
+        case _ => throw new Exception("unhandled case") //TODO any better ideas?!?
        }
        res shouldEqual "21.6C"
     }
@@ -91,8 +95,10 @@ object SQLiteTest extends Specification {
                 res(i) = o.path
                 i += 1
               }
+            case _ => throw new Exception("unhandled case") //TODO any better ideas ?
           }
         case None =>
+        case _ => throw new Exception("unhandled case")//TODO any better ideas?
        }
        res.length == 2 && res.contains("path/to/sensor1/temp") && res.contains("path/to/sensor1/hum") shouldEqual true
     }
