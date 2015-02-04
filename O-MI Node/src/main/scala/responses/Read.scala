@@ -100,7 +100,7 @@ object Read {
     }
   }
 
-  def OMIReadResponse(requests: List[ParseMsg], begin: String, end: String): xml.Node = { //takes the return value of OmiParser straight
+  def OMIReadResponse(read: OneTimeRead): xml.Node = { //takes the return value of OmiParser straight
     val xml =
       <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
         <omi:response>
@@ -108,22 +108,9 @@ object Read {
             <omi:return returnCode="200"></omi:return>
             <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
               {
-                var listofnodes = requests.collect {
-                  case OneTimeRead(ttl: String,
-                    sensors: Seq[OdfObject],
-                    begin: String,
-                    end: String,
-                    newest: String,
-                    oldest: String,
-                    callback: String,
-                    requstId: Seq[String]
-                    ) => sensors
-                }
+                
 
-                val OMIelements = odfGeneration(
-                  listofnodes.flatMap(
-                    node => node), begin, end)
-                    
+                val OMIelements = odfGeneration(read)                    
                 OMIelements
               }
             </omi:msg>
@@ -138,9 +125,9 @@ object Read {
    * @param nodes in Objects node to be generated
    * @return generated O-DF xml as String
    */
-  def odfGeneration(objects: List[parsing.OdfObject], begin: String, end: String): xml.NodeSeq = {
+  def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
     <Objects>
-      { odfObjectGeneration(objects, begin, end) }
+      { odfObjectGeneration(read.sensors.toList, read.begin, read.end) }
     </Objects>
   }
 

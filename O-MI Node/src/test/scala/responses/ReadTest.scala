@@ -55,7 +55,7 @@ class ReadTest extends Specification with Before {
       lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/correctXMLfirsttest.xml")
       val parserlist = OmiParser.parse(simpletestfile)
 
-      trim(correctxmlreturn) == trim(Read.OMIReadResponse(parserlist.toList, "0", "0"))
+      trim(correctxmlreturn) should be equalTo(trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])))
     }
 
     "Give a history of values when begin and end is used" in {
@@ -63,7 +63,7 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
 
-        trim(correctxmlreturn) == trim(Read.OMIReadResponse(parserlist.toList, "1970-01-17T12:56:15", "1970-01-17T12:56:25"))
+        trim(correctxmlreturn) should be equalTo(trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])))
     }
   }
 }
