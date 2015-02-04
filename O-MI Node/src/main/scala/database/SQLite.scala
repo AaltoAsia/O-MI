@@ -4,7 +4,7 @@ import scala.slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
-
+import java.sql.Timestamp
 object SQLite {
   private var historyLength = 10
   //path where the file is stored
@@ -291,13 +291,57 @@ object SQLite {
       objects.ddl.create
       subs.ddl.create
     }
-
-    def saveSub(sub:DBSub)
+    def isExpired(id:Int):Boolean=
     {
       db withSession { implicit session =>
+        val sub = subs.filter(_.ID === id).first
+        if(sub._4 > 0)
+        {
+        var cal = java.util.Calendar.getInstance()
+        cal.setTimeInMillis(sub._3.getTime())
+        cal.add(java.util.Calendar.SECOND, sub._4)
+        var endtime = new java.sql.Timestamp(cal.getTime().getTime())
+        new java.sql.Timestamp(new java.util.Date().getTime).after(endtime)
+        }
+        else
+        {
+          true
+        }
+      }
+    }
+
+    def removeSub(id:Int)
+    {
+      db withSession { implicit session =>
+        subs.filter(_.ID === id).delete
+      }
+    }
+    def getSub(id:Int):Option[DBSub]=
+    {
+     var res:Option[DBSub] = None
+      db withSession { implicit session =>
+        val query = subs.filter(_.ID === id)
+        if(query.list.length > 0)
+        {
+          var head = query.first
+          var sub = new DBSub(Array(),head._4,head._5,head._6)
+          sub.paths = head._2.split(";")
+          sub.id = head._1
+          sub.startTime = head._3
+          res = Some(sub)
+        }
+        
+      }
+      res
+    }
+    def saveSub(sub:DBSub):Int=
+    {
+      sub.startTime=new java.sql.Timestamp(new java.util.Date().getTime)
+      db withSession { implicit session =>
         val id = getNextId()
-        val time = new java.sql.Timestamp(new java.util.Date().getTime)
-        subs += (id,sub.joined,time,sub.ttl,sub.interval,sub.callback)
+        sub.id=id
+        subs += (sub.id,sub.paths.mkString(";"),sub.startTime,sub.ttl,sub.interval,sub.callback)
+        id
       }
     }
     private def getNextId()(implicit session: Session):Int={
@@ -313,9 +357,11 @@ object SQLite {
     }
 }
 
-class DBSub(paths:Array[String],val ttl:Int,val interval:Int,val callback:Option[String])
+class DBSub(var paths:Array[String],val ttl:Int,val interval:Int,val callback:Option[String])
 {
-  val joined = paths.mkString(";")
+  //these are not needed when saving, but they are set in getSub
+  var id:Int = 0
+  var startTime:java.sql.Timestamp = null
 }
 /**
  * Abstract base class for sensors' data structure
