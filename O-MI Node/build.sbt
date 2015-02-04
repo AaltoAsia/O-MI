@@ -3,7 +3,7 @@ val scalaBuildVersion = "2.11.2"
 
 scalaVersion := scalaBuildVersion
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
 
 // STM
 libraryDependencies += ("org.scala-stm" %% "scala-stm" % "0.7")

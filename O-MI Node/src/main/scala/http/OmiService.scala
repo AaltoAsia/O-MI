@@ -11,7 +11,6 @@ import responses._
 
 import parsing._
 import xml._
-import cors._
 
 class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
@@ -27,8 +26,7 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 }
 
 // this trait defines our service behavior independently from the service actor
-trait OmiService extends HttpService with CORSDirectives
-  with DefaultCORSDirectives {
+trait OmiService extends HttpService {
   def log: LoggingAdapter
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
@@ -83,40 +81,6 @@ trait OmiService extends HttpService with CORSDirectives
       }
     }
 
-  /*
-  val getXMLResponse = entity(as[NodeSeq]) { xml => 
-    val omi = OmiParser.parse(xml)
-    val requests = omi.filter{
-      case ParseError(_) => false
-      case _ => true
-    }
-    val errors = omi.filter{ 
-      case ParseError(_) => true
-      case _ => false
-    }
-    if(errors.isEmpty) {
-      complete{
-        requests.map{
-          case oneTimeRead: OneTimeRead => 
-            log.warning("Not yet impelemented")
-            "Not yet implemented"
-          case write: Write =>
-            log.warning("Not yet impelemented")
-            "Not yet implemented"
-          case subscription: Subscription =>
-            log.warning("Not yet impelemented")
-            "Not yet implemented"
-          case a =>
-            log.warning("Unknown O-MI request " + a.toString)
-            "Unknown O-MI request"
-        }.mkString("\n")
-      }
-    } else {
-      //Error found
-      complete {
-        // TODO: make error response generator in responses package
-        <error> {errors.mkString("; ")} </error>
-        */
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = path("") {
     (post | parameter('method ! "post")) { // Handle POST requests from the client
@@ -135,16 +99,19 @@ trait OmiService extends HttpService with CORSDirectives
           if (errors.isEmpty) {
             complete {
               requests.map {
-
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
-                  Read.OMIReadResponse(requests.toList)
+                  log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
+                  Read.OMIReadResponse(requests.toList, oneTimeRead.begin, oneTimeRead.end)
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write
                 case subscription: Subscription => 
                   log.debug("sub") 
                   ??? //TODO handle sub
+                case cancel: Cancel =>
+                  log.debug("cancel")
+                  ??? //TODO: handle cancel
                 case _ => log.warning("Unknown request")
               }.mkString("\n")
             }
@@ -152,6 +119,7 @@ trait OmiService extends HttpService with CORSDirectives
             //Error found
             complete {
               log.error("ERROR")
+              println(errors)
               ??? // TODO handle error
             }
           }
@@ -161,6 +129,5 @@ trait OmiService extends HttpService with CORSDirectives
   }
 
   // Combine all handlers
-
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
 }
