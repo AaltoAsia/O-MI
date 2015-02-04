@@ -63,8 +63,6 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
 
-        println(Read.OMIReadResponse(parserlist.toList, "1970-01-17T12:56:15", "1970-01-17T12:56:25"))
-
         trim(correctxmlreturn) == trim(Read.OMIReadResponse(parserlist.toList, "1970-01-17T12:56:15", "1970-01-17T12:56:25"))
     }
   }
