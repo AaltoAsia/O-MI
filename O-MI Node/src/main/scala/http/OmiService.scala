@@ -145,6 +145,8 @@ trait OmiService extends HttpService with CORSDirectives
                 case subscription: Subscription => 
                   log.debug("sub") 
                   ??? //TODO handle sub
+                case cancel: Cancel =>
+                  ??? //TODO: handle cancel
                 case _ => log.warning("Unknown request")
               }.mkString("\n")
             }
