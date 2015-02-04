@@ -1,23 +1,75 @@
 package responses
 
 import org.specs2.mutable._
-//import scala.io.Source
-//import responses._
-//import parsing._
-//import database._
-//import parsing.OdfParser._
-//import java.util.Date;
-//import java.util.Calendar;
-//import java.text.SimpleDateFormat;
+import scala.io.Source
+import responses._
+import parsing._
+import database._
+import parsing.OdfParser._
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+import scala.xml.Utility.trim
+import scala.xml.XML
 
 class ReadTest extends Specification with Before {
-  def before = //save data
+  def before = {
+    val date = new Date(1421775723); //static date for testing
+    val testtime = new java.sql.Timestamp(date.getTime)
+    val calendar = Calendar.getInstance()
+    calendar.setTimeInMillis(testtime.getTime())
+    val testData = Map(
+        "Objects/Refrigerator123/PowerConsumption" -> "0.123",
+        "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
+        "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
+        "Objects/RoomSensors1/Temperature/Inside" -> "21.2",
+        "Objects/RoomSensors1/CarbonDioxide" -> "too much",
+        "Objects/RoomSensors1/Temperature/Outside" -> "12.2"
+    )
+
+    val intervaltestdata = List(
+                            "100",
+                            "102",
+                            "105",
+                            "109",
+                            "115",
+                            "117")
+
+    for ((path, value) <- testData){
+        SQLite.remove(path)
+        SQLite.set(new DBSensor(path, value, testtime))
+    }
+
+    var count = 0
+
+    SQLite.remove("Objects/SmartOven/Temperature")
+    for (value <- intervaltestdata){
+        SQLite.set(new DBSensor("Objects/SmartOven/Temperature", value, new java.sql.Timestamp(date.getTime + count)))
+        count = count + 1000
+    }
+  }
+
   "Read response" should {
-    "temp test" in {
-      1 should be equalTo(1)
+    "Give correct XML when asked for multiple values" in {
+      lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
+      lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/correctXMLfirsttest.xml")
+      val parserlist = OmiParser.parse(simpletestfile)
+
+      trim(correctxmlreturn) == trim(Read.OMIReadResponse(parserlist.toList, "0", "0"))
+    }
+
+    "Give a history of values when begin and end is used" in {
+        lazy val intervaltestfile = Source.fromFile("src/test/scala/responses/IntervalXMLTest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/CorrectIntervalXML.xml")
+        val parserlist = OmiParser.parse(intervaltestfile)
+
+        println(Read.OMIReadResponse(parserlist.toList, "1970-01-17T12:56:15", "1970-01-17T12:56:25"))
+
+        trim(correctxmlreturn) == trim(Read.OMIReadResponse(parserlist.toList, "1970-01-17T12:56:15", "1970-01-17T12:56:25"))
     }
   }
 }
+
 /*
 class ReadTest extends Specification {
     lazy val simpletestfile = Source.fromFile("src/test/scala/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
