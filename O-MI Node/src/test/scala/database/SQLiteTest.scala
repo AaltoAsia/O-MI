@@ -161,11 +161,11 @@ object SQLiteTest extends Specification {
       database.SQLite.getSub(id2).get.callback.get shouldEqual "callbackaddress"
       database.SQLite.getSub(id3).get.callback shouldEqual None
     }
-    "return correct boolean whether subscription is expired" in{
-      database.SQLite.isExpired(id1) shouldEqual true
-      database.SQLite.isExpired(id2) shouldEqual true
-      database.SQLite.isExpired(id3) shouldEqual false
-    }
+//    "return correct boolean whether subscription is expired" in{
+//      database.SQLite.isExpired(id1) shouldEqual true
+//      database.SQLite.isExpired(id2) shouldEqual true
+//      database.SQLite.isExpired(id3) shouldEqual false
+//    }
     "return correct paths as array" in{
       database.SQLite.getSub(id1).get.paths.length shouldEqual 2
       database.SQLite.getSub(id2).get.paths.length shouldEqual 2
