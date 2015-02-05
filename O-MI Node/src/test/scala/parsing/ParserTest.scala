@@ -14,6 +14,7 @@ import parsing.OdfParser._
  * tests e400 - e499 are for testing OdfParser class
  */
 class ParserTest extends Specification {
+  lazy val omi_subscription_test_file = Source.fromFile("src/test/scala/parsing/omi_subscription_test.xml").getLines.mkString("\n")
   lazy val omi_read_test_file = Source.fromFile("src/test/scala/parsing/omi_read_test.xml").getLines.mkString("\n")
   lazy val omi_write_test_file = Source.fromFile("src/test/scala/parsing/omi_write_test.xml").getLines.mkString("\n")
   lazy val omi_response_test_file = Source.fromFile("src/test/scala/parsing/omi_response_test.xml").getLines.mkString("\n")
@@ -48,6 +49,7 @@ class ParserTest extends Specification {
       missing omi:msg     $e303
       missing Objects     $e304
       no objects to parse $e305
+      correct subscription $e306
   OdfParser should give certain result for
     message with
       incorrect XML       $e401
@@ -569,6 +571,89 @@ class ParserTest extends Specification {
 """)
     temp.head should be equalTo (ParseError("No Objects to parse"))
 
+  }
+
+  def e306 = {
+    OmiParser.parse(omi_subscription_test_file) should be equalTo (List(
+      Subscription("10", "40", List(
+        OdfObject(
+          List("Objects", "SmartHouse"),
+          List(
+            OdfObject(
+              List(
+                "Objects",
+                "SmartHouse",
+                "SmartFridge"),
+              List(),
+              List(
+                OdfInfoItem(
+                  List(
+                    "Objects",
+                    "SmartHouse",
+                    "SmartFridge",
+                    "PowerConsumption"),
+                  List(),
+                  "")),
+              ""),
+            OdfObject(
+              List(
+                "Objects",
+                "SmartHouse",
+                "SmartOven"),
+              List(),
+              List(
+                OdfInfoItem(
+                  List(
+                    "Objects",
+                    "SmartHouse",
+                    "SmartOven",
+                    "PowerConsumption"),
+                  List(),
+                  "")),
+              "")),
+          List(
+            OdfInfoItem(
+              List(
+                "Objects",
+                "SmartHouse",
+                "PowerConsumption"),
+              List(),
+              ""),
+            OdfInfoItem(
+              List(
+                "Objects",
+                "SmartHouse",
+                "Moisture"),
+              List(),
+              "")),
+          ""),
+        OdfObject(
+          List(
+            "Objects",
+            "SmartCar"),
+          List(),
+          List(
+            OdfInfoItem(
+              List(
+                "Objects",
+                "SmartCar",
+                "Fuel"),
+              List(),
+              "")),
+          ""),
+        OdfObject(
+          List(
+            "Objects",
+            "SmartCottage"),
+          List(),
+          List(),
+          "")),
+        "",
+        "",
+        "",
+        "",
+        "",
+        List())))
   }
 
   def e401 = {
