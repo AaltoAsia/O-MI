@@ -29,6 +29,8 @@ libraryDependencies ++= List(
 "org.xerial" % "sqlite-jdbc" % "3.7.2"
 )
 
+cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 
+
 Revolver.settings
 
 // Eclipse
