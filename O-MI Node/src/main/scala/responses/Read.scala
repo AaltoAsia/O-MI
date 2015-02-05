@@ -10,9 +10,6 @@ import scala.collection.mutable.Map
 
 object Read {
 
-  def normalizePath(path: String): String = 
-    if (path.endsWith("/")) path.init
-    else path
 
   private val valueLength = "/value".length
 
@@ -23,25 +20,19 @@ object Read {
    * @param path The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-	def generateODFREST(path: String): Option[Either[String,xml.Node]] = {
+	def generateODFREST(orgPath: Path): Option[Either[String,xml.Node]] = {
 
     // Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: String): (String, Boolean) = {
-
-      val npath = normalizePath(path)
-
-      if (npath.split("/").last == "value") {
-        val pathWithoutVal = npath.dropRight(valueLength)
-        (pathWithoutVal, true) 
-      } else
-        (npath, false)
+    def restNormalizePath(path: Path): (Path, Boolean) = {
+      if (path.last == "value") (path.init, true) 
+      else (path, false)
     }
 
 
-    val (npath, wasValue) = restNormalizePath(path)
+    val (path, wasValue) = restNormalizePath(path)
 
 
-		SQLite.get(npath) match {
+		SQLite.get(path) match {
 			case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))

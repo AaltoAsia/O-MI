@@ -61,9 +61,10 @@ trait OmiService extends HttpService with CORSDirectives
     }
 
   val getDataDiscovery =
-    path(Rest) { path =>
+    path(Rest) { pathStr =>
       get {
         respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+          val path = Path(pathStr)
           Read.generateODFREST(path) match {
             case Some(Left(value)) =>
               respondWithMediaType(`text/plain`) {
@@ -74,7 +75,7 @@ trait OmiService extends HttpService with CORSDirectives
                 complete(xmlData)
               }
             case None =>
-              log.debug(s"Url Discovery fail: $path")
+              log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
               respondWithMediaType(`text/xml`) {
                 complete(404, <error>No object found</error>)
               }
