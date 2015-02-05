@@ -20,21 +20,6 @@ object Boot extends App {
 
   // Create our in-memory sensor database
 
-  val date = new Date();
-  val testTime = new java.sql.Timestamp(date.getTime)
-  
-  val testData = Map(
-        "Objects/Refrigerator123/PowerConsumption" -> "0.123",
-        "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
-        "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
-        "Objects/RoomSensors1/Temperature/Inside" -> "21.2",
-        "Objects/RoomSensors1/CarbonDioxide" -> "too much",
-        "Objects/RoomSensors1/Temperature/Outside" -> "12.2"
-    )
-
-  for ((path, value) <- testData){
-      SQLite.set(new DBSensor(path, value, testTime))
-  }
 
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
@@ -43,8 +28,6 @@ object Boot extends App {
   val settings = Settings(system)
   // TODO:
   system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
-  SQLite.set(new DBSensor(
-    settings.settingsOdfPath + "num-latest-values-stored", settings.numLatestValues.toString, testTime))
 
 
   // create and start our service actor
