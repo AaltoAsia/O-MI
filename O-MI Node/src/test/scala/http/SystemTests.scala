@@ -45,12 +45,12 @@ class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService 
       }
 
       "reply its settings as odf from path `settingsOdfPath`" in {
-        val path = Path(Starter.settings.settingsOdfPath).toString
-        path === "Objects/OMI-Service/Settings"
-        Get(path) ~> myRoute ~> check {
+        val path = "/" +Path(Starter.settings.settingsOdfPath).toString
+        path === "/Objects/OMI-Service/Settings"
+        Get(path) ~> myRoute ~> check { // this didn't work without / at start
           mediaType === `text/xml`
           responseAs[NodeSeq] must contain(
-            <Object><id>Settings</id></Object>
+            <Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object>
             )
         }
       }
