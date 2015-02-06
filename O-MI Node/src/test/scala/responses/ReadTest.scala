@@ -25,7 +25,8 @@ class ReadTest extends Specification with Before {
         "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
         "Objects/RoomSensors1/Temperature/Inside" -> "21.2",
         "Objects/RoomSensors1/CarbonDioxide" -> "too much",
-        "Objects/RoomSensors1/Temperature/Outside" -> "12.2"
+        "Objects/RoomSensors1/Temperature/Outside" -> "12.2",
+        "Objects/SmartCar/Fuel" -> "30"
     )
 
     val intervaltestdata = List(
@@ -90,7 +91,7 @@ class ReadTest extends Specification with Before {
     "Return right xml when asked for Objects" in {
         val RESTXML = Read.generateODFREST("Objects")
 
-        val rightXML = <Objects><Object><id>RoomSensors1</id></Object><Object><id>Refrigerator123</id></Object>
+        val rightXML = <Objects><Object><id>SmartCar</id></Object><Object><id>RoomSensors1</id></Object><Object><id>Refrigerator123</id></Object>
                         <Object><id>SmartOven</id></Object></Objects>
 
         trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
