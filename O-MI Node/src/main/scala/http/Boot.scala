@@ -17,9 +17,9 @@ import database.SQLite
 import database._
 
 
+
 // Initialize functionality seperated for testing purposes
 object Starter {
-
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
 
