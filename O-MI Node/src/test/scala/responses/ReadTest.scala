@@ -14,10 +14,14 @@ import scala.xml.XML
 
 class ReadTest extends Specification with Before {
   def before = {
-    val date = new Date(1421775723); //static date for testing
-    val testtime = new java.sql.Timestamp(date.getTime)
+//    val date = new Date(1421775723); //static date for testing
+//    val testtime = new java.sql.Timestamp(date.getTime)
     val calendar = Calendar.getInstance()
-    calendar.setTimeInMillis(testtime.getTime())
+    calendar.setTime(new Date(1421775723))
+    calendar.set(Calendar.HOUR_OF_DAY, 12)
+    val date = calendar.getTime
+    val testtime = new java.sql.Timestamp(date.getTime)
+//    calendar.setTimeInMillis(testtime.getTime())
     SQLite.clearDB()
     val testData = Map(
         "Objects/Refrigerator123/PowerConsumption" -> "0.123",
@@ -57,7 +61,7 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
         
-        trim(correctxmlreturn) should be equalTo(trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])))    
+        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))    
     }
 
     "Give a history of values when begin and end is used" in {
@@ -65,7 +69,7 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
 
-        trim(correctxmlreturn) should be equalTo(trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])))
+        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
     }
 
 }
