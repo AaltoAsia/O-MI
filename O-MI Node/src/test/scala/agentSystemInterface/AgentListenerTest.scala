@@ -95,7 +95,7 @@ def after = SQLite.clearDB()
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
       EventFilter.debug(message = "Got data \n" + testOdf) intercept {
-        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+        actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:35:52"))), probe.ref)
       }
       SQLite.clearDB()
     }
@@ -104,7 +104,7 @@ def after = SQLite.clearDB()
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
       SQLite.clearDB()
-      actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+      actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:36:52"))), probe.ref)
       //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
       awaitCond(SQLite.get("Objects/AgentTest/SmartHouse/Moisture") != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
     }
@@ -114,7 +114,7 @@ def after = SQLite.clearDB()
       val probe = TestProbe()
       SQLite.clearDB()
       EventFilter.warning(start = "Throwing away node: ") intercept {
-        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+        actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:37:52"))), probe.ref)
       }
       SQLite.clearDB()
     }
