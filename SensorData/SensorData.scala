@@ -16,6 +16,12 @@ import spray.client.pipelining._
 import scala.concurrent.Future
 import scala.util.{ Success, Failure } 
 
+// Scala XML
+import scala.xml
+import scala.xml._
+
+import scala.collection.mutable.Map
+
 // Need to wrap in a package to get application supervisor actor
 // "you need to provide exactly one argument: the class of the application supervisor actor"
 package main.scala {
@@ -64,10 +70,86 @@ package main.scala {
           JField(sensor, JString(value)) <- child
         } yield (sensor, value)
         
-        println(list)
+        // Print the data
+        //println(list)
         
+        val odf = generateODF(list)
+        
+        println(new PrettyPrinter(80, 2).format(odf))
         System.exit(1)
       case Failure(error) => println("An error has occured: " + error.getMessage)
+    }
+    
+    private def generateODF(list : List[(String, String)]) : scala.xml.Node = {
+      
+    	// Initialize objects and infoitems
+    	val objects = Map[String, Map[String, String]]()
+        val infoItems = Map[String, String]()
+        
+        
+        for(item <- list){
+        	val sensor : String = item._1
+        	val value : String = item._2 // Currently as string, convert to double?
+        	
+        	// Split name from underlines
+        	val split = sensor.split('_')
+        	
+        	if(split.length > 3){
+	        	// Object id
+	        	val objectId : String = split(0) + "_" + split(1) + "_" + split.last
+	        	val infoItemName : String = split.drop(2).dropRight(1).mkString("_")
+	        	
+	        	val temp = objects.find(_._1 == objectId)
+	        	
+	        	// Append the object parameters to the map
+	        	if(temp.isDefined){
+	        	  temp.get._2.put(infoItemName, value)
+	        	} else {
+	        	  objects.put(objectId, Map((infoItemName, value)))
+	        	}
+	        	
+	        	// Test printing
+	        	//val test = <Object><id>{objectId}</id><InfoItem name={infoItemName}><value>{value}</value></InfoItem></Object>
+	        	//println(test)
+        	} else {
+        		//val test = <InfoItem name={sensor}><value>{value}</value></InfoItem>
+        		//println(test)
+        	  infoItems.put(sensor, value)
+        	}
+        }
+    	
+    	//Generate the odf
+        val odf = <Objects>
+        			{
+        				var node: NodeSeq = NodeSeq.Empty
+        				
+        				for(o <- objects) {
+        				  node ++=
+        				  <Object>
+        					<id>{o._1}</id>
+        					{
+        					  	var infoItemNode: NodeSeq = NodeSeq.Empty
+        						for(item <- o._2) {
+        							infoItemNode ++=
+        								<InfoItem name={item._1}>
+        					    			<value>{item._2}</value>
+        					    		</InfoItem>
+        					  	}
+        					  	infoItemNode
+        					}
+        				  	</Object>
+        				}
+        				for(item <- infoItems){
+        				  node ++=
+        				    <InfoItem name={item._1}>
+        					    <value>{item._2}</value>
+        					</InfoItem>
+        				}
+        				
+        			 	node
+        			}
+        		</Objects>
+        odf
     }
   }
 } 
