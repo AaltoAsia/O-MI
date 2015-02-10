@@ -5,7 +5,16 @@ import java.io.File
 import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
+
+import parsing.Path
+import parsing.Path._
+
 object SQLite {
+  implicit val pathColumnType = MappedColumnType.base[Path, String](
+    { _.toString }, // Path to String
+    { Path(_) } // String to Path
+    )
+
   private var historyLength = 10
   //path where the file is stored
   private val dbPath = "./sensorDB.sqlite3"
@@ -45,19 +54,17 @@ object SQLite {
         if (count > historyLength && !buffering) {
           removeExcess(data.path)
           false
-        } else if(count==0){ 
+        } else if (count == 0) {
           //also add missing objects for the hierarchy
           addObjects(data.path)
           true
-        }
-        else
-        {
+        } else {
           false
         }
       }
 
     }
-  
+
   def setHistoryLength(newLength: Int) {
     historyLength = newLength
   }
@@ -68,11 +75,13 @@ object SQLite {
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
    * @return boolean whether something was removed
    */
-  def remove(path: String): Boolean = {
+  def remove(path: Path): Boolean = {
+
     db withSession { implicit session =>
       //search database for given path
       var deleted = false;
       val pathQuery = latestValues.filter(_.path === path)
+
       //if found rows with given path remove else path doesn't exist and can't be removed
       if (pathQuery.list.length > 0) {
         pathQuery.delete
@@ -80,59 +89,55 @@ object SQLite {
         //also delete objects from hierarchy that are not used anymore.
         // start from sensors path and proceed upward in hierarchy until object that is shared by other sensor is found,
         //ultimately the root. path/to/sensor/temp -> path/to/sensor -> ..... -> "" (root)
-      }
-        var pathParts = path.split("/")
-        while (!pathParts.isEmpty) {
-          var testPath = pathParts.mkString("/")
+
+        var testPath = path
+
+        while (!testPath.isEmpty) {
           if (getChilds(testPath).length == 0) {
             //only leaf nodes have 0 childs. 
             var pathQueryObjects = objects.filter(_.path === testPath)
             pathQueryObjects.delete
-            deleted = true;
-            pathParts = pathParts.dropRight(1)
+
+            testPath = testPath.dropRight(1)
           } else {
             //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
             //exit while loop
-            pathParts = Array[String]()
+            testPath = Path("")
+
           }
         }
-        return deleted
-        }
+
+      }
+      return deleted
     }
-  private def removeExcess(path:String)(implicit session: Session)=
-  {
-    val pathQuery = latestValues.filter(_.path===path)
-    var count = pathQuery.list.length
-    val oldtime = pathQuery.sortBy(_.timestamp).drop(count-historyLength).first._3
-    pathQuery.filter(_.timestamp < oldtime).delete
+    
   }
-  def startBuffering(path:String)
-  {
+  private def removeExcess(path: Path)(implicit session: Session) =
+    {
+      val pathQuery = latestValues.filter(_.path === path)
+      var count = pathQuery.list.length
+      val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
+      pathQuery.filter(_.timestamp < oldtime).delete
+    }
+  def startBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
-      if(pathQuery.list.length == 0)
-      {
+      if (pathQuery.list.length == 0) {
         buffered += (path)
         true
-      }
-      else
-      {
+      } else {
         false
       }
     }
   }
-  def stopBuffering(path:String)
-  {
+  def stopBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
-      if(pathQuery.list.length > 0)
-      {
+      if (pathQuery.list.length > 0) {
         pathQuery.delete
         removeExcess(path)
         true
-      }
-      else
-      {
+      } else {
         false
       }
     }
@@ -149,21 +154,23 @@ object SQLite {
    *
    * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
    */
-  def get(path: String): Option[DBItem] =
+  def get(path: Path): Option[DBItem] =
     {
       var result: Option[DBItem] = None
 
       db withSession { implicit session =>
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
+
         //if path is found from latest values it must be Sensor otherwise check if it is an object
         var count = pathQuery.list.length
         if (count > 0) {
           //path is sensor
           //case class matching
+
           val latest = pathQuery.sortBy(_.timestamp).drop(count - 1)
           latest.first match {
-            case (path: String, value: String, time: java.sql.Timestamp) =>
+            case (path: Path, value: String, time: java.sql.Timestamp) =>
               result = Some(DBSensor(path, value, time))
           }
 
@@ -188,7 +195,8 @@ object SQLite {
    * @param path path to sensor whose values are of interest
    * @param start
    */
-  def getInterval(path: String, start: java.sql.Timestamp, end: java.sql.Timestamp): Array[DBSensor] = {
+
+  def getInterval(path: Path, start: java.sql.Timestamp, end: java.sql.Timestamp): Array[DBSensor] = {
     var result = Buffer[DBSensor]()
     db withSession { implicit session =>
       val pathQuery = latestValues.filter(_.path === path)
@@ -197,7 +205,7 @@ object SQLite {
       if (count > 0) {
         val sorted = pathQuery.sortBy(_.timestamp)
         pathQuery foreach {
-          case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
+          case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
             if (dbtime.after(start) && dbtime.before(end))
               result += new DBSensor(dbpath, dbvalue, dbtime)
         }
@@ -205,28 +213,23 @@ object SQLite {
     }
     result.toArray
   }
+
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    *
    */
-  def addObjects(path: String) {
-    db withSession{ implicit Session =>
-      
-    var pathparts = path.split("/")
-    var curpath = ""
-    var fullpath = ""
-    for (i <- 0 until pathparts.size) {
-      if (fullpath != "") {
-        fullpath += "/"
-      }
-      fullpath += pathparts(i)
+
+  private def addObjects(path: Path)(implicit session: Session) {
+    val parentsAndPath: Seq[Path] = path.tail.scanLeft(Path(path.head))(Path(_) / _)
+    var parent = Path("")
+    for (fullpath <- parentsAndPath) {
       if (!hasObject(fullpath)) {
-        objects += (fullpath, curpath, pathparts(i))
+        objects += (fullpath, parent, fullpath.last)
       }
-      curpath = fullpath
+      parent = fullpath
     }
-    }
+
   }
   /**
    * returns n latest values from sensor at given path as Array[DBSensor]
@@ -235,7 +238,9 @@ object SQLite {
    * @param n number of values to return
    * @param return returns Array[DBSensor]
    */
-  def getNLatest(path: String, n: Int) = getN(path, n, true): Array[DBSensor]
+
+  def getNLatest(path: Path, n: Int) = getN(path, n, true): Array[DBSensor]
+
   /**
    * returns n oldest values from sensor at given path as Array[DBSensor]
    * returns all stored values if n is greater than number of values stored
@@ -243,7 +248,8 @@ object SQLite {
    * @param n number of values to return
    * @param return returns Array[DBSensor]
    */
-  def getNOldest(path: String, n: Int) = getN(path, n, false): Array[DBSensor]
+
+  def getNOldest(path: Path, n: Int) = getN(path, n, false): Array[DBSensor]
   /**
    * returns n latest or oldest values from sensor at given path as Array[DBSensor]
    * returns all stored values if n is greater than number of values stored
@@ -252,7 +258,8 @@ object SQLite {
    * @param latest boolean return latest? if false returns oldest
    * @param return returns Array[DBSensor]
    */
-  private def getN(path: String, n: Int, latest: Boolean): Array[DBSensor] =
+
+  private def getN(path: Path, n: Int, latest: Boolean): Array[DBSensor] =
     {
       var result = Buffer[DBSensor]()
       db withSession { implicit session =>
@@ -260,16 +267,17 @@ object SQLite {
         var count = pathQuery.list.length
         if (count > 0) {
           val sorted = pathQuery.sortBy(_.timestamp)
-          val limited = if (latest) { sorted.drop(math.max(count - n, 0)) } else { sorted.take(math.min(count, n)) }
+          val limited =
+            if (latest) sorted.drop(math.max(count - n, 0))
+            else sorted.take(math.min(count, n))
           limited foreach {
-            case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
+            case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
               result += new DBSensor(dbpath, dbvalue, dbtime)
           }
         }
       }
       result.toArray
     }
-  
 
   /**
    * Empties all the data from the database
@@ -288,7 +296,7 @@ object SQLite {
    * @return Array[DBItem] of DBObjects containing childs
    *  of given object. Empty if no childs found or invalid path.
    */
-  private def getChilds(path: String)(implicit session: Session): Array[DBItem] =
+  private def getChilds(path: Path)(implicit session: Session): Array[DBItem] =
     {
       var childs = Array[DBItem]()
       val objectQuery = for {
@@ -297,8 +305,8 @@ object SQLite {
       childs = Array.ofDim[DBItem](objectQuery.list.length)
       var index = 0
       objectQuery foreach {
-        case (path: String) =>
-          childs(index) = DBObject(path)
+        case (cpath: Path) =>
+          childs(index) = DBObject(cpath)
           index += 1
       }
       childs
@@ -308,7 +316,7 @@ object SQLite {
    * @param path path to be checked
    * @return boolean whether path was found or not
    */
-  private def hasObject(path: String)(implicit session: Session): Boolean =
+  private def hasObject(path: Path)(implicit session: Session): Boolean =
     {
       var objectQuery = objects.filter(_.path === path)
       objectQuery.list.length > 0
@@ -422,6 +430,9 @@ object SQLite {
     }
   }
 }
+
+import SQLite._
+
 /**
  * DBSub class to represent subscription information
  * @param paths Array of paths representing all the sensors the subscription needs
@@ -434,13 +445,15 @@ class DBSub(var paths: Array[String], val ttl: Int, val interval: Int, val callb
   var id: Int = 0
   var startTime: java.sql.Timestamp = null
 }
+
 /**
  * Abstract base class for sensors' data structure
  *
  * @param path to where node is. Last part is key for this.
  *
  */
-sealed abstract class DBItem(val path: String)
+sealed abstract class DBItem(val path: Path)
+
 /**
  * case class DBSensor for the actual sensor data
  * @param pathto path to sensor
@@ -448,7 +461,8 @@ sealed abstract class DBItem(val path: String)
  * @param time time stamp indicating when sensor data was read using java.sql.Timestamp
  *
  */
-case class DBSensor(pathto: String, var value: String, var time: java.sql.Timestamp) extends DBItem(pathto)
+case class DBSensor(pathto: Path, var value: String, var time: java.sql.Timestamp) extends DBItem(pathto)
+
 /**
  * case class DBObject for object hierarchy
  * returned from get when path doesn't end in actual sensor
@@ -456,7 +470,7 @@ case class DBSensor(pathto: String, var value: String, var time: java.sql.Timest
  *
  * @param pathto path to object
  */
-case class DBObject(pathto: String) extends DBItem(pathto) {
+case class DBObject(pathto: Path) extends DBItem(pathto) {
   var childs = Array[DBItem]()
 }
 
@@ -465,40 +479,42 @@ case class DBObject(pathto: String) extends DBItem(pathto) {
  * used internally by the object SQLite
  */
 class DBData(tag: Tag)
-  extends Table[(String, String, java.sql.Timestamp)](tag, "Values") {
+  extends Table[(Path, String, java.sql.Timestamp)](tag, "Values") {
   // This is the primary key column:
-  def path = column[String]("PATH")
+  def path = column[Path]("PATH")
   def value = column[String]("VALUE")
   def timestamp = column[java.sql.Timestamp]("TIME")
   // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(String, String, java.sql.Timestamp)] = (path, value, timestamp)
+  def * : ProvenShape[(Path, String, java.sql.Timestamp)] = (path, value, timestamp)
   def pk = primaryKey("pk_DBData", (path, timestamp))
 }
+
 /**
  * class DBNode to store object hierarchy
  * used internally by the object SQLite
  */
 class DBNode(tag: Tag)
-  extends Table[(String, String, String)](tag, "Objects") {
+  extends Table[(Path, Path, String)](tag, "Objects") {
   // This is the primary key column:
-  def path = column[String]("PATH", O.PrimaryKey)
-  def parentPath = column[String]("PARENTPATH")
+  def path = column[Path]("PATH", O.PrimaryKey)
+  def parentPath = column[Path]("PARENTPATH")
   def key = column[String]("KEY")
 
   // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(String, String, String)] = (path, parentPath, key)
+  def * : ProvenShape[(Path, Path, String)] = (path, parentPath, key)
 }
+
 /**
  * Storing paths that need to be buffered
  * i.e if path is found in the table it is being buffered
  * else only historyLength amount of values is stored
  */
 class BufferedPath(tag: Tag)
-  extends Table[(String)](tag, "Buffered") {
+  extends Table[(Path)](tag, "Buffered") {
   // This is the primary key column:
-  def path = column[String]("PATH", O.PrimaryKey)
+  def path = column[Path]("PATH", O.PrimaryKey)
   // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(String)] = (path)
+  def * : ProvenShape[(Path)] = (path)
 }
 /**
  * Storing the subscription information to DB

@@ -24,8 +24,7 @@ $(function() {
 
 	$("#url-field").val('http://' + window.location.host + "/Objects");
 
-}); 
-
+	
 /* Get the objects through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
@@ -73,7 +72,7 @@ function displayObjects(data, indent, url, listId) {
 				addInfoItems(this, id, indent + 1);
 				
 				//Get lower hierarchy values
-				ajaxGet(indent + 1, url + "/" + id, "list-" + id)
+				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
 			});
 		});
 	} else {
@@ -211,7 +210,8 @@ function addChildren(object, items){
 	var children = [];
 	
 	for(var i = 0; i < items.length; i++){
-		if($(items[i]).attr('class').contains(object.id)){
+		var c = $(items[i]).attr('class');
+		if(c.indexOf(object.id) > -1){
 			children.push(items[i]);
 		}
 	}
@@ -309,3 +309,5 @@ function printResponse(response){
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
 }
+}); 
+

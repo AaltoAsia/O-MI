@@ -59,9 +59,10 @@ trait OmiService extends HttpService {
     }
 
   val getDataDiscovery =
-    path(Rest) { path =>
+    path(Rest) { pathStr =>
       get {
         respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+          val path = Path(pathStr)
           Read.generateODFREST(path) match {
             case Some(Left(value)) =>
               respondWithMediaType(`text/plain`) {
@@ -72,7 +73,7 @@ trait OmiService extends HttpService {
                 complete(xmlData)
               }
             case None =>
-              log.debug(s"Url Discovery fail: $path")
+              log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
               respondWithMediaType(`text/xml`) {
                 complete(404, <error>No object found</error>)
               }
@@ -102,7 +103,7 @@ trait OmiService extends HttpService {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
                   log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
-                  Read.OMIReadResponse(requests.toList, oneTimeRead.begin, oneTimeRead.end)
+                  Read.OMIReadResponse(oneTimeRead)
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write
