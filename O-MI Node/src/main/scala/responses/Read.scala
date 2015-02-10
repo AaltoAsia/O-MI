@@ -9,6 +9,8 @@ import scala.collection.mutable.Map
 
 import java.sql.Timestamp
 
+import parsing.Path._
+
 object Read {
 
 
@@ -38,7 +40,7 @@ object Read {
           return Some(Left(sensor.value))
         else
           return Some(Right(
-            <InfoItem name={ sensor.path.split("/").last }>
+            <InfoItem name={ sensor.path.last }>
               <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
             </InfoItem>))
 
@@ -48,18 +50,18 @@ object Read {
         for (item <- sensormap.childs) {
           SQLite.get(item.path) match {
             case Some(sensor: DBSensor) => {
-              resultChildren += <InfoItem name={ sensor.path.split("/").last }/>
+              resultChildren += <InfoItem name={ sensor.path.last }/>
             }
 
             case Some(subobject: DBObject) => {
-              resultChildren += <Object><id>{ subobject.path.split("/").last }</id></Object>
+              resultChildren += <Object><id>{ subobject.path.last }</id></Object>
             }
 
             case None => return None
           }
         }
 
-        val mapId = sensormap.path.split("/").last
+        val mapId = sensormap.path.last
         val xmlReturn =
           if (mapId == "Objects") {
             <Objects>{ resultChildren }</Objects>
@@ -119,7 +121,7 @@ object Read {
               odfObjectGeneration(obj.childs.toList, begin, end)
             } else {
               //TODO: sqlite get begin to end
-              val childs: Array[DBItem] = SQLite.get(obj.path.mkString("/")) match {
+              val childs: Array[DBItem] = SQLite.get(obj.path) match {
                 case Some(infoItem: database.DBSensor) =>
                   println("Found DBSensor instead of DBObject, when should not be possible.")
                   ???
@@ -132,9 +134,9 @@ object Read {
               for (child <- childs) {
                 child match {
                   case infoItem: database.DBSensor =>
-                    <InfoItem name={ infoItem.path.split("/").last }></InfoItem>
+                    <InfoItem name={ infoItem.path.last }></InfoItem>
                   case subobj: database.DBObject =>
-                    <Object><id>{ subobj.path.split("/").last }</id></Object>
+                    <Object><id>{ subobj.path.last }</id></Object>
                 }
               }
             }
@@ -156,7 +158,7 @@ object Read {
     for(infoItem <- infoItems){
       node ++= <InfoItem name={infoItem.path.last}>
         {
-            val item = SQLite.get(infoItem.path.mkString("/"))
+            val item = SQLite.get(infoItem.path)
             item match{
               case Some( sensor : database.DBSensor) =>
               <value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
@@ -190,7 +192,7 @@ object Read {
       for (infoItem <- infoItems) {
         node ++= <InfoItem name={ infoItem.path.last }>
                    {
-                     val items = SQLite.getInterval(infoItem.path.mkString("/"), beginTime, endTime)
+                     val items = SQLite.getInterval(infoItem.path, beginTime, endTime)
                      items match {
                        case sensors: Array[DBSensor] => {
                          var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 

@@ -16,6 +16,7 @@ import parsing._
 import database.SQLite
 import database._
 
+import parsing.Path._
 
 
 // Initialize functionality seperated for testing purposes
@@ -42,13 +43,13 @@ object Starter {
       )
 
     for ((path, value) <- testData){
-        SQLite.set(new DBSensor(path, value, testTime))
+        SQLite.set(new DBSensor(Path(path), value, testTime))
     }
 
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(
-      settings.settingsOdfPath + "num-latest-values-stored", settings.numLatestValues.toString, testTime))
+      Path(settings.settingsOdfPath) / "num-latest-values-stored", settings.numLatestValues.toString, testTime))
 
   }
 

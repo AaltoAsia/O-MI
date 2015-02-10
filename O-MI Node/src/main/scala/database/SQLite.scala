@@ -193,16 +193,13 @@ object SQLite {
    *
    */
   private def addObjects(path: Path)(implicit session: Session) {
-    val pathAndParents: Seq[Path] = path.tail.scanLeft(path.head)(_ / _)
-    for (i) {
-      if (fullpath != "") {
-        fullpath += "/"
-      }
-      fullpath += pathparts(i)
+    val parentsAndPath: Seq[Path] = path.tail.scanLeft(Path(path.head))(Path(_) / _)
+    var parent = Path("")
+    for (fullpath <- parentsAndPath) {
       if (!hasObject(fullpath)) {
-        objects += (fullpath, curpath, pathparts(i))
+        objects += (fullpath, parent, fullpath.last)
       }
-      curpath = fullpath
+      parent = fullpath
     }
   }
   /**
@@ -212,7 +209,7 @@ object SQLite {
    * @param n number of values to return
    * @param return returns Array[DBSensor]
    */
-  def getNLatest(path:String,n:Int) = getN(path,n,true):Array[DBSensor]
+  def getNLatest(path: Path, n: Int) = getN(path, n, true): Array[DBSensor]
   /**
    * returns n oldest values from sensor at given path as Array[DBSensor]
    * returns all stored values if n is greater than number of values stored
@@ -220,7 +217,7 @@ object SQLite {
    * @param n number of values to return
    * @param return returns Array[DBSensor]
    */
-  def getNOldest(path:String,n:Int) = getN(path,n,false):Array[DBSensor]
+  def getNOldest(path: Path, n: Int) = getN(path, n, false): Array[DBSensor]
   /**
    * returns n latest or oldest values from sensor at given path as Array[DBSensor]
    * returns all stored values if n is greater than number of values stored
@@ -229,19 +226,21 @@ object SQLite {
    * @param latest boolean return latest? if false returns oldest
    * @param return returns Array[DBSensor]
    */
-  private def getN(path:String,n:Int,latest:Boolean):Array[DBSensor]=
+  private def getN(path: Path, n: Int, latest: Boolean): Array[DBSensor] =
   {
    var result = Buffer[DBSensor]()
     db withSession { implicit session =>
       val pathQuery = latestValues.filter(_.path === path)
         var count = pathQuery.list.length
         if (count > 0) {
-         val sorted = pathQuery.sortBy(_.timestamp)
-         val limited = if(latest){sorted.drop(math.max(count-n,0))}else{sorted.take(math.min(count,n))}
-         limited foreach{
-           case (dbpath: String, dbvalue: String, dbtime: java.sql.Timestamp) =>
-               result+=new DBSensor(dbpath,dbvalue,dbtime)     
-         }
+          val sorted = pathQuery.sortBy(_.timestamp)
+          val limited = 
+            if (latest) sorted.drop(math.max(count-n, 0))
+            else sorted.take(math.min(count, n))
+          limited foreach{
+            case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
+                result+=new DBSensor(dbpath,dbvalue,dbtime)     
+          }
         }
     }
     result.toArray
@@ -265,7 +264,7 @@ object SQLite {
    * @return Array[DBItem] of DBObjects containing childs
    *  of given object. Empty if no childs found or invalid path.
    */
-  private def getChilds(path: String)(implicit session: Session): Array[DBItem] =
+  private def getChilds(path: Path)(implicit session: Session): Array[DBItem] =
     {
       var childs = Array[DBItem]()
       val objectQuery = for {
@@ -274,8 +273,8 @@ object SQLite {
       childs = Array.ofDim[DBItem](objectQuery.list.length)
       var index = 0
       objectQuery foreach {
-        case (path: String) =>
-          childs(index) = DBObject(path)
+        case (cpath: Path) =>
+          childs(index) = DBObject(cpath)
           index += 1
       }
 
@@ -286,7 +285,7 @@ object SQLite {
    * @param path path to be checked
    * @return boolean whether path was found or not
    */
-  private def hasObject(path: String)(implicit session: Session): Boolean =
+  private def hasObject(path: Path)(implicit session: Session): Boolean =
     {
       var objectQuery = objects.filter(_.path === path)
       objectQuery.list.length > 0
@@ -468,7 +467,7 @@ class DBData(tag: Tag)
   def value = column[String]("VALUE")
   def timestamp = column[java.sql.Timestamp]("TIME")
   // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(String, String, java.sql.Timestamp)] = (path, value, timestamp)
+  def * : ProvenShape[(Path, String, java.sql.Timestamp)] = (path, value, timestamp)
   def pk = primaryKey("pk_DBData",(path,timestamp))
 }
 
