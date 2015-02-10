@@ -61,8 +61,16 @@ package main.scala {
     // wait for Future to complete
     futureResponse onComplete {
       case Success(response) => 
-        val json = parse(response.trim.stripMargin)
-        println(json.extract[SensorData])
+        val json = (parse(response.stripMargin.trim))
+
+        // List of (sensorname, value) objects
+        val list = for {
+          JObject(child) <- json
+          JField(sensor, JString(value)) <- child
+        } yield (sensor, value)
+        
+        println(list)
+        
         System.exit(1)
       case Failure(error) => println("An error has occured: " + error.getMessage)
     }
