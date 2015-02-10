@@ -127,28 +127,30 @@ object Read {
               odfObjectGeneration(obj.childs.toList, begin, end)
             } else {
               //TODO: sqlite get begin to end
-              val childs: Array[DBItem] = SQLite.get(obj.path.mkString("/")) match {
+              val childs: Option[Array[DBItem]] = SQLite.get(obj.path.mkString("/")) match {
                 case Some(infoItem: database.DBSensor) =>
-                  println("Found DBSensor instead of DBObject, when should not be possible.")
-                  ???
+                  None
                 case Some(subobj: database.DBObject) =>
-                  subobj.childs
+                  Some(subobj.childs)
                 case None =>
-                  println("DBObject not found, when should not be possible.")
-                  ???
+                  None
               }
-              for (child <- childs) {
-                child match {
-                  case infoItem: database.DBSensor =>
-                    <InfoItem name={ infoItem.path.split("/").last }></InfoItem>
-                  case subobj: database.DBObject =>
-                    <Object><id>{ subobj.path.split("/").last }</id></Object>
+
+              childs match {
+                case Some(childs: Array[DBItem]) => {
+                for (child <- childs) {
+                  child match {
+                    case infoItem: database.DBSensor =>
+                      <InfoItem name={ infoItem.path.split("/").last }></InfoItem>
+                    case subobj: database.DBObject =>
+                      <Object><id>{ subobj.path.split("/").last }</id></Object>
+                    }
+                  }
                 }
+
+                case None => <Error> Item not found or wrong type (InfoItem/Object) </Error>
               }
             }
-          }
-          {
-            if(obj.metadata != "") <MetaData>{ obj.metadata }</MetaData>
           }
         </Object>
     }
@@ -169,12 +171,9 @@ object Read {
               case Some( sensor : database.DBSensor) =>
               <value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
               case Some( obj : database.DBObject) =>
-                println("WARN: Object found in InfoItem in DB!")
-              case _ => println("unhandled case") //TODO Any better ideas?
+                <Error> Wrong type of request: this item is an InfoItem, not an Object </Error>
+              case _ => <Error> Item not found in the database </Error>
             }
-        }
-        {
-          if(infoItem.metadata != "") <MetaData>{infoItem.metadata}</MetaData>
         }
       </InfoItem>
     }
@@ -212,16 +211,17 @@ object Read {
                          println("Error in interval read")
                      }
                    }
-                   {
-                    if(infoItem.metadata != "") <MetaData>{infoItem.metadata}</MetaData>
-                    }
                  </InfoItem>
       }
       node
     } catch {
       case e: IllegalArgumentException =>
-        println("invalid begin and/or end parameter; ignoring")
+        //println("invalid begin and/or end parameter; ignoring")
         odfInfoItemGeneration(infoItems)
     }
   }
 }
+
+/*        {
+          if(infoItem.metadata != "") <MetaData>{infoItem.metadata}</MetaData>
+        }*/
