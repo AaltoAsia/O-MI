@@ -3,7 +3,7 @@ val scalaBuildVersion = "2.11.2"
 
 scalaVersion := scalaBuildVersion
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
 
 // STM
 libraryDependencies += ("org.scala-stm" %% "scala-stm" % "0.7")
@@ -28,6 +28,8 @@ libraryDependencies ++= List(
 "org.slf4j" % "slf4j-nop" % "1.6.4",
 "org.xerial" % "sqlite-jdbc" % "3.7.2"
 )
+
+cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 
 
 Revolver.settings
 

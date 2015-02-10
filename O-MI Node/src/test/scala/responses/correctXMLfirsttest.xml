@@ -1,23 +1,25 @@
-<omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-  xmlns:omi="omi.xsd">
+<omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <omi:response>
           <omi:result msgformat="odf">
             <omi:return returnCode="200"></omi:return>
             <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
               <Objects>
                 <Object>
-                  <id>Refrigerator123</id>
-                  <InfoItem name="PowerConsumption">
-                  <value dateTime="1970-01-17T12:56:15.723">0.123</value>
-                  </InfoItem>
-                </Object>
-                <Object>
-                  <id>RoomSensors1</id>
+                  <id>ReadTest</id>
                   <Object>
-                    <id>Temperature</id>
-                    <InfoItem name="Inside">
-                    <value dateTime="1970-01-17T12:56:15.723">21.2</value>
+                    <id>Refrigerator123</id>
+                    <InfoItem name="PowerConsumption">
+                    <value dateTime="1970-01-17T12:56:15.723">0.123</value>
                     </InfoItem>
+                  </Object>
+                  <Object>
+                    <id>RoomSensors1</id>
+                    <Object>
+                      <id>Temperature</id>
+                      <InfoItem name="Inside">
+                      <value dateTime="1970-01-17T12:56:15.723">21.2</value>
+                      </InfoItem>
+                    </Object>
                   </Object>
                 </Object>
               </Objects>

@@ -90,8 +90,7 @@ object Read {
             <omi:return returnCode="200"></omi:return>
             <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
               {
-                val OMIelements = odfGeneration(read)                    
-                OMIelements
+                odfGeneration(read)
               }
             </omi:msg>
           </omi:result>

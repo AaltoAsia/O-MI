@@ -11,11 +11,12 @@ object SQLiteTest extends Specification {
     var data1 = DBSensor("path/to/sensor1/temp","21.5C",new java.sql.Timestamp(1000))
     var data2 = DBSensor("path/to/sensor1/hum","40%",new java.sql.Timestamp(2000))
     var data3 = DBSensor("path/to/sensor2/temp","24.5",new java.sql.Timestamp(3000))
-    var data4= DBSensor("path/to/sensor2/hum","60%",new java.sql.Timestamp(4000))
+    var data4 = DBSensor("path/to/sensor2/hum","60%",new java.sql.Timestamp(4000))
     var data5 = DBSensor("path/to/sensor1/temp","21.6C",new java.sql.Timestamp(5000))
     var data6 = DBSensor("path/to/sensor1/temp","21.7C",new java.sql.Timestamp(6000))
-
-    //database.SQLite.clearDB()
+    var id1 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),1,1,None))
+    var id2 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),1,2,Some("callbackaddress")))
+    var id3 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2","path/to/sensor3","path/to/another/sensor2"),100,2,None))
 
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
@@ -122,6 +123,16 @@ object SQLiteTest extends Specification {
         var values = sensrs.map { x => x.value }
        values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
     }
+    "return correct values for N latest values" in {
+        var sensrs = database.SQLite.getNLatest("path/to/sensor3/temp",3)
+        var values = sensrs.map { x => x.value }
+       values.length == 3 && values.contains("21.5C") && values.contains("21.6C") shouldEqual true
+    }
+    "return correct values for N oldest values" in {
+        var sensrs = database.SQLite.getNOldest("path/to/sensor3/temp",12)
+        var values = sensrs.map { x => x.value }
+       values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
+    }
     "return correct values for N oldest values" in {
         var sensrs = database.SQLite.getNOldest("path/to/sensor3/temp",2)
         var values = sensrs.map { x => x.value }
@@ -139,17 +150,35 @@ object SQLiteTest extends Specification {
     }
     "return true when removing valid path" in{
       database.SQLite.remove("path/to/sensor2/temp") shouldEqual true
-    }
-    "return true when removing valid path" in{
-      database.SQLite.remove("path/to/sensor2/hum") shouldEqual true
+       database.SQLite.remove("path/to/sensor2/hum") shouldEqual true
     }
      "return None when searching non existent object" in{
       database.SQLite.get("path/to/sensor2") shouldEqual None
-    }
-     "return None when searching non existent object" in{
       database.SQLite.get("path/to/sensor1") shouldEqual None
     }
-   
+    "return correct callback adress for subscriptions" in{
+      database.SQLite.getSub(id1).get.callback shouldEqual None
+      database.SQLite.getSub(id2).get.callback.get shouldEqual "callbackaddress"
+      database.SQLite.getSub(id3).get.callback shouldEqual None
+    }
+//    "return correct boolean whether subscription is expired" in{
+//      database.SQLite.isExpired(id1) shouldEqual true
+//      database.SQLite.isExpired(id2) shouldEqual true
+//      database.SQLite.isExpired(id3) shouldEqual false
+//    }
+    "return correct paths as array" in{
+      database.SQLite.getSub(id1).get.paths.length shouldEqual 2
+      database.SQLite.getSub(id2).get.paths.length shouldEqual 2
+      database.SQLite.getSub(id3).get.paths.length shouldEqual 4
+    }
+   "return None for removed subscriptions" in{
+      database.SQLite.removeSub(id1)
+      database.SQLite.removeSub(id2)
+      database.SQLite.removeSub(id3)
+      database.SQLite.getSub(id1) shouldEqual None
+      database.SQLite.getSub(id2) shouldEqual None
+      database.SQLite.getSub(id3) shouldEqual None
+    }
     
   }
 }

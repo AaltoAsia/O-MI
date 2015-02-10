@@ -14,18 +14,20 @@ import scala.xml.XML
 
 class ReadTest extends Specification with Before {
   def before = {
-    val date = new Date(1421775723); //static date for testing
-    val testtime = new java.sql.Timestamp(date.getTime)
     val calendar = Calendar.getInstance()
-    calendar.setTimeInMillis(testtime.getTime())
+    calendar.setTime(new Date(1421775723))
+    calendar.set(Calendar.HOUR_OF_DAY, 12)
+    val date = calendar.getTime
+    val testtime = new java.sql.Timestamp(date.getTime)
     SQLite.clearDB()
     val testData = Map(
-        "Objects/Refrigerator123/PowerConsumption" -> "0.123",
-        "Objects/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
-        "Objects/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
-        "Objects/RoomSensors1/Temperature/Inside" -> "21.2",
-        "Objects/RoomSensors1/CarbonDioxide" -> "too much",
-        "Objects/RoomSensors1/Temperature/Outside" -> "12.2"
+        "Objects/ReadTest/Refrigerator123/PowerConsumption" -> "0.123",
+        "Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
+        "Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
+        "Objects/ReadTest/RoomSensors1/Temperature/Inside" -> "21.2",
+        "Objects/ReadTest/RoomSensors1/CarbonDioxide" -> "too much",
+        "Objects/ReadTest/RoomSensors1/Temperature/Outside" -> "12.2",
+        "Objects/ReadTest/SmartCar/Fuel" -> "30"
     )
 
     val intervaltestdata = List(
@@ -43,12 +45,15 @@ class ReadTest extends Specification with Before {
 
     var count = 0
 
-    SQLite.remove("Objects/SmartOven/Temperature")
+    SQLite.remove("Objects/ReadTest/SmartOven/Temperature")
     for (value <- intervaltestdata){
-        SQLite.set(new DBSensor("Objects/SmartOven/Temperature", value, new java.sql.Timestamp(date.getTime + count)))
+        SQLite.set(new DBSensor("Objects/ReadTest/SmartOven/Temperature", value, new java.sql.Timestamp(date.getTime + count)))
         count = count + 1000
     }
   }
+//  def after = {
+//    SQLite.remove("Objects/ReadTest")
+//  }
 
   "Read response" should {
     "Give correct XML when asked for multiple values" in {
@@ -56,7 +61,7 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
         
-        trim(correctxmlreturn) should be equalTo(trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])))    
+        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))    
     }
 
     "Give a history of values when begin and end is used" in {
@@ -64,7 +69,7 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
 
-        trim(correctxmlreturn) should be equalTo(trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])))
+        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
     }
 
 }
@@ -72,13 +77,13 @@ class ReadTest extends Specification with Before {
     "When given path ODFREST" should {
 
     "Give just the value when path ends with /value" in {
-        val RESTXML = Read.generateODFREST("Objects/Refrigerator123/PowerConsumption/value")
+        val RESTXML = Read.generateODFREST("Objects/ReadTest/Refrigerator123/PowerConsumption/value")
 
         RESTXML should be equalTo(Some(Left("0.123")))
     }
 
     "Give correct XML when asked with just the path and trailing /" in {
-        val RESTXML = Read.generateODFREST("Objects/RoomSensors1/")
+        val RESTXML = Read.generateODFREST("Objects/ReadTest/RoomSensors1/")
 
         val rightXML = <Object><id>RoomSensors1</id><InfoItem name="CarbonDioxide"/><Object>
                   <id>Temperature</id>
@@ -88,10 +93,10 @@ class ReadTest extends Specification with Before {
     }
 
     "Return right xml when asked for Objects" in {
-        val RESTXML = Read.generateODFREST("Objects")
+        val RESTXML = Read.generateODFREST("Objects/ReadTest")
 
-        val rightXML = <Objects><Object><id>RoomSensors1</id></Object><Object><id>Refrigerator123</id></Object>
-                        <Object><id>SmartOven</id></Object></Objects>
+        val rightXML = <Object><id>ReadTest</id><Object><id>Refrigerator123</id></Object><Object><id>RoomSensors1</id></Object><Object><id>SmartCar</id></Object>
+                        <Object><id>SmartOven</id></Object></Object>
 
         trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
     }
