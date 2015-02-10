@@ -114,8 +114,8 @@ object OdfParser {
     val subnodes = Map(
       "id" -> getChild(node, "id"),
       "Object" -> getChilds(node, "Object", true, true, true),
-      "InfoItem" -> getChilds(node, "InfoItem", true, true, true),
-      "MetaData" -> getChild(node, "MetaData", true, true))
+      "InfoItem" -> getChilds(node, "InfoItem", true, true, true)
+    )
 
     val errors = subnodes.filter(_._2.isLeft).map(_._2.left.get)
     if (errors.nonEmpty)
@@ -123,7 +123,7 @@ object OdfParser {
 
     val path = currentPath :+ subnodes("id").right.get.text
     if (subnodes("InfoItem").right.get.isEmpty && subnodes("Object").right.get.isEmpty) {
-      Seq(Right(OdfObject(path, Seq.empty[OdfObject], Seq.empty[OdfInfoItem], subnodes("MetaData").right.get.text)))
+      Seq(Right(OdfObject(path, Seq.empty[OdfObject], Seq.empty[OdfInfoItem])))
     } else {
       val eithersObjects: Seq[ObjectResult] = subnodes("Object").right.get.flatMap {
         sub: Node => parseObject(sub, path)
@@ -141,7 +141,7 @@ object OdfParser {
       if (errors.nonEmpty)
         return errors
       else
-        return Seq(Right(OdfObject(path, childs, sensors, subnodes("MetaData").right.get.text)))
+        return Seq(Right(OdfObject(path, childs, sensors)))
     }
   }
 

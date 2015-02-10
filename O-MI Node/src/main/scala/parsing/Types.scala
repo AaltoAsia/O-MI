@@ -77,8 +77,7 @@ case class OdfInfoItem( path: Seq[ String],
  */
 case class OdfObject( path: Seq[String],
                       childs: Seq[OdfObject],
-                      sensors: Seq[OdfInfoItem],
-                      metadata: String
+                      sensors: Seq[OdfInfoItem]
                     ) extends OdfNode
 
 

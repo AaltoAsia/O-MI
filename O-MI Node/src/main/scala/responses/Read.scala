@@ -147,9 +147,6 @@ object Read {
               }
             }
           }
-          {
-            if(obj.metadata != "") <MetaData>{ obj.metadata }</MetaData>
-          }
         </Object>
     }
     node
