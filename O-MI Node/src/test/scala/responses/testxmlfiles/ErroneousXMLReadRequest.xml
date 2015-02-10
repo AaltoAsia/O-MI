@@ -5,6 +5,7 @@
  			<Objects>
  				<Object>
                 <id>ReadTest</id>
+                	<InfoItem name="Refrigerator123"></InfoItem>
  					<Object>
  						<id>NonexistingObject</id>
  					</Object>
@@ -12,7 +13,11 @@
  						<id>Roomsensors1</id>
  						<InfoItem name="wrong"></InfoItem>
  						<InfoItem name="Temperature"></InfoItem>
+ 						<Object>
+ 							<id>CarbonDioxide</id>
+ 						</Object>
  					</Object>
+
  				</Object>
 			</Objects>
  		</omi:msg>

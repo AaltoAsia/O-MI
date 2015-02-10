@@ -72,6 +72,16 @@ class ReadTest extends Specification with Before {
         trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
     }
 
+    "Give plain object when asked for" in {
+        lazy val plainxml = Source.fromFile("src/test/scala/responses/testxmlfiles/PlainRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/PlainRightRequest.xml")
+
+        val parserlist = OmiParser.parse(plainxml)
+
+        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
+
+    }
+
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
         lazy val erroneousxml = Source.fromFile("src/test/scala/responses/testxmlfiles/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/WrongRequestReturn.xml")
@@ -90,7 +100,7 @@ class ReadTest extends Specification with Before {
         RESTXML should be equalTo(Some(Left("0.123")))
     }
 
-    "Give correct XML when asked with just the path and trailing /" in {
+    "Give correct XML when asked with an object path and trailing /" in {
         val RESTXML = Read.generateODFREST("Objects/ReadTest/RoomSensors1/")
 
         val rightXML = <Object><id>RoomSensors1</id><InfoItem name="CarbonDioxide"/><Object>
@@ -98,6 +108,22 @@ class ReadTest extends Specification with Before {
                 </Object></Object>
 
         trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
+    }
+
+    "Give correct XML when asked with an InfoItem path and trailing /" in {
+        val RESTXML = Read.generateODFREST("Objects/ReadTest/RoomSensors1/CarbonDioxide")
+
+        val rightXML = <InfoItem name="CarbonDioxide">
+                        <value dateTime="1970-01-17 12:56:15.723">too much</value>
+                        </InfoItem>
+
+        trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
+    }
+
+    "Return None when asked for nonexisting object" in {
+        val RESTXML = Read.generateODFREST("Objects/ReadTest/RoomSensors1/Wrong")
+
+        RESTXML should be equalTo(None)
     }
 
     "Return right xml when asked for Objects" in {
