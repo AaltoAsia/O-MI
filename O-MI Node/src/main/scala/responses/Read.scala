@@ -9,13 +9,11 @@ import scala.collection.mutable.Map
 
 import java.sql.Timestamp
 
+import parsing.Path._
+
 object Read {
 
-  def normalizePath(path: String): String =
-    if (path.endsWith("/")) path.init
-    else path
 
-  private val valueLength = "/value".length
 
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
@@ -24,29 +22,25 @@ object Read {
    * @param path The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-  def generateODFREST(path: String): Option[Either[String, xml.Node]] = {
+	def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
 
     // Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: String): (String, Boolean) = {
-
-      val npath = normalizePath(path)
-
-      if (npath.split("/").last == "value") {
-        val pathWithoutVal = npath.dropRight(valueLength)
-        (pathWithoutVal, true)
-      } else
-        (npath, false)
+    def restNormalizePath(path: Path): (Path, Boolean) = {
+      if (path.last == "value") (path.init, true) 
+      else (path, false)
     }
 
-    val (npath, wasValue) = restNormalizePath(path)
 
-    SQLite.get(npath) match {
-      case Some(sensor: DBSensor) =>
+    val (path, wasValue) = restNormalizePath(orgPath)
+
+
+		SQLite.get(path) match {
+			case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
         else
           return Some(Right(
-            <InfoItem name={ sensor.path.split("/").last }>
+            <InfoItem name={ sensor.path.last }>
               <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
             </InfoItem>))
 
@@ -56,18 +50,20 @@ object Read {
         for (item <- sensormap.childs) {
           SQLite.get(item.path) match {
             case Some(sensor: DBSensor) => {
-              resultChildren += <InfoItem name={ sensor.path.split("/").last }/>
+              resultChildren += <InfoItem name={ sensor.path.last }/>
             }
 
             case Some(subobject: DBObject) => {
-              resultChildren += <Object><id>{ subobject.path.split("/").last }</id></Object>
+              resultChildren += <Object><id>{ subobject.path.last }</id></Object>
             }
 
             case None => return None
           }
         }
 
-        val mapId = sensormap.path.split("/").last
+        resultChildren = resultChildren.sortBy(_.mkString) //InfoItems are meant to come first
+
+        val mapId = sensormap.path.last
         val xmlReturn =
           if (mapId == "Objects") {
             <Objects>{ resultChildren }</Objects>
@@ -130,7 +126,7 @@ object Read {
               } ++ odfObjectGeneration(obj.childs.toList, begin, end)
             } else {
               //TODO: sqlite get begin to end
-              val childs: Array[DBItem] = SQLite.get(obj.path.mkString("/")) match {
+              val childs: Array[DBItem] = SQLite.get(obj.path) match {
                 case Some(infoItem: database.DBSensor) =>
                   println("Found DBSensor instead of DBObject, when should not be possible.")
                   ???
@@ -143,9 +139,9 @@ object Read {
               for (child <- childs) {
                 child match {
                   case infoItem: database.DBSensor =>
-                    <InfoItem name={ infoItem.path.split("/").last }></InfoItem>
+                    <InfoItem name={ infoItem.path.last }></InfoItem>
                   case subobj: database.DBObject =>
-                    <Object><id>{ subobj.path.split("/").last }</id></Object>
+                    <Object><id>{ subobj.path.last }</id></Object>
                 }
               }
             }
@@ -164,7 +160,7 @@ object Read {
     for(infoItem <- infoItems){
       node ++= <InfoItem name={infoItem.path.last}>
         {
-            val item = SQLite.get(infoItem.path.mkString("/"))
+            val item = SQLite.get(infoItem.path)
             item match{
               case Some( sensor : database.DBSensor) =>
               <value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
@@ -198,7 +194,7 @@ object Read {
       for (infoItem <- infoItems) {
         node ++= <InfoItem name={ infoItem.path.last }>
                    {
-                     val items = SQLite.getInterval(infoItem.path.mkString("/"), beginTime, endTime)
+                     val items = SQLite.getInterval(infoItem.path, beginTime, endTime)
                      items match {
                        case sensors: Array[DBSensor] => {
                          var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 

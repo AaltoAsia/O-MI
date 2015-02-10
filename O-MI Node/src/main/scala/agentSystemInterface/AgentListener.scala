@@ -14,6 +14,9 @@ import scala.util.control._
 import parsing.OdfParser
 import database._
 
+import parsing.Path._
+import parsing.Path
+
 /** AgentListener handles connections from agents.
   */
 
@@ -97,11 +100,11 @@ class InputDataHandler(
           val sensorData = timedValue.time match {
               case None =>
                 val currentTime = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(info.path.mkString("/"), timedValue.value, currentTime)
+                new DBSensor(info.path, timedValue.value, currentTime)
               case Some(timestamp) =>
-                new DBSensor(info.path.mkString("/"), timedValue.value,  timestamp)
+                new DBSensor(info.path, timedValue.value,  timestamp)
             }
-            log.debug(s"Saving to path ${info.path.mkString("/")}")
+            log.debug(s"Saving to path ${info.path}")
 
             SQLite.set(sensorData)
       }  
