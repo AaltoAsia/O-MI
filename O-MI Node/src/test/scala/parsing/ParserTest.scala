@@ -123,7 +123,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue("2014-12-18T15:34:52", "56")),
+                    TimedValue(None, "56")),
                   ""))),
             OdfObject(
               List(
@@ -139,7 +139,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue("2014-12-18T15:34:52", "1")),
+                    TimedValue(None, "1")),
                   "")))),
           List(
             OdfInfoItem(
@@ -148,7 +148,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue("2014-12-18T15:34:52", "180")),
+                TimedValue(None, "180")),
               ""),
             OdfInfoItem(
               List(
@@ -156,7 +156,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue("2014-12-18T15:34:52", "0.20")),
+                TimedValue(None, "0.20")),
               ""))),
         OdfObject(
           List(
@@ -170,7 +170,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue("2014-12-18T15:34:52", "30")),
+                TimedValue(None, "30")),
               ""))),
         OdfObject(
           List(
@@ -280,7 +280,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue("2014-12-18T15:34:52", "56")),
+                    TimedValue(None, "56")),
                   ""))),
             OdfObject(
               List(
@@ -296,7 +296,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue("2014-12-18T15:34:52", "1")),
+                    TimedValue(None, "1")),
                   "")))),
           List(
             OdfInfoItem(
@@ -305,7 +305,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue("2014-12-18T15:34:52", "180")),
+                TimedValue(None, "180")),
               ""),
             OdfInfoItem(
               List(
@@ -313,7 +313,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue("2014-12-18T15:34:52", "0.20")),
+                TimedValue(None, "0.20")),
               ""))),
         OdfObject(
           List(
@@ -327,7 +327,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue("2014-12-18T15:34:52", "30")),
+                TimedValue(None, "30")),
               ""))),
         OdfObject(
           List(
