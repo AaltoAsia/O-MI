@@ -86,17 +86,17 @@ object SQLiteTest extends Specification {
     }
     
     "return correct childs for given valid path" in {
-        var res = Array[Path]()
+        var res = Array[String]()
        database.SQLite.get(Path("path/to/sensor1")) match
        {
         case Some(obj) =>
           obj match{
             case ob:DBObject =>
               var i = 0
-              res = Array.ofDim[Path](ob.childs.length)
+              res = Array.ofDim[String](ob.childs.length)
               for(o <- ob.childs)
               {
-                res(i) = o.path
+                res(i) = o.path.toString
                 i += 1
               }
             case _ => throw new Exception("unhandled case") //TODO any better ideas ?
@@ -104,7 +104,7 @@ object SQLiteTest extends Specification {
         case None =>
         case _ => throw new Exception("unhandled case")//TODO any better ideas?
        }
-       res.length == 2 && res.contains(Path("path/to/sensor1/temp")) && res.contains(Path("path/to/sensor1/hum")) shouldEqual true
+       res.length == 2 && res.contains("path/to/sensor1/temp") && res.contains("path/to/sensor1/hum") shouldEqual true
     }
     "return None for given invalid path" in {
       database.SQLite.get(Path("path/to/nosuchsensor")) shouldEqual None
