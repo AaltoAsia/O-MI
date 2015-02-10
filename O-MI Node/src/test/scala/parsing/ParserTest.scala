@@ -516,13 +516,8 @@ class ParserTest extends Specification {
             "SmartCottage"),
           List(),
           List(),
-          "")),
-        "",
-        "",
-        "",
-        "",
-        "",
-        List())))
+          ""))
+      )))
   }
 
   def e301 = {
@@ -647,13 +642,7 @@ class ParserTest extends Specification {
             "SmartCottage"),
           List(),
           List(),
-          "")),
-        "",
-        "",
-        "",
-        "",
-        "",
-        List())))
+          "")))))
   }
 
   def e401 = {

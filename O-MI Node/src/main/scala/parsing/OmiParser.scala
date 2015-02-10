@@ -9,6 +9,8 @@ import java.io.File
 import java.io.StringReader
 import java.io.StringBufferInputStream
 import java.io.IOException
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
 
 //Schema validation
 import javax.xml.XMLConstants
@@ -21,6 +23,7 @@ import org.xml.sax.SAXException
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
+  private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
 
   /**
    * This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
@@ -115,10 +118,14 @@ object OmiParser {
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
+        val callback = parameters("callback").right.get match {
+          case "" => None
+          case str => Some(str)
+        }
         if (left.isEmpty && !right.isEmpty) {
           Seq(Write(ttl,
             right.map(_.right.get),
-            parameters("callback").right.get,
+            callback,
             subnodes("requestId").right.get.map {
               id => id.text
             }))
@@ -154,16 +161,36 @@ object OmiParser {
         val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
+        val begin = parameters("begin").right.get match {
+          case "" => None
+          case str => Some(new Timestamp(dateFormat.parse(str).getTime))
+        }
+        val end = parameters("end").right.get match {
+          case "" => None
+          case str => Some(new Timestamp(dateFormat.parse(str).getTime))
+        }
+        val newest = parameters("newest").right.get match {
+          case "" => None
+          case str => Some(str.toInt)
+        }
+        val oldest = parameters("oldest").right.get match {
+          case "" => None
+          case str => Some(str.toInt)
+        }
+        val callback = parameters("callback").right.get match {
+          case "" => None
+          case str => Some(str)
+        }
 
         if (left.isEmpty && !right.isEmpty) {
           if (parameters("interval").right.get.isEmpty) {
             Seq(OneTimeRead(ttl,
               right.map(_.right.get),
-              parameters("begin").right.get,
-              parameters("end").right.get,
-              parameters("newest").right.get,
-              parameters("oldest").right.get,
-              parameters("callback").right.get,
+              begin,
+              end,
+              newest,
+              oldest,
+              callback,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))
@@ -171,11 +198,11 @@ object OmiParser {
             Seq(Subscription(ttl,
               parameters("interval").right.get,
               right.map(_.right.get),
-              parameters("begin").right.get,
-              parameters("end").right.get,
-              parameters("newest").right.get,
-              parameters("oldest").right.get,
-              parameters("callback").right.get,
+              begin,
+              end,
+              newest,
+              oldest,
+              callback,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))
@@ -234,11 +261,16 @@ object OmiParser {
         if (errors.nonEmpty)
           return errors.toSeq
 
+        val callback = parameters("callback").right.get match {
+          case "" => None
+          case str => Some(str)
+        }
+        
         if (subnodes("msg").right.get.isEmpty)
           return Seq(Result(subnodes("return").right.get.text,
             parameters("returnCode").right.get,
             None,
-            parameters("callback").right.get,
+            callback,
             subnodes("requestId").right.get.map {
               id => id.text
             }))
@@ -252,7 +284,7 @@ object OmiParser {
             return Seq(Result(subnodes("return").right.get.text,
               parameters("returnCode").right.get,
               Some(right.map(_.right.get)),
-              parameters("callback").right.get,
+              callback,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))

@@ -66,6 +66,7 @@ object OdfParser {
     }
   }
 
+  private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
   /**
    * private helper type for parseInfoItem
    *
@@ -90,7 +91,6 @@ object OdfParser {
 
     val path = currentPath :+ parameters("name").right.get
 
-    val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
     val timedValues: Seq[TimedValue] = subnodes("value").right.get.toSeq.map { value: Node =>
       var timeStr = getParameter(value, "unixTime", true).right.get
       if (timeStr.isEmpty) {
