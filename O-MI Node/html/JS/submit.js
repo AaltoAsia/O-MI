@@ -1,6 +1,9 @@
 /* IconSelect object */
 var iconSelect;
 
+/* Url to get the objects from */
+var objectUrl;
+
 $(function() {
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select");
@@ -9,22 +12,19 @@ $(function() {
 	var icons = [];
 	icons.push({'iconFilePath': 'Resources/icons/read.png', 'iconValue': 'read'});
 	icons.push({'iconFilePath': 'Resources/icons/write.png', 'iconValue': 'write'});
-	icons.push({'iconFilePath': 'Resources/icons/subscribe.png', 'iconValue': 'subscribe'});
 	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
 	iconSelect.refresh(icons);
 
 
-        /* Click events for buttons */
-        $(document).on('click', '#object-button', getObjects);
-        $(document).on('click', '#request-gen', generateRequest);
-        $(document).on('click', '#request-send', sendRequest);
+	/* Click events for buttons */
+	$(document).on('click', '#object-button', getObjects);
+	$(document).on('click', '#request-gen', generateRequest);
+	$(document).on('click', '#request-send', sendRequest);
 
-        $("#url-field").val('http://' + window.location.host + "/Objects");
+	$("#url-field").val('http://' + window.location.host + "/Objects");
 
-}); 
-var objectUrl;
-
+	
 /* Get the objects through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
@@ -72,7 +72,7 @@ function displayObjects(data, indent, url, listId) {
 				addInfoItems(this, id, indent + 1);
 				
 				//Get lower hierarchy values
-				ajaxGet(indent + 1, url + "/" + id, "list-" + id)
+				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
 			});
 		});
 	} else {
@@ -141,7 +141,7 @@ function generateRequest(){
 * @param {Number} Message interval
 * @param {function} Callback function (not used atm)
 */
-function writeXML(objects, operation, ttl, interval, begin, end, callback){
+function writeXML(items, operation, ttl, interval, begin, end, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -165,6 +165,8 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	if(interval > 0) writer.writeAttributeString('interval', interval);
 	
 	if(begin && end){
+		console.log(new Date(begin).getTime());
+		console.log(new Date(end).getTime());
 		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
 			writer.writeAttributeString('end', end);
@@ -180,42 +182,20 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
 	writer.writeStartElement('Objects');
 	//Payload
 	var ids = [];
-	if(objects.length > 0){
-		writer.writeStartElement('Object');
-		writer.writeElementString('id', objects[0].id);
-		ids.push(objects[0].id);
-	}
-
-	for (var i = 1; i < objects.length; i++)
-	{
-		var classes = $(objects[i]).attr("class").split(" ");
-		var cl = classes[classes.length - 1];
+	var objects = [];
+	
+	for(var i = 0; i < items.length; i++){
+		var cl = $(items[i]).attr("class");
 		
-		if(objects[i].id) {
-			if(cl != ids[ids.length - 1]){
-				while(ids.length > 0){
-					ids.pop();
-					writer.writeEndElement();
-				}			
-			}
-			
-			//Object
-			ids.push(objects[i].id);
-			writer.writeStartElement('Object');
-			writer.writeElementString('id', objects[i].id);
-		} else {
-			//InfoItem
-			if(cl != ids[ids.length - 1]){
-				ids.pop();
-				writer.writeEndElement();
-			}
-			writer.writeStartElement('InfoItem');
-			writer.writeAttributeString('name', objects[i].name);
-			writer.writeEndElement();
+		if(cl === "checkbox"){
+			var obj = new OdfObject(items[i].id);
+			addChildren(obj, items);
+			objects.push(obj);
 		}
 	}
-	if(objects.length > 0) {
-		writer.writeEndElement();
+	
+	for(var i = 0; i < objects.length; i++){
+		writeObject(objects[i], writer);
 	}
 	
 	writer.writeEndElement();
@@ -226,6 +206,50 @@ function writeXML(objects, operation, ttl, interval, begin, end, callback){
     return request;
 }
 
+function addChildren(object, items){
+	var children = [];
+	
+	for(var i = 0; i < items.length; i++){
+		var c = $(items[i]).attr('class');
+		if(c.indexOf(object.id) > -1){
+			children.push(items[i]);
+		}
+	}
+	
+	for(var i = 0; i < children.length; i++){
+		var child = children[i];
+		if(child.id){ //Object
+			var subobj = new OdfObject(child.id);
+			addChildren(subobj, items);
+			object.subObjects.push(subobj);
+		} else {
+			var infoitem = new InfoItem(child.name);
+			object.infoItems.push(infoitem);
+		}
+	}
+}
+
+/* Writes an object and its children to the xml */
+function writeObject(object, writer){
+	writer.writeStartElement('Object');
+	writer.writeElementString('id', object.id);
+	
+	// Write InfoItems BEFORE SubObjects
+	for(var i = 0; i < object.infoItems.length; i++){
+		writer.writeStartElement('InfoItem');
+		writer.writeAttributeString('name', object.infoItems[i].name);
+		writer.writeEndElement();
+	}
+	
+	// Write subobjects
+	for(var i = 0; i < object.subObjects.length; i++){
+		writeObject(object.subObjects[i], writer);
+	}
+	
+	writer.writeEndElement();
+}
+
+
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
@@ -233,7 +257,6 @@ function sendRequest()
 	var server = $("#send-field").val();
 
     var request = $('#request').text(); //Get the request string
-	console.log(request);
 	
     if(request.indexOf("subscribe") >= 0)
 		//TODO:
@@ -256,7 +279,7 @@ function sendRequest()
     } 
 }
 
-/* HTML 5 Server Sent Event communication */
+/* HTML 5 Server Sent Event communication (NOT USED ATM) */
 function startSubscriptionEventListener(request) {
     var source = new EventSource(server+"?msg="+request);
 
@@ -286,3 +309,5 @@ function printResponse(response){
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
 }
+}); 
+
