@@ -16,9 +16,9 @@ object SQLiteTest extends Specification {
     var data4 = DBSensor(Path("path/to/sensor2/hum"),"60%",new java.sql.Timestamp(4000))
     var data5 = DBSensor(Path("path/to/sensor1/temp"),"21.6C",new java.sql.Timestamp(5000))
     var data6 = DBSensor(Path("path/to/sensor1/temp"),"21.7C",new java.sql.Timestamp(6000))
-    var id1 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),0,1,None))
-    var id2 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),0,2,Some("callbackaddress")))
-    var id3 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2","path/to/sensor3","path/to/another/sensor2"),100,2,None))
+    var id1 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,1,None))
+    var id2 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,2,Some("callbackaddress")))
+    var id3 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2"),Path("path/to/sensor3"),Path("path/to/another/sensor2")),100,2,None))
 
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
@@ -85,17 +85,17 @@ object SQLiteTest extends Specification {
     }
     
     "return correct childs for given valid path" in {
-        var res = Array[Path]()
+        var res = Array[String]()
        database.SQLite.get(Path("path/to/sensor1")) match
        {
         case Some(obj) =>
           obj match{
             case ob:DBObject =>
               var i = 0
-              res = Array.ofDim[Path](ob.childs.length)
+              res = Array.ofDim[String](ob.childs.length)
               for(o <- ob.childs)
               {
-                res(i) = o.path
+                res(i) = o.path.toString()
                 i += 1
               }
             case _ => throw new Exception("unhandled case") //TODO any better ideas ?
@@ -103,7 +103,7 @@ object SQLiteTest extends Specification {
         case None =>
         case _ => throw new Exception("unhandled case")//TODO any better ideas?
        }
-       res.length == 2 && res.contains(Path("path/to/sensor1/temp")) && res.contains(Path("path/to/sensor1/hum")) shouldEqual true
+       res.length == 2 && res.contains("path/to/sensor1/temp") && res.contains("path/to/sensor1/hum") shouldEqual true
     }
     "return None for given invalid path" in {
       database.SQLite.get(Path("path/to/nosuchsensor")) shouldEqual None

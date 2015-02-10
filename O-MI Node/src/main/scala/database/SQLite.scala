@@ -385,7 +385,7 @@ object SQLite {
           //creates DBSub object based on saved information
           var head = query.first
           var sub = new DBSub(Array(), head._4, head._5, head._6)
-          sub.paths = head._2.split(";")
+          sub.paths = head._2.split(";").map(Path(_))
           sub.id = head._1
           sub.startTime = head._3
           res = Some(sub)
@@ -440,7 +440,7 @@ import SQLite._
  * @param interval to store the interval value to DB
  * @param callback optional callback address. use None if no address is needed
  */
-class DBSub(var paths: Array[String], val ttl: Int, val interval: Int, val callback: Option[String]) {
+class DBSub(var paths: Array[Path], val ttl: Int, val interval: Int, val callback: Option[String]) {
   //these are not needed when saving, but they are set in getSub
   var id: Int = 0
   var startTime: java.sql.Timestamp = null
