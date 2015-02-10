@@ -10,6 +10,8 @@ import akka.io.Tcp._
 import scala.io.Source
 import database._
 
+import parsing.Path
+import parsing.Path._
 
 class AgentListenerTest extends Specification with BeforeAfter {
 def before = SQLite.clearDB()
@@ -106,7 +108,7 @@ def after = SQLite.clearDB()
       SQLite.clearDB()
       actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:36:52"))), probe.ref)
       //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
-      awaitCond(SQLite.get("Objects/AgentTest/SmartHouse/Moisture") != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
+      awaitCond(SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
     }
 
     "log warning when it encounters node with no information" in new Actors {
