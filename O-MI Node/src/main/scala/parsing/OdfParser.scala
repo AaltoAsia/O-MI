@@ -77,7 +77,7 @@ object OdfParser {
    * @param node to parse, should be InfoItem
    * @param current path parsed from xml
    */
-  private def parseInfoItem(node: Node, currentPath: Seq[String]): Seq[InfoItemResult] = {
+  private def parseInfoItem(node: Node, currentPath: Path): Seq[InfoItemResult] = {
     var parameters: Map[String, Either[ParseError, String]] = Map(
       "name" -> getParameter(node, "name"))
 
@@ -89,7 +89,7 @@ object OdfParser {
     if (errors.nonEmpty)
       return errors.map(e => Left(e)).toSeq
 
-    val path = currentPath :+ parameters("name").right.get
+    val path = currentPath / parameters("name").right.get
 
     val timedValues: Seq[TimedValue] = subnodes("value").right.get.toSeq.map { value: Node =>
       var timeStr = getParameter(value, "unixTime", true).right.get
@@ -126,7 +126,7 @@ object OdfParser {
    * @param node to parse, should be an Object
    * @param current path parsed from xml
    */
-  private def parseObject(node: Node, currentPath: Seq[String]): Seq[ObjectResult] = {
+  private def parseObject(node: Node, currentPath: Path): Seq[ObjectResult] = {
     val subnodes = Map(
       "id" -> getChild(node, "id"),
       "Object" -> getChilds(node, "Object", true, true, true),
@@ -137,7 +137,7 @@ object OdfParser {
     if (errors.nonEmpty)
       return errors.map(e => Left(e)).toSeq
 
-    val path = currentPath :+ subnodes("id").right.get.text
+    val path = currentPath / subnodes("id").right.get.text
     if (subnodes("InfoItem").right.get.isEmpty && subnodes("Object").right.get.isEmpty) {
       Seq(Right(OdfObject(path, Seq.empty[OdfObject], Seq.empty[OdfInfoItem])))
     } else {

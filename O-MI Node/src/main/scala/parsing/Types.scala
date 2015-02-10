@@ -64,7 +64,7 @@ abstract sealed trait OdfNode
  *  @param metadata Object may contain metadata, 
  *         metadata can contain e.g. value type, units or similar information
  */
-case class OdfInfoItem( path: Seq[ String],
+case class OdfInfoItem( path: Path,
                         timedValues: Seq[ TimedValue],
                         metadata: String 
                       ) extends OdfNode
@@ -76,7 +76,7 @@ case class OdfInfoItem( path: Seq[ String],
  *  @param metadata Object may contain metadata, 
  *         metadata can contain e.g. value type, units or similar information
  */
-case class OdfObject( path: Seq[String],
+case class OdfObject( path: Path,
                       childs: Seq[OdfObject],
                       sensors: Seq[OdfInfoItem]
                     ) extends OdfNode
