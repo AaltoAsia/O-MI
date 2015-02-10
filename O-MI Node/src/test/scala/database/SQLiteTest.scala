@@ -10,16 +10,15 @@ object SQLiteTest extends Specification {
   
   "SQLite" should {
     sequential
-
     var data1 = DBSensor(Path("path/to/sensor1/temp"),"21.5C",new java.sql.Timestamp(1000))
     var data2 = DBSensor(Path("path/to/sensor1/hum"),"40%",new java.sql.Timestamp(2000))
     var data3 = DBSensor(Path("path/to/sensor2/temp"),"24.5",new java.sql.Timestamp(3000))
     var data4 = DBSensor(Path("path/to/sensor2/hum"),"60%",new java.sql.Timestamp(4000))
     var data5 = DBSensor(Path("path/to/sensor1/temp"),"21.6C",new java.sql.Timestamp(5000))
     var data6 = DBSensor(Path("path/to/sensor1/temp"),"21.7C",new java.sql.Timestamp(6000))
-    var id1 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),1,1,None))
-    var id2 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2"),1,2,Some("callbackaddress")))
-    var id3 = SQLite.saveSub(new DBSub(Array("path/to/sensor1","path/to/sensor2","path/to/sensor3","path/to/another/sensor2"),100,2,None))
+    var id1 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,1,None))
+    var id2 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,2,Some("callbackaddress")))
+    var id3 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2"),Path("path/to/sensor3"),Path("path/to/another/sensor2")),100,2,None))
 
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
@@ -48,7 +47,7 @@ object SQLiteTest extends Specification {
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.5C",new java.sql.Timestamp(16000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(17000)))
       database.SQLite.set(data6)
-      database.SQLite.set(data5) shouldEqual true
+      database.SQLite.set(data5) shouldEqual false
     }
      "return correct value for given valid path" in {
         var res = ""
@@ -96,7 +95,7 @@ object SQLiteTest extends Specification {
               res = Array.ofDim[String](ob.childs.length)
               for(o <- ob.childs)
               {
-                res(i) = o.path.toString
+                res(i) = o.path.toString()
                 i += 1
               }
             case _ => throw new Exception("unhandled case") //TODO any better ideas ?
@@ -145,7 +144,38 @@ object SQLiteTest extends Specification {
       database.SQLite.remove(Path("path/to/sensor3/temp"))
       database.SQLite.remove(Path("path/to/sensor1/hum")) shouldEqual true
     }
+    "be able to buffer data on demand"in{
+      database.SQLite.startBuffering(Path("path/to/sensor3/temp"))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new java.sql.Timestamp(6000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.1C",new java.sql.Timestamp(7000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.1C",new java.sql.Timestamp(8000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.2C",new java.sql.Timestamp(9000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.2C",new java.sql.Timestamp(10000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.3C",new java.sql.Timestamp(11000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.3C",new java.sql.Timestamp(12000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.4C",new java.sql.Timestamp(13000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.4C",new java.sql.Timestamp(14000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.5C",new java.sql.Timestamp(15000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.5C",new java.sql.Timestamp(16000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(17000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(18000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(19000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(20000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(21000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(22000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(23000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(24000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(25000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(26000)))
+      database.SQLite.getNLatest(Path("path/to/sensor3/temp"),21).length shouldEqual 21
+    }
+    "be able to stop buffering and revert to using historyLenght" in
+    {
+      database.SQLite.stopBuffering(Path("path/to/sensor3/temp"))
+      database.SQLite.getNLatest(Path("path/to/sensor3/temp"),21).length shouldEqual 10
+    }
     "return true when removing valid path" in{
+      database.SQLite.remove(Path("path/to/sensor3/temp"))
       database.SQLite.remove(Path("path/to/sensor1/temp")) shouldEqual true
     }
     "return false when trying to remove object from the middle" in{
@@ -164,11 +194,11 @@ object SQLiteTest extends Specification {
       database.SQLite.getSub(id2).get.callback.get shouldEqual "callbackaddress"
       database.SQLite.getSub(id3).get.callback shouldEqual None
     }
-//    "return correct boolean whether subscription is expired" in{
-//      database.SQLite.isExpired(id1) shouldEqual true
-//      database.SQLite.isExpired(id2) shouldEqual true
-//      database.SQLite.isExpired(id3) shouldEqual false
-//    }
+    "return correct boolean whether subscription is expired" in{
+      database.SQLite.isExpired(id1) shouldEqual true
+      database.SQLite.isExpired(id2) shouldEqual true
+      database.SQLite.isExpired(id3) shouldEqual false
+    }
     "return correct paths as array" in{
       database.SQLite.getSub(id1).get.paths.length shouldEqual 2
       database.SQLite.getSub(id2).get.paths.length shouldEqual 2
@@ -182,6 +212,7 @@ object SQLiteTest extends Specification {
       database.SQLite.getSub(id2) shouldEqual None
       database.SQLite.getSub(id3) shouldEqual None
     }
+   
     
   }
 }

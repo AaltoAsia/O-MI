@@ -1,0 +1,22 @@
+<omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <omi:response>
+          <omi:result msgformat="odf">
+            <omi:return returnCode="200"></omi:return>
+            <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+              <Objects>
+                <Object>
+                  <id>ReadTest</id>
+                  <Object>
+                    <id>Refrigerator123</id>
+                    <InfoItem name="PowerConsumption">
+                    <value dateTime="1970-01-17T12:56:15.723">0.123</value>
+                    <InfoItem name="format"><value
+                      type="xs:string">xs:double</value></InfoItem>
+                    </InfoItem>
+                  </Object>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:result>
+        </omi:response>
+      </omi:omiEnvelope>
