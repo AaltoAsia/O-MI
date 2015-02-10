@@ -63,7 +63,7 @@ class TypesTest extends Specification {
   }
   
   def e11 = {
-    !new OdfObject(Seq(), Seq(), Seq(), "").isInstanceOf[ParseMsg]
+    !new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[ParseMsg]
   }
   
   def e100 = {
@@ -71,7 +71,7 @@ class TypesTest extends Specification {
   }
   
   def e101 = {
-    new OdfObject(Seq(), Seq(), Seq(), "").isInstanceOf[OdfNode]
+    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OdfNode]
   }
   
   def e200 = {

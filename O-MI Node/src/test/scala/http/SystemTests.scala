@@ -18,7 +18,14 @@ class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService 
     Starter.init()
       
     "OmiService (Data discovery)" should {
-
+      
+      "respond with hello message for GET request to the root path" in {
+        Get() ~> myRoute ~> check{
+          mediaType === `text/html`
+          responseAs[String] must contain ("Say hello to <i>O-MI Node service")
+        }
+      }
+      
       "respond succesfully to GET to /Objects" in {
         Get("/Objects") ~> myRoute ~> check {
           mediaType === `text/xml`

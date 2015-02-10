@@ -124,8 +124,7 @@ class ParserTest extends Specification {
                     "PowerConsumption"),
                   List(
                     TimedValue("2014-12-18T15:34:52", "56")),
-                  "")),
-              ""),
+                  ""))),
             OdfObject(
               List(
                 "Objects",
@@ -141,8 +140,7 @@ class ParserTest extends Specification {
                     "PowerOn"),
                   List(
                     TimedValue("2014-12-18T15:34:52", "1")),
-                  "")),
-              "")),
+                  "")))),
           List(
             OdfInfoItem(
               List(
@@ -159,8 +157,7 @@ class ParserTest extends Specification {
                 "Moisture"),
               List(
                 TimedValue("2014-12-18T15:34:52", "0.20")),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
@@ -174,8 +171,7 @@ class ParserTest extends Specification {
                 "Fuel"),
               List(
                 TimedValue("2014-12-18T15:34:52", "30")),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
@@ -187,26 +183,22 @@ class ParserTest extends Specification {
                 "SmartCottage",
                 "Heater"),
               List(),
-              List(),
-              ""),
+              List()),
             OdfObject(
               List(
                 "Objects",
                 "SmartCottage",
                 "Sauna"),
               List(),
-              List(),
-              ""),
+              List()),
             OdfObject(
               List(
                 "Objects",
                 "SmartCottage",
                 "Weather"),
               List(),
-              List(),
-              "")),
-          List(),
-          "")),
+              List())),
+          List())),
         "",
         List())))
     //      List(
@@ -289,8 +281,7 @@ class ParserTest extends Specification {
                     "PowerConsumption"),
                   List(
                     TimedValue("2014-12-18T15:34:52", "56")),
-                  "")),
-              ""),
+                  ""))),
             OdfObject(
               List(
                 "Objects",
@@ -306,8 +297,7 @@ class ParserTest extends Specification {
                     "PowerOn"),
                   List(
                     TimedValue("2014-12-18T15:34:52", "1")),
-                  "")),
-              "")),
+                  "")))),
           List(
             OdfInfoItem(
               List(
@@ -324,8 +314,7 @@ class ParserTest extends Specification {
                 "Moisture"),
               List(
                 TimedValue("2014-12-18T15:34:52", "0.20")),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
@@ -339,8 +328,7 @@ class ParserTest extends Specification {
                 "Fuel"),
               List(
                 TimedValue("2014-12-18T15:34:52", "30")),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
@@ -352,26 +340,22 @@ class ParserTest extends Specification {
                 "SmartCottage",
                 "Heater"),
               List(),
-              List(),
-              ""),
+              List()),
             OdfObject(
               List(
                 "Objects",
                 "SmartCottage",
                 "Sauna"),
               List(),
-              List(),
-              ""),
+              List()),
             OdfObject(
               List(
                 "Objects",
                 "SmartCottage",
                 "Weather"),
               List(),
-              List(),
-              "")),
-          List(),
-          ""))),
+              List())),
+          List()))),
         "",
         List())))
   }
@@ -462,8 +446,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(),
-                  "")),
-              ""),
+                  ""))),
             OdfObject(
               List(
                 "Objects",
@@ -478,8 +461,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerConsumption"),
                   List(),
-                  "")),
-              "")),
+                  "")))),
           List(
             OdfInfoItem(
               List(
@@ -494,8 +476,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
@@ -508,15 +489,13 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
             "SmartCottage"),
           List(),
-          List(),
-          "")),
+          List())),
         "",
         "",
         "",
@@ -593,8 +572,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(),
-                  "")),
-              ""),
+                  ""))),
             OdfObject(
               List(
                 "Objects",
@@ -609,8 +587,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerConsumption"),
                   List(),
-                  "")),
-              "")),
+                  "")))),
           List(
             OdfInfoItem(
               List(
@@ -625,8 +602,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
@@ -639,15 +615,13 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(),
-              "")),
-          ""),
+              ""))),
         OdfObject(
           List(
             "Objects",
             "SmartCottage"),
           List(),
-          List(),
-          "")),
+          List())),
         "",
         "",
         "",
