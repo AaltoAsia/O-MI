@@ -1,4 +1,5 @@
 package parsing
+import java.sql.Timestamp
 
 /** absract trait that represent either error or request in the O-MI
   *
@@ -49,7 +50,7 @@ case class Cancel(  ttl: String,
   * @param optional timestamp when value was measured
   * @param measured value
   */
-case class TimedValue(time: String, value: String)
+case class TimedValue( time: Option[Timestamp], value: String)
 
 /** absract trait that reprasents an node in the O-DF either Object or InfoItem
   *
