@@ -1,10 +1,5 @@
 package sensordata
 
-// Spray json
-import spray.json._
-import DefaultJsonProtocol._
-import spray.httpx.SprayJsonSupport._
-
 // Json4s
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -20,8 +15,6 @@ import spray.client.pipelining._
 // Futures related imports
 import scala.concurrent.Future
 import scala.util.{ Success, Failure } 
-
-case class SensorData(value: String) 
 
 // Need to wrap in a package to get application supervisor actor
 // "you need to provide exactly one argument: the class of the application supervisor actor"
@@ -50,6 +43,7 @@ package main.scala {
     import scala.concurrent.ExecutionContext.Implicits.global
     // bring the actor system in scope
     implicit val system = ActorSystem()
+    // Define formats
     implicit val formats = DefaultFormats
     
     // create the client
@@ -61,7 +55,8 @@ package main.scala {
     // wait for Future to complete
     futureResponse onComplete {
       case Success(response) => 
-        val json = (parse(response.stripMargin.trim))
+        // Json data received from the server
+        val json = parse(response)
 
         // List of (sensorname, value) objects
         val list = for {
