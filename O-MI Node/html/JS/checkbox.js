@@ -15,16 +15,17 @@ $(document).on('click', '.checkbox', function() {
 		var parentId = $(parent).attr("id");
 		//Find child items and mark their value the same as their parent
 		getChildren(parentId).each(function(){
-			$(this).prop('checked', parent.is(':checked'));
-			propChildren($(this));
+			$(this).prop('checked', $(parent).is(':checked'));
+			propChildren(this);
 		});
 	}
 	
 	/* Child is a jquery object */
 	function propParent(child){
 		//ChildItem clicked;
-		var parentId = child.attr('class').split(' ').find(isParent);
-		if(parentId){
+		var ids = ($(child).attr('class')).split(' ').filter(isParent);
+		if(ids.length > 0){
+			var parentId = ids[0];
 			var jqId = jq("#", parentId);
 
 			var checked = $("#objectList").find(jq(".", parentId)).filter(":checked").length > 0;

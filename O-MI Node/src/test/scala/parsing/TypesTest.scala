@@ -7,7 +7,7 @@ import parsing._
 class TypesTest extends Specification {
 
   def is = s2"""
-  This is Specification to check inheritance for Types.
+  This is Specification to check inheritance for Types. Also testing Path Object
 
   Types should specify type inheritance for
     ParseMsg inherited by
@@ -23,6 +23,15 @@ class TypesTest extends Specification {
     OdfNode inherited by
       OdfInfoItem		  $e100
       OdfObject			  $e101
+      
+  Path 
+    Path object should
+      create same instance from string and seq	$e200
+      be same as the Seq it was created with 	$e201
+      seq as path								$e202
+    Path class instance should
+      join with another path correctly			$e300
+      join with another path string				$e301
     """
 
   def e1 = {
@@ -63,5 +72,34 @@ class TypesTest extends Specification {
   
   def e101 = {
     new OdfObject(Seq(), Seq(), Seq(), "").isInstanceOf[OdfNode]
+  }
+  
+  def e200 = {
+    Path("test/test2").toSeq should be equalTo (Path(Seq("test", "test2")))
+  }
+  
+  def e201 = {
+    val seq = Seq("test", "test2")
+    val path = Path(seq)
+    Path.PathAsSeq(path) should be equalTo (seq)
+  }
+  
+  def e202 = {
+    val seq = Seq("test", "test2")
+    val path = Path(seq)
+    Path.SeqAsPath(seq).toString should be equalTo (path.toString)
+  }
+  
+  def e300 = {
+    val path1 = new Path("test1/test2")
+    val path2 = new Path("test3/test4/test5")
+    
+    (path1 / path2).toSeq should be equalTo (new Path("test1/test2/test3/test4/test5").toSeq)
+  }
+  
+  def e301 = {
+    val path1 = new Path("test1/test2")
+    
+    (path1 / "test3/test4/test5").toSeq should be equalTo (new Path("test1/test2/test3/test4/test5").toSeq)
   }
 }

@@ -40,7 +40,7 @@ object Read {
 
     val (npath, wasValue) = restNormalizePath(path)
 
-    SQLite.get(path) match {
+    SQLite.get(npath) match {
       case Some(sensor: DBSensor) =>
         if (wasValue)
           return Some(Left(sensor.value))
@@ -82,26 +82,7 @@ object Read {
     }
   }
 
-  def generateODFresponse(path: String): String = {
-    SQLite.get(path) match {
-      case Some(sensor: DBSensor) => {
-        val id = path.split("/").last
-        val xmlreturn = <InfoItem name={ id }><value dateTime={ sensor.time.toString }>{ sensor.value }</value></InfoItem>
-        return xmlreturn.toString
-      }
-
-      case Some(sensormap: DBObject) => {
-        val mapId = sensormap.path.split("/").last
-        val xmlreturn = <id>{ mapId }</id>
-        return xmlreturn.toString
-      }
-
-      case None => return "No object or value found"
-    }
-  }
-
-
-  def OMIReadResponse(requests: List[ParseMsg], begin: String, end: String): String = { //takes the return value of OmiParser straight
+  def OMIReadResponse(read: OneTimeRead): xml.Node = { //takes the return value of OmiParser straight
     val xml =
       <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
         <omi:response>
@@ -109,29 +90,13 @@ object Read {
             <omi:return returnCode="200"></omi:return>
             <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
               {
-                var listofnodes = requests.collect {
-                  case OneTimeRead(ttl: String,
-                    sensors: Seq[OdfObject],
-                    begin: String,
-                    end: String,
-                    newest: String,
-                    oldest: String,
-                    callback: String,
-                    requstId: Seq[String]
-                    ) => sensors
-                }
-
-                val OMIelements = odfGeneration(
-                  listofnodes.flatMap(
-                    node => node), begin, end)
-                    
-                OMIelements
+                odfGeneration(read)
               }
             </omi:msg>
           </omi:result>
         </omi:response>
       </omi:omiEnvelope>
-    xml.toString
+    xml
   }
 
   /**
@@ -139,8 +104,10 @@ object Read {
    * @param nodes in Objects node to be generated
    * @return generated O-DF xml as String
    */
-  def odfGeneration(objects: List[parsing.OdfObject], begin: String, end: String): xml.NodeSeq = {
-    (<Objects>{ odfObjectGeneration(objects, begin, end) }</Objects>)
+  def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
+    <Objects>
+      { odfObjectGeneration(read.sensors.toList, read.begin, read.end) }
+    </Objects>
   }
 
   /**
@@ -156,33 +123,35 @@ object Read {
           <id>{ obj.path.last }</id>
           {
             if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-
               odfInfoItemGeneration(obj.sensors.toList, begin, end) ++ 
               odfObjectGeneration(obj.childs.toList, begin, end)
-
             } else {
               //TODO: sqlite get begin to end
-              val childs: Array[DBItem] = SQLite.get(obj.path.mkString("/")) match {
+              val childs: Option[Array[DBItem]] = SQLite.get(obj.path.mkString("/")) match {
                 case Some(infoItem: database.DBSensor) =>
-                  println("Found DBSensor instead of DBObject, when should not be possible.")
-                  ???
+                  None
                 case Some(subobj: database.DBObject) =>
-                  subobj.childs
+                  Some(subobj.childs)
                 case None =>
-                  println("DBObject not found, when should not be possible.")
-                  ???
+                  None
               }
-              for (child <- childs) {
-                child match {
-                  case infoItem: database.DBSensor =>
-                    <InfoItem name={ infoItem.path.split("/").last }></InfoItem>
-                  case subobj: database.DBObject =>
-                    <Object><id>{ subobj.path.split("/").last }</id></Object>
+
+              childs match {
+                case Some(childs: Array[DBItem]) => {
+                for (child <- childs) {
+                  child match {
+                    case infoItem: database.DBSensor =>
+                      <InfoItem name={ infoItem.path.split("/").last }></InfoItem>
+                    case subobj: database.DBObject =>
+                      <Object><id>{ subobj.path.split("/").last }</id></Object>
+                    }
+                  }
                 }
+
+                case None => <Error> Item not found or wrong type (InfoItem/Object) </Error>
               }
             }
           }
-          <MetaData>{ obj.metadata }</MetaData>
         </Object>
     }
     node
@@ -200,13 +169,12 @@ object Read {
             val item = SQLite.get(infoItem.path.mkString("/"))
             item match{
               case Some( sensor : database.DBSensor) =>
-              <value unixTime={sensor.time.toString}>{sensor.value}</value>
+              <value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
               case Some( obj : database.DBObject) =>
-                println("WARN: Object found in InfoItem in DB!")
-              case _ => println("unhandled case") //TODO Any better ideas?
+                <Error> Wrong type of request: this item is an InfoItem, not an Object </Error>
+              case _ => <Error> Item not found in the database </Error>
             }
         }
-        <MetaData>{infoItem.metadata}</MetaData>
       </InfoItem>
     }
     node
@@ -231,22 +199,29 @@ object Read {
                    {
                      val items = SQLite.getInterval(infoItem.path.mkString("/"), beginTime, endTime)
                      items match {
-                       case sensors: Array[DBSensor] =>
+                       case sensors: Array[DBSensor] => {
+                         var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
                          for (sensor <- sensors) {
-                           <value unixTime={ sensor.time.toString }>{ sensor.value }</value>
+                           intervaldata ++= <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
                          }
+
+                         intervaldata
+                       }
                        case _ =>
                          println("Error in interval read")
                      }
                    }
-                   <MetaData>{ infoItem.metadata }</MetaData>
                  </InfoItem>
       }
       node
     } catch {
       case e: IllegalArgumentException =>
-        println("invalid begin and/or end parameter; ignoring")
+        //println("invalid begin and/or end parameter; ignoring")
         odfInfoItemGeneration(infoItems)
     }
   }
 }
+
+/*        {
+          if(infoItem.metadata != "") <MetaData>{infoItem.metadata}</MetaData>
+        }*/

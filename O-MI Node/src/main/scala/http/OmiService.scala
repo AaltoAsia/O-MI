@@ -102,7 +102,7 @@ trait OmiService extends HttpService {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
                   log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
-                  Read.OMIReadResponse(requests.toList, oneTimeRead.begin, oneTimeRead.end)
+                  Read.OMIReadResponse(oneTimeRead)
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write
