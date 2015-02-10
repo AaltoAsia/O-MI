@@ -109,6 +109,10 @@ class Path(pathSeq: Seq[String]){
   def /(otherPathStr: String): Path = {
     this / Path(otherPathStr)
   }
+  override def equals(that: Any): Boolean = that match{
+    case thatPath: Path => thatPath.toSeq.equals(this.toSeq)
+    case _ => false
+  }
 
   /**
    * Creates a path string which represents this path with '/' seperators.
