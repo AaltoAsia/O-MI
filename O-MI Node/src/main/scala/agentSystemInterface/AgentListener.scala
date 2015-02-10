@@ -95,19 +95,11 @@ class InputDataHandler(
     for( info <- infoitems ){
       for(timedValue <- info.timedValues){
           val sensorData = timedValue.time match {
-              case "" =>
+              case None =>
                 val currentTime = new java.sql.Timestamp(new Date().getTime())
                 new DBSensor(info.path.mkString("/"), timedValue.value, currentTime)
-              case date =>
-                try{
-                  val stamp : Long = date.toLong
-                  val currentTime = new java.sql.Timestamp(stamp)
-                  new DBSensor(info.path.mkString("/"), timedValue.value,  currentTime)
-                } catch{
-                  case e: Exception =>
-                    val currentTime = new java.sql.Timestamp(dateFormat.parse(date).getTime)
-                    new DBSensor(info.path.mkString("/"), timedValue.value,  currentTime)
-                }
+              case Some(timestamp) =>
+                new DBSensor(info.path.mkString("/"), timedValue.value,  timestamp)
             }
             log.debug(s"Saving to path ${info.path.mkString("/")}")
 

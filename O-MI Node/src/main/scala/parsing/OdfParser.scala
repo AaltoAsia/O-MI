@@ -9,6 +9,8 @@ import scala.util.Try
 import java.io.File;
 import java.io.StringReader
 import java.io.IOException
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
 
 //Schema validation
 import javax.xml.XMLConstants
@@ -88,12 +90,26 @@ object OdfParser {
 
     val path = currentPath :+ parameters("name").right.get
 
+    val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
     val timedValues: Seq[TimedValue] = subnodes("value").right.get.toSeq.map { value: Node =>
-      val time = getParameter(value, "unixTime", true).right.get
-      if (time.isEmpty)
-        TimedValue(getParameter(value, "dateTime", true).right.get, value.text)
-      else
-        TimedValue(time, value.text)
+      var timeStr = getParameter(value, "unixTime", true).right.get
+      if (timeStr.isEmpty) {
+        timeStr = getParameter(value, "dateTime", true).right.get
+        if (timeStr.isEmpty){
+          TimedValue(None, value.text)
+        } else {
+          val timestamp = new Timestamp(dateFormat.parse(timeStr).getTime)
+          TimedValue(Some(timestamp), value.text)
+        }
+      } else {
+        try {
+          val timestamp = new Timestamp(timeStr.toInt/1000)
+          TimedValue(Some(timestamp), value.text)
+        } catch {
+          case e: Exception =>//TODO: better error msg.
+            return Seq( Left( ParseError( "unixTime have invalid value." ) ) )
+        }
+      }
     }
 
     Seq(Right(OdfInfoItem(path, timedValues, subnodes("MetaData").right.get.text)))
