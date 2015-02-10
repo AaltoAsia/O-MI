@@ -4,6 +4,7 @@ import org.specs2._
 import scala.io.Source
 import parsing._
 import parsing.OdfParser._
+import java.sql.Timestamp
 
 /*
  * Test class for testing parsing parsing package
@@ -123,7 +124,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue(None, "56")),
+                    TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "56")),
                   ""))),
             OdfObject(
               List(
@@ -139,7 +140,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue(None, "1")),
+                    TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "1")),
                   "")))),
           List(
             OdfInfoItem(
@@ -148,7 +149,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue(None, "180")),
+                TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "180")),
               ""),
             OdfInfoItem(
               List(
@@ -156,7 +157,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue(None, "0.20")),
+                TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "0.20")),
               ""))),
         OdfObject(
           List(
@@ -170,7 +171,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue(None, "30")),
+                TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "30")),
               ""))),
         OdfObject(
           List(
@@ -199,18 +200,18 @@ class ParserTest extends Specification {
               List(),
               List())),
           List())),
-        "",
+        None,
         List())))
     //      List(
     //      Write("10", List(
-    //        OdfObject(Seq("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), None),
-    //        ODFNode("/Objects/SmartHouse/SmartOven/PowerOn", InfoItem, Some("1"), Some("dateTime=\"2014-12-186T15:34:52\""), None),
-    //        ODFNode("/Objects/SmartHouse/PowerConsumption", InfoItem, Some("180"), Some("dateTime=\"2014-12-186T15:34:52\""), None),
-    //        ODFNode("/Objects/SmartHouse/Moisture", InfoItem, Some("0.20"), Some("dateTime=\"2014-12-186T15:34:52\""), None),
-    //        ODFNode("/Objects/SmartCar/Fuel", InfoItem, Some("30"), Some("dateTime=\"2014-12-186T15:34:52\""), None),
-    //        ODFNode("/Objects/SmartCottage/Heater", NodeObject, None, None, None),
-    //        ODFNode("/Objects/SmartCottage/Sauna", NodeObject, None, None, None),
-    //        ODFNode("/Objects/SmartCottage/Weather", NodeObject, None, None, None)),
+    //        OdfObject(Seq("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartHouse/SmartOven/PowerOn", InfoItem, Some("1"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartHouse/PowerConsumption", InfoItem, Some("180"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartHouse/Moisture", InfoItem, Some("0.20"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartCar/Fuel", InfoItem, Some("30"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartCottage/Heater", NodeObject, Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartCottage/Sauna", NodeObject, Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    //        ODFNode("/Objects/SmartCottage/Weather", NodeObject, Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")))),
     //        "test",
     //        Seq()))
   }
@@ -280,7 +281,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(
-                    TimedValue(None, "56")),
+                    TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "56")),
                   ""))),
             OdfObject(
               List(
@@ -296,7 +297,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerOn"),
                   List(
-                    TimedValue(None, "1")),
+                    TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "1")),
                   "")))),
           List(
             OdfInfoItem(
@@ -305,7 +306,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(
-                TimedValue(None, "180")),
+                TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "180")),
               ""),
             OdfInfoItem(
               List(
@@ -313,7 +314,7 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "Moisture"),
               List(
-                TimedValue(None, "0.20")),
+                TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "0.20")),
               ""))),
         OdfObject(
           List(
@@ -327,7 +328,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(
-                TimedValue(None, "30")),
+                TimedValue(Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), "30")),
               ""))),
         OdfObject(
           List(
@@ -356,7 +357,7 @@ class ParserTest extends Specification {
               List(),
               List())),
           List()))),
-        "",
+        None,
         List())))
   }
 
@@ -495,14 +496,10 @@ class ParserTest extends Specification {
             "Objects",
             "SmartCottage"),
           List(),
-          List())),
-        "",
-        "",
-        "",
-        "",
-        "",
-        List())))
-  }
+
+          List()))
+      )))
+ }
 
   def e301 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("""omi:read msgformat="odf"""", "omi:read"))
@@ -621,13 +618,7 @@ class ParserTest extends Specification {
             "Objects",
             "SmartCottage"),
           List(),
-          List())),
-        "",
-        "",
-        "",
-        "",
-        "",
-        List())))
+          List())))))
   }
 
   def e401 = {

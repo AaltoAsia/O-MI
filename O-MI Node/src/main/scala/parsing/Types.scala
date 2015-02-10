@@ -12,33 +12,33 @@ abstract sealed trait ParseMsg
 case class ParseError(msg: String) extends ParseMsg
 case class OneTimeRead( ttl: String,
                         sensors: Seq[ OdfObject],
-                        begin: String,
-                        end: String,
-                        newest: String,
-                        oldest: String,
-                        callback: String,
-                        requstId: Seq[ String]
+                        begin: Option[Timestamp] = None,
+                        end: Option[Timestamp] = None,
+                        newest: Option[Int] = None,
+                        oldest: Option[Int] = None,
+                        callback: Option[String] = None,
+                        requstId: Seq[ String] = Seq.empty
                       ) extends ParseMsg
 case class Write( ttl: String,
                   sensors: Seq[ OdfObject],
-                  callback: String,
-                  requstId: Seq[ String]
+                  callback: Option[String] = None,
+                  requstId: Seq[ String] = Seq.empty
                 ) extends ParseMsg
 case class Subscription(  ttl: String,
                           interval: String,
                           sensors: Seq[ OdfObject],
-                          begin: String,
-                          end: String,
-                          newest: String,
-                          oldest: String,
-                          callback: String,
-                          requstId: Seq[ String]
+                          begin: Option[Timestamp] = None,
+                          end: Option[Timestamp] = None,
+                          newest: Option[Int] = None,
+                          oldest: Option[Int] = None,
+                          callback: Option[String] = None,
+                          requstId: Seq[ String] = Seq.empty
                         ) extends ParseMsg
 case class Result(  returnValue: String,
                     returnCode: String,
                     parseMsgOp: Option[ Seq[ OdfObject] ],
-                    callback: String,
-                    requstId: Seq[ String]
+                    callback: Option[String] = None,
+                    requstId: Seq[ String] = Seq.empty
                   ) extends ParseMsg
 case class Cancel(  ttl: String,
                     requstId: Seq[ String]
