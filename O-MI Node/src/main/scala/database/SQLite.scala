@@ -35,7 +35,6 @@ object SQLite {
   def set(data: DBSensor) =
     {
       var count = 0
-      //try{
       db withSession { implicit session =>
         //search database for sensor's path
         val pathQuery = latestValues.filter(_.path === data.path)
@@ -56,14 +55,9 @@ object SQLite {
           false
         }
       }
-      //}
-      //catch{
-      //case e: Exception => 
-      //just fail silently when something bad happens
-      //e.g does nothing when trying to add same path and timestamp multiple times
-      //}
 
     }
+  
   def setHistoryLength(newLength: Int) {
     historyLength = newLength
   }
@@ -275,6 +269,7 @@ object SQLite {
       }
       result.toArray
     }
+  
 
   /**
    * Empties all the data from the database
