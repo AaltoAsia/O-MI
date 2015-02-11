@@ -9,12 +9,12 @@
 					<value dateTime="2014-12-18T15:34:52">180</value>
 				</InfoItem>
 				<InfoItem name="Moisture">
-					<value dateTime="2014-12-18T15:34:52">0.20</value>
+					<value unixTime="1418916892">0.20</value>
 				</InfoItem>
 				<Object>
 					<id>SmartFridge</id>
 					<InfoItem name="PowerConsumption">
-					<value dateTime="2014-12-18T15:34:52">56</value>
+					<value>56</value>
 					</InfoItem>
 				</Object>
 				<Object>

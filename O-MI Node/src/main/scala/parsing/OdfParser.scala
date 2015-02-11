@@ -40,9 +40,6 @@ object OdfParser extends Parser[OdfParseResult] {
       return schema_err.map { e => Left(e) }
 
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(Left(ParseError("Invalid XML"))))
-    if (root.label != "Objects")
-      return Seq(Left(ParseError("ODF doesn't have Objects as root.")))
-    else
       (root \ "Object").flatMap(obj => {
         parseNode(obj, Seq(root.label))
       })
@@ -104,7 +101,7 @@ object OdfParser extends Parser[OdfParseResult] {
         }
       } else {
         try {
-          val timestamp = new Timestamp(timeStr.toInt/1000)
+          val timestamp = new Timestamp(timeStr.toInt*1000)
           TimedValue(Some(timestamp), value.text)
         } catch {
           case e: Exception =>//TODO: better error msg.
