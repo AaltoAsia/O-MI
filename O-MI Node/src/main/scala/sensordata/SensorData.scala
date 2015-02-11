@@ -10,7 +10,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import scala.language.postfixOps
 
-// Json4s
+/* JSON4s */
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
@@ -24,6 +24,8 @@ import spray.client.pipelining._
 // Futures related imports
 import scala.concurrent.Future
 import scala.util.{ Success, Failure }
+
+import parsing.Path
 
 // Scala XML
 import scala.xml
@@ -72,7 +74,7 @@ package main.scala {
           // Print the formatted data
           //val formattedXML = new PrettyPrinter(80, 2).format(odf)
           //println(formattedXML);
-          system.shutdown()
+          //system.shutdown()
           
         //System.exit(1) // Exit needed?
         case Failure(error) => println("An error has occured: " + error.getMessage)
@@ -104,7 +106,7 @@ package main.scala {
           val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
 
           // TEST: adding values to database
-          val sensor = DBSensor("Objects/" + objectId + "/" + infoItemName, value, new java.sql.Timestamp(date.getTime()))
+          val sensor = DBSensor(Path("Objects/" + objectId + "/" + infoItemName), value, new java.sql.Timestamp(date.getTime()))
     	  addSensor(sensor)
         }
       }
@@ -115,8 +117,8 @@ package main.scala {
        database.SQLite.set(sensor)
       } catch {
       	case e : Exception => 
-      	  println("sleep 0.5s")
-      	  Thread.sleep(500)
+      	  //println("sleep 0.5s")
+      	  Thread.sleep(100)
           addSensor(sensor)
       }
     }

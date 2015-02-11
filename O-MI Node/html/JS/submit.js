@@ -77,7 +77,7 @@ function displayObjects(data, indent, url, listId) {
 		});
 	} else {
 		// Subobjects/Infoitems
-		var margin = indent * 20 + "px";
+		var margin = indent * 10 + "px";
 		
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
