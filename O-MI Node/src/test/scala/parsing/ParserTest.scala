@@ -30,7 +30,7 @@ class ParserTest extends Specification {
             OdfInfoItem(Path("Objects/SmartHouse/SmartFridge/PowerConsumption"),
               Seq(
                 TimedValue(
-                  Some(Timestamp.valueOf("2014-12-18 15:34:52")),
+                  None,
                   "56"
                 )
               ),
@@ -66,7 +66,7 @@ class ParserTest extends Specification {
         OdfInfoItem(Path("Objects/SmartHouse/Moisture"),
           Seq(
             TimedValue(
-              Some(Timestamp.valueOf("2014-12-18 15:34:52")),
+              Some(new Timestamp(1418916892.toLong*1000)),
               "0.20"
             )
           ),
