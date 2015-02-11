@@ -69,19 +69,11 @@ object OmiParser extends Parser[ParseMsg] {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val root = xml_msg.head
 
-    if (root.prefix != "omi")
-      return Seq(new ParseError("Incorrect prefix"))
-    if (root.label != "omiEnvelope")
-      return Seq(new ParseError("XML's root isn't omi:omiEnvelope"))
-
     val request = root.child.collect {
       case el: Elem => el
-    }.headOption.getOrElse(
-      return Seq(new ParseError("omi:omiEnvelope doesn't contain request")))
+    }.head
 
     val ttl = (root \ "@ttl").text
-    if (ttl.isEmpty())
-      return Seq(new ParseError("No ttl present in O-MI Envelope"))
 
     parseNode(request, ttl)
     
@@ -96,8 +88,6 @@ object OmiParser extends Parser[ParseMsg] {
    *
    */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
-    if (node.prefix != "omi")
-      return Seq(new ParseError("Incorrect prefix"))
     node.label match {
       /*
         Write request 
@@ -151,10 +141,12 @@ object OmiParser extends Parser[ParseMsg] {
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestId", true, true))
+          "requestId" -> getChild(node, "requestId", true, true)
+        )
 
-        if (subnodes("msg").isRight)
+        if (subnodes("msg").isRight){
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
+        }
 
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         
@@ -164,6 +156,7 @@ object OmiParser extends Parser[ParseMsg] {
         val odf = parseODF(subnodes("Objects").right.get.head)
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
+
         val begin = parameters("begin").right.get match {
           case "" => None
           case str => Some(new Timestamp(dateFormat.parse(str).getTime))
@@ -254,12 +247,12 @@ object OmiParser extends Parser[ParseMsg] {
           "msg" -> getChild(node, "msg"),
           "requestId" -> getChild(node, "requestId", true, true))
 
-        if (subnodes("msg").isRight)
+        if (subnodes("msg").isRight){
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true)
-
-        if (subnodes("return").isRight)
+        }
+        if (subnodes("return").isRight){
           parameters += "returnCode" -> getParameter(subnodes("return").right.get.head, "returnCode", true)
-
+        }
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
@@ -308,7 +301,6 @@ object OmiParser extends Parser[ParseMsg] {
     }
   }
 
-  private def errorsAndOdf(odf: Seq[OdfParseResult]) = odf.groupBy(_.isLeft)
   
 }
 
