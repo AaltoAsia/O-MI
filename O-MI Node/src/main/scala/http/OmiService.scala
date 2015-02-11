@@ -10,6 +10,7 @@ import MediaTypes._
 import responses._
 
 import parsing._
+import parsing.Types._
 import xml._
 
 class OmiServiceActor extends Actor with ActorLogging with OmiService {

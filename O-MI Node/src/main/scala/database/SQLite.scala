@@ -6,8 +6,8 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
 
-import parsing.Path
-import parsing.Path._
+import parsing.Types._
+import parsing.Types.Path._
 
 object SQLite {
   implicit val pathColumnType = MappedColumnType.base[Path, String](

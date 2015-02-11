@@ -1,6 +1,8 @@
 package responses
 
-import parsing._
+
+import parsing.Types._
+import parsing.Types.Path._
 import database._
 import scala.xml
 import scala.collection.mutable.Buffer
@@ -8,8 +10,6 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
 import java.sql.Timestamp
-
-import parsing.Path._
 
 object Read {
 
@@ -111,7 +111,7 @@ object Read {
    * @param nodes to generate
    * @return generated xml as String
    */
-  def odfObjectGeneration(objects: List[parsing.OdfObject], begin: String, end: String): xml.NodeSeq = {
+  def odfObjectGeneration(objects: List[OdfObject], begin: Option[Timestamp], end: Option[Timestamp]): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
     for (obj <- objects) {
       node ++=
@@ -119,8 +119,13 @@ object Read {
           <id>{ obj.path.last }</id>
           {
             if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-              odfInfoItemGeneration(obj.sensors.toList, begin, end) ++ 
-              odfObjectGeneration(obj.childs.toList, begin, end)
+              if(begin.isEmpty || end.isEmpty) {
+                odfInfoItemGeneration(obj.sensors.toList) ++
+                odfObjectGeneration(obj.childs.toList, begin, end)
+              } else {
+                odfInfoItemGeneration(obj.sensors.toList, begin, end) ++
+                odfObjectGeneration(obj.childs.toList, begin, end)
+              }
             } else {
               //TODO: sqlite get begin to end
 
@@ -161,7 +166,7 @@ object Read {
     * @param nodes to generate
     * @return generated xml as String
     */
-  def odfInfoItemGeneration(infoItems: List[ parsing.OdfInfoItem]) : xml.NodeSeq = {
+  def odfInfoItemGeneration(infoItems: List[ OdfInfoItem]) : xml.NodeSeq = {
     var node : xml.NodeSeq = xml.NodeSeq.Empty 
     for(infoItem <- infoItems){
       node ++= <InfoItem name={infoItem.path.last}>
@@ -187,11 +192,11 @@ object Read {
    * @param the end time of the time interval from where to get sensors
    * @return generated xml as String
    */
-  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): xml.NodeSeq = {
+  def odfInfoItemGeneration(infoItems: List[OdfInfoItem], begin: Option[Timestamp], end: Option[Timestamp]): xml.NodeSeq = {
 
     try {
-      var beginTime = Timestamp.valueOf(begin.replace('T', ' '))
-      var endTime = Timestamp.valueOf(end.replace('T', ' '))
+      var beginTime = begin.get
+      var endTime = end.get
 
       var node: xml.NodeSeq = xml.NodeSeq.Empty
       for (infoItem <- infoItems) {

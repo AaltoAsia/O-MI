@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+	<omi:read msgformat="odf" interval="40" >
+	    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+		<Objects>
+		    <Object>
+				<id>SmartHouse</id>
+				<InfoItem name="PowerConsumption">
+				</InfoItem>
+				<InfoItem name="Moisture">
+				</InfoItem>
+				<Object>
+					<id>SmartFridge</id>
+					<InfoItem name="PowerConsumption">
+					</InfoItem>
+				</Object>
+				<Object>
+					<id>SmartOven</id>
+					<InfoItem name="PowerConsumption">
+					</InfoItem>
+				</Object>
+		    </Object>
+		    <Object>
+				<id>SmartCar</id>
+				<InfoItem name="Fuel">
+				</InfoItem>
+		    </Object>
+		    <Object>
+				<id>SmartCottage</id>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:read>
+</omi:omiEnvelope>
