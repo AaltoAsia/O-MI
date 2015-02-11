@@ -53,7 +53,8 @@ local.properties
 .buildpath
 # sbteclipse plugin
 .target
-
+# Mac-specific
+.DS_Store
 # Windows-specific 
 Thumbs.db
 desktop.ini
