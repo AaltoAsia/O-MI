@@ -1,6 +1,8 @@
 package http
 
-import parsing.Path
+import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest

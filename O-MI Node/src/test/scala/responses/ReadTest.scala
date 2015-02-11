@@ -4,6 +4,8 @@ import org.specs2.mutable._
 import scala.io.Source
 import responses._
 import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 import database._
 import parsing.OdfParser._
 import java.util.Date;

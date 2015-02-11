@@ -1,5 +1,5 @@
 package parsing
-
+import parsing.Types._
 
 import scala.collection.mutable.Map
 
@@ -22,10 +22,11 @@ import javax.xml.validation.Validator
 import org.xml.sax.SAXException;
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
-object OdfParser {
+object OdfParser extends Parser[OdfParseResult] {
+
+  def schemaPath : String = "./src/main/resources/odf.xsd"
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
-  type ParseResult = Either[ParseError, OdfObject]
 
   /**
    * Public method for parsing the xml string into seq of ParseResults.
@@ -33,8 +34,8 @@ object OdfParser {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
    *  @return Seq of ParseResults
    */
-  def parse(xml_msg: String): Seq[ParseResult] = {
-    val schema_err = validateOdfSchema(xml_msg)
+  def parse(xml_msg: String): Seq[OdfParseResult] = {
+    val schema_err = schemaValitation(xml_msg)
     if (schema_err.nonEmpty)
       return schema_err.map { e => Left(e) }
 
@@ -55,7 +56,7 @@ object OdfParser {
    *        e.g. "/Objects/SmartHouse/SmartFridge"
    * @return Seq of ParseResults.
    */
-  private def parseNode(node: Node, currentPath: Seq[String]): Seq[ParseResult] = {
+  private def parseNode(node: Node, currentPath: Seq[String]): Seq[OdfParseResult] = {
     node.label match {
       /* Found an Object*/
       case "Object" => {
@@ -161,101 +162,5 @@ object OdfParser {
     }
   }
 
-  /**
-   * private helper function for getting parameter of an node.
-   * Handles error cases.
-   * @param node were parameter should be.
-   * @param parameter's label
-   * @param is nonexisting parameter accepted, is parameter's existent mandatory
-   * @param validation function if parameter musth confor some format
-   * @return Either ParseError or parameter as String
-   */
-  private def getParameter(node: Node,
-    paramName: String,
-    tolerateEmpty: Boolean = false,
-    validation: String => Boolean = _ => true): Either[ParseError, String] = {
-    val parameter = (node \ s"@$paramName").text
-    if (parameter.isEmpty && !tolerateEmpty)
-      return Left(ParseError(s"No $paramName parameter found in ${node.label}."))
-    else if (validation(parameter))
-      return Right(parameter)
-    else
-      return Left(ParseError(s"Invalid $paramName parameter in ${node.label}."))
-  }
-
-  /**
-   * private helper function for getting child of an node.
-   * Handles error cases.
-   * @param node were parameter should be.
-   * @param child's label
-   * @param is child allowed to have empty value
-   * @param is nonexisting childs accepted, is child's existent mandatory
-   * @return Either ParseError or sequence of childs found
-   */
-  private def getChild(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName")
-    if (!tolerateNonexist && childs.isEmpty)
-      return Left(ParseError(s"No $childName child found in ${node.label}."))
-    else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
-      return Left(ParseError(s"$childName's value not found in ${node.label}."))
-    else
-      return Right(childs)
-  }
-
-  /**
-   * private helper function for getting child of an node.
-   * Handles error cases.
-   * @param node were parameter should be.
-   * @param child's label
-   * @param is child allowed to have empty value
-   * @param is nonexisting childs accepted, is child's existent mandatory
-   * @param is multiple childs accepted
-   * @return Either ParseError or sequence of childs found
-   */
-  private def getChilds(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateNonexist: Boolean = false,
-    tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName")
-    if (!tolerateNonexist && childs.isEmpty)
-      return Left(ParseError(s"No $childName child found in ${node.label}."))
-    else if (!tolerateMultiple && childs.size > 1)
-      return Left(ParseError(s"Multiple $childName childs found in ${node.label}."))
-    else if (!tolerateEmpty && childs.nonEmpty && childs.contains{ n: Node => n.text.isEmpty }  )
-      return Left(ParseError(s"$childName's value not found in ${node.label}."))
-    else
-      return Right(childs)
-  }
-
-  /**
-   * function for checking does given string confort O-DF schema
-   * @param String to check
-   * @return ParseErrors found while checking, if empty, successful
-   */
-  def validateOdfSchema(xml: String): Seq[ParseError] = {
-    try {
-      val xsdPath = "./src/main/resources/odf.xsd"
-      val factory : SchemaFactory =
-        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val schema: Schema = factory.newSchema(new File(xsdPath))
-      val validator: Validator = schema.newValidator()
-      validator.validate(new StreamSource(new StringReader(xml)))
-    } catch {
-      case e: IOException =>
-        //TODO: log these instead of println
-        //        println(e.getMessage()) 
-        return Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
-      case e: SAXException =>
-        //        println(e.getMessage()) 
-        return Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
-      case e: Exception =>
-        return Seq(ParseError("Unknown exception: " + e.getMessage))
-    }
-    return Seq.empty;
-  }
 
 }

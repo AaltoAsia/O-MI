@@ -10,8 +10,9 @@ import akka.io.Tcp._
 import scala.io.Source
 import database._
 
-import parsing.Path
-import parsing.Path._
+import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 
 class AgentListenerTest extends Specification with BeforeAfter {
 def before = SQLite.clearDB()

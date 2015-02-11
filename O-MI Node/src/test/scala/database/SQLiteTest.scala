@@ -3,8 +3,9 @@ package database
 import org.specs2.mutable._
 import database._
 
-import parsing.Path._
-import parsing.Path
+import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 
 object SQLiteTest extends Specification {
   

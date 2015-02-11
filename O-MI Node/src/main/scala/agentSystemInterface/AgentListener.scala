@@ -14,8 +14,8 @@ import scala.util.control._
 import parsing.OdfParser
 import database._
 
-import parsing.Path._
-import parsing.Path
+import parsing.Types._
+import parsing.Types.Path._
 
 /** AgentListener handles connections from agents.
   */
@@ -86,7 +86,7 @@ class InputDataHandler(
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
-  private def handleObjects( objs: Seq[parsing.OdfObject] ) : Unit = {
+  private def handleObjects( objs: Seq[OdfObject] ) : Unit = {
     for(obj <- objs){
       if(obj.childs.nonEmpty)
         handleObjects(obj.childs)
@@ -94,7 +94,7 @@ class InputDataHandler(
         handleInfoItems(obj.sensors)
     }
   }
-  private def handleInfoItems( infoitems: Seq[parsing.OdfInfoItem]) : Unit = {
+  private def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
     for( info <- infoitems ){
       for(timedValue <- info.timedValues){
           val sensorData = timedValue.time match {

@@ -12,11 +12,11 @@ import java.net.InetSocketAddress
 
 import agentSystemInterface.AgentListener
 import responses._
-import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 import database.SQLite
 import database._
 
-import parsing.Path._
 
 
 // Initialize functionality seperated for testing purposes

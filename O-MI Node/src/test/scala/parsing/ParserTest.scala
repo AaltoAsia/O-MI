@@ -3,7 +3,8 @@ package parsing
 import org.specs2._
 import scala.io.Source
 import parsing._
-import parsing.OdfParser._
+import parsing.Types._
+import parsing.Types.Path._
 import java.sql.Timestamp
 
 /*
