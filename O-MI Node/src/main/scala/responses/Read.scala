@@ -120,10 +120,12 @@ object Read {
           {
             if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
               if(begin.isEmpty || end.isEmpty) {
-                odfInfoItemGeneration(obj.sensors.toList) 
+                odfInfoItemGeneration(obj.sensors.toList) ++
+                odfObjectGeneration(obj.childs.toList, begin, end)
               } else {
-                odfInfoItemGeneration(obj.sensors.toList, begin, end) 
-              } ++ odfObjectGeneration(obj.childs.toList, begin, end)
+                odfInfoItemGeneration(obj.sensors.toList, begin, end) ++
+                odfObjectGeneration(obj.childs.toList, begin, end)
+              }
             } else {
               //TODO: sqlite get begin to end
 
