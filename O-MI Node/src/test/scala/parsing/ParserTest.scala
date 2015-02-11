@@ -20,6 +20,7 @@ class ParserTest extends Specification {
   lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
   lazy val omi_write_test_file = Source.fromFile("src/test/resources/parsing/omi_write_test.xml").getLines.mkString("\n")
   lazy val omi_response_test_file = Source.fromFile("src/test/resources/parsing/omi_response_test.xml").getLines.mkString("\n")
+  lazy val omi_cancel_test_file = Source.fromFile("src/test/resources/parsing/omi_cancel_test.xml").getLines.mkString("\n")
   lazy val odf_test_file = Source.fromFile("src/test/resources/parsing/odf_test.xml").getLines.mkString("\n")
   val write_response_odf = Seq(
     OdfObject(Path("Objects/SmartHouse"),
@@ -115,6 +116,7 @@ class ParserTest extends Specification {
       missing omi:msg     $e103
       missing Objects     $e104 
       no objects to parse $e105
+      correct without callback $e106
     response message with
       correct message     $e200
       missing msgformat   $e201
@@ -129,6 +131,8 @@ class ParserTest extends Specification {
       missing Objects     $e304
       no objects to parse $e305
       correct subscription $e306
+    cancel request with
+      correct request     $e500 
   OdfParser should give certain result for
     message with
       correct format      $e400
@@ -185,7 +189,7 @@ class ParserTest extends Specification {
 
   def e100 = {
     OmiParser.parse(omi_write_test_file) should be equalTo (List(
-      Write("10", write_response_odf)))
+      Write("10", write_response_odf, Some("http://testing.test"))))
     //      List(
     //      Write("10", List(
     //        OdfObject(Seq("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
@@ -243,6 +247,11 @@ class ParserTest extends Specification {
 """)
     temp.head should be equalTo (ParseError("No Objects to parse"))
 
+  }
+
+  def e106 = {
+    OmiParser.parse(omi_write_test_file.replace("callback=\"http://testing.test\" ", "")) should be equalTo (List(
+      Write("10", write_response_odf)))
   }
 
   def e200 = {
@@ -385,7 +394,6 @@ class ParserTest extends Specification {
             "Objects",
             "SmartCottage"),
           List(),
-
           List()))
       )))
  }
@@ -507,9 +515,15 @@ class ParserTest extends Specification {
             "Objects",
             "SmartCottage"),
           List(),
-          List())))))
+          List())),
+      Some(Timestamp.valueOf("2014-12-18 15:34:52")),
+      Some(Timestamp.valueOf("2014-12-18 15:34:52")),
+      Some(5),
+      Some(3),
+      Some("http://testing.test"),
+      Seq("123456","456789")
+      )))
   }
-
   def e401 = {
     val temp = OdfParser.parse("incorrect xml")
     temp.head should be equalTo (Left(ParseError("Invalid XML, schema failure: Content is not allowed in prolog.")))
@@ -565,6 +579,9 @@ class ParserTest extends Specification {
     OdfParser.parse(odf_test_file)  should be equalTo( write_response_odf.map( o => Right(o) ))
   }
 
+  def e500 = {
+    OmiParser.parse(omi_cancel_test_file)  should be equalTo(Seq(Cancel("10", Seq("123","456"))))
+  }
 
 
 }

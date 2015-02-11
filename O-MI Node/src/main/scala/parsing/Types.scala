@@ -18,12 +18,12 @@ object Types {
                           newest: Option[Int] = None,
                           oldest: Option[Int] = None,
                           callback: Option[String] = None,
-                          requstId: Seq[ String] = Seq.empty
+                          requestId: Seq[ String] = Seq.empty
                         ) extends ParseMsg
   case class Write( ttl: String,
                     sensors: Seq[ OdfObject],
                     callback: Option[String] = None,
-                    requstId: Seq[ String] = Seq.empty
+                    requestId: Seq[ String] = Seq.empty
                   ) extends ParseMsg
   case class Subscription(  ttl: String,
                             interval: String,
@@ -33,16 +33,15 @@ object Types {
                             newest: Option[Int] = None,
                             oldest: Option[Int] = None,
                             callback: Option[String] = None,
-                            requstId: Seq[ String] = Seq.empty
+                            requestId: Seq[ String] = Seq.empty
                           ) extends ParseMsg
   case class Result(  returnValue: String,
                       returnCode: String,
                       parseMsgOp: Option[ Seq[ OdfObject] ],
-                      callback: Option[String] = None,
-                      requstId: Seq[ String] = Seq.empty
+                      requestId: Seq[ String] = Seq.empty
                     ) extends ParseMsg
   case class Cancel(  ttl: String,
-                      requstId: Seq[ String]
+                      requestId: Seq[ String]
                     ) extends ParseMsg
 
 
