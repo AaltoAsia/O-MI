@@ -2,6 +2,7 @@ package database
 
 import org.specs2.mutable._
 import database._
+import java.sql.Timestamp
 
 import parsing.Path._
 import parsing.Path
@@ -19,7 +20,9 @@ object SQLiteTest extends Specification {
     var id1 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,1,None))
     var id2 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,2,Some("callbackaddress")))
     var id3 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2"),Path("path/to/sensor3"),Path("path/to/another/sensor2")),100,2,None))
-
+    var list = List(("test/path/sensor1","val1"),("test/path/sensor1","val1"),("test/path/sensor1","val1"),("test/path/sensor1","val1"),("test/path/sensor2","val2"),("test/path/sensor2","val2"))
+    database.SQLite.setMany(list)
+    
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
     }
@@ -168,6 +171,38 @@ object SQLiteTest extends Specification {
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(25000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(26000)))
       database.SQLite.getNLatest(Path("path/to/sensor3/temp"),21).length shouldEqual 21
+    }
+    "return values between two timestamps" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(6000)), Some(new Timestamp(10000)), None, None).length shouldEqual 5
+    }
+    "return values from start" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(20000)), None, None, None).length shouldEqual 7
+    }
+    "return values before end" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, Some(new Timestamp(10000)), None, None).length shouldEqual 5
+    }
+     "return 10 values before end" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, Some(new Timestamp(26000)), None, Some(10)).length shouldEqual 10
+    }
+     "return 10 values after start" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(6000)),None, Some(10), None).length shouldEqual 10
+    }
+     "return values between two timestamps" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(6000)), Some(new Timestamp(10000)), Some(10), None).length shouldEqual 5
+    }
+     "return all values if no options given" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, None, None, None).length shouldEqual 21
+    }
+     "return all values if both fromStart and fromEnd is given" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, None, Some(10), Some(5)).length shouldEqual 21
     }
     "be able to stop buffering and revert to using historyLenght" in
     {
