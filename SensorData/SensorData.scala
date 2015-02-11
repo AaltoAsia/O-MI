@@ -45,6 +45,9 @@ package main.scala {
     }
   }
 
+  /**
+   * The main program for getting SensorData
+   */
   object Program extends App {
     import scala.concurrent.ExecutionContext.Implicits.global
     // bring the actor system in scope
@@ -70,19 +73,23 @@ package main.scala {
           JField(sensor, JString(value)) <- child
         } yield (sensor, value)
         
-        //println(list)
-        
         val odf = generateODF(list)
-        
         
         // Print the formatted data
         println(new PrettyPrinter(80, 2).format(odf))
-        System.exit(1)
+        
+        //System.exit(1) // Exit needed?
       case Failure(error) => println("An error has occured: " + error.getMessage)
     }
     
+    /**
+     * Generate ODF from the parsed & formatted Json data
+     * @param list of sensor-value pairs
+     * @return generated XML Node
+     */
     private def generateODF(list : List[(String, String)]) : scala.xml.Node = {
-      
+    	
+    	// Define dateformat for dateTime value
     	val dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     	val date = new java.util.Date()
     	val dateTime = dateFormat.format(date).replace(' ', 'T')
@@ -91,7 +98,7 @@ package main.scala {
     	val objects = Map[String, Map[String, String]]()
         val infoItems = Map[String, String]()
         
-        
+        // Iterate over the list to get objects and infoitems
         for(item <- list){
         	val sensor : String = item._1
         	val value : String = item._2 // Currently as string, convert to double?
@@ -108,23 +115,30 @@ package main.scala {
 	        	
 	        	// Append the object parameters to the map
 	        	if(temp.isDefined){
-	        	  temp.get._2.put(infoItemName, value)
+	        	  temp.get._2.put(infoItemName, value) // Existing object add new key-value pair to the map
 	        	} else {
-	        	  objects.put(objectId, Map((infoItemName, value)))
+	        	  objects.put(objectId, Map((infoItemName, value))) // New object create new key-value pair
 	        	}
-	        	
-	        	// Test printing
-	        	//val test = <Object><id>{objectId}</id><InfoItem name={infoItemName}><value>{value}</value></InfoItem></Object>
-	        	//println(test)
         	} else {
-        		//val test = <InfoItem name={sensor}><value>{value}</value></InfoItem>
-        		//println(test)
         	  infoItems.put(sensor, value)
         	}
         }
     	
-    	//Generate the odf
-        val odf = <Objects>
+    	// Return generated XML
+        generateXML(objects, infoItems, dateTime)
+    }
+    
+    /**
+     * Generate XML in O-DF
+     * @param objects mapped as (objectId -> (InfoItem name -> InfoItem value))
+     * @param infoItems (without objects) mapped as (InfoItem name -> InfoItem value)
+     * @param dateTime value
+     * @return generated XML Node
+     */
+    private def generateXML(objects : Map[String, Map[String, String]], infoItems : Map[String, String], 
+        dateTime : String) : scala.xml.Node = {
+      
+      val xml = <Objects>
         			{
         				var node: NodeSeq = NodeSeq.Empty
         				
@@ -154,7 +168,7 @@ package main.scala {
         			 	node
         			}
         		</Objects>
-        odf
+      xml
     }
   }
 } 
