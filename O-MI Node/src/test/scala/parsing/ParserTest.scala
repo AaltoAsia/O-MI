@@ -66,7 +66,7 @@ class ParserTest extends Specification {
         OdfInfoItem(Path("Objects/SmartHouse/Moisture"),
           Seq(
             TimedValue(
-              Some(new Timestamp(1418916892*1000)),
+              Some(new Timestamp(1418916892.toLong*1000)),
               "0.20"
             )
           ),

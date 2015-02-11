@@ -101,7 +101,7 @@ object OdfParser extends Parser[OdfParseResult] {
         }
       } else {
         try {
-          val timestamp = new Timestamp(timeStr.toInt*1000)
+          val timestamp = new Timestamp(timeStr.toLong*1000)
           TimedValue(Some(timestamp), value.text)
         } catch {
           case e: Exception =>//TODO: better error msg.
