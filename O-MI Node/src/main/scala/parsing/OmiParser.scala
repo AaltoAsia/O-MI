@@ -25,7 +25,8 @@ import org.xml.sax.SAXException
 object OmiParser extends Parser[ParseMsg] {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
   private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
-  def schemaPath : String = "./src/main/resources/omi.xsd"
+
+  override def schemaPath : String = "./src/main/resources/omi.xsd"
 
   /**
    * This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
@@ -309,16 +310,6 @@ object OmiParser extends Parser[ParseMsg] {
 
   private def errorsAndOdf(odf: Seq[OdfParseResult]) = odf.groupBy(_.isLeft)
   
-  /**
-   * Temp function for fixing tests
-   */
-  def stripNamespaces(node : Node) : Node = {
-     node match {
-         case e : Elem => 
-             e.copy(scope = TopScope, child = e.child map (stripNamespaces))
-         case _ => node;
-     }
- }
 }
 
 

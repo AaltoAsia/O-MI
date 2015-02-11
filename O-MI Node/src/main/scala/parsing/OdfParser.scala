@@ -24,7 +24,7 @@ import org.xml.sax.SAXException;
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
 
-  def schemaPath : String = "./src/main/resources/odf.xsd"
+  override def schemaPath : String = "./src/main/resources/odf.xsd"
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
 

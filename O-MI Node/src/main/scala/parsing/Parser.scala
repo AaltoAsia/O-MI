@@ -19,7 +19,7 @@ import org.xml.sax.SAXException;
 abstract trait Parser[Result] {
 
   def parse(xml_msg: String) : Seq[Result]
-  protected def schemaPath : String
+  def schemaPath : String
 
   /**
    * private helper function for getting parameter of an node.
@@ -56,7 +56,7 @@ abstract trait Parser[Result] {
     childName: String,
     tolerateEmpty: Boolean = false,
     tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName")
+    val childs = (node \ s"$childName") map (stripNamespaces)
     if (!tolerateNonexist && childs.isEmpty)
       return Left(ParseError(s"No $childName child found in ${node.label}."))
     else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
@@ -115,4 +115,14 @@ abstract trait Parser[Result] {
     return Seq.empty;
   }
 
+  /**
+   * Temp function for fixing tests
+   */
+  def stripNamespaces(node : Node) : Node = {
+     node match {
+         case e : Elem => 
+             e.copy(scope = TopScope, child = e.child map (stripNamespaces))
+         case _ => node;
+     }
+ }
 }
