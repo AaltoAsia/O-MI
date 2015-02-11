@@ -5,6 +5,7 @@ import java.io.File
 import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
+
 object SQLite {
   private var historyLength = 10
   //path where the file is stored
@@ -23,6 +24,7 @@ object SQLite {
       initialize()
     }
   }
+  
   
   /**
    * Used to set values to database. If data already exists for the path, updates existing data,

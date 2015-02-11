@@ -20,6 +20,7 @@ import scala.util.{ Success, Failure }
 import scala.xml
 import scala.xml._
 
+// Mutable map for sensordata
 import scala.collection.mutable.Map
 
 // Need to wrap in a package to get application supervisor actor
@@ -76,7 +77,8 @@ package main.scala {
         val odf = generateODF(list)
         
         // Print the formatted data
-        println(new PrettyPrinter(80, 2).format(odf))
+        val formattedXML = new PrettyPrinter(80, 2).format(odf)
+        println(formattedXML);
         
         //System.exit(1) // Exit needed?
       case Failure(error) => println("An error has occured: " + error.getMessage)
