@@ -28,7 +28,7 @@ def after = SQLite.clearDB()
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)
-  lazy val testOdf = Source.fromFile("src/test/scala/testOdf.xml").getLines().mkString("")
+  lazy val testOdf = Source.fromFile("src/test/scala/agentSystemInterface/testOdf.xml").getLines().mkString("")
 
   "AgentListener" should {
 
