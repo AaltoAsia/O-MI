@@ -41,7 +41,7 @@ object Read {
         else
           return Some(Right(
             <InfoItem name={ sensor.path.last }>
-              <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
+              <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>
             </InfoItem>))
 
       case Some(sensormap: DBObject) =>
@@ -207,7 +207,7 @@ object Read {
                        case sensors: Array[DBSensor] => {
                          var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
                          for (sensor <- sensors) {
-                           intervaldata ++= <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
+                           intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
                          }
 
                          intervaldata
