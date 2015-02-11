@@ -59,24 +59,24 @@ class ReadTest extends Specification with Before {
 
   "Read response" should {
     "Give correct XML when asked for multiple values" in {
-        lazy val simpletestfile = Source.fromFile("src/test/scala/responses/testxmlfiles/SimpleXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/correctXMLfirsttest.xml")
+        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
         
         trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))    
     }
 
     "Give a history of values when begin and end is used" in {
-        lazy val intervaltestfile = Source.fromFile("src/test/scala/responses/testxmlfiles/IntervalXMLTest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/CorrectIntervalXML.xml")
+        lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/IntervalXMLTest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
 
         trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
     }
 
     "Give plain object when asked for" in {
-        lazy val plainxml = Source.fromFile("src/test/scala/responses/testxmlfiles/PlainRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/PlainRightRequest.xml")
+        lazy val plainxml = Source.fromFile("src/test/resources/responses/PlainRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/PlainRightRequest.xml")
 
         val parserlist = OmiParser.parse(plainxml)
 
@@ -85,8 +85,8 @@ class ReadTest extends Specification with Before {
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
-        lazy val erroneousxml = Source.fromFile("src/test/scala/responses/testxmlfiles/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/WrongRequestReturn.xml")
+        lazy val erroneousxml = Source.fromFile("src/test/resources/responses/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
 
         trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))

@@ -16,11 +16,11 @@ import java.sql.Timestamp
  * tests e400 - e499 are for testing OdfParser class
  */
 class ParserTest extends Specification {
-  lazy val omi_subscription_test_file = Source.fromFile("src/test/scala/parsing/omi_subscription_test.xml").getLines.mkString("\n")
-  lazy val omi_read_test_file = Source.fromFile("src/test/scala/parsing/omi_read_test.xml").getLines.mkString("\n")
-  lazy val omi_write_test_file = Source.fromFile("src/test/scala/parsing/omi_write_test.xml").getLines.mkString("\n")
-  lazy val omi_response_test_file = Source.fromFile("src/test/scala/parsing/omi_response_test.xml").getLines.mkString("\n")
-  lazy val odf_test_file = Source.fromFile("src/test/scala/parsing/odf_test.xml").getLines.mkString("\n")
+  lazy val omi_subscription_test_file = Source.fromFile("src/test/resources/parsing/omi_subscription_test.xml").getLines.mkString("\n")
+  lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
+  lazy val omi_write_test_file = Source.fromFile("src/test/resources/parsing/omi_write_test.xml").getLines.mkString("\n")
+  lazy val omi_response_test_file = Source.fromFile("src/test/resources/parsing/omi_response_test.xml").getLines.mkString("\n")
+  lazy val odf_test_file = Source.fromFile("src/test/resources/parsing/odf_test.xml").getLines.mkString("\n")
   val write_response_odf = Seq(
     OdfObject(Path("Objects/SmartHouse"),
       Seq(
