@@ -55,7 +55,7 @@ package main.scala {
     // create the client
     val webClient = new SprayWebClient()(system)
 
-    // send GET request with absolute URI
+    // send GET request with absolute URI (http://121.78.237.160:2100/)
     val futureResponse = webClient.get("http://121.78.237.160:2100/")
     
     // wait for Future to complete
@@ -70,11 +70,12 @@ package main.scala {
           JField(sensor, JString(value)) <- child
         } yield (sensor, value)
         
-        // Print the data
         //println(list)
         
         val odf = generateODF(list)
         
+        
+        // Print the formatted data
         println(new PrettyPrinter(80, 2).format(odf))
         System.exit(1)
       case Failure(error) => println("An error has occured: " + error.getMessage)
@@ -82,6 +83,10 @@ package main.scala {
     
     private def generateODF(list : List[(String, String)]) : scala.xml.Node = {
       
+    	val dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    	val date = new java.util.Date()
+    	val dateTime = dateFormat.format(date).replace(' ', 'T')
+    	
     	// Initialize objects and infoitems
     	val objects = Map[String, Map[String, String]]()
         val infoItems = Map[String, String]()
@@ -132,7 +137,7 @@ package main.scala {
         						for(item <- o._2) {
         							infoItemNode ++=
         								<InfoItem name={item._1}>
-        					    			<value>{item._2}</value>
+        					    			<value dateTime={dateTime}>{item._2}</value>
         					    		</InfoItem>
         					  	}
         					  	infoItemNode
@@ -142,7 +147,7 @@ package main.scala {
         				for(item <- infoItems){
         				  node ++=
         				    <InfoItem name={item._1}>
-        					    <value>{item._2}</value>
+        					    <value dateTime={dateTime}>{item._2}</value>
         					</InfoItem>
         				}
         				
