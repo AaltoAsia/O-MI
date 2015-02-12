@@ -1,5 +1,6 @@
 package database
 import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.jdbc.StaticQuery.interpolation
 import scala.slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
@@ -62,9 +63,31 @@ object SQLite {
           false
         }
       }
-
     }
-
+  def setMany(data:List[(String,String)])
+  {
+    db withSession{ implicit session =>
+    sql"PRAGMA synchronous=OFF"
+    var path = Path("")
+    var len = 0
+    data.foreach {
+        case (p:String, v:String)=>
+           path = Path(p)
+           var pathQuery = latestValues.filter(_.path === path)
+          len = pathQuery.length.run
+          if(len == 0)
+          {
+            addObjects(path)
+          }
+          var buffering = buffered.filter(_.path === path).list.length > 0
+          latestValues += (path,v,new Timestamp(new java.util.Date().getTime))
+          if(len >= historyLength)
+          {
+           removeExcess(path)
+          }
+    }
+    }
+  }
   def setHistoryLength(newLength: Int) {
     historyLength = newLength
   }
@@ -112,6 +135,13 @@ object SQLite {
     }
     
   }
+  /**
+   * Used to clear excess data from database for given path
+   * for example after stopping buffering we want to revert to using
+   * historyLength
+   * @param path path to sensor as Path object
+   * 
+   */
   private def removeExcess(path: Path)(implicit session: Session) =
     {
       val pathQuery = latestValues.filter(_.path === path)
@@ -119,6 +149,10 @@ object SQLite {
       val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
       pathQuery.filter(_.timestamp < oldtime).delete
     }
+  /**
+   * put the path to buffering table
+   * @param path path as Path object
+   */
   def startBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
@@ -130,6 +164,13 @@ object SQLite {
       }
     }
   }
+   /**
+   * removes the path from buffering table
+   * also clear all buffered data
+   * leaves only historyLength amount of data
+   * Should be called only when the buffered data is not needed any more
+   * @param path path as Path object
+   */
   def stopBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
@@ -230,6 +271,61 @@ object SQLite {
       parent = fullpath
     }
 
+  }
+  /**
+   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
+   * search is targeted between these two times. If only start is given,all values from start time onwards are
+   * targeted. Similiarly if only end is given, values before end time are targeted.
+   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number 
+   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
+   * the end.
+   * All parameters except path are optional, given only path returns all values in DB for that path
+   * 
+   * @param path path as Path object
+   * @param start optional start Timestamp
+   * @param start optional end Timestamp
+   * @param fromStart number of values to be returned from start
+   * @param fromEnd number of values to be returned from end
+   * 
+   * @param return Array of DBSensors
+   */
+  
+  def getNBetween(path:Path,start:Option[Timestamp],end:Option[Timestamp],fromStart:Option[Int],fromEnd:Option[Int]):Array[DBSensor]={
+    var result = Array[DBSensor]()
+    db withSession { implicit session =>
+    var query = latestValues.filter(_.path===path)
+    if(start != None)
+    {
+      query = query.filter(_.timestamp >= start.get)
+    }
+    if(end != None)
+    {
+      query = query.filter(_.timestamp <= end.get)
+    }
+    if(fromStart != None && fromEnd != None)
+    {
+      //does not compute
+      //can't have query from two different parts in one go
+    }
+    else if(fromStart != None)
+    {
+      var amount = Math.max(0,Math.min(query.length.run,fromStart.get))
+      query = query.take(amount)
+    }
+    else if(fromEnd != None)
+    {
+      var amount = Math.max(0,Math.min(query.length.run,fromEnd.get))
+      query = query.drop(query.length.run - amount)
+    }
+    result = Array.ofDim[DBSensor](query.length.run)
+    var index = 0
+    query foreach {
+        case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
+          result(index) = new DBSensor(dbpath, dbvalue, dbtime)
+          index += 1
+      }
+    result
+    }
   }
   /**
    * returns n latest values from sensor at given path as Array[DBSensor]
@@ -461,7 +557,7 @@ sealed abstract class DBItem(val path: Path)
  * @param time time stamp indicating when sensor data was read using java.sql.Timestamp
  *
  */
-case class DBSensor(pathto: Path, var value: String, var time: java.sql.Timestamp) extends DBItem(pathto)
+case class DBSensor(pathto: Path, var value: String, var time:Timestamp) extends DBItem(pathto)
 
 /**
  * case class DBObject for object hierarchy
