@@ -12,9 +12,10 @@ body {
 #objectContainer{
 	border-width: 5px;
 	border-style: groove;
-	margin-top: 15px;
-	margin-bottom: 15px;
+	
+	width: 90%;
 	padding-top: 15px;
+	margin: 30px auto;
 	display: inline-block;
 }
 

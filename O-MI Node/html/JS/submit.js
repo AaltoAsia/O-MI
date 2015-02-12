@@ -46,7 +46,7 @@ function ajaxGet(indent, url, listId){
 			displayObjects(data, indent, url, listId);
 		},
 		error: function(a, b, c){
-			console.log("Error accessing data discovery");
+			alert("Error accessing data discovery");
 		}
     });
 }
@@ -55,7 +55,7 @@ function ajaxGet(indent, url, listId){
 * @param {XML Object} the received XML data
 */
 function displayObjects(data, indent, url, listId) {
-	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
+	//console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
 	// Basic objects
 	if(indent === 0){
