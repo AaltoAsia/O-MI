@@ -5,6 +5,7 @@ import akka.pattern.ask
 import spray.can.Http
 import spray.http._
 import HttpMethods._
+import scala.concurrent._
 import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.pattern.ask
@@ -44,7 +45,15 @@ package main.scala {
    * The main program for getting SensorData
    */
   object SensorData {
-    def queueSensors() = {
+    var loading = false
+    
+    def queueSensors() : Unit = {
+      // Set loading to true, 
+      loading = true
+      
+      val uri = "http://121.78.237.160:2100/"
+      println("Queuing for new sensor data from: " + uri)
+      
       import scala.concurrent.ExecutionContext.Implicits.global
       // bring the actor system in scope
       implicit val system = ActorSystem()
@@ -55,7 +64,7 @@ package main.scala {
 
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
-        (IO(Http) ? HttpRequest(GET, Uri("http://121.78.237.160:2100/"))).mapTo[HttpResponse]
+        (IO(Http) ? HttpRequest(GET, Uri(uri))).mapTo[HttpResponse]
 
       // wait for Future to complete
       futureResponse onComplete {
@@ -72,13 +81,14 @@ package main.scala {
           addToDatabase(list)
           
           println("Sensors Added to Database!")
-          // Print the formatted data
-          //val formattedXML = new PrettyPrinter(80, 2).format(odf)
-          //println(formattedXML);
-          //system.shutdown()
           
-        //System.exit(1) // Exit needed?
-        case Failure(error) => println("An error has occured: " + error.getMessage)
+          // Schedule for new future in 5 minutes
+          //TEST: 1 minute
+          akka.pattern.after(300 seconds, using = system.scheduler)(Future { queueSensors() })
+          loading = false
+          
+        case Failure(error) =>
+          println("An error has occured: " + error.getMessage)
       }
     }
 
@@ -93,6 +103,7 @@ package main.scala {
       val date = new java.util.Date()
       var i = 0
       
+      // InfoItems filtered out
       SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item =>{
     	val sensor: String = item._1
         val value: String = item._2 // Currently as string, convert to double?
@@ -106,7 +117,6 @@ package main.scala {
 
       	("Objects/" + objectId + "/" + infoItemName, value)
       }))
-      
       
       /*
       // Iterate over the list to get objects and infoitems
@@ -128,7 +138,7 @@ package main.scala {
         }
       } */
     }
-    
+    /*
     private def addSensor(sensor : DBSensor) : Unit = {
       try {
        database.SQLite.set(sensor)
@@ -138,6 +148,6 @@ package main.scala {
       	  Thread.sleep(100)
           addSensor(sensor)
       }
-    }
+    } */
   }
 } 
