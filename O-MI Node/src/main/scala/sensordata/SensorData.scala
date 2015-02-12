@@ -44,7 +44,7 @@ package main.scala {
    * The main program for getting SensorData
    */
   object SensorData {
-    def run() = {
+    def queueSensors() = {
       import scala.concurrent.ExecutionContext.Implicits.global
       // bring the actor system in scope
       implicit val system = ActorSystem()
@@ -70,6 +70,7 @@ package main.scala {
           } yield (sensor, value)
 
           addToDatabase(list)
+          
           println("Sensors Added to Database!")
           // Print the formatted data
           //val formattedXML = new PrettyPrinter(80, 2).format(odf)
@@ -92,6 +93,22 @@ package main.scala {
       val date = new java.util.Date()
       var i = 0
       
+      SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item =>{
+    	val sensor: String = item._1
+        val value: String = item._2 // Currently as string, convert to double?
+
+        // Split name from underlines
+        val split = sensor.split('_')
+    	  
+      // Object id
+        val objectId: String = split(0) + "_" + split(1) + "_" + split.last
+      	val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
+
+      	("Objects/" + objectId + "/" + infoItemName, value)
+      }))
+      
+      
+      /*
       // Iterate over the list to get objects and infoitems
       for (item <- list) {
         val sensor: String = item._1
@@ -109,7 +126,7 @@ package main.scala {
           val sensor = DBSensor(Path("Objects/" + objectId + "/" + infoItemName), value, new java.sql.Timestamp(date.getTime()))
     	  addSensor(sensor)
         }
-      }
+      } */
     }
     
     private def addSensor(sensor : DBSensor) : Unit = {

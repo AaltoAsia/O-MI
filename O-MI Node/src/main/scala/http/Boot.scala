@@ -15,7 +15,7 @@ import responses._
 import parsing._
 import database.SQLite
 import database._
-
+import sensordata.main.scala.SensorData
 
 
 // Initialize functionality seperated for testing purposes
@@ -44,10 +44,9 @@ object Starter {
 
     for ((path, value) <- testData){
         SQLite.set(new DBSensor(path, value, testTime))
-    } 
-    SensorData.run()
-    */
-
+    }  */
+    SensorData.queueSensors()
+    
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(
       parsing.Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))

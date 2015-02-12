@@ -66,7 +66,7 @@ object SQLite {
     }
   def setMany(data:List[(String,String)])
   {
-    db withSession{ implicit session =>
+    db withTransaction{ implicit session =>
     sql"PRAGMA synchronous=OFF"
     var path = Path("")
     var len = 0
