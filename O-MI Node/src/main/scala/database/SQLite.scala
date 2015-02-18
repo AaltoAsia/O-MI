@@ -29,7 +29,7 @@ object SQLite {
 
   //initializing database
   private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
-  db withSession { implicit session =>
+  db withTransaction { implicit session =>
     if (init) {
       initialize()
     }
@@ -45,7 +45,7 @@ object SQLite {
   def set(data: DBSensor) =
     {
       var count = 0
-      db withSession { implicit session =>
+      db withTransaction { implicit session =>
         //search database for sensor's path
         val pathQuery = latestValues.filter(_.path === data.path)
         var buffering = buffered.filter(_.path === data.path).list.length > 0
@@ -66,8 +66,7 @@ object SQLite {
     }
   def setMany(data:List[(String,String)])
   {
-    db withSession{ implicit session =>
-    sql"PRAGMA synchronous=OFF"
+    db withTransaction{ implicit session =>
     var path = Path("")
     var len = 0
     data.foreach {
@@ -102,7 +101,7 @@ object SQLite {
 
     db withSession { implicit session =>
       //search database for given path
-      var deleted = false;
+      var deleted = false
       val pathQuery = latestValues.filter(_.path === path)
 
       //if found rows with given path remove else path doesn't exist and can't be removed
@@ -135,6 +134,23 @@ object SQLite {
     }
     
   }
+  def getSubData(id:Int):Array[DBSensor]=
+  {
+    db withTransaction { implicit session =>
+    var result = Buffer[DBSensor]()
+    var subQuery = subs.filter(_.ID===id)
+      if(subQuery.length.run > 0)
+      {
+        var sub = subQuery.first
+        var paths = sub._2.split(";")
+        paths.foreach{
+          p => 
+            result ++= getNBetween(Path(p),Some(sub._3),None,None,None)
+        }
+      }
+    result.toArray
+    }
+  }
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
@@ -145,16 +161,19 @@ object SQLite {
   private def removeExcess(path: Path)(implicit session: Session) =
     {
       val pathQuery = latestValues.filter(_.path === path)
-      var count = pathQuery.list.length
+      var count = pathQuery.length.run
+      if(count > historyLength)
+      {
       val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
       pathQuery.filter(_.timestamp < oldtime).delete
+      }
     }
   /**
    * put the path to buffering table
    * @param path path as Path object
    */
   def startBuffering(path: Path) {
-    db withSession { implicit session =>
+    db withTransaction { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
       if (pathQuery.list.length == 0) {
         buffered += (path)
@@ -168,13 +187,13 @@ object SQLite {
    * removes the path from buffering table
    * also clear all buffered data
    * leaves only historyLength amount of data
-   * Should be called only when the buffered data is not needed any more
+   * Should be called only when the buffered data is not needed anymore
    * @param path path as Path object
    */
   def stopBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
-      if (pathQuery.list.length > 0) {
+      if (pathQuery.length.run > 0) {
         pathQuery.delete
         removeExcess(path)
         true
@@ -199,7 +218,7 @@ object SQLite {
     {
       var result: Option[DBItem] = None
 
-      db withSession { implicit session =>
+      db withTransaction { implicit session =>
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
 
@@ -236,31 +255,16 @@ object SQLite {
    * @param path path to sensor whose values are of interest
    * @param start
    */
-
-  def getInterval(path: Path, start: java.sql.Timestamp, end: java.sql.Timestamp): Array[DBSensor] = {
-    var result = Buffer[DBSensor]()
-    db withSession { implicit session =>
-      val pathQuery = latestValues.filter(_.path === path)
-      //if path is found from latest values it must be Sensor otherwise check if it is an object
-      var count = pathQuery.list.length
-      if (count > 0) {
-        val sorted = pathQuery.sortBy(_.timestamp)
-        pathQuery foreach {
-          case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
-            if (dbtime.after(start) && dbtime.before(end))
-              result += new DBSensor(dbpath, dbvalue, dbtime)
-        }
-      }
-    }
-    result.toArray
-  }
+  @deprecated("Should use getNBetween(path Some(start),Some(end),None,None)","11/02/2015")
+  def getInterval(path: Path, start: java.sql.Timestamp, end: java.sql.Timestamp): Array[DBSensor] =
+    getNBetween(path, Some(start),Some(end),None,None)
+    
 
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    *
    */
-
   private def addObjects(path: Path)(implicit session: Session) {
     val parentsAndPath: Seq[Path] = path.tail.scanLeft(Path(path.head))(Path(_) / _)
     var parent = Path("")
@@ -292,7 +296,7 @@ object SQLite {
   
   def getNBetween(path:Path,start:Option[Timestamp],end:Option[Timestamp],fromStart:Option[Int],fromEnd:Option[Int]):Array[DBSensor]={
     var result = Array[DBSensor]()
-    db withSession { implicit session =>
+    db withTransaction { implicit session =>
     var query = latestValues.filter(_.path===path)
     if(start != None)
     {
@@ -334,8 +338,8 @@ object SQLite {
    * @param n number of values to return
    * @param return returns Array[DBSensor]
    */
-
-  def getNLatest(path: Path, n: Int) = getN(path, n, true): Array[DBSensor]
+@deprecated("Should use getNBetween(path None,None,None,Some(n))","11/02/2015")
+  def getNLatest(path: Path, n: Int) = getNBetween(path, None,None,None,Some(n))
 
   /**
    * returns n oldest values from sensor at given path as Array[DBSensor]
@@ -344,43 +348,15 @@ object SQLite {
    * @param n number of values to return
    * @param return returns Array[DBSensor]
    */
-
-  def getNOldest(path: Path, n: Int) = getN(path, n, false): Array[DBSensor]
-  /**
-   * returns n latest or oldest values from sensor at given path as Array[DBSensor]
-   * returns all stored values if n is greater than number of values stored
-   * @param path path to sensor
-   * @param n number of values to return
-   * @param latest boolean return latest? if false returns oldest
-   * @param return returns Array[DBSensor]
-   */
-
-  private def getN(path: Path, n: Int, latest: Boolean): Array[DBSensor] =
-    {
-      var result = Buffer[DBSensor]()
-      db withSession { implicit session =>
-        val pathQuery = latestValues.filter(_.path === path)
-        var count = pathQuery.list.length
-        if (count > 0) {
-          val sorted = pathQuery.sortBy(_.timestamp)
-          val limited =
-            if (latest) sorted.drop(math.max(count - n, 0))
-            else sorted.take(math.min(count, n))
-          limited foreach {
-            case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
-              result += new DBSensor(dbpath, dbvalue, dbtime)
-          }
-        }
-      }
-      result.toArray
-    }
+@deprecated("Should use getNBetween(path None,None,Some(n),None)","11/02/2015")
+  def getNOldest(path: Path, n: Int) = getNBetween(path, None,None,Some(n),None)
 
   /**
    * Empties all the data from the database
    *
    */
   def clearDB() = {
-    db withSession { implicit session =>
+    db withTransaction { implicit session =>
       latestValues.delete
       objects.delete
     }
@@ -442,7 +418,7 @@ object SQLite {
       //gets time when subscibe was added,
       // adds ttl amount of seconds to it,
       //and compares to current time
-      db withSession { implicit session =>
+      db withTransaction { implicit session =>
         val sub = subs.filter(_.ID === id).first
         if (sub._4 > 0) {
           var cal = java.util.Calendar.getInstance()
@@ -462,7 +438,17 @@ object SQLite {
    */
   def removeSub(id: Int) {
     db withSession { implicit session =>
-      subs.filter(_.ID === id).delete
+      var toBeDeleted = subs.filter(_.ID === id)
+      if(toBeDeleted.length.run > 0)
+      {
+        if(toBeDeleted.first._6 == None)
+        {
+          toBeDeleted.first._2.split(";").foreach{p =>
+            stopBuffering(Path(p))
+          }
+        }
+        toBeDeleted.delete
+      }
     }
   }
   /**
@@ -475,15 +461,14 @@ object SQLite {
   def getSub(id: Int): Option[DBSub] =
     {
       var res: Option[DBSub] = None
-      db withSession { implicit session =>
+      db withTransaction { implicit session =>
         val query = subs.filter(_.ID === id)
         if (query.list.length > 0) {
           //creates DBSub object based on saved information
           var head = query.first
-          var sub = new DBSub(Array(), head._4, head._5, head._6)
+          var sub = new DBSub(Array(), head._4, head._5, head._6,Some(head._3))
           sub.paths = head._2.split(";").map(Path(_))
           sub.id = head._1
-          sub.startTime = head._3
           res = Some(sub)
         }
 
@@ -502,12 +487,11 @@ object SQLite {
    */
   def saveSub(sub: DBSub): Int =
     {
-      db withSession { implicit session =>
+      db withTransaction { implicit session =>
         val id = getNextId()
         //these two assignments are just to make things look less messy
         sub.id = id
-        sub.startTime = new java.sql.Timestamp(new java.util.Date().getTime)
-        subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
+        subs += (sub.id, sub.paths.mkString(";"), sub.startTime.get, sub.ttl, sub.interval, sub.callback)
         //returns the id for reference
         id
       }
@@ -536,10 +520,19 @@ import SQLite._
  * @param interval to store the interval value to DB
  * @param callback optional callback address. use None if no address is needed
  */
-class DBSub(var paths: Array[Path], val ttl: Int, val interval: Int, val callback: Option[String]) {
-  //these are not needed when saving, but they are set in getSub
+class DBSub(var paths: Array[Path], val ttl: Int, val interval: Int, val callback: Option[String], var startTime:Option[Timestamp]) {
+  //this is assigned later when subscribtion is added to db
   var id: Int = 0
-  var startTime: java.sql.Timestamp = null
+  if(startTime == None)
+  {
+    startTime = Some(new Timestamp(new java.util.Date().getTime))
+  }
+  if(callback == None)
+  {
+    paths.foreach{
+    startBuffering(_)
+    }
+  }
 }
 
 /**
