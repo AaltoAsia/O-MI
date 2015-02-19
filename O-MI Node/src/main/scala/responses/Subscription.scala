@@ -10,6 +10,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
 import java.sql.Timestamp
+import java.util.Date
 
 object OMISubscription {
 	def setSubscription(subscription: Subscription): (String, xml.Node) = {	//returns requestID and the response
@@ -29,7 +30,7 @@ object OMISubscription {
 							val callback = subscription.callback
 
 							requestIdInt = SQLite.saveSub(
-								new DBSub(paths.toArray, ttlInt, interval, callback)
+								new DBSub(paths.toArray, ttlInt, interval, callback, Some(new Timestamp( new Date().getTime())))
 								)
 
 							requestIdInt.toString
