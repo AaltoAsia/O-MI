@@ -145,30 +145,6 @@ object Read {
     }
     node
   }
-
-  /** helper function for generating O-DF's InfoItem nodes
-    * @param nodes to generate
-    * @return generated xml as String
-    */
-  def odfInfoItemGeneration(infoItems: List[ OdfInfoItem]) : xml.NodeSeq = {
-    var node : xml.NodeSeq = xml.NodeSeq.Empty 
-    for(infoItem <- infoItems){
-      node ++= <InfoItem name={infoItem.path.last}>
-        {
-            val item = SQLite.get(infoItem.path)
-            item match{
-              case Some( sensor : database.DBSensor) =>
-              <value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
-              case Some( obj : database.DBObject) =>
-                <Error> Wrong type of request: this item is an InfoItem, not an Object </Error>
-              case _ => <Error> Item not found in the database </Error>
-            }
-        }
-      </InfoItem>
-    }
-    node
-  }
-
   /**
    * helper function for generating O-DF's InfoItem nodes
    * @param nodes to generate
@@ -177,8 +153,6 @@ object Read {
    * @return generated xml as String
    */
   def odfInfoItemGeneration(infoItems: List[OdfInfoItem], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int] ): xml.NodeSeq = {
-
-    try {
       var node: xml.NodeSeq = xml.NodeSeq.Empty
       for (infoItem <- infoItems) {
         node ++= 
@@ -199,14 +173,6 @@ object Read {
         </InfoItem>
       }
       node
-    } catch {
-      case e: IllegalArgumentException =>
-        //println("invalid begin and/or end parameter; ignoring")
-        odfInfoItemGeneration(infoItems)
-    }
   }
 }
 
-/*        {
-          if(infoItem.metadata != "") <MetaData>{infoItem.metadata}</MetaData>
-        }*/
