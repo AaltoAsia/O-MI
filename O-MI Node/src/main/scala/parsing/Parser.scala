@@ -90,7 +90,7 @@ abstract trait Parser[Result] {
     else
       return Right(childs)
   }
-
+  
   /**
    * function for checking does given string confort O-DF schema
    * @param String to check
