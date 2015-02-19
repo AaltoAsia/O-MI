@@ -21,13 +21,13 @@ class ReadTest extends Specification with Before {
     val testtime = new java.sql.Timestamp(date.getTime)
     SQLite.clearDB()
     val testData = Map(
-        "Objects/ReadTest/Refrigerator123/PowerConsumption" -> "0.123",
-        "Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning" -> "door closed",
-        "Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault" -> "Nothing wrong with probe",
-        "Objects/ReadTest/RoomSensors1/Temperature/Inside" -> "21.2",
-        "Objects/ReadTest/RoomSensors1/CarbonDioxide" -> "too much",
-        "Objects/ReadTest/RoomSensors1/Temperature/Outside" -> "12.2",
-        "Objects/ReadTest/SmartCar/Fuel" -> "30"
+        Path("Objects/ReadTest/Refrigerator123/PowerConsumption") -> "0.123",
+        Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",
+        Path("Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault") -> "Nothing wrong with probe",
+        Path("Objects/ReadTest/RoomSensors1/Temperature/Inside") -> "21.2",
+        Path("Objects/ReadTest/RoomSensors1/CarbonDioxide") -> "too much",
+        Path("Objects/ReadTest/RoomSensors1/Temperature/Outside") -> "12.2",
+        Path("Objects/ReadTest/SmartCar/Fuel") -> "30"
     )
 
     val intervaltestdata = List(
@@ -45,14 +45,14 @@ class ReadTest extends Specification with Before {
 
     var count = 0
 
-    SQLite.remove("Objects/ReadTest/SmartOven/Temperature")
+    SQLite.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
     for (value <- intervaltestdata){
-        SQLite.set(new DBSensor("Objects/ReadTest/SmartOven/Temperature", value, new java.sql.Timestamp(date.getTime + count)))
+        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
         count = count + 1000
     }
   }
 //  def after = {
-//    SQLite.remove("Objects/ReadTest")
+//    SQLite.remove(Path("Objects/ReadTest"))
 //  }
 
   "Read response" should {
@@ -85,13 +85,13 @@ class ReadTest extends Specification with Before {
     "When given path ODFREST" should {
 
     "Give just the value when path ends with /value" in {
-        val RESTXML = Read.generateODFREST("Objects/ReadTest/Refrigerator123/PowerConsumption/value")
+        val RESTXML = Read.generateODFREST(Path("Objects/ReadTest/Refrigerator123/PowerConsumption/value"))
 
         RESTXML should be equalTo(Some(Left("0.123")))
     }
 
     "Give correct XML when asked with just the path and trailing /" in {
-        val RESTXML = Read.generateODFREST("Objects/ReadTest/RoomSensors1/")
+        val RESTXML = Read.generateODFREST(Path("Objects/ReadTest/RoomSensors1/"))
 
         val rightXML = <Object><id>RoomSensors1</id><InfoItem name="CarbonDioxide"/><Object>
                   <id>Temperature</id>
@@ -101,7 +101,7 @@ class ReadTest extends Specification with Before {
     }
 
     "Return right xml when asked for Objects" in {
-        val RESTXML = Read.generateODFREST("Objects/ReadTest")
+        val RESTXML = Read.generateODFREST(Path("Objects/ReadTest"))
 
         val rightXML = <Object><id>ReadTest</id><Object><id>Refrigerator123</id></Object><Object><id>RoomSensors1</id></Object><Object><id>SmartCar</id></Object>
                         <Object><id>SmartOven</id></Object></Object>
