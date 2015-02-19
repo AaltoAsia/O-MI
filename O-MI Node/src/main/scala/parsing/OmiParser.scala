@@ -141,7 +141,7 @@ object OmiParser extends Parser[ParseMsg] {
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestId", true, true)
+          "requestId" -> getChild(node, "requestID", true, true)
         )
 
         if (subnodes("msg").isRight){
@@ -240,33 +240,31 @@ object OmiParser extends Parser[ParseMsg] {
 
       case "result" => {
         val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat"),
-          "callback" -> getParameter(node, "callback", true))
+          "msgformat" -> getParameter(node, "msgformat")
+        )
         val subnodes = Map(
           "return" -> getChild(node, "return",tolerateEmpty = true),
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestId", true, true))
+          "requestId" -> getChild(node, "requestId", true, true)
+        )
 
-        if (subnodes("msg").isRight){
+        if (subnodes("msg").isRight) {
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true)
         }
-        if (subnodes("return").isRight){
+        
+        if (subnodes("return").isRight) {
           parameters += "returnCode" -> getParameter(subnodes("return").right.get.head, "returnCode", true)
         }
+        
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
 
-        val callback = parameters("callback").right.get match {
-          case "" => None
-          case str => Some(str)
-        }
         
         if (subnodes("msg").right.get.isEmpty)
           return Seq(Result(subnodes("return").right.get.text,
             parameters("returnCode").right.get,
             None,
-            callback,
             subnodes("requestId").right.get.map {
               id => id.text
             }))
@@ -280,7 +278,6 @@ object OmiParser extends Parser[ParseMsg] {
             return Seq(Result(subnodes("return").right.get.text,
               parameters("returnCode").right.get,
               Some(right.map(_.right.get)),
-              callback,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))
