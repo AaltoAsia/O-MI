@@ -2,6 +2,7 @@ package database
 
 import org.specs2.mutable._
 import database._
+import java.sql.Timestamp
 
 import parsing._
 import parsing.Types._
@@ -17,10 +18,10 @@ object SQLiteTest extends Specification {
     var data4 = DBSensor(Path("path/to/sensor2/hum"),"60%",new java.sql.Timestamp(4000))
     var data5 = DBSensor(Path("path/to/sensor1/temp"),"21.6C",new java.sql.Timestamp(5000))
     var data6 = DBSensor(Path("path/to/sensor1/temp"),"21.7C",new java.sql.Timestamp(6000))
-    var id1 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,1,None))
-    var id2 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,2,Some("callbackaddress")))
-    var id3 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2"),Path("path/to/sensor3"),Path("path/to/another/sensor2")),100,2,None))
-
+    var id1 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,1,None,None))
+    var id2 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2")),0,2,Some("callbackaddress"),None))
+    var id3 = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1"),Path("path/to/sensor2"),Path("path/to/sensor3"),Path("path/to/another/sensor2")),100,2,None,None))
+    
     "return true when adding new data" in {
       database.SQLite.set(data1) shouldEqual true
     }
@@ -170,6 +171,42 @@ object SQLiteTest extends Specification {
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(26000)))
       database.SQLite.getNLatest(Path("path/to/sensor3/temp"),21).length shouldEqual 21
     }
+    "return values between two timestamps" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(6000)), Some(new Timestamp(10000)), None, None).length shouldEqual 5
+    }
+    "return values from start" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(20000)), None, None, None).length shouldEqual 7
+    }
+    "return values before end" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, Some(new Timestamp(10000)), None, None).length shouldEqual 5
+    }
+     "return 10 values before end" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, Some(new Timestamp(26000)), None, Some(10)).length shouldEqual 10
+    }
+     "return 10 values after start" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(6000)),None, Some(10), None).length shouldEqual 10
+    }
+     "return values between two timestamps" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), Some(new Timestamp(6000)), Some(new Timestamp(10000)), Some(10), None).length shouldEqual 5
+    }
+     "return all values if no options given" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, None, None, None).length shouldEqual 21
+    }
+     "return all values if both fromStart and fromEnd is given" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, None, Some(10), Some(5)).length shouldEqual 21
+    }
+      "return empty array if Path doesnt exist" in
+    {
+      database.SQLite.getNBetween(Path("path/to/sensor/doesntexist"), None, None,None, None).length shouldEqual 0
+    }
     "be able to stop buffering and revert to using historyLenght" in
     {
       database.SQLite.stopBuffering(Path("path/to/sensor3/temp"))
@@ -213,7 +250,33 @@ object SQLiteTest extends Specification {
       database.SQLite.getSub(id2) shouldEqual None
       database.SQLite.getSub(id3) shouldEqual None
     }
-   
-    
+   "return rigtht values in getsubdata" in
+   {
+       var id = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1/temp"),Path("path/to/sensor2/temp"),Path("path/to/sensor3/temp")),0,1,None,Some(new Timestamp(5000))))
+       
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(6000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(7000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(8000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(9000)))
+      
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(6000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(7000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(8000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(9000)))
+      
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(6000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(7000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(8000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(9000)))
+      
+      var res = database.SQLite.getSubData(id).length
+      database.SQLite.removeSub(id)
+      database.SQLite.remove(Path("path/to/sensor1/temp"))
+      database.SQLite.remove(Path("path/to/sensor2/temp"))
+      database.SQLite.remove(Path("path/to/sensor3/temp"))
+      res shouldEqual 12
+      
+   }
+
   }
 }
