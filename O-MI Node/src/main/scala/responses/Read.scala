@@ -1,6 +1,8 @@
 package responses
 
-import parsing._
+
+import parsing.Types._
+import parsing.Types.Path._
 import database._
 import scala.xml
 import scala.collection.mutable.Buffer
@@ -8,8 +10,6 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
 import java.sql.Timestamp
-
-import parsing.Path._
 
 object Read {
 
@@ -41,7 +41,7 @@ object Read {
         else
           return Some(Right(
             <InfoItem name={ sensor.path.last }>
-              <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
+              <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>
             </InfoItem>))
 
       case Some(sensormap: DBObject) =>
@@ -102,7 +102,7 @@ object Read {
    */
   def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
     <Objects>
-      { odfObjectGeneration(read.sensors.toList, read.begin, read.end) }
+      { odfObjectGeneration(read.sensors.toList, read.begin, read.end, read.newest, read.oldest) }
     </Objects>
   }
 
@@ -111,7 +111,7 @@ object Read {
    * @param nodes to generate
    * @return generated xml as String
    */
-  def odfObjectGeneration(objects: List[parsing.OdfObject], begin: String, end: String): xml.NodeSeq = {
+  def odfObjectGeneration(objects: List[OdfObject], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int] ): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
     for (obj <- objects) {
       node ++=
@@ -119,8 +119,8 @@ object Read {
         <id>{ obj.path.last }</id>
         {
           if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-            odfInfoItemGeneration(obj.sensors.toList, begin, end) ++ 
-            odfObjectGeneration(obj.childs.toList, begin, end)
+            odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
+            odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
           } else {
             //TODO: sqlite get begin to end
             SQLite.get(obj.path) match {
@@ -150,7 +150,7 @@ object Read {
     * @param nodes to generate
     * @return generated xml as String
     */
-  def odfInfoItemGeneration(infoItems: List[ parsing.OdfInfoItem]) : xml.NodeSeq = {
+  def odfInfoItemGeneration(infoItems: List[ OdfInfoItem]) : xml.NodeSeq = {
     var node : xml.NodeSeq = xml.NodeSeq.Empty 
     for(infoItem <- infoItems){
       node ++= <InfoItem name={infoItem.path.last}>
@@ -176,31 +176,27 @@ object Read {
    * @param the end time of the time interval from where to get sensors
    * @return generated xml as String
    */
-  def odfInfoItemGeneration(infoItems: List[parsing.OdfInfoItem], begin: String, end: String): xml.NodeSeq = {
+  def odfInfoItemGeneration(infoItems: List[OdfInfoItem], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int] ): xml.NodeSeq = {
 
     try {
-      var beginTime = Timestamp.valueOf(begin.replace('T', ' '))
-      var endTime = Timestamp.valueOf(end.replace('T', ' '))
-
       var node: xml.NodeSeq = xml.NodeSeq.Empty
       for (infoItem <- infoItems) {
-        node ++= <InfoItem name={ infoItem.path.last }>
-                   {
-                     val items = SQLite.getInterval(infoItem.path, beginTime, endTime)
-                     items match {
-                       case sensors: Array[DBSensor] => {
-                         var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
-                         for (sensor <- sensors) {
-                           intervaldata ++= <value dateTime={ sensor.time.toString }>{ sensor.value }</value>
-                         }
+        node ++= 
+        <InfoItem name={ infoItem.path.last }>
+          {
+            val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
+            if(sensors.nonEmpty){
+                var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
+                for (sensor <- sensors) {
+                  intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                }
 
-                         intervaldata
-                       }
-                       case _ =>
-                         println("Error in interval read")
-                     }
-                   }
-                 </InfoItem>
+                intervaldata
+            }else{
+              <Error> Item not found in the database </Error>
+            }
+          }
+        </InfoItem>
       }
       node
     } catch {

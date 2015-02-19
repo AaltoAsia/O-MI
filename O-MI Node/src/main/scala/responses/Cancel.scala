@@ -1,6 +1,6 @@
 package responses
 
-import parsing._
+import parsing.Types._
 import database._
 import scala.xml
 import scala.collection.mutable.Buffer

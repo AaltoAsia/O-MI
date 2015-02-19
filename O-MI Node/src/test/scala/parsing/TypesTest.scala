@@ -2,6 +2,8 @@ package parsing
 
 import org.specs2._
 import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 
 /* Test class for testing ODF Types */
 class TypesTest extends Specification {
@@ -39,19 +41,19 @@ class TypesTest extends Specification {
   }
 
   def e2 = {
-    new OneTimeRead("", Seq(), "", "", "", "", "", Seq()).isInstanceOf[ParseMsg]
+    new OneTimeRead("", Seq()).isInstanceOf[ParseMsg]
   }
 
   def e3 = {
-    new Write("", Seq(), "", Seq()).isInstanceOf[ParseMsg]
+    new Write("", Seq()).isInstanceOf[ParseMsg]
   }
 
   def e4 = {
-    new Subscription("", "", Seq(), "", "", "", "", "", Seq()).isInstanceOf[ParseMsg]
+    new Subscription("", "", Seq()).isInstanceOf[ParseMsg]
   }
 
   def e5 = {
-    new Result("", "", None, "", Seq()).isInstanceOf[ParseMsg]
+    new Result("", "", None).isInstanceOf[ParseMsg]
   }
 
   def e6 = {
@@ -63,7 +65,7 @@ class TypesTest extends Specification {
   }
   
   def e11 = {
-    !new OdfObject(Seq(), Seq(), Seq(), "").isInstanceOf[ParseMsg]
+    !new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[ParseMsg]
   }
   
   def e100 = {
@@ -71,7 +73,7 @@ class TypesTest extends Specification {
   }
   
   def e101 = {
-    new OdfObject(Seq(), Seq(), Seq(), "").isInstanceOf[OdfNode]
+    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OdfNode]
   }
   
   def e200 = {

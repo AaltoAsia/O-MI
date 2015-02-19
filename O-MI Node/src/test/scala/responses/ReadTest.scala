@@ -4,6 +4,8 @@ import org.specs2.mutable._
 import scala.io.Source
 import responses._
 import parsing._
+import parsing.Types._
+import parsing.Types.Path._
 import database._
 import parsing.OdfParser._
 import java.util.Date;
@@ -57,27 +59,45 @@ class ReadTest extends Specification with Before {
 
   "Read response" should {
     "Give correct XML when asked for multiple values" in {
-        lazy val simpletestfile = Source.fromFile("src/test/scala/responses/testxmlfiles/SimpleXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/correctXMLfirsttest.xml")
+        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
         
-        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))    
+        resultXML should be equalTo(trim(correctxmlreturn))
+        OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
 
     "Give a history of values when begin and end is used" in {
-        lazy val intervaltestfile = Source.fromFile("src/test/scala/responses/testxmlfiles/IntervalXMLTest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/CorrectIntervalXML.xml")
+        lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/IntervalXMLTest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        
+        resultXML should be equalTo(trim(correctxmlreturn))
+        OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+    }
 
-        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
+    "Give plain object when asked for" in {
+        lazy val plainxml = Source.fromFile("src/test/resources/responses/PlainRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/PlainRightRequest.xml")
+
+        val parserlist = OmiParser.parse(plainxml)
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+
+        resultXML should be equalTo(trim(correctxmlreturn))
+        OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
-        lazy val erroneousxml = Source.fromFile("src/test/scala/responses/testxmlfiles/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/scala/responses/testxmlfiles/WrongRequestReturn.xml")
+        lazy val erroneousxml = Source.fromFile("src/test/resources/responses/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
-
-        trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead])) should be equalTo(trim(correctxmlreturn))
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        
+        //returnCode should not be 200
+        resultXML should be equalTo(trim(correctxmlreturn))
+        //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
 
 }
@@ -90,14 +110,32 @@ class ReadTest extends Specification with Before {
         RESTXML should be equalTo(Some(Left("0.123")))
     }
 
-    "Give correct XML when asked with just the path and trailing /" in {
+
+    "Give correct XML when asked with an object path and trailing /" in {
         val RESTXML = Read.generateODFREST(Path("Objects/ReadTest/RoomSensors1/"))
+
 
         val rightXML = <Object><id>RoomSensors1</id><InfoItem name="CarbonDioxide"/><Object>
                   <id>Temperature</id>
                 </Object></Object>
 
         trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
+    }
+
+    "Give correct XML when asked with an InfoItem path and trailing /" in {
+        val RESTXML = Read.generateODFREST(Path("Objects/ReadTest/RoomSensors1/CarbonDioxide"))
+
+        val rightXML = <InfoItem name="CarbonDioxide">
+                        <value dateTime="1970-01-17T12:56:15.723">too much</value>
+                        </InfoItem>
+
+        trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
+    }
+
+    "Return None when asked for nonexisting object" in {
+        val RESTXML = Read.generateODFREST(Path("Objects/ReadTest/RoomSensors1/Wrong"))
+
+        RESTXML should be equalTo(None)
     }
 
     "Return right xml when asked for Objects" in {

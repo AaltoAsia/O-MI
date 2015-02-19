@@ -1,4 +1,5 @@
 package parsing
+import parsing.Types._
 
 import java.sql.Timestamp
 import scala.xml._
@@ -9,6 +10,8 @@ import java.io.File
 import java.io.StringReader
 import java.io.StringBufferInputStream
 import java.io.IOException
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
 
 //Schema validation
 import javax.xml.XMLConstants
@@ -19,8 +22,11 @@ import javax.xml.validation.Validator
 
 import org.xml.sax.SAXException
 /** Parsing object for parsing messages with O-MI protocol*/
-object OmiParser {
+object OmiParser extends Parser[ParseMsg] {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
+  private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
+
+  override def schemaPath : String = "./src/main/resources/omi.xsd"
 
   /**
    * This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
@@ -42,7 +48,7 @@ object OmiParser {
    */
   def parse(xml_msg: String): Seq[ParseMsg] = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    val schema_err = validateOmiSchema(xml_msg)
+    val schema_err = schemaValitation(xml_msg)
     if (schema_err.nonEmpty)
       return schema_err
 
@@ -63,19 +69,11 @@ object OmiParser {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val root = xml_msg.head
 
-    if (root.prefix != "omi")
-      return Seq(new ParseError("Incorrect prefix"))
-    if (root.label != "omiEnvelope")
-      return Seq(new ParseError("XML's root isn't omi:omiEnvelope"))
-
     val request = root.child.collect {
       case el: Elem => el
-    }.headOption.getOrElse(
-      return Seq(new ParseError("omi:omiEnvelope doesn't contain request")))
+    }.head
 
     val ttl = (root \ "@ttl").text
-    if (ttl.isEmpty())
-      return Seq(new ParseError("No ttl present in O-MI Envelope"))
 
     parseNode(request, ttl)
     
@@ -90,8 +88,6 @@ object OmiParser {
    *
    */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
-    if (node.prefix != "omi")
-      return Seq(new ParseError("Incorrect prefix"))
     node.label match {
       /*
         Write request 
@@ -115,10 +111,14 @@ object OmiParser {
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
+        val callback = parameters("callback").right.get match {
+          case "" => None
+          case str => Some(str)
+        }
         if (left.isEmpty && !right.isEmpty) {
           Seq(Write(ttl,
             right.map(_.right.get),
-            parameters("callback").right.get,
+            callback,
             subnodes("requestId").right.get.map {
               id => id.text
             }))
@@ -141,10 +141,12 @@ object OmiParser {
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestId", true, true))
+          "requestId" -> getChild(node, "requestID", true, true)
+        )
 
-        if (subnodes("msg").isRight)
+        if (subnodes("msg").isRight){
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
+        }
 
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         
@@ -155,15 +157,36 @@ object OmiParser {
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
+        val begin = parameters("begin").right.get match {
+          case "" => None
+          case str => Some(new Timestamp(dateFormat.parse(str).getTime))
+        }
+        val end = parameters("end").right.get match {
+          case "" => None
+          case str => Some(new Timestamp(dateFormat.parse(str).getTime))
+        }
+        val newest = parameters("newest").right.get match {
+          case "" => None
+          case str => Some(str.toInt)
+        }
+        val oldest = parameters("oldest").right.get match {
+          case "" => None
+          case str => Some(str.toInt)
+        }
+        val callback = parameters("callback").right.get match {
+          case "" => None
+          case str => Some(str)
+        }
+
         if (left.isEmpty && !right.isEmpty) {
           if (parameters("interval").right.get.isEmpty) {
             Seq(OneTimeRead(ttl,
               right.map(_.right.get),
-              parameters("begin").right.get,
-              parameters("end").right.get,
-              parameters("newest").right.get,
-              parameters("oldest").right.get,
-              parameters("callback").right.get,
+              begin,
+              end,
+              newest,
+              oldest,
+              callback,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))
@@ -171,11 +194,11 @@ object OmiParser {
             Seq(Subscription(ttl,
               parameters("interval").right.get,
               right.map(_.right.get),
-              parameters("begin").right.get,
-              parameters("end").right.get,
-              parameters("newest").right.get,
-              parameters("oldest").right.get,
-              parameters("callback").right.get,
+              begin,
+              end,
+              newest,
+              oldest,
+              callback,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))
@@ -217,28 +240,31 @@ object OmiParser {
 
       case "result" => {
         val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat"),
-          "callback" -> getParameter(node, "callback", true))
+          "msgformat" -> getParameter(node, "msgformat")
+        )
         val subnodes = Map(
           "return" -> getChild(node, "return",tolerateEmpty = true),
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestId", true, true))
+          "requestId" -> getChild(node, "requestId", true, true)
+        )
 
-        if (subnodes("msg").isRight)
+        if (subnodes("msg").isRight) {
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true)
-
-        if (subnodes("return").isRight)
+        }
+        
+        if (subnodes("return").isRight) {
           parameters += "returnCode" -> getParameter(subnodes("return").right.get.head, "returnCode", true)
-
+        }
+        
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
 
+        
         if (subnodes("msg").right.get.isEmpty)
           return Seq(Result(subnodes("return").right.get.text,
             parameters("returnCode").right.get,
             None,
-            parameters("callback").right.get,
             subnodes("requestId").right.get.map {
               id => id.text
             }))
@@ -252,7 +278,6 @@ object OmiParser {
             return Seq(Result(subnodes("return").right.get.text,
               parameters("returnCode").right.get,
               Some(right.map(_.right.get)),
-              parameters("callback").right.get,
               subnodes("requestId").right.get.map {
                 id => id.text
               }))
@@ -273,112 +298,7 @@ object OmiParser {
     }
   }
 
-  private def errorsAndOdf(odf: Seq[OdfParser.ParseResult]) = odf.groupBy(_.isLeft)
-
-  /**
-   * private helper function for getting parameter of an node.
-   * Handles error cases.
-   * @param node were parameter should be.
-   * @param parameter's label
-   * @param is nonexisting parameter accepted, is parameter's existent mandatory
-   * @param validation function if parameter must confor some format
-   * @return Either ParseError or parameter as String
-   */
-  private def getParameter(node: Node,
-    paramName: String,
-    tolerateEmpty: Boolean = false,
-    validation: String => Boolean = _ => true): Either[ParseError, String] = {
-    val parameter = (node \ s"@$paramName").text
-    if (parameter.isEmpty && !tolerateEmpty)
-      return Left(ParseError(s"No $paramName parameter found in ${node.label}."))
-    else if (validation(parameter))
-      return Right(parameter)
-    else
-      return Left(ParseError(s"Invalid $paramName parameter in ${node.label}."))
-  }
-
-  private def getChild(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName") map (stripNamespaces)
-    if (!tolerateNonexist && childs.isEmpty)
-      return Left(ParseError(s"No $childName child found in ${node.label}."))
-    else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty ){
-      return Left(ParseError(s"$childName's value not found in ${node.label}."))
-    }
-      
-    else
-      return Right(childs)
-  }
-
-  /**
-   * private helper function for getting child of an node.
-   * Handles error cases.
-   * @param node were parameter should be.
-   * @param child's label
-   * @param is child allowed to have empty value
-   * @param is nonexisting childs accepted, is child's existent mandatory
-   * @param is multiple childs accepted
-   * @return Either ParseError or sequence of childs found
-   */
-  private def getChilds(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateNonexist: Boolean = false,
-    tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
-    val childs = (node \ s"$childName")
-
-    if (!tolerateNonexist && childs.isEmpty)
-      return Left(ParseError(s"No $childName child found in ${node.label}."))
-    else if (!tolerateMultiple && childs.size > 1)
-      return Left(ParseError(s"Multiple $childName childs found in ${node.label}."))
-    else if (!tolerateEmpty && childs.nonEmpty && childs.contains{ n: Node => n.text.isEmpty }  )
-      return Left(ParseError(s"$childName's value not found in ${node.label}."))
-    else
-      return Right(childs)
-  }
-
-  /**
-   * function for checking does given string confort O-MI schema
-   * @param String to check
-   * @return ParseErrors found while checking, if empty, successful
-   */
-  def validateOmiSchema(xml: String): Seq[ParseError] = {
-    try {
-      val xsdPath = "./src/main/resources/omi.xsd"
-      val factory : SchemaFactory =
-        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val schema: Schema = factory.newSchema(new File(xsdPath))
-      val validator: Validator = schema.newValidator()
-      validator.validate(new StreamSource(new StringReader(xml)))
-    } catch {
-      case e: IOException =>
-        //TODO: log these instead of println
-        //        println(e.getMessage())
-        return Seq(ParseError("Invalid XML, IO failure"))
-      case e: SAXException =>
-        //        println(e.getMessage())
-        return Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
-      case e: SAXParseException =>
-        //        println(e.getMessage())
-        return Seq(ParseError("Invalid XML, schema failure"))
-      case e: Exception =>
-        return Seq(ParseError("Unknown exception: " + e.getMessage))
-    }
-    return Seq.empty;
-  }
   
-  /**
-   * Temp function for fixing tests
-   */
-  def stripNamespaces(node : Node) : Node = {
-     node match {
-         case e : Elem => 
-             e.copy(scope = TopScope, child = e.child map (stripNamespaces))
-         case _ => node;
-     }
- }
 }
 
 

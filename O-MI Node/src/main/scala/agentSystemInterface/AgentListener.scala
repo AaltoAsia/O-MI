@@ -14,8 +14,8 @@ import scala.util.control._
 import parsing.OdfParser
 import database._
 
-import parsing.Path._
-import parsing.Path
+import parsing.Types._
+import parsing.Types.Path._
 
 /** AgentListener handles connections from agents.
   */
@@ -86,7 +86,7 @@ class InputDataHandler(
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
-  private def handleObjects( objs: Seq[parsing.OdfObject] ) : Unit = {
+  private def handleObjects( objs: Seq[OdfObject] ) : Unit = {
     for(obj <- objs){
       if(obj.childs.nonEmpty)
         handleObjects(obj.childs)
@@ -94,23 +94,15 @@ class InputDataHandler(
         handleInfoItems(obj.sensors)
     }
   }
-  private def handleInfoItems( infoitems: Seq[parsing.OdfInfoItem]) : Unit = {
+  private def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
     for( info <- infoitems ){
       for(timedValue <- info.timedValues){
           val sensorData = timedValue.time match {
-              case "" =>
+              case None =>
                 val currentTime = new java.sql.Timestamp(new Date().getTime())
                 new DBSensor(info.path, timedValue.value, currentTime)
-              case date =>
-                try{
-                  val stamp : Long = date.toLong
-                  val currentTime = new java.sql.Timestamp(stamp)
-                  new DBSensor(info.path, timedValue.value,  currentTime)
-                } catch{
-                  case e: Exception =>
-                    val currentTime = new java.sql.Timestamp(dateFormat.parse(date).getTime)
-                    new DBSensor(info.path, timedValue.value,  currentTime)
-                }
+              case Some(timestamp) =>
+                new DBSensor(info.path, timedValue.value,  timestamp)
             }
             log.debug(s"Saving to path ${info.path}")
 
