@@ -4,16 +4,18 @@ import parsing._
 import parsing.Types._
 import parsing.Types.Path._
 
+import xml._
+
 import org.specs2.mutable.Specification
 import org.specs2.matcher.XmlMatchers
+
 import spray.testkit.Specs2RouteTest
+import spray.httpx.marshalling.BasicMarshallers._
 import spray.http._
-import spray.http.HttpMethods._
-import spray.http.StatusCodes._
+import HttpMethods._
 import StatusCodes._
 import MediaTypes._
 import StatusCodes._
-import xml._
 
 
 class OmiServiceSpec extends Specification
@@ -23,9 +25,11 @@ class OmiServiceSpec extends Specification
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
+    "System tests for features of OMI Node service".title
+
     Starter.init()
       
-    "OmiService (Data discovery)" should {
+    "Data discovery, GET: OmiService" should {
       
       "respond with hello message for GET request to the root path" in {
         Get() ~> myRoute ~> check{
@@ -56,43 +60,93 @@ class OmiServiceSpec extends Specification
         }
       }
 
+      val settingsPath = "/" +Path(Starter.settings.settingsOdfPath).toString
+
       // Somewhat overcomplicated test; Serves as an example for other tests
       "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" in {
-        val path = "/" +Path(Starter.settings.settingsOdfPath).toString
-        path === "/Objects/OMI-Service/Settings"
-        Get(path) ~> myRoute ~> check { // this didn't work without / at start
+        Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
+          status === OK
+          mediaType === `text/xml`
+          responseAs[NodeSeq] must \("id") \> "Settings"
+        }
+      }
+
+      "reply its settings having num-latest-values-stored)" in {
+        Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
           status === OK
           mediaType === `text/xml`
           responseAs[NodeSeq] must \("InfoItem", "name" -> "num-latest-values-stored")
-          responseAs[NodeSeq] must \("id") \> "Settings"
-          //responseAs[NodeSeq] must contain(
-          //  <Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object>
-          //  )
         }
       }
-      
-//      "handle Read request and respond with xml" in {
-//        Post().withEntity(HttpEntity(new ContentType(`text/xml`),"""<?xml version="1.0" encoding="UTF-8"?>
-//<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-//  <omi:read msgformat="omi.xsd">
-//    <!-- Here could be a list of destination nodes if the message can't be 
-//
-//sent directly to the destination node(s). -->
-//    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-//      <Objects>
-//        <Object>
-//          <id>SmartFridge22334411</id>
-//          <InfoItem name="PowerConsumption" />
-//        </Object>
-//      </Objects>
-//    </omi:msg>
-//  </omi:read>
-//</omi:omiEnvelope>""")) ~> myRoute ~> check {
-////          mediaType === `text/xml`
-//          responseAs[String] === "test"
-//        }
-//      }
-//
+
+
+    }
+
+    "Read requests: OmiService" should {
+      val powerConsumptionValue = "180"
+      val dataTime = new java.sql.Timestamp(1000)
+      val fridgeData = database.DBSensor(Path("Objects/SmartFridge22334411/PowerConsumption"),
+        powerConsumptionValue,
+        dataTime
+      )
+
+      step {
+        database.SQLite.clearDB()
+        database.SQLite.set(fridgeData)
+      }
+
+      // NOTE: FIXME: Put or check that testdata is loaded in the system!
+      val readTestRequestFridge: NodeSeq =
+        // NOTE: The type needed for compiler to recognize the right Marhshaller later
+            <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+              <omi:read msgformat="omi.xsd">
+                <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+                  <Objects>
+                    <Object>
+                      <id>SmartFridge22334411</id>
+                      <InfoItem name="PowerConsumption" />
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>
+    
+
+      "handle a single read request and the response" should {
+
+        // XXX: This test is hacky as it is a nested "should"
+        Post("/", readTestRequestFridge) ~> myRoute ~> check {
+
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          "be xml that has a success return code (200)" in {
+            mtype === `text/xml`
+            rstatus === OK
+            response must \("response") \("result", "msgformat" -> "odf")
+            response must \("response") \("result") \("return", "returnCode" -> "200")
+          }
+
+
+          val msg = response \ "response" \ "result" \ "msg"
+          val infoitem = msg \ "Objects" \ "Object" \ "InfoItem"
+
+          "has the right InfoItem" in {
+
+            response must \("response") \("result") \("msg")
+
+            msg must \("Objects") \("Object") \("InfoItem", "name" -> "PowerConsumption")
+          }
+
+          "infoitem has the right value" in {
+            infoitem must have length(1)
+            infoitem must \("value") \> powerConsumptionValue // "180"
+          }
+        }
+      }
+
       /** EXAMPLES:
 
       "return a greeting for GET requests to the root path" in {
@@ -114,7 +168,7 @@ class OmiServiceSpec extends Specification
         }
       }
       */
-        
+      
     }
 
 }
