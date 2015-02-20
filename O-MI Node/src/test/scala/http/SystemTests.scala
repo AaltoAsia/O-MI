@@ -89,19 +89,17 @@ class OmiServiceSpec extends Specification
     }
 
     "Read requests: OmiService" should {
+      sequential
       val powerConsumptionValue = "180"
       val dataTime = new java.sql.Timestamp(1000)
       val fridgeData = database.DBSensor(Path("Objects/SmartFridge22334411/PowerConsumption"),
         powerConsumptionValue,
         dataTime
       )
+      log.debug("set data")
+      database.SQLite.set(fridgeData)
 
-      step {
-        // put some data
-        database.SQLite.set(fridgeData)
-      }
 
-      // NOTE: FIXME: Put or check that testdata is loaded in the system!
       val readTestRequestFridge: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
             <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -121,9 +119,9 @@ class OmiServiceSpec extends Specification
 
       "handle a single read request and the response" should {
 
-        // XXX: This test is hacky as it is a nested "should"
         Post("/", readTestRequestFridge) ~> myRoute ~> check {
 
+          // XXX: This test is hacky as it is a nested "should"
           val response = responseAs[NodeSeq].head
           val mtype = mediaType
           val rstatus = status
@@ -152,11 +150,12 @@ class OmiServiceSpec extends Specification
           }
         }
       }
+    }
 
-      step {
-        // clear db
-        database.SQLite.clearDB()
-      }
+    step {
+      // clear db
+      database.SQLite.clearDB()
+    }
 
       /** EXAMPLES:
 
@@ -180,7 +179,6 @@ class OmiServiceSpec extends Specification
       }
       */
       
-    }
 
 }
 
