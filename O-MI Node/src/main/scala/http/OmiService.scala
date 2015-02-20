@@ -60,8 +60,8 @@ trait OmiService extends HttpService {
     }
 
   val getDataDiscovery =
-    path(Rest) { pathStr =>
-      get {
+    get {
+      path(Rest) { pathStr =>
         respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
           val path = Path(pathStr)
           Read.generateODFREST(path) match {
@@ -83,9 +83,10 @@ trait OmiService extends HttpService {
       }
     }
 
+
   /* Receives HTTP-POST directed to root (localhost:8080) */
-  val getXMLResponse = path("") {
-    (post | parameter('method ! "post")) { // Handle POST requests from the client
+  val getXMLResponse = post { // Handle POST requests from the client
+    path("") {
       respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
         entity(as[NodeSeq]) { xml =>
           val omi = OmiParser.parse(xml.toString)

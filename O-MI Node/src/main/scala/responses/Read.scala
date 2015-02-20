@@ -24,12 +24,14 @@ object Read {
    */
 	def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
 
-    // Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: Path): (Path, Boolean) = {
-      if (path.last == "value") (path.init, true) 
-      else (path, false)
+    // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
+    def restNormalizePath(path: Path): (Path, Boolean) = path.lastOption match {
+      case Some("value") => (path.init, true) 
+      case _             => (path, false)
     }
 
+    // safeguard
+    assert(!path.isEmpty, "Undefined url data discovery: empty path")
 
     val (path, wasValue) = restNormalizePath(orgPath)
 
