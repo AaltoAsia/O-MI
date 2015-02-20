@@ -27,7 +27,10 @@ class OmiServiceSpec extends Specification
 
     "System tests for features of OMI Node service".title
 
-    Starter.init()
+    step {
+      // Initialize the OmiService
+      Starter.init()
+    }
       
     "Data discovery, GET: OmiService" should {
       
@@ -91,6 +94,7 @@ class OmiServiceSpec extends Specification
       )
 
       step {
+        // put some data
         database.SQLite.clearDB()
         database.SQLite.set(fridgeData)
       }
@@ -145,6 +149,11 @@ class OmiServiceSpec extends Specification
             infoitem must \("value") \> powerConsumptionValue // "180"
           }
         }
+      }
+
+      step {
+        // clear db
+        database.SQLite.clearDB()
       }
 
       /** EXAMPLES:
