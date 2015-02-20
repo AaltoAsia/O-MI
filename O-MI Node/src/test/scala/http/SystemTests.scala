@@ -5,6 +5,7 @@ import parsing.Types._
 import parsing.Types.Path._
 
 import org.specs2.mutable.Specification
+import org.specs2.matcher.XmlMatchers
 import spray.testkit.Specs2RouteTest
 import spray.http._
 import spray.http.HttpMethods._
@@ -15,7 +16,10 @@ import StatusCodes._
 import xml._
 
 
-class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService {
+class OmiServiceSpec extends Specification
+                        with XmlMatchers
+                        with Specs2RouteTest
+                        with OmiService {
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
@@ -34,36 +38,36 @@ class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService 
         Get("/Objects") ~> myRoute ~> check {
           mediaType === `text/xml`
           status === OK
-          responseAs[String] must contain("<Objects>")
-          responseAs[String] must contain("</Objects>")
+          responseAs[NodeSeq].head.label === "Objects"
         }
       }
       "respond succesfully to GET to /Objects/" in {
         Get("/Objects/") ~> myRoute ~> check {
           mediaType === `text/xml`
           status === OK
-          responseAs[String] must contain("<Objects>")
-          responseAs[String] must contain("</Objects>")
+          responseAs[NodeSeq].head.label === "Objects"
         }
       }
       "respond with error to non existing path" in {
         Get("/Objects/nonexsistent7864057") ~> myRoute ~> check {
           mediaType === `text/xml`
           status === NotFound
-          responseAs[String] must contain("<error>")
-          responseAs[String] must contain("</error>")
+          responseAs[NodeSeq].head.label === "error"
         }
       }
 
-      "reply its settings as odf from path `settingsOdfPath`" in {
+      // Somewhat overcomplicated test; Serves as an example for other tests
+      "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" in {
         val path = "/" +Path(Starter.settings.settingsOdfPath).toString
         path === "/Objects/OMI-Service/Settings"
         Get(path) ~> myRoute ~> check { // this didn't work without / at start
           status === OK
           mediaType === `text/xml`
-          responseAs[NodeSeq] must contain(
-            <Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object>
-            )
+          responseAs[NodeSeq] must \("InfoItem", "name" -> "num-latest-values-stored")
+          responseAs[NodeSeq] must \("id") \> "Settings"
+          //responseAs[NodeSeq] must contain(
+          //  <Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object>
+          //  )
         }
       }
       
