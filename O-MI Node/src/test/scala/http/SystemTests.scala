@@ -33,7 +33,7 @@ class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService 
       "respond succesfully to GET to /Objects" in {
         Get("/Objects") ~> myRoute ~> check {
           mediaType === `text/xml`
-          // status === Success // != 200 OK ????
+          status === OK
           responseAs[String] must contain("<Objects>")
           responseAs[String] must contain("</Objects>")
         }
@@ -41,7 +41,7 @@ class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService 
       "respond succesfully to GET to /Objects/" in {
         Get("/Objects/") ~> myRoute ~> check {
           mediaType === `text/xml`
-          //status === Success
+          status === OK
           responseAs[String] must contain("<Objects>")
           responseAs[String] must contain("</Objects>")
         }
@@ -59,6 +59,7 @@ class OmiServiceSpec extends Specification with Specs2RouteTest with OmiService 
         val path = "/" +Path(Starter.settings.settingsOdfPath).toString
         path === "/Objects/OMI-Service/Settings"
         Get(path) ~> myRoute ~> check { // this didn't work without / at start
+          status === OK
           mediaType === `text/xml`
           responseAs[NodeSeq] must contain(
             <Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object>
