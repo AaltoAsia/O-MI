@@ -28,6 +28,9 @@ class OmiServiceSpec extends Specification
     "System tests for features of OMI Node service".title
 
     step {
+      // clear if some other tests have left data
+      database.SQLite.clearDB()
+
       // Initialize the OmiService
       Starter.init()
     }
@@ -95,7 +98,6 @@ class OmiServiceSpec extends Specification
 
       step {
         // put some data
-        database.SQLite.clearDB()
         database.SQLite.set(fridgeData)
       }
 
