@@ -31,7 +31,7 @@ object Read {
     }
 
     // safeguard
-    assert(!path.isEmpty, "Undefined url data discovery: empty path")
+    assert(!orgPath.isEmpty, "Undefined url data discovery: empty path")
 
     val (path, wasValue) = restNormalizePath(orgPath)
 

@@ -38,8 +38,8 @@ trait OmiService extends HttpService {
 
   // should be removed?
   val helloWorld =
-    path("") { // Root
-      get {
+    get {
+      path("") { // Root
         respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) { //Handles CORS
           respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
             complete {
