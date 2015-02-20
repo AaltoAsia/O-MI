@@ -30,6 +30,10 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 trait OmiService extends HttpService {
   def log: LoggingAdapter
 
+  //Handles CORS allow-origin seems to be enough
+  private def corsHeaders =
+    respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
+
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
     pathPrefix("html") {
@@ -40,7 +44,7 @@ trait OmiService extends HttpService {
   val helloWorld =
     get {
       path("") { // Root
-        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) { //Handles CORS
+        corsHeaders { 
           respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
             complete {
               <html>
@@ -62,7 +66,7 @@ trait OmiService extends HttpService {
   val getDataDiscovery =
     get {
       path(Rest) { pathStr =>
-        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+        corsHeaders {
           val path = Path(pathStr)
           Read.generateODFREST(path) match {
             case Some(Left(value)) =>
@@ -87,7 +91,7 @@ trait OmiService extends HttpService {
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
     path("") {
-      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+      corsHeaders {
         entity(as[NodeSeq]) { xml =>
           val omi = OmiParser.parse(xml.toString)
           val requests = omi.filter {
