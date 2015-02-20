@@ -104,7 +104,7 @@ trait OmiService extends HttpService {
           }
 
           if (errors.isEmpty) {
-            complete {
+            respondWithMediaType(`text/xml`) { complete {
               requests.map {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
@@ -121,7 +121,7 @@ trait OmiService extends HttpService {
                   ??? //TODO: handle cancel
                 case _ => log.warning("Unknown request")
               }.mkString("\n")
-            }
+            }}
           } else {
             //Error found
             complete {
