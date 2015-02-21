@@ -3,6 +3,7 @@ package response
 import akka.actor.Actor
 import akka.event.LoggingAdapter
 import akka.actor.ActorLogging
+import responses._
 
 import scala.collection.mutable.PriorityQueue
 import database._
@@ -47,14 +48,23 @@ import scala.concurrent.ExecutionContext.Implicits.global
   }
 
   private var subscriptions : PriorityQueue[ TimedSub ] = new PriorityQueue[TimedSub]()(SubscriptionOrdering)
-  override def receive = { case _ => }
+
+  override def receive = { 
+    case subscription: Subscription => {
+      val (requestid, xmlanswer) = OMISubscription.setSubscription(subscription)
+      subscriptions ++= (new java.sql.Timestamp(System.currentTimeMillis()), requestid)
+      //send xml to the address this came from?
+    }
+  }
   
   def looper = {
     var ids = subscriptions.takeWhile(sub => sub._1.getTime <= System.currentTimeMillis())
     for( id <- ids){
-      val dbSensors = SQLite.getSubData(id._2)
-      val omiMsg = generateOmi(dbSensors)
+      //val dbSensors = SQLite.getSubData(id._2)
+      //right now subscription omi generation uses the paths in the dbsub, not sure if getSubData-function is needed as this looper
+      //loops through all subs in the interval already? Also with the paths its easier to construct the OMI hierarchy
       val sub = SQLite.getSub(id._2) 
+      val omiMsg = generateOmi(id)
       val callback = sub.get.callback.get.split(":").dropRight(1).mkString(":")
       val port = sub.get.callback.get.split(":").takeRight(1).head.toInt
       //callback addres were to send data
@@ -74,5 +84,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
       id._1.setTime(id._1.getTime + sub.get.interval)
     }
   }
-  def generateOmi(sensors: Array[DBSensor]) = ???
+
+  def generateOmi(id: Int): xml.Node = {
+    return OMISubscription.OMISubscriptionResponse(id)
+  }
 }
