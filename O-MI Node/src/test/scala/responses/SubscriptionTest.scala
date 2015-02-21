@@ -61,16 +61,17 @@ class SubscriptionTest extends Specification with Before {
         val parserlist = OmiParser.parse(simpletestfile)
 
         val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
-        
+
         val correctxml = <omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <omi:response>
                                 <omi:result msgformat="odf">
                                     <omi:return returnCode="200"></omi:return>
-                                        <omi:requestId>{requestID.toInt}</omi:requestId>
+                                        <omi:requestId>{requestID}</omi:requestId>
                                 </omi:result>
                             </omi:response>
-                        </omi:omiEnvelope>
+                         </omi:omiEnvelope>
 
+        //sanoo että failure vaikka nämä ovat identtiset?
         trim(xmlreturn) should be equalTo(trim(correctxml))
 
         }
