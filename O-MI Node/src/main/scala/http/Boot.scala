@@ -58,6 +58,7 @@ object Starter {
     // create and start our service actor
     val omiService = system.actorOf(Props(classOf[OmiServiceActor]), "omi-service")
 
+    // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
     val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
 
