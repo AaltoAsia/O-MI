@@ -19,22 +19,7 @@ libraryDependencies ++= {
 	"io.spray"			  %%  "spray-client"  % sprayV,
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
-    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
+    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",	
 	"org.json4s" 		  %%  "json4s-native" % "3.2.11"
   )
 }
-
-//slick
-libraryDependencies ++= List(
-"com.typesafe.slick"  %%  "slick" % "2.1.0",
-"org.slf4j" % "slf4j-nop" % "1.6.4",
-"org.xerial" % "sqlite-jdbc" % "3.7.2"
-)
-
-cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 
-
-Revolver.settings
-
-// Eclipse
-EclipseKeys.withSource := true
-
