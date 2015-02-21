@@ -58,7 +58,7 @@ package sensordata {
       // Define formats
       implicit val formats = DefaultFormats
 
-      implicit val timeout = akka.util.Timeout(30 seconds)
+      implicit val timeout = akka.util.Timeout(10 seconds)
 
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
@@ -86,6 +86,7 @@ package sensordata {
           loading = false
           
         case Failure(error) =>
+          loading = false
           println("An error has occured: " + error.getMessage)
       }
     }
