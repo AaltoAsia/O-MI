@@ -1,3 +1,14 @@
+$(document).on('click', '#checkall', function() {
+	console.log("Checking all boxes");
+	$(".checkbox").prop('checked', true);
+});
+
+$(document).on('click', '#uncheckall', function() {
+	console.log("Unchecking all boxes");
+	$(".checkbox").prop('checked', false);
+});
+
+
 /* Eventlistener for object tree updating */
 $(document).on('click', '.checkbox', function() {
 	var ref = $(this); //Reference (jquery object) of the clicked button

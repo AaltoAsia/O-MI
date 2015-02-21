@@ -378,7 +378,7 @@ object SQLite {
       var index = 0
       objectQuery foreach {
         case (cpath: Path) =>
-          childs(index) = DBObject(cpath)
+          childs(Math.min(index, childs.length - 1)) = DBObject(cpath)
           index += 1
       }
       childs
