@@ -45,10 +45,10 @@ body {
     position: relative;
     *overflow: hidden;
 }
-
+/*
 #objectList .lower {
-	margin-left: 25px;
-}
+	margin-left: 25px; 
+} */
 
 #requestBox {
 	border: 1px solid black;

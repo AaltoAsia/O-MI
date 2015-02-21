@@ -77,7 +77,7 @@ function displayObjects(data, indent, url, listId) {
 		});
 	} else {
 		// Subobjects/Infoitems
-		var margin = indent * 10 + "px";
+		var margin = "20px";
 		
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
@@ -95,13 +95,13 @@ function displayObjects(data, indent, url, listId) {
 				
 				$("#" + listId + ":last-child").css({ marginLeft:margin });
 			});
-			addInfoItems(this, id, indent + 1);
+			addInfoItems(this, id, indent);
 		});
 	}
 }
 
-function addInfoItems(parent, id, indent) {
-	var margin = indent * 20 + "px";
+function addInfoItems(parent, id) {
+	var margin = "20px";
 
 	$(parent).find("InfoItem").each(function(){
 		var name = $(this).attr('name');
