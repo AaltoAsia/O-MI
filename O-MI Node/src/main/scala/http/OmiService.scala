@@ -30,6 +30,10 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 trait OmiService extends HttpService {
   def log: LoggingAdapter
 
+  //Handles CORS allow-origin seems to be enough
+  private def corsHeaders =
+    respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
+
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml =
     pathPrefix("html") {
@@ -38,9 +42,9 @@ trait OmiService extends HttpService {
 
   // should be removed?
   val helloWorld =
-    path("") { // Root
-      get {
-        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) { //Handles CORS
+    get {
+      path("") { // Root
+        corsHeaders { 
           respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
             complete {
               <html>
@@ -60,9 +64,9 @@ trait OmiService extends HttpService {
     }
 
   val getDataDiscovery =
-    path(Rest) { pathStr =>
-      get {
-        respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+    get {
+      path(Rest) { pathStr =>
+        corsHeaders {
           val path = Path(pathStr)
           Read.generateODFREST(path) match {
             case Some(Left(value)) =>
@@ -83,10 +87,11 @@ trait OmiService extends HttpService {
       }
     }
 
+
   /* Receives HTTP-POST directed to root (localhost:8080) */
-  val getXMLResponse = path("") {
-    (post | parameter('method ! "post")) { // Handle POST requests from the client
-      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+  val getXMLResponse = post { // Handle POST requests from the client
+    path("") {
+      corsHeaders {
         entity(as[NodeSeq]) { xml =>
           val omi = OmiParser.parse(xml.toString)
           val requests = omi.filter {
@@ -99,7 +104,7 @@ trait OmiService extends HttpService {
           }
 
           if (errors.isEmpty) {
-            complete {
+            respondWithMediaType(`text/xml`) { complete {
               requests.map {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
@@ -116,7 +121,7 @@ trait OmiService extends HttpService {
                   ??? //TODO: handle cancel
                 case _ => log.warning("Unknown request")
               }.mkString("\n")
-            }
+            }}
           } else {
             //Error found
             complete {
