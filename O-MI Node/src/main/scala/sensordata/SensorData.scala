@@ -1,5 +1,3 @@
-package sensordata
-
 import akka.io.IO
 import akka.pattern.ask
 import spray.can.Http
@@ -40,7 +38,7 @@ import database._
 
 // Need to wrap in a package to get application supervisor actor
 // "you need to provide exactly one argument: the class of the application supervisor actor"
-package main.scala {
+package sensordata {
   /**
    * The main program for getting SensorData
    */
@@ -103,51 +101,22 @@ package main.scala {
       val date = new java.util.Date()
       var i = 0
       
-      // InfoItems filtered out
-      SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item =>{
-    	val sensor: String = item._1
-        val value: String = item._2 // Currently as string, convert to double?
-
-        // Split name from underlines
-        val split = sensor.split('_')
-    	  
-      // Object id
-        val objectId: String = split(0) + "_" + split(1) + "_" + split.last
-      	val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
-
-      	("Objects/" + objectId + "/" + infoItemName, value)
-      }))
-      
-      /*
-      // Iterate over the list to get objects and infoitems
-      for (item <- list) {
-        val sensor: String = item._1
-        val value: String = item._2 // Currently as string, convert to double?
-
-        // Split name from underlines
-        val split = sensor.split('_')
-
-        if (split.length > 3) {
-          // Object id
-          val objectId: String = split(0) + "_" + split(1) + "_" + split.last
-          val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
-
-          // TEST: adding values to database
-          val sensor = DBSensor(Path("Objects/" + objectId + "/" + infoItemName), value, new java.sql.Timestamp(date.getTime()))
-    	  addSensor(sensor)
-        }
-      } */
-    }
-    /*
-    private def addSensor(sensor : DBSensor) : Unit = {
-      try {
-       database.SQLite.set(sensor)
-      } catch {
-      	case e : Exception => 
-      	  //println("sleep 0.5s")
-      	  Thread.sleep(100)
-          addSensor(sensor)
+      if(!list.isEmpty){
+	      // InfoItems filtered out
+	      SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item =>{
+	    	val sensor: String = item._1
+	        val value: String = item._2 // Currently as string, convert to double?
+	
+	        // Split name from underlines
+	        val split = sensor.split('_')
+	    	  
+	      // Object id
+	        val objectId: String = split(0) + "_" + split(1) + "_" + split.last
+	      	val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
+	
+	      	("Objects/" + objectId + "/" + infoItemName, value)
+	      }))
       }
-    } */
+    }
   }
 } 

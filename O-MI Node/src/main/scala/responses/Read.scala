@@ -216,7 +216,7 @@ object Read {
       node
     } catch {
       case e: IllegalArgumentException =>
-        println("invalid begin and/or end parameter; ignoring")
+        //println("invalid begin and/or end parameter; ignoring")
         odfInfoItemGeneration(infoItems)
     }
   }

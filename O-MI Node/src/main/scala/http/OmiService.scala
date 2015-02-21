@@ -11,7 +11,7 @@ import responses._
 
 import parsing._
 import xml._
-import sensordata.main.scala.SensorData
+import sensordata.SensorData
 
 class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
@@ -88,62 +88,58 @@ trait OmiService extends HttpService {
             }
           }
         }
-      }
-    }
-
-  /* Receives HTTP-POST directed to root (localhost:8080) */
-  val getXMLResponse = path("") {
-    (post | parameter('method ! "post")) { // Handle POST requests from the client
-      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
-        if (SensorData.loading) {
-          respondWithMediaType(`text/xml`) {
-            complete(404, <error>SensorData is currently being updated</error>)
-          }
-        } else {
-          entity(as[NodeSeq]) { xml =>
-            val omi = OmiParser.parse(xml.toString)
-            val requests = omi.filter {
-              case ParseError(_) => false
-              case _ => true
-            }
-            val errors = omi.filter {
-              case ParseError(_) => true
-              case _ => false
-            }
-
-            if (errors.isEmpty) {
-              complete {
-                requests.map {
-                  case oneTimeRead: OneTimeRead =>
-                    log.debug("read")
-                    log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
-                    Read.OMIReadResponse(oneTimeRead)
-                  case write: Write =>
-                    log.debug("write")
-                    ??? //TODO handle Write
-                  case subscription: Subscription =>
-                    log.debug("sub")
-                    ??? //TODO handle sub
-                  case cancel: Cancel =>
-                    log.debug("cancel")
-                    ??? //TODO: handle cancel
-                  case _ => log.warning("Unknown request")
-                }.mkString("\n")
+      } ~
+        (post | parameter('method ! "post")) { // Handle POST requests from the client
+          respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+            if (SensorData.loading) {
+              respondWithMediaType(`text/xml`) {
+                complete(404, <error>SensorData is currently being updated</error>)
               }
             } else {
-              //Error found
-              complete {
-                log.error("ERROR")
-                println(errors)
-                ??? // TODO handle error
+              entity(as[NodeSeq]) { xml =>
+                val omi = OmiParser.parse(xml.toString)
+                val requests = omi.filter {
+                  case ParseError(_) => false
+                  case _ => true
+                }
+                val errors = omi.filter {
+                  case ParseError(_) => true
+                  case _ => false
+                }
+
+                if (errors.isEmpty) {
+                  complete {
+                    requests.map {
+                      case oneTimeRead: OneTimeRead =>
+                        log.debug("read")
+                        log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
+                        Read.OMIReadResponse(oneTimeRead)
+                      case write: Write =>
+                        log.debug("write")
+                        ??? //TODO handle Write
+                      case subscription: Subscription =>
+                        log.debug("sub")
+                        ??? //TODO handle sub
+                      case cancel: Cancel =>
+                        log.debug("cancel")
+                        ??? //TODO: handle cancel
+                      case _ => log.warning("Unknown request")
+                    }.mkString("\n")
+                  }
+                } else {
+                  //Error found
+                  complete {
+                    log.error("ERROR")
+                    println(errors)
+                    ??? // TODO handle error
+                  }
+                }
               }
             }
           }
         }
-      }
     }
-  }
 
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery
 }

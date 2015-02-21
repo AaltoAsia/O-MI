@@ -15,7 +15,7 @@ import responses._
 import parsing._
 import database.SQLite
 import database._
-import sensordata.main.scala.SensorData
+import sensordata.SensorData
 
 
 // Initialize functionality seperated for testing purposes
