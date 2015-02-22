@@ -86,6 +86,7 @@ object Read {
         <omi:response>
           <omi:result msgformat="odf">
             <omi:return returnCode="200"></omi:return>
+            {if(read.requestId.isEmpty == false) <omi:requestId>{read.requestId(0)}</omi:requestId>}
             <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
               {
                 odfGeneration(read)
@@ -103,9 +104,21 @@ object Read {
    * @return generated O-DF xml as String
    */
   def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
+    if (read.requestId.isEmpty) {
     <Objects>
       { odfObjectGeneration(read.sensors.toList, read.begin, read.end, read.newest, read.oldest) }
     </Objects>
+    }
+
+    else {
+      val id = read.requestId.head.toInt
+      val newbegin = SQLite.getSub(id).get.startTime
+      val newend = Some(new Timestamp(new java.util.Date().getTime))
+
+    <Objects>
+      { odfObjectGeneration(read.sensors.toList, newbegin, newend, read.newest, read.oldest) }
+    </Objects>
+    }
   }
 
   /**
@@ -207,8 +220,5 @@ object Read {
         odfInfoItemGeneration(infoItems)
     }
   }
-}
 
-/*        {
-          if(infoItem.metadata != "") <MetaData>{infoItem.metadata}</MetaData>
-        }*/
+}
