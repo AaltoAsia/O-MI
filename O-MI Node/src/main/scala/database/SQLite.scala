@@ -64,6 +64,10 @@ object SQLite {
         }
       }
     }
+  /**
+   * Used to set many values efficiently to the database.
+   * Currently works only for list of tuples consisting of path and value.
+   */
   def setMany(data: List[(String, String)]) {
     db withTransaction { implicit session =>
       var path = Path("")
@@ -84,6 +88,12 @@ object SQLite {
       }
     }
   }
+  /**
+   * sets the historylength to desired length
+   * default is 10
+   * 
+   * @param newLength new length to be used
+   */
   def setHistoryLength(newLength: Int) {
     historyLength = newLength
   }
@@ -131,6 +141,16 @@ object SQLite {
     }
 
   }
+  /**
+   * Returns array of DBSensors for given subscription id.
+   * Array consists of all sensor values after beginning of the subscription
+   * for all the sensors in the subscription
+   * returns empty array if no data or subscription is found
+   * 
+   * @param id subscription id that is assigned during saving the subscription
+   * 
+   * @return Array of DBSensors
+   */
   def getSubData(id: Int): Array[DBSensor] =
     {
       db withTransaction { implicit session =>
@@ -164,7 +184,10 @@ object SQLite {
       }
     }
   /**
-   * put the path to buffering table
+   * put the path to buffering table if it is not there yet, otherwise
+   * increases the count on that item, to prevent removing buffered data
+   * if one subscription ends and other is still buffering.
+   * 
    * @param path path as Path object
    */
   def startBuffering(path: Path) {
@@ -184,10 +207,9 @@ object SQLite {
     }
   }
   /**
-   * removes the path from buffering table
-   * also clear all buffered data
-   * leaves only historyLength amount of data
-   * Should be called only when the buffered data is not needed anymore
+   * removes the path from buffering table or dimishes the count by one
+   * also clear all buffered data if count is only 1
+   * leaves only historyLength amount of data if count is only 1
    * @param path path as Path object
    */
   def stopBuffering(path: Path) {
