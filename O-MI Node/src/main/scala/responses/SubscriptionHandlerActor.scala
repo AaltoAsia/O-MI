@@ -22,6 +22,8 @@ import xml._
 import scala.concurrent.duration._
 import scala.concurrent._
 
+case object Handle
+
 class SubscriptionHandlerActor extends Actor with ActorLogging {
   /**
     *
@@ -64,10 +66,12 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
       // TODO: send acception xmlanswer to the address this came from?
     }
+
+    case Handle => handleIntervals()
   }
   
 
-  def handleIntervals = {
+  def handleIntervals(): Unit = {
     val activeSubs = intervalSubs.takeWhile(_._1.getTime <= currentTimeMillis())
 
     for ( (time, id) <- activeSubs) {
@@ -111,6 +115,12 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       // FIXME: should rather have calculation that takes long
       // intervals into account on restart
       time.setTime(time.getTime + sub.interval)
+
+      // Schedule for next
+      intervalSubs.headOption map { next =>
+        val nextRun = next._1.getTime - currentTimeMillis()
+        system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
+      }
     }
   }
 
