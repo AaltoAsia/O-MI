@@ -12,9 +12,10 @@ body {
 #objectContainer{
 	border-width: 5px;
 	border-style: groove;
-	margin-top: 15px;
-	margin-bottom: 15px;
+	
+	width: 90%;
 	padding-top: 15px;
+	margin: 30px auto;
 	display: inline-block;
 }
 
@@ -26,9 +27,12 @@ body {
 	list-style-type: none;
 }
 
+#objectList li {
+	display: table-row;
+}
+
 #objectList label {
     display: inline-block;
-	padding-left: 33%;
 	float: left;
 }
 #objectList input {
@@ -41,10 +45,10 @@ body {
     position: relative;
     *overflow: hidden;
 }
-
+/*
 #objectList .lower {
-	margin-left: 25px;
-}
+	margin-left: 25px; 
+} */
 
 #requestBox {
 	border: 1px solid black;
