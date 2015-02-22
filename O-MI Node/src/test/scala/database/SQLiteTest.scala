@@ -148,6 +148,7 @@ object SQLiteTest extends Specification {
     }
     "be able to buffer data on demand"in{
       database.SQLite.startBuffering(Path("path/to/sensor3/temp"))
+      database.SQLite.startBuffering(Path("path/to/sensor3/temp"))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new java.sql.Timestamp(6000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.1C",new java.sql.Timestamp(7000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.1C",new java.sql.Timestamp(8000)))
@@ -207,6 +208,11 @@ object SQLiteTest extends Specification {
     {
       database.SQLite.getNBetween(Path("path/to/sensor/doesntexist"), None, None,None, None).length shouldEqual 0
     }
+     "should not rever to historyLength if other are still buffering" in{
+       
+       database.SQLite.stopBuffering(Path("path/to/sensor3/temp"))
+       database.SQLite.getNBetween(Path("path/to/sensor3/temp"), None, None, None, None).length shouldEqual 21
+     }
     "be able to stop buffering and revert to using historyLenght" in
     {
       database.SQLite.stopBuffering(Path("path/to/sensor3/temp"))
@@ -275,8 +281,8 @@ object SQLiteTest extends Specification {
       database.SQLite.remove(Path("path/to/sensor2/temp"))
       database.SQLite.remove(Path("path/to/sensor3/temp"))
       res shouldEqual 12
-      
    }
+   
 
   }
 }
