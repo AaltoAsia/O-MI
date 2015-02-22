@@ -20,6 +20,7 @@ import scala.util.{Success,Failure}
 
 import xml._
 import scala.concurrent.duration._
+import scala.concurrent._
 
 class SubscriptionHandlerActor extends Actor with ActorLogging {
   /**
@@ -39,10 +40,13 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     *
     *
     */
-import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val timeout = Timeout(5.seconds)
+  import ExecutionContext.Implicits.global
   import context.system
+
+  implicit val timeout = Timeout(5.seconds)
+
   type TimedSub = (Timestamp,Int) 
+
   object SubscriptionOrdering extends Ordering[TimedSub] {
     def compare(a: TimedSub, b: TimedSub) = a._1.getTime compare b._1.getTime
   }
@@ -56,7 +60,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
     case subscription: Subscription => {
       val (requestid, xmlanswer) = OMISubscription.setSubscription(subscription)
 
-      intervalSubs += ((new java.sql.Timestamp(System.currentTimeMillis()), requestid))
+      intervalSubs += ((new Timestamp(currentTimeMillis()), requestid))
 
       // TODO: send acception xmlanswer to the address this came from?
     }
@@ -64,7 +68,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   
 
   def handleIntervals = {
-    val activeSubs = intervalSubs.takeWhile(_._1.getTime <= System.currentTimeMillis())
+    val activeSubs = intervalSubs.takeWhile(_._1.getTime <= currentTimeMillis())
 
     for ( (time, id) <- activeSubs) {
 
