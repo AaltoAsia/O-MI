@@ -65,7 +65,7 @@ object Read {
 
         resultChildren = resultChildren.sortBy(_.mkString) //InfoItems are meant to come first
 
-        val mapId = sensormap.path.last
+        val mapId = sensormap.path.lastOption.getOrElse("")
         val xmlReturn =
           if (mapId == "Objects") {
             <Objects>{ resultChildren }</Objects>

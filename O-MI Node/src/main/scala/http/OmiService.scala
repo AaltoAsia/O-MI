@@ -12,6 +12,7 @@ import responses._
 import parsing._
 import parsing.Types._
 import xml._
+import sensordata.SensorData
 
 class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
@@ -51,9 +52,11 @@ trait OmiService extends HttpService {
                 <body>
                   <h1>Say hello to <i>O-MI Node service</i>!</h1>
                   <a href="/Objects">Url Data Discovery /Objects: Root of the hierarchy</a>
-                  <p>With url data discovery you can discover or request Objects,
+                  <p>
+                    With url data discovery you can discover or request Objects,
                      InfoItems and values with HTTP Get request by giving some existing
-                     path to the O-DF xml hierarchy.</p>
+                     path to the O-DF xml hierarchy.
+                  </p>
                   <a href="/html/form.html">O-MI Test Client WebApp</a>
                 </body>
               </html>
@@ -104,7 +107,7 @@ trait OmiService extends HttpService {
           }
 
           if (errors.isEmpty) {
-            complete {
+            respondWithMediaType(`text/xml`) { complete {
               requests.map {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
@@ -121,7 +124,7 @@ trait OmiService extends HttpService {
                   ??? //TODO: handle cancel
                 case _ => log.warning("Unknown request")
               }.mkString("\n")
-            }
+            }}
           } else {
             //Error found
             complete {
