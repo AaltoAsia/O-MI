@@ -48,10 +48,10 @@ object CallbackHandlers {
     address.scheme match {
 
       case "http" =>
-        httpHandler(address, data)
+        sendHttp(address, data)
 
       case "https" =>
-        httpHandler(address, data)
+        sendHttp(address, data)
 
       case _ =>
         Future{ ProtocolNotSupported }
