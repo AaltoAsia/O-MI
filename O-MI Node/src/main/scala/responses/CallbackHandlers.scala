@@ -22,24 +22,36 @@ object CallbackHandlers {
   implicit val system = ActorSystem()
   import system.dispatcher // execution context for futures
 
-  val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
+  private val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
 
+  private def sendHttp(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
+      val request = Post(address, data)
+      val responseFuture = httpHandler(request)
+      
+      responseFuture map { response =>
+
+        if (response.status.isSuccess)
+          CallbackSuccess
+        else
+          HttpError(response.status)
+      }
+  }
+
+  /**
+   * Send callback xml message containing `data` to `address`
+   * @param address spray Uri that tells the protocol and address for the callback
+   * @param data xml data to send as a callback
+   * @return future for the result of the callback is returned without blocking the calling thread
+   */
   def sendCallback(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
 
     address.scheme match {
 
       case "http" =>
+        httpHandler(address, data)
 
-        val request = Post(address, data)
-        val responseFuture = httpHandler(request)
-        
-        responseFuture map { response =>
-
-          if (response.status.isSuccess)
-            CallbackSuccess
-          else
-            HttpError(response.status)
-        }
+      case "https" =>
+        httpHandler(address, data)
 
       case _ =>
         Future{ ProtocolNotSupported }
