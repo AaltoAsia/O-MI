@@ -29,11 +29,15 @@ function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, c
 	
 	if(interval > 0) writer.writeAttributeString('interval', interval);
 	
-	if(begin && end){
+	if(begin){
 		console.log(new Date(begin).getTime());
-		console.log(new Date(end).getTime());
-		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
+		if(new Date(begin).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
+		}
+	}
+	if(end){
+		console.log(new Date(end).getTime());
+		if(new Date(end).getTime() > 0){
 			writer.writeAttributeString('end', end);
 		}
 	}
