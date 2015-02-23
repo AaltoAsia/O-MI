@@ -126,20 +126,11 @@ trait OmiService extends HttpService {
                 case subscription: Subscription => 
                   log.debug("sub") 
 
-                  if (subscription.interval.toDouble > 0.0) {
-                    // interval based subscription
+                  val (subId, response) = OMISubscription.setSubscription(subscription)
+                  subscriptionHandler ! NewSubscription(subId, subscription)
 
-                    val (subId, response) = OMISubscription.setSubscription(subscription)
-                    subscriptionHandler ! NewSubscription(subId, subscription)
+                  response
 
-                    response
-
-                  } else {
-                    // event based subscription
-
-                    ???
-                  }
-                    
                 case cancel: Cancel =>
                   log.debug("cancel")
                   ??? //TODO: handle cancel

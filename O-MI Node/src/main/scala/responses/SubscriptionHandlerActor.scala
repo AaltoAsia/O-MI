@@ -9,7 +9,8 @@ import akka.actor.ActorLogging
 
 import responses._
 import database._
-import parsing.Types.Subscription
+import parsing.Types.{Subscription, Path}
+import OMISubscription.{getPaths, OMISubscriptionResponse}
 
 import scala.collection.mutable.PriorityQueue
 
@@ -17,6 +18,7 @@ import java.sql.Timestamp
 import System.currentTimeMillis
 import scala.math.Ordering
 import scala.util.{Success,Failure}
+import scala.collection.mutable.{Map, HashMap}
 
 import xml._
 import scala.concurrent.duration._
@@ -26,52 +28,92 @@ import scala.concurrent._
 case object Handle
 case class NewSubscription(id: Int, sub: Subscription)
 
+
+
+
+/**
+ * TODO: Under development
+ */
 class SubscriptionHandlerActor extends Actor with ActorLogging {
-  /**
-    *
-    *
-    *
-    *
-    *
-    *
-    *
-    * TODO: Under development, think as pseudo code more than actual.
-    *
-    *
-    *
-    *
-    *
-    *
-    *
-    */
   import ExecutionContext.Implicits.global
   import context.system
 
   implicit val timeout = Timeout(5.seconds)
 
+
+
+  // FIXME: why not contain also the whole Subscription
   type TimedSub = (Timestamp,Int) 
+
+  type EventSub = (Subscription,Int)
+
 
   object SubscriptionOrdering extends Ordering[TimedSub] {
     def compare(a: TimedSub, b: TimedSub) = a._1.getTime compare b._1.getTime
   }
 
-  private var intervalSubs: PriorityQueue[ TimedSub ] =
-    new PriorityQueue[TimedSub]()(SubscriptionOrdering)
+  private var intervalSubs: PriorityQueue[TimedSub] =
+    PriorityQueue()(SubscriptionOrdering)
+
+  private var eventSubs: Map[Path, EventSub] = HashMap()
+
+  // TODO: load subscriptions at startup
+
+
 
 
   override def receive = { 
 
     case NewSubscription(requestId, subscription) => {
-      //val (requestId, xmlanswer) = OMISubscription.setSubscription(subscription)
+      //val (requestId, xmlanswer) = setSubscription(subscription)
       //sender() ! xmlanswer
       //// maybe do these in OmiService
 
-      intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
+      if (subscription.hasInterval){
+        // TODO wakeup if needed
+        intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
+      }else {
+        for (path <- getPaths(subscription.sensors))
+          eventSubs += path -> (subscription, requestId)
+      } 
     }
 
     case Handle => handleIntervals()
   }
   
+
+  def checkEventSubs(paths: Seq[Path]): Unit = {
+
+    for (path <- paths) {
+      eventSubs.get(path) match {
+
+        case Some((subscription, id)) => 
+
+          def failed(reason: String) =
+            log.warning(s"Callback failed; subscription id:$id  reason: $reason")
+
+          val addr = subscription.callback.get
+          val callbackXml = OMISubscriptionResponse(id)
+
+          val call = CallbackHandlers.sendCallback(addr, callbackXml)
+
+          call onComplete {
+            
+            case Success(CallbackSuccess) =>
+              log.debug(s"Callback sent; subscription id:$id addr:$addr")
+
+            case Success(fail: CallbackFailure) =>
+              failed(fail.toString)
+            case Failure(e) =>
+              failed(e.getMessage)
+          }
+
+        case None => // noop
+      }
+    }
+  }
+
+
 
   def handleIntervals(): Unit = {
     val activeSubs = intervalSubs.takeWhile(_._1.getTime <= currentTimeMillis())
@@ -102,7 +144,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       call onComplete {
 
         case Success(CallbackSuccess) => 
-          log.debug(s"Callback sent; subscription id:$id interval:$interval")
+          log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
 
         case Success(fail: CallbackFailure) =>
           failed(fail.toString)
@@ -114,8 +156,6 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
       // New time
-      // FIXME: should rather have calculation that takes long
-      // intervals into account on restart
       time.setTime(time.getTime + sub.interval)
 
       // Schedule for next
@@ -129,6 +169,6 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
   def generateOmi(id: Int): xml.Node = {
-    return OMISubscription.OMISubscriptionResponse(id)
+    return OMISubscriptionResponse(id)
   }
 }

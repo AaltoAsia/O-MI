@@ -69,7 +69,7 @@ object OMISubscription {
 
 	}*/
 
-	def getPaths(objects: List[OdfObject]): Buffer[Path] = {
+	def getPaths(objects: Iterable[OdfObject]): Buffer[Path] = {
 		var paths = Buffer[Path]()
 		for (obj <- objects) {
 			if (obj.childs.nonEmpty) {
