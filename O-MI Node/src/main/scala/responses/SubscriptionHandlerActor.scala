@@ -59,7 +59,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private var eventSubs: Map[Path, EventSub] = HashMap()
 
   // Attach to db events
-  Sqlite.attachSetHook(this.checkEventSubs)
+  SQLite.attachSetHook(this.checkEventSubs _)
 
   // TODO: load subscriptions at startup
 
@@ -74,8 +74,9 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       //// maybe do these in OmiService
 
       if (subscription.hasInterval){
-        // TODO wakeup if needed
         intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
+        handleIntervals()
+
       }else {
         for (path <- getPaths(subscription.sensors))
           eventSubs += path -> (subscription, requestId)
@@ -84,7 +85,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
     case Handle => handleIntervals()
   }
-  
+
 
   def checkEventSubs(paths: Seq[Path]): Unit = {
 
@@ -162,11 +163,12 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       // New time
       time.setTime(time.getTime + sub.interval)
 
-      // Schedule for next
-      intervalSubs.headOption map { next =>
-        val nextRun = next._1.getTime - currentTimeMillis()
-        system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
-      }
+    }
+
+    // Schedule for next
+    intervalSubs.headOption map { next =>
+      val nextRun = next._1.getTime - currentTimeMillis()
+      system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
     }
   }
 
