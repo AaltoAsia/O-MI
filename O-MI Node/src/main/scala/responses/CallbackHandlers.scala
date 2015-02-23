@@ -9,16 +9,18 @@ import spray.client.pipelining._
 
 
 // Errors
-sealed trait CallbackResult
-sealed class CallbackFailure               extends CallbackResult
-
-case object  CallbackSuccess               extends CallbackResult
-case class   HttpError(status: StatusCode) extends CallbackFailure
-case object  ProtocolNotSupported          extends CallbackFailure
 
 
 
 object CallbackHandlers {
+  sealed trait CallbackResult
+  sealed class CallbackFailure               extends CallbackResult
+
+  case object  CallbackSuccess               extends CallbackResult
+  case class   HttpError(status: StatusCode) extends CallbackFailure
+  case object  ProtocolNotSupported          extends CallbackFailure
+
+
   implicit val system = ActorSystem()
   import system.dispatcher // execution context for futures
 

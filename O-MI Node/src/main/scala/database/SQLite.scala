@@ -27,6 +27,10 @@ object SQLite {
   private val subs = TableQuery[DBSubscription]
   private val buffered = TableQuery[BufferedPath]
 
+  private var setEventHooks: List[Seq[Path] => Unit] = List()
+  def attachSetHook(f: Seq[Path] => Unit) =
+    setEventHooks = f :: setEventHooks
+
   //initializing database
   private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
   db withTransaction { implicit session =>
@@ -52,6 +56,11 @@ object SQLite {
         //if found a row with same path update else add new data
         count = pathQuery.list.length
         latestValues += (data.path, data.value, data.time)
+        
+        // Call hooks
+        val argument = Seq(data.path)
+        setEventHooks foreach {_(argument)}
+
         if (count > historyLength && !buffering) {
           removeExcess(data.path)
           false
@@ -82,6 +91,11 @@ object SQLite {
           }
           var buffering = buffered.filter(_.path === path).list.length > 0
           latestValues += (path, v, new Timestamp(new java.util.Date().getTime))
+
+          // Call hooks
+          val argument = Seq(path)
+          setEventHooks foreach {_(argument)}
+
           if (len >= historyLength) {
             removeExcess(path)
           }

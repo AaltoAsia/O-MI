@@ -11,6 +11,7 @@ import responses._
 import database._
 import parsing.Types.{Subscription, Path}
 import OMISubscription.{getPaths, OMISubscriptionResponse}
+import CallbackHandlers._
 
 import scala.collection.mutable.PriorityQueue
 
@@ -56,6 +57,9 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     PriorityQueue()(SubscriptionOrdering)
 
   private var eventSubs: Map[Path, EventSub] = HashMap()
+
+  // Attach to db events
+  Sqlite.attachSetHook(this.checkEventSubs)
 
   // TODO: load subscriptions at startup
 
