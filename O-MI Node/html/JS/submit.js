@@ -122,9 +122,12 @@ function generateRequest(){
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
 	var end = $("#end").val();
+	var newest = $("#newest").val();
+	var oldest = $("#oldest").val();
+	var callback = $("#callback").val();
 	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end);
+	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end, newest, oldest, callback);
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
