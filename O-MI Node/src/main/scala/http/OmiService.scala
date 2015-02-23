@@ -1,8 +1,7 @@
 package http
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingAdapter
-import akka.actor.ActorLogging
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
@@ -14,11 +13,14 @@ import parsing.Types._
 import xml._
 import sensordata.SensorData
 
-class OmiServiceActor extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
   def actorRefFactory = context
+
+  // Used for O-MI subscriptions
+  val subscriptionHandler = subHandler
 
   // this actor only runs our route, but you could add
   // other things here, like request stream processing
@@ -30,6 +32,7 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
   def log: LoggingAdapter
+  val subscriptionHandler: ActorRef
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -108,21 +111,41 @@ trait OmiService extends HttpService {
 
           if (errors.isEmpty) {
             respondWithMediaType(`text/xml`) { complete {
+
               requests.map {
+
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
                   log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
                   Read.OMIReadResponse(oneTimeRead)
+
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write
+
                 case subscription: Subscription => 
                   log.debug("sub") 
-                  ??? //TODO handle sub
+
+                  if (subscription.interval.toDouble > 0.0) {
+                    // interval based subscription
+
+                    val (subId, response) = OMISubscription.setSubscription(subscription)
+                    subscriptionHandler ! NewSubscription(subId, subscription)
+
+                    response
+
+                  } else {
+                    // event based subscription
+
+                    ???
+                  }
+                    
                 case cancel: Cancel =>
                   log.debug("cancel")
                   ??? //TODO: handle cancel
-                case _ => log.warning("Unknown request")
+
+                case u => log.warning("Unknown request " + u.toString)
+
               }.mkString("\n")
             }}
           } else {

@@ -1,4 +1,4 @@
-package response
+package responses
 
 import akka.actor.Actor
 import akka.event.LoggingAdapter
@@ -22,7 +22,9 @@ import xml._
 import scala.concurrent.duration._
 import scala.concurrent._
 
+// MESSAGES
 case object Handle
+case class NewSubscription(id: Int, sub: Subscription)
 
 class SubscriptionHandlerActor extends Actor with ActorLogging {
   /**
@@ -59,12 +61,12 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
   override def receive = { 
 
-    case subscription: Subscription => {
-      val (requestid, xmlanswer) = OMISubscription.setSubscription(subscription)
+    case NewSubscription(requestId, subscription) => {
+      //val (requestId, xmlanswer) = OMISubscription.setSubscription(subscription)
+      //sender() ! xmlanswer
+      //// maybe do these in OmiService
 
-      intervalSubs += ((new Timestamp(currentTimeMillis()), requestid))
-
-      // TODO: send acception xmlanswer to the address this came from?
+      intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
     }
 
     case Handle => handleIntervals()
