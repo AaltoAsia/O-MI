@@ -27,7 +27,7 @@ function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, c
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
-	if(interval > 0) writer.writeAttributeString('interval', interval);
+	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	if(begin){
 		console.log(new Date(begin).getTime());
