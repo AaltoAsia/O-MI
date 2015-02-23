@@ -199,7 +199,8 @@ object Read {
         node ++= 
         <InfoItem name={ infoItem.path.last }>
           {
-            val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
+            //val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
+            val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest ) // The parametres in database (fromStart, fromEnd)
             if(sensors.nonEmpty){
                 var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
                 for (sensor <- sensors) {
