@@ -43,7 +43,7 @@ package sensordata {
   /**
    * The main program for getting SensorData
    */
-  object SensorData {
+  class SensorData {
     var loading = false
     
     def queueSensors() : Unit = {

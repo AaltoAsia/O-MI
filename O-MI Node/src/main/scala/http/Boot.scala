@@ -32,7 +32,7 @@ object Starter {
     // Create test data
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
-    
+    val sensorData = new SensorData
     /*
     val testData = Map(
           "Objects/Refrigerator123/PowerConsumption" -> "0.123",
@@ -46,7 +46,7 @@ object Starter {
     for ((path, value) <- testData){
         SQLite.set(new DBSensor(path, value, testTime))
     }  */
-    SensorData.queueSensors()
+    sensorData.queueSensors()
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(
