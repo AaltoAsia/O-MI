@@ -77,7 +77,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
         handleIntervals()
 
-      }else {
+      }else if(subscription.isEventBased){
         for (path <- getPaths(subscription.sensors))
           eventSubs += path -> (subscription, requestId)
       } 
