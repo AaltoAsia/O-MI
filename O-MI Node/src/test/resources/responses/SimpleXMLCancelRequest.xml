@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+ 	<omi:cancel msgformat="odf">
+ 		<omi:requestId>12345</omi:requestId>
+ 	</omi:read>
+</omi:omiEnvelope>

@@ -431,7 +431,7 @@ object SQLite {
    * @param id id number that was generated during saving
    *
    */
-  def removeSub(id: Int) {
+  def removeSub(id: Int): Boolean = {
     db withSession { implicit session =>
       var toBeDeleted = subs.filter(_.ID === id)
       if (toBeDeleted.length.run > 0) {
@@ -441,8 +441,11 @@ object SQLite {
           }
         }
         toBeDeleted.delete
+      } else {
+        return false
       }
     }
+    true
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
