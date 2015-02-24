@@ -46,13 +46,7 @@ package sensordata {
   class SensorData {
     var loading = false
     
-    def queueSensors() : Unit = {
-      // Set loading to true, 
-      loading = true
-      
-      val uri = "http://121.78.237.160:2100/"
-      println("Queuing for new sensor data from: " + uri)
-      
+    val uri = "http://121.78.237.160:2100/"
       import scala.concurrent.ExecutionContext.Implicits.global
       // bring the actor system in scope
       implicit val system = ActorSystem()
@@ -60,10 +54,17 @@ package sensordata {
       implicit val formats = DefaultFormats
 
       implicit val timeout = akka.util.Timeout(10 seconds)
-
+      lazy val httpRef = IO(Http) //If problems change to def
+      
+    def queueSensors() : Unit = {
+      // Set loading to true, 
+      loading = true
+      println("Queuing for new sensor data from: " + uri)
+      
+      
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
-        (IO(Http) ? HttpRequest(GET, Uri(uri))).mapTo[HttpResponse]
+        (httpRef ? HttpRequest(GET, Uri(uri))).mapTo[HttpResponse]
 
       // wait for Future to complete
       futureResponse onComplete {
