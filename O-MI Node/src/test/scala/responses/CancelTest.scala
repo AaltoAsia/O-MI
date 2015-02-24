@@ -23,47 +23,28 @@ class CancelTest extends Specification with Before {
     val testtime = new java.sql.Timestamp(date.getTime)
     SQLite.clearDB()
     val testData = Map(
-        Path("Objects/ReadTest/Refrigerator123/PowerConsumption") -> "0.123",
-        Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",
-        Path("Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault") -> "Nothing wrong with probe",
-        Path("Objects/ReadTest/RoomSensors1/Temperature/Inside") -> "21.2",
-        Path("Objects/ReadTest/RoomSensors1/CarbonDioxide") -> "too much",
-        Path("Objects/ReadTest/RoomSensors1/Temperature/Outside") -> "12.2",
-        Path("Objects/ReadTest/SmartCar/Fuel") -> "30"
+        Path("Objects/CancelTest/Refrigerator123/PowerConsumption") -> "0.123"
     )
-
-    val intervaltestdata = List(
-                            "100",
-                            "102",
-                            "105",
-                            "109",
-                            "115",
-                            "117")
-
+    
     for ((path, value) <- testData){
         SQLite.remove(path)
         SQLite.set(new DBSensor(path, value, testtime))
     }
 
-    var count = 0
-
-    SQLite.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
-    for (value <- intervaltestdata){
-        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
-        count = count + 1000
-    }
+    var id = SQLite.saveSub(
+        new DBSub(Array(Path("Objects/CancelTest/Refrigerator123/PowerConsumption")),0,1,None,Some(testtime)))
   }
 
-  /*
+  
   "Cancel response" should {
     "Give correct XML when cancel is requested" in {
-        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/correctXMLfirsttest.xml")
+        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SimpleXMLCancelRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/CorrectCancelReturn.xml")
         val parserlist = OmiParser.parse(simpletestfile)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        val resultXML = trim(OMICancel.OMICancelResponse(parserlist))
         
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
-  } */
+  } 
 }
