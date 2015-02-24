@@ -64,29 +64,36 @@ object SQLite {
         }
       }
     }
-  def setMany(data:List[(String,String)])
-  {
-    db withTransaction{ implicit session =>
-    var path = Path("")
-    var len = 0
-    data.foreach {
-        case (p:String, v:String)=>
-           path = Path(p)
-           var pathQuery = latestValues.filter(_.path === path)
+  /**
+   * Used to set many values efficiently to the database.
+   * Currently works only for list of tuples consisting of path and value.
+   */
+  def setMany(data: List[(String, String)]) {
+    db withTransaction { implicit session =>
+      var path = Path("")
+      var len = 0
+      data.foreach {
+        case (p: String, v: String) =>
+          path = Path(p)
+          var pathQuery = latestValues.filter(_.path === path)
           len = pathQuery.length.run
-          if(len == 0)
-          {
+          if (len == 0) {
             addObjects(path)
           }
           var buffering = buffered.filter(_.path === path).list.length > 0
-          latestValues += (path,v,new Timestamp(new java.util.Date().getTime))
-          if(len >= historyLength)
-          {
-           removeExcess(path)
+          latestValues += (path, v, new Timestamp(new java.util.Date().getTime))
+          if (len >= historyLength) {
+            removeExcess(path)
           }
-    }
+      }
     }
   }
+  /**
+   * sets the historylength to desired length
+   * default is 10
+   * 
+   * @param newLength new length to be used
+   */
   def setHistoryLength(newLength: Int) {
     historyLength = newLength
   }
@@ -132,71 +139,95 @@ object SQLite {
       }
       return deleted
     }
-    
+
   }
-  def getSubData(id:Int):Array[DBSensor]=
-  {
-    db withTransaction { implicit session =>
-    var result = Buffer[DBSensor]()
-    var subQuery = subs.filter(_.ID===id)
-      if(subQuery.length.run > 0)
-      {
-        var sub = subQuery.first
-        var paths = sub._2.split(";")
-        paths.foreach{
-          p => 
-            result ++= getNBetween(Path(p),Some(sub._3),None,None,None)
+  /**
+   * Returns array of DBSensors for given subscription id.
+   * Array consists of all sensor values after beginning of the subscription
+   * for all the sensors in the subscription
+   * returns empty array if no data or subscription is found
+   * 
+   * @param id subscription id that is assigned during saving the subscription
+   * 
+   * @return Array of DBSensors
+   */
+  def getSubData(id: Int): Array[DBSensor] =
+    {
+      db withTransaction { implicit session =>
+        var result = Buffer[DBSensor]()
+        var subQuery = subs.filter(_.ID === id)
+        if (subQuery.length.run > 0) {
+          var sub = subQuery.first
+          var paths = sub._2.split(";")
+          paths.foreach {
+            p =>
+              result ++= getNBetween(Path(p), Some(sub._3), None, None, None)
+          }
         }
+        result.toArray
       }
-    result.toArray
     }
-  }
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
    * historyLength
    * @param path path to sensor as Path object
-   * 
+   *
    */
   private def removeExcess(path: Path)(implicit session: Session) =
     {
       val pathQuery = latestValues.filter(_.path === path)
       var count = pathQuery.length.run
-      if(count > historyLength)
-      {
-      val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
-      pathQuery.filter(_.timestamp < oldtime).delete
+      if (count > historyLength) {
+        val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
+        pathQuery.filter(_.timestamp < oldtime).delete
       }
     }
   /**
-   * put the path to buffering table
+   * put the path to buffering table if it is not there yet, otherwise
+   * increases the count on that item, to prevent removing buffered data
+   * if one subscription ends and other is still buffering.
+   * 
    * @param path path as Path object
    */
   def startBuffering(path: Path) {
     db withTransaction { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
-      if (pathQuery.list.length == 0) {
-        buffered += (path)
+      var len = pathQuery.length.run
+      if (len == 0) {
+        buffered += (path, 1)
         true
       } else {
+        val counts = for {
+          c <- pathQuery
+        } yield (c.count)
+        counts.update(len + 1)
         false
       }
     }
   }
-   /**
-   * removes the path from buffering table
-   * also clear all buffered data
-   * leaves only historyLength amount of data
-   * Should be called only when the buffered data is not needed anymore
+  /**
+   * removes the path from buffering table or dimishes the count by one
+   * also clear all buffered data if count is only 1
+   * leaves only historyLength amount of data if count is only 1
    * @param path path as Path object
    */
   def stopBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
-      if (pathQuery.length.run > 0) {
-        pathQuery.delete
-        removeExcess(path)
-        true
+      var len = pathQuery.length.run
+      if (len > 0) {
+        if (pathQuery.first._2 > 1) {
+          val counts = for {
+            c <- pathQuery
+          } yield (c.count)
+          counts.update(len - 1)
+          false
+        } else {
+          pathQuery.delete
+          removeExcess(path)
+          true
+        }
       } else {
         false
       }
@@ -251,16 +282,6 @@ object SQLite {
       result
     }
   /**
-   * getInterval returns Array of DBSensors that are on given path and between given timestamps
-   * @param path path to sensor whose values are of interest
-   * @param start
-   */
-  @deprecated("Should use getNBetween(path Some(start),Some(end),None,None)","11/02/2015")
-  def getInterval(path: Path, start: java.sql.Timestamp, end: java.sql.Timestamp): Array[DBSensor] =
-    getNBetween(path, Some(start),Some(end),None,None)
-    
-
-  /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    *
@@ -280,76 +301,50 @@ object SQLite {
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
    * search is targeted between these two times. If only start is given,all values from start time onwards are
    * targeted. Similiarly if only end is given, values before end time are targeted.
-   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number 
+   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
    * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
    * the end.
    * All parameters except path are optional, given only path returns all values in DB for that path
-   * 
+   *
    * @param path path as Path object
    * @param start optional start Timestamp
    * @param start optional end Timestamp
    * @param fromStart number of values to be returned from start
    * @param fromEnd number of values to be returned from end
-   * 
+   *
    * @param return Array of DBSensors
    */
-  
-  def getNBetween(path:Path,start:Option[Timestamp],end:Option[Timestamp],fromStart:Option[Int],fromEnd:Option[Int]):Array[DBSensor]={
+
+  def getNBetween(path: Path, start: Option[Timestamp], end: Option[Timestamp], fromStart: Option[Int], fromEnd: Option[Int]): Array[DBSensor] = {
     var result = Array[DBSensor]()
     db withTransaction { implicit session =>
-    var query = latestValues.filter(_.path===path)
-    if(start != None)
-    {
-      query = query.filter(_.timestamp >= start.get)
-    }
-    if(end != None)
-    {
-      query = query.filter(_.timestamp <= end.get)
-    }
-    if(fromStart != None && fromEnd != None)
-    {
-      //does not compute
-      //can't have query from two different parts in one go
-    }
-    else if(fromStart != None)
-    {
-      var amount = Math.max(0,Math.min(query.length.run,fromStart.get))
-      query = query.take(amount)
-    }
-    else if(fromEnd != None)
-    {
-      var amount = Math.max(0,Math.min(query.length.run,fromEnd.get))
-      query = query.drop(query.length.run - amount)
-    }
-    result = Array.ofDim[DBSensor](query.length.run)
-    var index = 0
-    query foreach {
+      var query = latestValues.filter(_.path === path)
+      if (start != None) {
+        query = query.filter(_.timestamp >= start.get)
+      }
+      if (end != None) {
+        query = query.filter(_.timestamp <= end.get)
+      }
+      if (fromStart != None && fromEnd != None) {
+        //does not compute
+        //can't have query from two different parts in one go
+      } else if (fromStart != None) {
+        var amount = Math.max(0, Math.min(query.length.run, fromStart.get))
+        query = query.take(amount)
+      } else if (fromEnd != None) {
+        var amount = Math.max(0, Math.min(query.length.run, fromEnd.get))
+        query = query.drop(query.length.run - amount)
+      }
+      result = Array.ofDim[DBSensor](query.length.run)
+      var index = 0
+      query foreach {
         case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
           result(index) = new DBSensor(dbpath, dbvalue, dbtime)
           index += 1
       }
-    result
+      result
     }
   }
-  /**
-   * returns n latest values from sensor at given path as Array[DBSensor]
-   * returns all stored values if n is greater than number of values stored
-   * @param path path to sensor
-   * @param n number of values to return
-   * @param return returns Array[DBSensor]
-   */
-@deprecated("Should use getNBetween(path None,None,None,Some(n))","11/02/2015")
-  def getNLatest(path: Path, n: Int) = getNBetween(path, None,None,None,Some(n))
-
-  /**
-   * returns n oldest values from sensor at given path as Array[DBSensor]
-   * returns all stored values if n is greater than number of values stored
-   * @param path path to sensor
-   * @param n number of values to return
-   * @param return returns Array[DBSensor]
-   */
-@deprecated("Should use getNBetween(path None,None,Some(n),None)","11/02/2015")
-  def getNOldest(path: Path, n: Int) = getNBetween(path, None,None,Some(n),None)
 
   /**
    * Empties all the data from the database
@@ -436,20 +431,21 @@ object SQLite {
    * @param id id number that was generated during saving
    *
    */
-  def removeSub(id: Int) {
+  def removeSub(id: Int): Boolean = {
     db withSession { implicit session =>
       var toBeDeleted = subs.filter(_.ID === id)
-      if(toBeDeleted.length.run > 0)
-      {
-        if(toBeDeleted.first._6 == None)
-        {
-          toBeDeleted.first._2.split(";").foreach{p =>
+      if (toBeDeleted.length.run > 0) {
+        if (toBeDeleted.first._6 == None) {
+          toBeDeleted.first._2.split(";").foreach { p =>
             stopBuffering(Path(p))
           }
         }
         toBeDeleted.delete
+      } else {
+        return false
       }
     }
+    true
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
@@ -466,7 +462,7 @@ object SQLite {
         if (query.list.length > 0) {
           //creates DBSub object based on saved information
           var head = query.first
-          var sub = new DBSub(Array(), head._4, head._5, head._6,Some(head._3))
+          var sub = new DBSub(Array(), head._4, head._5, head._6, Some(head._3))
           sub.paths = head._2.split(";").map(Path(_))
           sub.id = head._1
           res = Some(sub)
@@ -511,111 +507,3 @@ object SQLite {
   }
 }
 
-import SQLite._
-
-/**
- * DBSub class to represent subscription information
- * @param paths Array of paths representing all the sensors the subscription needs
- * @param ttl time to live. in seconds. subscription expires after ttl seconds
- * @param interval to store the interval value to DB
- * @param callback optional callback address. use None if no address is needed
- */
-class DBSub(var paths: Array[Path], val ttl: Int, val interval: Int, val callback: Option[String], var startTime:Option[Timestamp]) {
-  //this is assigned later when subscribtion is added to db
-  var id: Int = 0
-  if(startTime == None)
-  {
-    startTime = Some(new Timestamp(new java.util.Date().getTime))
-  }
-  if(callback == None)
-  {
-    paths.foreach{
-    startBuffering(_)
-    }
-  }
-}
-
-/**
- * Abstract base class for sensors' data structure
- *
- * @param path to where node is. Last part is key for this.
- *
- */
-sealed abstract class DBItem(val path: Path)
-
-/**
- * case class DBSensor for the actual sensor data
- * @param pathto path to sensor
- * @param value  actual value from sensor as String
- * @param time time stamp indicating when sensor data was read using java.sql.Timestamp
- *
- */
-case class DBSensor(pathto: Path, var value: String, var time:Timestamp) extends DBItem(pathto)
-
-/**
- * case class DBObject for object hierarchy
- * returned from get when path doesn't end in actual sensor
- * used to store hierarchy and to retrieve object's children for given path
- *
- * @param pathto path to object
- */
-case class DBObject(pathto: Path) extends DBItem(pathto) {
-  var childs = Array[DBItem]()
-}
-
-/**
- * class DBData to store sensor data to database
- * used internally by the object SQLite
- */
-class DBData(tag: Tag)
-  extends Table[(Path, String, java.sql.Timestamp)](tag, "Values") {
-  // This is the primary key column:
-  def path = column[Path]("PATH")
-  def value = column[String]("VALUE")
-  def timestamp = column[java.sql.Timestamp]("TIME")
-  // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(Path, String, java.sql.Timestamp)] = (path, value, timestamp)
-  def pk = primaryKey("pk_DBData", (path, timestamp))
-}
-
-/**
- * class DBNode to store object hierarchy
- * used internally by the object SQLite
- */
-class DBNode(tag: Tag)
-  extends Table[(Path, Path, String)](tag, "Objects") {
-  // This is the primary key column:
-  def path = column[Path]("PATH", O.PrimaryKey)
-  def parentPath = column[Path]("PARENTPATH")
-  def key = column[String]("KEY")
-
-  // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(Path, Path, String)] = (path, parentPath, key)
-}
-
-/**
- * Storing paths that need to be buffered
- * i.e if path is found in the table it is being buffered
- * else only historyLength amount of values is stored
- */
-class BufferedPath(tag: Tag)
-  extends Table[(Path)](tag, "Buffered") {
-  // This is the primary key column:
-  def path = column[Path]("PATH", O.PrimaryKey)
-  // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(Path)] = (path)
-}
-/**
- * Storing the subscription information to DB
- */
-class DBSubscription(tag: Tag)
-  extends Table[(Int, String, java.sql.Timestamp, Int, Int, Option[String])](tag, "subscriptions") {
-  // This is the primary key column:
-  def ID = column[Int]("ID", O.PrimaryKey)
-  def paths = column[String]("PATHS")
-  def start = column[java.sql.Timestamp]("START")
-  def TTL = column[Int]("TTL")
-  def interval = column[Int]("INTERVAL")
-  def callback = column[Option[String]]("CALLBACK")
-  def * : ProvenShape[(Int, String, java.sql.Timestamp, Int, Int, Option[String])] = (ID, paths, start, TTL, interval, callback)
-}
