@@ -282,15 +282,6 @@ object SQLite {
       result
     }
   /**
-   * getInterval returns Array of DBSensors that are on given path and between given timestamps
-   * @param path path to sensor whose values are of interest
-   * @param start
-   */
-  @deprecated("Should use getNBetween(path Some(start),Some(end),None,None)", "11/02/2015")
-  def getInterval(path: Path, start: java.sql.Timestamp, end: java.sql.Timestamp): Array[DBSensor] =
-    getNBetween(path, Some(start), Some(end), None, None)
-
-  /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    *
@@ -354,25 +345,6 @@ object SQLite {
       result
     }
   }
-  /**
-   * returns n latest values from sensor at given path as Array[DBSensor]
-   * returns all stored values if n is greater than number of values stored
-   * @param path path to sensor
-   * @param n number of values to return
-   * @param return returns Array[DBSensor]
-   */
-  @deprecated("Should use getNBetween(path None,None,None,Some(n))", "11/02/2015")
-  def getNLatest(path: Path, n: Int) = getNBetween(path, None, None, None, Some(n))
-
-  /**
-   * returns n oldest values from sensor at given path as Array[DBSensor]
-   * returns all stored values if n is greater than number of values stored
-   * @param path path to sensor
-   * @param n number of values to return
-   * @param return returns Array[DBSensor]
-   */
-  @deprecated("Should use getNBetween(path None,None,Some(n),None)", "11/02/2015")
-  def getNOldest(path: Path, n: Int) = getNBetween(path, None, None, Some(n), None)
 
   /**
    * Empties all the data from the database
@@ -532,110 +504,3 @@ object SQLite {
   }
 }
 
-import SQLite._
-
-/**
- * DBSub class to represent subscription information
- * @param paths Array of paths representing all the sensors the subscription needs
- * @param ttl time to live. in seconds. subscription expires after ttl seconds
- * @param interval to store the interval value to DB
- * @param callback optional callback address. use None if no address is needed
- */
-class DBSub(var paths: Array[Path], val ttl: Int, val interval: Int, val callback: Option[String], var startTime: Option[Timestamp]) {
-  //this is assigned later when subscribtion is added to db
-  var id: Int = 0
-  if (startTime == None) {
-    startTime = Some(new Timestamp(new java.util.Date().getTime))
-  }
-  if (callback == None) {
-    paths.foreach {
-      startBuffering(_)
-    }
-  }
-}
-
-/**
- * Abstract base class for sensors' data structure
- *
- * @param path to where node is. Last part is key for this.
- *
- */
-sealed abstract class DBItem(val path: Path)
-
-/**
- * case class DBSensor for the actual sensor data
- * @param pathto path to sensor
- * @param value  actual value from sensor as String
- * @param time time stamp indicating when sensor data was read using java.sql.Timestamp
- *
- */
-case class DBSensor(pathto: Path, var value: String, var time: Timestamp) extends DBItem(pathto)
-
-/**
- * case class DBObject for object hierarchy
- * returned from get when path doesn't end in actual sensor
- * used to store hierarchy and to retrieve object's children for given path
- *
- * @param pathto path to object
- */
-case class DBObject(pathto: Path) extends DBItem(pathto) {
-  var childs = Array[DBItem]()
-}
-
-/**
- * class DBData to store sensor data to database
- * used internally by the object SQLite
- */
-class DBData(tag: Tag)
-  extends Table[(Path, String, java.sql.Timestamp)](tag, "Values") {
-  // This is the primary key column:
-  def path = column[Path]("PATH")
-  def value = column[String]("VALUE")
-  def timestamp = column[java.sql.Timestamp]("TIME")
-  // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(Path, String, java.sql.Timestamp)] = (path, value, timestamp)
-  def pk = primaryKey("pk_DBData", (path, timestamp))
-}
-
-/**
- * class DBNode to store object hierarchy
- * used internally by the object SQLite
- */
-class DBNode(tag: Tag)
-  extends Table[(Path, Path, String)](tag, "Objects") {
-  // This is the primary key column:
-  def path = column[Path]("PATH", O.PrimaryKey)
-  def parentPath = column[Path]("PARENTPATH")
-  def key = column[String]("KEY")
-
-  // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(Path, Path, String)] = (path, parentPath, key)
-}
-
-/**
- * Storing paths that need to be buffered
- * i.e if path is found in the table it is being buffered
- * else only historyLength amount of values is stored
- */
-class BufferedPath(tag: Tag)
-  extends Table[(Path, Int)](tag, "Buffered") {
-  // This is the primary key column:
-  def path = column[Path]("PATH", O.PrimaryKey)
-  def count = column[Int]("COUNT")
-  // Every table needs a * projection with the same type as the table's type parameter
-  def * : ProvenShape[(Path, Int)] = (path, count)
-}
-/**
- * Storing the subscription information to DB
- */
-class DBSubscription(tag: Tag)
-  extends Table[(Int, String, java.sql.Timestamp, Int, Int, Option[String])](tag, "subscriptions") {
-  // This is the primary key column:
-  def ID = column[Int]("ID", O.PrimaryKey)
-  def paths = column[String]("PATHS")
-  def start = column[java.sql.Timestamp]("START")
-  def TTL = column[Int]("TTL")
-  def interval = column[Int]("INTERVAL")
-  def callback = column[Option[String]]("CALLBACK")
-  def * : ProvenShape[(Int, String, java.sql.Timestamp, Int, Int, Option[String])] = (ID, paths, start, TTL, interval, callback)
-}
