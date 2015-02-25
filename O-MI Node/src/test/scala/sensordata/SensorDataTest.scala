@@ -33,7 +33,12 @@ class SensorDataTest extends Specification {
       val sensorData = new SensorData{override def httpRef = probe.ref}
       sensorData.queueSensors()
       probe.expectMsgType[HttpRequest]
-      probe.reply(new HttpResponse(entity = HttpEntity("test")))
+      probe.reply(new HttpResponse(entity = HttpEntity("""{
+    "vtt_otakaari4_humidity_100":"0.85",
+    "vtt_otakaari4_temperature_100":"211.28",
+    "vtt_otakaari4_temperature_10624":"-545.39"
+}
+""")))
     }
   }
 }
