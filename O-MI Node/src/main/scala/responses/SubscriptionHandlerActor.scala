@@ -149,7 +149,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         call onComplete {
 
           case Success(CallbackSuccess) => 
-            log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
+            log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
 
           case Success(fail: CallbackFailure) =>
             failed(fail.toString)
