@@ -45,23 +45,23 @@ package sensordata {
    */
   class SensorData {
     var loading = false
-    
-    val uri = "http://121.78.237.160:2100/"
-      import scala.concurrent.ExecutionContext.Implicits.global
-      // bring the actor system in scope
-      implicit val system = ActorSystem()
-      // Define formats
-      implicit val formats = DefaultFormats
 
-      implicit val timeout = akka.util.Timeout(10 seconds)
-      lazy val httpRef = IO(Http) //If problems change to def
-      
-    def queueSensors() : Unit = {
+    val uri = "http://121.78.237.160:2100/"
+    import scala.concurrent.ExecutionContext.Implicits.global
+    // bring the actor system in scope
+    implicit val system = ActorSystem()
+    // Define formats
+    implicit val formats = DefaultFormats
+
+    implicit val timeout = akka.util.Timeout(10 seconds)
+    
+    def httpRef = IO(Http) //If problems change to def
+
+    def queueSensors(): Unit = {
       // Set loading to true, 
       loading = true
       println("Queuing for new sensor data from: " + uri)
-      
-      
+
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
         (httpRef ? HttpRequest(GET, Uri(uri))).mapTo[HttpResponse]
@@ -79,17 +79,17 @@ package sensordata {
           } yield (sensor, value)
 
           addToDatabase(list)
-          
-          println("Sensors Added to Database!")
-          
+
+          system.log.info("Sensors Added to Database!")
+
           // Schedule for new future in 5 minutes
           //TEST: 1 minute
           akka.pattern.after(300 seconds, using = system.scheduler)(Future { queueSensors() })
           loading = false
-          
+
         case Failure(error) =>
           loading = false
-          println("An error has occured: " + error.getMessage)
+          system.log.error("An error has occured: " + error.getMessage)
       }
     }
 
@@ -103,22 +103,22 @@ package sensordata {
       // Define dateformat for dateTime value
       val date = new java.util.Date()
       var i = 0
-      
-      if(!list.isEmpty){
-	      // InfoItems filtered out
-	      SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item =>{
-	    	val sensor: String = item._1
-	        val value: String = item._2 // Currently as string, convert to double?
-	
-	        // Split name from underlines
-	        val split = sensor.split('_')
-	    	  
-	      // Object id
-	        val objectId: String = split(0) + "_" + split(1) + "_" + split.last
-	      	val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
-	
-	      	("Objects/" + objectId + "/" + infoItemName, value)
-	      }))
+
+      if (!list.isEmpty) {
+        // InfoItems filtered out
+        SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
+          val sensor: String = item._1
+          val value: String = item._2 // Currently as string, convert to double?
+
+          // Split name from underlines
+          val split = sensor.split('_')
+
+          // Object id
+          val objectId: String = split(0) + "_" + split(1) + "_" + split.last
+          val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
+
+          ("Objects/" + objectId + "/" + infoItemName, value)
+        }))
       }
     }
   }
