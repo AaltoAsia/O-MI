@@ -57,7 +57,10 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Int):Array[DBSensor] =
       else
       { 
         //data is older than our current spot so move onwards
+        if(formatedIndex < formatedData.length-1)
+        {
         formatedIndex += 1
+        }
         formatedData(formatedIndex) = rawdata(n)
         compareTime = new Timestamp(starttime.getTime + 1000*interval*(formatedIndex + 1))
       }
