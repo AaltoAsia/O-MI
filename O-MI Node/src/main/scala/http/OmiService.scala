@@ -111,8 +111,11 @@ trait OmiService extends HttpService {
           }
 
           if (errors.isEmpty) {
-            respondWithMediaType(`text/xml`) { complete {
-              requests.map {
+            respondWithMediaType(`text/xml`) {
+              
+              var returnStatus = 200
+              //TODO: Currently sending multiple omi:omiEnvelope
+              val result = requests.map {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
                   log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
@@ -120,24 +123,28 @@ trait OmiService extends HttpService {
                   Await.result(response, oneTimeRead.ttl.toDouble  seconds).asInstanceOf[NodeSeq]
                 case write: Write => 
                   log.debug("write") 
-                  ??? //TODO handle Write
+                  ErrorResponse.notImplemented
+                  returnStatus = 501
                 case subscription: Subscription => 
                   log.debug("sub") 
-                  ??? //TODO handle sub
+                  ErrorResponse.notImplemented
+                  returnStatus = 501
                 case cancel: Cancel =>
                   log.debug("cancel")
-                  ??? //TODO: handle cancel
+                  ErrorResponse.notImplemented
+                  returnStatus = 501
                 case _ => log.warning("Unknown request")
+                  returnStatus = 400
               }.mkString("\n")
-            }}
+              complete(returnStatus, result)
+            }
           } else {
             //Error found
-            complete {
+            complete (400,{
               log.error("ERROR")
               println(errors)
-              
-              ??? // TODO handle error
-            }
+              ErrorResponse.parseErrorResponse(errors.map{err => err.asInstanceOf[ParseError]})  
+            })
           }
         }
       }
