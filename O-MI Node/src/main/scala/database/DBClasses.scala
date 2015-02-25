@@ -41,7 +41,9 @@ sealed abstract class DBItem(val path: Path)
  * @param time time stamp indicating when sensor data was read using java.sql.Timestamp
  *
  */
-case class DBSensor(pathto: Path, var value: String, var time: Timestamp) extends DBItem(pathto)
+case class DBSensor(pathto: Path, var value: String, var time: Timestamp) extends DBItem(pathto){
+  override def toString=value
+}
 
 /**
  * case class DBObject for object hierarchy
