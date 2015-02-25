@@ -146,7 +146,7 @@ class OmiServiceSpec extends Specification
       "handle a single read request and the response" should {
         "return error with invalid request" in {
           Post("/", invalidReadTestRequestFridge) ~> myRoute~> check {
-            status === InternalServerError // TODO this test needs to be updated when error handling is correctly implemented
+            status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
           }
         }
 
