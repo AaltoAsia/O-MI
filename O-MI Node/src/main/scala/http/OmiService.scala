@@ -9,6 +9,9 @@ import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
 import responses._
 
+import akka.pattern.ask
+import scala.concurrent.duration._
+import scala.concurrent._
 import parsing._
 import parsing.Types._
 import xml._
@@ -29,6 +32,7 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
+  import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
 
   //Handles CORS allow-origin seems to be enough
@@ -112,7 +116,8 @@ trait OmiService extends HttpService {
                 case oneTimeRead: OneTimeRead =>
                   log.debug("read")
                   log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
-                  Read.OMIReadResponse(oneTimeRead)
+                  val response = Future{ Read.OMIReadResponse(oneTimeRead) }
+                  Await.result(response, oneTimeRead.ttl.toDouble  seconds).asInstanceOf[NodeSeq]
                 case write: Write => 
                   log.debug("write") 
                   ??? //TODO handle Write
@@ -130,6 +135,7 @@ trait OmiService extends HttpService {
             complete {
               log.error("ERROR")
               println(errors)
+              
               ??? // TODO handle error
             }
           }
