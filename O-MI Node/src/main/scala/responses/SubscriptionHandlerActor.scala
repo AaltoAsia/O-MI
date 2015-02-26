@@ -77,7 +77,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
         handleIntervals()
 
-      }else {
+      }else if(subscription.isEventBased){
         for (path <- getPaths(subscription.sensors))
           eventSubs += path -> (subscription, requestId)
       } 
@@ -124,51 +124,53 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     val activeSubs = intervalSubs.takeWhile(_._1.getTime <= currentTimeMillis())
 
     for ( (time, id) <- activeSubs) {
+      Future{
+        //val dbSensors = SQLite.getSubData(id) right now subscription omi
+        //generation uses the paths in the dbsub, not sure if getSubData-function
+        //is needed as this looper loops through all subs in the interval already?
+        //Also with the paths its easier to construct the OMI hierarchy
 
-      //val dbSensors = SQLite.getSubData(id) right now subscription omi
-      //generation uses the paths in the dbsub, not sure if getSubData-function
-      //is needed as this looper loops through all subs in the interval already?
-      //Also with the paths its easier to construct the OMI hierarchy
-
-      val sub = SQLite.getSub(id).get 
-      val omiMsg = generateOmi(id)
-      val callbackAddr = sub.callback.get
-      val interval = sub.interval
+        val sub = SQLite.getSub(id).get 
+        val omiMsg = generateOmi(id)
+        val callbackAddr = sub.callback.get
+        val interval = sub.interval
 
 
 
-      // Send, handle errors
+        // Send, handle errors
 
-      def failed(reason: String) =
-          log.warning(
-            s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
-          )
+        def failed(reason: String) =
+            log.warning(
+              s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
+            )
 
-      val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
+        val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
 
-      call onComplete {
+        call onComplete {
 
-        case Success(CallbackSuccess) => 
-          log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
+          case Success(CallbackSuccess) => 
+            log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
 
-        case Success(fail: CallbackFailure) =>
-          failed(fail.toString)
-          
-        case Failure(e) =>
-          failed(e.getMessage)
+          case Success(fail: CallbackFailure) =>
+            failed(fail.toString)
+            
+          case Failure(e) =>
+            failed(e.getMessage)
+        }
+
+
+
+        // New time
+        time.setTime(time.getTime + sub.interval)
+        intervalSubs += Tuple2( time , id)
       }
-
-
-
-      // New time
-      time.setTime(time.getTime + sub.interval)
-
     }
 
     // Schedule for next
     intervalSubs.headOption map { next =>
       val nextRun = next._1.getTime - currentTimeMillis()
       system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
+      log.info(s"Next subcription handling scheluded to $nextRun.")
     }
   }
 

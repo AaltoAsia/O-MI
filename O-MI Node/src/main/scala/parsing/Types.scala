@@ -36,8 +36,8 @@ object Types {
                             requestId: Seq[ String] = Seq.empty
                             ) extends ParseMsg {
 
-    def hasInterval  = interval.toDouble > 0.0
-    def isEventBased = !hasInterval
+    def hasInterval  = interval.toDouble >= 0.0
+    def isEventBased = interval.toDouble == -1
   }
   case class Result(  returnValue: String,
                       returnCode: String,
