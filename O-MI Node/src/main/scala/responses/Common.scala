@@ -8,6 +8,9 @@ import xml._
  * for documentation.
  */
 object Common {
+  /**
+   * Wraps innerxml to O-MI Envelope
+   */
   def omiEnvelope(ttl: Int)(innerxml: NodeSeq): NodeSeq = {
     <omi:omiEnvelope xmlns:omi="omi.xsd"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd
@@ -19,6 +22,9 @@ object Common {
   def omiEnvelope: NodeSeq => NodeSeq = omiEnvelope(0)
 
 
+  /**
+   * Wraps innerxml to O-MI Envelope and response
+   */
   def omiResponse(ttl: Int)(innerxml: NodeSeq) = {
     omiEnvelope(ttl)(
       <omi:response>
@@ -29,30 +35,41 @@ object Common {
 
   def omiResponse: NodeSeq => NodeSeq = omiResponse(0)
 
+
+
+  def result(innerxml: NodeSeq): NodeSeq = {
+    <omi:result>
+      { innerxml }
+    </omi:result>
+  }
+
+  /**
+   * Wraps innerxml to O-MI Envelope, response and result with msgformat odf
+   */
   def omiOdfResult(innerxml: NodeSeq): NodeSeq = omiResponse(
       <omi:result msgformat="odf">
         { innerxml }
       </omi:result>
     )
-  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(
-      <omi:result>
-        { innerxml }
-      </omi:result>
-    )
+
+  /**
+   * Wraps innerxml to O-MI Envelope, response and result
+   */
+  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(omiResult(innerxml))
 
 
-  def returnCodeWrapper(code: Int): Elem =
+  def returnCode(code: Int): Elem =
     <omi:return returnCode={ code.toString }></omi:return>
 
   /**
    * NOTE: Contains implementation specific "description" attribute
    * that can have a more detailed error message.
    */
-  def returnCodeWrapper(code: Int, description: String): Elem =
+  def returnCode(code: Int, description: String): Elem =
     <omi:return returnCode={ code.toString } description={ description }>
     </omi:return>
 
-  val returnCode200: Elem = returnCodeWrapper(200)
+  val returnCode200: Elem = returnCode(200)
 
   def odfmsgWrapper(innerxml: NodeSeq): NodeSeq = {
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
@@ -60,16 +77,5 @@ object Common {
     </omi:msg>
   }
 
-  def genErrorResponse(parseError: ParseError): xml.NodeSeq = {
-    omiResponse(
-      returnCodeWrapper(400, parseError.toString)
-    )
-  }
-
-  def genErrorResponse(parseErrors: Iterable[ParseError]): xml.NodeSeq = {
-    omiResponse(
-      returnCodeWrapper(400, parseErrors.mkString(", "))
-    )
-  }
 }
 

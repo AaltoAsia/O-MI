@@ -1,36 +1,28 @@
 package responses
 
+import Common._
 import parsing._
 import parsing.Types._
 import xml._
 
 object ErrorResponse {
-  def parseErrorResponse( errors: Seq[ParseError]) : NodeSeq = {
-    <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-      <omi:response>
-        <omi:result>
-          <omi:return returnCode="400" description={errors.map{err => err.msg}.mkString("\n")}></omi:return>
-        </omi:result>
-      </omi:response>
-    </omi:omiEnvelope>
+  def parseErrorResponse(parseError: ParseError): NodeSeq =
+    parseErrorResponse(Seq(parseError))
+  def parseErrorResponse(parseErrors: Iterable[ParseError]): NodeSeq = {
+    omiResult(
+      returnCode(400, parseErrors.mkString(", "))
+    )
   }
+
   def ttlTimeOut = {
-    <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-      <omi:response>
-        <omi:result>
-          <omi:return returnCode="500" description="Could not produce response with in ttl."></omi:return>
-        </omi:result>
-      </omi:response>
-    </omi:omiEnvelope>
+    omiResult(
+      returnCode(500, "Could not produce response with in ttl.")
+    )
   }
   def notImplemented = {
-    <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-      <omi:response>
-        <omi:result>
-          <omi:return returnCode="501"></omi:return>
-        </omi:result>
-      </omi:response>
-    </omi:omiEnvelope>
+    omiResult(
+      returnCode(501, "Not implemented.")
+    )
   }
 
 }
