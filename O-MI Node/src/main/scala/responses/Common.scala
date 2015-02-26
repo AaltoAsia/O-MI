@@ -71,19 +71,23 @@ object Common {
 
   val returnCode200: Elem = returnCode(200)
 
-  def odfmsgWrapper(innerxml: NodeSeq): NodeSeq = {
+  def odfmsgWrapper(innerxml: NodeSeq): Elem = {
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
         { innerxml }
     </omi:msg>
   }
 
+  // Should not be called directly because id is supposed to be Int
+  private def requestId(id: String): Elem = {
+    <omi:requestId>
+      { id }
+    </omi:requestId>
+  }
+  def requestId(id: Int): Elem = requestId(id.toString)
+
   def requestIds(ids: Seq[String]): NodeSeq = {
     if (ids.nonEmpty)
-      for (id <- ids) yield {
-        <omi:requestId>
-          { id }
-        </omi:requestId>
-      }
+      ids map {requestId(_)}
     else NodeSeq.Empty
   }
 }

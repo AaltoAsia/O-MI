@@ -1,5 +1,6 @@
 package responses
 
+import Common._
 import parsing.Types._
 import parsing.Types.Path._
 import database._
@@ -20,31 +21,25 @@ object OMISubscription {
 	 			containing the immediate xml that's used for responding to a subscription request
 	 **/
 
-	def setSubscription(subscription: Subscription): (Int, xml.Node) = {	//returns requestID and the response
-		var requestIdInt = -1
-		val ttl = subscription.ttl
+	def setSubscription(subscription: Subscription): (Int, xml.NodeSeq) = {	//returns requestID and the response
+		var requestIdInt: Int = -1
 		val xml =
-		<omi:omiEnvelope ttl={ttl} version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" 
-		 xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-        	<omi:response>
-          		<omi:result msgformat="odf">
-            		<omi:return returnCode="200"></omi:return>
-						<omi:requestId>{
+      omiResult{
+        returnCode200 ++
+        requestId{
 
-							val paths = getPaths(subscription.sensors.toList)
-							val ttlInt = subscription.ttl.toInt
-							val interval = subscription.interval.toInt
-							val callback = subscription.callback
+          val paths = getPaths(subscription.sensors.toList)
+          val ttlInt = subscription.ttl.toInt
+          val interval = subscription.interval.toInt
+          val callback = subscription.callback
 
-							requestIdInt = SQLite.saveSub(
-								new DBSub(paths.toArray, ttlInt, interval, callback, Some(new Timestamp( new Date().getTime())))
-								)
+          requestIdInt = SQLite.saveSub(
+            new DBSub(paths.toArray, ttlInt, interval, callback, Some(new Timestamp( new Date().getTime())))
+            )
 
-							requestIdInt.toString
-						}</omi:requestId>
-				</omi:result>
- 			</omi:response>
-		</omi:omiEnvelope>
+          requestIdInt
+        }
+      }
 
 		return (requestIdInt, xml)
 	}
