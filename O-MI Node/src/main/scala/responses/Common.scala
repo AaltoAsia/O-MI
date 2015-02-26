@@ -77,5 +77,14 @@ object Common {
     </omi:msg>
   }
 
+  def requestIds(ids: Seq[String]): NodeSeq = {
+    if (ids.nonEmpty)
+      for (id <- ids) yield {
+        <omi:requestId>
+          { id }
+        </omi:requestId>
+      }
+    else NodeSeq.Empty
+  }
 }
 
