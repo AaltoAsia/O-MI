@@ -34,7 +34,10 @@ class CancelTest extends Specification with Before {
     val singleSubs = Array(
       Path("Objects/CancelTest/Refrigerator123/PowerConsumption"),
       Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning"),
-      Path("Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault"))
+      Path("Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault"),
+      Path("Objects/ReadTest/RoomSensors1/Temperature/Inside"),
+      Path("Objects/ReadTest/RoomSensors1/CarbonDioxide"),
+      Path("Objects/ReadTest/RoomSensors1/Temperature/Outside"))
 
     val multiSubs = Array(
       singleSubs,
@@ -48,12 +51,12 @@ class CancelTest extends Specification with Before {
       SQLite.set(new DBSensor(path, value, testtime))
     }
 
-    // IDs [0-2]
+    // IDs [0-5]
     for (path <- singleSubs) {
       SQLite.saveSub(new DBSub(Array(path), 0, 1, None, Some(testtime)))
     }
 
-    // IDs [3-4]
+    // IDs [6-7]
     for (paths <- multiSubs) {
       SQLite.saveSub(new DBSub(paths, 0, 1, None, Some(testtime)))
     }

@@ -25,6 +25,8 @@ object OMICancel {
             var node = xml.NodeSeq.Empty
             for (idSeq <- requestIds) {
               for (id <- idSeq) {
+                
+                          println("ID: " + id)
                 var result =
                   <omi:result msgformat="odf">
                     {
