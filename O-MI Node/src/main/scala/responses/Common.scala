@@ -45,11 +45,11 @@ object Common {
     <omi:return returnCode={ code.toString }></omi:return>
 
   /**
-   * NOTE: Contains implementation specific "error" attribute
+   * NOTE: Contains implementation specific "description" attribute
    * that can have a more detailed error message.
    */
-  def returnCodeWrapper(code: Int, error: String): Elem =
-    <omi:return returnCode={ code.toString } error={ error }>
+  def returnCodeWrapper(code: Int, description: String): Elem =
+    <omi:return returnCode={ code.toString } description={ description }>
     </omi:return>
 
   val returnCode200: Elem = returnCodeWrapper(200)

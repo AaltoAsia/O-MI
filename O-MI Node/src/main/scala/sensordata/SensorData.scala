@@ -95,7 +95,6 @@ package sensordata {
     /**
      * Generate ODF from the parsed & formatted Json data
      * @param list of sensor-value pairs
-     * @return generated XML Node
      */
     private def addToDatabase(list: List[(String, String)]): Unit = {
 

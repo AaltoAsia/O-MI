@@ -21,7 +21,15 @@ $(function() {
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-gen', generateRequest);
 	$(document).on('click', '#request-send', sendRequest);
-
+	
+	/* Clearing previous data, if it exists */
+	$(document).on('click', '#next2', function(){
+		$("#request").html("");
+	});
+	$(document).on('click', '#next3', function(){
+		$("#responseBox").html("");
+	});
+	
 	$("#url-field").val('http://' + window.location.host + "/Objects");
 
 	
@@ -134,6 +142,9 @@ function generateRequest(){
 	
 	var formattedXML = formatXml(request);
     $("#request").html(formattedXML.value); //Update the request textbox on the webpage
+	
+	var width = -($("#request").width() / 4) + 'px';
+	$("#page3").css('left', width);
 }
 
 /* Send the O-DF request using AJAX */
@@ -188,7 +199,8 @@ function printResponse(response){
 	console.log(formattedXML);
     $("#responseBox").html(formattedXML.value);
 	
-	//$("#responseBox").text(response);
+	var width = -($("#responseBox").width() / 4) + 'px';
+	$("#page4").css('left', width);
 }
 
 /* Handle the ajax errors */

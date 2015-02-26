@@ -35,9 +35,11 @@
 			<h2 class="fs-title">Query for objects</h2>
 			<h3 class="fs-subtitle">This is step 1</h3>
 			<input type="text" name="url" id="url-field" value="http://localhost:8080/Objects" />
-			<input type="button" name="objects" id="object-button" class="action-button" value="Get Objects" />
-			<input type="button" name="all" id="checkall" class="action-button" value="Check All" />
-			<input type="button" name="all" id="uncheckall" class="action-button" value="Uncheck All" />
+			<input type="button" name="objects" id="object-button" class="action-button highlight-button" value="Get Objects" />
+			<div>
+				<input type="button" name="all" id="checkall" class="action-button" value="Check All" />
+				<input type="button" name="all" id="uncheckall" class="action-button" value="Uncheck All" />
+			</div
 			<div class="loading"></div>
 			<div id="objectContainer">
 				<ul id="objectList"></ul>
@@ -48,35 +50,35 @@
 			<h2 class="fs-title">O-DF Request selection</h2>
 			<h3 class="fs-subtitle">Select which operation you want to use</h3>
 			<div id="operation-select"></div><br><br><br><br>
-      <label>TTL*<input type="text" name="ttl" id="ttl" placeholder="TTL" value="0" /></label>
-      <label>Interval*<input type="text" name="interval" id="interval" placeholder="Interval" value="0" /></label>
-      <label>Timeframe
+			<label>TTL*<input type="text" name="ttl" id="ttl" placeholder="TTL" value="0" /></label>
+			<label>Interval*<input type="text" name="interval" id="interval" placeholder="Interval" value="0" /></label>
+			<label>Timeframe
         <input type="text" name="begin" id="begin" placeholder="Begin" />
         <input type="text" name="end" id="end" placeholder="End" />
-      </label>
-	  <label>Newest<input type="text" name="newest" id="newest" placeholder="Newest" /></label>
-	  <label>Oldest<input type="text" name="oldest" id="oldest" placeholder="Oldest" /></label>
-	  <label>Callback<input type="text" name="callback" id="callback" placeholder="Callback" /></label>
+			</label>
+      <label>Newest<input type="text" name="newest" id="newest" placeholder="Newest" /></label>
+      <label>Oldest<input type="text" name="oldest" id="oldest" placeholder="Oldest" /></label>
+      <label>Callback<input type="text" name="callback" id="callback" placeholder="Callback" /></label>
 			<input type="button" name="previous" class="previous action-button" value="Previous" />
 			<input type="button" name="next" id="next2" class="next action-button" value="Next" />
 		</fieldset>
-		<fieldset>
+		<fieldset id="page3">
 			<h2 class="fs-title">Request generation</h2>
 			<h3 class="fs-subtitle">See the generated request</h3>
-			<input type="button" name="objects" id="request-gen" class="action-button" value="Generate" />
+			<input type="button" name="previous" class="previous action-button" value="Previous" />
+			<input type="button" name="objects" id="request-gen" class="action-button highlight-button" value="Generate" />
+			<input type="button" name="next" id="next3" class="next action-button" value="Next" />
 			<div id="requestBox">
 				<pre class="xml" id="request"></p>
 			</div>
-			<input type="button" name="previous" class="previous action-button" value="Previous" />
-			<input type="button" name="next" id="next3" class="next action-button" value="Next" />
 		</fieldset>
-		<fieldset>
+		<fieldset id="page4">
 			<h2 class="fs-title">Request sending</h2>
 			<h3 class="fs-subtitle">Send the request and see the response</h3>
 			<input type="text" name="send" id="send-field" placeholder="Server URL" /> 
 			<input type="button" name="previous" class="previous action-button" value="Previous" />
-			<input type="button" name="objects" id="request-send" class="action-button" value="Send" />
-			<div style="border: 1px solid black; width: auto;">
+			<input type="button" name="objects" id="request-send" class="action-button highlight-button" value="Send" />
+			<div>
 				<pre class="xml" id="responseBox">
 				</pre>
 			</div>

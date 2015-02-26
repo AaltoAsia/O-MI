@@ -112,33 +112,33 @@ object SQLiteTest extends Specification {
     }
     
     "return correct values for given valid path and timestamps" in {
-        var sensrs = database.SQLite.getInterval(Path("path/to/sensor1/temp"),new java.sql.Timestamp(900),new java.sql.Timestamp(5500))
+        var sensrs = database.SQLite.getNBetween(Path("path/to/sensor1/temp"),Some(new Timestamp(900)),Some(new Timestamp(5500)),None,None)
         var values = sensrs.map { x => x.value }
        values.length == 2 && values.contains("21.5C") && values.contains("21.6C") shouldEqual true
     }
     
     "return correct values for given valid path and timestamps" in {
-        var sensrs = database.SQLite.getInterval(Path("path/to/sensor1/temp"),new java.sql.Timestamp(1500),new java.sql.Timestamp(6001))
+        var sensrs = database.SQLite.getNBetween(Path("path/to/sensor1/temp"),Some(new Timestamp(1500)),Some(new Timestamp(6001)),None,None)
         var values = sensrs.map { x => x.value }
        values.length == 2 && values.contains("21.7C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N latest values" in {
-        var sensrs = database.SQLite.getNLatest(Path("path/to/sensor3/temp"),12)
+        var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,None,Some(12))
         var values = sensrs.map { x => x.value }
        values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N latest values" in {
-        var sensrs = database.SQLite.getNLatest(Path("path/to/sensor3/temp"),3)
+        var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,None,Some(3))
         var values = sensrs.map { x => x.value }
        values.length == 3 && values.contains("21.5C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N oldest values" in {
-        var sensrs = database.SQLite.getNOldest(Path("path/to/sensor3/temp"),12)
+        var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,Some(12),None)
         var values = sensrs.map { x => x.value }
        values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N oldest values" in {
-        var sensrs = database.SQLite.getNOldest(Path("path/to/sensor3/temp"),2)
+        var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,Some(2),None)
         var values = sensrs.map { x => x.value }
        values.length == 2 && values.contains("21.1C") && values.contains("21.2C") shouldEqual true
     }
@@ -170,7 +170,7 @@ object SQLiteTest extends Specification {
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(24000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(25000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.6C",new java.sql.Timestamp(26000)))
-      database.SQLite.getNLatest(Path("path/to/sensor3/temp"),21).length shouldEqual 21
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,None,None).length shouldEqual 21
     }
     "return values between two timestamps" in
     {
@@ -216,7 +216,7 @@ object SQLiteTest extends Specification {
     "be able to stop buffering and revert to using historyLenght" in
     {
       database.SQLite.stopBuffering(Path("path/to/sensor3/temp"))
-      database.SQLite.getNLatest(Path("path/to/sensor3/temp"),21).length shouldEqual 10
+      database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,None,None).length shouldEqual 10
     }
     "return true when removing valid path" in{
       database.SQLite.remove(Path("path/to/sensor3/temp"))

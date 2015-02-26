@@ -65,6 +65,16 @@ class OmiServiceSpec extends Specification
           responseAs[NodeSeq].head.label === "error"
         }
       }
+      "respond successfully to GET to some value" in {
+        database.SQLite.set(new database.DBSensor(Path("Objects/SystemTests/TestValue"), "123", new java.sql.Timestamp(1000)))
+        
+        Get("/Objects/SystemTests/TestValue/value") ~> myRoute ~> check {
+          mediaType === `text/plain`
+          status === OK
+          responseAs[String] === "123"
+        }
+        
+      }
 
       val settingsPath = "/" +Path(Starter.settings.settingsOdfPath).toString
 
@@ -115,9 +125,30 @@ class OmiServiceSpec extends Specification
                 </omi:msg>
               </omi:read>
             </omi:omiEnvelope>
+        
+      val invalidReadTestRequestFridge: NodeSeq =
+        // NOTE: The type needed for compiler to recognize the right Marhshaller later
+            <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+              <omi:read msgformat="omi.xsd">
+                <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+                  <sss>
+                    <Object>
+                      <id>SmartFridge22334411</id>
+                      <InfoItem name="PowerConsumption" />
+                    </Object>
+                  </sss>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>
     
 
       "handle a single read request and the response" should {
+        "return error with invalid request" in {
+          Post("/", invalidReadTestRequestFridge) ~> myRoute~> check {
+            status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
+          }
+        }
 
         Post("/", readTestRequestFridge) ~> myRoute ~> check {
 
@@ -137,7 +168,7 @@ class OmiServiceSpec extends Specification
           val msg = response \ "response" \ "result" \ "msg"
           val infoitem = msg \ "Objects" \ "Object" \ "InfoItem"
 
-          "has the right InfoItem" in {
+          "have the right InfoItem" in {
 
             response must \("response") \("result") \("msg")
 
