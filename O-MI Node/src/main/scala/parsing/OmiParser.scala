@@ -84,7 +84,7 @@ object OmiParser extends Parser[ParseMsg] {
    *  type the message contains and handles them.
    *
    *  @param node scala.xml.Node that should contain the message to be parsed e.g. read or write messages
-   *  @param ttl of the omiEnvalope as string. ttl is in seconds.
+   *  @param ttl of the omiEnvelope as string. ttl is in seconds.
    *
    */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {

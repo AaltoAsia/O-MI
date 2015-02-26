@@ -104,9 +104,8 @@ trait OmiService extends HttpService {
             case ParseError(_) => false
             case _ => true
           }
-          val errors = omi.filter {
-            case ParseError(_) => true
-            case _ => false
+          val errors = omi.collect {
+            case e: ParseError => e
           }
 
           if (errors.isEmpty) {
@@ -142,9 +141,8 @@ trait OmiService extends HttpService {
           } else {
             //Error found
             complete {
-              log.error("ERROR")
-              println(errors)
-              ??? // TODO handle error
+              log.warning("Parse Errors: {}", errors.mkString(","))
+              Common.genErrorResponse(errors)
             }
           }
         }

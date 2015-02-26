@@ -4,7 +4,9 @@ package responses
 import parsing.Types._
 import parsing.Types.Path._
 import database._
-import scala.xml
+import Common._
+
+import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
@@ -80,22 +82,17 @@ object Read {
     }
   }
 
-  def OMIReadResponse(read: OneTimeRead): xml.Node = { //takes the return value of OmiParser straight
-    val xml =
-      <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-        <omi:response>
-          <omi:result msgformat="odf">
-            <omi:return returnCode="200"></omi:return>
-            {if(read.requestId.isEmpty == false) <omi:requestId>{read.requestId(0)}</omi:requestId>}
-            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-              {
-                odfGeneration(read)
-              }
-            </omi:msg>
-          </omi:result>
-        </omi:response>
-      </omi:omiEnvelope>
-    xml
+  def OMIReadResponse(read: OneTimeRead): xml.NodeSeq = { //takes the return value of OmiParser straight
+    omiOdfResult(
+        returnCode200 ++
+        { if (read.requestId.nonEmpty)
+            <omi:requestId>
+              { read.requestId }
+            </omi:requestId>
+          else NodeSeq.Empty
+        } ++
+        odfmsgWrapper(odfGeneration(read))
+    )
   }
 
   /**
