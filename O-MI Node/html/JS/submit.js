@@ -130,9 +130,12 @@ function generateRequest(){
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
 	var end = $("#end").val();
+	var newest = $("#newest").val();
+	var oldest = $("#oldest").val();
+	var callback = $("#callback").val();
 	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end);
+	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end, newest, oldest, callback);
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
@@ -152,39 +155,37 @@ function sendRequest()
 
     var request = $('#request').text(); //Get the request string
 	
-    if(request.indexOf("subscribe") >= 0)
-		//TODO:
-        startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
-    else
-    {
-        $.ajax({
-            type: "POST",
-            url: server, //TODO: the real server here
-            data: request,
-			contentType: "text/xml",
-			processData: false,
-            dataType: "text",
-            success: printResponse,
-			error: function(a, b, c){
-				$("#responseBox").text("Error sending message");
-				handleError(a, b, c);
-			}
-        });
-    } 
+	var subscribe = true;
+	
+    ajaxPost(server, request, subscribe);
 }
 
-/* HTML 5 Server Sent Event communication (NOT USED ATM) */
-function startSubscriptionEventListener(request) {
-    var source = new EventSource(server+"?msg="+request);
+//Test
+var count = 0;
 
-    source.onmessage = function(event)
-    {
-        printResponse(event.data);
-    };
-    source.onerror = function(event) {
-        source.close();
-        console.log("Subscription TTL Expired");
-    };
+function ajaxPost(server, request, subscribe){
+	$.ajax({
+		type: "POST",
+		url: server,
+		data: request,
+		contentType: "text/xml",
+		processData: false,
+		dataType: "text",
+		success: function(response){
+			printResponse(response);
+			
+			count += 1;
+			$("#infoBox").text("Count: " + 1);
+			
+			if(subscribe){
+				window.setTimeout(ajaxPost(server, request, subscribe), 1000);
+			}
+		},
+		error: function(a, b, c){
+			$("#infoBox").text("Error sending message");
+			handleError(a, b, c);
+		}
+	});
 }
 
 /* Do something with the response from the server */

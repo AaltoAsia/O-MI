@@ -53,9 +53,12 @@
 			<label>TTL*<input type="text" name="ttl" id="ttl" placeholder="TTL" value="0" /></label>
 			<label>Interval*<input type="text" name="interval" id="interval" placeholder="Interval" value="0" /></label>
 			<label>Timeframe
-			<input type="text" name="begin" id="begin" placeholder="Begin" />
-			<input type="text" name="end" id="end" placeholder="End" />
+        <input type="text" name="begin" id="begin" placeholder="Begin" />
+        <input type="text" name="end" id="end" placeholder="End" />
 			</label>
+      <label>Newest<input type="text" name="newest" id="newest" placeholder="Newest" /></label>
+      <label>Oldest<input type="text" name="oldest" id="oldest" placeholder="Oldest" /></label>
+      <label>Callback<input type="text" name="callback" id="callback" placeholder="Callback" /></label>
 			<input type="button" name="previous" class="previous action-button" value="Previous" />
 			<input type="button" name="next" id="next2" class="next action-button" value="Next" />
 		</fieldset>
@@ -76,6 +79,7 @@
 			<input type="button" name="previous" class="previous action-button" value="Previous" />
 			<input type="button" name="objects" id="request-send" class="action-button highlight-button" value="Send" />
 			<div>
+				<pre id="infoBox">Info</pre>
 				<pre class="xml" id="responseBox">
 				</pre>
 			</div>

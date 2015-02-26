@@ -1,8 +1,7 @@
 package http
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingAdapter
-import akka.actor.ActorLogging
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
@@ -17,11 +16,14 @@ import parsing.Types._
 import xml._
 import sensordata.SensorData
 
-class OmiServiceActor extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
   def actorRefFactory = context
+
+  // Used for O-MI subscriptions
+  val subscriptionHandler = subHandler
 
   // this actor only runs our route, but you could add
   // other things here, like request stream processing
@@ -34,6 +36,7 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 trait OmiService extends HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
+  val subscriptionHandler: ActorRef
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -101,14 +104,10 @@ trait OmiService extends HttpService {
       corsHeaders {
         entity(as[NodeSeq]) { xml =>
           val omi = OmiParser.parse(xml.toString)
-          val requests = omi.filter {
-            case ParseError(_) => false
-            case _ => true
+          val errors = omi.collect {
+            case e: ParseError => e
           }
-          val errors = omi.filter {
-            case ParseError(_) => true
-            case _ => false
-          }
+          val requests = omi diff errors // exclude errors from omi
 
           if (errors.isEmpty) {
             respondWithMediaType(`text/xml`) {
@@ -139,12 +138,11 @@ trait OmiService extends HttpService {
               complete(returnStatus, result)
             }
           } else {
-            //Error found
-            complete (400,{
-              log.error("ERROR")
-              println(errors)
-              ErrorResponse.parseErrorResponse(errors.map{err => err.asInstanceOf[ParseError]})  
-            })
+            //Errors found
+            log.warning("Parse Errors: {}", errors.mkString(", "))
+            complete (400,
+              ErrorResponse.parseErrorResponse(errors)  
+            )
           }
         }
       }

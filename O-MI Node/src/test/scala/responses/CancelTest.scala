@@ -65,7 +65,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/SimpleXMLCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/SimpleXMLCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist))
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -75,7 +75,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultipleCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultipleCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist))
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -85,7 +85,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultiplePathsRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultiplePathsReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist))
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -95,7 +95,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/ErrorCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/ErrorCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist))
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -105,7 +105,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MixedCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MixedCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist))
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]

@@ -34,7 +34,11 @@ object Types {
                             oldest: Option[Int] = None,
                             callback: Option[String] = None,
                             requestId: Seq[ String] = Seq.empty
-                          ) extends ParseMsg
+                            ) extends ParseMsg {
+
+    def hasInterval  = interval.toDouble >= 0.0
+    def isEventBased = interval.toDouble == -1
+  }
   case class Result(  returnValue: String,
                       returnCode: String,
                       parseMsgOp: Option[ Seq[ OdfObject] ],
@@ -126,6 +130,7 @@ object Types {
   object Path {
     def apply(pathStr: String): Path = new Path(pathStr)
     def apply(pathSeq: Seq[String]): Path = new Path(pathSeq)
+    val empty = new Path(Seq.empty)
 
     import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 

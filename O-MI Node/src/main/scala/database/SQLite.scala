@@ -27,6 +27,10 @@ object SQLite {
   private val subs = TableQuery[DBSubscription]
   private val buffered = TableQuery[BufferedPath]
 
+  private var setEventHooks: List[Seq[Path] => Unit] = List()
+  def attachSetHook(f: Seq[Path] => Unit) =
+    setEventHooks = f :: setEventHooks
+
   //initializing database
   private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
   db withTransaction { implicit session =>
@@ -53,6 +57,11 @@ object SQLite {
         //appends a row to the latestvalues table
         count = pathQuery.length.run
         latestValues += (data.path, data.value, data.time)
+        
+        // Call hooks
+        val argument = Seq(data.path)
+        setEventHooks foreach {_(argument)}
+
         if (count > historyLength && !buffering) {
           //if table has more than historyLength and not buffering, remove excess data
           removeExcess(data.path)
@@ -85,6 +94,11 @@ object SQLite {
           }
           var buffering = buffered.filter(_.path === path).list.length > 0
           latestValues += (path, v, new Timestamp(new java.util.Date().getTime))
+
+          // Call hooks
+          val argument = Seq(path)
+          setEventHooks foreach {_(argument)}
+
           if (len >= historyLength) {
             removeExcess(path)
           }

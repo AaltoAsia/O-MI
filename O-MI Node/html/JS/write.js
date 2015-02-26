@@ -6,7 +6,7 @@
 * @param {Number} Message interval
 * @param {function} Callback function (not used atm)
 */
-function writeXML(items, operation, ttl, interval, begin, end, callback){
+function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -27,14 +27,30 @@ function writeXML(items, operation, ttl, interval, begin, end, callback){
 	writer.writeStartElement('omi:'+ operation);
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
-	if(interval > 0) writer.writeAttributeString('interval', interval);
+	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
-	if(begin && end){
+	if(begin){
 		console.log(new Date(begin).getTime());
-		console.log(new Date(end).getTime());
-		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
+		if(new Date(begin).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
+		}
+	}
+	if(end){
+		console.log(new Date(end).getTime());
+		if(new Date(end).getTime() > 0){
 			writer.writeAttributeString('end', end);
+		}
+	}
+	console.log("Newest: " + newest);
+	console.log("Oldest: " + oldest);
+	if(newest){
+		if($.isNumeric(newest)){
+			writer.writeAttributeString('newest', newest);
+		}
+	}
+	if(oldest){
+		if($.isNumeric(oldest)){
+			writer.writeAttributeString('oldest', oldest);
 		}
 	}
 	
