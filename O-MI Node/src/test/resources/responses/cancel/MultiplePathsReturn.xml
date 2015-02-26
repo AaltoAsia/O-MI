@@ -2,11 +2,9 @@
 	<omi:response>
 		<omi:result>
 			<omi:return returnCode="200"></omi:return>
-			<omi:requestId>3</omi:requestId>
 		</omi:result>
 		<omi:result>
 			<omi:return returnCode="200"></omi:return>
-			<omi:requestId>4</omi:requestId>
 		</omi:result>
 	</omi:response>
 </omi:omiEnvelope>

@@ -2,7 +2,6 @@
 	<omi:response>
 		<omi:result>
 			<omi:return description="Subscription with requestId not found" returnCode="404"></omi:return>
-			<omi:requestId>9001</omi:requestId>
 		</omi:result>
 	</omi:response>
 </omi:omiEnvelope>

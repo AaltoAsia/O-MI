@@ -227,7 +227,7 @@ object OmiParser extends Parser[ParseMsg] {
         Response 
       */
       case "response" => {
-        val results = getChild(node, "result", false, true)
+        val results = getChild(node, "result", true, true)
         if (results.isLeft)
           return Seq(results.left.get)
 
@@ -243,7 +243,7 @@ object OmiParser extends Parser[ParseMsg] {
           "msgformat" -> getParameter(node, "msgformat", true)
         )
         
-        // NOTE: Result should not contain msg
+        // NOTE: Result does not have to contain msg
         val subnodes = Map(
           "return" -> getChild(node, "return",tolerateEmpty = true),
           "msg" -> getChild(node, "msg", true, true),
