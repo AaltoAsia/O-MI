@@ -19,9 +19,8 @@ object OMICancel {
         var nodes = NodeSeq.Empty
 
         for (id <- requestIds) {
-          // OmiResponse already wrapped; no need for omiresult = response + result
-          nodes ++= result /* omiResult */ {
-            (try {
+          nodes ++= result{
+            try {
               // TODO: update somehow SubscriptionHandlerActor's internal memory
               if (SQLite.removeSub(id.toInt))
                 returnCode200
@@ -31,9 +30,7 @@ object OMICancel {
             } catch {
               case n: NumberFormatException =>
                 returnCode(400, "Invalid requestId")
-            }) ++ {
-             <omi:requestId>{id}</omi:requestId>
-            }
+            } 
           } 
         }
         nodes

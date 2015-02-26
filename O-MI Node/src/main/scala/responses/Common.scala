@@ -55,7 +55,7 @@ object Common {
   /**
    * Wraps innerxml to O-MI Envelope, response and result
    */
-  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(innerxml)
+  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(result(innerxml))
 
 
   def returnCode(code: Int): Elem =
