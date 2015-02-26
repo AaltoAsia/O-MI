@@ -436,14 +436,15 @@ object SQLite {
   def removeSub(id: Int): Boolean = {
     db withSession { implicit session =>
       var toBeDeleted = subs.filter(_.ID === id)
-      println(toBeDeleted.list)
-      if(toBeDeleted.length.run > 0) {
+      if(toBeDeleted.length.run > 0) { 
+        println("\nlist:\n "+ toBeDeleted.list+ "\nend")
         if(toBeDeleted.list.head._6 == None) {
           toBeDeleted.first._2.split(";").foreach { p =>
             stopBuffering(Path(p))
           }
         }
         toBeDeleted.delete
+        return true
       } else {
         return false
       }
