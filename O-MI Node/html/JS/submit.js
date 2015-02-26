@@ -22,16 +22,7 @@ $(function() {
 	$(document).on('click', '#request-gen', generateRequest);
 	$(document).on('click', '#request-send', sendRequest);
 	
-	/* Clearing previous data, if it exists */
-	$(document).on('click', '#next2', function(){
-		$("#request").html("");
-	});
-	$(document).on('click', '#next3', function(){
-		$("#responseBox").html("");
-	});
-	
 	$("#url-field").val('http://' + window.location.host + "/Objects");
-
 	
 /* Get the objects through ajax get */
 function getObjects() {
@@ -154,8 +145,13 @@ function sendRequest()
 	var server = $("#send-field").val();
 
     var request = $('#request').text(); //Get the request string
-	
-	var subscribe = true;
+
+	var subscribe = false;
+	var interval = $("#interval").val();
+	if($.isNumeric(interval)){
+		// Allowed intervals, -2, -1, 0 and all positive integers
+		subscribe = interval >= -2;
+	}
 	
     ajaxPost(server, request, subscribe);
 }
@@ -175,7 +171,7 @@ function ajaxPost(server, request, subscribe){
 			printResponse(response);
 			
 			count += 1;
-			$("#infoBox").text("Count: " + 1);
+			$("#infoBox").text("Count: " + count);
 			
 			if(subscribe){
 				window.setTimeout(ajaxPost(server, request, subscribe), 1000);
