@@ -74,7 +74,7 @@ class SubscriptionTest extends Specification with Before {
     }
 
     "Return with historical data when no callback was provided" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/Subretrieve.xml").getLines.mkString("\n")
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
       println(parserlist)
 
