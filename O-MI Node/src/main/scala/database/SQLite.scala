@@ -368,6 +368,7 @@ object SQLite {
     db withTransaction { implicit session =>
       latestValues.delete
       objects.delete
+      subs.delete
     }
   }
 

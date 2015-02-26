@@ -15,30 +15,29 @@ object OMICancel {
     var requestIds = request.requestId
 
     val response =
-      omiResponse{
-          var nodes = NodeSeq.Empty
+      omiResponse {
+        var nodes = NodeSeq.Empty
 
-          for (idSeq <- requestIds) {
-            for (id <- idSeq) {
+        for (id <- requestIds) {
+          // OmiResponse already wrapped; no need for omiresult = response + result
+          nodes ++= result /* omiResult */ {
+            (try {
+              // TODO: update somehow SubscriptionHandlerActor's internal memory
+              if (SQLite.removeSub(id.toInt))
+                returnCode200
+              else
+                returnCode(404, "Subscription with requestId not found")
 
-              nodes ++= omiResult{
-                try {
-
-                  // TODO: update somehow SubscriptionHandlerActor's internal memory
-                  if (SQLite.removeSub(id.toInt))
-                    returnCode200
-                  else
-                    returnCode(404, "Subscription with requestId not found")
-
-                } catch {
-                  case n: NumberFormatException =>
-                    returnCode(400, "Invalid requestId")
-                }
-              }
+            } catch {
+              case n: NumberFormatException =>
+                returnCode(400, "Invalid requestId")
+            }) ++ {
+             <omi:requestId>{id}</omi:requestId>
             }
-          }
-          nodes
+          } 
         }
+        nodes
+      }
 
     response
   }

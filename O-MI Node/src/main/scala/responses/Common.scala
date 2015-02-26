@@ -13,8 +13,8 @@ object Common {
    */
   def omiEnvelope(ttl: Int)(innerxml: NodeSeq): NodeSeq = {
     <omi:omiEnvelope xmlns:omi="omi.xsd"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd
-        omi.xsd" version="1.0" ttl={ ttl.toString }>
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd"
+	  	version="1.0" ttl={ ttl.toString }>
       { innerxml }
     </omi:omiEnvelope>
   }
@@ -55,7 +55,7 @@ object Common {
   /**
    * Wraps innerxml to O-MI Envelope, response and result
    */
-  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(omiResult(innerxml))
+  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(innerxml)
 
 
   def returnCode(code: Int): Elem =

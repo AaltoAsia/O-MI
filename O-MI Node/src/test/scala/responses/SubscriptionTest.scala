@@ -72,7 +72,7 @@ class SubscriptionTest extends Specification with Before {
                          </omi:omiEnvelope>
 
         //sanoo että failure vaikka nämä ovat identtiset?
-        trim(xmlreturn) should be equalTo(trim(correctxml))
+        trim(xmlreturn.head) should be equalTo(trim(correctxml))
 
         }
 

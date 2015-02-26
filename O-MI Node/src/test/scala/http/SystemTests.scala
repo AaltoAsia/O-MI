@@ -24,7 +24,9 @@ class OmiServiceSpec extends Specification
                         with OmiService {
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
-
+    
+    val subscriptionHandler = akka.actor.ActorRef.noSender
+    
     "System tests for features of OMI Node service".title
 
     step {

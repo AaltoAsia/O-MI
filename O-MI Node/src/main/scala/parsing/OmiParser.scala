@@ -240,16 +240,18 @@ object OmiParser extends Parser[ParseMsg] {
 
       case "result" => {
         val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat")
+          "msgformat" -> getParameter(node, "msgformat", true)
         )
+        
+        // NOTE: Result should not contain msg
         val subnodes = Map(
           "return" -> getChild(node, "return",tolerateEmpty = true),
-          "msg" -> getChild(node, "msg"),
+          "msg" -> getChild(node, "msg", true, true),
           "requestId" -> getChild(node, "requestId", true, true)
         )
 
-        if (subnodes("msg").isRight) {
-          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true)
+        if (subnodes("msg").isRight && !subnodes("msg").right.get.isEmpty) {
+          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true, true)
         }
         
         if (subnodes("return").isRight) {
@@ -261,7 +263,7 @@ object OmiParser extends Parser[ParseMsg] {
           return errors.toSeq
 
         
-        if (subnodes("msg").right.get.isEmpty)
+        if (!subnodes.contains("msg") || subnodes("msg").right.get.isEmpty)
           return Seq(Result(subnodes("return").right.get.text,
             parameters("returnCode").right.get,
             None,
