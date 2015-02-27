@@ -258,29 +258,29 @@ object SQLiteTest extends Specification {
     }
    "return rigtht values in getsubdata" in
    {
-       var id = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1/temp"),Path("path/to/sensor2/temp"),Path("path/to/sensor3/temp")),0,1,None,Some(new Timestamp(5000))))
+      var timeNow= new java.util.Date().getTime
+      var id = SQLite.saveSub(new DBSub(Array(Path("path/to/sensor1/temp")
+          ,Path("path/to/sensor2/temp"),Path("path/to/sensor3/temp")),0,1,None,
+          Some(new Timestamp(timeNow-3500))))
        
-      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(6000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(7000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(8000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(9000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(timeNow-3000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(timeNow-2000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor1/temp"),"21.0C",new Timestamp(timeNow-1000)))
       
-      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(6000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(7000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(8000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(9000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(timeNow-3000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(timeNow-2000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor2/temp"),"21.0C",new Timestamp(timeNow-1000)))
       
-      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(6000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(7000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(8000)))
-      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(9000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(timeNow-3000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(timeNow-2000)))
+      database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(timeNow-1000)))
       
       var res = database.SQLite.getSubData(id).length
       database.SQLite.removeSub(id)
       database.SQLite.remove(Path("path/to/sensor1/temp"))
       database.SQLite.remove(Path("path/to/sensor2/temp"))
       database.SQLite.remove(Path("path/to/sensor3/temp"))
-      res shouldEqual 12
+      res shouldEqual 9
    }
    
 

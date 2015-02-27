@@ -24,7 +24,9 @@ class OmiServiceSpec extends Specification
                         with OmiService {
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
-
+    
+    val subscriptionHandler = akka.actor.ActorRef.noSender
+    
     "System tests for features of OMI Node service".title
 
     step {
@@ -146,7 +148,7 @@ class OmiServiceSpec extends Specification
       "handle a single read request and the response" should {
         "return error with invalid request" in {
           Post("/", invalidReadTestRequestFridge) ~> myRoute~> check {
-            status === InternalServerError // TODO this test needs to be updated when error handling is correctly implemented
+            status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
           }
         }
 

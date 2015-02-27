@@ -6,7 +6,7 @@ function page1Verified(){
 
 /* Returns whether the input on the 2nd page is valid (numerical TTL & interval) */
 function page2Verified(){
-	return ($.isNumeric($("#ttl").val()) && $.isNumeric($("#interval").val()));
+	return ($.isNumeric($("#ttl").val()));
 }
 
 /* Returns whether the input on the 3rd page is valid (message generated) */

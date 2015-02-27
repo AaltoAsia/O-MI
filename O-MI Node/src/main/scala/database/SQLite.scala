@@ -27,6 +27,10 @@ object SQLite {
   private val subs = TableQuery[DBSubscription]
   private val buffered = TableQuery[BufferedPath]
 
+  private var setEventHooks: List[Seq[Path] => Unit] = List()
+  def attachSetHook(f: Seq[Path] => Unit) =
+    setEventHooks = f :: setEventHooks
+
   //initializing database
   private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
   db withTransaction { implicit session =>
@@ -36,8 +40,9 @@ object SQLite {
   }
 
   /**
-   * Used to set values to database. If data already exists for the path, updates existing data,
-   *  otherwise creates new data and all the missing objects to the hierarchy.
+   * Used to set values to database. If data already exists for the path, appends until historyLength
+   * is met, otherwise creates new data and all the missing objects to the hierarchy.
+   *  Does not remove excess rows if path is set ot buffer
    *
    *  @param data data is of type DBSensor
    *  @return boolean whether added data was new
@@ -49,17 +54,24 @@ object SQLite {
         //search database for sensor's path
         val pathQuery = latestValues.filter(_.path === data.path)
         var buffering = buffered.filter(_.path === data.path).list.length > 0
-        //if found a row with same path update else add new data
-        count = pathQuery.list.length
+        //appends a row to the latestvalues table
+        count = pathQuery.length.run
         latestValues += (data.path, data.value, data.time)
+        
+        // Call hooks
+        val argument = Seq(data.path)
+        setEventHooks foreach {_(argument)}
+
         if (count > historyLength && !buffering) {
+          //if table has more than historyLength and not buffering, remove excess data
           removeExcess(data.path)
           false
         } else if (count == 0) {
-          //also add missing objects for the hierarchy
+          //add missing objects for the hierarchy since this is a new path
           addObjects(data.path)
           true
         } else {
+          //existing path and less than history length of data or buffering.
           false
         }
       }
@@ -82,6 +94,11 @@ object SQLite {
           }
           var buffering = buffered.filter(_.path === path).list.length > 0
           latestValues += (path, v, new Timestamp(new java.util.Date().getTime))
+
+          // Call hooks
+          val argument = Seq(path)
+          setEventHooks foreach {_(argument)}
+
           if (len >= historyLength) {
             removeExcess(path)
           }
@@ -110,7 +127,6 @@ object SQLite {
       //search database for given path
       var deleted = false
       val pathQuery = latestValues.filter(_.path === path)
-
       //if found rows with given path remove else path doesn't exist and can't be removed
       if (pathQuery.list.length > 0) {
         pathQuery.delete
@@ -161,7 +177,7 @@ object SQLite {
           var paths = sub._2.split(";")
           paths.foreach {
             p =>
-              result ++= getNBetween(Path(p), Some(sub._3), None, None, None)
+              result ++= DataFormater.FormatSubData(Path(p), sub._3, sub._5)
           }
         }
         result.toArray
@@ -252,19 +268,16 @@ object SQLite {
       db withTransaction { implicit session =>
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
-
         //if path is found from latest values it must be Sensor otherwise check if it is an object
-        var count = pathQuery.list.length
+        var count = pathQuery.length.run
         if (count > 0) {
           //path is sensor
           //case class matching
-
           val latest = pathQuery.sortBy(_.timestamp).drop(count - 1)
           latest.first match {
             case (path: Path, value: String, time: java.sql.Timestamp) =>
               result = Some(DBSensor(path, value, time))
           }
-
         } else {
           var childs = getChilds(path)
           //childs is empty only if given path does not exist or ends in sensor.
@@ -336,6 +349,7 @@ object SQLite {
         query = query.drop(query.length.run - amount)
       }
       result = Array.ofDim[DBSensor](query.length.run)
+      query.sortBy(_.timestamp)
       var index = 0
       query foreach {
         case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
@@ -354,6 +368,8 @@ object SQLite {
     db withTransaction { implicit session =>
       latestValues.delete
       objects.delete
+      subs.delete
+      buffered.delete
     }
   }
 
@@ -434,13 +450,15 @@ object SQLite {
   def removeSub(id: Int): Boolean = {
     db withSession { implicit session =>
       var toBeDeleted = subs.filter(_.ID === id)
-      if (toBeDeleted.length.run > 0) {
-        if (toBeDeleted.first._6 == None) {
+      if(toBeDeleted.length.run > 0) { 
+        println("\nlist:\n "+ toBeDeleted.list+ "\nend")
+        if(toBeDeleted.list.head._6 == None) {
           toBeDeleted.first._2.split(";").foreach { p =>
             stopBuffering(Path(p))
           }
         }
         toBeDeleted.delete
+        return true
       } else {
         return false
       }
@@ -485,7 +503,6 @@ object SQLite {
     {
       db withTransaction { implicit session =>
         val id = getNextId()
-        //these two assignments are just to make things look less messy
         sub.id = id
         subs += (sub.id, sub.paths.mkString(";"), sub.startTime.get, sub.ttl, sub.interval, sub.callback)
         //returns the id for reference

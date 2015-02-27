@@ -21,9 +21,8 @@ $(function() {
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-gen', generateRequest);
 	$(document).on('click', '#request-send', sendRequest);
-
+	
 	$("#url-field").val('http://' + window.location.host + "/Objects");
-
 	
 /* Get the objects through ajax get */
 function getObjects() {
@@ -134,6 +133,9 @@ function generateRequest(){
 	
 	var formattedXML = formatXml(request);
     $("#request").html(formattedXML.value); //Update the request textbox on the webpage
+	
+	var width = -($("#request").width() / 4) + 'px';
+	$("#page3").css('left', width);
 }
 
 /* Send the O-DF request using AJAX */
@@ -143,40 +145,43 @@ function sendRequest()
 	var server = $("#send-field").val();
 
     var request = $('#request').text(); //Get the request string
+
+	var subscribe = false;
+	var interval = $("#interval").val();
+	if($.isNumeric(interval)){
+		// Allowed intervals, -2, -1, 0 and all positive integers
+		subscribe = interval >= -2;
+	}
 	
-    if(request.indexOf("subscribe") >= 0)
-		//TODO:
-        startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
-    else
-    {
-        $.ajax({
-            type: "POST",
-            url: server, //TODO: the real server here
-            data: request,
-			contentType: "text/xml",
-			processData: false,
-            dataType: "text",
-            success: printResponse,
-			error: function(a, b, c){
-				$("#responseBox").text("Error sending message");
-				handleError(a, b, c);
-			}
-        });
-    } 
+    ajaxPost(server, request, subscribe);
 }
 
-/* HTML 5 Server Sent Event communication (NOT USED ATM) */
-function startSubscriptionEventListener(request) {
-    var source = new EventSource(server+"?msg="+request);
+//Test
+var count = 0;
 
-    source.onmessage = function(event)
-    {
-        printResponse(event.data);
-    };
-    source.onerror = function(event) {
-        source.close();
-        console.log("Subscription TTL Expired");
-    };
+function ajaxPost(server, request, subscribe){
+	$.ajax({
+		type: "POST",
+		url: server,
+		data: request,
+		contentType: "text/xml",
+		processData: false,
+		dataType: "text",
+		success: function(response){
+			printResponse(response);
+			
+			count += 1;
+			$("#infoBox").text("Count: " + count);
+			
+			if(subscribe){
+				window.setTimeout(ajaxPost(server, request, subscribe), 1000);
+			}
+		},
+		error: function(a, b, c){
+			$("#infoBox").text("Error sending message");
+			handleError(a, b, c);
+		}
+	});
 }
 
 /* Do something with the response from the server */
@@ -188,7 +193,8 @@ function printResponse(response){
 	console.log(formattedXML);
     $("#responseBox").html(formattedXML.value);
 	
-	//$("#responseBox").text(response);
+	var width = -($("#responseBox").width() / 4) + 'px';
+	$("#page4").css('left', width);
 }
 
 /* Handle the ajax errors */
