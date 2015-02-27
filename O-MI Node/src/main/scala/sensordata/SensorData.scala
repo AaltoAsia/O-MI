@@ -54,7 +54,7 @@ package sensordata {
     implicit val formats = DefaultFormats
 
     implicit val timeout = akka.util.Timeout(10 seconds)
-    
+
     def httpRef = IO(Http) //If problems change to def
 
     def queueSensors(): Unit = {
@@ -71,14 +71,18 @@ package sensordata {
         case Success(response) =>
           // Json data received from the server
           val json = parse(response.entity.asString)
+          println("_____________________")
+          println(json)
 
           // List of (sensorname, value) objects
           val list = for {
             JObject(child) <- json
             JField(sensor, JString(value)) <- child
           } yield (sensor, value)
-
+          println("_____________")
+          println(list.filter(_._1.split('_').length > 3))
           addToDatabase(list)
+          //        
 
           system.log.info("Sensors Added to Database!")
 
@@ -99,17 +103,15 @@ package sensordata {
      * @return generated XML Node
      */
     private def addToDatabase(list: List[(String, String)]): Unit = {
-
       // Define dateformat for dateTime value
       val date = new java.util.Date()
       var i = 0
 
       if (!list.isEmpty) {
         // InfoItems filtered out
-        SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
+        val temp = list.filter(_._1.split('_').length > 3).map(item => {
           val sensor: String = item._1
           val value: String = item._2 // Currently as string, convert to double?
-
           // Split name from underlines
           val split = sensor.split('_')
 
@@ -118,7 +120,10 @@ package sensordata {
           val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
 
           ("Objects/" + objectId + "/" + infoItemName, value)
-        }))
+        })
+        println("WWWWWWWWWW")
+        println(temp)
+        SQLite.setMany(temp)
       }
     }
   }
