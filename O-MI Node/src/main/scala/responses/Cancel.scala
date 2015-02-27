@@ -1,35 +1,41 @@
 package responses
 
+import Common._
 import parsing.Types._
 import database._
-import scala.xml
+import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
-object OmiCancel {
+object OMICancel {
 
-  def OMICancelResponse(requests: List[ParseMsg]): String = {
+  def OMICancelResponse(request: Cancel): NodeSeq = {
 
-    val xml = <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-                <omi:response>
-                  <omi:result>
-                    {
-                      var requestIds = requests.collect {
-                        case Cancel(ttl: String,
-                          requestId: Seq[String]) => requestId
-                      }
-                      for (id <- requestIds) {
-                    	 // TODO: Send ids to database for canceling; if database returns true append success message, 
-                    	 // if false append error message?
-                      }
-                      // Success: <omi:return returnCode="200"></omi:return>
-                      // Error: <omi:return returnCode="404"></omi:return>
-                    }
-                  </omi:result>
-                </omi:response>
-              </omi:omiEnvelope>
+    var requestIds = request.requestId
 
-    xml.toString
+    val response =
+      omiResponse {
+        var nodes = NodeSeq.Empty
+
+        for (id <- requestIds) {
+          nodes ++= result{
+            try {
+              // TODO: update somehow SubscriptionHandlerActor's internal memory
+              if (SQLite.removeSub(id.toInt))
+                returnCode200
+              else
+                returnCode(404, "Subscription with requestId not found")
+
+            } catch {
+              case n: NumberFormatException =>
+                returnCode(400, "Invalid requestId")
+            }
+          } 
+        }
+        nodes
+      }
+
+    response
   }
 }

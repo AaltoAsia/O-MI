@@ -79,12 +79,14 @@ object OmiParser extends Parser[ParseMsg] {
     
   }
 
+  private def isInteger: String => Boolean = _.forall(_.isDigit)
+
   /**
    * Private method that is called inside parse method. This method checks which O-MI message
    *  type the message contains and handles them.
    *
    *  @param node scala.xml.Node that should contain the message to be parsed e.g. read or write messages
-   *  @param ttl of the omiEnvalope as string. ttl is in seconds.
+   *  @param ttl of the omiEnvelope as string. ttl is in seconds.
    *
    */
   private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
@@ -133,7 +135,9 @@ object OmiParser extends Parser[ParseMsg] {
       case "read" => {
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
-          "interval" -> getParameter(node, "interval", true),
+          "interval" -> getParameter(node, "interval", true,
+              validation = isInteger
+            ),
           "begin" -> getParameter(node, "begin", true),
           "end" -> getParameter(node, "end", true),
           "newest" -> getParameter(node, "newest", true),
@@ -192,7 +196,7 @@ object OmiParser extends Parser[ParseMsg] {
               }))
           } else {
             Seq(Subscription(ttl,
-              parameters("interval").right.get,
+              parameters("interval").right.get.toInt,
               right.map(_.right.get),
               begin,
               end,
@@ -227,7 +231,7 @@ object OmiParser extends Parser[ParseMsg] {
         Response 
       */
       case "response" => {
-        val results = getChild(node, "result", false, true)
+        val results = getChild(node, "result", true, true)
         if (results.isLeft)
           return Seq(results.left.get)
 
@@ -240,16 +244,18 @@ object OmiParser extends Parser[ParseMsg] {
 
       case "result" => {
         val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat")
+          "msgformat" -> getParameter(node, "msgformat", true)
         )
+        
+        // NOTE: Result does not have to contain msg
         val subnodes = Map(
           "return" -> getChild(node, "return",tolerateEmpty = true),
-          "msg" -> getChild(node, "msg"),
+          "msg" -> getChild(node, "msg", true, true),
           "requestId" -> getChild(node, "requestId", true, true)
         )
 
-        if (subnodes("msg").isRight) {
-          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true)
+        if (subnodes("msg").isRight && !subnodes("msg").right.get.isEmpty) {
+          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true, true)
         }
         
         if (subnodes("return").isRight) {
@@ -261,7 +267,7 @@ object OmiParser extends Parser[ParseMsg] {
           return errors.toSeq
 
         
-        if (subnodes("msg").right.get.isEmpty)
+        if (!subnodes.contains("msg") || subnodes("msg").right.get.isEmpty)
           return Seq(Result(subnodes("return").right.get.text,
             parameters("returnCode").right.get,
             None,

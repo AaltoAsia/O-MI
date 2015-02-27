@@ -61,7 +61,20 @@ body {
 	padding: 10px 5px;
 	margin: 10px 5px;
 }
-#msform .action-button:hover, #msform .action-button:focus {
+
+#msform .highlight-button {
+	width: 100px;
+	background: #2E64FE;
+	font-weight: bold;
+	color: white;
+	border: 0 none;
+	border-radius: 1px;
+	cursor: pointer;
+	padding: 10px 5px;
+	margin: 10px 5px;
+}
+
+#msform .action-button:hover, #msform .action-button:focus, #msform .highlight-button:focus, #msform .highlight-button:focus {
 	box-shadow: 0 0 0 2px white, 0 0 0 3px #27AE60;
 }
 /*headings*/
