@@ -260,7 +260,7 @@ class ParserTest extends Specification {
   }
 
   def e201 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("""omi:result msgformat="odf"""", "omi:result"))
+    val temp = OmiParser.parse(omi_response_test_file.replace("msgformat=\"odf\"", " "))
     temp.head should be equalTo (ParseError("No msgformat parameter found in result."))
 
   }
@@ -291,7 +291,7 @@ class ParserTest extends Specification {
   </omi:response>
 </omi:omiEnvelope>
 """)
-    temp.head should be equalTo (ParseError("No Objects child found in msg."))
+    temp.head should be equalTo (ParseError("No Objects node in msg, possible but not implemented"))
 
   }
 
@@ -448,7 +448,7 @@ class ParserTest extends Specification {
 
   def e306 = {
     OmiParser.parse(omi_subscription_test_file) should be equalTo (List(
-      Subscription("10", "40", List(
+      Subscription("10", 40, List(
         OdfObject(
           List("Objects", "SmartHouse"),
           List(

@@ -62,10 +62,10 @@ class SubscriptionTest extends Specification with Before {
 
         val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
 
-        val correctxml = <omi:omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      val correctxml = <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0"  ttl="0" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <omi:response>
-                                <omi:result msgformat="odf">
-                                    <omi:return returnCode="200"></omi:return>
+                                <omi:result>
+                                    <omi:return returnCode="200"/>
                                         <omi:requestId>{requestID}</omi:requestId>
                                 </omi:result>
                             </omi:response>
@@ -77,7 +77,7 @@ class SubscriptionTest extends Specification with Before {
         }
 
     "Return with historical data when no callback was provided" in {
-        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/Subretrieve.xml").getLines.mkString("\n")
+        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
         val parserlist = OmiParser.parse(simpletestfile)
         println(parserlist)
 

@@ -1,4 +1,4 @@
-<omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
+<omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
     <omi:response>
 	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
