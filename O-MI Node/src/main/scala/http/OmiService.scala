@@ -7,7 +7,6 @@ import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
 import responses._
-
 import akka.pattern.ask
 import scala.concurrent.duration._
 import scala.concurrent._
@@ -15,6 +14,7 @@ import parsing._
 import parsing.Types._
 import xml._
 import sensordata.SensorData
+import scala.concurrent.duration._
 
 class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
@@ -119,7 +119,8 @@ trait OmiService extends HttpService {
                   log.debug("read")
                   log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
                   val response = Future{ Read.OMIReadResponse(oneTimeRead) }
-                  Await.result(response, oneTimeRead.ttl.toDouble  seconds).asInstanceOf[NodeSeq]
+                  val ttl = oneTimeRead.ttl.toDouble
+                  Await.result(response, (if(ttl != 0) oneTimeRead.ttl.toDouble  seconds else Duration.Inf)).asInstanceOf[NodeSeq]
                 case write: Write => 
                   log.debug("write") 
                   ErrorResponse.notImplemented

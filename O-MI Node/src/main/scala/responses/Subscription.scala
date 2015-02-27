@@ -96,7 +96,7 @@ object OMISubscription {
 		val xml =
 	      <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
 	        <omi:response>
-	          <omi:result msgformat="odf">
+	          <omi:result>
 	            <omi:return returnCode="200"></omi:return>
 	            <omi:requestId>{id.toString}</omi:requestId>
 	            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">

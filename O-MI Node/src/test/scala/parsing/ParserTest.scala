@@ -119,7 +119,6 @@ class ParserTest extends Specification {
       correct without callback $e106
     response message with
       correct message     $e200
-      missing msgformat   $e201
       missing Objects     $e204
       missing result node $e205
       no objects to parse $e206
@@ -259,11 +258,14 @@ class ParserTest extends Specification {
       Result("", "200", Some( write_response_odf))))
   }
 
+  /*
+  //Missing msgformat is allowed
   def e201 = {
     val temp = OmiParser.parse(omi_response_test_file.replace("msgformat=\"odf\"", " "))
     temp.head should be equalTo (ParseError("No msgformat parameter found in result."))
 
   }
+  */
 
 //  def e202 = {
 //    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))

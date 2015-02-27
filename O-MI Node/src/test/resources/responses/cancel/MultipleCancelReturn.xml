@@ -6,8 +6,5 @@
 		<omi:result>
 			<omi:return returnCode="200"></omi:return>
 		</omi:result>
-		<omi:result>
-			<omi:return returnCode="200"></omi:return>
-		</omi:result>
 	</omi:response>
 </omi:omiEnvelope>
