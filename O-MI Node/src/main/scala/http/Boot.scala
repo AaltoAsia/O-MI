@@ -48,7 +48,7 @@ object Starter {
     }  */
 
     // NOTE: There might be some limits on how often the server permits fetching the data
-    //SensorData.queueSensors()
+    SensorData.queueSensors()
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(

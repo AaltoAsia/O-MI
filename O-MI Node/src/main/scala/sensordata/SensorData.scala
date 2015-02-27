@@ -50,7 +50,8 @@ package sensordata {
       // Set loading to true, 
       loading = true
       
-      val uri = "http://121.78.237.160:2100/"
+      //val uri = "http://121.78.237.160:2100/"
+      val uri = "http://zanagi.herokuapp.com/sensors/"
       println("Queuing for new sensor data from: " + uri)
       
       import scala.concurrent.ExecutionContext.Implicits.global
