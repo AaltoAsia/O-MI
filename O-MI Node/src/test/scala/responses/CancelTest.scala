@@ -34,7 +34,10 @@ class CancelTest extends Specification with Before {
     val singleSubs = Array(
       Path("Objects/CancelTest/Refrigerator123/PowerConsumption"),
       Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning"),
-      Path("Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault"))
+      Path("Objects/ReadTest/Refrigerator123/RefrigeratorProbeFault"),
+      Path("Objects/ReadTest/RoomSensors1/Temperature/Inside"),
+      Path("Objects/ReadTest/RoomSensors1/CarbonDioxide"),
+      Path("Objects/ReadTest/RoomSensors1/Temperature/Outside"))
 
     val multiSubs = Array(
       singleSubs,
@@ -60,6 +63,7 @@ class CancelTest extends Specification with Before {
   }
 
   "Cancel response" should {
+    sequential
     "Give correct XML when a single cancel is requested" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/SimpleXMLCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/SimpleXMLCancelReturn.xml")
