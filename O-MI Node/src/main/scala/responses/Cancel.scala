@@ -30,7 +30,7 @@ object OMICancel {
             } catch {
               case n: NumberFormatException =>
                 returnCode(400, "Invalid requestId")
-            } 
+            }
           } 
         }
         nodes

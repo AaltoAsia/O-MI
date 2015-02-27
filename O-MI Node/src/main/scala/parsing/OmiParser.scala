@@ -79,6 +79,8 @@ object OmiParser extends Parser[ParseMsg] {
     
   }
 
+  private def isInteger: String => Boolean = _.forall(_.isDigit)
+
   /**
    * Private method that is called inside parse method. This method checks which O-MI message
    *  type the message contains and handles them.
@@ -133,7 +135,9 @@ object OmiParser extends Parser[ParseMsg] {
       case "read" => {
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
-          "interval" -> getParameter(node, "interval", true),
+          "interval" -> getParameter(node, "interval", true,
+              validation = isInteger
+            ),
           "begin" -> getParameter(node, "begin", true),
           "end" -> getParameter(node, "end", true),
           "newest" -> getParameter(node, "newest", true),
@@ -192,7 +196,7 @@ object OmiParser extends Parser[ParseMsg] {
               }))
           } else {
             Seq(Subscription(ttl,
-              parameters("interval").right.get,
+              parameters("interval").right.get.toInt,
               right.map(_.right.get),
               begin,
               end,

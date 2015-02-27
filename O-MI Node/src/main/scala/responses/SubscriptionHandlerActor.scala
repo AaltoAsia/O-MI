@@ -41,25 +41,33 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5.seconds)
 
+  sealed trait SavedSub {
+    val sub: Subscription
+    val id: Int
+  }
+
+  case class TimedSub(sub: Subscription, id: Int, nextRunTime: Timestamp)
+    extends SavedSub
+
+  case class EventSub(sub: Subscription, id: Int)
+    extends SavedSub
 
 
-  // FIXME: why not contain also the whole Subscription
-  type TimedSub = (Timestamp,Int) 
-
-  type EventSub = (Subscription,Int)
-
-
-  object SubscriptionOrdering extends Ordering[TimedSub] {
-    def compare(a: TimedSub, b: TimedSub) = a._1.getTime compare b._1.getTime
+  object TimedSubOrdering extends Ordering[TimedSub] {
+    def compare(a: TimedSub, b: TimedSub) =
+      a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
 
   private var intervalSubs: PriorityQueue[TimedSub] =
-    PriorityQueue()(SubscriptionOrdering)
+    PriorityQueue()(TimedSubOrdering)
 
   private var eventSubs: Map[Path, EventSub] = HashMap()
 
   // Attach to db events
   SQLite.attachSetHook(this.checkEventSubs _)
+
+
+
 
   // TODO: load subscriptions at startup
 
@@ -69,17 +77,22 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   override def receive = { 
 
     case NewSubscription(requestId, subscription) => {
-      //val (requestId, xmlanswer) = setSubscription(subscription)
-      //sender() ! xmlanswer
-      //// maybe do these in OmiService
 
       if (subscription.hasInterval){
-        intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
+
+        intervalSubs += TimedSub(
+            subscription,
+            requestId,
+            new Timestamp(currentTimeMillis())
+          )
+
         handleIntervals()
 
       }else if(subscription.isEventBased){
+
         for (path <- getPaths(subscription.sensors))
-          eventSubs += path -> (subscription, requestId)
+          eventSubs += path -> EventSub(subscription, requestId)
+
       } 
     }
 
@@ -92,7 +105,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     for (path <- paths) {
       eventSubs.get(path) match {
 
-        case Some((subscription, id)) => 
+        case Some(EventSub(subscription, id)) => 
 
           def failed(reason: String) =
             log.warning(s"Callback failed; subscription id:$id  reason: $reason")
@@ -121,16 +134,16 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
   def handleIntervals(): Unit = {
-    val activeSubs = intervalSubs.takeWhile(_._1.getTime <= currentTimeMillis())
 
-    for ( (time, id) <- activeSubs) {
+    while (intervalSubs.head.nextRunTime.getTime <= currentTimeMillis()){
+      val TimedSub(sub, id, time) = intervalSubs.dequeue()
       Future{
         //val dbSensors = SQLite.getSubData(id) right now subscription omi
         //generation uses the paths in the dbsub, not sure if getSubData-function
         //is needed as this looper loops through all subs in the interval already?
         //Also with the paths its easier to construct the OMI hierarchy
 
-        val sub = SQLite.getSub(id).get 
+          // FIXME: cancel or ending subscription should be aken into account
         val omiMsg = generateOmi(id)
         val callbackAddr = sub.callback.get
         val interval = sub.interval
@@ -160,17 +173,16 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
 
-        // New time
-        time.setTime(time.getTime + sub.interval)
-        intervalSubs += Tuple2( time , id)
+        val newTime = new Timestamp(time.getTime + interval)
+        intervalSubs += TimedSub(sub, id, newTime)
       }
     }
 
     // Schedule for next
     intervalSubs.headOption map { next =>
-      val nextRun = next._1.getTime - currentTimeMillis()
+      val nextRun = next.nextRunTime.getTime - currentTimeMillis()
       system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
-      log.info(s"Next subcription handling scheluded to $nextRun.")
+      log.debug(s"Next subcription handling scheluded to $nextRun, current $currentTimeMillis")
     }
   }
 

@@ -26,7 +26,7 @@ object Types {
                     requestId: Seq[ String] = Seq.empty
                   ) extends ParseMsg
   case class Subscription(  ttl: String,
-                            interval: String,
+                            interval: Int,
                             sensors: Seq[ OdfObject],
                             begin: Option[Timestamp] = None,
                             end: Option[Timestamp] = None,
