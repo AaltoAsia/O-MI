@@ -135,8 +135,12 @@ trait OmiService extends HttpService {
 
                 case subscription: Subscription => 
                   log.debug("sub") 
-                  ErrorResponse.notImplemented
-                  returnStatus = 501
+
+                  val (id, response) = setSubscription(subscription)
+                  subscriptionHandler ! NewSubscription(id, subscription)
+
+                  response
+
                 case cancel: Cancel =>
                   log.debug("cancel")
                   ErrorResponse.notImplemented
