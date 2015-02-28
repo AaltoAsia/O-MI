@@ -60,7 +60,7 @@ package sensordata {
     def queueSensors(): Unit = {
       // Set loading to true, 
       loading = true
-      println("Queuing for new sensor data from: " + uri)
+      system.log.info("Queuing for new sensor data from: " + uri)
 
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
@@ -71,16 +71,12 @@ package sensordata {
         case Success(response) =>
           // Json data received from the server
           val json = parse(response.entity.asString)
-          println("_____________________")
-          println(json)
 
           // List of (sensorname, value) objects
           val list = for {
             JObject(child) <- json
             JField(sensor, JString(value)) <- child
           } yield (sensor, value)
-          println("_____________")
-          println(list.filter(_._1.split('_').length > 3))
           addToDatabase(list)
           //        
 
@@ -100,6 +96,7 @@ package sensordata {
     /**
      * Generate ODF from the parsed & formatted Json data
      * @param list of sensor-value pairs
+     * @return generated XML Node
      */
     private def addToDatabase(list: List[(String, String)]): Unit = {
       // Define dateformat for dateTime value
@@ -108,7 +105,7 @@ package sensordata {
 
       if (!list.isEmpty) {
         // InfoItems filtered out
-        val temp = list.filter(_._1.split('_').length > 3).map(item => {
+        SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
           val sensor: String = item._1
           val value: String = item._2 // Currently as string, convert to double?
           // Split name from underlines
@@ -119,10 +116,7 @@ package sensordata {
           val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
 
           ("Objects/" + objectId + "/" + infoItemName, value)
-        })
-        println("WWWWWWWWWW")
-        println(temp)
-        SQLite.setMany(temp)
+        }))
       }
     }
   }
