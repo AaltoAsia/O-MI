@@ -8,6 +8,7 @@ import akka.pattern.ask
 import akka.actor.ActorLogging
 
 import responses._
+import database.SQLite._
 import database._
 import parsing.Types.{Subscription, Path}
 import OMISubscription.{getPaths, OMISubscriptionResponse}
@@ -27,7 +28,7 @@ import scala.concurrent._
 
 // MESSAGES
 case object Handle
-case class NewSubscription(id: Int, sub: Subscription)
+case class NewSubscription(id: Int)
 
 
 
@@ -42,14 +43,14 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   implicit val timeout = Timeout(5.seconds)
 
   sealed trait SavedSub {
-    val sub: Subscription
+    val sub: DBSub
     val id: Int
   }
 
-  case class TimedSub(sub: Subscription, id: Int, nextRunTime: Timestamp)
+  case class TimedSub(sub: DBSub, id: Int, nextRunTime: Timestamp)
     extends SavedSub
 
-  case class EventSub(sub: Subscription, id: Int)
+  case class EventSub(sub: DBSub, id: Int)
     extends SavedSub
 
 
@@ -74,27 +75,35 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
 
+
+  private def loadSub(id: Int): Unit = {
+    getSub(id) match {
+      case Some(dbsub) =>
+        if (dbsub.isIntervalBased){
+
+          intervalSubs += TimedSub(
+              dbsub,
+              id,
+              new Timestamp(currentTimeMillis())
+            )
+
+          handleIntervals()
+
+        } else if (dbsub.isEventBased){
+
+          for (path <- dbsub.paths)
+            eventSubs += path -> EventSub(dbsub, id)
+        }
+
+      case None =>
+        log.warning(s"Tried to load nonexistent subscription: $id")
+    }
+  }
+
+
   override def receive = { 
 
-    case NewSubscription(requestId, subscription) => {
-
-      if (subscription.hasInterval){
-
-        intervalSubs += TimedSub(
-            subscription,
-            requestId,
-            new Timestamp(currentTimeMillis())
-          )
-
-        handleIntervals()
-
-      }else if(subscription.isEventBased){
-
-        for (path <- getPaths(subscription.sensors))
-          eventSubs += path -> EventSub(subscription, requestId)
-
-      } 
-    }
+    case NewSubscription(requestId) => loadSub(requestId)
 
     case Handle => handleIntervals()
   }
@@ -110,7 +119,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
           def failed(reason: String) =
             log.warning(s"Callback failed; subscription id:$id  reason: $reason")
 
-          val addr = subscription.callback.get
+          val addr = subscription.callback.get // FIXME if no callback
           val callbackXml = OMISubscriptionResponse(id)
 
           val call = CallbackHandlers.sendCallback(addr, callbackXml)
@@ -134,8 +143,10 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
   def handleIntervals(): Unit = {
+    val checkTime = currentTimeMillis()
 
-    while (intervalSubs.head.nextRunTime.getTime <= currentTimeMillis()){
+    while (intervalSubs.head.nextRunTime.getTime <= checkTime){
+
       val TimedSub(sub, id, time) = intervalSubs.dequeue()
       Future{
         //val dbSensors = SQLite.getSubData(id) right now subscription omi
@@ -145,7 +156,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
           // FIXME: cancel or ending subscription should be aken into account
         val omiMsg = generateOmi(id)
-        val callbackAddr = sub.callback.get
+        val callbackAddr = sub.callback.get // FIXME: if no callback addr
         val interval = sub.interval
 
 
@@ -157,6 +168,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
               s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
             )
 
+        log.debug(s"Sending callback $id to $callbackAddr...")
         val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
 
         call onComplete {
@@ -172,9 +184,13 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         }
 
 
-
-        val newTime = new Timestamp(time.getTime + interval)
-        intervalSubs += TimedSub(sub, id, newTime)
+        // Check if ttl has ended, comparing to original check time
+        if (sub.startTime.getTime + sub.ttlToMillis > checkTime) {
+          removeSub(id)
+        } else {
+          val newTime = new Timestamp(time.getTime + sub.intervalToMillis)
+          intervalSubs += TimedSub(sub, id, newTime)
+        }
       }
     }
 

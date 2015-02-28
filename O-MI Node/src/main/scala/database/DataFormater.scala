@@ -19,11 +19,13 @@ object DataFormater {
    * sent if callback address were provided 
    *
    */
-def FormatSubData(path:Path,starttime:Timestamp,interval:Int):Array[DBSensor] =
+def FormatSubData(path:Path,starttime:Timestamp,interval:Double):Array[DBSensor] =
 {
   var rawdata = SQLite.getNBetween(path, Some(starttime), None, None,None)
   var deltaTime = new java.util.Date().getTime - starttime.getTime
-  var formatedData = Array.ofDim[DBSensor]((deltaTime/1000).toInt/interval)
+  val intervalMillis = (1000*interval).toLong
+  var formatedData = Array.ofDim[DBSensor]((deltaTime/intervalMillis).toInt)
+
   if(rawdata.isEmpty)
   {
     //found no data after subscription was set
@@ -44,7 +46,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Int):Array[DBSensor] =
   else
   {
    var formatedIndex = 0
-   var compareTime = new Timestamp(starttime.getTime + 1000*interval)
+   var compareTime = new Timestamp(starttime.getTime + intervalMillis)
    for(n <- 0 until rawdata.length)
     {
      //loop through all raw data and determine a correct position for it in the formated data
@@ -62,7 +64,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Int):Array[DBSensor] =
         formatedIndex += 1
         }
         formatedData(formatedIndex) = rawdata(n)
-        compareTime = new Timestamp(starttime.getTime + 1000*interval*(formatedIndex + 1))
+        compareTime = new Timestamp(starttime.getTime + intervalMillis*(formatedIndex + 1).toLong)
       }
     }
   //Try to fill gaps in FormatedData

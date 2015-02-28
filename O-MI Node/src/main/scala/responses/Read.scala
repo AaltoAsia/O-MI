@@ -113,7 +113,7 @@ object Read {
 
     else {
       val id = read.requestId.head.toInt
-      val newbegin = SQLite.getSub(id).get.startTime
+      val newbegin = Some(SQLite.getSub(id).get.startTime)
       val newend = Some(new Timestamp(new java.util.Date().getTime))
 
       <Objects>

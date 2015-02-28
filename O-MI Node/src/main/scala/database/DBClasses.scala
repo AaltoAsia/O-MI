@@ -13,12 +13,21 @@ import SQLite._
  * @param interval to store the interval value to DB
  * @param callback optional callback address. use None if no address is needed
  */
-class DBSub(var paths: Array[Path], val ttl: Int, val interval: Int, val callback: Option[String], var startTime: Option[Timestamp]) {
+class DBSub(var paths: Array[Path],
+            val ttl: Double,
+            val interval: Double,
+            val callback: Option[String],
+            var startTimeOption: Option[Timestamp]
+            ) extends SubLike {
   //this is assigned later when subscribtion is added to db
   var id: Int = 0
-  if (startTime == None) {
-    startTime = Some(new Timestamp(new java.util.Date().getTime))
-  }
+  val startTime: Timestamp =
+    startTimeOption.getOrElse(
+      new Timestamp(
+        new java.util.Date().getTime
+      )
+    )
+
   if (callback == None) {
     paths.foreach {
       startBuffering(_)
@@ -104,13 +113,13 @@ class BufferedPath(tag: Tag)
  * Storing the subscription information to DB
  */
 class DBSubscription(tag: Tag)
-  extends Table[(Int, String, java.sql.Timestamp, Int, Int, Option[String])](tag, "subscriptions") {
+  extends Table[(Int, String, java.sql.Timestamp, Double, Double, Option[String])](tag, "subscriptions") {
   // This is the primary key column:
   def ID = column[Int]("ID", O.PrimaryKey)
   def paths = column[String]("PATHS")
   def start = column[java.sql.Timestamp]("START")
-  def TTL = column[Int]("TTL")
-  def interval = column[Int]("INTERVAL")
+  def TTL = column[Double]("TTL")
+  def interval = column[Double]("INTERVAL")
   def callback = column[Option[String]]("CALLBACK")
-  def * : ProvenShape[(Int, String, java.sql.Timestamp, Int, Int, Option[String])] = (ID, paths, start, TTL, interval, callback)
+  def * : ProvenShape[(Int, String, java.sql.Timestamp, Double, Double, Option[String])] = (ID, paths, start, TTL, interval, callback)
 }

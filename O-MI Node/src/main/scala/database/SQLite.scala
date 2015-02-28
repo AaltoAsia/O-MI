@@ -432,10 +432,15 @@ object SQLite {
       db withTransaction { implicit session =>
         val sub = subs.filter(_.ID === id).first
         if (sub._4 > 0) {
-          var cal = java.util.Calendar.getInstance()
-          cal.setTimeInMillis(sub._3.getTime())
-          cal.add(java.util.Calendar.SECOND, sub._4)
-          var endtime = new java.sql.Timestamp(cal.getTime().getTime())
+
+          // um, are these necessary? (remove these if they are not):
+          //var cal = java.util.Calendar.getInstance()
+          //cal.setTimeInMillis(sub._3.getTime())
+          //cal.add(java.util.Calendar.SECOND, sub._4)
+          //var endtime = new java.sql.Timestamp(cal.getTime().getTime())
+
+          val endtime = new Timestamp(sub._3.getTime + (sub._4 * 1000).toLong)
+
           new java.sql.Timestamp(new java.util.Date().getTime).after(endtime)
         } else {
           true
@@ -504,7 +509,7 @@ object SQLite {
       db withTransaction { implicit session =>
         val id = getNextId()
         sub.id = id
-        subs += (sub.id, sub.paths.mkString(";"), sub.startTime.get, sub.ttl, sub.interval, sub.callback)
+        subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
         //returns the id for reference
         id
       }

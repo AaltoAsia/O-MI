@@ -137,7 +137,7 @@ trait OmiService extends HttpService {
                   log.debug("sub") 
 
                   val (id, response) = OMISubscription.setSubscription(subscription)
-                  subscriptionHandler ! NewSubscription(id, subscription)
+                  subscriptionHandler ! NewSubscription(id)
 
                   response
 

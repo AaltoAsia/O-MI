@@ -2,6 +2,19 @@ package parsing
 import java.sql.Timestamp
 
 object Types {
+  /**
+   * Trait for subscription like classes
+   */
+  trait SubLike {
+    // Note: defs can be implemented also as val and lazy val
+    def interval: Double
+    def ttl: Double
+    def isIntervalBased  = interval.toDouble >= 0.0
+    def isEventBased = interval.toDouble == -1
+    def ttlToMillis: Long = (ttl * 1000).toLong
+    def intervalToMillis: Long = (interval * 1000).toLong
+  }
+
   /** absract trait that represent either error or request in the O-MI
     *
     */
@@ -25,8 +38,8 @@ object Types {
                     callback: Option[String] = None,
                     requestId: Seq[ String] = Seq.empty
                   ) extends ParseMsg
-  case class Subscription(  ttl: String,
-                            interval: Int,
+  case class Subscription(  ttl: Double,
+                            interval: Double,
                             sensors: Seq[ OdfObject],
                             begin: Option[Timestamp] = None,
                             end: Option[Timestamp] = None,
@@ -34,11 +47,7 @@ object Types {
                             oldest: Option[Int] = None,
                             callback: Option[String] = None,
                             requestId: Seq[ String] = Seq.empty
-                            ) extends ParseMsg {
-
-    def hasInterval  = interval.toDouble >= 0.0
-    def isEventBased = interval.toDouble == -1
-  }
+                            ) extends ParseMsg with SubLike
   case class Result(  returnValue: String,
                       returnCode: String,
                       parseMsgOp: Option[ Seq[ OdfObject] ],

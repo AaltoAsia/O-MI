@@ -30,11 +30,15 @@ abstract trait Parser[Result] {
    * @param validation function if parameter musth confor some format
    * @return Either ParseError or parameter as String
    */
-  protected def getParameter(node: Node,
-    paramName: String,
-    tolerateEmpty: Boolean = false,
-    validation: String => Boolean = _ => true): Either[ParseError, String] = {
+  protected def getParameter(
+        node: Node,
+        paramName: String,
+        tolerateEmpty: Boolean = false,
+        validation: String => Boolean = _ => true
+      ): Either[ParseError, String] = {
+
     val parameter = (node \ s"@$paramName").text
+
     if (parameter.isEmpty && !tolerateEmpty)
       return Left(ParseError(s"No $paramName parameter found in ${node.label}."))
     else if (validation(parameter))

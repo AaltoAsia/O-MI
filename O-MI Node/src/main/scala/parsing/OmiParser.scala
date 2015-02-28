@@ -80,6 +80,14 @@ object OmiParser extends Parser[ParseMsg] {
   }
 
   private def isInteger: String => Boolean = _.forall(_.isDigit)
+  private def isDouble(str: String): Boolean =
+    try {
+      str.toDouble // XXX: Let's hope that some compiler optimization doesn't cut this line out
+                   // because the value is not used anywhere
+      true
+    } catch {
+      case _: Throwable => false
+    }
 
   /**
    * Private method that is called inside parse method. This method checks which O-MI message
@@ -195,8 +203,8 @@ object OmiParser extends Parser[ParseMsg] {
                 id => id.text
               }))
           } else {
-            Seq(Subscription(ttl,
-              parameters("interval").right.get.toInt,
+            Seq(Subscription(ttl.toDouble,
+              parameters("interval").right.get.toDouble,
               right.map(_.right.get),
               begin,
               end,
