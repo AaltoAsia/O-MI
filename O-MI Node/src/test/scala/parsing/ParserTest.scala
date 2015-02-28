@@ -450,7 +450,7 @@ class ParserTest extends Specification {
 
   def e306 = {
     OmiParser.parse(omi_subscription_test_file) should be equalTo (List(
-      Subscription("10", 40, List(
+      Subscription(10, 40, List(
         OdfObject(
           List("Objects", "SmartHouse"),
           List(
