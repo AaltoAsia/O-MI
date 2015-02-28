@@ -25,8 +25,8 @@ abstract trait Parser[Result] {
    * private helper function for getting parameter of an node.
    * Handles error cases.
    * @param node were parameter should be.
-   * @param parameter's label
-   * @param is nonexisting parameter accepted, is parameter's existent mandatory
+   * @param paramName parameter's label
+   * @param tolerateEmpty is nonexisting parameter accepted, is parameter's existent mandatory
    * @param validation function if parameter musth confor some format
    * @return Either ParseError or parameter as String
    */
@@ -50,17 +50,21 @@ abstract trait Parser[Result] {
   /**
    * private helper function for getting child of an node.
    * Handles error cases.
-   * @param node were parameter should be.
-   * @param child's label
-   * @param is child allowed to have empty value
-   * @param is nonexisting childs accepted, is child's existent mandatory
+   * @param node node were parameter should be.
+   * @param childName child's label
+   * @param tolerateEmpty is child allowed to have empty value
+   * @param tolerateNonexist is nonexisting childs accepted, is child's existent mandatory
    * @return Either ParseError or sequence of childs found
    */
-  protected def getChild(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateNonexist: Boolean = false): Either[ParseError, Seq[Node]] = {
+  protected def getChild(
+        node: Node,
+        childName: String,
+        tolerateEmpty: Boolean = false,
+        tolerateNonexist: Boolean = false
+      ): Either[ParseError, Seq[Node]] = {
+
     val childs = (node \ s"$childName") map (stripNamespaces)
+
     if (!tolerateNonexist && childs.isEmpty)
       return Left(ParseError(s"No $childName child found in ${node.label}."))
     else if (!tolerateEmpty && childs.nonEmpty && childs.head.text.isEmpty )
@@ -72,19 +76,23 @@ abstract trait Parser[Result] {
   /**
    * private helper function for getting child of an node.
    * Handles error cases.
-  * @param node were parameter should be.
-   * @param child's label
-   * @param is child allowed to have empty value
-   * @param is nonexisting childs accepted, is child's existent mandatory
-   * @param is multiple childs accepted
+  * @param node node where parameter should be.
+   * @param childName child's label
+   * @param tolerateEmpty is child allowed to have empty value
+   * @param tolerateNonexist is nonexisting childs accepted, is child's existent mandatory
+   * @param tolerateMultiple is multiple childs accepted
    * @return Either ParseError or sequence of childs found
    */
-  protected def getChilds(node: Node,
-    childName: String,
-    tolerateEmpty: Boolean = false,
-    tolerateNonexist: Boolean = false,
-    tolerateMultiple: Boolean = false): Either[ParseError, Seq[Node]] = {
+  protected def getChilds(
+        node: Node,
+        childName: String,
+        tolerateEmpty: Boolean = false,
+        tolerateNonexist: Boolean = false,
+        tolerateMultiple: Boolean = false
+      ): Either[ParseError, Seq[Node]] = {
+
     val childs = (node \ s"$childName")
+    
     if (!tolerateNonexist && childs.isEmpty)
       return Left(ParseError(s"No $childName child found in ${node.label}."))
     else if (!tolerateMultiple && childs.size > 1)
@@ -97,7 +105,7 @@ abstract trait Parser[Result] {
   
   /**
    * function for checking does given string confort O-DF schema
-   * @param String to check
+   * @param xml String to check
    * @return ParseErrors found while checking, if empty, successful
    */
   def schemaValitation(xml: String): Seq[ParseError] = {

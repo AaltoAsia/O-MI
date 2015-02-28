@@ -321,11 +321,11 @@ object SQLite {
    *
    * @param path path as Path object
    * @param start optional start Timestamp
-   * @param start optional end Timestamp
+   * @param end optional end Timestamp
    * @param fromStart number of values to be returned from start
    * @param fromEnd number of values to be returned from end
    *
-   * @param return Array of DBSensors
+   * @return Array of DBSensors
    */
 
   def getNBetween(path: Path, start: Option[Timestamp], end: Option[Timestamp], fromStart: Option[Int], fromEnd: Option[Int]): Array[DBSensor] = {
@@ -422,7 +422,7 @@ object SQLite {
    *
    * @param id id number that was generated during saving
    *
-   * @param return returns boolean whether subscription with given id has expired
+   * @return returns boolean whether subscription with given id has expired
    */
   def isExpired(id: Int): Boolean =
     {
@@ -475,7 +475,7 @@ object SQLite {
    * Returns None if no subscription data matches the id
    * @param id id number that was generated during saving
    *
-   * @param return returns Some(BDSub) if found element with given id None otherwise
+   * @return returns Some(BDSub) if found element with given id None otherwise
    */
   def getSub(id: Int): Option[DBSub] =
     {
@@ -502,7 +502,7 @@ object SQLite {
    *
    * @param sub DBSub object to be stored
    *
-   * @param return id number that is used for querying the elements
+   * @return id number that is used for querying the elements
    */
   def saveSub(sub: DBSub): Int =
     {
@@ -516,7 +516,7 @@ object SQLite {
     }
   /**
    * Private helper method to find next free id number
-   * @param return the next free id number
+   * @return the next free id number
    */
   private def getNextId()(implicit session: Session): Int = {
     var len = subs.list.length

@@ -207,9 +207,11 @@ object Read {
 
   /**
    * helper function for generating O-DF's InfoItem nodes
-   * @param nodes to generate
-   * @param the start time of the time interval from where to get sensors
-   * @param the end time of the time interval from where to get sensors
+   * @param infoItems nodes to generate
+   * @param begin the start time of the time interval from where to get sensors
+   * @param end the end time of the time interval from where to get sensors
+   * @param newest get only this many newest items
+   * @param oldest get only this many oldest items
    * @return generated xml as String
    */
   def odfInfoItemGeneration(infoItems: List[OdfInfoItem],

@@ -60,8 +60,8 @@ object Types {
 
   /** case classs that represnts a value of InfoItem in the O-DF
     *
-    * @param optional timestamp when value was measured
-    * @param measured value
+    * @param time optional timestamp when value was measured
+    * @param value measured value
     */
   case class TimedValue( time: Option[Timestamp], value: String)
 
@@ -73,7 +73,7 @@ object Types {
   /** case class that represents an InfoItem in the O-DF
    *  
    *  @param path path to the InfoItem as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge","PowerConsumption")
-   *  @param InfoItem's values found in xml structure, TimedValue.
+   *  @param timedValues InfoItem's values found in xml structure, TimedValue.
    *  @param metadata Object may contain metadata, 
    *         metadata can contain e.g. value type, units or similar information
    */
@@ -84,8 +84,8 @@ object Types {
   /** case class that represents an Object in the O-DF
    *  
    *  @param path path to the Object as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge")
-   *  @param Object's childs found in xml structure.
-   *  @param Object's InfoItems found in xml structure.
+   *  @param childs Object's childs found in xml structure.
+   *  @param sensors Object's InfoItems found in xml structure.
    *  @param metadata Object may contain metadata, 
    *         metadata can contain e.g. value type, units or similar information
    */
