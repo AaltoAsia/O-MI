@@ -136,7 +136,7 @@ trait OmiService extends HttpService {
                 case subscription: Subscription => 
                   log.debug("sub") 
 
-                  val (id, response) = setSubscription(subscription)
+                  val (id, response) = OMISubscription.setSubscription(subscription)
                   subscriptionHandler ! NewSubscription(id, subscription)
 
                   response
