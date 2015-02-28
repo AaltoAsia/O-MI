@@ -49,7 +49,7 @@ class TypesTest extends Specification {
   }
 
   def e4 = {
-    new Subscription("", "", Seq()).isInstanceOf[ParseMsg]
+    new Subscription("", 0, Seq()).isInstanceOf[ParseMsg]
   }
 
   def e5 = {
