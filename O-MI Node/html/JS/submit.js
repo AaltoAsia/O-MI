@@ -146,20 +146,21 @@ function sendRequest()
 
     var request = $('#request').text(); //Get the request string
 
-	var subscribe = false;
+	var subscribeLocal = false;
 	var interval = $("#interval").val();
+        var callback = $("#callback").val();
 	if($.isNumeric(interval)){
 		// Allowed intervals, -2, -1, 0 and all positive integers
-		subscribe = interval >= -2;
+		subscribeLocal = interval >= -2 && callback.length === 0;
 	}
 	
-    ajaxPost(server, request, subscribe);
+    ajaxPost(server, request, subscribeLocal);
 }
 
 //Test
 var count = 0;
 
-function ajaxPost(server, request, subscribe){
+function ajaxPost(server, request, subscribeLocal){
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -173,8 +174,10 @@ function ajaxPost(server, request, subscribe){
 			count += 1;
 			$("#infoBox").text("Count: " + count);
 			
-			if(subscribe){
-				window.setTimeout(ajaxPost(server, request, subscribe), 1000);
+			if(subscribeLocal){
+				window.setTimeout(
+					function () {ajaxPost(server, request, subscribeLocal)},
+					1000);
 			}
 		},
 		error: function(a, b, c){
