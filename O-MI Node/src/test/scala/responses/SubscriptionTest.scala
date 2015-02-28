@@ -54,33 +54,8 @@ class SubscriptionTest extends Specification with Before {
   }
 
   "Subscription response" should {
-    "Return with just a requestId when subscribed" in {
-/*<<<<<<< HEAD
-        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
-        val parserlist = OmiParser.parse(simpletestfile)
-
-        val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
-
-      val correctxml = <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0"  ttl="0" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                            <omi:response>
-                                <omi:result>
-                                    <omi:return returnCode="200"/>
-                                        <omi:requestId>{requestID}</omi:requestId>
-                                </omi:result>
-                            </omi:response>
-                         </omi:omiEnvelope>
-
-        //sanoo että failure vaikka nämä ovat identtiset?
-        trim(xmlreturn.head) should be equalTo(trim(correctxml))
-
-        }
-
-    "Return with historical data when no callback was provided" in {
-        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
-        val parserlist = OmiParser.parse(simpletestfile)
-        println(parserlist)
-//=======
-*/      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
+    "Return with just a requestId when subscribed and right data when no callback" in {
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
 
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
@@ -95,16 +70,14 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
+      Thread.sleep(3000)
+
+      println(OMISubscription.OMINoCallbackResponse(requestID))
+      
       trim(xmlreturn.head).toString == trim(correctxml).toString
+
     }
 
-    "Return with historical data when no callback was provided" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
-//      println(parserlist) //Debug print
-
-      1 == 1
-    }
   }
 
 }
