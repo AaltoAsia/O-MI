@@ -456,7 +456,7 @@ object SQLite {
     db withSession { implicit session =>
       var toBeDeleted = subs.filter(_.ID === id)
       if(toBeDeleted.length.run > 0) { 
-        println("\nlist:\n "+ toBeDeleted.list+ "\nend")
+//        println("\nlist:\n "+ toBeDeleted.list+ "\nend") //Debug print
         if(toBeDeleted.list.head._6 == None) {
           toBeDeleted.first._2.split(";").foreach { p =>
             stopBuffering(Path(p))
