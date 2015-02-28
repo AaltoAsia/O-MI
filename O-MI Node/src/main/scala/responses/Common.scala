@@ -71,7 +71,7 @@ object Common {
 
   val returnCode200: Elem = returnCode(200)
 
-  def odfmsgWrapper(innerxml: NodeSeq): Elem = {
+  def odfMsgWrapper(innerxml: NodeSeq): Elem = {
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
         { innerxml }
     </omi:msg>

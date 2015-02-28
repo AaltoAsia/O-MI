@@ -180,15 +180,17 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
     // Schedule for next
     intervalSubs.headOption map { next =>
+
       val nextRun = next.nextRunTime.getTime - currentTimeMillis()
       system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
+
       log.debug(s"Next subcription handling scheluded to $nextRun, current $currentTimeMillis")
     }
   }
 
 
 
-  def generateOmi(id: Int): xml.Node = {
+  def generateOmi(id: Int): xml.NodeSeq = {
     return OMISubscriptionResponse(id)
   }
 }

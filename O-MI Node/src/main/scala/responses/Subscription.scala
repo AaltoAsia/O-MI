@@ -90,24 +90,14 @@ object OMISubscription {
 	}
 
 	//basically the same as Read response except it also contains a requestId
-	def OMISubscriptionResponse(id: Int): xml.Node = {
+	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
 		val subdata = SQLite.getSub(id).get
 
-		val xml =
-	      <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-	        <omi:response>
-	          <omi:result>
-	            <omi:return returnCode="200"></omi:return>
-	            <omi:requestId>{id.toString}</omi:requestId>
-	            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-	              {
-	                odfGeneration(subdata.paths)
-	              }
-	            </omi:msg>
-	          </omi:result>
-	        </omi:response>
-	      </omi:omiEnvelope>
-	    xml
+    omiResult{
+      returnCode200 ++
+      requestId(id) ++
+      odfMsgWrapper(odfGeneration(subdata.paths))
+    }
 	}
 
 	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = {

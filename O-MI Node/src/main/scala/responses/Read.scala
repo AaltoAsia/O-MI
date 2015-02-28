@@ -89,7 +89,7 @@ object Read {
     omiOdfResult(
         returnCode200 ++
         requestIds(read.requestId) ++
-        odfmsgWrapper(odfGeneration(read))
+        odfMsgWrapper(odfGeneration(read))
     )
   }
   /**
