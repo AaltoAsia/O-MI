@@ -76,7 +76,7 @@ object OMISubscription {
     }
 	}
 
-	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = {
+	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = { //TODO make hierarchy right
     	var node : xml.NodeSeq = xml.NodeSeq.Empty 
     	for(path <- itempaths){
       		node ++=

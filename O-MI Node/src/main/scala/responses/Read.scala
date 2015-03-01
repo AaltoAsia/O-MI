@@ -113,19 +113,8 @@ object Read {
 
     else {
       val id = read.requestId.head.toInt
-      val newbegin = Some(SQLite.getSub(id).get.startTime)
-      val newend = Some(new Timestamp(new java.util.Date().getTime))
-
-      <Objects>
-        {
-          odfObjectGeneration(
-            read.sensors.toList,
-            newbegin,
-            newend,
-            read.newest,
-            read.oldest)
-        }
-      </Objects>
+      OMISubscription.OMINoCallbackResponse(id)
+      
     }
   }
 
