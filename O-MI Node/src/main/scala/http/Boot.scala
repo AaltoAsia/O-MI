@@ -46,7 +46,7 @@ object Starter {
     for ((path, value) <- testData){
         SQLite.set(new DBSensor(path, value, testTime))
     }  */
-    sensorData.queueSensors()
+    //sensorData.queueSensors()
 
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
@@ -56,7 +56,7 @@ object Starter {
   }
 
   def start(): Unit = {
-    val subHandler = system.actorOf(Props(classOf[AgentListener]), "subscription-handler")
+    val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
 
     // create and start our service actor
     val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
