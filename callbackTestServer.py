@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from http.server import *
-#from xml.dom.minidom import parseString
+from xml.dom.minidom import parseString
 
 # Use colors if available
 try:
@@ -22,7 +22,21 @@ def seperator():
     Fore.YELLOW + " # {:02} # ".format(responseNum) +\
     Fore.BLUE + "=" * 20 + Style.RESET_ALL
 
+import re
+emptyLinePattern = re.compile(u'(?imu)^\s*\n')
+def prettyXml(string):
+    xml = parseString(string).toprettyxml("  ")
+    return emptyLinePattern.sub(u'', xml)
+           
 
+
+
+
+
+
+
+# Simple Handler for HTTP POST callbacks
+#
 class CallbackHandler(BaseHTTPRequestHandler):
     def do_POST(s):
         s.send_response(200)
@@ -33,8 +47,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
         msg = post_body.decode("UTF-8")
 
         print(seperator())
-        #print(parseString(msg).toprettyxml("  "))
-        print(msg)
+        print(prettyXml(msg))
         print(seperator() + "\n")
         print(Fore.GREEN + Style.BRIGHT)
 
