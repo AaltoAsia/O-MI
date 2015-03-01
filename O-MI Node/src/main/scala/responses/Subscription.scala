@@ -117,7 +117,7 @@ object OMISubscription {
     }
 	}
 
-	def odfNoCallbackDataGeneration(itempaths: Array[Path], starttime:Timestamp, interval:Int) : xml.NodeSeq = {
+	def odfNoCallbackDataGeneration(itempaths: Array[Path], starttime:Timestamp, interval:Double) : xml.NodeSeq = {
     	var node : xml.NodeSeq = xml.NodeSeq.Empty
 
     	if(itempaths.isEmpty == false) {
