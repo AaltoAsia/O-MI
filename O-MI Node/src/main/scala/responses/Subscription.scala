@@ -113,7 +113,7 @@ object OMISubscription {
     omiResult{
       returnCode200 ++
       requestId(id) ++
-      odfMsgWrapper(odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval.toInt))
+      odfMsgWrapper(odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval))
     }
 	}
 
@@ -146,7 +146,7 @@ object OMISubscription {
     node
   	}
 
-  	def getAllvalues(sensor: database.DBSensor, starttime:Timestamp, interval:Int) : xml.NodeSeq = {
+  	def getAllvalues(sensor: database.DBSensor, starttime:Timestamp, interval:Double) : xml.NodeSeq = {
   		var node : xml.NodeSeq = xml.NodeSeq.Empty
   		val infoitemvaluelist = DataFormater.FormatSubData(sensor.path, starttime, interval)
 
