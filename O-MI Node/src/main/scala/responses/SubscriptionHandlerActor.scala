@@ -162,7 +162,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       // Check if ttl has ended, comparing to original check time
       val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
-      if (removeTime <= checkTime) {
+      if (removeTime <= checkTime && sub.ttl != -1) {
         log.debug(s"Removing sub: id:$id ttl:${sub.ttlToMillis} delay:${checkTime-removeTime}ms")
         removeSub(id)
 
