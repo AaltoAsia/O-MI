@@ -79,6 +79,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def loadSub(id: Int): Unit = {
     getSub(id) match {
       case Some(dbsub) =>
+        log.debug(s"Adding sub: $id")
         if (dbsub.isIntervalBased){
 
           intervalSubs += TimedSub(
@@ -96,7 +97,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         }
 
       case None =>
-        log.warning(s"Tried to load nonexistent subscription: $id")
+        log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
 
@@ -143,53 +144,74 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
   def handleIntervals(): Unit = {
+    // failsafe
+    if (intervalSubs.isEmpty) {
+      log.error("handleIntervals shouldn't be called when there is no intervalSubs!")
+      return
+    }
+
     val checkTime = currentTimeMillis()
 
-    while (intervalSubs.head.nextRunTime.getTime <= checkTime){
+    while (intervalSubs.headOption.map(_.nextRunTime.getTime <= checkTime).getOrElse(false)){
 
       val TimedSub(sub, id, time) = intervalSubs.dequeue()
-      Future{
-        //val dbSensors = SQLite.getSubData(id) right now subscription omi
-        //generation uses the paths in the dbsub, not sure if getSubData-function
-        //is needed as this looper loops through all subs in the interval already?
-        //Also with the paths its easier to construct the OMI hierarchy
 
-          // FIXME: cancel or ending subscription should be aken into account
-        val omiMsg = generateOmi(id)
-        val callbackAddr = sub.callback.get // FIXME: if no callback addr
-        val interval = sub.interval
+      log.debug(s"handleIntervals: delay:${checkTime-time.getTime}ms currentTime:$checkTime targetTime:${time.getTime} id:$id")
 
 
+      // Check if ttl has ended, comparing to original check time
+      val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
-        // Send, handle errors
+      if (removeTime <= checkTime) {
+        log.debug(s"Removing sub: id:$id ttl:${sub.ttlToMillis} delay:${checkTime-removeTime}ms")
+        removeSub(id)
 
-        def failed(reason: String) =
-            log.warning(
-              s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
-            )
+      } else {
+        // FIXME: long TTLs may start accumulating some delay between calls, so maybe change
+        // calculation to something like: startTime + interval * numOfCalls
+        // , where numOfCalls = ((currentTime - startTime) / interval).toInt
+        val newTime = new Timestamp(time.getTime + sub.intervalToMillis)
+        intervalSubs += TimedSub(sub, id, newTime)
 
-        log.debug(s"Sending callback $id to $callbackAddr...")
-        val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
+        Future{ // TODO: Maybe move this to wrap only the generation and sending
+                // because they are the only things that can take some time
 
-        call onComplete {
+          //val dbSensors = SQLite.getSubData(id) right now subscription omi
+          //generation uses the paths in the dbsub, not sure if getSubData-function
+          //is needed as this looper loops through all subs in the interval already?
+          //Also with the paths its easier to construct the OMI hierarchy
 
-          case Success(CallbackSuccess) => 
-            log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
-
-          case Success(fail: CallbackFailure) =>
-            failed(fail.toString)
-            
-          case Failure(e) =>
-            failed(e.getMessage)
-        }
+            // FIXME: cancel or ending subscription should be aken into account
+          log.debug(s"generateOmi for id:$id")
+          val omiMsg = generateOmi(id)
+          val callbackAddr = sub.callback.get // FIXME: if no callback addr
+          val interval = sub.interval
 
 
-        // Check if ttl has ended, comparing to original check time
-        if (sub.startTime.getTime + sub.ttlToMillis > checkTime) {
-          removeSub(id)
-        } else {
-          val newTime = new Timestamp(time.getTime + sub.intervalToMillis)
-          intervalSubs += TimedSub(sub, id, newTime)
+
+          // Send, handle errors
+
+          def failed(reason: String) =
+              log.warning(
+                s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
+              )
+
+          log.debug(s"Sending callback $id to $callbackAddr...")
+          val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
+
+          call onComplete {
+
+            case Success(CallbackSuccess) => 
+              log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
+
+            case Success(fail: CallbackFailure) =>
+              failed(fail.toString)
+              
+            case Failure(e) =>
+              failed(e.getMessage)
+          }
+        }.onFailure{case err: Throwable =>
+          log.error(s"Error in callback handling of sub $id: $err")
         }
       }
     }
@@ -200,7 +222,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       val nextRun = next.nextRunTime.getTime - currentTimeMillis()
       system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
 
-      log.debug(s"Next subcription handling scheluded to $nextRun, current $currentTimeMillis")
+      log.debug(s"Next subcription handling scheluded after ${nextRun}ms")
     }
   }
 

@@ -9,8 +9,8 @@ object Types {
     // Note: defs can be implemented also as val and lazy val
     def interval: Double
     def ttl: Double
-    def isIntervalBased  = interval.toDouble >= 0.0
-    def isEventBased = interval.toDouble == -1
+    def isIntervalBased  = interval >= 0.0
+    def isEventBased = interval == -1
     def ttlToMillis: Long = (ttl * 1000).toLong
     def intervalToMillis: Long = (interval * 1000).toLong
   }
