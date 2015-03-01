@@ -465,6 +465,33 @@ object SQLite {
     }
     true
   }
+  
+  def getAllSubs(hasCallBack:Option[Boolean]):Array[DBSub]=
+  {
+    var res = Array[DBSub]()
+    db withSession {
+      implicit session =>
+      var all = hasCallBack match{
+         case Some(true) =>
+           subs.filter(!_.callback.isEmpty)
+         case Some(false) =>
+           subs.filter(_.callback.isEmpty)
+         case None =>
+           subs
+      }
+      res = Array.ofDim[DBSub](all.length.run)
+      var index = 0
+      all foreach{
+        elem =>
+        res(index) = new DBSub(Array(), elem._4, elem._5, elem._6, Some(elem._3))
+        res(index).paths = elem._2.split(";").map(Path(_))
+        res(index).id = elem._1
+        index += 1
+      }   
+    }
+    res
+  }
+  
   /**
    * Returns DBSub object wrapped in Option for given id.
    * Returns None if no subscription data matches the id
