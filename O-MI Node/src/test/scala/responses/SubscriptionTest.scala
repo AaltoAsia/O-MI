@@ -61,7 +61,7 @@ class SubscriptionTest extends Specification with Before {
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
 
       val correctxml =
-        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
             <omi:result>
               <omi:return returnCode="200"></omi:return>
@@ -70,10 +70,8 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
-      Thread.sleep(3000)
+      //Thread.sleep(3000) TODO: test sub with no callback
 
-      println(OMISubscription.OMINoCallbackResponse(requestID))
-      
       trim(xmlreturn.head).toString == trim(correctxml).toString
 
     }

@@ -113,7 +113,7 @@ object OMISubscription {
     omiResult{
       returnCode200 ++
       requestId(id) ++
-      odfMsgWrapper(odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval))
+      odfMsgWrapper(<Objects>{odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval)}</Objects>)
     }
 	}
 
@@ -127,8 +127,8 @@ object OMISubscription {
               case Some(sensor: database.DBSensor) => {
               	<InfoItem name={sensor.path.last}>
               	{getAllvalues(sensor, starttime, interval)}
-              	</InfoItem>
-              	//{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)} //TODO: make recursion continue in this
+              	</InfoItem> ++
+              	{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)}
               }
 
               case Some(obj : database.DBObject) => {
