@@ -113,7 +113,7 @@ object OMISubscription {
     omiResult{
       returnCode200 ++
       requestId(id) ++
-      odfMsgWrapper(odfNoCallbackDataGeneration(subdata.paths, subdata.startTime.get, subdata.interval))
+      odfMsgWrapper(odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval.toInt))
     }
 	}
 
