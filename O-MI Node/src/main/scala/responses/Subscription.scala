@@ -44,35 +44,11 @@ object OMISubscription {
 		return (requestIdInt, xml)
 	}
 
-/*	def getInfoItemPaths(objects: List[OdfObject]): Buffer[Path] = {
-		var paths = Buffer[Path]()
-		for (obj <- objects) {
-			if (obj.childs.nonEmpty) {
-				paths ++= getInfoItemPaths(obj.childs.toList)
-			}
-
-			if (obj.sensors.nonEmpty) {
-				var infoitems = obj.sensors.collect {
-					case infoitem: OdfInfoItem => infoitem.path
-				}
-
-				paths ++= infoitems.toBuffer
-			}
-		}
-
-		return paths
-
-	}*/
-
 	def getPaths(objects: Iterable[OdfObject]): Buffer[Path] = {
 		var paths = Buffer[Path]()
 		for (obj <- objects) {
+			paths += obj.path
 			if (obj.childs.nonEmpty) {
-				var subobjects = obj.childs.collect {
-					case subobject: OdfObject => subobject.path
-				}
-
-				paths ++= subobjects.toBuffer
 				paths ++= getPaths(obj.childs.toList)
 			}
 
@@ -123,12 +99,63 @@ object OMISubscription {
     }
 
     node
-  }
+  	}
 
 	def odfGeneration(subdata: Array[Path]): xml.NodeSeq = {
     <Objects>
       { odfDataGeneration(subdata) }
     </Objects>
-  }
+  	}
+
+  	def OMINoCallbackResponse(id: Int): xml.NodeSeq = {
+		val subdata = SQLite.getSub(id).get
+
+    omiResult{
+      returnCode200 ++
+      requestId(id) ++
+      odfMsgWrapper(odfNoCallbackDataGeneration(subdata.paths, subdata.startTime.get, subdata.interval))
+    }
+	}
+
+	def odfNoCallbackDataGeneration(itempaths: Array[Path], starttime:Timestamp, interval:Int) : xml.NodeSeq = {
+    	var node : xml.NodeSeq = xml.NodeSeq.Empty
+
+    	if(itempaths.isEmpty == false) {
+      		node ++=
+        {
+            SQLite.get(itempaths.head) match{
+              case Some(sensor: database.DBSensor) => {
+              	<InfoItem name={sensor.path.last}>
+              	{getAllvalues(sensor, starttime, interval)}
+              	</InfoItem>
+              	//{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)} //TODO: make recursion continue in this
+              }
+
+              case Some(obj : database.DBObject) => {
+              	<Object><id>{ obj.path.last }</id>
+              	{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)}
+              	</Object>
+              	}
+
+              case _ => <Error> Item not found in the database </Error>
+            }
+        }
+
+    	}
+
+    node
+  	}
+
+  	def getAllvalues(sensor: database.DBSensor, starttime:Timestamp, interval:Int) : xml.NodeSeq = {
+  		var node : xml.NodeSeq = xml.NodeSeq.Empty
+  		val infoitemvaluelist = DataFormater.FormatSubData(sensor.path, starttime, interval)
+
+  		for(innersensor <- infoitemvaluelist) {
+  			node ++= <value dateTime={innersensor.time.toString.replace(' ', 'T')}>{innersensor.value}</value>
+  		}
+
+  		node
+  	}
+
 
 }
