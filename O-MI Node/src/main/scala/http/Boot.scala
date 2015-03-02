@@ -32,7 +32,8 @@ object Starter {
     // Create test data
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
-    val sensorData = new SensorData
+    val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
+    sensorData.queueSensors()
     /*
     val testData = Map(
           "Objects/Refrigerator123/PowerConsumption" -> "0.123",
@@ -46,6 +47,7 @@ object Starter {
     for ((path, value) <- testData){
         SQLite.set(new DBSensor(path, value, testTime))
     }  */
+
     //sensorData.queueSensors()
 
     

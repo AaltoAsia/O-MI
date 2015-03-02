@@ -1,10 +1,5 @@
 import akka.io.IO
 import akka.pattern.ask
-import spray.can.Http
-import spray.http._
-import HttpMethods._
-import scala.concurrent._
-import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.pattern.ask
 import scala.language.postfixOps
@@ -17,11 +12,15 @@ import org.json4s.native.JsonMethods._
 import akka.actor.ActorSystem
 
 // HTTP related imports
-import spray.http.{ HttpRequest, HttpResponse }
+import spray.can.Http
+import spray.http._
+import HttpMethods._
 import spray.client.pipelining._
 
 // Futures related imports
-import scala.concurrent.Future
+
+import scala.concurrent._
+import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 
 import parsing.Types._
@@ -43,10 +42,10 @@ package sensordata {
   /**
    * The main program for getting SensorData
    */
-  class SensorData {
+  class SensorData(uri : String) {
+    // Used to inform that database might be busy
     var loading = false
 
-    val uri = "http://121.78.237.160:2100/"
     import scala.concurrent.ExecutionContext.Implicits.global
     // bring the actor system in scope
     implicit val system = ActorSystem()
