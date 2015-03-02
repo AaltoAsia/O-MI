@@ -192,14 +192,13 @@ function ajaxPost(server, request, subscribeLocal){
 			count += 1;
 			$("#infoBox").text("Count: " + count);
 			
-			/*
 			if(subscribeLocal && send){
 				window.setTimeout(
 					function () {
-						
+						getSub();
 					},
 					1000);
-			} */
+			} 
 		},
 		error: function(a, b, c){
 			$("#infoBox").text("Error sending message");
@@ -213,11 +212,14 @@ function getSub(){
 	console.log(response);
 	var r1 = response.split("<omi:requestId>");
 	
-	if(r1.length === 2){
+	if(r1.length === 2 || omi.requestId){
 		$("#infoBox").text("Sending request");
-	
-		var r2 = r1[1].split("</omi:requestId>")[0];
-		var subRequest = omi.getSub(r2, checkedObjects());
+		
+		if(r1.length === 2){
+			r2 = r1[1].split("</omi:requestId>")[0];
+			omi.requestId = r2;
+		}
+		var subRequest = omi.getSub(omi.requestId, checkedObjects());
 		console.log("Request: " + subRequest);
 		var server =  $("#send-field").val();
 		

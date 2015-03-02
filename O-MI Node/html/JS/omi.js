@@ -9,7 +9,12 @@ function Omi(operation, ttl, interval, begin, end, newest, oldest, callback) {
 	this.callback = callback;
 	this.request = "";
 	this.subscribe = "";
+	this.requestId = "";
 }
+
+Omi.prototype.setId = function(id) {
+	this.requestId = id;
+};
 
 Omi.prototype.getRequest = function(objects) {
 	if(this.request.length === 0){

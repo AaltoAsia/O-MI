@@ -150,7 +150,7 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 	writer.writeStartElement('omi:read');
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
-	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
+	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	if(begin){
 		console.log(new Date(begin).getTime());
