@@ -76,7 +76,7 @@ object OMISubscription {
     }
 	}
 
-	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = { //TODO make hierarchy right
+	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = {
     	var node : xml.NodeSeq = xml.NodeSeq.Empty 
     	for(path <- itempaths){
       		node ++=
@@ -86,11 +86,14 @@ object OMISubscription {
               case Some( sensor : database.DBSensor) => {
               	<InfoItem name={sensor.path.last}>
               	<value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
-              	</InfoItem>
+              	</InfoItem> ++
+                {odfDataGeneration(itempaths.tail)}
           		}
 
               case Some( obj : database.DBObject) => {
-              	<Object><id>{ obj.path.last }</id></Object>
+              	<Object><id>{ obj.path.last }</id>
+                {odfDataGeneration(itempaths.tail)}
+                </Object>
               	}
 
               case _ => <Error> Item not found in the database </Error>
