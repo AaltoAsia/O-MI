@@ -152,7 +152,6 @@ function sendRequest()
 		// Allowed intervals, -2, -1, 0 and all positive integers
 		subscribe = interval >= -2;
 	}
-	
     ajaxPost(server, request, subscribe);
 }
 
@@ -174,7 +173,8 @@ function ajaxPost(server, request, subscribe){
 			$("#infoBox").text("Count: " + count);
 			
 			if(subscribe){
-				window.setTimeout(ajaxPost(server, request, subscribe), 1000);
+				// Target 10 seconds timeout
+				window.setTimeout(ajaxPost(server, request, subscribe), 10000);
 			}
 		},
 		error: function(a, b, c){

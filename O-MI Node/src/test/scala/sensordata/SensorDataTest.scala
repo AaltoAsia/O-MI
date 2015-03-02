@@ -20,7 +20,7 @@ class SensorDataTest extends Specification {
     sequential
     "should turn loading flag true while waiting for data" in new testActors {
       val probe = TestProbe()
-      val sensorData = new SensorData { override def httpRef = probe.ref }
+      val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/") { override def httpRef = probe.ref }
       sensorData.loading === false
       sensorData.queueSensors()
       probe.expectMsgType[HttpRequest]
@@ -31,7 +31,7 @@ class SensorDataTest extends Specification {
     }
     "save json data in databse" in new testActors {
       val probe = TestProbe()
-      val sensorData = new SensorData { override def httpRef = probe.ref }
+      val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/") { override def httpRef = probe.ref }
       sensorData.queueSensors()
       probe.expectMsgType[HttpRequest]
       probe.reply(new HttpResponse(entity = HttpEntity(
