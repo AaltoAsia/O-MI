@@ -68,7 +68,6 @@ object OMISubscription {
 	//basically the same as Read response except it also contains a requestId
 	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
 		val subdata = SQLite.getSub(id).get
-
     omiResult{
       returnCode200 ++
       requestId(id) ++
@@ -77,11 +76,11 @@ object OMISubscription {
 	}
 
 	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = {
-    	var node : xml.NodeSeq = xml.NodeSeq.Empty 
-    	for(path <- itempaths){
+    	var node : xml.NodeSeq = xml.NodeSeq.Empty
+      if(itempaths.isEmpty == false) { 
       		node ++=
         {
-            val itemtype = SQLite.get(path)
+            val itemtype = SQLite.get(itempaths.head)
             itemtype match{
               case Some( sensor : database.DBSensor) => {
               	<InfoItem name={sensor.path.last}>
@@ -99,7 +98,7 @@ object OMISubscription {
               case _ => <Error> Item not found in the database </Error>
             }
         }
-    }
+      }
 
     node
   	}

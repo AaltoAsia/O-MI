@@ -88,14 +88,16 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def loadSub(id: Int, dbsub: DBSub): Unit = { 
       log.debug(s"Adding sub: $id")
       if (dbsub.isIntervalBased){
+        if(dbsub.callback != None) {
+          intervalSubs += TimedSub(
+              dbsub,
+              id,
+              new Timestamp(currentTimeMillis())
+            )
 
-        intervalSubs += TimedSub(
-            dbsub,
-            id,
-            new Timestamp(currentTimeMillis())
-          )
+          handleIntervals()
+        }
 
-        handleIntervals()
 
       } else if (dbsub.isEventBased){
 
@@ -150,10 +152,11 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
           def failed(reason: String) =
             log.warning(s"Callback failed; subscription id:$id  reason: $reason")
 
-          val addr = subscription.callback.get // FIXME if no callback
+          val addr = subscription.callback // FIXME if no callback
+          if(addr == None) return
           val callbackXml = OMISubscriptionResponse(id)
 
-          val call = CallbackHandlers.sendCallback(addr, callbackXml)
+          val call = CallbackHandlers.sendCallback(addr.get, callbackXml)
 
           call onComplete {
             
@@ -215,11 +218,6 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
         Future{ // TODO: Maybe move this to wrap only the generation and sending
                 // because they are the only things that can take some time
-
-          //val dbSensors = SQLite.getSubData(id) right now subscription omi
-          //generation uses the paths in the dbsub, not sure if getSubData-function
-          //is needed as this looper loops through all subs in the interval already?
-          //Also with the paths its easier to construct the OMI hierarchy
 
             // FIXME: cancel or ending subscription should be aken into account
           log.debug(s"generateOmi for id:$id")
