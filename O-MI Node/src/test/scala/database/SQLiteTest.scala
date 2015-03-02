@@ -282,7 +282,32 @@ object SQLiteTest extends Specification {
       database.SQLite.remove(Path("path/to/sensor3/temp"))
       res shouldEqual 9
    }
-   
+   "return correct subscriptions with getAllSubs" in
+   {
+     val time = Some(new Timestamp(1000))
+     val id1 = SQLite.saveSub(new DBSub(Array(),0,1,None,time))
+     val id2 = SQLite.saveSub(new DBSub(Array(),0,1,None,time))
+     val id3 = SQLite.saveSub(new DBSub(Array(),0,1,None,time))
+     val id4 = SQLite.saveSub(new DBSub(Array(),0,1,None,time))
+     val id5 = SQLite.saveSub(new DBSub(Array(),0,1,Some("addr1"),time))
+     val id6 = SQLite.saveSub(new DBSub(Array(),0,1,Some("addr2"),time))
+     val id7 = SQLite.saveSub(new DBSub(Array(),0,1,Some("addr3"),time))
+     val id8 = SQLite.saveSub(new DBSub(Array(),0,1,Some("addr4"),time))
+     val id9 = SQLite.saveSub(new DBSub(Array(),0,1,Some("addr5"),time))
+     
+     SQLite.getAllSubs(None).length shouldEqual 9
+     SQLite.getAllSubs(Some(true)).length shouldEqual 5
+     SQLite.getAllSubs(Some(false)).length shouldEqual 4
+     SQLite.removeSub(id1)
+     SQLite.removeSub(id2)
+     SQLite.removeSub(id3)
+     SQLite.removeSub(id4)
+     SQLite.removeSub(id5)
+     SQLite.removeSub(id6)
+     SQLite.removeSub(id7)
+     SQLite.removeSub(id8)
+     SQLite.removeSub(id9)
+   }
 
   }
 }
