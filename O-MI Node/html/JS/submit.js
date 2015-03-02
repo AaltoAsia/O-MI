@@ -5,6 +5,8 @@ var iconSelect;
 var objectUrl;
 
 var omi;
+var iconValue;
+var send = false;
 
 $(function() {
 	//IconSelect settings
@@ -18,6 +20,7 @@ $(function() {
 	
 	iconSelect.refresh(icons);
 
+	loadOptions();
 
 	/* Click events for buttons */
 	$(document).on('click', '#object-button', getObjects);
@@ -32,7 +35,25 @@ $(function() {
 		}
 	});
 	
+	$(document).on('click', '#prev4', function(){
+		send = false;
+	});
+	
+	for(var i = 0; i < iconSelect.getIcons().length; i++){
+		$(iconSelect.getIcons())[i].element.onclick = function(){
+			iconSelect.setSelectedIndex(this.childNodes[0].getAttribute('icon-index'));
+			loadOptions();
+		};
+	}
+	
 	$("#url-field").val('http://' + window.location.host + "/Objects");
+
+/* Load form options */
+function loadOptions() {
+	iconValue = iconSelect.getSelectedValue();
+	$("#options").empty();
+	$("#options").load("forms/" + iconValue + ".html"); 
+}
 	
 /* Get the objects through ajax get */
 function getObjects() {
@@ -136,8 +157,9 @@ function generateRequest(){
 	var newest = $("#newest").val();
 	var oldest = $("#oldest").val();
 	var callback = $("#callback").val();
+	var requestId = $("#request-id").val();
 	
-	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback);
+	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
 	
 	var request = omi.getRequest(checkedObjects());
 	
@@ -154,9 +176,6 @@ function generateRequest(){
 function checkedObjects() {
 	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
 }
-
-
-var send = false;
 
 /* Send the O-DF request using AJAX */
 function sendRequest()
