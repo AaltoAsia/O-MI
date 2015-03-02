@@ -4,6 +4,8 @@ var iconSelect;
 /* Url to get the objects from */
 var objectUrl;
 
+var omi;
+
 $(function() {
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select");
@@ -21,6 +23,14 @@ $(function() {
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-gen', generateRequest);
 	$(document).on('click', '#request-send', sendRequest);
+	$(document).on('click', '#stop', function(){
+		send = false;
+	});
+	$(document).on('click', '#sub', function(){
+		if(omi){
+			getSub();
+		}
+	});
 	
 	$("#url-field").val('http://' + window.location.host + "/Objects");
 	
@@ -115,8 +125,10 @@ function addInfoItems(parent, id) {
 	});
 }
 
+
 /* Generate the O-DF request */
 function generateRequest(){
+	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
@@ -124,9 +136,10 @@ function generateRequest(){
 	var newest = $("#newest").val();
 	var oldest = $("#oldest").val();
 	var callback = $("#callback").val();
-	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
-	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end, newest, oldest, callback);
+	
+	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback);
+	
+	var request = omi.getRequest(checkedObjects());
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
@@ -138,6 +151,13 @@ function generateRequest(){
 	$("#page3").css('left', width);
 }
 
+function checkedObjects() {
+	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
+}
+
+
+var send = false;
+
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
@@ -146,21 +166,19 @@ function sendRequest()
 
     var request = $('#request').text(); //Get the request string
 
-	var subscribeLocal = false;
-	var interval = $("#interval").val();
-        var callback = $("#callback").val();
-	if($.isNumeric(interval)){
-		// Allowed intervals, -2, -1, 0 and all positive integers
-		subscribeLocal = interval >= -2 && callback.length === 0;
-	}
-	
-    ajaxPost(server, request, subscribeLocal);
+	send = true;
+    ajaxPost(server, request, getSubscribeLocal());
+}
+
+function getSubscribeLocal(){
+	return ($.isNumeric(omi.interval) && omi.callback.length === 0);
 }
 
 //Test
 var count = 0;
 
 function ajaxPost(server, request, subscribeLocal){
+	
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -174,17 +192,39 @@ function ajaxPost(server, request, subscribeLocal){
 			count += 1;
 			$("#infoBox").text("Count: " + count);
 			
-			if(subscribeLocal){
+			/*
+			if(subscribeLocal && send){
 				window.setTimeout(
-					function () {ajaxPost(server, request, subscribeLocal)},
+					function () {
+						
+					},
 					1000);
-			}
+			} */
 		},
 		error: function(a, b, c){
 			$("#infoBox").text("Error sending message");
 			handleError(a, b, c);
 		}
 	});
+}
+
+function getSub(){
+	var response = $("#responseBox").text();
+	console.log(response);
+	var r1 = response.split("<omi:requestId>");
+	
+	if(r1.length === 2){
+		$("#infoBox").text("Sending request");
+	
+		var r2 = r1[1].split("</omi:requestId>")[0];
+		var subRequest = omi.getSub(r2, checkedObjects());
+		console.log("Request: " + subRequest);
+		var server =  $("#send-field").val();
+		
+		ajaxPost(server, subRequest, getSubscribeLocal());
+	} else {
+		alert("No request id found!");
+	}
 }
 
 /* Do something with the response from the server */
