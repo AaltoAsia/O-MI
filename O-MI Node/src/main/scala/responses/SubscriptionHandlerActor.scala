@@ -88,7 +88,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def loadSub(id: Int, dbsub: DBSub): Unit = { 
       log.debug(s"Adding sub: $id")
       if (dbsub.isIntervalBased){
-        if(dbsub.callback != None) {
+        if(dbsub.callback != None) {  //dont add to intervalSubs if no callback
           intervalSubs += TimedSub(
               dbsub,
               id,
@@ -222,7 +222,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
             // FIXME: cancel or ending subscription should be aken into account
           log.debug(s"generateOmi for id:$id")
           val omiMsg = generateOmi(id)
-          val callbackAddr = sub.callback.get // FIXME: if no callback addr. (subs with no callback shouldnt be added to intervals)
+          val callbackAddr = sub.callback.get // FIXME: if no callback addr. (subs with no callback shouldnt be added to intervals?)
           val interval = sub.interval
 
 
