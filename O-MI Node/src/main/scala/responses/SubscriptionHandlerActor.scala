@@ -222,7 +222,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
             // FIXME: cancel or ending subscription should be aken into account
           log.debug(s"generateOmi for id:$id")
           val omiMsg = generateOmi(id)
-          val callbackAddr = sub.callback.get // FIXME: if no callback addr
+          val callbackAddr = sub.callback.get // FIXME: if no callback addr. (subs with no callback shouldnt be added to intervals)
           val interval = sub.interval
 
 

@@ -44,6 +44,13 @@ object OMISubscription {
 		return (requestIdInt, xml)
 	}
 
+  /**
+   * Return the right order of the paths so hierarchy stays intact
+   *
+   * @param The objects a Subscription class has
+   * @return A Buffer with paths in the right order
+   **/
+
 	def getPaths(objects: Iterable[OdfObject]): Buffer[Path] = {
 		var paths = Buffer[Path]()
 		for (obj <- objects) {
@@ -65,7 +72,13 @@ object OMISubscription {
 
 	}
 
-	//basically the same as Read response except it also contains a requestId
+	/**
+   * Subscription response on intervals.
+   *
+   * @param Id of the subscription
+   * @return The response XML
+   **/
+
 	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
 		val subdata = SQLite.getSub(id).get
     omiResult{
@@ -74,6 +87,13 @@ object OMISubscription {
       odfMsgWrapper(odfGeneration(subdata.paths))
     }
 	}
+
+  /**
+   * Used for generating the ODF data
+   *
+   * @param Array of the paths (in the right order, given by getPaths)
+   * @return The ODF data XML
+   **/
 
 	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = {
     	var node : xml.NodeSeq = xml.NodeSeq.Empty
@@ -103,6 +123,10 @@ object OMISubscription {
     node
   	}
 
+  /**
+   * Wraps ODF data in Objects
+   **/
+
 	def odfGeneration(subdata: Array[Path]): xml.NodeSeq = {
     <Objects>
       { odfDataGeneration(subdata) }
@@ -118,6 +142,13 @@ object OMISubscription {
       odfMsgWrapper(<Objects>{odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval)}</Objects>)
     }
 	}
+
+  /**
+   * Used for generating the ODF data when no callback is given. Same as normal sub except there are potentially more values in infoitems
+   *
+   * @param Array of the paths (in the right order, given by getPaths)
+   * @return The ODF data XML
+   **/
 
 	def odfNoCallbackDataGeneration(itempaths: Array[Path], starttime:Timestamp, interval:Double) : xml.NodeSeq = {
     	var node : xml.NodeSeq = xml.NodeSeq.Empty
@@ -147,6 +178,10 @@ object OMISubscription {
 
     node
   	}
+
+    /**
+     * Function that gets all the infoitem values that sub with no callback has accumulated
+    **/
 
   	def getAllvalues(sensor: database.DBSensor, starttime:Timestamp, interval:Double) : xml.NodeSeq = {
   		var node : xml.NodeSeq = xml.NodeSeq.Empty
