@@ -165,7 +165,7 @@ object OMISubscription {
               }
 
               case Some(obj : database.DBObject) => {
-              	<Object><id>{ obj.path.last }</id>
+              	<Object><id>{obj.path.last}</id>
               	{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)}
               	</Object>
               	}
