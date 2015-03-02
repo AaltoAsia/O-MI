@@ -79,7 +79,7 @@ object Common {
 
   // Should not be called directly because id is supposed to be Int
   private def requestId(id: String): Elem = {
-    <omi:requestId> { id } </omi:requestId>
+    <omi:requestId>{ id }</omi:requestId>
   }
   def requestId(id: Int): Elem = requestId(id.toString)
 
