@@ -24,7 +24,7 @@ object Types {
    *  @param msg error message that describes the problem.
    */
   case class ParseError(msg: String) extends ParseMsg
-  case class OneTimeRead( ttl: String,
+  case class OneTimeRead( ttl: Double,
                           sensors: Seq[ OdfObject],
                           begin: Option[Timestamp] = None,
                           end: Option[Timestamp] = None,
@@ -33,7 +33,7 @@ object Types {
                           callback: Option[String] = None,
                           requestId: Seq[ String] = Seq.empty
                         ) extends ParseMsg
-  case class Write( ttl: String,
+  case class Write( ttl: Double,
                     sensors: Seq[ OdfObject],
                     callback: Option[String] = None,
                     requestId: Seq[ String] = Seq.empty
@@ -53,7 +53,7 @@ object Types {
                       parseMsgOp: Option[ Seq[ OdfObject] ],
                       requestId: Seq[ String] = Seq.empty
                     ) extends ParseMsg
-  case class Cancel(  ttl: String,
+  case class Cancel(  ttl: Double,
                       requestId: Seq[ String]
                     ) extends ParseMsg
 
