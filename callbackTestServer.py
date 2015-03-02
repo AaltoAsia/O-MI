@@ -11,8 +11,8 @@ except ImportError:
     class Noop:
         def __getattr__(s, key):
             return ""
-    class Fore(Noop): pass
-    class Style(Noop): pass
+    Fore = Noop()
+    Style = Noop()
 
 responseNum = 1
 
