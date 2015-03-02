@@ -1,4 +1,4 @@
-function Omi(operation, ttl, interval, begin, end, newest, oldest, callback) {
+function Omi(operation, ttl, interval, begin, end, newest, oldest, callback, requestId) {
 	this.operation = operation;
 	this.ttl = ttl;
 	this.interval = interval;
@@ -9,7 +9,7 @@ function Omi(operation, ttl, interval, begin, end, newest, oldest, callback) {
 	this.callback = callback;
 	this.request = "";
 	this.subscribe = "";
-	this.requestId = "";
+	this.requestId = requestId;
 }
 
 Omi.prototype.setId = function(id) {
@@ -18,7 +18,7 @@ Omi.prototype.setId = function(id) {
 
 Omi.prototype.getRequest = function(objects) {
 	if(this.request.length === 0){
-		this.request = writeXML(objects, this.operation, this.ttl, this.interval, this.begin, this.end, this.newest, this.oldest, this.callback);
+		this.request = writeXML(objects, this);
 	}
 	return this.request;
 };

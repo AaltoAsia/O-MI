@@ -1,12 +1,9 @@
 /* 
 * Write the O-DF message (XML) based on form input
 * @param {Array} Array of objects, that have their 
-* @param {String} the O-DF operation (read, write, cancel, subscribe)
-* @param {Number} Time to live 
-* @param {Number} Message interval
-* @param {function} Callback function (not used atm)
+* @param {Object} OMI object 
 */
-function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, callback){
+function writeXML(items, omi){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -21,10 +18,26 @@ function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, c
 	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
 	writer.writeAttributeString('version', '1.0');
 	
-	if(ttl) writer.writeAttributeString('ttl', ttl);
+	if(omi.ttl) writer.writeAttributeString('ttl', omi.ttl);
 	
 	//(second line)
-	writer.writeStartElement('omi:'+ operation);
+	writer.writeStartElement('omi:'+ omi.operation);
+	
+	if(omi.operation === 'read'){
+		writeRead(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
+	} else if (omi.operation === 'cancel'){
+		writeCancel(writer, omi.requestId);
+	}
+	
+	writer.writeEndElement();
+    writer.writeEndDocument();
+
+    var request = writer.flush();
+
+    return request;
+}
+
+function writeRead(writer, items, interval, begin, end, newest, oldest, callback){
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
 	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
@@ -78,13 +91,6 @@ function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, c
 	for(var i = 0; i < objects.length; i++){
 		writeObject(objects[i], writer);
 	}
-	
-	writer.writeEndElement();
-    writer.writeEndDocument();
-
-    var request = writer.flush();
-
-    return request;
 }
 
 function addChildren(object, items){
@@ -126,6 +132,12 @@ function writeObject(object, writer){
 	for(var i = 0; i < object.subObjects.length; i++){
 		writeObject(object.subObjects[i], writer);
 	}
+	writer.writeEndElement();
+}
+
+function writeCancel(writer, requestId) {
+	writer.writeStartElement('omi:requestId');
+	writer.writeString(requestId);
 	writer.writeEndElement();
 }
 
