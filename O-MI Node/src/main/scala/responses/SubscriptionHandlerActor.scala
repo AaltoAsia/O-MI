@@ -10,7 +10,7 @@ import akka.actor.ActorLogging
 import responses._
 import database.SQLite._
 import database._
-import parsing.Types.{Subscription, Path}
+import parsing.Types.{SubLike, Path}
 import OMISubscription.{getPaths, OMISubscriptionResponse}
 import CallbackHandlers._
 
@@ -27,14 +27,15 @@ import scala.concurrent.duration._
 import scala.concurrent._
 
 // MESSAGES
-case object Handle
+case object HandleIntervals
 case class NewSubscription(id: Int)
+case class RemoveSubscription(id: Int)
 
 
 
 
 /**
- * TODO: Under development
+ * Handles interval counting and event checking for subscriptions
  */
 class SubscriptionHandlerActor extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
@@ -79,34 +80,58 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def loadSub(id: Int): Unit = {
     getSub(id) match {
       case Some(dbsub) =>
-        log.debug(s"Adding sub: $id")
-        if (dbsub.isIntervalBased){
-
-          intervalSubs += TimedSub(
-              dbsub,
-              id,
-              new Timestamp(currentTimeMillis())
-            )
-
-          handleIntervals()
-
-        } else if (dbsub.isEventBased){
-
-          for (path <- dbsub.paths)
-            eventSubs += path -> EventSub(dbsub, id)
-        }
-
+        loadSub(id, dbsub)
       case None =>
         log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
+  private def loadSub(id: Int, dbsub: DBSub): Unit = { 
+      log.debug(s"Adding sub: $id")
+      if (dbsub.isIntervalBased){
 
+        intervalSubs += TimedSub(
+            dbsub,
+            id,
+            new Timestamp(currentTimeMillis())
+          )
+
+        handleIntervals()
+
+      } else if (dbsub.isEventBased){
+
+        for (path <- dbsub.paths)
+          eventSubs += path -> EventSub(dbsub, id)
+      }
+
+  }
+
+  /**
+   * @return true on success
+   */
+  private def removeSub(id: Int): Boolean = {
+    getSub(id) match {
+      case Some(dbsub) => removeSub(dbsub)
+      case None => false
+    }
+  }
+  private def removeSub(sub: DBSub): Boolean = {
+    if (sub.isEventBased) {
+      sub.paths.foreach{ path =>
+        eventSubs -= path
+      }
+    } else { 
+      // TODO: FIXME: remove from intervalSubs
+    }
+    SQLite.removeSub(sub.id)
+  }
 
   override def receive = { 
 
+    case HandleIntervals => handleIntervals()
+
     case NewSubscription(requestId) => loadSub(requestId)
 
-    case Handle => handleIntervals()
+    case RemoveSubscription(requestId) => removeSub(requestId)
   }
 
 
@@ -117,6 +142,11 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
         case Some(EventSub(subscription, id)) => 
 
+          if (hasTTLEnded(subscription, currentTimeMillis())) {
+            removeSub(subscription)
+          }
+
+          // Callback stuff
           def failed(reason: String) =
             log.warning(s"Callback failed; subscription id:$id  reason: $reason")
 
@@ -143,6 +173,17 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
 
+  private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
+    val removeTime = sub.startTime.getTime + sub.ttlToMillis
+
+    if (removeTime <= timeMillis && sub.ttl != -1) {
+      log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${timeMillis-removeTime}ms")
+      true
+    } else
+      false
+  }
+
+
   def handleIntervals(): Unit = {
     // failsafe
     if (intervalSubs.isEmpty) {
@@ -152,6 +193,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
     val checkTime = currentTimeMillis()
 
+    // FIXME: only dequeue and dequeueAll returns elements in priority order
     while (intervalSubs.headOption.map(_.nextRunTime.getTime <= checkTime).getOrElse(false)){
 
       val TimedSub(sub, id, time) = intervalSubs.dequeue()
@@ -160,11 +202,9 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
       // Check if ttl has ended, comparing to original check time
-      val removeTime = sub.startTime.getTime + sub.ttlToMillis
+      if (hasTTLEnded(sub, checkTime)) {
 
-      if (removeTime <= checkTime && sub.ttl != -1) {
-        log.debug(s"Removing sub: id:$id ttl:${sub.ttlToMillis} delay:${checkTime-removeTime}ms")
-        removeSub(id)
+        SQLite.removeSub(id)
 
       } else {
         // FIXME: long TTLs may start accumulating some delay between calls, so maybe change
@@ -220,7 +260,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     intervalSubs.headOption map { next =>
 
       val nextRun = next.nextRunTime.getTime - currentTimeMillis()
-      system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
+      system.scheduler.scheduleOnce(nextRun.milliseconds, self, HandleIntervals)
 
       log.debug(s"Next subcription handling scheluded after ${nextRun}ms")
     }

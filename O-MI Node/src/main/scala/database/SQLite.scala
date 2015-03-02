@@ -468,7 +468,7 @@ object SQLite {
         return false
       }
     }
-    true
+    false
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
