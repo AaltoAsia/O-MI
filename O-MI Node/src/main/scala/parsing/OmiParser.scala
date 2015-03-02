@@ -73,7 +73,7 @@ object OmiParser extends Parser[ParseMsg] {
       case el: Elem => el
     }.head
 
-    val ttl = (root \ "@ttl").text
+    val ttl = (root \ "@ttl").text.toDouble
 
     parseNode(request, ttl)
     
@@ -97,7 +97,7 @@ object OmiParser extends Parser[ParseMsg] {
    *  @param ttl of the omiEnvelope as string. ttl is in seconds.
    *
    */
-  private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
+  private def parseNode(node: Node, ttl: Double): Seq[ParseMsg] = {
     node.label match {
       /*
         Write request 
@@ -203,7 +203,7 @@ object OmiParser extends Parser[ParseMsg] {
                 id => id.text
               }))
           } else {
-            Seq(Subscription(ttl.toDouble,
+            Seq(Subscription(ttl,
               parameters("interval").right.get.toDouble,
               right.map(_.right.get),
               begin,
