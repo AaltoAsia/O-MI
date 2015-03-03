@@ -136,7 +136,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
     case NewSubscription(requestId) => loadSub(requestId)
 
-    case RemoveSubscription(requestId) => removeSub(requestId)
+    case RemoveSubscription(requestId) => sender() ! removeSub(requestId)
   }
 
 
