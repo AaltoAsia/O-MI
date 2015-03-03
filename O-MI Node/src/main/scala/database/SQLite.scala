@@ -185,6 +185,8 @@ object SQLite {
         result.toArray
       }
     }
+  def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
+
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
