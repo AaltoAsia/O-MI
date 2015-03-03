@@ -143,7 +143,7 @@ trait OmiService extends HttpService {
 
                 case cancel: Cancel =>
                   log.debug("cancel")
-                  val response = Future{ OMICancel.OMICancelResponse(cancel) }
+                  val response = Future{ OMICancel.OMICancelResponse(cancel, subscriptionHandler) }
 
                   val ttl = cancel.ttl.toDouble // FIXME: can fail, should be done in parsers!
                   val timeout = if (ttl > 0) ttl seconds else Duration.Inf
