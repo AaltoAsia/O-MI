@@ -420,7 +420,7 @@ object SQLite {
    * Check whether subscription with given ID has expired. i.e if subscription has been in database for
    * longer than its ttl value in seconds.
    *
-   * @param id id number that was generated during saving
+   * @param id number that was generated during saving
    *
    * @return returns boolean whether subscription with given id has expired
    */
@@ -470,7 +470,16 @@ object SQLite {
     }
     false
   }
-  
+  /**
+   * getAllSubs is used to search the database for subscription information
+   * Can also filter subscriptions based on whether it has a callback address
+   * @param hasCallBack optional boolean value to filter results based on having callback address
+   * None -> all subscriptions
+   * Some(True) -> only with callback
+   * Some(False) -> only without callback
+   * 
+   * @return DBSub objects for the query as Array
+   */
   def getAllSubs(hasCallBack:Option[Boolean]):Array[DBSub]=
   {
     var res = Array[DBSub]()
@@ -500,7 +509,7 @@ object SQLite {
   /**
    * Returns DBSub object wrapped in Option for given id.
    * Returns None if no subscription data matches the id
-   * @param id id number that was generated during saving
+   * @param id number that was generated during saving
    *
    * @return returns Some(BDSub) if found element with given id None otherwise
    */
