@@ -51,6 +51,11 @@ class SubscriptionTest extends Specification with Before {
       SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
       count = count + 1000
     }
+
+    lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
+    val parserlist = OmiParser.parse(simpletestfile)
+
+    val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
   }
 
   "Subscription response" should {
@@ -66,7 +71,7 @@ class SubscriptionTest extends Specification with Before {
           <omi:response>
             <omi:result>
               <omi:return returnCode="200"></omi:return>
-              <omi:requestId>{ requestID }</omi:requestId>
+              <omi:requestId>{requestID}</omi:requestId>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -75,22 +80,16 @@ class SubscriptionTest extends Specification with Before {
 
     }
 
-    "Return with no values when interval is 1 and no callback given" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
+    "Return with no values when interval is larger than time elapsed and no callback given" in {
 
-      val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
-
-      //Thread.sleep(1500) TODO: make sure the time stays similar during tests
-
-      val subxml = OMISubscription.OMINoCallbackResponse(requestID)
+      val subxml = OMISubscription.OMINoCallbackResponse(0)
 
       val correctxml = 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
             <omi:result>
               <omi:return returnCode="200"></omi:return>
-                <omi:requestId> {requestID} </omi:requestId>
+                <omi:requestId>0</omi:requestId>
                   <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
                     <Objects>
                       <Object>
@@ -98,8 +97,6 @@ class SubscriptionTest extends Specification with Before {
                         <Object>
                           <id>Refrigerator123</id>
                           <InfoItem name="PowerConsumption">
-                            <value dateTime="1970-01-17T12:56:15.723">0.123</value>
-                            <value dateTime="1970-01-17T12:56:15.723">0.123</value>
                           </InfoItem>
                         </Object>
                       </Object>
@@ -109,27 +106,20 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
-      println(subxml)
-
-      //trim(subxml.head).toString == trim(correctxml).toString
-      1 == 1
+      trim(subxml.head).toString == trim(correctxml).toString
 
     }
 
     "Return with right values and requestId in subscription generation" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
 
-      val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
-
-      val subxml = OMISubscription.OMISubscriptionResponse(requestID)
+      val subxml = OMISubscription.OMISubscriptionResponse(0)
 
       val correctxml = 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
           <omi:result>
             <omi:return returnCode="200"></omi:return>
-              <omi:requestId> {requestID} </omi:requestId>
+              <omi:requestId>0</omi:requestId>
                 <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
                   <Objects>
                     <Object>
