@@ -123,6 +123,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       }
     } else { 
       // TODO: FIXME: remove from intervalSubs
+      intervalSubs = intervalSubs.filterNot( sub.id == _.id ) 
     }
     SQLite.removeSub(sub.id)
   }
