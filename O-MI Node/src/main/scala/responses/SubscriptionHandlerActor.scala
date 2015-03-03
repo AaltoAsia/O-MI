@@ -69,11 +69,9 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   SQLite.attachSetHook(this.checkEventSubs _)
 
 
-
-
-  // TODO: load subscriptions at startup
+  // load subscriptions at startup
   override def preStart() = {
-    val subs = SQLite.getAllSubs(None)
+    val subs = SQLite.getAllSubs(Some(true))
     for( sub <- subs ) loadSub(sub.id , sub)
   
   }
@@ -126,7 +124,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         eventSubs -= path
       }
     } else { 
-      // TODO: FIXME: remove from intervalSubs
+      //remove from intervalSubs
       intervalSubs = intervalSubs.filterNot( sub.id == _.id ) 
     }
     SQLite.removeSub(sub.id)
@@ -218,16 +216,19 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         // FIXME: long TTLs may start accumulating some delay between calls, so maybe change
         // calculation to something like: startTime + interval * numOfCalls
         // , where numOfCalls = ((currentTime - startTime) / interval).toInt
-        val newTime = new Timestamp(time.getTime + sub.intervalToMillis)
+        val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt
+
+        val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * numOfCalls)
+        //val newTime = new Timestamp(time.getTime + sub.intervalToMillis) // OLD VERSION
         intervalSubs += TimedSub(sub, id, newTime)
 
         Future{ // TODO: Maybe move this to wrap only the generation and sending
                 // because they are the only things that can take some time
 
-            // FIXME: cancel or ending subscription should be aken into account
+            // FIXME: cancel or ending subscription should be taken into account
           log.debug(s"generateOmi for id:$id")
           val omiMsg = generateOmi(id)
-          val callbackAddr = sub.callback.get // FIXME: if no callback addr. (subs with no callback shouldnt be added to intervals?)
+          val callbackAddr = sub.callback.get 
           val interval = sub.interval
 
 
