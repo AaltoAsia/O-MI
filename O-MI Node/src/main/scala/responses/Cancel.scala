@@ -17,9 +17,17 @@ import akka.util.Timeout
 import Timeout._
 import akka.pattern.ask
 
+/* Object for generating responses for omi:cancel requests */
 object OMICancel {
   implicit val timeout: Timeout = Timeout(6000) // NOTE: ttl will timeout from OmiService
 
+  
+  /**
+   * Generates ODF containing a list of omi:results along with their return codes
+   *
+   * @param Cancel the cancel request given by the parser
+   * @return ActorRef the subscription handler actor
+   */
   def OMICancelResponse(request: Cancel, subHandler: ActorRef): NodeSeq = {
 
     var requestIds = request.requestId
