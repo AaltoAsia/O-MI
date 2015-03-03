@@ -54,6 +54,7 @@ class SubscriptionTest extends Specification with Before {
   }
 
   "Subscription response" should {
+    sequential
     "Return with just a requestId when subscribed" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
