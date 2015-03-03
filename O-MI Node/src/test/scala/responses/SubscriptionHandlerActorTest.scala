@@ -1,7 +1,7 @@
 package responses
 
 import org.specs2.mutable._
-import akka.testkit.{TestKit}
+import akka.testkit.{TestKit, TestActorRef}
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.Scope
@@ -16,9 +16,14 @@ class SubscriptionHandlerActorTest extends Specification {
 
   val testSub1 = new DBSub(Array(Path("SubscriptionTest/test")), 2, 2,None,None)
   
-  database.SQLite.saveSub(testSub1)
+  val testID = database.SQLite.saveSub(testSub1)
   
   "SubscriptionHandlerActor" should{
-    "save "
+    "load given sub into memory when sent load message" in new Actors{
+      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
+      val subscriptionActor = subscriptionHandler.underlyingActor
+      subscriptionActor.eventSubs.isEmpty === true
+      subscriptionActor.intervalSubs.isEmpty === true
+    }
   }
 }
