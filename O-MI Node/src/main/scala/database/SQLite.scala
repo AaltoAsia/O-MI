@@ -209,7 +209,7 @@ object SQLite {
    * @param path path as Path object
    */
   def startBuffering(path: Path) {
-    db withTransaction { implicit session =>
+    db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
       var len = pathQuery.length.run
       if (len == 0) {
@@ -513,7 +513,7 @@ object SQLite {
   def getSub(id: Int): Option[DBSub] =
     {
       var res: Option[DBSub] = None
-      db withTransaction { implicit session =>
+      db withSession { implicit session =>
         val query = subs.filter(_.ID === id)
         if (query.list.length > 0) {
           //creates DBSub object based on saved information
@@ -539,7 +539,7 @@ object SQLite {
    */
   def saveSub(sub: DBSub): Int =
     {
-      db withTransaction { implicit session =>
+      db withSession { implicit session =>
         val id = getNextId()
         sub.id = id
         subs += (sub.id, sub.paths.mkString(";"), sub.startTime.get, sub.ttl, sub.interval, sub.callback)
