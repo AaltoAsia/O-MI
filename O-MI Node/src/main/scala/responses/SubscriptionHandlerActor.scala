@@ -218,7 +218,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         // , where numOfCalls = ((currentTime - startTime) / interval).toInt
         val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt
 
-        val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * numOfCalls)
+        val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * (numOfCalls+1))
         //val newTime = new Timestamp(time.getTime + sub.intervalToMillis) // OLD VERSION
         intervalSubs += TimedSub(sub, id, newTime)
 
