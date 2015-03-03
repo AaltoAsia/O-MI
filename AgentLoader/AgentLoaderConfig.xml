@@ -1,0 +1,7 @@
+<AgentLoaderConfig>
+    <AgentJars>
+	<jar path="../Agents/target/scala-2.11/agents_2.11-0.1-SNAPSHOT.jar">
+	    <agent classname="parising.GenericAgent" config="localhost 8181 SmartHouse/Temperature"/>
+	</jar>
+    </AgentJars>
+</AgentLoaderConfig>

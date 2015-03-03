@@ -68,17 +68,19 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor with ActorLogg
   }
 }
 
+//Agents should have their own config files
+case class Config(path:String)
+case class Start()
 /** A generic agent that read standart input stream and send given valus to AgentListenr via client.
   * @param Path where sensor is.
   * @param Client actor that handles connection with AgentListener
   */
-case class Start(seqpath:Seq[String], address : String, port: Int)
 
 class GenericAgent extends IAgentActor {
 
   private var path : Seq[String] = Seq.empty[String]
   var client : ActorRef = self 
-  def connectAndStart(seqpath : Seq[String], address : String, port: Int) = {
+  def connect(seqpath : Seq[String], address : String, port: Int) = {
     path = seqpath
     import scala.concurrent.ExecutionContext.Implicits.global
     val socket = new InetSocketAddress( address,port)
@@ -92,8 +94,15 @@ class GenericAgent extends IAgentActor {
   * 
   */
   def receive = {
-    case "Run" => run()
-    case Start(seqpath:Seq[String], address : String, port: Int) => connectAndStart(seqpath,address,port)
+    case Start => run()
+    case Config(path: String) => 
+      val params = path.split(" ")
+      val address = params(0)
+      val port = params(1).toInt
+      val seqpath = params(2).split("/")
+      connect(seqpath,address,port)
+
+
   }
 
 /** Function to loop for getting new values to sensor. 

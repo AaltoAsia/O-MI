@@ -1,8 +1,8 @@
 package agents
 
 import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
-
-case class Start(seqpath:Seq[String], address : String, port: Int)
+//Agents should have their own config files
+case class Config(path:String)
 abstract trait IAgentActor extends Actor with ActorLogging{
 
 
