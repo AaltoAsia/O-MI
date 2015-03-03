@@ -185,7 +185,7 @@ object OMISubscription {
 
   	def getAllvalues(sensor: database.DBSensor, starttime:Timestamp, interval:Double) : xml.NodeSeq = {
   		var node : xml.NodeSeq = xml.NodeSeq.Empty
-  		val infoitemvaluelist = DataFormater.FormatSubData(sensor.path, starttime, interval)
+  		val infoitemvaluelist = DataFormater.FormatSubData(sensor.path, starttime, interval,None)
 
   		for(innersensor <- infoitemvaluelist) {
   			node ++= <value dateTime={innersensor.time.toString.replace(' ', 'T')}>{innersensor.value}</value>
