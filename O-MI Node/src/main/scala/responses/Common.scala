@@ -37,7 +37,7 @@ object Common {
 
 
 
-  def result(innerxml: NodeSeq): NodeSeq = {
+  def result(innerxml: NodeSeq): Elem = {
     <omi:result>
       { innerxml }
     </omi:result>
