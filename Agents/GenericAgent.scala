@@ -9,7 +9,12 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.ActorLogging
+import java.net.URLClassLoader
+import java.io.File
 
+abstract trait IAgentActor extends Actor with ActorLogging{
+
+}
 
 object GenericAgentClient {
   def props(remote: InetSocketAddress) =
@@ -67,17 +72,28 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor with ActorLogg
   * @param Path where sensor is.
   * @param Client actor that handles connection with AgentListener
   */
+case class Start(seqpath:Seq[String], address : String, port: Int)
 
-class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with ActorLogging {
+class GenericAgent extends IAgentActor {
 
+  private var path : Seq[String] = Seq.empty[String]
+  var client : ActorRef = self 
+  def connectAndStart(seqpath : Seq[String], address : String, port: Int) = {
+    path = seqpath
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val socket = new InetSocketAddress( address,port)
+    implicit val timeout = Timeout(5.seconds)
+    implicit val system = ActorSystem("on-generic-agent")
+    client = system.actorOf( GenericAgentClient.props(socket), "generic-agent-client") 
+  }
   // XXX: infinite event loop hack!
-  self ! "Run"
 /** A partial function for reacting received messages.
   * Event loop hack. Better than while(true) if there will be other messages.
   * 
   */
   def receive = {
     case "Run" => run()
+    case Start(seqpath:Seq[String], address : String, port: Int) => connectAndStart(seqpath,address,port)
   }
 
 /** Function to loop for getting new values to sensor. 
@@ -103,34 +119,5 @@ class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with Acto
          <id>{path.head}</id>
          {genODF(path.tail,value)}
        </Object>
-  }
-}
-/** Simple main object to launch agent's actors 
-**/
-object GenericMain {
-/** Simple main function to launch agent's actors 
-  * @param arguments for connecting AgentListener and sensor's path.
-**/
-  def main(args: Array[String]) = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    if(args.length < 3){
-      println("arguments are <address> <port> <path of this sensor>")
-
-    } else {
-      val address = new InetSocketAddress( args(0),args(1).toInt)
-      var path = args(2).split("/").filterNot(_.isEmpty)
-      
-      if(path.head == "Objects")
-        path = path.tail
-
-      implicit val timeout = Timeout(5.seconds)
-      implicit val system = ActorSystem("on-generic-agent")
-
-      val client = system.actorOf(
-        GenericAgentClient.props(address), "generic-agent-client")  
-      val agent = system.actorOf(
-        Props(new GenericAgent(path,client)), "generic-agent")
-    }
   }
 }

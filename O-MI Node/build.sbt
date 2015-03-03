@@ -1,3 +1,4 @@
+import com.github.retronym.SbtOneJar
 
 val scalaBuildVersion = "2.11.2"
 
@@ -23,6 +24,10 @@ libraryDependencies ++= {
 	"org.json4s" 		  %%  "json4s-native" % "3.2.11"
   )
 }
+
+oneJarSettings
+
+libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
 //slick
 libraryDependencies ++= List(
