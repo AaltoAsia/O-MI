@@ -29,9 +29,12 @@ $(function() {
 	$(document).on('click', '#stop', function(){
 		send = false;
 	});
-	$(document).on('click', '#sub', function(){
+	$(document).on('click', '#poll', function(){
+		send = true;
 		if(omi){
-			getSub();
+			if(omi.operation === "read" && getSubscribeLocal()){
+				getSub();
+			}
 		}
 	});
 	
@@ -185,7 +188,6 @@ function sendRequest()
 
     var request = $('#request').text(); //Get the request string
 
-	send = true;
     ajaxPost(server, request, getSubscribeLocal());
 }
 
