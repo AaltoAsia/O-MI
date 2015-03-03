@@ -164,10 +164,12 @@ object SQLite {
    * returns empty array if no data or subscription is found
    * 
    * @param id subscription id that is assigned during saving the subscription
+   * @param testTime optional timestamp value to indicate end time of subscription,
+   * should only be needed during testing. Other than testing None should be used
    * 
    * @return Array of DBSensors
    */
-  def getSubData(id: Int): Array[DBSensor] =
+  def getSubData(id: Int,testTime:Option[Timestamp]): Array[DBSensor] =
     {
       db withTransaction { implicit session =>
         var result = Buffer[DBSensor]()
@@ -177,7 +179,7 @@ object SQLite {
           var paths = sub._2.split(";")
           paths.foreach {
             p =>
-              result ++= DataFormater.FormatSubData(Path(p), sub._3, sub._5)
+              result ++= DataFormater.FormatSubData(Path(p), sub._3, sub._5,testTime)
           }
         }
         result.toArray

@@ -14,15 +14,24 @@ object DataFormater {
    * @param path sensors path as Path
    * @param starttime Timestamp for subscription start time
    * @param interval in seconds
+   * @param endTime optional timestamp value to indicate end time of subscription,
+   * should only be needed during testing. Other than testing None should be used  
+   *
    *
    * @return Array of DBSensors that represents the values that would've been
    * sent if callback address were provided 
    *
    */
-def FormatSubData(path:Path,starttime:Timestamp,interval:Int):Array[DBSensor] =
+def FormatSubData(path:Path,starttime:Timestamp,interval:Int,endTime:Option[Timestamp]):Array[DBSensor] =
 {
   var rawdata = SQLite.getNBetween(path, Some(starttime), None, None,None)
-  var deltaTime = new java.util.Date().getTime - starttime.getTime
+  var deltaTime =
+    endTime match{
+    case Some(time:Timestamp)=>
+      time.getTime - starttime.getTime
+    case None =>
+      new java.util.Date().getTime - starttime.getTime
+  }
   var formatedData = Array.ofDim[DBSensor]((deltaTime/1000).toInt/interval)
   if(rawdata.isEmpty)
   {
@@ -41,7 +50,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Int):Array[DBSensor] =
       formatedData(n) = new DBSensor(lastval.path,lastval.value,lastval.time)
     }
   }
-  else
+  else if(formatedData.length > 0)
   {
    var formatedIndex = 0
    var compareTime = new Timestamp(starttime.getTime + 1000*interval)
