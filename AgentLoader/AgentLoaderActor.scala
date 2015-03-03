@@ -39,7 +39,7 @@ class AgentLoaderActor extends Actor with ActorLogging {
       )
       for(jar <- agentsToLoad){
         for(agentToCreate <- jar._2){
-          if(!agents.exists{case (k,v) => k == agentToCreate }){
+          if(!agents.exists{case (k,v) => k == agentToCreate._1 }){
             val actorClass  = classLoader.loadClass(agentToCreate._1)
             val agent = context.system.actorOf(
               Props(actorClass), agentToCreate._1.replace(".","-"))
