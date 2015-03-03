@@ -3,39 +3,51 @@ package responses
 import Common._
 import parsing.Types._
 import database._
+
+import scala.util.{Try, Success, Failure}
+import scala.concurrent.{Future,Await}
+import scala.concurrent.duration.Duration
 import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
-object OMICancel {
+import akka.actor.ActorRef
+import akka.util.Timeout
+import Timeout._
+import akka.pattern.ask
 
-  def OMICancelResponse(request: Cancel): NodeSeq = {
+
+object OMICancel {
+  implicit val timeout: Timeout = Timeout(6000) // NOTE: ttl will timeout from OmiService
+
+  def OMICancelResponse(request: Cancel, subHandler: ActorRef): NodeSeq = {
 
     var requestIds = request.requestId
 
-    val response =
-      omiResponse {
-        var nodes = NodeSeq.Empty
+    omiResponse {
+      var nodes = NodeSeq.Empty
 
-        for (id <- requestIds) {
-          nodes ++= result{
-            try {
-              // TODO: update somehow SubscriptionHandlerActor's internal memory
-              if (SQLite.removeSub(id.toInt))
-                returnCode200
-              else
-                returnCode(404, "Subscription with requestId not found")
-
-            } catch {
-              case n: NumberFormatException =>
-                returnCode(400, "Invalid requestId")
-            }
-          } 
+      val jobs = requestIds.map{ id =>
+        Try {
+          val parsedId = id.toInt
+          subHandler ? RemoveSubscription(parsedId)
         }
-        nodes
       }
 
-    response
+      jobs.map{
+        case Success(removeFuture) => 
+          // NOTE: ttl will timeout from OmiService
+          Await.result(removeFuture, Duration.Inf) match {
+            case true => returnCode200
+            case false => returnCode(404, "Subscription with requestId not found")
+            case _ => returnCode(501, "Internal server error")
+          }
+        case Failure(n: NumberFormatException) =>
+          returnCode(400, "Invalid requestId")
+        case _ =>
+          returnCode(501, "Internal server error")
+      }
+    }
   }
 }
