@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.ActorLogging
+import System.currentTimeMillis
 
 
 object GenericAgentClient {
@@ -70,6 +71,7 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor with ActorLogg
 
 class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with ActorLogging {
 
+   import scala.concurrent.ExecutionContext.Implicits.global
   // XXX: infinite event loop hack!
   self ! "Run"
 /** A partial function for reacting received messages.
@@ -88,7 +90,7 @@ class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with Acto
       val value = StdIn.readLine
       client ! <Objects>{genODF(path,value)}</Objects>
     }
-    self ! "Run"
+    context.system.scheduler.scheduleOnce(1.seconds, self, "Run")
   }
 
 /** Functiong for generating O-DF message
