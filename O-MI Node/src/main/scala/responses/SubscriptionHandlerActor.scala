@@ -60,10 +60,13 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
 
-  private var intervalSubs: PriorityQueue[TimedSub] =
+
+
+   var intervalSubs: PriorityQueue[TimedSub] =
     PriorityQueue()(TimedSubOrdering.reverse)
 
-  private var eventSubs: Map[Path, EventSub] = HashMap()
+
+   var eventSubs: Map[Path, EventSub] = HashMap()
 
   // Attach to db events
   SQLite.attachSetHook(this.checkEventSubs _)
