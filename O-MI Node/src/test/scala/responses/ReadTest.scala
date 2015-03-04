@@ -62,7 +62,7 @@ class ReadTest extends Specification with Before {
         lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -72,7 +72,7 @@ class ReadTest extends Specification with Before {
         lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/IntervalXMLTest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -83,7 +83,7 @@ class ReadTest extends Specification with Before {
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/PlainRightRequest.xml")
 
         val parserlist = OmiParser.parse(plainxml)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
 
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -93,7 +93,7 @@ class ReadTest extends Specification with Before {
         lazy val erroneousxml = Source.fromFile("src/test/resources/responses/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]))
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         //returnCode should not be 200
         resultXML should be equalTo(trim(correctxmlreturn))

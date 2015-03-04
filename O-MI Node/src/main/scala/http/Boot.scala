@@ -6,7 +6,7 @@ import spray.can.Http
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
-import java.util.Date;
+import java.util.Date
 import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
 
@@ -32,7 +32,8 @@ object Starter {
     // Create test data
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
-    
+    val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
+    sensorData.queueSensors()
     /*
     val testData = Map(
           "Objects/Refrigerator123/PowerConsumption" -> "0.123",
@@ -46,7 +47,9 @@ object Starter {
     for ((path, value) <- testData){
         SQLite.set(new DBSensor(path, value, testTime))
     }  */
-    SensorData.queueSensors()
+
+    //sensorData.queueSensors()
+
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(
@@ -55,8 +58,10 @@ object Starter {
   }
 
   def start(): Unit = {
+    val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
+
     // create and start our service actor
-    val omiService = system.actorOf(Props(classOf[OmiServiceActor]), "omi-service")
+    val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
 
     // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener

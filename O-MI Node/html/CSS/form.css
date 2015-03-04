@@ -14,12 +14,13 @@ body {
 	border-style: groove;
 	
 	width: 90%;
-	padding-top: 15px;
-	margin: 30px auto;
+	padding: 5px 0;
+	margin: 0 auto;
 	display: inline-block;
 }
 
 #objectList {
+	position: relative;
 	list-style-type: none;
 }
 
@@ -45,15 +46,25 @@ body {
     position: relative;
     *overflow: hidden;
 }
-
+/*
 #objectList .lower {
-	margin-left: 25px;
-}
+	margin-left: 25px; 
+} */
 
-#requestBox {
+#requestBox, #responseBox {
+	position: relative;
 	border: 1px solid black;
 	margin-top: 15px;
 	margin-bottom: 15px;
+}
+
+
+.highlight-button {
+	background: blue;
+}
+
+fieldset {
+	margin: 0 auto;
 }
 
 pre.xml {
