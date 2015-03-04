@@ -192,12 +192,12 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	//(third line)
-	writer.writeStartElement('omi:msg');
-	writer.writeAttributeString( 'xmlns', 'omi.xsd');
-	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 	writer.writeStartElement('omi:requestId');
 	writer.writeString(requestId);
 	writer.writeEndElement();
+	writer.writeStartElement('omi:msg');
+	writer.writeAttributeString( 'xmlns', 'omi.xsd');
+	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 	writer.writeStartElement('Objects');
 	//Payload
 	var ids = [];
