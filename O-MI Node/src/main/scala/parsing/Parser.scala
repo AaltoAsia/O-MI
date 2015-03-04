@@ -41,7 +41,7 @@ abstract trait Parser[Result] {
 
     if (parameter.isEmpty && !tolerateEmpty)
       return Left(ParseError(s"No $paramName parameter found in ${node.label}."))
-    else if (validation(parameter))
+    else if (validation(parameter) || parameter.isEmpty)
       return Right(parameter)
     else
       return Left(ParseError(s"Invalid $paramName parameter in ${node.label}."))

@@ -144,7 +144,7 @@ object OmiParser extends Parser[ParseMsg] {
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
           "interval" -> getParameter(node, "interval", true,
-              validation = isInteger
+              isDouble
             ),
           "begin" -> getParameter(node, "begin", true),
           "end" -> getParameter(node, "end", true),
