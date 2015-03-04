@@ -86,11 +86,12 @@ class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with Acto
   * Part of event loop hack. 
   */
   def run() = {
-    if(System.in.available() != 0){
-      val value = StdIn.readLine
-      client ! <Objects>{genODF(path,value)}</Objects>
-    }
-    context.system.scheduler.scheduleOnce(1.seconds, self, "Run")
+    //if(System.in.available() != 0){
+    val value = StdIn.readLine
+    client ! <Objects>{genODF(path,value)}</Objects>
+    //}
+    //context.system.scheduler.scheduleOnce(1.seconds, self, "Run")
+    self ! "Run"
   }
 
 /** Functiong for generating O-DF message
