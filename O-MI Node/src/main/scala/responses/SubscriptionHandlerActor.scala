@@ -61,7 +61,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   }
 
   private var intervalSubs: PriorityQueue[TimedSub] =
-    PriorityQueue()(TimedSubOrdering)
+    PriorityQueue()(TimedSubOrdering.reverse)
 
   private var eventSubs: Map[Path, EventSub] = HashMap()
 
