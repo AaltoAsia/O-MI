@@ -2,19 +2,22 @@ package http
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingAdapter
+import akka.pattern.ask
+
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
+
 import responses._
-import akka.pattern.ask
-import scala.concurrent.duration._
-import scala.concurrent._
 import parsing._
 import parsing.Types._
-import xml._
 import sensordata.SensorData
+import database.SQLite
+
 import scala.concurrent.duration._
+import scala.concurrent._
+import xml._
 
 class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
@@ -118,10 +121,19 @@ trait OmiService extends HttpService {
               val result = requests.map {
 
                 case oneTimeRead: OneTimeRead =>
-                  log.debug("read")
-                  log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
+                  log.debug(oneTimeRead.toString)
 
-                  val response = Future{ Read.OMIReadResponse(oneTimeRead) }
+                  val response = Future{
+                    if (oneTimeRead.requestId.isEmpty) {
+                      Read.OMIReadResponse(oneTimeRead)
+                    } else {
+                      var responses = NodeSeq.Empty
+                      for (reqId <- oneTimeRead.requestId) {
+                        val data = OMISubscription.OMINoCallbackResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                        responses = responses ++ data
+                      }
+                    }
+                  }
 
                   val ttl = oneTimeRead.ttl.toDouble // FIXME: can fail, should be done in parsers!
                   val timeout = if (ttl > 0) ttl seconds else Duration.Inf
@@ -129,20 +141,22 @@ trait OmiService extends HttpService {
                   Await.result(response, timeout)
 
                 case write: Write => 
-                  log.debug("write") 
+                  log.debug(write.toString) 
                   ErrorResponse.notImplemented
                   returnStatus = 501
 
                 case subscription: Subscription => 
-                  log.debug("sub") 
+                  log.debug(subscription.toString) 
 
                   val (id, response) = OMISubscription.setSubscription(subscription)
-                  subscriptionHandler ! NewSubscription(id)
+
+                  if (subscription.callback.isDefined)
+                    subscriptionHandler ! NewSubscription(id)
 
                   response
 
                 case cancel: Cancel =>
-                  log.debug("cancel")
+                  log.debug(cancel.toString)
                   val response = Future{ OMICancel.OMICancelResponse(cancel, subscriptionHandler) }
 
                   val ttl = cancel.ttl.toDouble // FIXME: can fail, should be done in parsers!
