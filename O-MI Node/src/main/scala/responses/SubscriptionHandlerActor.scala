@@ -66,7 +66,8 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     PriorityQueue()(TimedSubOrdering.reverse)
 
 
-   var eventSubs: Map[Path, EventSub] = HashMap()
+   //var eventSubs: Map[Path, EventSub] = HashMap()
+   var eventSubs: Map[String, EventSub] = HashMap()
 
   // Attach to db events
   SQLite.attachSetHook(this.checkEventSubs _)
@@ -103,11 +104,14 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         )
 
       handleIntervals()
+      log.debug(s"Added sub as TimedSub: $id")
 
     } else if (dbsub.isEventBased){
 
       for (path <- dbsub.paths)
-        eventSubs += path -> EventSub(dbsub, id)
+        eventSubs += path.toString -> EventSub(dbsub, id)
+
+      log.debug(s"Added sub as EventSub: $id")
     }
 
   }
@@ -124,7 +128,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def removeSub(sub: DBSub): Boolean = {
     if (sub.isEventBased) {
       sub.paths.foreach{ path =>
-        eventSubs -= path
+        eventSubs -= path.toString
       }
     } else { 
       //remove from intervalSubs
@@ -146,7 +150,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   def checkEventSubs(paths: Seq[Path]): Unit = {
 
     for (path <- paths) {
-      eventSubs.get(path) match {
+      eventSubs.get(path.toString) match {
 
         case Some(EventSub(subscription, id)) => 
 
