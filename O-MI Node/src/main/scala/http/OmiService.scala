@@ -132,6 +132,7 @@ trait OmiService extends HttpService {
                         val data = OMISubscription.OMINoCallbackResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
                         responses = responses ++ data
                       }
+                      responses
                     }
                   }
 
@@ -150,7 +151,7 @@ trait OmiService extends HttpService {
 
                   val (id, response) = OMISubscription.setSubscription(subscription)
 
-                  if (subscription.callback.isDefined)
+                  if (subscription.callback.isDefined && subscription.callback.get.length > 3) // XXX: hack check for valid url :D
                     subscriptionHandler ! NewSubscription(id)
 
                   response
