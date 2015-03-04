@@ -60,8 +60,11 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
 
+
+
    var intervalSubs: PriorityQueue[TimedSub] =
-    PriorityQueue()(TimedSubOrdering)
+    PriorityQueue()(TimedSubOrdering.reverse)
+
 
    var eventSubs: Map[Path, EventSub] = HashMap()
 
@@ -88,24 +91,24 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     }
   }
   private def loadSub(id: Int, dbsub: DBSub): Unit = { 
-      log.debug(s"Adding sub: $id")
-      if (dbsub.isIntervalBased){
-        if(dbsub.callback != None) {  //dont add to intervalSubs if no callback
-          intervalSubs += TimedSub(
-              dbsub,
-              id,
-              new Timestamp(currentTimeMillis())
-            )
+    log.debug(s"Adding sub: $id")
 
-          handleIntervals()
-        }
+    require(dbsub.callback.isDefined, "SubscriptionHandlerActor is not for buffered messages")
 
+    if (dbsub.isIntervalBased){
+      intervalSubs += TimedSub(
+          dbsub,
+          id,
+          new Timestamp(currentTimeMillis())
+        )
 
-      } else if (dbsub.isEventBased){
+      handleIntervals()
 
-        for (path <- dbsub.paths)
-          eventSubs += path -> EventSub(dbsub, id)
-      }
+    } else if (dbsub.isEventBased){
+
+      for (path <- dbsub.paths)
+        eventSubs += path -> EventSub(dbsub, id)
+    }
 
   }
 
@@ -213,19 +216,16 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         SQLite.removeSub(id)
 
       } else {
-        // FIXME: long TTLs may start accumulating some delay between calls, so maybe change
-        // calculation to something like: startTime + interval * numOfCalls
-        // , where numOfCalls = ((currentTime - startTime) / interval).toInt
         val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt
 
         val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * (numOfCalls+1))
         //val newTime = new Timestamp(time.getTime + sub.intervalToMillis) // OLD VERSION
+
         intervalSubs += TimedSub(sub, id, newTime)
 
         Future{ // TODO: Maybe move this to wrap only the generation and sending
                 // because they are the only things that can take some time
 
-            // FIXME: cancel or ending subscription should be taken into account
           log.debug(s"generateOmi for id:$id")
           val omiMsg = generateOmi(id)
           val callbackAddr = sub.callback.get 

@@ -133,7 +133,7 @@ object OMISubscription {
     </Objects>
   	}
 
-  	def OMINoCallbackResponse(id: Int): xml.NodeSeq = {
+  def OMINoCallbackResponse(id: Int): xml.NodeSeq = {
 		val subdata = SQLite.getSub(id).get
 
     omiResult{
