@@ -153,7 +153,7 @@ object OmiParser extends Parser[ParseMsg] {
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestID", true, true)
+          "requestId" -> getChild(node, "requestId", true, true)
         )
 
         if (subnodes("msg").isRight){
