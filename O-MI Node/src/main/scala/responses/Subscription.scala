@@ -134,6 +134,10 @@ object OMISubscription {
   	}
 
   def OMINoCallbackResponse(id: Int): xml.NodeSeq = {
+    // XXX should this be done here?
+    if (SQLite.isExpired(id)) {
+      SQLite.stopBuffering(id)
+    }
 		val subdata = SQLite.getSub(id).get
 
     omiResult{
