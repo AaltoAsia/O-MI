@@ -28,7 +28,7 @@ object OMISubscription {
         returnCode200 ++
         requestId{
 
-          val paths = getPaths(subscription.sensors.toList)
+          val paths = getInfoItemPaths(subscription.sensors.toList)
           val ttlInt = subscription.ttl.toInt
           val interval = subscription.interval.toInt
           val callback = subscription.callback
@@ -45,143 +45,76 @@ object OMISubscription {
 	}
 
   /**
-   * Return the right order of the paths so hierarchy stays intact
+   * Used for getting only the infoitems from the request (objects can't be subscribed to (?))
    *
-   * @param The objects a Subscription class has
-   * @return A Buffer with paths in the right order
+   * @param A hierarchy of the ODF-structure that the parser creates
+   * @return Paths of the infoitems
    **/
 
-	def getPaths(objects: Iterable[OdfObject]): Buffer[Path] = {
-		var paths = Buffer[Path]()
-		for (obj <- objects) {
-			paths += obj.path
-			if (obj.childs.nonEmpty) {
-				paths ++= getPaths(obj.childs.toList)
-			}
-
-			if (obj.sensors.nonEmpty) {
-				var infoitems = obj.sensors.collect {
-					case infoitem: OdfInfoItem => infoitem.path
-				}
-
-				paths ++= infoitems.toBuffer
-			}
-		}
-
-		return paths
-
-	}
+    def getInfoItemPaths(objects: List[OdfObject]): Buffer[Path] = {
+    var paths = Buffer[Path]()
+    for (obj <- objects) {
+      if (obj.childs.nonEmpty) {
+        paths ++= getInfoItemPaths(obj.childs.toList)
+      }
+      if (obj.sensors.nonEmpty) {
+        var infoitems = obj.sensors.collect {
+          case infoitem: OdfInfoItem => infoitem.path
+        }
+        paths ++= infoitems.toBuffer
+      }
+    }
+    return paths
+  }
 
 	/**
-   * Subscription response on intervals.
+   * Subscription response
    *
    * @param Id of the subscription
    * @return The response XML
    **/
 
 	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
-		val subdata = SQLite.getSub(id).get
     omiResult{
       returnCode200 ++
       requestId(id) ++
-      odfMsgWrapper(odfGeneration(subdata.paths))
+      odfMsgWrapper(odfGeneration(id))
     }
 	}
 
   /**
-   * Used for generating the ODF data
+   * Used for generating data in ODF-format. When the subscription has callback set it acts like a onetimeread with a requestID,
+   * when it doesn't have a callback it generates the values accumulated in the database.
    *
-   * @param Array of the paths (in the right order, given by getPaths)
-   * @return The ODF data XML
+   * @param Id of the subscription
+   * @return The data in ODF-format
    **/
 
-	def odfDataGeneration(itempaths: Array[Path]) : xml.NodeSeq = {
-    	var node : xml.NodeSeq = xml.NodeSeq.Empty
-      if(itempaths.isEmpty == false) { 
-      		node ++=
-        {
-            val itemtype = SQLite.get(itempaths.head)
-            itemtype match{
-              case Some( sensor : database.DBSensor) => {
-              	<InfoItem name={sensor.path.last}>
-              	<value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
-              	</InfoItem> ++
-                {odfDataGeneration(itempaths.tail)}
-          		}
-
-              case Some( obj : database.DBObject) => {
-              	<Object><id>{ obj.path.last }</id>
-                {odfDataGeneration(itempaths.tail)}
-                </Object>
-              	}
-
-              case _ => <Error> Item not found in the database </Error>
-            }
-        }
+	def odfGeneration(id: Int): xml.NodeSeq = {
+    val subdata = SQLite.getSub(id).get
+    subdata.callback match {
+      case Some(callback: String) => {
+        <Objects>
+        {createFromPaths(subdata.paths, 1)}
+        </Objects>
       }
 
-    node
-  	}
-
-  /**
-   * Wraps ODF data in Objects
-   **/
-
-	def odfGeneration(subdata: Array[Path]): xml.NodeSeq = {
-    <Objects>
-      { odfDataGeneration(subdata) }
-    </Objects>
-  	}
-
-  def OMINoCallbackResponse(id: Int): xml.NodeSeq = {
-		val subdata = SQLite.getSub(id).get
-
-    omiResult{
-      returnCode200 ++
-      requestId(id) ++
-      odfMsgWrapper(<Objects>{odfNoCallbackDataGeneration(subdata.paths, subdata.startTime, subdata.interval)}</Objects>)
+      case None => {
+        <Objects>
+        {createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval)}
+        </Objects>
+      }
     }
-	}
+  }
 
   /**
-   * Used for generating the ODF data when no callback is given. Same as normal sub except there are potentially more values in infoitems
-   *
-   * @param Array of the paths (in the right order, given by getPaths)
-   * @return The ODF data XML
+   * Uses the Dataformater from database package to get a list of the values that have been accumulated during the start of the sub and the request
+   * 
+   * @param The InfoItem that's been subscribed to
+   * @param Start time of the subscription
+   * @param Interval of the subscription
+   * @return The values accumulated in ODF format
    **/
-
-	def odfNoCallbackDataGeneration(itempaths: Array[Path], starttime:Timestamp, interval:Double) : xml.NodeSeq = {
-    	var node : xml.NodeSeq = xml.NodeSeq.Empty
-
-    	if(itempaths.isEmpty == false) {
-      		node ++=
-        {
-            SQLite.get(itempaths.head) match{
-              case Some(sensor: database.DBSensor) => {
-              	<InfoItem name={sensor.path.last}>
-              	{getAllvalues(sensor, starttime, interval)}
-              	</InfoItem> ++
-              	{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)}
-              }
-
-              case Some(obj : database.DBObject) => {
-              	<Object><id>{obj.path.last}</id>
-              	{odfNoCallbackDataGeneration(itempaths.tail, starttime, interval)}
-              	</Object>
-              	}
-
-              case _ => <Error> Item not found in the database </Error>
-            }
-        }
-
-    	}
-
-    node
-  	}
-
-    /**
-     * Function that gets all the infoitem values that sub with no callback has accumulated
-    **/
 
   	def getAllvalues(sensor: database.DBSensor, starttime:Timestamp, interval:Double) : xml.NodeSeq = {
   		var node : xml.NodeSeq = xml.NodeSeq.Empty
@@ -194,5 +127,115 @@ object OMISubscription {
   		node
   	}
 
+  /**
+   * Creates the right hierarchy from the infoitems that have been subscribed to.
+   *
+   * @param The paths of the infoitems that have been subscribed to
+   * @param Index of the current 'level'. Used because it recursively drills deeper.
+   * @return The ODF hierarchy as XML
+   **/
+
+    def createFromPaths(paths: Array[Path], index: Int): xml.NodeSeq = {
+      var node : xml.NodeSeq = xml.NodeSeq.Empty
+
+      if (paths.isEmpty) return node
+
+      else {
+        var slices = Buffer[Path]()
+        var previous = paths.head
+
+        for(path <- paths) {
+            var slicedpath = Path(path.toSeq.slice(0, index+1))
+            SQLite.get(slicedpath) match {
+              case Some(sensor: database.DBSensor) => {
+                node ++= 
+                <InfoItem name={sensor.path.last}>
+                <value dateTime={sensor.time.toString.replace(' ', 'T')}>{sensor.value}</value>
+                </InfoItem>
+              }
+
+              case Some(obj: database.DBObject) => {
+                if (path(index) == previous(index)) {
+                  slices += path
+                }
+
+                else {
+                  node ++= <Object><id>{previous(index)}</id>{createFromPaths(slices.toArray, index+1)}</Object>
+                  slices = Buffer[Path](path)
+                }
+
+              }
+            }
+
+            previous = path
+
+            //in case this is the last item in the array, we check if there are any non processed paths left
+            if (path == paths.last) {
+              if (slices.isEmpty == false) {
+                node ++= <Object><id>{slices.last.toSeq(index)}</id>{createFromPaths(slices.toArray, index+1)}</Object>
+              }
+            }
+          }
+
+        }
+      
+      return node
+    }
+
+  /**
+   * Creates the right hierarchy from the infoitems that have been subscribed to and no callback is given (one infoitem may have many values)
+   *
+   * @param The paths of the infoitems that have been subscribed to
+   * @param Index of the current 'level'. Used because it recursively drills deeper.
+   * @param Start time of the subscription
+   * @param Interval of the subscription
+   * @return The ODF hierarchy as XML
+   **/
+
+    def createFromPathsNoCallback(paths: Array[Path], index: Int, starttime:Timestamp, interval:Double): xml.NodeSeq = {
+      var node : xml.NodeSeq = xml.NodeSeq.Empty
+
+      if (paths.isEmpty) return node
+
+      else {
+        var slices = Buffer[Path]()
+        var previous = paths.head
+
+        for(path <- paths) {
+            var slicedpath = Path(path.toSeq.slice(0, index+1))
+            SQLite.get(slicedpath) match {
+              case Some(sensor: database.DBSensor) => {
+                node ++= 
+                <InfoItem name={sensor.path.last}>
+                {getAllvalues(sensor, starttime, interval)}
+                </InfoItem>
+              }
+
+              case Some(obj: database.DBObject) => {
+                if (path(index) == previous(index)) {
+                  slices += path
+                }
+
+                else {
+                  node ++= <Object><id>{previous(index)}</id>{createFromPathsNoCallback(slices.toArray, index+1, starttime, interval)}</Object>
+                  slices = Buffer[Path](path)
+                }
+
+              }
+            }
+
+            previous = path
+
+            if (path == paths.last) {
+              if (slices.isEmpty == false) {
+                node ++= <Object><id>{slices.last.toSeq(index)}</id>{createFromPathsNoCallback(slices.toArray, index+1, starttime, interval)}</Object>
+              }
+            }
+          }
+
+        }
+      
+      return node
+    }
 
 }

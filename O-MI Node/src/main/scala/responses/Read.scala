@@ -113,7 +113,7 @@ object Read {
 
     else {
       val id = read.requestId.head.toInt
-      OMISubscription.OMINoCallbackResponse(id)
+      OMISubscription.OMISubscriptionResponse(id)
       
     }
   }

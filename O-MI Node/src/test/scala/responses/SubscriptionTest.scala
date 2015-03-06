@@ -56,6 +56,11 @@ class SubscriptionTest extends Specification with Before {
     val parserlist = OmiParser.parse(simpletestfile)
 
     val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
+
+    lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/SubscriptionRequestWithCallback.xml").getLines.mkString("\n")
+    val parserlistcallback = OmiParser.parse(simpletestfilecallback)
+
+    val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[Subscription])
   }
 
   "Subscription response" should {
@@ -82,7 +87,7 @@ class SubscriptionTest extends Specification with Before {
 
     "Return with no values when interval is larger than time elapsed and no callback given" in {
 
-      val subxml = OMISubscription.OMINoCallbackResponse(0)
+      val subxml = OMISubscription.OMISubscriptionResponse(0)
 
       val correctxml = 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
@@ -112,14 +117,14 @@ class SubscriptionTest extends Specification with Before {
 
     "Return with right values and requestId in subscription generation" in {
 
-      val subxml = OMISubscription.OMISubscriptionResponse(0)
+      val subxml = OMISubscription.OMISubscriptionResponse(1)
 
       val correctxml = 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
           <omi:result>
             <omi:return returnCode="200"></omi:return>
-              <omi:requestId>0</omi:requestId>
+              <omi:requestId>1</omi:requestId>
                 <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
                   <Objects>
                     <Object>
@@ -136,6 +141,8 @@ class SubscriptionTest extends Specification with Before {
           </omi:result>
         </omi:response>
       </omi:omiEnvelope>
+
+      println(subxml)
 
       trim(subxml.head).toString == trim(correctxml).toString
 

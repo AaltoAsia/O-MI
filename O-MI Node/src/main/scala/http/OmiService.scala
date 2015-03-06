@@ -129,7 +129,7 @@ trait OmiService extends HttpService {
                     } else {
                       var responses = NodeSeq.Empty
                       for (reqId <- oneTimeRead.requestId) {
-                        val data = OMISubscription.OMINoCallbackResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                        val data = OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
                         responses = responses ++ data
                       }
                       responses

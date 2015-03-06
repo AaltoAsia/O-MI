@@ -11,7 +11,7 @@ import responses._
 import database.SQLite._
 import database._
 import parsing.Types.{SubLike, Path}
-import OMISubscription.{getPaths, OMISubscriptionResponse}
+import OMISubscription.{OMISubscriptionResponse}
 import CallbackHandlers._
 
 import scala.collection.mutable.PriorityQueue
