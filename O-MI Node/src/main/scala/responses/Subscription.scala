@@ -100,9 +100,16 @@ object OMISubscription {
       }
 
       case None => {
+        if (SQLite.isExpired(id)) {
+        subdata.paths.foreach{p => SQLite.stopBuffering(p)}
+        return xml.NodeSeq.Empty //fix so a message saying sub has expired is sent?
+        }
+
+        else {
         <Objects>
         {createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval)}
         </Objects>
+        }
       }
     }
   }
