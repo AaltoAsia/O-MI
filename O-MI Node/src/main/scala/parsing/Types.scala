@@ -2,6 +2,19 @@ package parsing
 import java.sql.Timestamp
 
 object Types {
+  /**
+   * Trait for subscription like classes
+   */
+  trait SubLike {
+    // Note: defs can be implemented also as val and lazy val
+    def interval: Double
+    def ttl: Double
+    def isIntervalBased  = interval >= 0.0
+    def isEventBased = interval == -1
+    def ttlToMillis: Long = (ttl * 1000).toLong
+    def intervalToMillis: Long = (interval * 1000).toLong
+  }
+
   /** absract trait that represent either error or request in the O-MI
     *
     */
@@ -11,7 +24,7 @@ object Types {
    *  @param msg error message that describes the problem.
    */
   case class ParseError(msg: String) extends ParseMsg
-  case class OneTimeRead( ttl: String,
+  case class OneTimeRead( ttl: Double,
                           sensors: Seq[ OdfObject],
                           begin: Option[Timestamp] = None,
                           end: Option[Timestamp] = None,
@@ -20,13 +33,13 @@ object Types {
                           callback: Option[String] = None,
                           requestId: Seq[ String] = Seq.empty
                         ) extends ParseMsg
-  case class Write( ttl: String,
+  case class Write( ttl: Double,
                     sensors: Seq[ OdfObject],
                     callback: Option[String] = None,
                     requestId: Seq[ String] = Seq.empty
                   ) extends ParseMsg
-  case class Subscription(  ttl: String,
-                            interval: String,
+  case class Subscription(  ttl: Double,
+                            interval: Double,
                             sensors: Seq[ OdfObject],
                             begin: Option[Timestamp] = None,
                             end: Option[Timestamp] = None,
@@ -34,21 +47,21 @@ object Types {
                             oldest: Option[Int] = None,
                             callback: Option[String] = None,
                             requestId: Seq[ String] = Seq.empty
-                          ) extends ParseMsg
+                            ) extends ParseMsg with SubLike
   case class Result(  returnValue: String,
                       returnCode: String,
                       parseMsgOp: Option[ Seq[ OdfObject] ],
                       requestId: Seq[ String] = Seq.empty
                     ) extends ParseMsg
-  case class Cancel(  ttl: String,
+  case class Cancel(  ttl: Double,
                       requestId: Seq[ String]
                     ) extends ParseMsg
 
 
   /** case classs that represnts a value of InfoItem in the O-DF
     *
-    * @param optional timestamp when value was measured
-    * @param measured value
+    * @param time optional timestamp when value was measured
+    * @param value measured value
     */
   case class TimedValue( time: Option[Timestamp], value: String)
 
@@ -60,7 +73,7 @@ object Types {
   /** case class that represents an InfoItem in the O-DF
    *  
    *  @param path path to the InfoItem as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge","PowerConsumption")
-   *  @param InfoItem's values found in xml structure, TimedValue.
+   *  @param timedValues InfoItem's values found in xml structure, TimedValue.
    *  @param metadata Object may contain metadata, 
    *         metadata can contain e.g. value type, units or similar information
    */
@@ -71,8 +84,8 @@ object Types {
   /** case class that represents an Object in the O-DF
    *  
    *  @param path path to the Object as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge")
-   *  @param Object's childs found in xml structure.
-   *  @param Object's InfoItems found in xml structure.
+   *  @param childs Object's childs found in xml structure.
+   *  @param sensors Object's InfoItems found in xml structure.
    *  @param metadata Object may contain metadata, 
    *         metadata can contain e.g. value type, units or similar information
    */
@@ -126,6 +139,7 @@ object Types {
   object Path {
     def apply(pathStr: String): Path = new Path(pathStr)
     def apply(pathSeq: Seq[String]): Path = new Path(pathSeq)
+    val empty = new Path(Seq.empty)
 
     import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 

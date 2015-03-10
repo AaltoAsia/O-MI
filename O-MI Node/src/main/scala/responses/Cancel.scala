@@ -1,35 +1,62 @@
 package responses
 
+import Common._
 import parsing.Types._
 import database._
-import scala.xml
+
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.{ Future, Await }
+import scala.concurrent.duration.Duration
+import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
-object OmiCancel {
+import akka.actor.ActorRef
+import akka.util.Timeout
+import Timeout._
+import akka.pattern.ask
 
-  def OMICancelResponse(requests: List[ParseMsg]): String = {
+/* Object for generating responses for omi:cancel requests */
+object OMICancel {
+  implicit val timeout: Timeout = Timeout(6000) // NOTE: ttl will timeout from OmiService
 
-    val xml = <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-                <omi:response>
-                  <omi:result>
-                    {
-                      var requestIds = requests.collect {
-                        case Cancel(ttl: String,
-                          requestId: Seq[String]) => requestId
-                      }
-                      for (id <- requestIds) {
-                    	 // TODO: Send ids to database for canceling; if database returns true append success message, 
-                    	 // if false append error message?
-                      }
-                      // Success: <omi:return returnCode="200"></omi:return>
-                      // Error: <omi:return returnCode="404"></omi:return>
-                    }
-                  </omi:result>
-                </omi:response>
-              </omi:omiEnvelope>
+  
+  /**
+   * Generates ODF containing a list of omi:results along with their return codes
+   *
+   * @param Cancel the cancel request given by the parser
+   * @return ActorRef the subscription handler actor
+   */
+  def OMICancelResponse(request: Cancel, subHandler: ActorRef): NodeSeq = {
 
-    xml.toString
+    var requestIds = request.requestId
+
+    omiResponse {
+      var nodes = NodeSeq.Empty
+
+      val jobs = requestIds.map { id =>
+        Try {
+          val parsedId = id.toInt
+          subHandler ? RemoveSubscription(parsedId)
+        }
+      }
+
+      jobs.map {
+        case Success(removeFuture) =>
+          // NOTE: ttl will timeout from OmiService
+          result {
+            Await.result(removeFuture, Duration.Inf) match {
+              case true => returnCode200
+              case false => returnCode(404, "Subscription with requestId not found")
+              case _ => returnCode(501, "Internal server error")
+            }
+          }
+        case Failure(n: NumberFormatException) =>
+          result { returnCode(400, "Invalid requestId") }
+        case _ =>
+          result { returnCode(501, "Internal server error") }
+      }
+    }
   }
 }

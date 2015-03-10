@@ -1,24 +1,32 @@
 package http
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingAdapter
-import akka.actor.ActorLogging
+import akka.pattern.ask
+
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
-import responses._
 
+import responses._
 import parsing._
 import parsing.Types._
-import xml._
 import sensordata.SensorData
+import database.SQLite
 
-class OmiServiceActor extends Actor with ActorLogging with OmiService {
+import scala.concurrent.duration._
+import scala.concurrent._
+import xml._
+
+class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
   // the HttpService trait defines only one abstract member, which
   // connects the services environment to the enclosing actor or test
   def actorRefFactory = context
+
+  // Used for O-MI subscriptions
+  val subscriptionHandler = subHandler
 
   // this actor only runs our route, but you could add
   // other things here, like request stream processing
@@ -29,7 +37,9 @@ class OmiServiceActor extends Actor with ActorLogging with OmiService {
 
 // this trait defines our service behavior independently from the service actor
 trait OmiService extends HttpService {
+  import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
+  val subscriptionHandler: ActorRef
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -97,41 +107,77 @@ trait OmiService extends HttpService {
       corsHeaders {
         entity(as[NodeSeq]) { xml =>
           val omi = OmiParser.parse(xml.toString)
-          val requests = omi.filter {
-            case ParseError(_) => false
-            case _ => true
+          val errors = omi.collect {
+            case e: ParseError => e
           }
-          val errors = omi.filter {
-            case ParseError(_) => true
-            case _ => false
-          }
+          val requests = omi diff errors // exclude errors from omi
 
           if (errors.isEmpty) {
-            respondWithMediaType(`text/xml`) { complete {
-              requests.map {
+            respondWithMediaType(`text/xml`) {
+              
+              var returnStatus = 200
+
+              //FIXME: Currently sending multiple omi:omiEnvelope
+              val result = requests.map {
+
                 case oneTimeRead: OneTimeRead =>
-                  log.debug("read")
-                  log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
-                  Read.OMIReadResponse(oneTimeRead)
+                  log.debug(oneTimeRead.toString)
+
+                  val response = Future{
+                    if (oneTimeRead.requestId.isEmpty) {
+                      Read.OMIReadResponse(oneTimeRead)
+                    } else {
+                      var responses = NodeSeq.Empty
+                      for (reqId <- oneTimeRead.requestId) {
+                        val data = OMISubscription.OMINoCallbackResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                        responses = responses ++ data
+                      }
+                    }
+                  }
+
+                  val ttl = oneTimeRead.ttl.toDouble // FIXME: can fail, should be done in parsers!
+                  val timeout = if (ttl > 0) ttl seconds else Duration.Inf
+
+                  Await.result(response, timeout)
+
                 case write: Write => 
-                  log.debug("write") 
-                  ??? //TODO handle Write
+                  log.debug(write.toString) 
+                  ErrorResponse.notImplemented
+                  returnStatus = 501
+
                 case subscription: Subscription => 
-                  log.debug("sub") 
-                  ??? //TODO handle sub
+                  log.debug(subscription.toString) 
+
+                  val (id, response) = OMISubscription.setSubscription(subscription)
+
+                  if (subscription.callback.isDefined)
+                    subscriptionHandler ! NewSubscription(id)
+
+                  response
+
                 case cancel: Cancel =>
-                  log.debug("cancel")
-                  ??? //TODO: handle cancel
+                  log.debug(cancel.toString)
+                  val response = Future{ OMICancel.OMICancelResponse(cancel, subscriptionHandler) }
+
+                  val ttl = cancel.ttl.toDouble // FIXME: can fail, should be done in parsers!
+                  val timeout = if (ttl > 0) ttl seconds else Duration.Inf
+
+                  Await.result(response, timeout)
+
                 case _ => log.warning("Unknown request")
+                  returnStatus = 400
+
               }.mkString("\n")
-            }}
-          } else {
-            //Error found
-            complete {
-              log.error("ERROR")
-              println(errors)
-              ??? // TODO handle error
+
+              complete(returnStatus, result)
+
             }
+          } else {
+            //Errors found
+            log.warning("Parse Errors: {}", errors.mkString(", "))
+            complete (400,
+              ErrorResponse.parseErrorResponse(errors)  
+            )
           }
         }
       }
