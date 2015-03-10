@@ -11,7 +11,7 @@ import responses._
 import database.SQLite._
 import database._
 import parsing.Types.{SubLike, Path}
-import OMISubscription.{getPaths, OMISubscriptionResponse}
+import OMISubscription.{OMISubscriptionResponse}
 import CallbackHandlers._
 
 import scala.collection.mutable.PriorityQueue
@@ -62,11 +62,14 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
 
-   var intervalSubs: PriorityQueue[TimedSub] =
-    PriorityQueue()(TimedSubOrdering.reverse)
+   private var intervalSubs: PriorityQueue[TimedSub] = {
+     PriorityQueue()(TimedSubOrdering.reverse)
+   }
+   def getIntervalSubs = intervalSubs
 
-
-   var eventSubs: Map[Path, EventSub] = HashMap()
+   //var eventSubs: Map[Path, EventSub] = HashMap()
+   private var eventSubs: Map[String, EventSub] = HashMap()
+   def getEventSubs = eventSubs
 
   // Attach to db events
   SQLite.attachSetHook(this.checkEventSubs _)
@@ -103,11 +106,14 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
         )
 
       handleIntervals()
+      log.debug(s"Added sub as TimedSub: $id")
 
     } else if (dbsub.isEventBased){
 
       for (path <- dbsub.paths)
-        eventSubs += path -> EventSub(dbsub, id)
+        eventSubs += path.toString -> EventSub(dbsub, id)
+
+      log.debug(s"Added sub as EventSub: $id")
     }
 
   }
@@ -124,7 +130,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def removeSub(sub: DBSub): Boolean = {
     if (sub.isEventBased) {
       sub.paths.foreach{ path =>
-        eventSubs -= path
+        eventSubs -= path.toString
       }
     } else { 
       //remove from intervalSubs
@@ -146,7 +152,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   def checkEventSubs(paths: Seq[Path]): Unit = {
 
     for (path <- paths) {
-      eventSubs.get(path) match {
+      eventSubs.get(path.toString) match {
 
         case Some(EventSub(subscription, id)) => 
 
