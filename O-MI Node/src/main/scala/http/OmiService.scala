@@ -149,9 +149,9 @@ trait OmiService extends HttpService {
                 case subscription: Subscription => 
                   log.debug(subscription.toString) 
 
-                  val (id, response) = OMISubscription.setSubscription(subscription)
+                  val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
 
-                  if (subscription.callback.isDefined && subscription.callback.get.length > 3) // XXX: hack check for valid url :D
+                  if (subscription.callback.isDefined && subscription.callback.get.length > 3 && id >= 0) // XXX: hack check for valid url :D
                     subscriptionHandler ! NewSubscription(id)
 
                   response

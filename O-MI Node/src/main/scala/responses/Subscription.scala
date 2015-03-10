@@ -21,14 +21,16 @@ object OMISubscription {
 	 			containing the immediate xml that's used for responding to a subscription request
 	 **/
 
-	def setSubscription(subscription: Subscription): (Int, xml.NodeSeq) = {	//returns requestID and the response
+	def setSubscription(subscription: Subscription): (Int, xml.NodeSeq) = {
 		var requestIdInt: Int = -1
-		val xml =
+    val paths = getInfoItemPaths(subscription.sensors.toList)
+
+    if(paths.isEmpty == false) {
+		  val xml =
       omiResult{
         returnCode200 ++
         requestId{
 
-          val paths = getInfoItemPaths(subscription.sensors.toList)
           val ttlInt = subscription.ttl.toInt
           val interval = subscription.interval.toInt
           val callback = subscription.callback
@@ -41,7 +43,17 @@ object OMISubscription {
         }
       }
 
-		return (requestIdInt, xml)
+      return (requestIdInt, xml)
+    }
+
+    else {
+      val xml = 
+      omiResult{
+        returnCode(400, "No InfoItems found in the paths")
+      }
+
+      return (requestIdInt, xml)
+    }
 	}
 
   /**
@@ -57,13 +69,16 @@ object OMISubscription {
       if (obj.childs.nonEmpty) {
         paths ++= getInfoItemPaths(obj.childs.toList)
       }
+
       if (obj.sensors.nonEmpty) {
-        var infoitems = obj.sensors.collect {
-          case infoitem: OdfInfoItem => infoitem.path
+        for (sensor <- obj.sensors) {
+          SQLite.get(sensor.path) match {
+            case Some(infoitem: DBSensor) => paths += infoitem.path
+            case _ => //do nothing
+            }
+          }
         }
-        paths ++= infoitems.toBuffer
       }
-    }
     return paths
   }
 
@@ -172,6 +187,8 @@ object OMISubscription {
                 }
 
               }
+
+              case None => node ++= <Error> Item not found in the database </Error>
             }
 
             previous = path
@@ -229,6 +246,8 @@ object OMISubscription {
                 }
 
               }
+
+              case None => node ++= <Error> Item not found in the database </Error>
             }
 
             previous = path

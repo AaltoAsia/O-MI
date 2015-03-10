@@ -146,6 +146,26 @@ class SubscriptionTest extends Specification with Before {
 
     }
 
+    "Return error code when asked for nonexisting infoitem" in {
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/BuggyRequest.xml").getLines.mkString("\n")
+      val parserlist = OmiParser.parse(simpletestfile)
+
+      val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
+
+      val correctxml = 
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
+          <omi:response>
+            <omi:result>
+              <omi:return returnCode="400" description="No InfoItems found in the paths"></omi:return>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
+        println(xmlreturn)
+
+      (requestID, trim(xmlreturn.head).toString) == (-1, trim(correctxml).toString)
+    }
+
   }
 
 }
