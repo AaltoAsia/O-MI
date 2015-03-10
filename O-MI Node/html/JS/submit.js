@@ -1,12 +1,8 @@
 /* IconSelect object */
-var iconSelect;
+var iconSelect, objectUrl, omi, iconValue;
 
-/* Url to get the objects from */
-var objectUrl;
-
-var omi;
-var iconValue;
 var send = false;
+var index = 0;
 
 $(function() {
 	//IconSelect settings
