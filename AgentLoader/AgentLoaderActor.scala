@@ -15,61 +15,109 @@ import java.io.File
 import agents._
 import scala.collection.mutable.Map
 
-case class AgentDied(actor: ActorRef)
-case class ReloadConfig()
+import java.lang.Boolean.getBoolean
+import java.util.jar.JarFile
+import scala.collection.immutable
+import scala.collection.JavaConverters._
+
+trait Bootable {
+  def hasConfig : Boolean 
+  def setConfigPath( path : String): Unit  
+  /**
+   * Callback run on microkernel startup.
+   * Create initial actors and messages here.
+   */
+  def startup(): Unit
+
+  /**
+   * Callback run on microkernel shutdown.
+   * Shutdown actor systems here.
+   */
+  def shutdown(): Unit
+
+  def getAgentActor : ActorRef
+}
+
+case class GivehMeODF(msg: String)
 case class Start()
+case class ConfigUpdated()
 class AgentLoaderActor extends Actor with ActorLogging {
+
+  protected var bootables : Map[String,Bootable] = Map.empty 
+  private val classLoader = createClassLoader()
+  Thread.currentThread.setContextClassLoader(classLoader)
+
   def receive = {
-    case Start => loadAndLaunch()//Todo:listen tcp socket for config update
-    case AgentDied(actor: ActorRef) =>
-    case ReloadConfig => loadAndLaunch() 
+    case Start =>
+    case ConfigUpdated =>
   }
 
-  var agentsToLoad : Map[String, Seq[(String,String)]] = Map.empty
-  val configFile = "AgentLoaderConfig.xml"
-  var agents : Map[String,ActorRef] = Map.empty
-  
-  def loadAndLaunch() = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    if(parseConfig()){
-      val jars = agentsToLoad.keys
-      val classLoader = new URLClassLoader(
-        jars.map( k => new File(k).toURI.toURL).toArray
-        ,this.getClass.getClassLoader
-      )
-      for(jar <- agentsToLoad){
-        for(agentToCreate <- jar._2){
-          if(!agents.exists{case (k,v) => k == agentToCreate._1 }){
-            val actorClass  = classLoader.loadClass(agentToCreate._1)
-            val agent = context.system.actorOf(
-              Props(actorClass), agentToCreate._1.replace(".","-"))
-            agents += Tuple2(agentToCreate._1, agent)
-            agent ! Config(agentToCreate._2)
-            agent ! Start  
-          }
-        }
+  def loadAndStart = {
+    val classnames = getClassnamesWithConfigPath
+    val toBeBooted =  classnames map { case (c: String, p: String) => 
+      if(!bootables.exists{case (k:String, b:Bootable) => k == c})
+        Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+    }
+
+    for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
+   //   log("Starting up " + bootable.getClass.getName)
+      b.setConfigPath(p)
+      b.startup()
+      bootables += Tuple2(c, b)
+    }
+
+    addShutdownHook( toBeBooted.map{ case ( c: String, p:String, b: Bootable ) => b}.to[immutable.Seq] )
+
+  }
+
+  private def createClassLoader(): ClassLoader = {
+    if (ActorSystem.GlobalHome.isDefined) {
+      val home = ActorSystem.GlobalHome.get
+      val deploy = new File(home, "deploy")
+      if (deploy.exists) {
+        loadDeployJars(deploy)
+      } else {
+   //     log("[warning] No deploy dir found at " + deploy)
+        Thread.currentThread.getContextClassLoader
       }
+    } else {
+   //   log("[warning] Akka home is not defined")
+      Thread.currentThread.getContextClassLoader
     }
   }
-  
-  /* TODO: 
-   * Create schema for config and check with it
-   * Handle errors
-   */
-  
-  def parseConfig() : Boolean  = {
-    val xml : NodeSeq = XML.loadFile(configFile)
-    val root = xml.head
-    if(root.label != "AgentLoaderConfig" || (root \ "AgentJars").isEmpty){
-      println("Mallformed config")
-      return false
+
+  private def loadDeployJars(deploy: File): ClassLoader = {
+    val jars = deploy.listFiles.filter(_.getName.endsWith(".jar"))
+
+    val nestedJars = jars flatMap { jar =>
+      val jarFile = new JarFile(jar)
+      val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))
+      jarEntries map { entry ⇒ new File("jar:file:%s!/%s" format (jarFile.getName, entry.getName)) }
     }
-    val jars = (root \ "AgentJars").head \ "jar"
-    for(jar <- jars ){
-      val path = (jar \ "@path").text
-      val agents = (jar \ "agent")
-      agentsToLoad += Tuple2(path, agents.map(s => ((s \ "@classname").text, (s \ "@config").text ) )) 
-    }
-    return true
+
+    val urls = (jars ++ nestedJars) map { _.toURI.toURL }
+
+  //  urls foreach { url <= log("Deploying " + url) }
+
+    new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
   }
+
+  private def addShutdownHook(bootables: immutable.Seq[Bootable]): Unit = {
+    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+      def run = {
+        //log("")
+        //log("Shutting down Akka...")
+
+        for (bootable ← bootables) {
+          //log("Shutting down " + bootable.getClass.getName)
+          bootable.shutdown()
+        }
+
+        //log("Successfully shut down Akka")
+      }
+    }))
+  }
+
+  private def getClassnamesWithConfigPath : Array[(String,String)]= ???
+
 }
