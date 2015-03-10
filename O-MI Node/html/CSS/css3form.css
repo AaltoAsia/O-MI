@@ -13,8 +13,8 @@ body {
 }
 /*form styles*/
 #msform {
-	width: 50%;
-	margin: 50px auto;
+	width: 70em;
+	margin: 4em auto;
 	text-align: center;
 	position: relative;
 }
@@ -26,11 +26,6 @@ body {
 	padding: 20px 30px;
 	
 	box-sizing: border-box;
-	width: 80%;
-	margin: 0 10%;
-	
-	/*stacking fieldsets above each other*/
-	position: absolute;
 }
 /*Hide all except first fieldset*/
 #msform fieldset:not(:first-of-type) {

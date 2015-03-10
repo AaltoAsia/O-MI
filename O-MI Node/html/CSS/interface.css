@@ -1,0 +1,68 @@
+#prev {
+	position: fixed;
+	margin-top: 10em;
+	left: 5em;
+}
+
+#next {
+	position: fixed;
+	margin-top: 10em;
+	right: 5em;
+}
+
+#prev:hover:not(.hidden), #next:hover:not(.hidden) {
+	cursor: pointer;
+}
+
+.hidden {
+	opacity: 0.5;
+}
+
+.behind {
+	display: none;
+	
+	/* Use for possible animation */
+	position: absolute;
+	width: 40%;
+	left: 40%;
+	z-index: -20;
+}
+
+.currentpage {
+	position: absolute;
+	width: 60%;
+	left: 20%;
+}
+
+.prevpage {
+	position: absolute;
+	opacity: 0.5;
+	width: 40%;
+	z-index: -10;
+	top: 5em;
+	left: 5em;
+}
+
+.nextpage {
+	position: absolute;
+	opacity: 0.5;
+	width: 40%;
+	z-index: -10;
+	top: 5em;
+	right: 5em;
+}
+
+.icon {
+	display: inline-block;
+	width: 5em;
+	height: 5em;
+	margin: 0 1em;
+}
+
+.icon:hover {
+	cursor: pointer;
+}
+
+.selected {
+	outline: red solid 5px;
+}

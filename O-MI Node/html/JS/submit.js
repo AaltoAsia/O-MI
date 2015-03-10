@@ -2,22 +2,13 @@
 var iconSelect, objectUrl, omi, iconValue;
 
 var send = false;
-var index = 0;
+var page = 1; //Start at page 1
 
 $(function() {
-	//IconSelect settings
-	iconSelect = new IconSelect("operation-select");
-
-	//Pushing the icons
-	var icons = [];
-	icons.push({'iconFilePath': 'Resources/icons/read.png', 'iconValue': 'read'});
-	icons.push({'iconFilePath': 'Resources/icons/write.png', 'iconValue': 'write'});
-	icons.push({'iconFilePath': 'Resources/icons/cancel.png', 'iconValue': 'cancel'});
 	
-	iconSelect.refresh(icons);
-
+	loadPages(page);
 	loadOptions();
-
+	
 	/* Click events for buttons */
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-gen', generateRequest);
@@ -37,23 +28,7 @@ $(function() {
 	$(document).on('click', '#prev4', function(){
 		send = false;
 	});
-	
-	for(var i = 0; i < iconSelect.getIcons().length; i++){
-		$(iconSelect.getIcons())[i].element.onclick = function(){
-			iconSelect.setSelectedIndex(this.childNodes[0].getAttribute('icon-index'));
-			loadOptions();
-		};
-	}
-	
-	$("#url-field").val('http://' + window.location.host + "/Objects");
 
-/* Load form options */
-function loadOptions() {
-	iconValue = iconSelect.getSelectedValue();
-	$("#options").empty();
-	$("#options").load("forms/" + iconValue + ".html"); 
-}
-	
 /* Get the objects through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
@@ -148,7 +123,7 @@ function addInfoItems(parent, id) {
 
 /* Generate the O-DF request */
 function generateRequest(){
-	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
+	var operation = $("#icons").find(".selected").attr("alt"); //Get the selected operation from the IconSelect object
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
@@ -224,6 +199,7 @@ function ajaxPost(server, request, subscribeLocal){
 	});
 }
 
+/* Get subscription from the server */
 function getSub(){
 	var response = $("#responseBox").text();
 	console.log(response);
