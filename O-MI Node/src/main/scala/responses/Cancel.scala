@@ -19,7 +19,7 @@ import akka.pattern.ask
 
 /* Object for generating responses for omi:cancel requests */
 object OMICancel {
-  implicit val timeout: Timeout = Timeout(6000) // NOTE: ttl will timeout from OmiService
+  implicit val timeout: Timeout = Timeout(Duration(6000, "ms")) // NOTE: ttl will timeout from OmiService
 
   
   /**

@@ -34,11 +34,11 @@ class SubscriptionHandlerActorTest extends Specification {
       testId.success(database.SQLite.saveSub(testSub1))
 
       val futureId: Int = Await.result(testId.future, scala.concurrent.duration.Duration(1000,"ms"))
-      subscriptionActor.eventSubs.isEmpty === true
-      subscriptionActor.intervalSubs.isEmpty === true
+//      subscriptionActor.eventSubs.isEmpty === true
+      subscriptionActor.intervalSubs.exists(n => n.id == futureId) === false
       subscriptionHandler.tell(NewSubscription(futureId), probe.ref)
 
-      subscriptionActor.intervalSubs.isEmpty === false
+      subscriptionActor.intervalSubs.exists(n => n.id == futureId) === true
     } 
     
     "remove given sub from queue when sent remove message" in new Actors{
@@ -49,15 +49,16 @@ class SubscriptionHandlerActorTest extends Specification {
       
       val futureId: Int = Await.result(testId.future, scala.concurrent.duration.Duration(1000,"ms"))
 
-      subscriptionActor.eventSubs.isEmpty === true
-      subscriptionActor.intervalSubs.isEmpty === false
+//      subscriptionActor.eventSubs.isEmpty === true
+//      subscriptionActor.intervalSubs.isEmpty === false
+      subscriptionActor.intervalSubs.exists(n => n.id == futureId) === true
 //      val answer = subscriptionHandler.ask(
 //          probe.ref, RemoveSubscription(futureId))(Timeout(Duration.apply(1500, "ms")))
 //      Await.result(answer, Duration.apply(1500, "ms")) === true
       
       subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
       probe.expectMsgType[Boolean](Duration.apply(2400,"ms")) === true
-      subscriptionActor.intervalSubs.isEmpty === true
+      subscriptionActor.intervalSubs.exists(n => n.id == futureId) === false
     }
   }
 }
