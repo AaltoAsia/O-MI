@@ -2,7 +2,7 @@
 var iconSelect, objectUrl, omi, iconValue;
 
 var send = false;
-var page = 1; //Start at page 1
+var page = 1; // Start at page 1
 
 $(function() {
 	
@@ -30,13 +30,36 @@ $(function() {
 	});
 
 function loadThemes(){
-	iconSelect = new IconSelect("themes");
+	iconSelect = new IconSelect("themes",{
+		'selectedIconWidth':48,
+        'selectedIconHeight':48,
+        'selectedBoxPadding':1,
+        'iconsWidth':48,
+        'iconsHeight':48,
+        'boxIconSpace':1,
+        'vectoralIconNumber':1,
+        'horizontalIconNumber':4});
 
 	var icons = [];
-    icons.push({'iconFilePath':'Resources/icons/light.svg', 'iconValue':'light'});
     icons.push({'iconFilePath':'Resources/icons/dark.svg', 'iconValue':'dark'});
-    
+    icons.push({'iconFilePath':'Resources/icons/light.svg', 'iconValue':'light'});
+    icons.push({'iconFilePath':'Resources/icons/white.svg', 'iconValue':'white'});
+    icons.push({'iconFilePath':'Resources/icons/green.svg', 'iconValue':'green'});
     iconSelect.refresh(icons);
+
+    for(var i = 0; i < iconSelect.getIcons().length; i++){
+    	iconSelect.getIcons()[i].element.onclick = function(){
+            iconSelect.setSelectedIndex(this.childNodes[0].getAttribute('icon-index'));
+            
+            $('body').css({
+            	"background": "url('Resources/icons/" + iconSelect.getSelectedValue() + ".svg') no-repeat center center fixed",
+            	"-webkit-background-size": "cover",
+        		"-moz-background-size": "cover",
+        		"-o-background-size": "cover",
+        		"background-size": "cover"
+            }); 
+        };
+    }
 }
 	
 /* Get the objects through ajax get */
@@ -47,7 +70,7 @@ function getObjects() {
 	
 	$("#send-field").val(objectUrl.replace("/Objects", ""));
 	
-	//Sent ajax get-request for the objects
+	// Sent ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
 }
 
@@ -65,18 +88,21 @@ function ajaxGet(indent, url, listId){
     });
 }
 
-/* Display the objects as checkboxes in objectList 
-* @param {XML Object} the received XML data
-*/
+/*
+ * Display the objects as checkboxes in objectList @param {XML Object} the
+ * received XML data
+ */
 function displayObjects(data, indent, url, listId) {
-	//console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
+	// console.log("Got the Objects as XML: \n" + new
+	// XMLSerializer().serializeToString(data));
 
 	// Basic objects
 	if(indent === 0){
-		//Clear the list beforehand, in case objects is changed in between the button clicks
+		// Clear the list beforehand, in case objects is changed in between the
+		// button clicks
 		$("#objectList").empty();
 		
-		//Append objects as checkboxes to the webpage
+		// Append objects as checkboxes to the webpage
 		$(data).find('Objects').each(function(){
 			$(this).find("Object").each(function(){
 				var id = $(this).find("id").text();
@@ -85,7 +111,7 @@ function displayObjects(data, indent, url, listId) {
 				$('<ul id="list-' + id + '"></ul>').appendTo("#objectList");
 				addInfoItems(this, id, indent + 1);
 				
-				//Get lower hierarchy values
+				// Get lower hierarchy values
 				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
 			});
 		});
@@ -120,12 +146,12 @@ function addInfoItems(parent, id) {
 	$(parent).find("InfoItem").each(function(){
 		var name = $(this).attr('name');
 		
-		//Append InfoItem as checkbox
+		// Append InfoItem as checkbox
 		$('<li><label>' + 
 		'<input type="checkbox" class="checkbox ' + id + '" name="' + name + '"/>' + name +
 		'</label></li>').appendTo("#list-" + id); 
 		
-		//Styling (margin)
+		// Styling (margin)
 		$("#list-" + id).last().css({ marginLeft: margin });
 	});
 }
@@ -136,7 +162,7 @@ function sendRequest()
 	// Server URL
 	var server = $("#send-field").val();
 
-    var request = $('#editRequest').text(); //Get the request string
+    var request = requestEditor.getValue(); // Get the request string
 
     ajaxPost(server, request, getSubscribeLocal());
 }
@@ -145,7 +171,7 @@ function getSubscribeLocal(){
 	return ($.isNumeric(omi.interval) && omi.callback.length === 0);
 }
 
-//Test
+// Test
 var count = 0;
 
 function ajaxPost(server, request, subscribeLocal){
@@ -205,9 +231,9 @@ function printResponse(response){
 	console.log("Got response!");
 	
 	var formattedXML = formatNoHighlight(response);
-	//console.log(formattedXML);
+	// console.log(formattedXML);
     $("#responseBox").html(formattedXML);
-    
+
     refreshEditor("response", "responseBox");
 }
 

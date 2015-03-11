@@ -1,3 +1,9 @@
+#themes {
+	position: absolute;
+	left: 5em;
+	top: 5em;
+}
+
 #prev {
 	position: fixed;
 	margin-top: 10em;

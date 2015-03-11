@@ -16,8 +16,10 @@ function loadPages() {
 	// Load operation options (page 2)
 	if (page === 2) {
 		$("#prev").removeClass("hidden");
-
-		loadOptions();
+		
+		if($('#options').is(':empty')){
+			loadOptions();
+		}
 	}
 	// Generate request
 	if (page === 3) {
@@ -30,27 +32,28 @@ function loadPages() {
 	}
 	if (page === 4) {
 		$("#send-field").val($("#url-field").val().replace("/Objects", ""));
+
+		$("#response .CodeMirror").remove();
 	}
 }
 
 function refreshEditor(editor, id) {
 	if (editor == "request") {
-		if (!requestEditor) {
-			requestEditor = CodeMirror.fromTextArea(
-					document.getElementById(id), {
-						mode : "application/xml",
-						lineNumbers : true
-					});
-		}
+		$("#edit .CodeMirror").remove();
+		
+		requestEditor = CodeMirror.fromTextArea(document.getElementById(id), {
+			mode : "application/xml",
+			lineNumbers : true
+		});
 		requestEditor.refresh();
 	} else if (editor == "response") {
-		if (!responseEditor) {
-			responseEditor = CodeMirror.fromTextArea(document
-					.getElementById(id), {
-				mode : "application/xml",
-				lineNumbers : true
-			});
-		}
+		$("#response .CodeMirror").remove();
+		
+		responseEditor = CodeMirror.fromTextArea(document
+				.getElementById(id), {
+			mode : "application/xml",
+			lineNumbers : true
+		});
 		responseEditor.refresh();
 	}
 }

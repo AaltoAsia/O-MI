@@ -1,7 +1,12 @@
 @charset "UTF-8";
 
 body {
-	background-image: url("../Resources/testbg.png");
+	background: url("../Resources/icons/dark.svg") no-repeat center center fixed;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	z-index: 1;
 }
 
 #operation-select {
@@ -78,4 +83,8 @@ body {
 
 fieldset {
 	margin: 0 auto;
+}
+
+#themes {
+	float: right;
 }
