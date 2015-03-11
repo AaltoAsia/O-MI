@@ -44,10 +44,6 @@ $(document).on('click', '#prev', function() {
 function animatePrev() {
 	if (animating || page === 1)
 		return false;
-
-	
-	
-	count = 0;
 	
 	current_fs = $("#page" + page);
 	previous_fs = $("#page" + (page - 1));
@@ -71,8 +67,7 @@ function animateNext() {
 	
 	// Animate scrolling
 	$("html, body").animate({ scrollTop: 0 }, "slow");
-	
-	count = 0;
+
 	animating = true;
 	
 	current_fs = $("#page" + page);
@@ -126,16 +121,6 @@ function animateNext() {
 	
 	loadPages();
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
-}
-
-function checkCount(){
-	count += 1;
-	
-	if(count >= 2){
-		count = 0;
-		animating = false;
-		loadPages();
-	}
 }
 
 $(".submit").click(function() {

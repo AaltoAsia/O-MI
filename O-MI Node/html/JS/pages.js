@@ -1,4 +1,5 @@
 var requestEditor, responseEditor;
+
 function loadPages() {
 	$(".page").addClass("behind");
 
@@ -8,7 +9,7 @@ function loadPages() {
 
 	selector.removeClass("prevpage nextpage hidden behind")
 	selector.addClass("currentpage")
-	
+
 	if (selector.is(':empty')) {
 		selector.load("pages/page" + page + ".html");
 	}
@@ -24,24 +25,34 @@ function loadPages() {
 		$("#requestTabs").tabs();
 
 		generateRequest();
-		
-		refreshEditor(requestEditor, "editRequest");
+
+		refreshEditor("request", "editRequest");
 	}
 	if (page === 4) {
 		$("#send-field").val($("#url-field").val().replace("/Objects", ""));
 	}
 }
 
-function refreshEditor(editor, id){
-	if(editor){
-		cm.setValue("");
-		cm.clearHistory();
+function refreshEditor(editor, id) {
+	if (editor == "request") {
+		if (!requestEditor) {
+			requestEditor = CodeMirror.fromTextArea(
+					document.getElementById(id), {
+						mode : "application/xml",
+						lineNumbers : true
+					});
+		}
+		requestEditor.refresh();
+	} else if (editor == "response") {
+		if (!responseEditor) {
+			responseEditor = CodeMirror.fromTextArea(document
+					.getElementById(id), {
+				mode : "application/xml",
+				lineNumbers : true
+			});
+		}
+		responseEditor.refresh();
 	}
-	editor = CodeMirror.fromTextArea(document.getElementById(id), {
-		mode : "application/xml",
-		lineNumbers : true
-	});
-	editor.refresh();
 }
 
 function loadSides() {

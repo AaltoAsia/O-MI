@@ -193,9 +193,11 @@ function getSub(){
 function printResponse(response){
 	console.log("Got response!");
 	
-	var formattedXML = formatXml(response);
+	var formattedXML = formatNoHighlight(response);
 	//console.log(formattedXML);
-    $("#responseBox").html(formattedXML.value);
+    $("#responseBox").html(formattedXML);
+    
+    refreshEditor("response", "responseBox");
 }
 
 /* Handle the ajax errors */
