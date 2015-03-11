@@ -11,7 +11,7 @@ trait Bootable {
     * Callback run on microkernel startup.
     * Create initial actors and messages here.
     */
-  def startup( system: ActorSystem, agentListener: ActorRef, configPath: String) : Boolean 
+  def startup( system: ActorSystem, configPath: String) : Boolean 
 
   /** 
     * Callback run on microkernel shutdown.

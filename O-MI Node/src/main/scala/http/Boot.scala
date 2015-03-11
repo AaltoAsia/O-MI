@@ -51,7 +51,7 @@ object Starter {
     // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
     val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
-    val agentLoader = system.actorOf(AgentLoader.props(sensorDataListener) , "agent-loader")
+    val agentLoader = system.actorOf(AgentLoader.props() , "agent-loader")
 
     implicit val timeout = Timeout(5.seconds)
 

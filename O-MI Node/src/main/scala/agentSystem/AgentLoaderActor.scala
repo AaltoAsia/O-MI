@@ -1,5 +1,6 @@
 package agentSystem
 
+import http._
 import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
 import akka.io.{ IO, Tcp }
 import akka.event.{Logging, LoggingAdapter}
@@ -12,6 +13,7 @@ import scala.concurrent.duration._
 import scala.collection.mutable.Map
 import scala.collection.immutable
 import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._
 import java.net.InetSocketAddress
 import java.net.URLClassLoader
 import java.lang.Boolean.getBoolean
@@ -19,14 +21,15 @@ import java.util.jar.JarFile
 import java.io.File
 
 object AgentLoader{
-  def props(agentListener: ActorRef) : Props = Props(new AgentLoader(agentListener))
+  def props() : Props = Props(new AgentLoader())
 }
 case class ConfigUpdated()
-class AgentLoader(agentListener: ActorRef)  extends Actor with ActorLogging {
+class AgentLoader  extends Actor with ActorLogging {
   protected var bootables : Map[String,Bootable] = Map.empty 
   private val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
 
+  val settings = Settings(context.system)
   self ! Start
   def receive = {
     case Start => loadAndStart
@@ -42,7 +45,7 @@ class AgentLoader(agentListener: ActorRef)  extends Actor with ActorLogging {
 
     for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
       log.info("Starting up " + b.getClass.getName)
-      if(b.startup(context.system, agentListener, p)){
+      if(b.startup(context.system, p)){
         log.info("Successfully started: "+ b.getClass.getName)
         bootables += Tuple2(c, b)
       } else {
@@ -55,17 +58,11 @@ class AgentLoader(agentListener: ActorRef)  extends Actor with ActorLogging {
   }
 
   private def createClassLoader(): ClassLoader = {
-    if (ActorSystem.GlobalHome.isDefined) {
-      val home = ActorSystem.GlobalHome.get
-      val deploy = new File(home, "deploy")
-      if (deploy.exists) {
-        loadDeployJars(deploy)
-      } else {
-        log.warning("No deploy dir found at " + deploy)
-        Thread.currentThread.getContextClassLoader
-      }
+    val deploy = new File("deploy")
+    if (deploy.exists) {
+      loadDeployJars(deploy)
     } else {
-      log.warning("Akka home is not defined")
+      log.warning("No deploy dir found at " + deploy)
       Thread.currentThread.getContextClassLoader
     }
   }
@@ -102,6 +99,8 @@ class AgentLoader(agentListener: ActorRef)  extends Actor with ActorLogging {
   }
 
   //TODO: handle config
-  private def getClassnamesWithConfigPath : Array[(String,String)]= {Array.empty}
+  private def getClassnamesWithConfigPath : Array[(String,String)]= {
+    settings.agents.unwrapped().asScala.map{ case (s: String, o: Object) => (s, o.toString)}.toArray 
+  }
 
 }

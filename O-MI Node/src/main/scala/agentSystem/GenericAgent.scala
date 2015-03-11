@@ -21,7 +21,7 @@ case class Start()
   * @param Client actor that handles connection with AgentListener
   */
 
-class GenericAgent( path: Seq[String], agentListener: ActorRef)  extends IAgentActor {
+class GenericAgent( path: Seq[String])  extends IAgentActor {
 
   case class Msg(msg: String)
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,7 +33,11 @@ class GenericAgent( path: Seq[String], agentListener: ActorRef)  extends IAgentA
   def receive = {
     case Start => run()
     case Msg(value) =>
-      agentListener ! genODF(path,value)
+      genODF(path, value) match {
+        case i: OdfInfoItem =>
+        case o: OdfObject =>
+          InputPusher.handleObjects(Seq(o))
+      }
       run()
   }
 
@@ -50,29 +54,35 @@ class GenericAgent( path: Seq[String], agentListener: ActorRef)  extends IAgentA
 */
   def genODF( path: Seq[String], value: String, deepnest : Int = 1) : OdfNode =
   {
-    if(deepnest == path.size)
+    if(deepnest == path.size){
       OdfInfoItem( path, Seq( TimedValue( None, value ) ), "" )
-    else
-      OdfObject( path.take(deepnest), Seq(genODF(path, value, deepnest + 1).asInstanceOf[OdfObject]), Seq.empty) 
+    } else {
+      genODF(path, value, deepnest + 1) match {
+        case i: OdfInfoItem =>
+          OdfObject( path.take(deepnest), Seq.empty, Seq(i)) 
+        case o: OdfObject =>
+          OdfObject( path.take(deepnest), Seq(o), Seq.empty) 
+      }
+    }
   }
 }
 
 object GenericAgent {
-  def props( path: Seq[String], agentListener: ActorRef) : Props = {Props(new GenericAgent(path,agentListener)) }
+  def props( path: Seq[String]) : Props = {Props(new GenericAgent(path)) }
 }
 
 class GenericBoot extends Bootable {
   private var configPath : String = ""
   private var agentActor : ActorRef = null
 
-  override def startup( system: ActorSystem, agentListener: ActorRef, pathToConfig: String) : Boolean = {
+  override def startup( system: ActorSystem, pathToConfig: String) : Boolean = {
     if(pathToConfig.isEmpty || !(new File(pathToConfig).exists()))
       return false 
 
     configPath = pathToConfig
     val lines = io.Source.fromFile(configPath).getLines().toArray
     var path = lines.head.split("/")
-    agentActor = system.actorOf(GenericAgent.props(path,agentListener), "Generic-Agent")    
+    agentActor = system.actorOf(GenericAgent.props(path), "Generic-Agent")    
     agentActor ! Start
     return true
   }
