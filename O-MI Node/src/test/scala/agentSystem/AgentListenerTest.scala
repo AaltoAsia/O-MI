@@ -1,4 +1,4 @@
-package agentSystemInterface
+package agentSystem
 
 import org.specs2.mutable._
 import akka.testkit.{ TestProbe, TestKit, EventFilter }
