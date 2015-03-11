@@ -71,7 +71,7 @@ class InputDataHandler(
     case Received(data) => 
       val dataString = data.decodeString("UTF-8")
 
-      log.debug("Got data \n" + dataString)
+      log.debug(s"Got data from $sender") // \n" + dataString)
 
       val parsedEntries = OdfParser.parse(dataString)
       val errors = parsedEntries.filter( _.isLeft ).map( e => e.left.get) 

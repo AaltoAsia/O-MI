@@ -275,7 +275,7 @@ object SQLiteTest extends Specification {
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(timeNow-2000)))
       database.SQLite.set(DBSensor(Path("path/to/sensor3/temp"),"21.0C",new Timestamp(timeNow-1000)))
       
-      var res = database.SQLite.getSubData(id).length
+      var res = database.SQLite.getSubData(id,Some(new Timestamp(timeNow))).length
       database.SQLite.removeSub(id)
       database.SQLite.remove(Path("path/to/sensor1/temp"))
       database.SQLite.remove(Path("path/to/sensor2/temp"))

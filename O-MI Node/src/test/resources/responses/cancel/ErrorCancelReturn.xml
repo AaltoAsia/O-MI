@@ -1,4 +1,4 @@
-<omi:omiEnvelope ttl="0" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<omi:omiEnvelope ttl="0.0" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<omi:response>
 		<omi:result>
 			<omi:return description="Subscription with requestId not found" returnCode="404"></omi:return>

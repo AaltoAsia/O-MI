@@ -6,11 +6,13 @@ import java.net.InetSocketAddress
 import xml._
 import io._
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.ActorLogging
 import java.net.URLClassLoader
 import java.io.File
+import System.currentTimeMillis
 
 abstract trait IAgentActor extends Actor with ActorLogging{
 
@@ -77,6 +79,8 @@ case class Start()
 
 class GenericAgent( path: Seq[String], agentListener: ActorRef)  extends IAgentActor {
 
+  case class Msg(msg: String)
+  import scala.concurrent.ExecutionContext.Implicits.global
   // XXX: infinite event loop hack!
 /** A partial function for reacting received messages.
   * Event loop hack. Better than while(true) if there will be other messages.
@@ -84,17 +88,18 @@ class GenericAgent( path: Seq[String], agentListener: ActorRef)  extends IAgentA
   */
   def receive = {
     case Start => run()
+    case Msg(value) =>
+      agentListener ! genODF(path,value)
+      run()
   }
 
 /** Function to loop for getting new values to sensor. 
   * Part of event loop hack. 
   */
   def run() = {
-    if(System.in.available() != 0){
-      val value = StdIn.readLine
-      agentListener ! genODF(path,value)
+    Future {
+      self ! Msg(StdIn.readLine)
     }
-    self ! "Run"
   }
 
 /** Functiong for generating O-DF message

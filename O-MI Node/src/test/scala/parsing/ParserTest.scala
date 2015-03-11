@@ -188,7 +188,7 @@ class ParserTest extends Specification {
 
   def e100 = {
     OmiParser.parse(omi_write_test_file) should be equalTo (List(
-      Write("10", write_response_odf, Some("http://testing.test"))))
+      Write(10, write_response_odf, Some("http://testing.test"))))
     //      List(
     //      Write("10", List(
     //        OdfObject(Seq("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
@@ -215,7 +215,7 @@ class ParserTest extends Specification {
 
   def e103 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("omi:msg", "omi:msn"))
-    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
   }
 
   def e104 = {
@@ -250,7 +250,7 @@ class ParserTest extends Specification {
 
   def e106 = {
     OmiParser.parse(omi_write_test_file.replace("callback=\"http://testing.test\" ", "")) should be equalTo (List(
-      Write("10", write_response_odf)))
+      Write(10, write_response_odf)))
   }
 
   def e200 = {
@@ -261,7 +261,7 @@ class ParserTest extends Specification {
   /*
   //Missing msgformat is allowed
   def e201 = {
-    val temp = OmiParser.parse(omi_response_test_file.replace("""omi:result msgformat="odf"""", "omi:result"))
+    val temp = OmiParser.parse(omi_response_test_file.replace("msgformat=\"odf\"", " "))
     temp.head should be equalTo (ParseError("No msgformat parameter found in result."))
 
   }
@@ -329,7 +329,7 @@ class ParserTest extends Specification {
 
   def e300 = {
     OmiParser.parse(omi_read_test_file) should be equalTo (List(
-      OneTimeRead("10", List(
+      OneTimeRead(10, List(
         OdfObject(
           List("Objects", "SmartHouse"),
           List(
@@ -414,7 +414,7 @@ class ParserTest extends Specification {
 
   def e303 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:msg", "omi:msn"))
-    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
+    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
 
   }
 
@@ -450,7 +450,7 @@ class ParserTest extends Specification {
 
   def e306 = {
     OmiParser.parse(omi_subscription_test_file) should be equalTo (List(
-      Subscription("10", "40", List(
+      Subscription(10, 40, List(
         OdfObject(
           List("Objects", "SmartHouse"),
           List(
@@ -582,7 +582,7 @@ class ParserTest extends Specification {
   }
 
   def e500 = {
-    OmiParser.parse(omi_cancel_test_file)  should be equalTo(Seq(Cancel("10", Seq("123","456"))))
+    OmiParser.parse(omi_cancel_test_file)  should be equalTo(Seq(Cancel(10, Seq("123","456"))))
   }
 
 

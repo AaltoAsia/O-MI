@@ -89,7 +89,7 @@ object Read {
     omiOdfResult(
         returnCode200 ++
         requestIds(read.requestId) ++
-        odfmsgWrapper(odfGeneration(read))
+        odfMsgWrapper(odfGeneration(read))
     )
   }
   /**
@@ -113,19 +113,8 @@ object Read {
 
     else {
       val id = read.requestId.head.toInt
-      val newbegin = SQLite.getSub(id).get.startTime
-      val newend = Some(new Timestamp(new java.util.Date().getTime))
-
-      <Objects>
-        {
-          odfObjectGeneration(
-            read.sensors.toList,
-            newbegin,
-            newend,
-            read.newest,
-            read.oldest)
-        }
-      </Objects>
+      OMISubscription.OMISubscriptionResponse(id)
+      
     }
   }
 
@@ -177,39 +166,13 @@ object Read {
     }
     node
   }
-
-  /** helper function for generating O-DF's InfoItem nodes
-    * @param nodes to generate
-    * @return generated xml as String
-    */
-  def odfInfoItemGeneration(infoItems: List[ OdfInfoItem]) : xml.NodeSeq = {
-    var node : xml.NodeSeq = xml.NodeSeq.Empty 
-    for(infoItem <- infoItems){
-      node ++= <InfoItem name={infoItem.path.last}>
-        {
-            val item = SQLite.get(infoItem.path)
-            item match{
-              case Some( sensor : database.DBSensor) =>
-                <value dateTime={sensor.time.toString.replace(' ', 'T')}>
-                  {sensor.value}
-                </value>
-
-              case Some( obj : database.DBObject) =>
-                <Error> Wrong type of request: this item is an InfoItem, not an Object </Error>
-
-              case _ => <Error> Item not found in the database </Error>
-            }
-        }
-      </InfoItem>
-    }
-    node
-  }
-
   /**
    * helper function for generating O-DF's InfoItem nodes
-   * @param nodes to generate
-   * @param the start time of the time interval from where to get sensors
-   * @param the end time of the time interval from where to get sensors
+   * @param infoItems nodes to generate
+   * @param begin the start time of the time interval from where to get sensors
+   * @param end the end time of the time interval from where to get sensors
+   * @param newest get only this many newest items
+   * @param oldest get only this many oldest items
    * @return generated xml as String
    */
   def odfInfoItemGeneration(infoItems: List[OdfInfoItem],
@@ -218,7 +181,6 @@ object Read {
                             newest: Option[Int],
                             oldest: Option[Int] ): xml.NodeSeq = {
 
-    try {
       var node: xml.NodeSeq = xml.NodeSeq.Empty
       for (infoItem <- infoItems) {
         node ++= 
@@ -242,11 +204,6 @@ object Read {
         </InfoItem>
       }
       node
-    } catch {
-      case e: IllegalArgumentException =>
-        //println("invalid begin and/or end parameter; ignoring")
-        odfInfoItemGeneration(infoItems)
-    }
   }
 
 }

@@ -11,7 +11,7 @@ object Common {
   /**
    * Wraps innerxml to O-MI Envelope
    */
-  def omiEnvelope(ttl: Int)(innerxml: NodeSeq): NodeSeq = {
+  def omiEnvelope(ttl: Double)(innerxml: NodeSeq): NodeSeq = {
     <omi:omiEnvelope xmlns:omi="omi.xsd"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd"
 	  	version="1.0" ttl={ ttl.toString }>
@@ -25,7 +25,7 @@ object Common {
   /**
    * Wraps innerxml to O-MI Envelope and response
    */
-  def omiResponse(ttl: Int)(innerxml: NodeSeq) = {
+  def omiResponse(ttl: Double)(innerxml: NodeSeq) = {
     omiEnvelope(ttl)(
       <omi:response>
         { innerxml }
@@ -37,7 +37,7 @@ object Common {
 
 
 
-  def result(innerxml: NodeSeq): NodeSeq = {
+  def result(innerxml: NodeSeq): Elem = {
     <omi:result>
       { innerxml }
     </omi:result>
@@ -71,7 +71,7 @@ object Common {
 
   val returnCode200: Elem = returnCode(200)
 
-  def odfmsgWrapper(innerxml: NodeSeq): Elem = {
+  def odfMsgWrapper(innerxml: NodeSeq): Elem = {
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
         { innerxml }
     </omi:msg>
@@ -79,9 +79,7 @@ object Common {
 
   // Should not be called directly because id is supposed to be Int
   private def requestId(id: String): Elem = {
-    <omi:requestId>
-      { id }
-    </omi:requestId>
+    <omi:requestId>{ id }</omi:requestId>
   }
   def requestId(id: Int): Elem = requestId(id.toString)
 
