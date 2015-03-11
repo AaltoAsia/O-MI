@@ -111,7 +111,7 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
-      trim(subxml.head).toString == trim(correctxml).toString
+      trim(subxml.head).toString === trim(correctxml).toString
 
     }
 
