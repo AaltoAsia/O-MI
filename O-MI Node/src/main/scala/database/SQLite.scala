@@ -6,6 +6,8 @@ import java.io.File
 import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
+import scala.slick.jdbc.StaticQuery
+
 
 import parsing.Types._
 import parsing.Types.Path._
@@ -33,12 +35,16 @@ object SQLite {
 
   //initializing database
   private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
-  db withTransaction { implicit session =>
+  db withSession { implicit session =>
+    sqlu"PRAGMA busy_timeout=1000;".execute
     if (init) {
       initialize()
     }
+    
   }
-
+  db withSession { implicit session =>
+   println(sqlu"PRAGMA busy_timeout;".first)
+  }
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
@@ -50,14 +56,15 @@ object SQLite {
   def set(data: DBSensor) =
     {
       var count = 0
+      var buffering = false
       db withTransaction { implicit session =>
         //search database for sensor's path
         val pathQuery = latestValues.filter(_.path === data.path)
-        var buffering = buffered.filter(_.path === data.path).list.length > 0
+        buffering = buffered.filter(_.path === data.path).list.length > 0
         //appends a row to the latestvalues table
         count = pathQuery.length.run
         latestValues += (data.path, data.value, data.time)
-        
+      }
         // Call hooks
         val argument = Seq(data.path)
         setEventHooks foreach {_(argument)}
@@ -74,7 +81,7 @@ object SQLite {
           //existing path and less than history length of data or buffering.
           false
         }
-      }
+      
     }
   /**
    * Used to set many values efficiently to the database.
@@ -122,40 +129,39 @@ object SQLite {
    * @return boolean whether something was removed
    */
   def remove(path: Path): Boolean = {
-
-    db withSession { implicit session =>
-      //search database for given path
-      var deleted = false
-      val pathQuery = latestValues.filter(_.path === path)
+    //search database for given path
+    val pathQuery = latestValues.filter(_.path === path)
+     var deleted = false
+    db withSession { implicit session => 
       //if found rows with given path remove else path doesn't exist and can't be removed
       if (pathQuery.list.length > 0) {
         pathQuery.delete
         deleted = true;
+      }
+    }
+    if(deleted)
+      {
+    db.withTransaction{
+      implicit session =>
         //also delete objects from hierarchy that are not used anymore.
         // start from sensors path and proceed upward in hierarchy until object that is shared by other sensor is found,
         //ultimately the root. path/to/sensor/temp -> path/to/sensor -> ..... -> "" (root)
-
         var testPath = path
-
         while (!testPath.isEmpty) {
           if (getChilds(testPath).length == 0) {
             //only leaf nodes have 0 childs. 
             var pathQueryObjects = objects.filter(_.path === testPath)
             pathQueryObjects.delete
-
             testPath = testPath.dropRight(1)
           } else {
             //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
             //exit while loop
             testPath = Path("")
-
           }
-        }
-
+        }   
       }
-      return deleted
     }
-
+   return deleted
   }
   /**
    * Returns array of DBSensors for given subscription id.
@@ -171,19 +177,22 @@ object SQLite {
    */
   def getSubData(id: Int,testTime:Option[Timestamp]): Array[DBSensor] =
     {
-      db withTransaction { implicit session =>
-        var result = Buffer[DBSensor]()
+       var result = Buffer[DBSensor]()
         var subQuery = subs.filter(_.ID === id)
+        var info:(Timestamp,Int) = (null,0)//to gather only needed info from the query
+        var paths = Array[String]()
+      db withTransaction { implicit session =>
         if (subQuery.length.run > 0) {
           var sub = subQuery.first
-          var paths = sub._2.split(";")
+          info = (sub._3, sub._5)
+          paths = sub._2.split(";")
+        }
           paths.foreach {
             p =>
-              result ++= DataFormater.FormatSubData(Path(p), sub._3, sub._5,testTime)
+              result ++= DataFormater.FormatSubData(Path(p), info._1,info._2,testTime)
           }
         }
         result.toArray
-      }
     }
   /**
    * Used to clear excess data from database for given path
@@ -192,13 +201,15 @@ object SQLite {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path)(implicit session: Session) =
+  private def removeExcess(path: Path)=
     {
       val pathQuery = latestValues.filter(_.path === path)
+      db.withTransaction{implicit session =>
       var count = pathQuery.length.run
       if (count > historyLength) {
         val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
         pathQuery.filter(_.timestamp < oldtime).delete
+      }
       }
     }
   /**
@@ -209,8 +220,8 @@ object SQLite {
    * @param path path as Path object
    */
   def startBuffering(path: Path) {
-    db withSession { implicit session =>
-      val pathQuery = buffered.filter(_.path === path)
+    val pathQuery = buffered.filter(_.path === path)
+    db.withTransaction { implicit session =>
       var len = pathQuery.length.run
       if (len == 0) {
         buffered += (path, 1)
@@ -301,16 +312,17 @@ object SQLite {
    * @param path path whose hierarchy is to be stored to database
    *
    */
-  private def addObjects(path: Path)(implicit session: Session) {
+  private def addObjects(path: Path){
     val parentsAndPath: Seq[Path] = path.tail.scanLeft(Path(path.head))(Path(_) / _)
     var parent = Path("")
+    db.withTransaction{implicit session =>
     for (fullpath <- parentsAndPath) {
       if (!hasObject(fullpath)) {
         objects += (fullpath, parent, fullpath.last)
       }
       parent = fullpath
     }
-
+    }
   }
   /**
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
@@ -332,7 +344,7 @@ object SQLite {
 
   def getNBetween(path: Path, start: Option[Timestamp], end: Option[Timestamp], fromStart: Option[Int], fromEnd: Option[Int]): Array[DBSensor] = {
     var result = Array[DBSensor]()
-    db withTransaction { implicit session =>
+   
       var query = latestValues.filter(_.path === path)
       if (start != None) {
         query = query.filter(_.timestamp >= start.get)
@@ -340,6 +352,7 @@ object SQLite {
       if (end != None) {
         query = query.filter(_.timestamp <= end.get)
       }
+       db withTransaction { implicit session =>
       if (fromStart != None && fromEnd != None) {
         //does not compute
         //can't have query from two different parts in one go
@@ -352,6 +365,7 @@ object SQLite {
       }
       result = Array.ofDim[DBSensor](query.length.run)
       query.sortBy(_.timestamp)
+      
       var index = 0
       query foreach {
         case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
@@ -480,16 +494,16 @@ object SQLite {
   def getAllSubs(hasCallBack:Option[Boolean]):Array[DBSub]=
   {
     var res = Array[DBSub]()
+     var all = hasCallBack match{
+     case Some(true) =>
+       subs.filter(!_.callback.isEmpty)
+     case Some(false) =>
+       subs.filter(_.callback.isEmpty)
+     case None =>
+       subs
+    }
     db withSession {
       implicit session =>
-      var all = hasCallBack match{
-         case Some(true) =>
-           subs.filter(!_.callback.isEmpty)
-         case Some(false) =>
-           subs.filter(_.callback.isEmpty)
-         case None =>
-           subs
-      }
       res = Array.ofDim[DBSub](all.length.run)
       var index = 0
       all foreach{
@@ -513,8 +527,8 @@ object SQLite {
   def getSub(id: Int): Option[DBSub] =
     {
       var res: Option[DBSub] = None
+      val query = subs.filter(_.ID === id)
       db withSession { implicit session =>
-        val query = subs.filter(_.ID === id)
         if (query.list.length > 0) {
           //creates DBSub object based on saved information
           var head = query.first
