@@ -1,12 +1,12 @@
 package database
-import scala.slick.driver.SQLiteDriver.simple._
-import scala.slick.jdbc.StaticQuery.interpolation
-import scala.slick.lifted.ProvenShape
+import slick.driver.SQLiteDriver.api._
+import slick.jdbc.StaticQuery.interpolation
+import slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
-import scala.slick.jdbc.StaticQuery
+import slick.jdbc.StaticQuery
 
 
 import parsing.Types._
@@ -36,15 +36,13 @@ object SQLite {
   //initializing database
   private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
   db withSession { implicit session =>
-    sqlu"PRAGMA busy_timeout=1000;".execute
+
     if (init) {
       initialize()
     }
     
   }
-  db withSession { implicit session =>
-   println(sqlu"PRAGMA busy_timeout;".first)
-  }
+ 
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
@@ -53,16 +51,16 @@ object SQLite {
    *  @param data data is of type DBSensor
    *  @return boolean whether added data was new
    */
-  def set(data: DBSensor) =
+  def set(data: DBSensor)=
     {
       var count = 0
       var buffering = false
-      db withTransaction { implicit session =>
+      db withSession { implicit session =>
         //search database for sensor's path
         val pathQuery = latestValues.filter(_.path === data.path)
-        buffering = buffered.filter(_.path === data.path).list.length > 0
+        buffering = db.stream(buffered.filter(_.path === data.path)).length > 0
         //appends a row to the latestvalues table
-        count = pathQuery.length.run
+        count = db.stream(pathQuery).length
         latestValues += (data.path, data.value, data.time)
       }
         // Call hooks
@@ -95,11 +93,11 @@ object SQLite {
         case (p: String, v: String) =>
           path = Path(p)
           var pathQuery = latestValues.filter(_.path === path)
-          len = pathQuery.length.run
+          len = db.stream(pathQuery.length)
           if (len == 0) {
             addObjects(path)
           }
-          var buffering = buffered.filter(_.path === path).list.length > 0
+          var buffering = db.stream(buffered.filter(_.path === path)).length > 0
           latestValues += (path, v, new Timestamp(new java.util.Date().getTime))
 
           // Call hooks
@@ -134,7 +132,7 @@ object SQLite {
      var deleted = false
     db withSession { implicit session => 
       //if found rows with given path remove else path doesn't exist and can't be removed
-      if (pathQuery.list.length > 0) {
+      if (db.stream(pathQuery).length > 0) {
         pathQuery.delete
         deleted = true;
       }
@@ -179,19 +177,20 @@ object SQLite {
     {
        var result = Buffer[DBSensor]()
         var subQuery = subs.filter(_.ID === id)
-        var info:(Timestamp,Int) = (null,0)//to gather only needed info from the query
+        var info:(Timestamp,Double) = (null,0.0)//to gather only needed info from the query
         var paths = Array[String]()
       db withTransaction { implicit session =>
-        if (subQuery.length.run > 0) {
-          var sub = subQuery.first
+        var str = db.stream(subQuery)
+        if (str .length > 0) {
+          var sub = str.head
           info = (sub._3, sub._5)
           paths = sub._2.split(";")
         }
+       }
           paths.foreach {
             p =>
               result ++= DataFormater.FormatSubData(Path(p), info._1,info._2,testTime)
           }
-        }
         result.toArray
     }
   def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
@@ -205,12 +204,12 @@ object SQLite {
    */
   private def removeExcess(path: Path)=
     {
-      val pathQuery = latestValues.filter(_.path === path)
+      var pathQuery = latestValues.filter(_.path === path)
       db.withTransaction{implicit session =>
-      var count = pathQuery.length.run
+      var count = db.stream(pathQuery).length
       if (count > historyLength) {
         val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
-        pathQuery.filter(_.timestamp < oldtime).delete
+        db.stream(pathQuery).filter(_.timestamp < oldtime).delete
       }
       }
     }
@@ -224,7 +223,7 @@ object SQLite {
   def startBuffering(path: Path) {
     val pathQuery = buffered.filter(_.path === path)
     db.withTransaction { implicit session =>
-      var len = pathQuery.length.run
+      var len = db.stream(pathQuery).length
       if (len == 0) {
         buffered += (path, 1)
         true
@@ -246,9 +245,10 @@ object SQLite {
   def stopBuffering(path: Path) {
     db withSession { implicit session =>
       val pathQuery = buffered.filter(_.path === path)
-      var len = pathQuery.length.run
+      val str = db.stream(pathQuery)
+      var len = str.length
       if (len > 0) {
-        if (pathQuery.first._2 > 1) {
+        if (str.head._2 > 1) {
           val counts = for {
             c <- pathQuery
           } yield (c.count)
@@ -284,7 +284,7 @@ object SQLite {
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
         //if path is found from latest values it must be Sensor otherwise check if it is an object
-        var count = pathQuery.length.run
+        var count = db.stream(pathQuery).length
         if (count > 0) {
           //path is sensor
           //case class matching
@@ -355,21 +355,23 @@ object SQLite {
         query = query.filter(_.timestamp <= end.get)
       }
        db withTransaction { implicit session =>
+         var str = db.stream(query)
       if (fromStart != None && fromEnd != None) {
         //does not compute
         //can't have query from two different parts in one go
       } else if (fromStart != None) {
-        var amount = Math.max(0, Math.min(query.length.run, fromStart.get))
+        var amount = Math.max(0, Math.min(str.length, fromStart.get))
         query = query.take(amount)
       } else if (fromEnd != None) {
-        var amount = Math.max(0, Math.min(query.length.run, fromEnd.get))
-        query = query.drop(query.length.run - amount)
+        var amount = Math.max(0, Math.min(str.length, fromEnd.get))
+        query = query.drop(str.length - amount)
       }
-      result = Array.ofDim[DBSensor](query.length.run)
+      str = db.stream(query)
+      result = Array.ofDim[DBSensor](str.length)
       query.sortBy(_.timestamp)
       
       var index = 0
-      query foreach {
+      str foreach {
         case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
           result(index) = new DBSensor(dbpath, dbvalue, dbtime)
           index += 1
@@ -403,9 +405,10 @@ object SQLite {
       val objectQuery = for {
         c <- objects if c.parentPath === path
       } yield (c.path)
-      childs = Array.ofDim[DBItem](objectQuery.list.length)
+      var str = db.stream(objectQuery)
+      childs = Array.ofDim[DBItem](str.length)
       var index = 0
-      objectQuery foreach {
+      str foreach {
         case (cpath: Path) =>
           childs(Math.min(index, childs.length - 1)) = DBObject(cpath)
           index += 1
@@ -419,8 +422,8 @@ object SQLite {
    */
   private def hasObject(path: Path)(implicit session: Session): Boolean =
     {
-      var objectQuery = objects.filter(_.path === path)
-      objectQuery.list.length > 0
+      var objectQuery = db.stream(objects.filter(_.path === path))
+      objectQuery.length > 0
     }
 
   /**
@@ -448,7 +451,7 @@ object SQLite {
       // adds ttl amount of seconds to it,
       //and compares to current time
       db withTransaction { implicit session =>
-        val sub = subs.filter(_.ID === id).first
+        val sub = db.stream(subs.filter(_.ID === id)).head
         if (sub._4 > 0) {
 
           // um, are these necessary? (remove these if they are not):
@@ -472,11 +475,11 @@ object SQLite {
    */
   def removeSub(id: Int): Boolean = {
     db withSession { implicit session =>
-      var toBeDeleted = subs.filter(_.ID === id)
-      if(toBeDeleted.length.run > 0) { 
+      var toBeDeleted = db.stream(subs.filter(_.ID === id))
+      if(toBeDeleted.length > 0) { 
 //        println("\nlist:\n "+ toBeDeleted.list+ "\nend") //Debug print
-        if(toBeDeleted.list.head._6 == None) {
-          toBeDeleted.first._2.split(";").foreach { p =>
+        if(toBeDeleted.head._6 == None) {
+          toBeDeleted.head._2.split(";").foreach { p =>
             stopBuffering(Path(p))
           }
         }
@@ -501,17 +504,17 @@ object SQLite {
   def getAllSubs(hasCallBack:Option[Boolean]):Array[DBSub]=
   {
     var res = Array[DBSub]()
-     var all = hasCallBack match{
+     var all = db.stream(hasCallBack match{
      case Some(true) =>
        subs.filter(!_.callback.isEmpty)
      case Some(false) =>
        subs.filter(_.callback.isEmpty)
      case None =>
        subs
-    }
+    })
     db withSession {
       implicit session =>
-      res = Array.ofDim[DBSub](all.length.run)
+      res = Array.ofDim[DBSub](all.length)
       var index = 0
       all foreach{
         elem =>
@@ -534,11 +537,11 @@ object SQLite {
   def getSub(id: Int): Option[DBSub] =
     {
       var res: Option[DBSub] = None
-      val query = subs.filter(_.ID === id)
+      val query = db.stream(subs.filter(_.ID === id))
       db withSession { implicit session =>
-        if (query.list.length > 0) {
+        if (query.length > 0) {
           //creates DBSub object based on saved information
-          var head = query.first
+          var head = query.head
           var sub = new DBSub(Array(), head._4, head._5, head._6, Some(head._3))
           sub.paths = head._2.split(";").map(Path(_))
           sub.id = head._1
@@ -573,7 +576,7 @@ object SQLite {
    * @return the next free id number
    */
   private def getNextId()(implicit session: Session): Int = {
-    var len = subs.list.length
+    var len = db.stream(subs).length
     if (len > 0) {
       //find the element with greatest id value and add 1 to it
       subs.sortBy(_.ID).drop(len - 1).first._1 + 1
