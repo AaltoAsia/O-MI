@@ -6,6 +6,7 @@ import java.net.InetSocketAddress
 import xml._
 import io._
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.ActorLogging
@@ -69,6 +70,7 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor with ActorLogg
   * @param Client actor that handles connection with AgentListener
   */
 
+case class Msg(s: String)
 class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with ActorLogging {
 
    import scala.concurrent.ExecutionContext.Implicits.global
@@ -80,17 +82,22 @@ class GenericAgent(path: Seq[String], client: ActorRef) extends Actor  with Acto
   */
   def receive = {
     case "Run" => run()
+    case Msg(value) =>
+      client ! <Objects>{genODF(path,value)}</Objects>
+      run()
   }
 
 /** Function to loop for getting new values to sensor. 
   * Part of event loop hack. 
   */
   def run() = {
-    if(System.in.available() != 0){
-      val value = StdIn.readLine
-      client ! <Objects>{genODF(path,value)}</Objects>
+    //if(System.in.available() != 0){
+    Future {
+      self ! Msg(StdIn.readLine)
+      //self ! "Run"
     }
-    context.system.scheduler.scheduleOnce(1.seconds, self, "Run")
+    //}
+    //context.system.scheduler.scheduleOnce(1.seconds, self, "Run")
   }
 
 /** Functiong for generating O-DF message
@@ -126,7 +133,7 @@ object GenericMain {
       if(path.head == "Objects")
         path = path.tail
 
-      implicit val timeout = Timeout(5.seconds)
+      implicit val timeout = Timeout(10.seconds)
       implicit val system = ActorSystem("on-generic-agent")
 
       val client = system.actorOf(

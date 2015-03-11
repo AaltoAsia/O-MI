@@ -129,9 +129,10 @@ trait OmiService extends HttpService {
                     } else {
                       var responses = NodeSeq.Empty
                       for (reqId <- oneTimeRead.requestId) {
-                        val data = OMISubscription.OMINoCallbackResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                        val data = OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
                         responses = responses ++ data
                       }
+                      responses
                     }
                   }
 
@@ -148,9 +149,9 @@ trait OmiService extends HttpService {
                 case subscription: Subscription => 
                   log.debug(subscription.toString) 
 
-                  val (id, response) = OMISubscription.setSubscription(subscription)
+                  val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
 
-                  if (subscription.callback.isDefined)
+                  if (subscription.callback.isDefined && subscription.callback.get.length > 3 && id >= 0) // XXX: hack check for valid url :D
                     subscriptionHandler ! NewSubscription(id)
 
                   response
