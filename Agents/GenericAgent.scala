@@ -69,25 +69,14 @@ class GenericAgentClient(remote: InetSocketAddress) extends Actor with ActorLogg
 }
 
 //Agents should have their own config files
-case class Config(path:String)
 case class Start()
 /** A generic agent that read standart input stream and send given valus to AgentListenr via client.
   * @param Path where sensor is.
   * @param Client actor that handles connection with AgentListener
   */
 
-class GenericAgent extends IAgentActor {
+class GenericAgent( path: Seq[String], agentListener: ActorRef)  extends IAgentActor {
 
-  private var path : Seq[String] = Seq.empty[String]
-  var client : ActorRef = self 
-  def connect(seqpath : Seq[String], address : String, port: Int) = {
-    path = seqpath
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val socket = new InetSocketAddress( address,port)
-    implicit val timeout = Timeout(5.seconds)
-    implicit val system = ActorSystem("on-generic-agent")
-    client = system.actorOf( GenericAgentClient.props(socket), "generic-agent-client") 
-  }
   // XXX: infinite event loop hack!
 /** A partial function for reacting received messages.
   * Event loop hack. Better than while(true) if there will be other messages.
@@ -95,14 +84,6 @@ class GenericAgent extends IAgentActor {
   */
   def receive = {
     case Start => run()
-    case Config(path: String) => 
-      val params = path.split(" ")
-      val address = params(0)
-      val port = params(1).toInt
-      val seqpath = params(2).split("/")
-      connect(seqpath,address,port)
-
-
   }
 
 /** Function to loop for getting new values to sensor. 
@@ -111,22 +92,61 @@ class GenericAgent extends IAgentActor {
   def run() = {
     if(System.in.available() != 0){
       val value = StdIn.readLine
-      client ! <Objects>{genODF(path,value)}</Objects>
+      agentListener ! genODF(path,value)
     }
     self ! "Run"
   }
 
 /** Functiong for generating O-DF message
 */
-  def genODF( path: Seq[String], value: String) : Elem ={
-    if(path.length == 1)
-      <InfoItem name={path.head}>
-        <value>{value}</value>
-      </InfoItem>
-    else
-       <Object>
-         <id>{path.head}</id>
-         {genODF(path.tail,value)}
-       </Object>
+  def genODF( path: Seq[String], value: String) : Unit ={
   }
 }
+
+
+trait Bootable {
+  def hasConfig : Boolean 
+  def setConfigPath( path : String): Unit  
+  def isConfigValid : Boolean
+  def getAgentActor : ActorRef
+  /** 
+    * Callback run on microkernel startup.
+    * Create initial actors and messages here.
+    */
+  def startup(): Boolean
+
+  /** 
+    * Callback run on microkernel shutdown.
+    * Shutdown actor systems here.
+    */
+  def shutdown(): Unit
+}
+
+class GenericBoot extends Bootable {
+  private var configPath : String = ""
+  private var configSet : Boolean = false
+  private var agentActor : ActorRef = null
+  override def setConfigPath(path : String ) : Unit = { 
+    configPath = path
+    configSet = true 
+  }
+  override def hasConfig : Boolean = configSet
+  override def isConfigValid : Boolean = {
+    hasConfig && new File(configPath).exists()  
+  }
+
+  override def startup() : Boolean = {
+    if(!hasConfig || !isConfigValid)
+      return false
+
+    val lines = io.Source.fromFile(configPath).getLines().toArray
+    var path = lines.head
+    return true
+
+
+  }
+  override def shutdown() : Unit = {}
+  override def getAgentActor() : ActorRef = agentActor 
+
+}
+
