@@ -11,7 +11,6 @@ $(function() {
 	
 	/* Click events for buttons */
 	$(document).on('click', '#object-button', getObjects);
-	$(document).on('click', '#request-gen', generateRequest);
 	$(document).on('click', '#request-send', sendRequest);
 	$(document).on('click', '#stop', function(){
 		send = false;
@@ -120,44 +119,13 @@ function addInfoItems(parent, id) {
 	});
 }
 
-
-/* Generate the O-DF request */
-function generateRequest(){
-	var operation = $("#icons").find(".selected").attr("alt"); //Get the selected operation from the IconSelect object
-	var ttl = $("#ttl").val(); 
-	var interval = $("#interval").val();
-	var begin = $("#begin").val();
-	var end = $("#end").val();
-	var newest = $("#newest").val();
-	var oldest = $("#oldest").val();
-	var callback = $("#callback").val();
-	var requestId = $("#request-id").val();
-	
-	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
-	
-	var request = omi.getRequest(checkedObjects());
-	
-	console.log("Generated the O-DF request");
-	console.log(request);
-	
-	var formattedXML = formatXml(request);
-    $("#request").html(formattedXML.value); //Update the request textbox on the webpage
-	
-	var width = -($("#request").width() / 4) + 'px';
-	$("#page3").css('left', width);
-}
-
-function checkedObjects() {
-	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-}
-
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
 	// Server URL
 	var server = $("#send-field").val();
 
-    var request = $('#request').text(); //Get the request string
+    var request = $('#editRequest').text(); //Get the request string
 
     ajaxPost(server, request, getSubscribeLocal());
 }
@@ -170,7 +138,6 @@ function getSubscribeLocal(){
 var count = 0;
 
 function ajaxPost(server, request, subscribeLocal){
-	
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -225,14 +192,10 @@ function getSub(){
 /* Do something with the response from the server */
 function printResponse(response){
 	console.log("Got response!");
-	console.log(response);
 	
 	var formattedXML = formatXml(response);
-	console.log(formattedXML);
+	//console.log(formattedXML);
     $("#responseBox").html(formattedXML.value);
-	
-	var width = -($("#responseBox").width() / 4) + 'px';
-	$("#page4").css('left', width);
 }
 
 /* Handle the ajax errors */

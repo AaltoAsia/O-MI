@@ -42,15 +42,16 @@ $(document).on('click', '#prev', function() {
 });
 
 function animatePrev() {
-	if (animating || page === 1) {
+	if (animating || page === 1)
 		return false;
-	}
 
+	
+	
 	count = 0;
 	
-	current_fs = $("#page" + page).parent();
-	previous_fs = $("#page" + (page - 1)).parent().prev();
-	next_fs = $("#page" + (page + 1)).parent();
+	current_fs = $("#page" + page);
+	previous_fs = $("#page" + (page - 1));
+	next_fs = $("#page" + (page + 1));
 	
 	page -= 1; // Update index
 	animating = true;
@@ -59,12 +60,17 @@ function animatePrev() {
 	$("#progressbar li").eq(page).removeClass("active");
 	
 	animating = false;
+	
 	loadPages();
+	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
 }	
 
 function animateNext() {
-	if (animating)
+	if (animating || page === 4)
 		return false;
+	
+	// Animate scrolling
+	$("html, body").animate({ scrollTop: 0 }, "slow");
 	
 	count = 0;
 	animating = true;
@@ -117,7 +123,9 @@ function animateNext() {
 	} */
 	
 	animating = false;
+	
 	loadPages();
+	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
 }
 
 function checkCount(){
