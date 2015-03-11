@@ -1,20 +1,26 @@
 cd Agents/
 (while true; do 
-    free -h | awk '/Mem:/ {print $3}'
-    sleep 2
+    free | awk '/Mem:/ {print $7}'
+    sleep 1
 done
-) | sbt "run localhost 8181 Server/Mem/Used" &
+) | sbt "run localhost 8181 Server/RAM/Available" &
 
-(while true; do 
-    cat /proc/loadavg | awk '{print $1}'
-    sleep 2
+(latestval="0"
+while true; do 
+    newval=`cat /proc/loadavg | awk '{print $3}'`
+    if [[ $newval != $lastval ]]; then
+        echo $newval
+    else
+        sleep 1
+    fi
+    lastval=$newval
 done
-) | sbt "run localhost 8181 Server/CPU/Usage" &
+) | sbt "run localhost 8181 Server/CPU/Usage" 
 
-(while true; do 
-    cat /proc/uptime | awk '{print $1}'
-    sleep 2
-done
-) | sbt "run localhost 8181 Server/Uptime" &
+#(while true; do 
+#    cat /proc/uptime | awk '{print $1}'
+#    sleep 2
+#done
+#) | sbt "run localhost 8181 Server/Uptime" &
 cd ..
 

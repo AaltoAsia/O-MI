@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
- 	<omi:read msgformat="odf">
- 		<omi:requestID>0</omi:requestID>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+ 	<omi:read msgformat="odf" interval="1" callback="http://localhost:5432">
  		<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
- 		<Objects>
+ 			<Objects>
  				<Object>
  					<id>ReadTest</id>
  					<Object>

@@ -13,14 +13,19 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
+import akka.actor._
 
 class CancelTest extends Specification with Before {
+
+  implicit val system = ActorSystem("on-core")
+  val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
   def before = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
+
     SQLite.clearDB()
     val testData = Map(
       Path("Objects/CancelTest/Refrigerator123/PowerConsumption") -> "0.123",
@@ -68,7 +73,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/SimpleXMLCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/SimpleXMLCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel], subHandler).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -78,7 +83,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultipleCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultipleCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel], subHandler).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -88,7 +93,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultiplePathsRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultiplePathsReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel], subHandler).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -98,7 +103,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/ErrorCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/ErrorCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel], subHandler).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -108,7 +113,7 @@ class CancelTest extends Specification with Before {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MixedCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MixedCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel]).head)
+      val resultXML = trim(OMICancel.OMICancelResponse(parserlist.head.asInstanceOf[Cancel], subHandler).head)
 
       resultXML should be equalTo (trim(correctxmlreturn))
       OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]

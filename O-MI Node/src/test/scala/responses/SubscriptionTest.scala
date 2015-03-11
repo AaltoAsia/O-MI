@@ -51,9 +51,20 @@ class SubscriptionTest extends Specification with Before {
       SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
       count = count + 1000
     }
+
+    lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
+    val parserlist = OmiParser.parse(simpletestfile)
+
+    val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
+
+    lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/SubscriptionRequestWithCallback.xml").getLines.mkString("\n")
+    val parserlistcallback = OmiParser.parse(simpletestfilecallback)
+
+    val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[Subscription])
   }
 
   "Subscription response" should {
+    sequential
     "Return with just a requestId when subscribed" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
@@ -61,25 +72,100 @@ class SubscriptionTest extends Specification with Before {
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
 
       val correctxml =
-        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
             <omi:result>
               <omi:return returnCode="200"></omi:return>
-              <omi:requestId>{ requestID }</omi:requestId>
+              <omi:requestId>{requestID}</omi:requestId>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
 
       trim(xmlreturn.head).toString == trim(correctxml).toString
+
     }
 
-    "Return with historical data when no callback was provided" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
+    "Return with no values when interval is larger than time elapsed and no callback given" in {
+
+      val subxml = OMISubscription.OMISubscriptionResponse(0)
+
+      val correctxml = 
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
+          <omi:response>
+            <omi:result>
+              <omi:return returnCode="200"></omi:return>
+                <omi:requestId>0</omi:requestId>
+                  <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+                    <Objects>
+                      <Object>
+                        <id>ReadTest</id>
+                        <Object>
+                          <id>Refrigerator123</id>
+                          <InfoItem name="PowerConsumption">
+                          </InfoItem>
+                        </Object>
+                      </Object>
+                    </Objects>
+                  </omi:msg>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
+      trim(subxml.head).toString == trim(correctxml).toString
+
+    }
+
+    "Return with right values and requestId in subscription generation" in {
+
+      val subxml = OMISubscription.OMISubscriptionResponse(1)
+
+      val correctxml = 
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
+          <omi:response>
+          <omi:result>
+            <omi:return returnCode="200"></omi:return>
+              <omi:requestId>1</omi:requestId>
+                <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+                  <Objects>
+                    <Object>
+                      <id>ReadTest</id>
+                      <Object>
+                        <id>Refrigerator123</id>
+                        <InfoItem name="PowerConsumption">
+                          <value dateTime="1970-01-17T12:56:15.723">0.123</value>
+                        </InfoItem>
+                      </Object>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+          </omi:result>
+        </omi:response>
+      </omi:omiEnvelope>
+
+      trim(subxml.head).toString == trim(correctxml).toString
+
+    }
+
+    "Return error code when asked for nonexisting infoitem" in {
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/BuggyRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
-//      println(parserlist) //Debug print
 
-      1 == 1
+      val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
+
+      val correctxml = 
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
+          <omi:response>
+            <omi:result>
+              <omi:return returnCode="400" description="No InfoItems found in the paths"></omi:return>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
+        println(xmlreturn)
+
+      (requestID, trim(xmlreturn.head).toString) == (-1, trim(correctxml).toString)
     }
+
   }
 
 }

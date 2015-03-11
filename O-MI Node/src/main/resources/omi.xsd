@@ -46,7 +46,7 @@
 	</xs:annotation>
 	<xs:sequence>
 	    <xs:element name="nodeList" type="nodesType" minOccurs="0"/>
-	    <xs:element name="requestID" minOccurs="0" maxOccurs="unbounded">
+	    <xs:element name="requestId" minOccurs="0" maxOccurs="unbounded">
 		<xs:annotation>
 		    <xs:documentation>"requestId" is only included when
 			"polling" for data that corresponds to an earlier subscription that returned

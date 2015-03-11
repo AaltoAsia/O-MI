@@ -2,19 +2,22 @@ package http
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingAdapter
+import akka.pattern.ask
+
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
+
 import responses._
-import akka.pattern.ask
-import scala.concurrent.duration._
-import scala.concurrent._
 import parsing._
 import parsing.Types._
-import xml._
 import sensordata.SensorData
+import database.SQLite
+
 import scala.concurrent.duration._
+import scala.concurrent._
+import xml._
 
 class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
@@ -113,30 +116,62 @@ trait OmiService extends HttpService {
             respondWithMediaType(`text/xml`) {
               
               var returnStatus = 200
-              //TODO: Currently sending multiple omi:omiEnvelope
+
+              //FIXME: Currently sending multiple omi:omiEnvelope
               val result = requests.map {
+
                 case oneTimeRead: OneTimeRead =>
-                  log.debug("read")
-                  log.debug("Begin: " + oneTimeRead.begin + ", End: " + oneTimeRead.end)
-                  val response = Future{ Read.OMIReadResponse(oneTimeRead) }
-                  val ttl = oneTimeRead.ttl.toDouble
-                  Await.result(response, (if(ttl != 0) oneTimeRead.ttl.toDouble  seconds else Duration.Inf)).asInstanceOf[NodeSeq]
+                  log.debug(oneTimeRead.toString)
+
+                  val response = Future{
+                    if (oneTimeRead.requestId.isEmpty) {
+                      Read.OMIReadResponse(oneTimeRead)
+                    } else {
+                      var responses = NodeSeq.Empty
+                      for (reqId <- oneTimeRead.requestId) {
+                        val data = OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                        responses = responses ++ data
+                      }
+                      responses
+                    }
+                  }
+
+                  val ttl = oneTimeRead.ttl.toDouble // FIXME: can fail, should be done in parsers!
+                  val timeout = if (ttl > 0) ttl seconds else Duration.Inf
+
+                  Await.result(response, timeout)
+
                 case write: Write => 
-                  log.debug("write") 
+                  log.debug(write.toString) 
                   ErrorResponse.notImplemented
                   returnStatus = 501
+
                 case subscription: Subscription => 
-                  log.debug("sub") 
-                  ErrorResponse.notImplemented
-                  returnStatus = 501
+                  log.debug(subscription.toString) 
+
+                  val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
+
+                  if (subscription.callback.isDefined && subscription.callback.get.length > 3 && id >= 0) // XXX: hack check for valid url :D
+                    subscriptionHandler ! NewSubscription(id)
+
+                  response
+
                 case cancel: Cancel =>
-                  log.debug("cancel")
-                  ErrorResponse.notImplemented
-                  returnStatus = 501
+                  log.debug(cancel.toString)
+                  val response = Future{ OMICancel.OMICancelResponse(cancel, subscriptionHandler) }
+
+                  val ttl = cancel.ttl.toDouble // FIXME: can fail, should be done in parsers!
+                  val timeout = if (ttl > 0) ttl seconds else Duration.Inf
+
+                  Await.result(response, timeout)
+
                 case _ => log.warning("Unknown request")
                   returnStatus = 400
+
               }.mkString("\n")
+
               complete(returnStatus, result)
+
             }
           } else {
             //Errors found

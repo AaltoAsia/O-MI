@@ -194,6 +194,8 @@ object SQLite {
         }
         result.toArray
     }
+  def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
+
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
@@ -335,11 +337,11 @@ object SQLite {
    *
    * @param path path as Path object
    * @param start optional start Timestamp
-   * @param start optional end Timestamp
+   * @param end optional end Timestamp
    * @param fromStart number of values to be returned from start
    * @param fromEnd number of values to be returned from end
    *
-   * @param return Array of DBSensors
+   * @return Array of DBSensors
    */
 
   def getNBetween(path: Path, start: Option[Timestamp], end: Option[Timestamp], fromStart: Option[Int], fromEnd: Option[Int]): Array[DBSensor] = {
@@ -438,7 +440,7 @@ object SQLite {
    *
    * @param id number that was generated during saving
    *
-   * @param return returns boolean whether subscription with given id has expired
+   * @return returns boolean whether subscription with given id has expired
    */
   def isExpired(id: Int): Boolean =
     {
@@ -448,10 +450,15 @@ object SQLite {
       db withTransaction { implicit session =>
         val sub = subs.filter(_.ID === id).first
         if (sub._4 > 0) {
-          var cal = java.util.Calendar.getInstance()
-          cal.setTimeInMillis(sub._3.getTime())
-          cal.add(java.util.Calendar.SECOND, sub._4)
-          var endtime = new java.sql.Timestamp(cal.getTime().getTime())
+
+          // um, are these necessary? (remove these if they are not):
+          //var cal = java.util.Calendar.getInstance()
+          //cal.setTimeInMillis(sub._3.getTime())
+          //cal.add(java.util.Calendar.SECOND, sub._4)
+          //var endtime = new java.sql.Timestamp(cal.getTime().getTime())
+
+          val endtime = new Timestamp(sub._3.getTime + (sub._4 * 1000).toLong)
+
           new java.sql.Timestamp(new java.util.Date().getTime).after(endtime)
         } else {
           true
@@ -479,7 +486,7 @@ object SQLite {
         return false
       }
     }
-    true
+    false
   }
   /**
    * getAllSubs is used to search the database for subscription information
@@ -522,7 +529,7 @@ object SQLite {
    * Returns None if no subscription data matches the id
    * @param id number that was generated during saving
    *
-   * @param return returns Some(BDSub) if found element with given id None otherwise
+   * @return returns Some(BDSub) if found element with given id None otherwise
    */
   def getSub(id: Int): Option[DBSub] =
     {
@@ -549,21 +556,21 @@ object SQLite {
    *
    * @param sub DBSub object to be stored
    *
-   * @param return id number that is used for querying the elements
+   * @return id number that is used for querying the elements
    */
   def saveSub(sub: DBSub): Int =
     {
       db withSession { implicit session =>
         val id = getNextId()
         sub.id = id
-        subs += (sub.id, sub.paths.mkString(";"), sub.startTime.get, sub.ttl, sub.interval, sub.callback)
+        subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
         //returns the id for reference
         id
       }
     }
   /**
    * Private helper method to find next free id number
-   * @param return the next free id number
+   * @return the next free id number
    */
   private def getNextId()(implicit session: Session): Int = {
     var len = subs.list.length

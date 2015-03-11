@@ -41,23 +41,23 @@ class TypesTest extends Specification {
   }
 
   def e2 = {
-    new OneTimeRead("", Seq()).isInstanceOf[ParseMsg]
+    new OneTimeRead(10, Seq()).isInstanceOf[ParseMsg]
   }
 
   def e3 = {
-    new Write("", Seq()).isInstanceOf[ParseMsg]
+    new Write(10, Seq()).isInstanceOf[ParseMsg]
   }
 
   def e4 = {
-    new Subscription("", "", Seq()).isInstanceOf[ParseMsg]
+    new Subscription(0, 0, Seq()).isInstanceOf[ParseMsg]
   }
 
   def e5 = {
-    new Result("", "", None).isInstanceOf[ParseMsg]
+    new Result("200", "", None).isInstanceOf[ParseMsg]
   }
 
   def e6 = {
-    new Cancel("", Seq()).isInstanceOf[ParseMsg]
+    new Cancel(10, Seq()).isInstanceOf[ParseMsg]
   }
   
   def e10 = {

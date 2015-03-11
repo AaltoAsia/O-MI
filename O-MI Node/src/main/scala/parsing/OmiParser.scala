@@ -73,11 +73,21 @@ object OmiParser extends Parser[ParseMsg] {
       case el: Elem => el
     }.head
 
-    val ttl = (root \ "@ttl").text
+    val ttl = (root \ "@ttl").text.toDouble
 
     parseNode(request, ttl)
     
   }
+
+  private def isInteger: String => Boolean = _.forall(_.isDigit)
+  private def isDouble(str: String): Boolean =
+    try {
+      str.toDouble // XXX: Let's hope that some compiler optimization doesn't cut this line out
+                   // because the value is not used anywhere
+      true
+    } catch {
+      case _: Throwable => false
+    }
 
   /**
    * Private method that is called inside parse method. This method checks which O-MI message
@@ -87,7 +97,7 @@ object OmiParser extends Parser[ParseMsg] {
    *  @param ttl of the omiEnvelope as string. ttl is in seconds.
    *
    */
-  private def parseNode(node: Node, ttl: String): Seq[ParseMsg] = {
+  private def parseNode(node: Node, ttl: Double): Seq[ParseMsg] = {
     node.label match {
       /*
         Write request 
@@ -133,7 +143,9 @@ object OmiParser extends Parser[ParseMsg] {
       case "read" => {
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
-          "interval" -> getParameter(node, "interval", true),
+          "interval" -> getParameter(node, "interval", true,
+              isDouble
+            ),
           "begin" -> getParameter(node, "begin", true),
           "end" -> getParameter(node, "end", true),
           "newest" -> getParameter(node, "newest", true),
@@ -141,7 +153,7 @@ object OmiParser extends Parser[ParseMsg] {
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
           "msg" -> getChild(node, "msg"),
-          "requestId" -> getChild(node, "requestID", true, true)
+          "requestId" -> getChild(node, "requestId", true, true)
         )
 
         if (subnodes("msg").isRight){
@@ -192,7 +204,7 @@ object OmiParser extends Parser[ParseMsg] {
               }))
           } else {
             Seq(Subscription(ttl,
-              parameters("interval").right.get,
+              parameters("interval").right.get.toDouble,
               right.map(_.right.get),
               begin,
               end,

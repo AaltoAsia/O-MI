@@ -1,12 +1,9 @@
 /* 
 * Write the O-DF message (XML) based on form input
 * @param {Array} Array of objects, that have their 
-* @param {String} the O-DF operation (read, write, cancel, subscribe)
-* @param {Number} Time to live 
-* @param {Number} Message interval
-* @param {function} Callback function (not used atm)
+* @param {Object} OMI object 
 */
-function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, callback){
+function writeXML(items, omi){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	writer.formatting = 'indented';
@@ -21,10 +18,26 @@ function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, c
 	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
 	writer.writeAttributeString('version', '1.0');
 	
-	if(ttl) writer.writeAttributeString('ttl', ttl);
+	if(omi.ttl) writer.writeAttributeString('ttl', omi.ttl);
 	
 	//(second line)
-	writer.writeStartElement('omi:'+ operation);
+	writer.writeStartElement('omi:'+ omi.operation);
+	
+	if(omi.operation === 'read'){
+		writeRead(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
+	} else if (omi.operation === 'cancel'){
+		writeCancel(writer, omi.requestId);
+	}
+	
+	writer.writeEndElement();
+    writer.writeEndDocument();
+
+    var request = writer.flush();
+
+    return request;
+}
+
+function writeRead(writer, items, interval, begin, end, newest, oldest, callback){
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
 	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
@@ -78,13 +91,6 @@ function writeXML(items, operation, ttl, interval, begin, end, newest, oldest, c
 	for(var i = 0; i < objects.length; i++){
 		writeObject(objects[i], writer);
 	}
-	
-	writer.writeEndElement();
-    writer.writeEndDocument();
-
-    var request = writer.flush();
-
-    return request;
 }
 
 function addChildren(object, items){
@@ -127,4 +133,93 @@ function writeObject(object, writer){
 		writeObject(object.subObjects[i], writer);
 	}
 	writer.writeEndElement();
+}
+
+function writeCancel(writer, requestId) {
+	writer.writeStartElement('omi:requestId');
+	writer.writeString(requestId);
+	writer.writeEndElement();
+}
+
+function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, oldest, callback){
+	//Using the same format as in demo
+	var writer = new XMLWriter('UTF-8');
+	writer.formatting = 'indented';
+    writer.indentChar = ' ';
+    writer.indentation = 2;
+	
+	writer.writeStartDocument();
+	//(first line)
+	writer.writeStartElement('omi:omiEnvelope');
+	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
+	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
+	writer.writeAttributeString('version', '1.0');
+	
+	if(ttl) writer.writeAttributeString('ttl', ttl);
+	
+	//(second line)
+	writer.writeStartElement('omi:read');
+	writer.writeAttributeString('msgformat', 'omi.xsd');
+	
+	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
+	
+	if(begin){
+		console.log(new Date(begin).getTime());
+		if(new Date(begin).getTime() > 0){
+			writer.writeAttributeString('begin', begin);
+		}
+	}
+	if(end){
+		console.log(new Date(end).getTime());
+		if(new Date(end).getTime() > 0){
+			writer.writeAttributeString('end', end);
+		}
+	}
+	console.log("Newest: " + newest);
+	console.log("Oldest: " + oldest);
+	if(newest){
+		if($.isNumeric(newest)){
+			writer.writeAttributeString('newest', newest);
+		}
+	}
+	if(oldest){
+		if($.isNumeric(oldest)){
+			writer.writeAttributeString('oldest', oldest);
+		}
+	}
+	
+	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
+	
+	//(third line)
+	writer.writeStartElement('omi:requestId');
+	writer.writeString(requestId);
+	writer.writeEndElement();
+	writer.writeStartElement('omi:msg');
+	writer.writeAttributeString( 'xmlns', 'omi.xsd');
+	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
+	writer.writeStartElement('Objects');
+	//Payload
+	var ids = [];
+	var objects = [];
+	
+	for(var i = 0; i < items.length; i++){
+		var cl = $(items[i]).attr("class");
+		
+		if(cl === "checkbox"){
+			var obj = new OdfObject(items[i].id);
+			addChildren(obj, items);
+			objects.push(obj);
+		}
+	}
+	
+	for(var i = 0; i < objects.length; i++){
+		writeObject(objects[i], writer);
+	}
+	writer.writeEndElement();
+    writer.writeEndDocument();
+
+    var request = writer.flush();
+
+    return request;
 }

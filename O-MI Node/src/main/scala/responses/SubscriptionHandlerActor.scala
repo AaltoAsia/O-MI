@@ -8,9 +8,10 @@ import akka.pattern.ask
 import akka.actor.ActorLogging
 
 import responses._
+import database.SQLite._
 import database._
-import parsing.Types.{Subscription, Path}
-import OMISubscription.{getPaths, OMISubscriptionResponse}
+import parsing.Types.{SubLike, Path}
+import OMISubscription.{OMISubscriptionResponse}
 import CallbackHandlers._
 
 import scala.collection.mutable.PriorityQueue
@@ -26,14 +27,15 @@ import scala.concurrent.duration._
 import scala.concurrent._
 
 // MESSAGES
-case object Handle
-case class NewSubscription(id: Int, sub: Subscription)
+case object HandleIntervals
+case class NewSubscription(id: Int)
+case class RemoveSubscription(id: Int)
 
 
 
 
 /**
- * TODO: Under development
+ * Handles interval counting and event checking for subscriptions
  */
 class SubscriptionHandlerActor extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
@@ -41,66 +43,132 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5.seconds)
 
-
-
-  // FIXME: why not contain also the whole Subscription
-  type TimedSub = (Timestamp,Int) 
-
-  type EventSub = (Subscription,Int)
-
-
-  object SubscriptionOrdering extends Ordering[TimedSub] {
-    def compare(a: TimedSub, b: TimedSub) = a._1.getTime compare b._1.getTime
+  sealed trait SavedSub {
+    val sub: DBSub
+    val id: Int
   }
 
-  private var intervalSubs: PriorityQueue[TimedSub] =
-    PriorityQueue()(SubscriptionOrdering)
+  case class TimedSub(sub: DBSub, id: Int, nextRunTime: Timestamp)
+    extends SavedSub
 
-  private var eventSubs: Map[Path, EventSub] = HashMap()
+  case class EventSub(sub: DBSub, id: Int)
+    extends SavedSub
+
+
+  object TimedSubOrdering extends Ordering[TimedSub] {
+    def compare(a: TimedSub, b: TimedSub) =
+      a.nextRunTime.getTime compare b.nextRunTime.getTime
+  }
+
+
+
+   private var intervalSubs: PriorityQueue[TimedSub] = {
+     PriorityQueue()(TimedSubOrdering.reverse)
+   }
+   def getIntervalSubs = intervalSubs
+
+   //var eventSubs: Map[Path, EventSub] = HashMap()
+   private var eventSubs: Map[String, EventSub] = HashMap()
+   def getEventSubs = eventSubs
 
   // Attach to db events
   SQLite.attachSetHook(this.checkEventSubs _)
 
-  // TODO: load subscriptions at startup
+
+  // load subscriptions at startup
+  override def preStart() = {
+    val subs = SQLite.getAllSubs(Some(true))
+    for( sub <- subs ) loadSub(sub.id , sub)
+  
+  }
 
 
 
+
+  private def loadSub(id: Int): Unit = {
+    getSub(id) match {
+      case Some(dbsub) =>
+        loadSub(id, dbsub)
+      case None =>
+        log.error(s"Tried to load nonexistent subscription: $id")
+    }
+  }
+  private def loadSub(id: Int, dbsub: DBSub): Unit = { 
+    log.debug(s"Adding sub: $id")
+
+    require(dbsub.callback.isDefined, "SubscriptionHandlerActor is not for buffered messages")
+
+    if (dbsub.isIntervalBased){
+      intervalSubs += TimedSub(
+          dbsub,
+          id,
+          new Timestamp(currentTimeMillis())
+        )
+
+      handleIntervals()
+      log.debug(s"Added sub as TimedSub: $id")
+
+    } else if (dbsub.isEventBased){
+
+      for (path <- dbsub.paths)
+        eventSubs += path.toString -> EventSub(dbsub, id)
+
+      log.debug(s"Added sub as EventSub: $id")
+    }
+
+  }
+
+  /**
+   * @return true on success
+   */
+  private def removeSub(id: Int): Boolean = {
+    getSub(id) match {
+      case Some(dbsub) => removeSub(dbsub)
+      case None => false
+    }
+  }
+  private def removeSub(sub: DBSub): Boolean = {
+    if (sub.isEventBased) {
+      sub.paths.foreach{ path =>
+        eventSubs -= path.toString
+      }
+    } else { 
+      //remove from intervalSubs
+      intervalSubs = intervalSubs.filterNot( sub.id == _.id ) 
+    }
+    SQLite.removeSub(sub.id)
+  }
 
   override def receive = { 
 
-    case NewSubscription(requestId, subscription) => {
-      //val (requestId, xmlanswer) = setSubscription(subscription)
-      //sender() ! xmlanswer
-      //// maybe do these in OmiService
+    case HandleIntervals => handleIntervals()
 
-      if (subscription.hasInterval){
-        intervalSubs += ((new Timestamp(currentTimeMillis()), requestId))
-        handleIntervals()
+    case NewSubscription(requestId) => loadSub(requestId)
 
-      }else if(subscription.isEventBased){
-        for (path <- getPaths(subscription.sensors))
-          eventSubs += path -> (subscription, requestId)
-      } 
-    }
-
-    case Handle => handleIntervals()
+    case RemoveSubscription(requestId) => sender() ! removeSub(requestId)
   }
 
 
   def checkEventSubs(paths: Seq[Path]): Unit = {
 
     for (path <- paths) {
-      eventSubs.get(path) match {
+      eventSubs.get(path.toString) match {
 
-        case Some((subscription, id)) => 
+        case Some(EventSub(subscription, id)) => 
 
+          if (hasTTLEnded(subscription, currentTimeMillis())) {
+            removeSub(subscription)
+          }
+
+          // Callback stuff
           def failed(reason: String) =
             log.warning(s"Callback failed; subscription id:$id  reason: $reason")
 
-          val addr = subscription.callback.get
+          val addr = subscription.callback // FIXME if no callback
+          if(addr == None) return
           val callbackXml = OMISubscriptionResponse(id)
 
-          val call = CallbackHandlers.sendCallback(addr, callbackXml)
+          val call = CallbackHandlers.sendCallback(addr.get, callbackXml)
 
           call onComplete {
             
@@ -120,63 +188,97 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
 
 
+  private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
+    val removeTime = sub.startTime.getTime + sub.ttlToMillis
+
+    if (removeTime <= timeMillis && sub.ttl != -1) {
+      log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${timeMillis-removeTime}ms")
+      true
+    } else
+      false
+  }
+
+
   def handleIntervals(): Unit = {
-    val activeSubs = intervalSubs.takeWhile(_._1.getTime <= currentTimeMillis())
+    // failsafe
+    if (intervalSubs.isEmpty) {
+      log.error("handleIntervals shouldn't be called when there is no intervalSubs!")
+      return
+    }
 
-    for ( (time, id) <- activeSubs) {
-      Future{
-        //val dbSensors = SQLite.getSubData(id) right now subscription omi
-        //generation uses the paths in the dbsub, not sure if getSubData-function
-        //is needed as this looper loops through all subs in the interval already?
-        //Also with the paths its easier to construct the OMI hierarchy
+    val checkTime = currentTimeMillis()
 
-        val sub = SQLite.getSub(id).get 
-        val omiMsg = generateOmi(id)
-        val callbackAddr = sub.callback.get
-        val interval = sub.interval
+    // FIXME: only dequeue and dequeueAll returns elements in priority order
+    while (intervalSubs.headOption.map(_.nextRunTime.getTime <= checkTime).getOrElse(false)){
+
+      val TimedSub(sub, id, time) = intervalSubs.dequeue()
+
+      log.debug(s"handleIntervals: delay:${checkTime-time.getTime}ms currentTime:$checkTime targetTime:${time.getTime} id:$id")
 
 
+      // Check if ttl has ended, comparing to original check time
+      if (hasTTLEnded(sub, checkTime)) {
 
-        // Send, handle errors
+        SQLite.removeSub(id)
 
-        def failed(reason: String) =
-            log.warning(
-              s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
-            )
+      } else {
+        val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt
 
-        val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
+        val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * (numOfCalls+1))
+        //val newTime = new Timestamp(time.getTime + sub.intervalToMillis) // OLD VERSION
 
-        call onComplete {
+        intervalSubs += TimedSub(sub, id, newTime)
 
-          case Success(CallbackSuccess) => 
-            log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
+        Future{ // TODO: Maybe move this to wrap only the generation and sending
+                // because they are the only things that can take some time
 
-          case Success(fail: CallbackFailure) =>
-            failed(fail.toString)
-            
-          case Failure(e) =>
-            failed(e.getMessage)
+          log.debug(s"generateOmi for id:$id")
+          val omiMsg = generateOmi(id)
+          val callbackAddr = sub.callback.get 
+          val interval = sub.interval
+
+
+
+          // Send, handle errors
+
+          def failed(reason: String) =
+              log.warning(
+                s"Callback failed; subscription id:$id interval:$interval  reason: $reason"
+              )
+
+          log.debug(s"Sending callback $id to $callbackAddr...")
+          val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
+
+          call onComplete {
+
+            case Success(CallbackSuccess) => 
+              log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
+
+            case Success(fail: CallbackFailure) =>
+              failed(fail.toString)
+              
+            case Failure(e) =>
+              failed(e.getMessage)
+          }
+        }.onFailure{case err: Throwable =>
+          log.error(s"Error in callback handling of sub $id: $err")
         }
-
-
-
-        // New time
-        time.setTime(time.getTime + sub.interval)
-        intervalSubs += Tuple2( time , id)
       }
     }
 
     // Schedule for next
     intervalSubs.headOption map { next =>
-      val nextRun = next._1.getTime - currentTimeMillis()
-      system.scheduler.scheduleOnce(nextRun.milliseconds, self, Handle)
-      log.info(s"Next subcription handling scheluded to $nextRun.")
+
+      val nextRun = next.nextRunTime.getTime - currentTimeMillis()
+      system.scheduler.scheduleOnce(nextRun.milliseconds, self, HandleIntervals)
+
+      log.debug(s"Next subcription handling scheluded after ${nextRun}ms")
     }
   }
 
 
 
-  def generateOmi(id: Int): xml.Node = {
+  def generateOmi(id: Int): xml.NodeSeq = {
     return OMISubscriptionResponse(id)
   }
 }
