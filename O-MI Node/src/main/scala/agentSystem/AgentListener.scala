@@ -1,4 +1,4 @@
-package agentSystemInterface
+package agentSystem
 
 import akka.actor.{ Actor, ActorRef, Props  }
 import akka.io.{ IO, Tcp  }

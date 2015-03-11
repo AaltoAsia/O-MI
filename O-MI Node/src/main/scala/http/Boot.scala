@@ -10,7 +10,7 @@ import java.util.Date
 import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
 
-import agentSystemInterface.AgentListener
+import agentSystem.{AgentListener, AgentLoader}
 import responses._
 import parsing.Types._
 import parsing.Types.Path._
@@ -51,6 +51,7 @@ object Starter {
     // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
     val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
+    val agentLoader = system.actorOf(AgentLoader.props(sensorDataListener) , "agent-loader")
 
     implicit val timeout = Timeout(5.seconds)
 

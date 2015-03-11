@@ -1,55 +1,36 @@
-package agentLoader
+package agentSystem
 
 import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
 import akka.io.{ IO, Tcp }
+import akka.event.{Logging, LoggingAdapter}
 import akka.util.ByteString
-import java.net.InetSocketAddress
+import akka.util.Timeout
+import akka.pattern.ask
 import xml._
 import io._
 import scala.concurrent.duration._
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.actor.ActorLogging
-import java.net.URLClassLoader
-import java.io.File
-import agents._
 import scala.collection.mutable.Map
-
-import java.lang.Boolean.getBoolean
-import java.util.jar.JarFile
 import scala.collection.immutable
 import scala.collection.JavaConverters._
+import java.net.InetSocketAddress
+import java.net.URLClassLoader
+import java.lang.Boolean.getBoolean
+import java.util.jar.JarFile
+import java.io.File
 
-trait Bootable {
-  def hasConfig : Boolean 
-  def setConfigPath( path : String): Unit  
-  /**
-   * Callback run on microkernel startup.
-   * Create initial actors and messages here.
-   */
-  def startup(): Unit
-
-  /**
-   * Callback run on microkernel shutdown.
-   * Shutdown actor systems here.
-   */
-  def shutdown(): Unit
-
-  def getAgentActor : ActorRef
+object AgentLoader{
+  def props(agentListener: ActorRef) : Props = Props(new AgentLoader(agentListener))
 }
-
-case class GivehMeODF(msg: String)
-case class Start()
 case class ConfigUpdated()
-class AgentLoaderActor extends Actor with ActorLogging {
-
+class AgentLoader(agentListener: ActorRef)  extends Actor with ActorLogging {
   protected var bootables : Map[String,Bootable] = Map.empty 
   private val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
 
+  self ! Start
   def receive = {
-    case Start =>
-    case ConfigUpdated =>
+    case Start => loadAndStart
+    case ConfigUpdated => loadAndStart
   }
 
   def loadAndStart = {
@@ -60,10 +41,13 @@ class AgentLoaderActor extends Actor with ActorLogging {
     }
 
     for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
-   //   log("Starting up " + bootable.getClass.getName)
-      b.setConfigPath(p)
-      b.startup()
-      bootables += Tuple2(c, b)
+      log.info("Starting up " + b.getClass.getName)
+      if(b.startup(context.system, agentListener, p)){
+        log.info("Successfully started: "+ b.getClass.getName)
+        bootables += Tuple2(c, b)
+      } else {
+        log.warning("Failed to start: "+ b.getClass.getName)
+      } 
     }
 
     addShutdownHook( toBeBooted.map{ case ( c: String, p:String, b: Bootable ) => b}.to[immutable.Seq] )
@@ -77,11 +61,11 @@ class AgentLoaderActor extends Actor with ActorLogging {
       if (deploy.exists) {
         loadDeployJars(deploy)
       } else {
-   //     log("[warning] No deploy dir found at " + deploy)
+        log.warning("No deploy dir found at " + deploy)
         Thread.currentThread.getContextClassLoader
       }
     } else {
-   //   log("[warning] Akka home is not defined")
+      log.warning("Akka home is not defined")
       Thread.currentThread.getContextClassLoader
     }
   }
@@ -105,19 +89,19 @@ class AgentLoaderActor extends Actor with ActorLogging {
   private def addShutdownHook(bootables: immutable.Seq[Bootable]): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run = {
-        //log("")
-        //log("Shutting down Akka...")
+        log.warning("Shutting down Akka...")
 
         for (bootable ← bootables) {
-          //log("Shutting down " + bootable.getClass.getName)
+          log.info("Shutting down " + bootable.getClass.getName)
           bootable.shutdown()
         }
 
-        //log("Successfully shut down Akka")
+        log.info("Successfully shut down Akka")
       }
     }))
   }
 
-  private def getClassnamesWithConfigPath : Array[(String,String)]= ???
+  //TODO: handle config
+  private def getClassnamesWithConfigPath : Array[(String,String)]= {Array.empty}
 
 }
