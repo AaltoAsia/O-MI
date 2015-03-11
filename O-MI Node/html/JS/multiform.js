@@ -19,9 +19,10 @@ $(document).on('click', '#next1', function(){
 /* Event handler for the next button on the 2nd page */
 $(document).on('click', '#next2', function(){
 	if(!page2Verified()){
-		alert("Please specify TTL (Time to live) and Interval as integers");
+		alert("Please specify TTL (Time to live) as integer");
 		return;
-	} 
+	}
+	$("#request").html("");
 	animateNext(this);
 });
 
@@ -30,7 +31,8 @@ $(document).on('click', '#next3', function(){
 	if(!page3Verified()){
 		alert("Please generate the request");
 		return;
-	} 
+	}
+	$("#responseBox").html("");
 	animateNext(this);
 });
 

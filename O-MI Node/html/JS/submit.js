@@ -4,6 +4,10 @@ var iconSelect;
 /* Url to get the objects from */
 var objectUrl;
 
+var omi;
+var iconValue;
+var send = false;
+
 $(function() {
 	//IconSelect settings
 	iconSelect = new IconSelect("operation-select");
@@ -16,14 +20,43 @@ $(function() {
 	
 	iconSelect.refresh(icons);
 
+	loadOptions();
 
 	/* Click events for buttons */
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-gen', generateRequest);
 	$(document).on('click', '#request-send', sendRequest);
-
+	$(document).on('click', '#stop', function(){
+		send = false;
+	});
+	$(document).on('click', '#poll', function(){
+		send = true;
+		if(omi){
+			if(omi.operation === "read" && getSubscribeLocal()){
+				getSub();
+			}
+		}
+	});
+	
+	$(document).on('click', '#prev4', function(){
+		send = false;
+	});
+	
+	for(var i = 0; i < iconSelect.getIcons().length; i++){
+		$(iconSelect.getIcons())[i].element.onclick = function(){
+			iconSelect.setSelectedIndex(this.childNodes[0].getAttribute('icon-index'));
+			loadOptions();
+		};
+	}
+	
 	$("#url-field").val('http://' + window.location.host + "/Objects");
 
+/* Load form options */
+function loadOptions() {
+	iconValue = iconSelect.getSelectedValue();
+	$("#options").empty();
+	$("#options").load("forms/" + iconValue + ".html"); 
+}
 	
 /* Get the objects through ajax get */
 function getObjects() {
@@ -46,7 +79,7 @@ function ajaxGet(indent, url, listId){
 			displayObjects(data, indent, url, listId);
 		},
 		error: function(a, b, c){
-			console.log("Error accessing data discovery");
+			alert("Error accessing data discovery");
 		}
     });
 }
@@ -55,7 +88,7 @@ function ajaxGet(indent, url, listId){
 * @param {XML Object} the received XML data
 */
 function displayObjects(data, indent, url, listId) {
-	console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
+	//console.log("Got the Objects as XML: \n" + new XMLSerializer().serializeToString(data));
 
 	// Basic objects
 	if(indent === 0){
@@ -77,7 +110,7 @@ function displayObjects(data, indent, url, listId) {
 		});
 	} else {
 		// Subobjects/Infoitems
-		var margin = indent * 20 + "px";
+		var margin = "20px";
 		
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
@@ -95,13 +128,13 @@ function displayObjects(data, indent, url, listId) {
 				
 				$("#" + listId + ":last-child").css({ marginLeft:margin });
 			});
-			addInfoItems(this, id, indent + 1);
+			addInfoItems(this, id, indent);
 		});
 	}
 }
 
-function addInfoItems(parent, id, indent) {
-	var margin = indent * 20 + "px";
+function addInfoItems(parent, id) {
+	var margin = "20px";
 
 	$(parent).find("InfoItem").each(function(){
 		var name = $(this).attr('name');
@@ -116,139 +149,36 @@ function addInfoItems(parent, id, indent) {
 	});
 }
 
+
 /* Generate the O-DF request */
 function generateRequest(){
+	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
 	var end = $("#end").val();
-	var operation = iconSelect.getSelectedValue(); //Get the selected operation from the IconSelect object
-	var selectedObjects = $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
-	var request = writeXML(selectedObjects, operation, ttl, interval, begin, end);
+	var newest = $("#newest").val();
+	var oldest = $("#oldest").val();
+	var callback = $("#callback").val();
+	var requestId = $("#request-id").val();
+	
+	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
+	
+	var request = omi.getRequest(checkedObjects());
 	
 	console.log("Generated the O-DF request");
 	console.log(request);
 	
 	var formattedXML = formatXml(request);
     $("#request").html(formattedXML.value); //Update the request textbox on the webpage
+	
+	var width = -($("#request").width() / 4) + 'px';
+	$("#page3").css('left', width);
 }
 
-/* 
-* Write the O-DF message (XML) based on form input
-* @param {Array} Array of objects, that have their 
-* @param {String} the O-DF operation (read, write, cancel, subscribe)
-* @param {Number} Time to live 
-* @param {Number} Message interval
-* @param {function} Callback function (not used atm)
-*/
-function writeXML(items, operation, ttl, interval, begin, end, callback){
-	//Using the same format as in demo
-	var writer = new XMLWriter('UTF-8');
-	writer.formatting = 'indented';
-    writer.indentChar = ' ';
-    writer.indentation = 2;
-	
-	writer.writeStartDocument();
-	//(first line)
-	writer.writeStartElement('omi:omiEnvelope');
-	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
-	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
-	writer.writeAttributeString('version', '1.0');
-	
-	if(ttl) writer.writeAttributeString('ttl', ttl);
-	
-	//(second line)
-	writer.writeStartElement('omi:'+ operation);
-	writer.writeAttributeString('msgformat', 'omi.xsd');
-	
-	if(interval > 0) writer.writeAttributeString('interval', interval);
-	
-	if(begin && end){
-		console.log(new Date(begin).getTime());
-		console.log(new Date(end).getTime());
-		if(new Date(begin).getTime() > 0 && new Date(end).getTime() > 0){
-			writer.writeAttributeString('begin', begin);
-			writer.writeAttributeString('end', end);
-		}
-	}
-	
-	if(callback) writer.writeAttributeString('callback', callback);
-	
-	//(third line)
-	writer.writeStartElement('omi:msg');
-	writer.writeAttributeString( 'xmlns', 'omi.xsd');
-	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
-	writer.writeStartElement('Objects');
-	//Payload
-	var ids = [];
-	var objects = [];
-	
-	for(var i = 0; i < items.length; i++){
-		var cl = $(items[i]).attr("class");
-		
-		if(cl === "checkbox"){
-			var obj = new OdfObject(items[i].id);
-			addChildren(obj, items);
-			objects.push(obj);
-		}
-	}
-	
-	for(var i = 0; i < objects.length; i++){
-		writeObject(objects[i], writer);
-	}
-	
-	writer.writeEndElement();
-    writer.writeEndDocument();
-
-    var request = writer.flush();
-
-    return request;
+function checkedObjects() {
+	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
 }
-
-function addChildren(object, items){
-	var children = [];
-	
-	for(var i = 0; i < items.length; i++){
-		var c = $(items[i]).attr('class');
-		if(c.indexOf(object.id) > -1){
-			children.push(items[i]);
-		}
-	}
-	
-	for(var i = 0; i < children.length; i++){
-		var child = children[i];
-		if(child.id){ //Object
-			var subobj = new OdfObject(child.id);
-			addChildren(subobj, items);
-			object.subObjects.push(subobj);
-		} else {
-			var infoitem = new InfoItem(child.name);
-			object.infoItems.push(infoitem);
-		}
-	}
-}
-
-/* Writes an object and its children to the xml */
-function writeObject(object, writer){
-	writer.writeStartElement('Object');
-	writer.writeElementString('id', object.id);
-	
-	// Write InfoItems BEFORE SubObjects
-	for(var i = 0; i < object.infoItems.length; i++){
-		writer.writeStartElement('InfoItem');
-		writer.writeAttributeString('name', object.infoItems[i].name);
-		writer.writeEndElement();
-	}
-	
-	// Write subobjects
-	for(var i = 0; i < object.subObjects.length; i++){
-		writeObject(object.subObjects[i], writer);
-	}
-	
-	writer.writeEndElement();
-}
-
 
 /* Send the O-DF request using AJAX */
 function sendRequest()
@@ -257,40 +187,67 @@ function sendRequest()
 	var server = $("#send-field").val();
 
     var request = $('#request').text(); //Get the request string
-	
-    if(request.indexOf("subscribe") >= 0)
-		//TODO:
-        startSubscriptionEventListener(request); //If subscribe request, create eventlistener for request
-    else
-    {
-        $.ajax({
-            type: "POST",
-            url: server, //TODO: the real server here
-            data: request,
-			contentType: "text/xml",
-			processData: false,
-            dataType: "text",
-            success: printResponse,
-			error: function(a, b, c){
-				$("#responseBox").text("Error sending message");
-				handleError(a, b, c);
-			}
-        });
-    } 
+
+    ajaxPost(server, request, getSubscribeLocal());
 }
 
-/* HTML 5 Server Sent Event communication (NOT USED ATM) */
-function startSubscriptionEventListener(request) {
-    var source = new EventSource(server+"?msg="+request);
+function getSubscribeLocal(){
+	return ($.isNumeric(omi.interval) && omi.callback.length === 0);
+}
 
-    source.onmessage = function(event)
-    {
-        printResponse(event.data);
-    };
-    source.onerror = function(event) {
-        source.close();
-        console.log("Subscription TTL Expired");
-    };
+//Test
+var count = 0;
+
+function ajaxPost(server, request, subscribeLocal){
+	
+	$.ajax({
+		type: "POST",
+		url: server,
+		data: request,
+		contentType: "text/xml",
+		processData: false,
+		dataType: "text",
+		success: function(response){
+			printResponse(response);
+			
+			count += 1;
+			$("#infoBox").text("Count: " + count);
+			
+			if(subscribeLocal && send){
+				window.setTimeout(
+					function () {
+						getSub();
+					},
+					1000);
+			} 
+		},
+		error: function(a, b, c){
+			$("#infoBox").text("Error sending message");
+			handleError(a, b, c);
+		}
+	});
+}
+
+function getSub(){
+	var response = $("#responseBox").text();
+	console.log(response);
+	var r1 = response.split("<omi:requestId>");
+	
+	if(r1.length === 2 || omi.requestId){
+		$("#infoBox").text("Sending request");
+		
+		if(r1.length === 2){
+			r2 = r1[1].split("</omi:requestId>")[0];
+			omi.requestId = r2;
+		}
+		var subRequest = omi.getSub(omi.requestId, checkedObjects());
+		console.log("Request: " + subRequest);
+		var server =  $("#send-field").val();
+		
+		ajaxPost(server, subRequest, getSubscribeLocal());
+	} else {
+		alert("No request id found!");
+	}
 }
 
 /* Do something with the response from the server */
@@ -302,7 +259,8 @@ function printResponse(response){
 	console.log(formattedXML);
     $("#responseBox").html(formattedXML.value);
 	
-	//$("#responseBox").text(response);
+	var width = -($("#responseBox").width() / 4) + 'px';
+	$("#page4").css('left', width);
 }
 
 /* Handle the ajax errors */
