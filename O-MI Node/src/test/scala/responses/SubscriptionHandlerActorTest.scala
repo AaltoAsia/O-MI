@@ -12,13 +12,14 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration.Duration
 
-class SubscriptionHandlerActorTest extends Specification with Before {
+class SubscriptionHandlerActorTest extends Specification {
   
 
   class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """))) with Scope
 
+  database.SQLite.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
   val testPath = Path("SubscriptionHandlerTest/testData")
 
   val testSub1 = new DBSub(Array(testPath), 60, 2, Some("test"), None)
@@ -28,9 +29,9 @@ class SubscriptionHandlerActorTest extends Specification with Before {
   val testId2 = Promise[Int]
   val testId3 = database.SQLite.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
 
-  def before = {
-    database.SQLite.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
-  }
+//  def before = {
+//    
+//  }
 //  def after = {
 //    database.SQLite.remove(Path("SubscriptionHandlerTest/testData"))
 //  }
