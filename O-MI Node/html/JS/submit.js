@@ -6,6 +6,7 @@ var page = 1; //Start at page 1
 
 $(function() {
 	
+	loadThemes();
 	loadPages(page);
 	loadOptions();
 	
@@ -28,6 +29,16 @@ $(function() {
 		send = false;
 	});
 
+function loadThemes(){
+	iconSelect = new IconSelect("themes");
+
+	var icons = [];
+    icons.push({'iconFilePath':'Resources/icons/light.svg', 'iconValue':'light'});
+    icons.push({'iconFilePath':'Resources/icons/dark.svg', 'iconValue':'dark'});
+    
+    iconSelect.refresh(icons);
+}
+	
 /* Get the objects through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
