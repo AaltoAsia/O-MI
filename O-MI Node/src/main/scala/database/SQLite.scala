@@ -1,5 +1,10 @@
 package database
 import slick.driver.SQLiteDriver.api._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import slick.jdbc.StaticQuery.interpolation
 import slick.lifted.ProvenShape
 import java.io.File
@@ -7,7 +12,6 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
 import slick.jdbc.StaticQuery
-
 
 import parsing.Types._
 import parsing.Types.Path._
@@ -34,15 +38,17 @@ object SQLite {
     setEventHooks = f :: setEventHooks
 
   //initializing database
-  private val db = Database.forURL("jdbc:sqlite:" + dbPath, driver = "org.sqlite.JDBC")
-  db withSession { implicit session =>
-
-    if (init) {
-      initialize()
-    }
-    
+  //private val db = Database.forConfig("sqlite-conf")
+  private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+  if (init) {
+    val setup = DBIO.seq(
+      latestValues.schema.create,
+      objects.schema.create,
+      subs.schema.create,
+      buffered.schema.create)
+    Await.result(db.run(setup), Duration.Inf)
   }
- 
+
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
@@ -51,69 +57,64 @@ object SQLite {
    *  @param data data is of type DBSensor
    *  @return boolean whether added data was new
    */
-  def set(data: DBSensor)=
+  def set(data: DBSensor) =
     {
       var count = 0
       var buffering = false
-      db withSession { implicit session =>
-        //search database for sensor's path
-        val pathQuery = latestValues.filter(_.path === data.path)
-        buffering = db.stream(buffered.filter(_.path === data.path)).length > 0
-        //appends a row to the latestvalues table
-        count = db.stream(pathQuery).length
-        latestValues += (data.path, data.value, data.time)
-      }
-        // Call hooks
-        val argument = Seq(data.path)
-        setEventHooks foreach {_(argument)}
+      //search database for sensor's path
+      val pathQuery = latestValues.filter(_.path === data.path)
+      buffering = Await.result(db.run(buffered.result), Duration.Inf).length > 0
+      //appends a row to the latestvalues table
+      count = Await.result(db.run(pathQuery.result), Duration.Inf).length
+      Await.result(db.run(DBIO.seq(latestValues += (data.path, data.value, data.time))),Duration.Inf)
+      // Call hooks
+      val argument = Seq(data.path)
+      setEventHooks foreach { _(argument) }
 
-        if (count > historyLength && !buffering) {
-          //if table has more than historyLength and not buffering, remove excess data
-          removeExcess(data.path)
-          false
-        } else if (count == 0) {
-          //add missing objects for the hierarchy since this is a new path
-          addObjects(data.path)
-          true
-        } else {
-          //existing path and less than history length of data or buffering.
-          false
-        }
-      
+      if (count > historyLength && !buffering) {
+        //if table has more than historyLength and not buffering, remove excess data
+        removeExcess(data.path)
+        false
+      } else if (count == 0) {
+        //add missing objects for the hierarchy since this is a new path
+        addObjects(data.path)
+        true
+      } else {
+        //existing path and less than history length of data or buffering.
+        false
+      }
+
     }
   /**
    * Used to set many values efficiently to the database.
    * Currently works only for list of tuples consisting of path and value.
    */
   def setMany(data: List[(String, String)]) {
-    db withTransaction { implicit session =>
-      var path = Path("")
-      var len = 0
-      data.foreach {
-        case (p: String, v: String) =>
-          path = Path(p)
-          var pathQuery = latestValues.filter(_.path === path)
-          len = db.stream(pathQuery.length)
-          if (len == 0) {
-            addObjects(path)
-          }
-          var buffering = db.stream(buffered.filter(_.path === path)).length > 0
-          latestValues += (path, v, new Timestamp(new java.util.Date().getTime))
+    var path = Path("")
+    var len = 0
+    data.foreach {
+      case (p: String, v: String) =>
+        path = Path(p)
+        var pathQuery = latestValues.filter(_.path === path)
+        len = Await.result(db.run(pathQuery.result), Duration.Inf).length
+        if (len == 0) {
+          addObjects(path)
+        }
+        var buffering = Await.result(db.run(buffered.result), Duration.Inf).length > 0
+        db.run(DBIO.seq(latestValues += (path, v, new Timestamp(new java.util.Date().getTime))))
+        // Call hooks
+        val argument = Seq(path)
+        setEventHooks foreach { _(argument) }
 
-          // Call hooks
-          val argument = Seq(path)
-          setEventHooks foreach {_(argument)}
-
-          if (len >= historyLength) {
-            removeExcess(path)
-          }
-      }
+        if (len >= historyLength) {
+          removeExcess(path)
+        }
     }
   }
   /**
    * sets the historylength to desired length
    * default is 10
-   * 
+   *
    * @param newLength new length to be used
    */
   def setHistoryLength(newLength: Int) {
@@ -129,69 +130,63 @@ object SQLite {
   def remove(path: Path): Boolean = {
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
-     var deleted = false
-    db withSession { implicit session => 
-      //if found rows with given path remove else path doesn't exist and can't be removed
-      if (db.stream(pathQuery).length > 0) {
-        pathQuery.delete
-        deleted = true;
+    var deleted = false
+    //if found rows with given path remove else path doesn't exist and can't be removed
+    if (Await.result(db.run(pathQuery.result), Duration.Inf).length > 0) {
+      db.run(pathQuery.delete)
+      deleted = true;
+    }
+    if (deleted) {
+      //also delete objects from hierarchy that are not used anymore.
+      // start from sensors path and proceed upward in hierarchy until object that is shared by other sensor is found,
+      //ultimately the root. path/to/sensor/temp -> path/to/sensor -> ..... -> "" (root)
+      var testPath = path
+      while (!testPath.isEmpty) {
+        if (getChilds(testPath).length == 0) {
+          //only leaf nodes have 0 childs. 
+          var pathQueryObjects = objects.filter(_.path === testPath)
+          db.run(pathQueryObjects.delete)
+          testPath = testPath.dropRight(1)
+        } else {
+          //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
+          //exit while loop
+          testPath = Path("")
+        }
       }
     }
-    if(deleted)
-      {
-    db.withTransaction{
-      implicit session =>
-        //also delete objects from hierarchy that are not used anymore.
-        // start from sensors path and proceed upward in hierarchy until object that is shared by other sensor is found,
-        //ultimately the root. path/to/sensor/temp -> path/to/sensor -> ..... -> "" (root)
-        var testPath = path
-        while (!testPath.isEmpty) {
-          if (getChilds(testPath).length == 0) {
-            //only leaf nodes have 0 childs. 
-            var pathQueryObjects = objects.filter(_.path === testPath)
-            pathQueryObjects.delete
-            testPath = testPath.dropRight(1)
-          } else {
-            //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
-            //exit while loop
-            testPath = Path("")
-          }
-        }   
-      }
-    }
-   return deleted
+    return deleted
   }
   /**
    * Returns array of DBSensors for given subscription id.
    * Array consists of all sensor values after beginning of the subscription
    * for all the sensors in the subscription
    * returns empty array if no data or subscription is found
-   * 
+   *
    * @param id subscription id that is assigned during saving the subscription
    * @param testTime optional timestamp value to indicate end time of subscription,
    * should only be needed during testing. Other than testing None should be used
-   * 
+   *
    * @return Array of DBSensors
    */
-  def getSubData(id: Int,testTime:Option[Timestamp]): Array[DBSensor] =
+  def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] =
     {
-       var result = Buffer[DBSensor]()
-        var subQuery = subs.filter(_.ID === id)
-        var info:(Timestamp,Double) = (null,0.0)//to gather only needed info from the query
-        var paths = Array[String]()
-      db withTransaction { implicit session =>
-        var str = db.stream(subQuery)
-        if (str .length > 0) {
-          var sub = str.head
-          info = (sub._3, sub._5)
-          paths = sub._2.split(";")
-        }
-       }
-          paths.foreach {
-            p =>
-              result ++= DataFormater.FormatSubData(Path(p), info._1,info._2,testTime)
-          }
-        result.toArray
+      var result = Buffer[DBSensor]()
+      var subQuery = subs.filter(_.ID === id)
+      var info: (Timestamp, Double) = (null, 0.0) //to gather only needed info from the query
+      var paths = Array[String]()
+
+      var str = Await.result(db.run(subQuery.result), Duration.Inf)
+      if (str.length > 0) {
+        var sub = str.head
+        info = (sub._3, sub._5)
+        paths = sub._2.split(";")
+      }
+
+      paths.foreach {
+        p =>
+          result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)
+      }
+      result.toArray
     }
   def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
 
@@ -202,38 +197,33 @@ object SQLite {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path)=
+  private def removeExcess(path: Path) =
     {
       var pathQuery = latestValues.filter(_.path === path)
-      db.withTransaction{implicit session =>
-      var count = db.stream(pathQuery).length
+      var qry = Await.result(db.run(pathQuery.sortBy(_.timestamp).result), Duration.Inf)
+      var count = qry.length
       if (count > historyLength) {
-        val oldtime = pathQuery.sortBy(_.timestamp).drop(count - historyLength).first._3
-        db.stream(pathQuery).filter(_.timestamp < oldtime).delete
-      }
+        val oldtime = qry.drop(count - historyLength).head._3
+        Await.result(db.run((pathQuery).filter(_.timestamp < oldtime).delete),Duration.Inf)
       }
     }
   /**
    * put the path to buffering table if it is not there yet, otherwise
    * increases the count on that item, to prevent removing buffered data
    * if one subscription ends and other is still buffering.
-   * 
+   *
    * @param path path as Path object
+   * 
    */
-  def startBuffering(path: Path) {
+  def startBuffering(path: Path):Boolean = {
     val pathQuery = buffered.filter(_.path === path)
-    db.withTransaction { implicit session =>
-      var len = db.stream(pathQuery).length
-      if (len == 0) {
-        buffered += (path, 1)
-        true
-      } else {
-        val counts = for {
-          c <- pathQuery
-        } yield (c.count)
-        counts.update(len + 1)
-        false
-      }
+    var len = Await.result(db.run(pathQuery.result), Duration.Inf).length
+    if (len == 0) {
+      db.run(buffered += (path, 1))
+      true
+    } else {
+      db.run(pathQuery.map(_.count).update(len + 1))
+      false
     }
   }
   /**
@@ -242,27 +232,22 @@ object SQLite {
    * leaves only historyLength amount of data if count is only 1
    * @param path path as Path object
    */
-  def stopBuffering(path: Path) {
-    db withSession { implicit session =>
+  def stopBuffering(path: Path):Boolean= {
       val pathQuery = buffered.filter(_.path === path)
-      val str = db.stream(pathQuery)
+      val str = Await.result(db.run(pathQuery.result),Duration.Inf)
       var len = str.length
       if (len > 0) {
         if (str.head._2 > 1) {
-          val counts = for {
-            c <- pathQuery
-          } yield (c.count)
-          counts.update(len - 1)
+          db.run(pathQuery.map(_.count).update(len - 1))
           false
         } else {
-          pathQuery.delete
+          db.run(pathQuery.delete)
           removeExcess(path)
           true
         }
       } else {
         false
       }
-    }
   }
   /**
    * Used to get data from database based on given path.
@@ -279,17 +264,16 @@ object SQLite {
   def get(path: Path): Option[DBItem] =
     {
       var result: Option[DBItem] = None
-
-      db withTransaction { implicit session =>
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
         //if path is found from latest values it must be Sensor otherwise check if it is an object
-        var count = db.stream(pathQuery).length
+        var qry = Await.result(db.run(pathQuery.sortBy(_.timestamp).result),Duration.Inf)
+        var count = qry.length
         if (count > 0) {
           //path is sensor
           //case class matching
-          val latest = pathQuery.sortBy(_.timestamp).drop(count - 1)
-          latest.first match {
+          val latest = qry.drop(count - 1)
+          latest.head match {
             case (path: Path, value: String, time: java.sql.Timestamp) =>
               result = Some(DBSensor(path, value, time))
           }
@@ -306,7 +290,6 @@ object SQLite {
             result = Some(obj)
           }
         }
-      }
       result
     }
   /**
@@ -314,17 +297,16 @@ object SQLite {
    * @param path path whose hierarchy is to be stored to database
    *
    */
-  private def addObjects(path: Path){
+  private def addObjects(path: Path) {
     val parentsAndPath: Seq[Path] = path.tail.scanLeft(Path(path.head))(Path(_) / _)
     var parent = Path("")
-    db.withTransaction{implicit session =>
-    for (fullpath <- parentsAndPath) {
-      if (!hasObject(fullpath)) {
-        objects += (fullpath, parent, fullpath.last)
+      for (fullpath <- parentsAndPath) {
+        if (!hasObject(fullpath)) {
+          db.run(objects += (fullpath, parent, fullpath.last))
+        }
+        parent = fullpath
       }
-      parent = fullpath
-    }
-    }
+    
   }
   /**
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
@@ -346,30 +328,26 @@ object SQLite {
 
   def getNBetween(path: Path, start: Option[Timestamp], end: Option[Timestamp], fromStart: Option[Int], fromEnd: Option[Int]): Array[DBSensor] = {
     var result = Array[DBSensor]()
-   
-      var query = latestValues.filter(_.path === path)
-      if (start != None) {
-        query = query.filter(_.timestamp >= start.get)
-      }
-      if (end != None) {
-        query = query.filter(_.timestamp <= end.get)
-      }
-       db withTransaction { implicit session =>
-         var str = db.stream(query)
+    var query = latestValues.filter(_.path === path)
+    if (start != None) {
+      query = query.filter(_.timestamp >= start.get)
+    }
+    if (end != None) {
+      query = query.filter(_.timestamp <= end.get)
+    }
+    query = query.sortBy(_.timestamp)
+      var str = Await.result(db.run(query.result),Duration.Inf)
       if (fromStart != None && fromEnd != None) {
         //does not compute
         //can't have query from two different parts in one go
       } else if (fromStart != None) {
         var amount = Math.max(0, Math.min(str.length, fromStart.get))
-        query = query.take(amount)
+        str = str.take(amount)
       } else if (fromEnd != None) {
         var amount = Math.max(0, Math.min(str.length, fromEnd.get))
-        query = query.drop(str.length - amount)
+        str = str.drop(str.length - amount)
       }
-      str = db.stream(query)
       result = Array.ofDim[DBSensor](str.length)
-      query.sortBy(_.timestamp)
-      
       var index = 0
       str foreach {
         case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
@@ -377,7 +355,7 @@ object SQLite {
           index += 1
       }
       result
-    }
+    
   }
 
   /**
@@ -385,12 +363,11 @@ object SQLite {
    *
    */
   def clearDB() = {
-    db withTransaction { implicit session =>
-      latestValues.delete
-      objects.delete
-      subs.delete
-      buffered.delete
-    }
+    db.run(DBIO.seq(
+      latestValues.delete,
+      objects.delete,
+      subs.delete,
+      buffered.delete))
   }
 
   /**
@@ -399,13 +376,13 @@ object SQLite {
    * @return Array[DBItem] of DBObjects containing childs
    *  of given object. Empty if no childs found or invalid path.
    */
-  private def getChilds(path: Path)(implicit session: Session): Array[DBItem] =
+  private def getChilds(path: Path): Array[DBItem] =
     {
       var childs = Array[DBItem]()
       val objectQuery = for {
         c <- objects if c.parentPath === path
       } yield (c.path)
-      var str = db.stream(objectQuery)
+      var str = Await.result(db.run(objectQuery.result),Duration.Inf)
       childs = Array.ofDim[DBItem](str.length)
       var index = 0
       str foreach {
@@ -420,23 +397,11 @@ object SQLite {
    * @param path path to be checked
    * @return boolean whether path was found or not
    */
-  private def hasObject(path: Path)(implicit session: Session): Boolean =
+  private def hasObject(path: Path): Boolean =
     {
-      var objectQuery = db.stream(objects.filter(_.path === path))
-      objectQuery.length > 0
+      Await.result(db.run(objects.filter(_.path === path).result),Duration.Inf).length > 0
     }
 
-  /**
-   * Initializes tables to the database file
-   * called only when the database file doesn't exist at startup
-   */
-  private def initialize()(implicit session: Session) =
-    {
-      latestValues.ddl.create
-      objects.ddl.create
-      subs.ddl.create
-      buffered.ddl.create
-    }
   /**
    * Check whether subscription with given ID has expired. i.e if subscription has been in database for
    * longer than its ttl value in seconds.
@@ -450,23 +415,13 @@ object SQLite {
       //gets time when subscibe was added,
       // adds ttl amount of seconds to it,
       //and compares to current time
-      db withTransaction { implicit session =>
-        val sub = db.stream(subs.filter(_.ID === id)).head
+        val sub = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf).head
         if (sub._4 > 0) {
-
-          // um, are these necessary? (remove these if they are not):
-          //var cal = java.util.Calendar.getInstance()
-          //cal.setTimeInMillis(sub._3.getTime())
-          //cal.add(java.util.Calendar.SECOND, sub._4)
-          //var endtime = new java.sql.Timestamp(cal.getTime().getTime())
-
           val endtime = new Timestamp(sub._3.getTime + (sub._4 * 1000).toLong)
-
           new java.sql.Timestamp(new java.util.Date().getTime).after(endtime)
         } else {
           true
         }
-      }
     }
   /**
    * Removes subscription information from database for given ID
@@ -474,21 +429,21 @@ object SQLite {
    *
    */
   def removeSub(id: Int): Boolean = {
-    db withSession { implicit session =>
-      var toBeDeleted = db.stream(subs.filter(_.ID === id))
-      if(toBeDeleted.length > 0) { 
-//        println("\nlist:\n "+ toBeDeleted.list+ "\nend") //Debug print
-        if(toBeDeleted.head._6 == None) {
+    
+      var qry = subs.filter(_.ID === id)
+      var toBeDeleted = Await.result(db.run(qry.result),Duration.Inf)
+      if (toBeDeleted.length > 0) {
+        if (toBeDeleted.head._6 == None) {
           toBeDeleted.head._2.split(";").foreach { p =>
             stopBuffering(Path(p))
           }
         }
-        toBeDeleted.delete
+        db.run(qry.delete)
         return true
       } else {
         return false
       }
-    }
+    
     false
   }
   /**
@@ -498,35 +453,32 @@ object SQLite {
    * None -> all subscriptions
    * Some(True) -> only with callback
    * Some(False) -> only without callback
-   * 
+   *
    * @return DBSub objects for the query as Array
    */
-  def getAllSubs(hasCallBack:Option[Boolean]):Array[DBSub]=
-  {
-    var res = Array[DBSub]()
-     var all = db.stream(hasCallBack match{
-     case Some(true) =>
-       subs.filter(!_.callback.isEmpty)
-     case Some(false) =>
-       subs.filter(_.callback.isEmpty)
-     case None =>
-       subs
-    })
-    db withSession {
-      implicit session =>
-      res = Array.ofDim[DBSub](all.length)
-      var index = 0
-      all foreach{
-        elem =>
-        res(index) = new DBSub(Array(), elem._4, elem._5, elem._6, Some(elem._3))
-        res(index).paths = elem._2.split(";").map(Path(_))
-        res(index).id = elem._1
-        index += 1
-      }   
+  def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] =
+    {
+      var res = Array[DBSub]()
+      var all = Await.result(db.run(hasCallBack match {
+        case Some(true) =>
+          subs.filter(!_.callback.isEmpty).result
+        case Some(false) =>
+          subs.filter(_.callback.isEmpty).result
+        case None =>
+          subs.result
+      }),Duration.Inf)
+          res = Array.ofDim[DBSub](all.length)
+          var index = 0
+          all foreach {
+            elem =>
+              res(index) = new DBSub(Array(), elem._4, elem._5, elem._6, Some(elem._3))
+              res(index).paths = elem._2.split(";").map(Path(_))
+              res(index).id = elem._1
+              index += 1
+      }
+      res
     }
-    res
-  }
-  
+
   /**
    * Returns DBSub object wrapped in Option for given id.
    * Returns None if no subscription data matches the id
@@ -537,7 +489,7 @@ object SQLite {
   def getSub(id: Int): Option[DBSub] =
     {
       var res: Option[DBSub] = None
-      val query = db.stream(subs.filter(_.ID === id))
+      val query = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf)
       db withSession { implicit session =>
         if (query.length > 0) {
           //creates DBSub object based on saved information
@@ -563,23 +515,22 @@ object SQLite {
    */
   def saveSub(sub: DBSub): Int =
     {
-      db withSession { implicit session =>
         val id = getNextId()
         sub.id = id
-        subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
+        db.run(DBIO.seq(subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)))
         //returns the id for reference
         id
-      }
     }
   /**
    * Private helper method to find next free id number
    * @return the next free id number
    */
-  private def getNextId()(implicit session: Session): Int = {
-    var len = db.stream(subs).length
+  private def getNextId(): Int = {
+    var res = Await.result(db.run(subs.sortBy(_.ID).result),Duration.Inf)
+    var len = res.length
     if (len > 0) {
       //find the element with greatest id value and add 1 to it
-      subs.sortBy(_.ID).drop(len - 1).first._1 + 1
+      res.drop(len - 1).head._1 + 1
     } else {
       0
     }

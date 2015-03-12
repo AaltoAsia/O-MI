@@ -125,21 +125,25 @@ object SQLiteTest extends Specification {
     "return correct values for N latest values" in {
         var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,None,Some(12))
         var values = sensrs.map { x => x.value }
+      
        values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N latest values" in {
         var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,None,Some(3))
         var values = sensrs.map { x => x.value }
+       
        values.length == 3 && values.contains("21.5C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N oldest values" in {
         var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,Some(12),None)
         var values = sensrs.map { x => x.value }
+      
        values.length == 10 && values.contains("21.1C") && values.contains("21.6C") shouldEqual true
     }
     "return correct values for N oldest values" in {
         var sensrs = database.SQLite.getNBetween(Path("path/to/sensor3/temp"),None,None,Some(2),None)
         var values = sensrs.map { x => x.value }
+        println(values.mkString(" "))
        values.length == 2 && values.contains("21.1C") && values.contains("21.2C") shouldEqual true
     }
     "return true when removing valid path" in{
