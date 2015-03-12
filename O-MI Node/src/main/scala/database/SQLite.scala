@@ -204,7 +204,7 @@ object SQLite {
       var count = qry.length
       if (count > historyLength) {
         val oldtime = qry.drop(count - historyLength).head._3
-        Await.result(db.run((pathQuery).filter(_.timestamp < oldtime).delete),Duration.Inf)
+        Await.ready(db.run(pathQuery.filter(_.timestamp < oldtime).delete),Duration.Inf)
       }
     }
   /**
