@@ -188,12 +188,14 @@ function ajaxPost(server, request, subscribeLocal){
 			count += 1;
 			$("#infoBox").text("Count: " + count);
 			
+			/*
 			if(subscribeLocal && send){
 				window.setTimeout(
 					function () {
 						getSub();
 					},
 					1000);
+			*/
 			} 
 		},
 		error: function(a, b, c){
