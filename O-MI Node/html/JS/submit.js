@@ -195,8 +195,8 @@ function ajaxPost(server, request, subscribeLocal){
 						getSub();
 					},
 					1000);
-			*/
-			} 
+			
+			}*/ 
 		},
 		error: function(a, b, c){
 			$("#infoBox").text("Error sending message");
