@@ -161,8 +161,6 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
-        println(xmlreturn)
-
       (requestID, trim(xmlreturn.head).toString) == (-1, trim(correctxml).toString)
     }
 

@@ -90,10 +90,21 @@ object OMISubscription {
    **/
 
 	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
+    if (SQLite.isExpired(id)) {
+      val subdata = SQLite.getSub(id).get
+      subdata.paths.foreach{p => SQLite.stopBuffering(p)}
+      omiResult{
+      returnCode(400, "This subscription has expired") ++
+      requestId(id)
+      }
+    }
+
+    else {
     omiResult{
       returnCode200 ++
       requestId(id) ++
       odfMsgWrapper(odfGeneration(id))
+      }
     }
 	}
 
@@ -115,16 +126,9 @@ object OMISubscription {
       }
 
       case None => {
-        if (SQLite.isExpired(id)) {
-        subdata.paths.foreach{p => SQLite.stopBuffering(p)}
-        return xml.NodeSeq.Empty //fix so a message saying sub has expired is sent?
-        }
-
-        else {
         <Objects>
         {createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval)}
         </Objects>
-        }
       }
     }
   }
