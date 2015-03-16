@@ -51,6 +51,7 @@
 .page {
 	max-height: 35em;
 	overflow-y: scroll;
+	outline: 1px black solid;
 }
 
 .currentpage {
