@@ -25,7 +25,13 @@ $(document).on('click', '.checkbox', function() {
 	function propChildren(parent){
 		var parentId = $(parent).attr("id");
 		//Find child items and mark their value the same as their parent
-		getChildren(parentId).each(function(){
+		var children = getChildren(parentId);
+		var url = $("#url-field").val();
+		
+		if(children.length == 0 && parentId){
+			ajaxGet(1, url + "/" + parentId, "list-" + parentId);
+		}
+		children.each(function(){
 			$(this).prop('checked', $(parent).is(':checked'));
 			propChildren(this);
 		});

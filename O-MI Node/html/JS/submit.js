@@ -61,7 +61,9 @@ function loadThemes(){
         };
     }
 }
-	
+});
+
+
 /* Get the objects through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
@@ -112,7 +114,7 @@ function displayObjects(data, indent, url, listId) {
 				addInfoItems(this, id, indent + 1);
 				
 				// Get lower hierarchy values
-				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
+				//ajaxGet(indent + 1, url + "/" + id, "list-" + id);
 			});
 		});
 	} else {
@@ -243,5 +245,4 @@ function printResponse(response){
 function handleError(jqXHR, errortype, exc) {
 	console.log("Error: " + (exc | errortype));
 }
-}); 
 
