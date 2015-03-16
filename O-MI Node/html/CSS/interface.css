@@ -1,20 +1,32 @@
 #themes {
 	position: absolute;
-	left: 5em;
-	top: 5em;
+	left: 0em;
+	width: 4.5em;
+	background-color: white;
+	z-index: 1;
+}
+
+#hints {
+	position: absolute;
+	top: -1em;
+	right: -10em;
+	width: 10em;
+	height: 10em;
+	z-index: 1;
+	background-color: black;
 }
 
 #prev {
-	position: fixed;
+	position: absolute;
 	margin-top: 10em;
-	left: 5em;
+	left: 0em;
 	z-index: 1;
 }
 
 #next {
-	position: fixed;
+	position: absolute;
 	margin-top: 10em;
-	right: 5em;
+	right: 0em;
 	z-index: 1;
 }
 
