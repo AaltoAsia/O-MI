@@ -116,7 +116,7 @@ object InputPusher extends IInputPusher{
               case Some(timestamp) =>
                 new DBSensor(info.path, timedValue.value,  timestamp)
             }
-            println(s"Saving to path ${info.path}")
+  //          println(s"Saving to path ${info.path}")
 
             SQLite.set(sensorData)
       }  
