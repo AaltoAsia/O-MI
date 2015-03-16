@@ -32,8 +32,8 @@ object Starter {
     // Create test data
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
-    val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
-    sensorData.queueSensors()
+    //val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
+    //sensorData.queueSensors()
 
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")

@@ -38,6 +38,7 @@ class GenericTestAgent( path: Seq[String])  extends IAgentActor {
         case i: OdfInfoItem =>
         case o: OdfObject =>
           InputPusher.handleObjects(Seq(o))
+          println("Writed to DB" )
       }
       run()
   }
@@ -83,6 +84,7 @@ class GenericTestBoot extends Bootable {
     configPath = pathToConfig
     val lines = io.Source.fromFile(configPath).getLines().toArray
     var path = lines.head.split("/")
+    println( lines.head ) 
     agentActor = system.actorOf(GenericAgent.props(path), "Generic-Agent")    
     agentActor ! Start
     return true
