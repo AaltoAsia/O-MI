@@ -19,14 +19,14 @@
 #prev {
 	position: absolute;
 	margin-top: 10em;
-	left: 0em;
+	left: 5em;
 	z-index: 1;
 }
 
 #next {
 	position: absolute;
 	margin-top: 10em;
-	right: 0em;
+	right: 5em;
 	z-index: 1;
 }
 

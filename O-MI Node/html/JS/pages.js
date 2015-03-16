@@ -43,16 +43,17 @@ function refreshEditor(editor, id) {
 		
 		requestEditor = CodeMirror.fromTextArea(document.getElementById(id), {
 			mode : "application/xml",
-			lineNumbers : true
+			lineNumbers : true,
+			lineWrapping: true
 		});
 		requestEditor.refresh();
 	} else if (editor == "response") {
 		$("#response .CodeMirror").remove();
 		
-		responseEditor = CodeMirror.fromTextArea(document
-				.getElementById(id), {
+		responseEditor = CodeMirror.fromTextArea(document.getElementById(id), {
 			mode : "application/xml",
-			lineNumbers : true
+			lineNumbers : true,
+			lineWrapping: true
 		});
 		responseEditor.refresh();
 	}
