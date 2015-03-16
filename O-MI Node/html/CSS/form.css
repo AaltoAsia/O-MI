@@ -26,6 +26,7 @@ body {
 #objectList {
 	position: relative;
 	list-style-type: none;
+	max-width: 100%;
 }
 
 #objectList ul {
