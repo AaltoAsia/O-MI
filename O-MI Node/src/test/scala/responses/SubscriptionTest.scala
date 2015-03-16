@@ -87,7 +87,10 @@ class SubscriptionTest extends Specification with Before {
 
     "Return with no values when interval is larger than time elapsed and no callback given" in {
 
-      val subxml = OMISubscription.OMISubscriptionResponse(0)
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
+      val parserlist = OmiParser.parse(simpletestfile)
+
+      val subxml = Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head
 
       val correctxml = 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">

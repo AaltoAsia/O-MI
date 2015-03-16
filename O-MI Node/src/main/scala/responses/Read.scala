@@ -86,11 +86,19 @@ object Read {
 
   //takes the return value of OmiParser straight
   def OMIReadResponse(read: OneTimeRead): xml.NodeSeq = {
+    if (read.requestId.isEmpty) {
     omiOdfResult(
         returnCode200 ++
         requestIds(read.requestId) ++
         odfMsgWrapper(odfGeneration(read))
-    )
+        )
+    }
+
+    else {
+      val id = read.requestId.head.toInt
+      OMISubscription.OMISubscriptionResponse(id)
+      
+    }
   }
   /**
    * helper function for generating whold O-DF xml.
@@ -98,7 +106,6 @@ object Read {
    * @return generated O-DF xml as String
    */
   def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
-    if (read.requestId.isEmpty) {
       <Objects>
         { 
           odfObjectGeneration(
@@ -109,13 +116,7 @@ object Read {
             read.oldest)
         }
       </Objects>
-    }
 
-    else {
-      val id = read.requestId.head.toInt
-      OMISubscription.OMISubscriptionResponse(id)
-      
-    }
   }
 
   /**
@@ -135,8 +136,15 @@ object Read {
         <id>{ obj.path.last }</id>
         {
           if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-            odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
-            odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
+            if(begin != None || end != None || newest != None || oldest != None) {
+              odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
+              odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
+            }
+
+            else {
+              odfLatestInfoItemGeneration(obj.sensors.toList) ++ 
+              odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
+            }
 
           } else {
             //TODO: sqlite get begin to end
@@ -201,6 +209,25 @@ object Read {
               <Error> Item not found in the database </Error>
             }
           }
+        </InfoItem>
+      }
+      node
+  }
+
+  def odfLatestInfoItemGeneration(infoItems: List[OdfInfoItem]): xml.NodeSeq = {
+
+      var node: xml.NodeSeq = xml.NodeSeq.Empty
+      for (infoItem <- infoItems) {
+        node ++= 
+        <InfoItem name={ infoItem.path.last }>
+          {
+            SQLite.get(infoItem.path) match {
+              case Some(sensor: DBSensor) => <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+              case _ => <Error> Item not found in the database </Error>
+            }
+
+          }
+
         </InfoItem>
       }
       node

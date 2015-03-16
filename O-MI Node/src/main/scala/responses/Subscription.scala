@@ -164,9 +164,8 @@ object OMISubscription {
     def createFromPaths(paths: Array[Path], index: Int): xml.NodeSeq = {
       var node : xml.NodeSeq = xml.NodeSeq.Empty
 
-      if (paths.isEmpty) return node
-
-      else {
+      if (paths.isEmpty == false)
+        {
         var slices = Buffer[Path]()
         var previous = paths.head
 
@@ -223,9 +222,8 @@ object OMISubscription {
     def createFromPathsNoCallback(paths: Array[Path], index: Int, starttime:Timestamp, interval:Double): xml.NodeSeq = {
       var node : xml.NodeSeq = xml.NodeSeq.Empty
 
-      if (paths.isEmpty) return node
-
-      else {
+      if (paths.isEmpty == false)
+        {
         var slices = Buffer[Path]()
         var previous = paths.head
 
