@@ -1,7 +1,7 @@
 package database
-import scala.slick.driver.SQLiteDriver.simple._
-import scala.slick.jdbc.StaticQuery.interpolation
-import scala.slick.lifted.ProvenShape
+import slick.driver.SQLiteDriver.api._
+import slick.jdbc.StaticQuery.interpolation
+import slick.lifted.ProvenShape
 import parsing.Types._
 import parsing.Types.Path._
 import java.sql.Timestamp

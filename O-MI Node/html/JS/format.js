@@ -1,5 +1,11 @@
 function formatXml(xml) {
-    var formatted = '';
+    var formattedXML = hljs.highlightAuto(formatNoHighlight(xml));
+
+    return formattedXML;
+}
+
+function formatNoHighlight(xml) {
+	var formatted = '';
     var reg = /(>)(<)(\/*)/g;
     xml = xml.replace(reg, '$1\r\n$2$3');
     var pad = 0;
@@ -28,7 +34,5 @@ function formatXml(xml) {
 			pad += indent;
 		}
     });
-    var formattedXML = hljs.highlightAuto(formatted);
-
-    return formattedXML;
+    return formatted;
 }
