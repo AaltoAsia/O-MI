@@ -1,18 +1,22 @@
 @charset "UTF-8";
 
 body {
-	background-image: url("../Resources/testbg.png"); 
+	background: url("../Resources/icons/dark.svg") no-repeat center center fixed;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	z-index: 1;
 }
 
-#operation-select{
+#operation-select {
 	float: left;
 	margin-left: 2%;
 }
 
-#objectContainer{
+#objectContainer {
 	border-width: 5px;
 	border-style: groove;
-	
 	width: 90%;
 	padding: 5px 0;
 	margin: 0 auto;
@@ -22,6 +26,7 @@ body {
 #objectList {
 	position: relative;
 	list-style-type: none;
+	max-width: 100%;
 }
 
 #objectList ul {
@@ -33,31 +38,45 @@ body {
 }
 
 #objectList label {
-    display: inline-block;
+	display: inline-block;
 	float: left;
 }
+
 #objectList input {
 	float: left;
-    width: 14px;
-    height: 14px;
-    padding: 0;
-    margin:0;
-    vertical-align: bottom;
-    position: relative;
-    *overflow: hidden;
-}
-/*
-#objectList .lower {
-	margin-left: 25px; 
-} */
-
-#requestBox, #responseBox {
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	margin: 0;
+	vertical-align: bottom;
 	position: relative;
-	border: 1px solid black;
-	margin-top: 15px;
-	margin-bottom: 15px;
+	*overflow: hidden;
 }
 
+#requestBox,#responseBox {
+	position: relative;
+	width: 90%;
+	border: 1px solid black;
+	margin: 1em auto;
+}
+
+#editRequest {
+	max-width: 90%;
+	height: auto;
+	text-align: left;
+	outline: black solid 2px;
+}
+
+.xml {
+	text-align: left;
+}
+
+.CodeMirror {
+	text-align: left;
+	max-width: 100%;
+	white-space: pre-wrap;
+	outline: black solid 5px;
+}
 
 .highlight-button {
 	background: blue;
@@ -67,6 +86,6 @@ fieldset {
 	margin: 0 auto;
 }
 
-pre.xml {
-	text-align: left;
+#themes {
+	float: right;
 }

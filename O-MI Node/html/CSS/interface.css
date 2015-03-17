@@ -1,0 +1,96 @@
+#themes {
+	position: absolute;
+	left: 0em;
+	width: 4.5em;
+	background-color: white;
+	z-index: 1;
+}
+
+#hints {
+	position: absolute;
+	top: -1em;
+	right: -10em;
+	width: 10em;
+	height: 10em;
+	z-index: 1;
+	background-color: black;
+}
+
+#prev {
+	position: absolute;
+	margin-top: 10em;
+	left: 5em;
+	z-index: 1;
+}
+
+#next {
+	position: absolute;
+	margin-top: 10em;
+	right: 5em;
+	z-index: 1;
+}
+
+#prev:hover:not(.hidden), #next:hover:not(.hidden) {
+	cursor: pointer;
+}
+
+.hidden {
+	opacity: 0.5;
+}
+
+.behind {
+	display: none;
+	
+	/* Use for possible animation */
+	position: absolute;
+	width: 40%;
+	left: 40%;
+	z-index: -20;
+}
+
+.page {
+	max-height: 40em;
+	overflow-y: scroll;
+	outline: 1px black solid;
+}
+
+.currentpage {
+	position: absolute;
+	width: 60%;
+	left: 20%;
+}
+
+.prevpage {
+	position: absolute;
+	opacity: 0.5;
+	width: 40%;
+	z-index: -10;
+	top: 5em;
+	left: 5em;
+	pointer-events: none;
+}
+
+.nextpage {
+	position: absolute;
+	opacity: 0.5;
+	width: 40%;
+	z-index: -10;
+	top: 5em;
+	right: 5em;
+	pointer-events: none;
+}
+
+.icon {
+	display: inline-block;
+	width: 5em;
+	height: 5em;
+	margin: 0 1em;
+}
+
+.icon:hover {
+	cursor: pointer;
+}
+
+.selected {
+	outline: red solid 5px;
+}

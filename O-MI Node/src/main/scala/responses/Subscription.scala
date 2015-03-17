@@ -188,7 +188,7 @@ object OMISubscription {
 
               }
 
-              case None => node ++= <Error> Item not found in the database </Error>
+              case None => {node ++= <Error> Item not found in the database </Error>}
             }
 
             previous = path
@@ -247,7 +247,7 @@ object OMISubscription {
 
               }
 
-              case None => node ++= <Error> Item not found in the database </Error>
+              case None => {node ++= <Error> Item not found in the database </Error>}
             }
 
             previous = path

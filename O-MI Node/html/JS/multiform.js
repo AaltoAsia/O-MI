@@ -1,111 +1,128 @@
 /* 
 Orginal Page: http://thecodeplayer.com/walkthrough/jquery-multi-step-form-with-progress-bar 
 
-*/
+ */
 //jQuery time
-var current_fs, next_fs, previous_fs; //fieldsets
-var left, opacity, scale; //fieldset properties which we will animate
-var animating; //flag to prevent quick multi-click glitches
-
-/* Event handler for the next button on the 1st page */
-$(document).on('click', '#next1', function(){
-	if(!page1Verified()){
-		alert("Please check at least one object");
-		return;
-	}
-	animateNext(this);
-});
-
-/* Event handler for the next button on the 2nd page */
-$(document).on('click', '#next2', function(){
-	if(!page2Verified()){
-		alert("Please specify TTL (Time to live) as integer");
-		return;
-	}
-	$("#request").html("");
-	animateNext(this);
-});
+var current_fs, next_fs, previous_fs; // fieldsets
+var left, opacity, scale; // fieldset properties which we will animate
+var animating; // flag to prevent quick multi-click glitches
+var count;
 
 /* Event handler for the next button on the 3rd page */
-$(document).on('click', '#next3', function(){
-	if(!page3Verified()){
-		alert("Please generate the request");
-		return;
+$(document).on('click', '#next', function() {
+	// Using global variable index
+	if (page === 1) {
+		if (!page1Verified()) {
+			alert("Please check at least one object");
+			return;
+		}
+	} else if (page === 2) {
+		if (!page2Verified()) {
+			alert("Please specify TTL (Time to live) as numeric value");
+			return;
+		}
+		$("#request").html("");
+	} else if (page === 3) {
+		if (!page3Verified()) {
+			alert("Please generate the request");
+			return;
+		}
+		$("#responseBox").html("");
+	} else if (page === 4) {
+		return false;
 	}
-	$("#responseBox").html("");
-	animateNext(this);
+	animateNext();
 });
 
-$(document).on('click', '.previous', function(){
-	if(animating) return false;
+$(document).on('click', '#prev', function() {
+	if (page === 4) {
+		send = false; // Polling variable
+	}
+	animatePrev();
+});
+
+function animatePrev() {
+	if (animating || page === 1)
+		return false;
+	
+	current_fs = $("#page" + page);
+	previous_fs = $("#page" + (page - 1));
+	next_fs = $("#page" + (page + 1));
+	
+	page -= 1; // Update index
+	animating = true;
+
+	// de-activate current step on progressbar
+	$("#progressbar li").eq(page).removeClass("active");
+	
+	animating = false;
+	
+	loadPages();
+	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+}	
+
+function animateNext() {
+	if (animating || page === 4)
+		return false;
+	
+	// Animate scrolling
+	$("html, body").animate({ scrollTop: 0 }, "slow");
+
 	animating = true;
 	
-	current_fs = $(this).parent();
-	previous_fs = $(this).parent().prev();
+	current_fs = $("#page" + page);
+	next_fs = $("#page" + (page + 1));
+	prev_fs = $("#page" + (page - 1));
 	
-	//de-activate current step on progressbar
-	$("#progressbar li").eq($("fieldset").index(current_fs)).removeClass("active");
-	
-	//show the previous fieldset
-	previous_fs.show(); 
-	//hide the current fieldset with style
-	current_fs.animate({opacity: 0}, {
-		step: function(now, mx) {
-			//as the opacity of current_fs reduces to 0 - stored in "now"
-			//1. scale previous_fs from 80% to 100%
-			scale = 0.8 + (1 - now) * 0.2;
-			//2. take current_fs to the right(50%) - from 0%
-			left = ((1-now) * 50)+"%";
-			//3. increase opacity of previous_fs to 1 as it moves in
-			opacity = 1 - now;
-			current_fs.css({'left': left});
-			previous_fs.css({'transform': 'scale('+scale+')', 'opacity': opacity});
-		}, 
-		duration: 800, 
-		complete: function(){
-			current_fs.hide();
-			animating = false;
-		}, 
-		//this comes from the custom easing plugin
-		easing: 'easeInOutBack'
-	});
-});
+	page += 1; // Update index
 
-$(".submit").click(function(){
+	// activate next step on progressbar using the page number
+	$("#progressbar li").eq((page - 1)).addClass("active");
+
+	/*
+	current_fs.animate({
+		opacity : 0.5,
+		top : "5em",
+		left : "5em",
+		width : "40%",
+		zIndex : -10
+	}, {
+		duration : 1500,
+		complete : checkCount,
+		easing : 'easeInOutBack'
+	});
+	
+	next_fs.animate({
+		opacity : 1,
+		left : "20%",
+		width : "60%",
+		zIndex : 0
+	}, {
+		duration : 1500,
+		complete : checkCount,
+		step : function(a, b){
+			console.log($(this).css("zIndex"));
+		},
+		easing : 'easeInOutBack'
+	});
+	
+	if(prev_fs){
+		prev_fs.animate({
+			left : "30%",
+			zIndex : -20
+		}, {
+			duration : 1500,
+			complete : checkCount,
+			easing : 'easeInOutBack'
+		});
+	} */
+	
+	animating = false;
+	
+	loadPages();
+	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+}
+
+$(".submit").click(function() {
 	return false;
 })
-
-function animateNext(button){
-	if(animating) return false;
-	animating = true;
-	
-	current_fs = $(button).parent();
-	next_fs = $(button).parent().next();
-	
-	//activate next step on progressbar using the index of next_fs
-	$("#progressbar li").eq($("fieldset").index(next_fs)).addClass("active");
-	
-	//show the next fieldset
-	next_fs.show(); 
-	//hide the current fieldset with style
-	current_fs.animate({opacity: 0}, {
-		step: function(now, mx) {
-			//as the opacity of current_fs reduces to 0 - stored in "now"
-			//1. scale current_fs down to 80%
-			scale = 1 - (1 - now) * 0.2;
-			//2. bring next_fs from the right(50%)
-			left = (now * 50)+"%";
-			//3. increase opacity of next_fs to 1 as it moves in
-			opacity = 1 - now;
-			current_fs.css({'transform': 'scale('+scale+')'});
-			next_fs.css({'left': left, 'opacity': opacity});
-		}, 
-		duration: 800, 
-		complete: function(){
-			current_fs.hide();
-			animating = false;
-		}, 
-		//this comes from the custom easing plugin
-		easing: 'easeInOutBack'
-	});
-}
