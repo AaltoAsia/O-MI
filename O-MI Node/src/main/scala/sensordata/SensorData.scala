@@ -35,6 +35,7 @@ import scala.collection.mutable.Map
 
 // Database
 import database._
+import agentSystem._
 
 // Need to wrap in a package to get application supervisor actor
 // "you need to provide exactly one argument: the class of the application supervisor actor"
@@ -106,7 +107,7 @@ package sensordata {
 
       if (!list.isEmpty) {
         // InfoItems filtered out
-        SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
+        InputPusher.handlePathValuePairs(list.filter(_._1.split('_').length > 3).map(item => {
           val sensor: String = item._1
           val value: String = item._2 // Currently as string, convert to double?
           // Split name from underlines

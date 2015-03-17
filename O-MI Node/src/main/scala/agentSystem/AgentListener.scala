@@ -94,7 +94,8 @@ class InputDataHandler(
 
 trait IInputPusher {
   def handleObjects( objs: Seq[OdfObject] ) : Unit
-  def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit 
+  def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit  
+  def handlePathValuePairs( pairs: Seq[(String,String)] ): Unit
 }
 object InputPusher extends IInputPusher{
   
@@ -122,5 +123,8 @@ object InputPusher extends IInputPusher{
       }  
     }
   } 
+  override def handlePathValuePairs( pairs: Seq[(String,String)] ) : Unit ={
+    SQLite.setMany(pairs.toList)
+  }
 
 }

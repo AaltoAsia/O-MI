@@ -13,6 +13,9 @@ function loadPages() {
 	if (selector.is(':empty')) {
 		selector.load("pages/page" + page + ".html");
 	}
+	if (page === 1) {
+		$("#prev").addClass("hidden");
+	}
 	// Load operation options (page 2)
 	if (page === 2) {
 		$("#prev").removeClass("hidden");
