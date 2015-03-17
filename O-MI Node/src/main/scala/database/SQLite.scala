@@ -363,11 +363,11 @@ object SQLite {
    *
    */
   def clearDB() = {
-    db.run(DBIO.seq(
+    Await.ready(db.run(DBIO.seq(
       latestValues.delete,
       objects.delete,
       subs.delete,
-      buffered.delete))
+      buffered.delete)),Duration.Inf)
   }
 
   /**
@@ -415,11 +415,18 @@ object SQLite {
       //gets time when subscibe was added,
       // adds ttl amount of seconds to it,
       //and compares to current time
-        val sub = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf).head
-        if (sub._4 > 0) {
-          val endtime = new Timestamp(sub._3.getTime + (sub._4 * 1000).toLong)
+        val sub = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf).headOption
+        if(sub != None)
+        {
+        if (sub.get._4 > 0) {
+          val endtime = new Timestamp(sub.get._3.getTime + (sub.get._4 * 1000).toLong)
           new java.sql.Timestamp(new java.util.Date().getTime).after(endtime)
         } else {
+          true
+        }
+        }
+        else
+        {
           true
         }
     }
@@ -478,7 +485,10 @@ object SQLite {
       }
       res
     }
-
+  def setSubStartTime(id:Int,newTime:Timestamp)
+  {
+   Await.ready(db.run(subs.filter(_.ID === id).map(_.start).update(newTime)),Duration.Inf)
+  }
   /**
    * Returns DBSub object wrapped in Option for given id.
    * Returns None if no subscription data matches the id
@@ -490,7 +500,6 @@ object SQLite {
     {
       var res: Option[DBSub] = None
       val query = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf)
-      db withSession { implicit session =>
         if (query.length > 0) {
           //creates DBSub object based on saved information
           var head = query.head
@@ -499,8 +508,6 @@ object SQLite {
           sub.id = head._1
           res = Some(sub)
         }
-
-      }
       res
     }
   /**
@@ -517,7 +524,7 @@ object SQLite {
     {
         val id = getNextId()
         sub.id = id
-        db.run(DBIO.seq(subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)))
+        Await.result(db.run(DBIO.seq(subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback))),Duration.Inf)
         //returns the id for reference
         id
     }
@@ -526,11 +533,12 @@ object SQLite {
    * @return the next free id number
    */
   private def getNextId(): Int = {
-    var res = Await.result(db.run(subs.sortBy(_.ID).result),Duration.Inf)
+    var res = Await.result(db.run(subs.result),Duration.Inf)
+    res = res.sortBy(_._1)
     var len = res.length
     if (len > 0) {
       //find the element with greatest id value and add 1 to it
-      res.drop(len - 1).head._1 + 1
+      res.last._1 + 1
     } else {
       0
     }
