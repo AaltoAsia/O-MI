@@ -29,12 +29,6 @@ class SubscriptionHandlerActorTest extends Specification {
   val testId2 = Promise[Int]
   val testId3 = database.SQLite.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
 
-//  def before = {
-//    
-//  }
-//  def after = {
-//    database.SQLite.remove(Path("SubscriptionHandlerTest/testData"))
-//  }
   "SubscriptionHandlerActor" should {
     sequential
     "remove eventsub from memory if ttl has expired" in new Actors {
@@ -50,7 +44,7 @@ class SubscriptionHandlerActorTest extends Specification {
       database.SQLite.removeSub(testId3)
 
     }
-    "load given interval sub into memory when sent load message" in new Actors {
+    "load given interval sub into memory when sent load message and remove when sent remove message" in new Actors {
 
       val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
       val subscriptionActor = subscriptionHandler.underlyingActor
@@ -65,6 +59,9 @@ class SubscriptionHandlerActorTest extends Specification {
       subscriptionHandler.tell(NewSubscription(futureId), probe.ref)
 
       subscriptionActor.getIntervalSubs.exists(_.id == futureId) === true
+      subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
+      probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
+      subscriptionActor.getIntervalSubs.exists(_.id == futureId) === false
     }
 
     "load given event subs into memory when sent load message" in new Actors {
@@ -83,21 +80,21 @@ class SubscriptionHandlerActorTest extends Specification {
 
     }
 
-    "remove given interval sub from queue when sent remove message" in new Actors {
-      //this test probably fails if previous test fails
-      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
-      val subscriptionActor = subscriptionHandler.underlyingActor
-      val probe = TestProbe()
-
-      val futureId: Int = Await.result(testId1.future, scala.concurrent.duration.Duration(1000, "ms"))
-
-      subscriptionActor.getIntervalSubs.exists(_.id == futureId) === true
-
-      subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
-      probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
-      subscriptionActor.getIntervalSubs.exists(_.id == futureId) === false
-      
-    }
+//    "remove given interval sub from queue when sent remove message" in new Actors {
+//      //this test probably fails if previous test fails
+//      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
+//      val subscriptionActor = subscriptionHandler.underlyingActor
+//      val probe = TestProbe()
+//
+//      val futureId: Int = Await.result(testId1.future, scala.concurrent.duration.Duration(1000, "ms"))
+//
+//      subscriptionActor.getIntervalSubs.exists(_.id == futureId) === true
+//
+//      subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
+//      probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
+//      subscriptionActor.getIntervalSubs.exists(_.id == futureId) === false
+//      
+//    }
 
     "remove given event sub from memory when sent remove message" in new Actors {
       val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]

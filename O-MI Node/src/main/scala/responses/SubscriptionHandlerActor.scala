@@ -220,7 +220,6 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
           log.debug(s"generateOmi for id:$id")
           val omiMsg = generateOmi(id)
-          log.error(s"${sub.callback}")
           val callbackAddr = sub.callback.get
           val interval = sub.interval
 
