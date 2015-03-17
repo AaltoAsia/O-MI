@@ -101,7 +101,7 @@ object SQLite {
           addObjects(path)
         }
         var buffering = Await.result(db.run(buffered.result), Duration.Inf).length > 0
-        db.run(DBIO.seq(latestValues += (path, v, new Timestamp(new java.util.Date().getTime))))
+        Await.result(db.run(DBIO.seq(latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))),Duration.Inf)
         // Call hooks
         val argument = Seq(path)
         setEventHooks foreach { _(argument) }
@@ -133,7 +133,7 @@ object SQLite {
     var deleted = false
     //if found rows with given path remove else path doesn't exist and can't be removed
     if (Await.result(db.run(pathQuery.result), Duration.Inf).length > 0) {
-      db.run(pathQuery.delete)
+      Await.result(db.run(pathQuery.delete),Duration.Inf)
       deleted = true;
     }
     if (deleted) {
@@ -145,7 +145,7 @@ object SQLite {
         if (getChilds(testPath).length == 0) {
           //only leaf nodes have 0 childs. 
           var pathQueryObjects = objects.filter(_.path === testPath)
-          db.run(pathQueryObjects.delete)
+          Await.result(db.run(pathQueryObjects.delete),Duration.Inf)
           testPath = testPath.dropRight(1)
         } else {
           //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
@@ -219,10 +219,10 @@ object SQLite {
     val pathQuery = buffered.filter(_.path === path)
     var len = Await.result(db.run(pathQuery.result), Duration.Inf).length
     if (len == 0) {
-      db.run(buffered += (path, 1))
+      Await.result(db.run(buffered += (path, 1)),Duration.Inf)
       true
     } else {
-      db.run(pathQuery.map(_.count).update(len + 1))
+      Await.result(db.run(pathQuery.map(_.count).update(len + 1)),Duration.Inf)
       false
     }
   }
@@ -238,10 +238,10 @@ object SQLite {
       var len = str.length
       if (len > 0) {
         if (str.head._2 > 1) {
-          db.run(pathQuery.map(_.count).update(len - 1))
+          Await.result(db.run(pathQuery.map(_.count).update(len - 1)),Duration.Inf)
           false
         } else {
-          db.run(pathQuery.delete)
+          Await.result(db.run(pathQuery.delete),Duration.Inf)
           removeExcess(path)
           true
         }
