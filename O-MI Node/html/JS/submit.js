@@ -28,6 +28,8 @@ $(function() {
 	$(document).on('click', '#prev4', function(){
 		send = false;
 	});
+	
+	$("#url-field").val('http://' + window.location.host + "/Objects");
 
 function loadThemes(){
 	iconSelect = new IconSelect("themes",{

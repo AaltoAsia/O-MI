@@ -49,7 +49,7 @@
 }
 
 .page {
-	max-height: 35em;
+	max-height: 40em;
 	overflow-y: scroll;
 	outline: 1px black solid;
 }
