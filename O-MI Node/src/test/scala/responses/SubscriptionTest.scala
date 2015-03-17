@@ -167,6 +167,23 @@ class SubscriptionTest extends Specification with Before {
       (requestID, trim(xmlreturn.head).toString) == (-1, trim(correctxml).toString)
     }
 
+    "Return with error when subscription doesn't exist" in {
+      val xmlreturn = OMISubscription.OMISubscriptionResponse(1234)
+
+      val correctxml = 
+      <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <omi:response>
+          <omi:result>
+            <omi:return returnCode="400" description="A subscription with this id has expired or doesn't exist">
+            </omi:return>
+            <omi:requestId>1234</omi:requestId>
+          </omi:result>
+        </omi:response>
+      </omi:omiEnvelope>
+
+      trim(xmlreturn.head).toString == trim(correctxml).toString
+    }
+
   }
 
 }

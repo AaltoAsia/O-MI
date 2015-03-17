@@ -90,22 +90,22 @@ object OMISubscription {
    **/
 
 	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
-    if (SQLite.isExpired(id)) {
-      val subdata = SQLite.getSub(id).get
-      subdata.paths.foreach{p => SQLite.stopBuffering(p)}
+    SQLite.getSub(id) match {
+    case None => {
       omiResult{
-      returnCode(400, "This subscription has expired") ++
+      returnCode(400, "A subscription with this id has expired or doesn't exist") ++
       requestId(id)
       }
     }
 
-    else {
-    omiResult{
+    case _ => {
+      omiResult{
       returnCode200 ++
       requestId(id) ++
       odfMsgWrapper(odfGeneration(id))
       }
     }
+  }
 	}
 
   /**
