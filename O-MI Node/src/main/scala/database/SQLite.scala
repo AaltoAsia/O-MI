@@ -63,7 +63,7 @@ object SQLite {
       var buffering = false
       //search database for sensor's path
       val pathQuery = latestValues.filter(_.path === data.path)
-      buffering = Await.result(db.run(buffered.result), Duration.Inf).length > 0
+      buffering = Await.result(db.run(buffered.filter(_.path === data.path).result), Duration.Inf).length > 0
       //appends a row to the latestvalues table
       count = Await.result(db.run(pathQuery.result), Duration.Inf).length
       Await.result(db.run(DBIO.seq(latestValues += (data.path, data.value, data.time))),Duration.Inf)
@@ -204,7 +204,7 @@ object SQLite {
       var count = qry.length
       if (count > historyLength) {
         val oldtime = qry.drop(count - historyLength).head._3
-        Await.ready(db.run(pathQuery.filter(_.timestamp < oldtime).delete),Duration.Inf)
+        Await.result(db.run(pathQuery.filter(_.timestamp < oldtime).delete),Duration.Inf)
       }
     }
   /**
