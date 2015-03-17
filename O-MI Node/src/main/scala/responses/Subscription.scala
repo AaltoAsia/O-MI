@@ -126,7 +126,8 @@ object OMISubscription {
       }
 
       case None => {
-        //TODO change sub starttime to current time when new database is taken in use
+        SQLite.setSubStartTime(subdata.id, new Timestamp(new Date().getTime())) //TODO this changes the intervals change new timestamp to be dividable byt timestamp
+        
         <Objects>
         {createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval)}
         </Objects>
