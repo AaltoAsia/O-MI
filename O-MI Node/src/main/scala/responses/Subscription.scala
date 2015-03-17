@@ -126,6 +126,7 @@ object OMISubscription {
       }
 
       case None => {
+        //TODO change sub starttime to current time when new database is taken in use
         <Objects>
         {createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval)}
         </Objects>
