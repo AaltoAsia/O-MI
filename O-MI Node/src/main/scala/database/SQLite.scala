@@ -38,8 +38,8 @@ object SQLite {
     setEventHooks = f :: setEventHooks
 
   //initializing database
-  //private val db = Database.forConfig("sqlite-conf")
-  private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+  private val db = Database.forConfig("sqlite-conf")
+  //private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
   if (init) {
     val setup = DBIO.seq(
       latestValues.schema.create,
