@@ -33,7 +33,6 @@ $(function() {
 		send = false;
 	});
 	
-	$("#url-field").val('http://' + window.location.host + "/Objects");
 
 function loadThemes(){
 	iconSelect = new IconSelect("themes",{
@@ -181,9 +180,6 @@ function ajaxPost(server, request, subscribeLocal){
 		dataType: "text",
 		success: function(response){
 			printResponse(response);
-			
-			count += 1;
-			$("#infoBox").text("Count: " + count);
 			
 			/*
 			if(subscribeLocal && send){
