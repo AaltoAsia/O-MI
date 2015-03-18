@@ -1,17 +1,28 @@
 var requestEditor, responseEditor;
 
-function loadPages() {
+function loadPages(page) {
 	$(".page").addClass("behind");
 
 	var selector = $("#page" + page);
 
-	loadSides();
+	loadSides(page);
 
 	selector.removeClass("prevpage nextpage hidden behind")
-	selector.addClass("currentpage")
-
+	selector.addClass("currentpage");
+	selector.prop("disabled", false);
+	
 	if (selector.is(':empty')) {
 		selector.load("pages/page" + page + ".html");
+		
+		// Handling server url for sending, in case skipping generate check, and field not loaded in time
+		if(page === 4){
+			var id = setInterval(function(){
+				if($("#send-field").length){
+					$("#send-field").val($("#url-field").val().replace("/Objects", ""));
+					clearInterval(id);
+				}
+			}, 100);
+		}
 	}
 	if (page === 1) {
 		$("#prev").addClass("hidden");
@@ -24,18 +35,13 @@ function loadPages() {
 			loadOptions();
 		}
 	}
-	// Generate request
 	if (page === 3) {
 		$("#next").removeClass("hidden");
-		$("#requestTabs").tabs();
-
-		generateRequest();
-
-		refreshEditor("request", "editRequest");
 	}
 	if (page === 4) {
+		$("#next").addClass("hidden");
 		$("#send-field").val($("#url-field").val().replace("/Objects", ""));
-
+		
 		$("#response .CodeMirror").remove();
 	}
 }
@@ -62,7 +68,7 @@ function refreshEditor(editor, id) {
 	}
 }
 
-function loadSides() {
+function loadSides(page) {
 	var prev = $("#page" + (page - 1));
 	var next = $("#page" + (page + 1));
 
