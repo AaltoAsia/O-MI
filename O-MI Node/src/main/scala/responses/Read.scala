@@ -188,17 +188,31 @@ object Read {
           {
             //val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
             // The parametres in database (fromStart, fromEnd)
-            val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
-            if(sensors.nonEmpty){
+            if(end.nonEmpty || begin.nonEmpty){
+              val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
+              if(sensors.nonEmpty){
 
-                var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
-                for (sensor <- sensors) {
-                  intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                  var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
+                  for (sensor <- sensors) {
+                    intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                  }
+
+                  intervaldata
+              }else{
+                <Error> Item not found in the database </Error>
+              }
+            } else {
+              val sensor = SQLite.get(infoItem.path)
+              if(sensor.nonEmpty){
+                sensor.get match {
+                  case dbsensor: DBSensor =>
+                    <value dateTime={ dbsensor.time.toString.replace(' ', 'T')}>{ dbsensor.value }</value>
+                  case dbobject: DBObject =>
+                      <Error> Found wrong type (InfoItem/Object) </Error>
                 }
-
-                intervaldata
-            }else{
-              <Error> Item not found in the database </Error>
+              }else{
+                <Error> Item not found in the database </Error>
+              }
             }
           }
         </InfoItem>
