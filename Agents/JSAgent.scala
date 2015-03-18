@@ -119,7 +119,7 @@ class SensorAgent(uri : String) extends IAgentActor {
 
           // Object id
           val path = split.dropRight(2) ++  split.takeRight(2).reverse
-          //system.log.debug("Data gained from: " + path.mkString("/"))
+         // system.log.debug("Data gained from: " + path.mkString("/"))
 
           ("Objects/" + path.mkString("/"), value)
         }))
