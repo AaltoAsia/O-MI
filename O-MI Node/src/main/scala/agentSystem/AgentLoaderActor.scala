@@ -1,7 +1,8 @@
 package agentSystem
 
 import http._
-import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
+import akka.actor._
+import akka.actor.SupervisorStrategy._
 import akka.io.{ IO, Tcp }
 import akka.event.{Logging, LoggingAdapter}
 import akka.util.ByteString
@@ -25,7 +26,7 @@ object AgentLoader{
 }
 case class ConfigUpdated()
 class AgentLoader  extends Actor with ActorLogging {
-  protected var bootables : Map[String,Bootable] = Map.empty 
+  protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty 
   private val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
 
@@ -34,26 +35,56 @@ class AgentLoader  extends Actor with ActorLogging {
   def receive = {
     case Start => loadAndStart
     case ConfigUpdated => loadAndStart
+    case Terminated(agent:ActorRef) =>
+    val b = bootables.find{ case (classname: String, (b: Bootable, config: String) ) => b.getAgentActor == agent}
+    if(b.nonEmpty)
+      b.get._2._1.startup(context.system, b.get._2._2)
   }
 
   def loadAndStart = {
     val classnames = getClassnamesWithConfigPath
-    val toBeBooted =  classnames map { case (c: String, p: String) => 
-      if(!bootables.exists{case (k:String, b:Bootable) => k == c})
-        Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
-    }
+      val toBeBooted =  classnames map { case (c: String, p: String) => 
+        try {
+        if(!bootables.exists{case (k:String, (b:Bootable, _ ) ) => k == c}){
+            Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        } else if(bootables.exists{case (k:String, (b:Bootable, config: String ) ) => k == c && p != config }){ 
+          log.warning("Agent config changed: "+ c +"\n Agent will be removed and restarted.")
+          val agent = bootables(c)._1.getAgentActor
+          bootables -= c
+          agent ! Stop
+          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        } else { 
+          log.warning("Agent allready running: "+ c)
+        }
+        } catch {
+          case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caucht")
+        }
+      }
 
     for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
       log.info("Starting up " + b.getClass.getName)
-      if(b.startup(context.system, p)){
-        log.info("Successfully started: "+ b.getClass.getName)
-        bootables += Tuple2(c, b)
+      if(bootables.get(c).isEmpty){
+        try{
+          if(b.startup(context.system, p)){
+            log.info("Successfully started: "+ b.getClass.getName)
+            bootables += Tuple2(c, (b, p))
+            context.watch(b.getAgentActor)
+          } else {
+            log.warning("Failed to start: "+ b.getClass.getName)
+          } 
+        } catch {
+          case e: InvalidActorNameException  => log.warning("Tryed to create same named actors")
+        }
       } else {
-        log.warning("Failed to start: "+ b.getClass.getName)
-      } 
+        
+          log.warning("Multiple instances of: "+ b.getClass.getName)
+      }
     }
 
-    addShutdownHook( toBeBooted.map{ case ( c: String, p:String, b: Bootable ) => b}.to[immutable.Seq] )
+   //TODO: Fix amtching error, exception. 
+  addShutdownHook( bootables.map{ 
+      case ( c: String, ( b: Bootable, p:String) ) => b
+    }.to[immutable.Seq] )
 
   }
 
@@ -102,5 +133,14 @@ class AgentLoader  extends Actor with ActorLogging {
   private def getClassnamesWithConfigPath : Array[(String,String)]= {
     settings.agents.unwrapped().asScala.map{ case (s: String, o: Object) => (s, o.toString)}.toArray 
   }
+  final val defaultStrategy: SupervisorStrategy = {
+    def defaultDecider: Decider = {
+      case _: ActorInitializationException => Stop
+      case _: ActorKilledException         => Stop
+      case _: Exception                    => Restart 
+    }
+    OneForOneStrategy()(defaultDecider)
+  }
+
 
 }

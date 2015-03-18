@@ -119,82 +119,12 @@ class SensorAgent(uri : String) extends IAgentActor {
 
           // Object id
           val path = split.dropRight(2) ++  split.takeRight(2).reverse
-          system.log.debug("Data gained from: " + path.mkString("/"))
+          //system.log.debug("Data gained from: " + path.mkString("/"))
 
           ("Objects/" + path.mkString("/"), value)
         }))
       }
     }
-  /*
-  def queueSensors(): Unit = {
-    // Set loading to true, 
-    loading = true
-
-    system.log.info("Queuing for new sensor data from: " + uri)
-
-
-    // send GET request with absolute URI (http://121.78.237.160:2100/)
-    val futureResponse: Future[HttpResponse] =
-    (httpRef ? HttpRequest(GET, Uri(uri))).mapTo[HttpResponse]
-
-    // wait for Future to complete
-    futureResponse onComplete {
-      case Success(response) =>
-      // Json data received from the server
-      val json = parse(response.entity.asString)
-
-      // List of (sensorname, value) objects
-      val list = for {
-        JObject(child) <- json
-        JField(sensor, JString(value)) <- child
-      } yield (sensor, value)
-      InputPusher.handleObjects(toODFObjSeq(list))
-
-      akka.pattern.after(300 seconds, using = system.scheduler)(Future { queueSensors() })
-      loading = false
-
-      case Failure(error) =>
-        loading = false
-        system.log.error("An error has occured: " + error.getMessage)
-    }
-  }
-  */
-  /**
-    * Generate ODF from the parsed & formatted Json data
-    * @param list of sensor-value pairs
-    * @return generated XML Node
-    */
-  /*
-  private def toODFObjSeq(list: List[(String, String)]): Seq[OdfObject] = {
-    // Define dateformat for dateTime value
-    var date = new java.sql.Timestamp(new java.util.Date().getTime)
-
-    // InfoItems filtered out
-    val infoItems: Seq[OdfInfoItem] = list.map{ item =>
-      val sensor: String = item._1
-      val value: String = item._2 // Currently as string, convert to double?
-      // Split name from underlines
-      val split = sensor.split('_')
-      val room = split.last
-      val infoname= split.takeRight(2).head
-      val path = Seq("Objects") ++ split.dropRight(2)
-      println( path / room / infoname)
-      OdfInfoItem(path.toSeq ++ Seq(  room, infoname), Seq(TimedValue(Some(date), value)), "")
-    }.toSeq
-    val rooms = infoItems.map{ i => 
-     i.path.takeRight(2).head
-    }
-    val roomObjs = rooms.map{ room =>
-      OdfObject(Seq("Objects",  "vtt", "otaakari4" , room), Seq.empty,
-      infoItems.filter{ i => 
-        i.path.takeRight(2).head == room
-      }.toSeq)
-    }
-
-    val vtt = OdfObject(Seq("Objects","vtt"),roomObjs,Seq())
-    return Seq(OdfObject(Seq("Objects"),Seq(vtt),Seq.empty))
-  }
-  */
 }
 
 object SensorAgent {
