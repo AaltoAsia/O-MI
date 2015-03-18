@@ -74,9 +74,7 @@ function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
 	
 	objectUrl = $("#url-field").val();
-	
-	$("#send-field").val(objectUrl.replace("/Objects", ""));
-	
+
 	// Sent ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
 }
@@ -205,8 +203,6 @@ function getSub(){
 	var r1 = response.split("<omi:requestId>");
 	
 	if(r1.length === 2 || omi.requestId){
-		$("#infoBox").text("Sending request");
-		
 		if(r1.length === 2){
 			r2 = r1[1].split("</omi:requestId>")[0];
 			omi.requestId = r2;
