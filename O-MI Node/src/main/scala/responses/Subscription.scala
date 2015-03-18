@@ -126,6 +126,12 @@ object OMISubscription {
       }
 
       case None => {
+        val currentTime = new Date().getTime()
+        //calculate new start time to be divisible by interval to keep the scheduling
+        val newStartTime = new Timestamp(
+            subdata.startTime.getTime + 
+            ((subdata.interval*1000) * (currentTime / (subdata.interval * 1000).floor)).toLong
+            )
         SQLite.setSubStartTime(subdata.id, new Timestamp(new Date().getTime())) //TODO this changes the intervals change new timestamp to be dividable byt timestamp
         
         <Objects>
