@@ -92,20 +92,25 @@ object SQLite {
   def setMany(data: List[(String, String)]) {
     var path = Path("")
     var len = 0
+    var add = DBIO.seq()
     data.foreach {
       case (p: String, v: String) =>
+        add >> (latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))
+        // Call hooks
+        val argument = Seq(path)
+        setEventHooks foreach { _(argument) }
+    }
+    Await.result(db.run(add.transactionally),Duration.Inf)
+    var OnlyPaths = data.map(_._1).distinct
+    OnlyPaths foreach{p
+      =>
         path = Path(p)
         var pathQuery = latestValues.filter(_.path === path)
         len = Await.result(db.run(pathQuery.result), Duration.Inf).length
         if (len == 0) {
           addObjects(path)
         }
-        var buffering = Await.result(db.run(buffered.result), Duration.Inf).length > 0
-        Await.result(db.run(DBIO.seq(latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))),Duration.Inf)
-        // Call hooks
-        val argument = Seq(path)
-        setEventHooks foreach { _(argument) }
-
+        var buffering = Await.result(db.run(buffered.filter(_.path === path).result), Duration.Inf).length > 0
         if (len >= historyLength) {
           removeExcess(path)
         }
@@ -485,9 +490,9 @@ object SQLite {
       }
       res
     }
-  def setSubStartTime(id:Int,newTime:Timestamp)
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double)
   {
-   Await.ready(db.run(subs.filter(_.ID === id).map(_.start).update(newTime)),Duration.Inf)
+   Await.ready(db.run(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL))),Duration.Inf)
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
