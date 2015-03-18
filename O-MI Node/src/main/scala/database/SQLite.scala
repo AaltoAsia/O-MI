@@ -45,6 +45,9 @@ object SQLite {
   private def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
     io => Await.result(db.run(io), Duration.Inf)
 
+  private def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
+    io => Await.ready(db.run(io), Duration.Inf)
+
   if (init) {
     val setup = DBIO.seq(
       latestValues.schema.create,
@@ -377,11 +380,11 @@ object SQLite {
    *
    */
   def clearDB() = {
-    Await.ready(db.run(DBIO.seq(
+    runWait(DBIO.seq(
       latestValues.delete,
       objects.delete,
       subs.delete,
-      buffered.delete)),Duration.Inf)
+      buffered.delete))
   }
 
   /**
@@ -480,14 +483,14 @@ object SQLite {
   def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] =
     {
       var res = Array[DBSub]()
-      var all = Await.result(db.run(hasCallBack match {
+      var all = runSync(hasCallBack match {
         case Some(true) =>
           subs.filter(!_.callback.isEmpty).result
         case Some(false) =>
           subs.filter(_.callback.isEmpty).result
         case None =>
           subs.result
-      }),Duration.Inf)
+      })
           res = Array.ofDim[DBSub](all.length)
           var index = 0
           all foreach {
@@ -501,7 +504,7 @@ object SQLite {
     }
   def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double)
   {
-   Await.ready(db.run(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL))),Duration.Inf)
+   runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
