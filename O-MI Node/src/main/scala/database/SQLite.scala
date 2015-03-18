@@ -92,16 +92,18 @@ object SQLite {
   def setMany(data: List[(String, String)]) {
     var path = Path("")
     var len = 0
- 
+    var add = Seq[(Path,String,Timestamp)]()
+    var time = 10000
     data.foreach {
       case (p: String, v: String) =>
         path = Path(p)
-        Await.result(db.run((latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))),Duration.Inf)
-        // Call hooks
+        time += 1
+         // Call hooks
         val argument = Seq(path)
         setEventHooks foreach { _(argument) }
+        add = add ++ Seq((path, v, new Timestamp(time)))
     }
-  //  Await.result(db.run(add),Duration.Inf)
+    Await.result(db.run((latestValues ++= add).transactionally),Duration.Inf)
     var OnlyPaths = data.map(_._1).distinct
     OnlyPaths foreach{p
       =>
