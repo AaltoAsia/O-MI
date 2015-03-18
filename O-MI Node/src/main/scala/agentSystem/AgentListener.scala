@@ -1,4 +1,4 @@
-package agentSystemInterface
+package agentSystem
 
 import akka.actor.{ Actor, ActorRef, Props  }
 import akka.io.{ IO, Tcp  }
@@ -50,7 +50,10 @@ class AgentListener extends Actor with ActorLogging {
       )
       agentCounter += 1
       connection ! Register(handler)
+    case obj: OdfObject => 
+      InputPusher.handleObjects(Seq(obj)) 
   }
+
 }
 
 /** A handler for data received from a agent.
@@ -81,12 +84,22 @@ class InputDataHandler(
         log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
       }
 
-      handleObjects(corrects)
+     InputPusher.handleObjects(corrects)
     case PeerClosed =>
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
-  private def handleObjects( objs: Seq[OdfObject] ) : Unit = {
+
+}
+
+trait IInputPusher {
+  def handleObjects( objs: Seq[OdfObject] ) : Unit
+  def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit  
+  def handlePathValuePairs( pairs: Seq[(String,String)] ): Unit
+}
+object InputPusher extends IInputPusher{
+  
+  override def handleObjects( objs: Seq[OdfObject] ) : Unit = {
     for(obj <- objs){
       if(obj.childs.nonEmpty)
         handleObjects(obj.childs)
@@ -94,7 +107,7 @@ class InputDataHandler(
         handleInfoItems(obj.sensors)
     }
   }
-  private def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
+  override def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
     for( info <- infoitems ){
       for(timedValue <- info.timedValues){
           val sensorData = timedValue.time match {
@@ -104,15 +117,14 @@ class InputDataHandler(
               case Some(timestamp) =>
                 new DBSensor(info.path, timedValue.value,  timestamp)
             }
-            log.debug(s"Saving to path ${info.path}")
+  //          println(s"Saving to path ${info.path}")
 
             SQLite.set(sensorData)
       }  
     }
   } 
+  override def handlePathValuePairs( pairs: Seq[(String,String)] ) : Unit ={
+    SQLite.setMany(pairs.toList)
+  }
 
 }
-
-
-
-

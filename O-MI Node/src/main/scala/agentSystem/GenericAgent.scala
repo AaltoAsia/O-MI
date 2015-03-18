@@ -1,5 +1,4 @@
-package agents
-import agentSystem._
+package agentSystem
 import parsing.Types._
 import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
 import akka.event.{Logging, LoggingAdapter}
@@ -22,7 +21,7 @@ case class Start()
   * @param Client actor that handles connection with AgentListener
   */
 
-class GenericTestAgent( path: Seq[String])  extends IAgentActor {
+class GenericAgent( path: Seq[String], fileToRead: File)  extends IAgentActor {
 
   case class Msg(msg: String)
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,7 +37,6 @@ class GenericTestAgent( path: Seq[String])  extends IAgentActor {
         case i: OdfInfoItem =>
         case o: OdfObject =>
           InputPusher.handleObjects(Seq(o))
-          println("Writed to DB" )
       }
       run()
   }
@@ -48,7 +46,8 @@ class GenericTestAgent( path: Seq[String])  extends IAgentActor {
   */
   def run() = {
     Future {
-      self ! Msg(StdIn.readLine)
+      for(line <- io.Source.fromFile(fileToRead).getLines)
+      self ! Msg(line)
     }
   }
 
@@ -69,11 +68,11 @@ class GenericTestAgent( path: Seq[String])  extends IAgentActor {
   }
 }
 
-object GenericTestAgent {
-  def props( path: Seq[String]) : Props = {Props(new GenericAgent(path)) }
+object GenericAgent {
+  def props( path: Seq[String], file: File) : Props = {Props(new GenericAgent(path,file)) }
 }
 
-class GenericTestBoot extends Bootable {
+class GenericBoot extends Bootable {
   private var configPath : String = ""
   private var agentActor : ActorRef = null
 
@@ -84,8 +83,11 @@ class GenericTestBoot extends Bootable {
     configPath = pathToConfig
     val lines = io.Source.fromFile(configPath).getLines().toArray
     var path = lines.head.split("/")
-    println( lines.head ) 
-    agentActor = system.actorOf(GenericAgent.props(path), "Generic-Agent")    
+    var file = new File(lines.last)
+    if(!file.canRead)
+      return false
+    
+    agentActor = system.actorOf(GenericAgent.props(path, file), "Generic-Agent")    
     agentActor ! Start
     return true
   }

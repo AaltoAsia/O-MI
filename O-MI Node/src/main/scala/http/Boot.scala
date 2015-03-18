@@ -10,7 +10,7 @@ import java.util.Date
 import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
 
-import agentSystemInterface.AgentListener
+import agentSystem.{AgentListener, AgentLoader}
 import responses._
 import parsing.Types._
 import parsing.Types.Path._
@@ -32,8 +32,8 @@ object Starter {
     // Create test data
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
-    val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
-    sensorData.queueSensors()
+    //val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
+    //sensorData.queueSensors()
 
     
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
@@ -51,6 +51,7 @@ object Starter {
     // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
     val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
+    val agentLoader = system.actorOf(AgentLoader.props() , "agent-loader")
 
     implicit val timeout = Timeout(5.seconds)
 
