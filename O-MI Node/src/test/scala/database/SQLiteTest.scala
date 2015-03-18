@@ -312,6 +312,23 @@ object SQLiteTest extends Specification {
      SQLite.removeSub(id8)
      SQLite.removeSub(id9)
    }
+   "be able to add many values in one go" in{
+     SQLite.startBuffering(Path("path/to/setmany/test1"))
+     val testdata = 
+       List(("path/to/setmany/test1","value1"),("path/to/setmany/test1","value2"),("path/to/setmany/test1","value3"),
+         ("path/to/setmany/test1","value4"),("path/to/setmany/test1","value5"),("path/to/setmany/test1","value6"),
+         ("path/to/setmany/test1","value7"),("path/to/setmany/test1","value8"),("path/to/setmany/test1","value9"),
+         ("path/to/setmany/test1","value10"),("path/to/setmany/test1","value11"),("path/to/setmany/test1","value12"),
+         ("path/to/setmany/test2","value1"),("path/to/setmany/test2","value2"),("path/to/setmany/test2","value3"),
+         ("path/to/setmany/test2","value4"),("path/to/setmany/test2","value5"),("path/to/setmany/test2","value6"),
+         ("path/to/setmany/test2","value7"),("path/to/setmany/test2","value8"),("path/to/setmany/test2","value9"),
+         ("path/to/setmany/test2","value10"),("path/to/setmany/test2","value11"),("path/to/setmany/test2","value12")
+         )
+     SQLite.setMany(testdata)
+     database.SQLite.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
+     database.SQLite.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
+     true shouldEqual true
+   }
 
   }
 }

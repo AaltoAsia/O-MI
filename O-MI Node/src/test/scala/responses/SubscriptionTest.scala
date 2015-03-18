@@ -13,8 +13,19 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
+//import org.specs2.specification.{Step, Fragments}
+
+//from http://stackoverflow.com/questions/16936811/execute-code-before-and-after-specification
+//trait BeforeAllAfterAll extends Specification {
+//  override def map(fragments: =>Fragments) = 
+//    Step(beforeAll) ^ fragments ^ Step(afterAll)
+//
+//  protected def beforeAll()
+//  protected def afterAll()
+//}
 
 class SubscriptionTest extends Specification with Before {
+//  def afterAll:Unit = ()
   def before = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
@@ -182,6 +193,12 @@ class SubscriptionTest extends Specification with Before {
       </omi:omiEnvelope>
 
       trim(xmlreturn.head).toString == trim(correctxml).toString
+    }
+    "Return polled data only once" in {
+//      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/Temperature")),60,1,None,Some(new java.sql.Timestamp(1426605117000L))))
+//      val test = OMISubscription.odfGeneration(testSub)
+//      test === <Object></Object>
+      1 ===1
     }
 
   }

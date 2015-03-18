@@ -38,8 +38,8 @@ object SQLite {
     setEventHooks = f :: setEventHooks
 
   //initializing database
-  //private val db = Database.forConfig("sqlite-conf")
-  private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+  private val db = Database.forConfig("sqlite-conf")
+  //private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
   if (init) {
     val setup = DBIO.seq(
       latestValues.schema.create,
@@ -92,20 +92,25 @@ object SQLite {
   def setMany(data: List[(String, String)]) {
     var path = Path("")
     var len = 0
+    var add = DBIO.seq()
     data.foreach {
       case (p: String, v: String) =>
+        add >> (latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))
+        // Call hooks
+        val argument = Seq(path)
+        setEventHooks foreach { _(argument) }
+    }
+    Await.result(db.run(add.transactionally),Duration.Inf)
+    var OnlyPaths = data.map(_._1).distinct
+    OnlyPaths foreach{p
+      =>
         path = Path(p)
         var pathQuery = latestValues.filter(_.path === path)
         len = Await.result(db.run(pathQuery.result), Duration.Inf).length
         if (len == 0) {
           addObjects(path)
         }
-        var buffering = Await.result(db.run(buffered.result), Duration.Inf).length > 0
-        db.run(DBIO.seq(latestValues += (path, v, new Timestamp(new java.util.Date().getTime))))
-        // Call hooks
-        val argument = Seq(path)
-        setEventHooks foreach { _(argument) }
-
+        var buffering = Await.result(db.run(buffered.filter(_.path === path).result), Duration.Inf).length > 0
         if (len >= historyLength) {
           removeExcess(path)
         }
@@ -133,7 +138,7 @@ object SQLite {
     var deleted = false
     //if found rows with given path remove else path doesn't exist and can't be removed
     if (Await.result(db.run(pathQuery.result), Duration.Inf).length > 0) {
-      db.run(pathQuery.delete)
+      Await.result(db.run(pathQuery.delete),Duration.Inf)
       deleted = true;
     }
     if (deleted) {
@@ -145,7 +150,7 @@ object SQLite {
         if (getChilds(testPath).length == 0) {
           //only leaf nodes have 0 childs. 
           var pathQueryObjects = objects.filter(_.path === testPath)
-          db.run(pathQueryObjects.delete)
+          Await.result(db.run(pathQueryObjects.delete),Duration.Inf)
           testPath = testPath.dropRight(1)
         } else {
           //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
@@ -219,10 +224,10 @@ object SQLite {
     val pathQuery = buffered.filter(_.path === path)
     var len = Await.result(db.run(pathQuery.result), Duration.Inf).length
     if (len == 0) {
-      db.run(buffered += (path, 1))
+      Await.result(db.run(buffered += (path, 1)),Duration.Inf)
       true
     } else {
-      db.run(pathQuery.map(_.count).update(len + 1))
+      Await.result(db.run(pathQuery.map(_.count).update(len + 1)),Duration.Inf)
       false
     }
   }
@@ -238,10 +243,10 @@ object SQLite {
       var len = str.length
       if (len > 0) {
         if (str.head._2 > 1) {
-          db.run(pathQuery.map(_.count).update(len - 1))
+          Await.result(db.run(pathQuery.map(_.count).update(len - 1)),Duration.Inf)
           false
         } else {
-          db.run(pathQuery.delete)
+          Await.result(db.run(pathQuery.delete),Duration.Inf)
           removeExcess(path)
           true
         }
@@ -485,9 +490,9 @@ object SQLite {
       }
       res
     }
-  def setSubStartTime(id:Int,newTime:Timestamp)
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double)
   {
-   Await.ready(db.run(subs.filter(_.ID === id).map(_.start).update(newTime)),Duration.Inf)
+   Await.ready(db.run(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL))),Duration.Inf)
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
