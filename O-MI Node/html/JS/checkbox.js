@@ -42,7 +42,7 @@ function ObjectBox(id, depth, parent){
 	};
 	
 	this.find = function(id) {
-		if(this.id == id){
+		if(this.id === id){
 			return this;
 		}
 		var o;
@@ -157,7 +157,7 @@ function propParent(child){
 /* Temp function, returns an array of children with the given id (as their class) */
 function getChildren(id){
 	return $("#objectList").find("input").filter(function(){
-		return $(this).attr('class').indexOf(id) > -1;
+		return $(this).attr('class').split(" ").indexOf(id) > -1;
 	});
 }
 

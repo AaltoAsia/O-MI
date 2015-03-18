@@ -98,7 +98,7 @@ function addChildren(object, items){
 	
 	for(var i = 0; i < items.length; i++){
 		var c = $(items[i]).attr('class');
-		if(c.indexOf(object.id) > -1){
+		if(c.split(" ").indexOf(object.id) > -1){
 			children.push(items[i]);
 		}
 	}
