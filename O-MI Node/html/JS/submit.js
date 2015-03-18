@@ -80,6 +80,9 @@ function getObjects() {
 }
 
 function ajaxGet(indent, url, listId){
+	
+	setInfo(0);
+	
 	$.ajax({
         type: "GET",
 		dataType: "xml",
@@ -89,6 +92,9 @@ function ajaxGet(indent, url, listId){
 		},
 		error: function(a, b, c){
 			alert("Error accessing data discovery");
+		}, 
+		complete : function(a , b){
+			clearInfo();
 		}
     });
 }
@@ -169,6 +175,8 @@ function getSubscribeLocal(){
 var count = 0;
 
 function ajaxPost(server, request, subscribeLocal){
+	setInfo(2);
+	
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -179,19 +187,14 @@ function ajaxPost(server, request, subscribeLocal){
 		success: function(response){
 			printResponse(response);
 			
-			/*
-			if(subscribeLocal && send){
-				window.setTimeout(
-					function () {
-						getSub();
-					},
-					1000);
-			
-			}*/ 
+			$("#response").animate({ scrollTop: $(this).height() }, "slow");
 		},
 		error: function(a, b, c){
 			$("#infoBox").text("Error sending message");
 			handleError(a, b, c);
+		},
+		complete: function(a, b){
+			clearInfo();
 		}
 	});
 }
