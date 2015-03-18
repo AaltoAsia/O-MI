@@ -1,8 +1,5 @@
 /* Generate the O-DF request */
 function generateRequest(){
-	//Info
-	setInfo(1);
-	
 	var operation = $("#icons").find(".selected").attr("alt"); //Get the selected operation from the IconSelect object
 	var ttl = $("#ttl").val(); 
 	var interval = $("#interval").val();
@@ -20,8 +17,6 @@ function generateRequest(){
 	console.log("Generated the O-DF request");
 	
 	$("#editRequest").html(request);
-	
-   clearInfo();
 }
 
 function checkedObjects() {

@@ -8,7 +8,6 @@ $("#info").on("mouseleave", function() {
 
 var infoArr = [
                "The server is querying for the objects",
-               "The server is generating the request",
                "The server is preparing the response"
 ];
 

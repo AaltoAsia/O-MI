@@ -175,7 +175,7 @@ function getSubscribeLocal(){
 var count = 0;
 
 function ajaxPost(server, request, subscribeLocal){
-	setInfo(2);
+	setInfo(1);
 	
 	$.ajax({
 		type: "POST",
