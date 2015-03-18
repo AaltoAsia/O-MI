@@ -181,9 +181,6 @@ function ajaxPost(server, request, subscribeLocal){
 		success: function(response){
 			printResponse(response);
 			
-			count += 1;
-			$("#infoBox").text("Count: " + count);
-			
 			/*
 			if(subscribeLocal && send){
 				window.setTimeout(
