@@ -2,6 +2,7 @@
 	<h2 class="fs-title">Query for objects</h2>
 	<h3 class="fs-subtitle">This is step 1</h3>
 	<input type="text" name="url" id="url-field" value="http://localhost:8080/Objects" />
+  <script>$("#url-field").val("http://" + window.location.host + "/Objects");</script>
 	<input type="button" name="objects" id="object-button" class="action-button highlight-button" value="Get Objects" />
 	<div>
 		<input type="button" name="all" id="checkall" class="action-button" value="Check All" />
