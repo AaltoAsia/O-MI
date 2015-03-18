@@ -92,15 +92,16 @@ object SQLite {
   def setMany(data: List[(String, String)]) {
     var path = Path("")
     var len = 0
-    var add = DBIO.seq()
+ 
     data.foreach {
       case (p: String, v: String) =>
-        add >> (latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))
+        path = Path(p)
+        Await.result(db.run((latestValues += (path, v, new Timestamp(new java.util.Date().getTime)))),Duration.Inf)
         // Call hooks
         val argument = Seq(path)
         setEventHooks foreach { _(argument) }
     }
-    Await.result(db.run(add.transactionally),Duration.Inf)
+  //  Await.result(db.run(add),Duration.Inf)
     var OnlyPaths = data.map(_._1).distinct
     OnlyPaths foreach{p
       =>
@@ -111,7 +112,7 @@ object SQLite {
           addObjects(path)
         }
         var buffering = Await.result(db.run(buffered.filter(_.path === path).result), Duration.Inf).length > 0
-        if (len >= historyLength) {
+        if (!buffering) {
           removeExcess(path)
         }
     }
@@ -307,7 +308,7 @@ object SQLite {
     var parent = Path("")
       for (fullpath <- parentsAndPath) {
         if (!hasObject(fullpath)) {
-          db.run(objects += (fullpath, parent, fullpath.last))
+          Await.result(db.run(objects += (fullpath, parent, fullpath.last)),Duration.Inf)
         }
         parent = fullpath
       }

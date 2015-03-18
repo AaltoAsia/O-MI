@@ -326,8 +326,7 @@ object SQLiteTest extends Specification {
          )
      SQLite.setMany(testdata)
      database.SQLite.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
-     database.SQLite.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
-     true shouldEqual true
+     database.SQLite.getNBetween(Path("path/to/setmany/test2"), None, None,None, None).length shouldEqual 10
    }
 
   }
