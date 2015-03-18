@@ -195,7 +195,9 @@ class SubscriptionTest extends Specification with BeforeAllAfterAll {
       trim(xmlreturn.head).toString == trim(correctxml).toString
     }
     "Return polled data only once" in {
-      1===1
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/Temperature")),60,1,None,Some(new java.sql.Timestamp(1426605117000L))))
+      val test = OMISubscription.odfGeneration(testSub)
+      test === 1
     }
 
   }
