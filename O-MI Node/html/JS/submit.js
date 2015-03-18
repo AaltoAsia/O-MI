@@ -4,7 +4,11 @@ var iconSelect, objectUrl, omi, iconValue;
 var send = false;
 var page = 1; // Start at page 1
 
+var manager;
+
 $(function() {
+	
+	manager = new ObjectBoxManager();
 	
 	loadThemes();
 	loadPages(page);
@@ -110,9 +114,7 @@ function displayObjects(data, indent, url, listId) {
 			$(this).find("Object").each(function(){
 				var id = $(this).find("id").text();
 				
-				$('<li><label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label></li>').appendTo("#objectList"); 
-				$('<ul id="list-' + id + '"></ul>').appendTo("#objectList");
-				addInfoItems(this, id, indent + 1);
+				manager.addObject(id);
 				
 				// Get lower hierarchy values
 				//ajaxGet(indent + 1, url + "/" + id, "list-" + id);
@@ -120,23 +122,14 @@ function displayObjects(data, indent, url, listId) {
 		});
 	} else {
 		// Subobjects/Infoitems
-		var margin = "20px";
-		
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
 			
 			$(this).find("Object").each(function(){
 				var name = $(this).find("id").text();
-				var str = '<li><label><input type="checkbox" class="checkbox ' + id + '" id="' + name + '"/>' + name + '</label></li>';
-				
-				$(str).appendTo("#" + listId); 
-				$("#" + listId).last().css({ marginLeft: margin });
-				$('<ul id="list-' + name + '"></ul>').appendTo("#" + listId);
-				$("#" + listId).last().css({ marginLeft: margin });
-				
-				ajaxGet(indent + 1, url + "/" + name);
-				
-				$("#" + listId + ":last-child").css({ marginLeft:margin });
+
+				//ajaxGet(indent + 1, url + "/" + name);
+				manager.find(id).addChild(id, name, listId);
 			});
 			addInfoItems(this, id, indent);
 		});
@@ -145,10 +138,10 @@ function displayObjects(data, indent, url, listId) {
 
 function addInfoItems(parent, id) {
 	var margin = "20px";
-
+	
 	$(parent).find("InfoItem").each(function(){
 		var name = $(this).attr('name');
-		
+
 		// Append InfoItem as checkbox
 		$('<li><label>' + 
 		'<input type="checkbox" class="checkbox ' + id + '" name="' + name + '"/>' + name +
