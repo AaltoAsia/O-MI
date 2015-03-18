@@ -186,16 +186,12 @@ function ajaxPost(server, request, subscribeLocal){
 		dataType: "text",
 		success: function(response){
 			printResponse(response);
-			
-			$("#response").animate({ scrollTop: $(this).height() }, "slow");
+			clearInfo();
 		},
 		error: function(a, b, c){
 			$("#infoBox").text("Error sending message");
 			handleError(a, b, c);
 		},
-		complete: function(a, b){
-			clearInfo();
-		}
 	});
 }
 

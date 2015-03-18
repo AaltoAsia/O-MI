@@ -79,10 +79,14 @@ function ObjectBox(id, depth, parent){
 
 $(document).on('click', '#checkall', function() {
 	console.log("Checking all boxes");
+	
+	$(".checkbox").prop('checked', true);
+	
+	/*
 	$(".checkbox").each(function(){
 		$(this).prop('checked', true);
 		update(this);
-	});
+	}); */
 });
 
 $(document).on('click', '#uncheckall', function() {
