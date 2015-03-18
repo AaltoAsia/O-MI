@@ -17,6 +17,7 @@ import parsing.Types._
 import parsing.Types.Path._
 
 object SQLite {
+
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) } // String to Path
@@ -40,14 +41,19 @@ object SQLite {
   //initializing database
   private val db = Database.forConfig("sqlite-conf")
   //private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+
+  private def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
+    io => Await.result(db.run(io), Duration.Inf)
+
   if (init) {
     val setup = DBIO.seq(
       latestValues.schema.create,
       objects.schema.create,
       subs.schema.create,
       buffered.schema.create)
-    Await.result(db.run(setup), Duration.Inf)
+    runSync(setup)
   }
+
 
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
@@ -63,10 +69,10 @@ object SQLite {
       var buffering = false
       //search database for sensor's path
       val pathQuery = latestValues.filter(_.path === data.path)
-      buffering = Await.result(db.run(buffered.filter(_.path === data.path).result), Duration.Inf).length > 0
+      buffering = runSync(buffered.filter(_.path === data.path).result).length > 0
       //appends a row to the latestvalues table
-      count = Await.result(db.run(pathQuery.result), Duration.Inf).length
-      Await.result(db.run(DBIO.seq(latestValues += (data.path, data.value, data.time))),Duration.Inf)
+      count = runSync(pathQuery.result).length
+      runSync(DBIO.seq(latestValues += (data.path, data.value, data.time)))
       // Call hooks
       val argument = Seq(data.path)
       setEventHooks foreach { _(argument) }
@@ -103,17 +109,17 @@ object SQLite {
         setEventHooks foreach { _(argument) }
         add = add ++ Seq((path, v, new Timestamp(time)))
     }
-    Await.result(db.run((latestValues ++= add).transactionally),Duration.Inf)
+    runSync((latestValues ++= add).transactionally)
     var OnlyPaths = data.map(_._1).distinct
     OnlyPaths foreach{p
       =>
         path = Path(p)
         var pathQuery = latestValues.filter(_.path === path)
-        len = Await.result(db.run(pathQuery.result), Duration.Inf).length
+        len = runSync(pathQuery.result).length
         if (len == 0) {
           addObjects(path)
         }
-        var buffering = Await.result(db.run(buffered.filter(_.path === path).result), Duration.Inf).length > 0
+        var buffering = runSync(buffered.filter(_.path === path).result).length > 0
         if (!buffering) {
           removeExcess(path)
         }
@@ -140,8 +146,8 @@ object SQLite {
     val pathQuery = latestValues.filter(_.path === path)
     var deleted = false
     //if found rows with given path remove else path doesn't exist and can't be removed
-    if (Await.result(db.run(pathQuery.result), Duration.Inf).length > 0) {
-      Await.result(db.run(pathQuery.delete),Duration.Inf)
+    if (runSync(pathQuery.result).length > 0) {
+      runSync(pathQuery.delete)
       deleted = true;
     }
     if (deleted) {
@@ -153,7 +159,7 @@ object SQLite {
         if (getChilds(testPath).length == 0) {
           //only leaf nodes have 0 childs. 
           var pathQueryObjects = objects.filter(_.path === testPath)
-          Await.result(db.run(pathQueryObjects.delete),Duration.Inf)
+          runSync(pathQueryObjects.delete)
           testPath = testPath.dropRight(1)
         } else {
           //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
@@ -183,7 +189,7 @@ object SQLite {
       var info: (Timestamp, Double) = (null, 0.0) //to gather only needed info from the query
       var paths = Array[String]()
 
-      var str = Await.result(db.run(subQuery.result), Duration.Inf)
+      var str = runSync(subQuery.result)
       if (str.length > 0) {
         var sub = str.head
         info = (sub._3, sub._5)
@@ -208,11 +214,11 @@ object SQLite {
   private def removeExcess(path: Path) =
     {
       var pathQuery = latestValues.filter(_.path === path)
-      var qry = Await.result(db.run(pathQuery.sortBy(_.timestamp).result), Duration.Inf)
+      var qry = runSync(pathQuery.sortBy(_.timestamp).result)
       var count = qry.length
       if (count > historyLength) {
         val oldtime = qry.drop(count - historyLength).head._3
-        Await.result(db.run(pathQuery.filter(_.timestamp < oldtime).delete),Duration.Inf)
+        runSync(pathQuery.filter(_.timestamp < oldtime).delete)
       }
     }
   /**
@@ -225,12 +231,12 @@ object SQLite {
    */
   def startBuffering(path: Path):Boolean = {
     val pathQuery = buffered.filter(_.path === path)
-    var len = Await.result(db.run(pathQuery.result), Duration.Inf).length
+    var len = runSync(pathQuery.result).length
     if (len == 0) {
-      Await.result(db.run(buffered += (path, 1)),Duration.Inf)
+      runSync(buffered += (path, 1))
       true
     } else {
-      Await.result(db.run(pathQuery.map(_.count).update(len + 1)),Duration.Inf)
+      runSync(pathQuery.map(_.count).update(len + 1))
       false
     }
   }
@@ -242,14 +248,14 @@ object SQLite {
    */
   def stopBuffering(path: Path):Boolean= {
       val pathQuery = buffered.filter(_.path === path)
-      val str = Await.result(db.run(pathQuery.result),Duration.Inf)
+      val str = runSync(pathQuery.result)
       var len = str.length
       if (len > 0) {
         if (str.head._2 > 1) {
-          Await.result(db.run(pathQuery.map(_.count).update(len - 1)),Duration.Inf)
+          runSync(pathQuery.map(_.count).update(len - 1))
           false
         } else {
-          Await.result(db.run(pathQuery.delete),Duration.Inf)
+          runSync(pathQuery.delete)
           removeExcess(path)
           true
         }
@@ -275,7 +281,7 @@ object SQLite {
         //search database for given path
         val pathQuery = latestValues.filter(_.path === path)
         //if path is found from latest values it must be Sensor otherwise check if it is an object
-        var qry = Await.result(db.run(pathQuery.sortBy(_.timestamp).result),Duration.Inf)
+        var qry = runSync(pathQuery.sortBy(_.timestamp).result)
         var count = qry.length
         if (count > 0) {
           //path is sensor
@@ -310,7 +316,7 @@ object SQLite {
     var parent = Path("")
       for (fullpath <- parentsAndPath) {
         if (!hasObject(fullpath)) {
-          Await.result(db.run(objects += (fullpath, parent, fullpath.last)),Duration.Inf)
+          runSync(objects += (fullpath, parent, fullpath.last))
         }
         parent = fullpath
       }
@@ -344,7 +350,7 @@ object SQLite {
       query = query.filter(_.timestamp <= end.get)
     }
     query = query.sortBy(_.timestamp)
-      var str = Await.result(db.run(query.result),Duration.Inf)
+      var str = runSync(query.result)
       if (fromStart != None && fromEnd != None) {
         //does not compute
         //can't have query from two different parts in one go
@@ -390,7 +396,7 @@ object SQLite {
       val objectQuery = for {
         c <- objects if c.parentPath === path
       } yield (c.path)
-      var str = Await.result(db.run(objectQuery.result),Duration.Inf)
+      var str = runSync(objectQuery.result)
       childs = Array.ofDim[DBItem](str.length)
       var index = 0
       str foreach {
@@ -407,7 +413,7 @@ object SQLite {
    */
   private def hasObject(path: Path): Boolean =
     {
-      Await.result(db.run(objects.filter(_.path === path).result),Duration.Inf).length > 0
+      runSync(objects.filter(_.path === path).result).length > 0
     }
 
   /**
@@ -423,7 +429,7 @@ object SQLite {
       //gets time when subscibe was added,
       // adds ttl amount of seconds to it,
       //and compares to current time
-        val sub = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf).headOption
+        val sub = runSync(subs.filter(_.ID === id).result).headOption
         if(sub != None)
         {
         if (sub.get._4 > 0) {
@@ -446,7 +452,7 @@ object SQLite {
   def removeSub(id: Int): Boolean = {
     
       var qry = subs.filter(_.ID === id)
-      var toBeDeleted = Await.result(db.run(qry.result),Duration.Inf)
+      var toBeDeleted = runSync(qry.result)
       if (toBeDeleted.length > 0) {
         if (toBeDeleted.head._6 == None) {
           toBeDeleted.head._2.split(";").foreach { p =>
@@ -507,7 +513,7 @@ object SQLite {
   def getSub(id: Int): Option[DBSub] =
     {
       var res: Option[DBSub] = None
-      val query = Await.result(db.run(subs.filter(_.ID === id).result),Duration.Inf)
+      val query = runSync(subs.filter(_.ID === id).result)
         if (query.length > 0) {
           //creates DBSub object based on saved information
           var head = query.head
@@ -532,7 +538,7 @@ object SQLite {
     {
         val id = getNextId()
         sub.id = id
-        Await.result(db.run(DBIO.seq(subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback))),Duration.Inf)
+        runSync(DBIO.seq(subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)))
         //returns the id for reference
         id
     }
@@ -541,7 +547,7 @@ object SQLite {
    * @return the next free id number
    */
   private def getNextId(): Int = {
-    var res = Await.result(db.run(subs.result),Duration.Inf)
+    var res = runSync(subs.result)
     res = res.sortBy(_._1)
     var len = res.length
     if (len > 0) {
