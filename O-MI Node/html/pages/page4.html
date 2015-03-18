@@ -1,13 +1,15 @@
 <fieldset>
 	<h2 class="fs-title">Request sending</h2>
-	<h3 class="fs-subtitle">Send the request and see the response</h3>
+	<h3 class="fs-subtitle">Specify the server URL where you want to send the request</h3>
 	<input type="text" name="send" id="send-field" placeholder="Server URL" /> 
+	
+	<h3 class="fs-subtitle">Send the request to the server</h3>
 	<input type="button" name="objects" id="request-send" class="action-button highlight-button" value="Send" />
-	<!-- <input type="button" name="sub" id="sub" class="action-button highlight-button" value="Get Sub" /> -->
 	<input type="button" name="poll" id="poll" class="action-button" value="Poll" />
 	<input type="button" name="stop" id="stop" class="action-button" value="Stop" />
+	
+	<h3 class="fs-subtitle">See (and edit) the response below</h3>
 	<div id="response">
-		<div id="status"></div>
 		<textarea id="responseBox" rows="15"></textarea>
 	</div>
 </fieldset>
