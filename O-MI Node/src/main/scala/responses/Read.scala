@@ -136,15 +136,8 @@ object Read {
         <id>{ obj.path.last }</id>
         {
           if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-            if(begin != None || end != None || newest != None || oldest != None) {
               odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
               odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
-            }
-
-            else {
-              odfLatestInfoItemGeneration(obj.sensors.toList) ++ 
-              odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
-            }
 
           } else {
             //TODO: sqlite get begin to end
@@ -175,7 +168,8 @@ object Read {
     node
   }
   /**
-   * helper function for generating O-DF's InfoItem nodes
+   * helper function for generating O-DF's InfoItem nodes. If any of the values begin, end, newest or oldest are defined, it uses them for generation.
+   * otherwise it fetches just the present value of the sensor.
    * @param infoItems nodes to generate
    * @param begin the start time of the time interval from where to get sensors
    * @param end the end time of the time interval from where to get sensors
@@ -190,46 +184,45 @@ object Read {
                             oldest: Option[Int] ): xml.NodeSeq = {
 
       var node: xml.NodeSeq = xml.NodeSeq.Empty
-      for (infoItem <- infoItems) {
-        node ++= 
-        <InfoItem name={ infoItem.path.last }>
-          {
-            //val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
-            // The parametres in database (fromStart, fromEnd)
-            val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
-            if(sensors.nonEmpty){
+      if(begin != None || end != None || newest != None || oldest != None) {
+        for (infoItem <- infoItems) {
+          node ++= 
+          <InfoItem name={ infoItem.path.last }>
+            {
+              // The parametres in database (fromStart, fromEnd)
+              val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
+              if(sensors.nonEmpty){
 
-                var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
-                for (sensor <- sensors) {
-                  intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
-                }
+                  var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
+                  for (sensor <- sensors) {
+                    intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                  }
 
-                intervaldata
-            }else{
-              <Error> Item not found in the database </Error>
+                  intervaldata
+              }else{
+                <Error> Item not found in the database </Error>
+              }
             }
-          }
-        </InfoItem>
+          </InfoItem>
+        }
       }
-      node
-  }
 
-  def odfLatestInfoItemGeneration(infoItems: List[OdfInfoItem]): xml.NodeSeq = {
+      else {
+        for (infoItem <- infoItems) {
+          node ++= 
+          <InfoItem name={ infoItem.path.last }>
+            {
+              SQLite.get(infoItem.path) match {
+                case Some(sensor: DBSensor) => <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                case _ => <Error> Item not found in the database </Error>
+              }
 
-      var node: xml.NodeSeq = xml.NodeSeq.Empty
-      for (infoItem <- infoItems) {
-        node ++= 
-        <InfoItem name={ infoItem.path.last }>
-          {
-            SQLite.get(infoItem.path) match {
-              case Some(sensor: DBSensor) => <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
-              case _ => <Error> Item not found in the database </Error>
             }
 
-          }
-
-        </InfoItem>
+          </InfoItem>
+        }
       }
+      
       node
   }
 
