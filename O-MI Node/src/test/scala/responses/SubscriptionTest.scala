@@ -195,10 +195,34 @@ class SubscriptionTest extends Specification with Before {
       trim(xmlreturn.head).toString == trim(correctxml).toString
     }
     "Return polled data only once" in {
-//      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/Temperature")),60,1,None,Some(new java.sql.Timestamp(1426605117000L))))
-//      val test = OMISubscription.odfGeneration(testSub)
-//      test === <Object></Object>
-      1 ===1
+      val testTime =new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,1,None,Some(new java.sql.Timestamp(testTime))))
+      SQLite.startBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      (0 to 10).foreach(n=>
+        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+      val test = OMISubscription.odfGeneration(testSub)
+      test.\\("value").length === 11
+      val test2 = OMISubscription.odfGeneration(testSub)
+      test2.\\("value").length === 0
+
+      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.stopBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.removeSub(testSub)
+    }
+    "TTL should decrease by some multiple of interval" in {
+      val testTime =new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,3,None,Some(new java.sql.Timestamp(testTime))))
+      val ttlFirst = SQLite.getSub(testSub).get.ttl
+      ttlFirst === 60.0
+      (0 to 10).foreach(n=>
+        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+      val test = OMISubscription.odfGeneration(testSub)
+      val test2 = OMISubscription.odfGeneration(testSub)
+      val ttlEnd = SQLite.getSub(testSub).get.ttl
+      (ttlFirst-ttlEnd) % 3 === 0
+      
+      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.removeSub(testSub)
     }
 
   }
