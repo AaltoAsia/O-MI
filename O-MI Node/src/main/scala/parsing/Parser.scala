@@ -18,6 +18,7 @@ import org.xml.sax.SAXException;
 
 abstract trait Parser[Result] {
 
+  def stringOptioner(str: String) : Option[String] = if(str.nonEmpty) Some(str) else None
   def parse(xml_msg: String) : Seq[Result]
   def schemaPath : String
 
