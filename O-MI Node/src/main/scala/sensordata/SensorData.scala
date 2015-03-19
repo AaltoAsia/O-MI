@@ -116,7 +116,7 @@ package sensordata {
           val objectId: String = split(0) + "_" + split(1) + "_" + split.last
           val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
 
-          ("Objects/" + objectId + "/" + infoItemName, TimedValue(Some(new java.sql.Timestamp(new java.util.Date().getTime)),value))
+          ("Objects/" + objectId + "/" + infoItemName, value)
         }))
       }
     }
