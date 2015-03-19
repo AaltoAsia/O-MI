@@ -16,10 +16,7 @@ function generateRequest(){
 	
 	console.log("Generated the O-DF request");
 	
-	//var formattedXML = formatXml(request);
 	$("#editRequest").html(request);
-	
-    //$("#request").html(formattedXML.value); //Update the request textbox on the webpage
 }
 
 function checkedObjects() {

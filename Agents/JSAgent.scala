@@ -1,15 +1,22 @@
-import akka.io.IO
-import akka.pattern.ask
-import akka.util.Timeout
+package agents
+
+import agentSystem._
+import parsing.Types._
+import database._
+
+import scala.io.Source
+import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
+import akka.event.{Logging, LoggingAdapter}
+import akka.io.{ IO, Tcp }
+import akka.util.{ByteString, Timeout}
 import akka.pattern.ask
 import scala.language.postfixOps
+
+import java.io.File
 
 /* JSON4s */
 import org.json4s._
 import org.json4s.native.JsonMethods._
-
-// Akka Actor system
-import akka.actor.ActorSystem
 
 // HTTP related imports
 import spray.can.Http
@@ -24,6 +31,7 @@ import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 
 import parsing.Types._
+import parsing.Types.Path._
 
 // Scala XML
 import scala.xml
@@ -32,30 +40,27 @@ import scala.xml._
 // Mutable map for sensordata
 import scala.collection.mutable.Map
 
-// Database
-import database._
-import agentSystem._
 
 // Need to wrap in a package to get application supervisor actor
 // "you need to provide exactly one argument: the class of the application supervisor actor"
-package sensordata {
-  /**
-   * The main program for getting SensorData
-   */
-  class SensorData(uri : String) {
-    // Used to inform that database might be busy
-    var loading = false
+/**
+  * The main program for getting SensorData
+  */
+class SensorAgent(uri : String) extends IAgentActor {
+  // Used to inform that database might be busy
+  var loading = false
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-    // bring the actor system in scope
-    implicit val system = ActorSystem()
-    // Define formats
-    implicit val formats = DefaultFormats
-
-    implicit val timeout = akka.util.Timeout(10 seconds)
-
-    def httpRef = IO(Http) //If problems change to def
-
+  // bring the actor system in scope
+  // Define formats
+  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val system = context.system
+  implicit val formats = DefaultFormats
+  implicit val timeout = akka.util.Timeout(10 seconds)
+  def receive = {
+    case Start => 
+    queueSensors
+  }
+  def httpRef = IO(Http) //If problems change to def
     def queueSensors(): Unit = {
       // Set loading to true, 
       loading = true
@@ -106,19 +111,43 @@ package sensordata {
 
       if (!list.isEmpty) {
         // InfoItems filtered out
-        InputPusher.handlePathValuePairs(list.filter(_._1.split('_').length > 3).map(item => {
+        SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
           val sensor: String = item._1
           val value: String = item._2 // Currently as string, convert to double?
           // Split name from underlines
           val split = sensor.split('_')
 
           // Object id
-          val objectId: String = split(0) + "_" + split(1) + "_" + split.last
-          val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
+          val path = split.dropRight(2) ++  split.takeRight(2).reverse
+         // system.log.debug("Data gained from: " + path.mkString("/"))
 
-          ("Objects/" + objectId + "/" + infoItemName, TimedValue(Some(new java.sql.Timestamp(new java.util.Date().getTime)),value))
+          ("Objects/" + path.mkString("/"), value)
         }))
       }
     }
+}
+
+object SensorAgent {
+  def props( uri: String) : Props = {Props(new SensorAgent(uri)) }
+}
+
+class SensorBoot extends Bootable {
+  private var configPath : String = ""
+  private var agentActor : ActorRef = null
+
+  override def startup( system: ActorSystem, pathToConfig: String) : Boolean = { 
+    if(pathToConfig.isEmpty || !(new File(pathToConfig).exists()))
+      return false 
+
+    configPath = pathToConfig
+    val lines = scala.io.Source.fromFile(configPath).getLines().toArray
+    var uri = lines.head
+    agentActor = system.actorOf(SensorAgent.props(uri), "Sensor-Agent")    
+    agentActor ! Start
+    return true
   }
-} 
+  override def shutdown() : Unit = {}
+  override def getAgentActor() : ActorRef = agentActor 
+
+}
+

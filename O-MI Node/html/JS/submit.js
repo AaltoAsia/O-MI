@@ -74,14 +74,15 @@ function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
 	
 	objectUrl = $("#url-field").val();
-	
-	$("#send-field").val(objectUrl.replace("/Objects", ""));
-	
+
 	// Sent ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
 }
 
 function ajaxGet(indent, url, listId){
+	
+	setInfo(0);
+	
 	$.ajax({
         type: "GET",
 		dataType: "xml",
@@ -91,6 +92,9 @@ function ajaxGet(indent, url, listId){
 		},
 		error: function(a, b, c){
 			alert("Error accessing data discovery");
+		}, 
+		complete : function(a , b){
+			clearInfo();
 		}
     });
 }
@@ -171,6 +175,8 @@ function getSubscribeLocal(){
 var count = 0;
 
 function ajaxPost(server, request, subscribeLocal){
+	setInfo(1);
+	
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -180,21 +186,12 @@ function ajaxPost(server, request, subscribeLocal){
 		dataType: "text",
 		success: function(response){
 			printResponse(response);
-			
-			/*
-			if(subscribeLocal && send){
-				window.setTimeout(
-					function () {
-						getSub();
-					},
-					1000);
-			
-			}*/ 
+			clearInfo();
 		},
 		error: function(a, b, c){
 			$("#infoBox").text("Error sending message");
 			handleError(a, b, c);
-		}
+		},
 	});
 }
 
@@ -205,8 +202,6 @@ function getSub(){
 	var r1 = response.split("<omi:requestId>");
 	
 	if(r1.length === 2 || omi.requestId){
-		$("#infoBox").text("Sending request");
-		
 		if(r1.length === 2){
 			r2 = r1[1].split("</omi:requestId>")[0];
 			omi.requestId = r2;

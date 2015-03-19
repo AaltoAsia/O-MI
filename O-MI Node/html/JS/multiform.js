@@ -57,14 +57,20 @@ function animatePrev() {
 	
 	animating = false;
 	
-	loadPages();
+	loadPages(page);
 	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	if(page === 3){
+		if($("#skip").prop('checked')) {
+			 animatePrev();
+		}
+	}
 }	
 
 function animateNext() {
 	if (animating || page === 4)
 		return false;
-	
+
 	// Animate scrolling
 	$("html, body").animate({ scrollTop: 0 }, "slow");
 
@@ -78,49 +84,23 @@ function animateNext() {
 
 	// activate next step on progressbar using the page number
 	$("#progressbar li").eq((page - 1)).addClass("active");
-
-	/*
-	current_fs.animate({
-		opacity : 0.5,
-		top : "5em",
-		left : "5em",
-		width : "40%",
-		zIndex : -10
-	}, {
-		duration : 1500,
-		complete : checkCount,
-		easing : 'easeInOutBack'
-	});
-	
-	next_fs.animate({
-		opacity : 1,
-		left : "20%",
-		width : "60%",
-		zIndex : 0
-	}, {
-		duration : 1500,
-		complete : checkCount,
-		step : function(a, b){
-			console.log($(this).css("zIndex"));
-		},
-		easing : 'easeInOutBack'
-	});
-	
-	if(prev_fs){
-		prev_fs.animate({
-			left : "30%",
-			zIndex : -20
-		}, {
-			duration : 1500,
-			complete : checkCount,
-			easing : 'easeInOutBack'
-		});
-	} */
 	
 	animating = false;
 	
-	loadPages();
+	loadPages(page);
+
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	// If generation step checked
+	if(page === 3){
+		// From pages.js
+		generateRequest();
+		refreshEditor("request", "editRequest");
+		
+		if($("#skip").prop('checked')) {
+			 animateNext();
+		}
+	}
 }
 
 $(".submit").click(function() {
