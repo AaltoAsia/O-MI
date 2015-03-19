@@ -33,6 +33,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[T
       new java.util.Date().getTime - starttime.getTime
   }
   val intervalMillis = (1000*interval).toLong
+
   var formatedData = Array.ofDim[DBSensor]((deltaTime/intervalMillis).toInt)
   if(rawdata.isEmpty)
   {
