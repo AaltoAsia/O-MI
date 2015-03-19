@@ -14,7 +14,6 @@ import java.sql.Timestamp
 import slick.jdbc.StaticQuery
 
 import parsing.Types._
-import parsing.Types.Path._
 
 object SQLite {
   implicit val pathColumnType = MappedColumnType.base[Path, String](
@@ -89,19 +88,17 @@ object SQLite {
    * Used to set many values efficiently to the database.
    * Currently works only for list of tuples consisting of path and value.
    */
-  def setMany(data: List[(String, String)]) {
+  def setMany(data: List[(String, TimedValue)]) {
     var path = Path("")
     var len = 0
     var add = Seq[(Path,String,Timestamp)]()
-    var time = 10000
     data.foreach {
-      case (p: String, v: String) =>
+      case (p: String, v: TimedValue) =>
         path = Path(p)
-        time += 1
          // Call hooks
         val argument = Seq(path)
         setEventHooks foreach { _(argument) }
-        add = add ++ Seq((path, v, new Timestamp(time)))
+        add = add ++ Seq((path, v.value, v.time.getOrElse(new Timestamp(new java.util.Date().getTime))))
     }
     Await.result(db.run((latestValues ++= add).transactionally),Duration.Inf)
     var OnlyPaths = data.map(_._1).distinct
