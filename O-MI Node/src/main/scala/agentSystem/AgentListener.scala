@@ -124,7 +124,7 @@ object InputPusher extends IInputPusher{
     }
   } 
   override def handlePathValuePairs( pairs: Seq[(String,String)] ) : Unit ={
-    SQLite.setMany(pairs.toList)
+    SQLite.setMany(pairs.toList.map((a => (a._1,TimedValue(None,a._2)))))
   }
 
 }

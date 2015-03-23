@@ -24,7 +24,6 @@ import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 
 import parsing.Types._
-import parsing.Types.Path._
 
 // Scala XML
 import scala.xml

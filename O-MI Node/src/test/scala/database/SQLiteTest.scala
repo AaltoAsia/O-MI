@@ -4,9 +4,7 @@ import org.specs2.mutable._
 import database._
 import java.sql.Timestamp
 
-import parsing._
 import parsing.Types._
-import parsing.Types.Path._
 
 object SQLiteTest extends Specification {
   
@@ -315,14 +313,14 @@ object SQLiteTest extends Specification {
    "be able to add many values in one go" in{
      SQLite.startBuffering(Path("path/to/setmany/test1"))
      val testdata = 
-       List(("path/to/setmany/test1","value1"),("path/to/setmany/test1","value2"),("path/to/setmany/test1","value3"),
-         ("path/to/setmany/test1","value4"),("path/to/setmany/test1","value5"),("path/to/setmany/test1","value6"),
-         ("path/to/setmany/test1","value7"),("path/to/setmany/test1","value8"),("path/to/setmany/test1","value9"),
-         ("path/to/setmany/test1","value10"),("path/to/setmany/test1","value11"),("path/to/setmany/test1","value12"),
-         ("path/to/setmany/test2","value1"),("path/to/setmany/test2","value2"),("path/to/setmany/test2","value3"),
-         ("path/to/setmany/test2","value4"),("path/to/setmany/test2","value5"),("path/to/setmany/test2","value6"),
-         ("path/to/setmany/test2","value7"),("path/to/setmany/test2","value8"),("path/to/setmany/test2","value9"),
-         ("path/to/setmany/test2","value10"),("path/to/setmany/test2","value11"),("path/to/setmany/test2","value12")
+       List(("path/to/setmany/test1",TimedValue(Some(new Timestamp(1001)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1002)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1003)),"val1")),
+         ("path/to/setmany/test1",TimedValue(Some(new Timestamp(1004)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1005)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1006)),"val1")),
+         ("path/to/setmany/test1",TimedValue(Some(new Timestamp(1007)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1008)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1009)),"val1")),
+         ("path/to/setmany/test1",TimedValue(Some(new Timestamp(1010)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1011)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1012)),"val1")),
+         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1013)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1014)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1015)),"val1")),
+         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1016)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1017)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1018)),"val1")),
+         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1019)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1020)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1021)),"val1")),
+         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1022)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1023)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1024)),"val1"))
          )
      SQLite.setMany(testdata)
      database.SQLite.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
