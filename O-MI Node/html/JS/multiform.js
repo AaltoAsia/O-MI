@@ -78,18 +78,8 @@ function animateNext() {
 	loadPages(page);
 
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
-	
-	// If generation step checked
-	if(page === 3){
-		// From pages.js
-		generateRequest();
-		refreshEditor("request", "editRequest");
-		
-		if($("#skip").prop('checked')) {
-			 animateNext();
-		}
-	}
 }
+
 
 $(".submit").click(function() {
 	return false;

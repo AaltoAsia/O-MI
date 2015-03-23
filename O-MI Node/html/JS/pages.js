@@ -1,4 +1,5 @@
 var requestEditor, responseEditor;
+var timeout; //Used for request generation timeout
 
 function loadPages(page) {
 	$(".page").addClass("behind");
@@ -27,11 +28,25 @@ function loadPages(page) {
 	
 	// Load operation options (page 2)
 	if (page === 2) {
+		$("#options").change(updateRequest);
+		updateRequest();
+		
 		if($('#options').is(':empty')){
 			loadOptions();
 		}
 		$("#response .CodeMirror").remove();
 	}
+}
+
+/* Set a 0.5 second timeout to automatically update the request */
+function updateRequest(){
+	if(timeout){
+		clearTimeout(timeout);
+	}
+	timeout = setTimeout(function(){
+		generateRequest(); // From pages.js
+		refreshEditor("request", "editRequest");
+	}, 500);
 }
 
 function refreshEditor(editor, id) {
@@ -80,10 +95,12 @@ function loadSides(page) {
 
 // Page 2 definitions
 $(document).on('click', '.icon', function() {
-	$(".icon").removeClass("selected");
-	$(this).addClass("selected");
-
-	loadOptions();
+	if(!$(this).hasClass("selected")){
+		$(".icon").removeClass("selected");
+		$(this).addClass("selected");
+		loadOptions();
+		updateRequest();
+	}
 });
 
 /* Load form options */
