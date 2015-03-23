@@ -1,0 +1,26 @@
+#operation-select {
+	float: left;
+	margin-left: 2%;
+}
+
+.row .col {
+	display: inline-block;
+	margin-top: 5%;
+	vertical-align: text-top;
+}
+
+#optionCol {
+	width: 25%;
+}
+
+#requestCol {
+	width: 70%;
+	margin-left: 4%;
+}
+
+#editRequest {
+	max-width: 90%;
+	height: auto;
+	text-align: left;
+	outline: black solid 2px;
+}

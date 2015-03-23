@@ -15,7 +15,7 @@ function loadPages(page) {
 		selector.load("pages/page" + page + ".html");
 		
 		// Handling server url for sending, in case skipping generate check, and field not loaded in time
-		if(page === 4){
+		if(page === 3){
 			var id = setInterval(function(){
 				if($("#send-field").length){
 					$("#send-field").val($("#url-field").val().replace("/Objects", ""));
@@ -24,24 +24,12 @@ function loadPages(page) {
 			}, 100);
 		}
 	}
-	if (page === 1) {
-		$("#prev").addClass("hidden");
-	}
+	
 	// Load operation options (page 2)
 	if (page === 2) {
-		$("#prev").removeClass("hidden");
-		
 		if($('#options').is(':empty')){
 			loadOptions();
 		}
-	}
-	if (page === 3) {
-		$("#next").removeClass("hidden");
-	}
-	if (page === 4) {
-		$("#next").addClass("hidden");
-		$("#send-field").val($("#url-field").val().replace("/Objects", ""));
-		
 		$("#response .CodeMirror").remove();
 	}
 }

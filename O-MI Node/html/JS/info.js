@@ -1,11 +1,3 @@
-$("#info").on("mouseenter", function() {
-	$("#info p").show();
-});
-
-$("#info").on("mouseleave", function() {
-	$("#info p").hide();
-});
-
 var infoArr = [
                "The server is querying for the objects",
                "The server is preparing the response"
@@ -13,10 +5,12 @@ var infoArr = [
 
 function clearInfo() {
 	$("#info p").text("The server is not doing anything");
+	$("#info p").hide();
 	$("#info img").removeClass("rotate");
 }
 
 function setInfo(index) {
 	$("#info p").text(infoArr[index]);
+	$("#info p").show();
 	$("#info img").addClass("rotate");
 }

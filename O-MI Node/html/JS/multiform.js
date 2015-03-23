@@ -9,7 +9,7 @@ var animating; // flag to prevent quick multi-click glitches
 var count;
 
 /* Event handler for the next button on the 3rd page */
-$(document).on('click', '#next', function() {
+$(document).on('click', '.next', function() {
 	// Using global variable index
 	if (page === 1) {
 		if (!page1Verified()) {
@@ -21,21 +21,15 @@ $(document).on('click', '#next', function() {
 			alert("Please specify TTL (Time to live) as numeric value");
 			return;
 		}
-		$("#request").html("");
-	} else if (page === 3) {
-		if (!page3Verified()) {
-			alert("Please generate the request");
-			return;
-		}
 		$("#responseBox").html("");
-	} else if (page === 4) {
+	} else if (page === 3) {
 		return false;
 	}
 	animateNext();
 });
 
-$(document).on('click', '#prev', function() {
-	if (page === 4) {
+$(document).on('click', '.prev', function() {
+	if (page === 3) {
 		send = false; // Polling variable
 	}
 	animatePrev();
@@ -59,16 +53,10 @@ function animatePrev() {
 	
 	loadPages(page);
 	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
-	
-	if(page === 3){
-		if($("#skip").prop('checked')) {
-			 animatePrev();
-		}
-	}
 }	
 
 function animateNext() {
-	if (animating || page === 4)
+	if (animating || page === 3)
 		return false;
 
 	// Animate scrolling

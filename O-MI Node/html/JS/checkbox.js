@@ -1,5 +1,5 @@
 function ObjectBoxManager(){
-	this.objects = [];
+	this.objects = []; // Array for storing objects
 	
 	/* Created a DOM checkbox and adds the reference object to objects array */
 	this.addObject = function(id) {
@@ -9,6 +9,7 @@ function ObjectBoxManager(){
 		this.push(new ObjectBox(id, 0));
 	}
 	
+	/* Pushes an object into the array */
 	this.push = function(o) {
 		this.objects.push(o);
 	};
