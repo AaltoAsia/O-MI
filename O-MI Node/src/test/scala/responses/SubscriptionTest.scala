@@ -197,16 +197,22 @@ class SubscriptionTest extends Specification with Before {
     "Return polled data only once" in {
       val testTime =new Date().getTime - 10000
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,1,None,Some(new java.sql.Timestamp(testTime))))
-      SQLite.startBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
-      (0 until 9).foreach(n=>
+//      SQLite.startBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      
+      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.get(Path("Objects/ReadTest/SmartOven/pollingtest")) === None
+      
+      (0 to 11).foreach(n=>
         SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
       val test = OMISubscription.odfGeneration(testSub)
-      test.\\("value").length === 9
+      val intervalsPassed = (new Date().getTime - testTime)/ 1000
+      test.\\("value").length === intervalsPassed
       val test2 = OMISubscription.odfGeneration(testSub)
       test2.\\("value").length === 0
 
       SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
-      SQLite.stopBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+
+//      SQLite.stopBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
     "TTL should decrease by some multiple of interval" in {
