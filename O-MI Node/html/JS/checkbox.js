@@ -107,21 +107,22 @@ function update(obj) {
 	
 	//Parent item clicked
 	if(id){
-		propChildren(ref);
+		propChildren(ref, true);
 		propParent(ref);
 	} else { 
 		propParent(ref);
 	}
 }
 
-function propChildren(parent){
+
+function propChildren(parent, dig){
 	var parentId = $(parent).attr("id");
 	
 	//Find child items and mark their value the same as their parent
 	var children = getChildren(parentId);
 	var url = $("#url-field").val();
 	
-	if(children.length == 0 && parentId){
+	if(children.length == 0 && parentId && dig){
 		// Using manager from submit.js
 		// TODO: Change manager to static class
 		var o = manager.find(parentId);
@@ -130,7 +131,7 @@ function propChildren(parent){
 	
 	children.each(function(){
 		$(this).prop('checked', $(parent).is(':checked'));
-		propChildren(this);
+		propChildren(this, false);
 	});
 }
 
