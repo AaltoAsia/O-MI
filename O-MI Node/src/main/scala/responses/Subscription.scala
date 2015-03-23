@@ -125,6 +125,11 @@ object OMISubscription {
         </Objects>
       }
       case None => {
+        subdata.interval match {
+          case -2 => // not supported
+          case -1 => //eventsub
+          case 0 => //intervalsub
+        }
         
         val start = subdata.startTime.getTime
         val currentTimeLong = new Date().getTime()
