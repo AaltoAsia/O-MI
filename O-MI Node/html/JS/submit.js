@@ -28,11 +28,12 @@ $(function() {
 			}
 		}
 	});
-	
-	$(document).on('click', '#prev4', function(){
-		send = false;
+	$(document).on("mouseenter", ".help", function(){
+		$(this).children("p").show();
 	});
-	
+	$(document).on("mouseleave", ".help", function(){
+		$(this).children("p").hide();
+	});
 
 function loadThemes(){
 	iconSelect = new IconSelect("themes",{
