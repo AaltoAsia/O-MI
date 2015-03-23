@@ -14,16 +14,6 @@ function loadPages(page) {
 	
 	if (selector.is(':empty')) {
 		selector.load("pages/page" + page + ".html");
-		
-		// Handling server url for sending, in case skipping generate check, and field not loaded in time
-		if(page === 3){
-			var id = setInterval(function(){
-				if($("#send-field").length){
-					$("#send-field").val($("#url-field").val().replace("/Objects", ""));
-					clearInterval(id);
-				}
-			}, 100);
-		}
 	}
 	
 	// Load operation options (page 2)

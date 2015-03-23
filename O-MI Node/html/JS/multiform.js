@@ -22,6 +22,8 @@ $(document).on('click', '.next', function() {
 			return;
 		}
 		$("#responseBox").html("");
+		
+		sendRequest(); // From submit.js, sending request on action
 	} else if (page === 3) {
 		return false;
 	}
@@ -72,11 +74,9 @@ function animateNext() {
 
 	// activate next step on progressbar using the page number
 	$("#progressbar li").eq((page - 1)).addClass("active");
-	
-	animating = false;
-	
-	loadPages(page);
 
+	loadPages(page);
+	animating = false;
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
 }
 

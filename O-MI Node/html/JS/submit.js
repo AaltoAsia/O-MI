@@ -160,7 +160,7 @@ function addInfoItems(parent, id) {
 function sendRequest()
 {
 	// Server URL
-	var server = $("#send-field").val();
+	var server = getServerUrl();
 
     var request = requestEditor.getValue(); // Get the request string
 
@@ -208,12 +208,21 @@ function getSub(){
 		}
 		var subRequest = omi.getSub(omi.requestId, checkedObjects());
 		console.log("Request: " + subRequest);
-		var server =  $("#send-field").val();
+		var server = getServerUrl();
 		
 		ajaxPost(server, subRequest, getSubscribeLocal());
 	} else {
 		alert("No request id found!");
 	}
+}
+
+function getServerUrl() {
+	var o = $("#url-field").val();
+	if(o) {
+		return o.replace("/Objects", "");
+	}
+	console.log("Couldn't find server url");
+	return "";
 }
 
 /* Do something with the response from the server */
