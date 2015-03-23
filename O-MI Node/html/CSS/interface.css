@@ -6,6 +6,23 @@
 	z-index: 1;
 }
 
+.movedesc {
+	text-align: center;
+}
+
+.movedesc p {
+	position: absolute;
+	top: -1.5em;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.movedesc img {
+	width: 100%;
+}
+
 .prev {
 	position: absolute;
 	top: 50%;
