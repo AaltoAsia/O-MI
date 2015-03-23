@@ -1,3 +1,4 @@
+/* Class for managing all checkbox instances */
 function ObjectBoxManager(){
 	this.objects = []; // Array for storing objects
 	
@@ -29,6 +30,7 @@ function ObjectBoxManager(){
 	};
 }
 
+/* Class for simulating a single checkbox instance */
 function ObjectBox(id, depth, parent){
 	this.id = id;
 	this.depth = depth;
@@ -78,18 +80,13 @@ function ObjectBox(id, depth, parent){
 	};
 }
 
+/* Event handler for checking all checkboxes (button click) */
 $(document).on('click', '#checkall', function() {
 	console.log("Checking all boxes");
-	
 	$(".checkbox").prop('checked', true);
-	
-	/*
-	$(".checkbox").each(function(){
-		$(this).prop('checked', true);
-		update(this);
-	}); */
 });
 
+/* Event handler for unchecking all checkboxes (button click) */
 $(document).on('click', '#uncheckall', function() {
 	console.log("Unchecking all boxes");
 	$(".checkbox").prop('checked', false);
@@ -101,6 +98,7 @@ $(document).on('click', '.checkbox', function() {
 	update(this);
 });
 
+/* Update the parents and children of the checked checkbox (obj) */
 function update(obj) {
 	var ref = $(obj); //Reference (jquery object) of the clicked button
 	var id = ref.attr('id');
@@ -114,7 +112,7 @@ function update(obj) {
 	}
 }
 
-
+/* Prop all children to match the propped checkbox, if dig is true, sends an ajax query to the server for deeper objects */
 function propChildren(parent, dig){
 	var parentId = $(parent).attr("id");
 	
@@ -168,10 +166,12 @@ function jq(prefix, myid) {
 	return prefix + myid.replace( /(:|\.|\[|\]|\/)/g, "\\$1" );
 }
 
+/* Returns true if checkbox (element) has a child, otherwise returns false */
 function isParent(element, index, array){
 	return element != "checkbox" && element != "lower";
 }
 
+/* Returns true if checkbox with given id is root, otherwise returns false */
 function isRootBox(jqid){
-	return $(jqid).attr('class').split(' ').length == 1;
+	return $(jqid).attr('class').split(' ').length === 1;
 }

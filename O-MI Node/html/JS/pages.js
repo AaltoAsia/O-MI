@@ -1,6 +1,7 @@
 var requestEditor, responseEditor;
 var timeout; //Used for request generation timeout
 
+/* Load pages from separate html files */
 function loadPages(page) {
 	$(".page").addClass("behind");
 
@@ -39,6 +40,7 @@ function updateRequest(){
 	}, 500);
 }
 
+/* Refresh CodeMirror editor */
 function refreshEditor(editor, id) {
 	if (editor == "request") {
 		$("#edit .CodeMirror").remove();
@@ -61,6 +63,7 @@ function refreshEditor(editor, id) {
 	}
 }
 
+/* Load the previous and the next page of the current page */
 function loadSides(page) {
 	var prev = $("#page" + (page - 1));
 	var next = $("#page" + (page + 1));

@@ -8,7 +8,7 @@ var left, opacity, scale; // fieldset properties which we will animate
 var animating; // flag to prevent quick multi-click glitches
 var count;
 
-/* Event handler for the next button on the 3rd page */
+/* Event handler for the next button */
 $(document).on('click', '.next', function() {
 	// Using global variable index
 	if (page === 1) {
@@ -30,6 +30,7 @@ $(document).on('click', '.next', function() {
 	animateNext();
 });
 
+/* Event handler for clicking the previous button */
 $(document).on('click', '.prev', function() {
 	if (page === 3) {
 		send = false; // Polling variable
@@ -37,6 +38,7 @@ $(document).on('click', '.prev', function() {
 	animatePrev();
 });
 
+/* Handle switching from current page to previous page */
 function animatePrev() {
 	if (animating || page === 1)
 		return false;
@@ -57,6 +59,7 @@ function animatePrev() {
 	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
 }	
 
+/* Handle switching from current page to next page */
 function animateNext() {
 	if (animating || page === 3)
 		return false;
@@ -83,4 +86,4 @@ function animateNext() {
 
 $(".submit").click(function() {
 	return false;
-})
+});

@@ -6,8 +6,8 @@ var page = 1; // Start at page 1
 
 var manager;
 
+/* Initial settings */
 $(function() {
-	
 	manager = new ObjectBoxManager();
 	
 	loadThemes();
@@ -69,16 +69,17 @@ function loadThemes(){
 });
 
 
-/* Get the objects through ajax get */
+/* Get the objects from the server through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
 	
 	objectUrl = $("#url-field").val();
 
-	// Sent ajax get-request for the objects
+	// Send ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
 }
 
+/* Sends an ajax query for objects */
 function ajaxGet(indent, url, listId){
 	
 	setInfo(0);
@@ -100,13 +101,10 @@ function ajaxGet(indent, url, listId){
 }
 
 /*
- * Display the objects as checkboxes in objectList @param {XML Object} the
- * received XML data
+ * Display the objects as checkboxes in objectList 
+ * @param {XML Object} the received XML data
  */
 function displayObjects(data, indent, url, listId) {
-	// console.log("Got the Objects as XML: \n" + new
-	// XMLSerializer().serializeToString(data));
-
 	// Basic objects
 	if(indent === 0){
 		// Clear the list beforehand, in case objects is changed in between the
@@ -140,6 +138,7 @@ function displayObjects(data, indent, url, listId) {
 	}
 }
 
+/* Add infoitem-checkboxes to the DOM */
 function addInfoItems(parent, id) {
 	var margin = "20px";
 	
