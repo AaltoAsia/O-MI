@@ -21,7 +21,6 @@ object SQLite {
     { _.toString }, // Path to String
     { Path(_) } // String to Path
     )
-
   private var historyLength = 10
   //path where the file is stored
   private val dbPath = "./sensorDB.sqlite3"
