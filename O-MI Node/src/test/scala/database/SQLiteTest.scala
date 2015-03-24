@@ -329,6 +329,12 @@ object SQLiteTest extends Specification {
      SQLite.remove(Path("path/to/setmany/test1"))
      SQLite.remove(Path("path/to/setmany/test2"))
    }
+   "be able to save and load metadata for a path" in{
+     val metadata = "<meta><infoItem1>value</infoItem1></meta>"
+     SQLite.setMetaData(Path("path/to/metaDataTest/test"), metadata)
+     SQLite.getMetaData(Path("path/to/metaDataTest/test/fail")) shouldEqual None
+     SQLite.getMetaData(Path("path/to/metaDataTest/test")) shouldEqual Some(metadata)
+   }
 
   }
 }
