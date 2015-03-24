@@ -78,7 +78,7 @@ class SubscriptionTest extends Specification with BeforeAll {
           <omi:response>
             <omi:result>
               <omi:return returnCode="200"></omi:return>
-              <omi:requestId>{requestID}</omi:requestId>
+              <omi:requestId>{ requestID }</omi:requestId>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -94,24 +94,24 @@ class SubscriptionTest extends Specification with BeforeAll {
 
       val subxml = Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head
 
-      val correctxml = 
+      val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
             <omi:result>
               <omi:return returnCode="200"></omi:return>
-                <omi:requestId>0</omi:requestId>
-                  <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
-                    <Objects>
-                      <Object>
-                        <id>ReadTest</id>
-                        <Object>
-                          <id>Refrigerator123</id>
-                          <InfoItem name="PowerConsumption">
-                          </InfoItem>
-                        </Object>
-                      </Object>
-                    </Objects>
-                  </omi:msg>
+              <omi:requestId>0</omi:requestId>
+              <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+                <Objects>
+                  <Object>
+                    <id>ReadTest</id>
+                    <Object>
+                      <id>Refrigerator123</id>
+                      <InfoItem name="PowerConsumption">
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                </Objects>
+              </omi:msg>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -124,28 +124,28 @@ class SubscriptionTest extends Specification with BeforeAll {
 
       val subxml = OMISubscription.OMISubscriptionResponse(1)
 
-      val correctxml = 
+      val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
-          <omi:result>
-            <omi:return returnCode="200"></omi:return>
+            <omi:result>
+              <omi:return returnCode="200"></omi:return>
               <omi:requestId>1</omi:requestId>
-                <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
-                  <Objects>
+              <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+                <Objects>
+                  <Object>
+                    <id>ReadTest</id>
                     <Object>
-                      <id>ReadTest</id>
-                      <Object>
-                        <id>Refrigerator123</id>
-                        <InfoItem name="PowerConsumption">
-                          <value dateTime="1970-01-17T12:56:15.723">0.123</value>
-                        </InfoItem>
-                      </Object>
+                      <id>Refrigerator123</id>
+                      <InfoItem name="PowerConsumption">
+                        <value dateTime="1970-01-17T12:56:15.723">0.123</value>
+                      </InfoItem>
                     </Object>
-                  </Objects>
-                </omi:msg>
-          </omi:result>
-        </omi:response>
-      </omi:omiEnvelope>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
 
       trim(subxml.head).toString == trim(correctxml).toString
 
@@ -157,7 +157,7 @@ class SubscriptionTest extends Specification with BeforeAll {
 
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
 
-      val correctxml = 
+      val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
             <omi:result>
@@ -172,66 +172,65 @@ class SubscriptionTest extends Specification with BeforeAll {
     "Return with error when subscription doesn't exist" in {
       val xmlreturn = OMISubscription.OMISubscriptionResponse(1234)
 
-      val correctxml = 
-      <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-        <omi:response>
-          <omi:result>
-            <omi:return returnCode="400" description="A subscription with this id has expired or doesn't exist">
-            </omi:return>
-            <omi:requestId>1234</omi:requestId>
-          </omi:result>
-        </omi:response>
-      </omi:omiEnvelope>
+      val correctxml =
+        <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <omi:response>
+            <omi:result>
+              <omi:return returnCode="400" description="A subscription with this id has expired or doesn't exist">
+              </omi:return>
+              <omi:requestId>1234</omi:requestId>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
 
       trim(xmlreturn.head).toString == trim(correctxml).toString
     }
     "Return polled data only once" in {
-      val testTime =new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")),60.0,1,None,Some(new java.sql.Timestamp(testTime))))
-//      SQLite.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
-      
+      val testTime = new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")), 60.0, 1, None, Some(new java.sql.Timestamp(testTime))))
+      //      SQLite.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
+
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
       SQLite.get(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")) === None
-      
-      (0 to 10).foreach(n=>
-        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+
+      (0 to 10).foreach(n =>
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
       val test = OMISubscription.odfGeneration(testSub)
       val dataLength = test.\\("value").length
       dataLength must be_>=(11)
       val test2 = OMISubscription.odfGeneration(testSub)
       val newDataLength = test2.\\("value").length
-      newDataLength === (((SQLite.getSub(testSub).get.startTime.getTime - testTime)/1000 - dataLength).toInt)
+      newDataLength === (((SQLite.getSub(testSub).get.startTime.getTime - testTime) / 1000 - dataLength).toInt)
 
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
 
-//      SQLite.stopBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
+      //      SQLite.stopBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
     "TTL should decrease by some multiple of interval" in {
-      val testTime =new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")),60.0,3,None,Some(new java.sql.Timestamp(testTime))))
+      val testTime = new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")), 60.0, 3, None, Some(new java.sql.Timestamp(testTime))))
       val ttlFirst = SQLite.getSub(testSub).get.ttl
       ttlFirst === 60.0
-      (0 to 10).foreach(n=>
-        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+      (0 to 10).foreach(n =>
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
       val test = OMISubscription.odfGeneration(testSub)
       val test2 = OMISubscription.odfGeneration(testSub)
       val ttlEnd = SQLite.getSub(testSub).get.ttl
-      (ttlFirst-ttlEnd) % 3 === 0
-      
+      (ttlFirst - ttlEnd) % 3 === 0
+
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
     "Event based subscription without callback should return all the new values when polled" in {
       val testTime = new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")),60.0,-1,None,Some(new java.sql.Timestamp(testTime))))
-      (0 to 10).foreach(n=>
-        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(),new java.sql.Timestamp(testTime-5000 + n*1000))))
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
+      (0 to 10).foreach(n =>
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
       val test = OMISubscription.odfGeneration(testSub)
       test.\\("value").length === 6
-      
+
     }
-    
 
   }
 
