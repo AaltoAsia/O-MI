@@ -65,7 +65,7 @@ object Types {
     */
   case class TimedValue( time: Option[Timestamp], value: String)
 
-  case class InfoItemMetaData( name: String, valuetype: Option[String], value: Option[String])
+  case class InfoItemMetaData(data: String)
   /** absract trait that reprasents an node in the O-DF either Object or InfoItem
     *
     */
@@ -80,7 +80,7 @@ object Types {
    */
   case class OdfInfoItem( path: Path,
                           timedValues: Seq[ TimedValue],
-                          metadata: Seq[InfoItemMetaData] = Seq.empty
+                          metadata: Option[InfoItemMetaData] = None
                         ) extends OdfNode
   /** case class that represents an Object in the O-DF
    *  

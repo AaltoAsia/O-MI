@@ -81,7 +81,7 @@ object OdfParser extends Parser[OdfParseResult] {
 
     val subnodes = Map(
       "value" -> getChilds(node, "value", false, true, true))
-    val metaData = parseMetaData( (node \ "MetaData").headOption.getOrElse( NodeSeq.Empty ) )
+    val metaData = (node \ "MetaData").headOption.getOrElse("").toString 
 
     val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
     if (errors.nonEmpty)
@@ -110,18 +110,11 @@ object OdfParser extends Parser[OdfParseResult] {
       }
     }
 
-    Seq(Right(OdfInfoItem(path, timedValues, metaData)))
-  }
+    if(metaData.nonEmpty)
+      Seq(Right(OdfInfoItem(path, timedValues,Some(InfoItemMetaData(metaData)))))
+    else
+      Seq(Right(OdfInfoItem(path, timedValues,None)))
 
-  private def parseMetaData(node: NodeSeq) : Seq[InfoItemMetaData] ={
-    val infoitems = node \ "InfoItem";
-    infoitems.map{ item => 
-      val value = (item \ "value").headOption
-      if(value.isEmpty)
-        InfoItemMetaData((item \ "@Name").text, None, None)
-      else
-        InfoItemMetaData((item \ "@Name").text, stringOptioner((value.get \ "@type").text) , stringOptioner(value.get.text))
-    }
   }
   /**
    * private helper type for parseObject
