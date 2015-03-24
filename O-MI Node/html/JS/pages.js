@@ -1,5 +1,6 @@
 var requestEditor, responseEditor;
 var timeout; //Used for request generation timeout
+var requestInterval = 1000; // Interval in milliseconds for automatic request generation
 
 /* Load pages from separate html files */
 function loadPages(page) {
@@ -19,8 +20,12 @@ function loadPages(page) {
 	
 	// Load operation options (page 2)
 	if (page === 2) {
-		$("#options").change(updateRequest);
-		updateRequest();
+		$("#options").change(function(){
+			updateRequest(requestInterval);
+		});
+		$(document).on("click", "#autorequest", function(){
+			updateRequest(requestInterval);
+		});
 		
 		if($('#options').is(':empty')){
 			loadOptions();
@@ -30,14 +35,31 @@ function loadPages(page) {
 }
 
 /* Set a 0.5 second timeout to automatically update the request */
-function updateRequest(){
-	if(timeout){
-		clearTimeout(timeout);
+function updateRequest(interval){
+	// If automatic update allowed by user
+	if($("#autorequest").prop("checked") || interval === 0){
+		$("#editRequest .CodeMirror").hide();
+			
+		if(timeout){
+			clearTimeout(timeout);
+		}
+		
+		if(interval === 0){
+			generateRequest(); // From generate.js
+			refreshEditor("request", "editRequest");
+		} else {
+			var loadSelector = $("#edit .loading");
+			loadSelector.show();
+			
+			timeout = setTimeout(function(){
+				generateRequest(); // From generate.js
+				refreshEditor("request", "editRequest");
+				
+				loadSelector.hide();
+				$("#editRequest .CodeMirror").show();
+			}, interval);
+		}
 	}
-	timeout = setTimeout(function(){
-		generateRequest(); // From pages.js
-		refreshEditor("request", "editRequest");
-	}, 500);
 }
 
 /* Refresh CodeMirror editor */
@@ -92,7 +114,7 @@ $(document).on('click', '.icon', function() {
 		$(".icon").removeClass("selected");
 		$(this).addClass("selected");
 		loadOptions();
-		updateRequest();
+		updateRequest(requestInterval);
 	}
 });
 

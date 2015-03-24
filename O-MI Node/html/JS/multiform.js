@@ -16,10 +16,25 @@ $(document).on('click', '.next', function() {
 			alert("Please check at least one object");
 			return;
 		}
+		if(checkedObjects().length > 100){
+			if (confirm('You have checked lot of objects. This webform has automatic request generation ' +
+					'enabled by default. Do you want to disable automatic generation to prevent the page ' +
+					'from lagging?')){
+				$("#autorequest").prop("checked", false);
+				return;
+			}
+		}
+		updateRequest(1000); //from pages.js
 	} else if (page === 2) {
 		if (!page2Verified()) {
 			alert("Please specify TTL (Time to live) as numeric value");
 			return;
+		}
+		if(!($("#autorequest").prop("checked"))){
+			if(confirm('You have disabled automatic updating, thus your request might not be up-to-date. Do you want ' +
+					'to generate the message once more? (Note: your manual changes to the request will be overwritten)')) {
+				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
+			}
 		}
 		$("#responseBox").html("");
 		

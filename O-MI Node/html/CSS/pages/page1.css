@@ -1,3 +1,7 @@
+#url-field {
+	max-width: 50%;
+}
+
 #objectContainer {
 	border-width: 5px;
 	border-style: groove;

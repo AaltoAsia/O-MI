@@ -186,6 +186,8 @@ function ajaxPost(server, request, subscribeLocal){
 		dataType: "text",
 		success: function(response){
 			printResponse(response);
+		},
+		complete: function(a, b) {
 			clearInfo();
 		},
 		error: function(a, b, c){
@@ -238,6 +240,7 @@ function printResponse(response){
 
 /* Handle the ajax errors */
 function handleError(jqXHR, errortype, exc) {
-	console.log("Error: " + (exc | errortype));
+	console.log(jqXHR);
+	alert("Error sending to server: (" + exc +")");
 }
 
