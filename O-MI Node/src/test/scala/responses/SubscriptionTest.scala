@@ -208,7 +208,7 @@ class SubscriptionTest extends Specification with Before {
       val intervalsPassed = (new Date().getTime - testTime)/ 1000
       test.\\("value").length === intervalsPassed
       val test2 = OMISubscription.odfGeneration(testSub)
-      test2.\\("value").length === 0
+      test2.\\("value").length === (SQLite.getSub(testSub).get.startTime.getTime - testTime)/1000 - intervalsPassed
 
       SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
 

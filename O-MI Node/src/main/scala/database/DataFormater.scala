@@ -100,6 +100,6 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[T
     }
   }
   }
-  formatedData
+  formatedData.dropWhile(_ == null)
 }
 }
