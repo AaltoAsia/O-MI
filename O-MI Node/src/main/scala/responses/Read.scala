@@ -48,7 +48,7 @@ object Read {
           if(metaData.isEmpty)
             return Some(Right(omiResult(returnCode(404,s"No metadata found for $path")).head))
           else
-            return Some(Left(metaData.get))
+            return Some(Right(XML.loadString(metaData.get)))
 
         }else{
           return Some(Right(
