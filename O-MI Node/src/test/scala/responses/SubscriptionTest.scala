@@ -197,7 +197,10 @@ class SubscriptionTest extends Specification with BeforeAll {
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
       val test = OMISubscription.odfGeneration(testSub)
       val dataLength = test.\\("value").length
-      dataLength must be_>=(11)
+      println("\n\n\n\n")
+      println( test.\\("value"))
+      println("\n\n\n\n")
+      dataLength must be_>=(10)
       val test2 = OMISubscription.odfGeneration(testSub)
       val newDataLength = test2.\\("value").length
       newDataLength must be_<=(3)
