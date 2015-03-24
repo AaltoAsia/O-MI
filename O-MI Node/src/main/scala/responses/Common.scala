@@ -81,8 +81,16 @@ object Common {
   private def requestId(id: String): Elem = {
     <omi:requestId>{ id }</omi:requestId>
   }
+
+  /**
+   * Creates requestId element
+   */
   def requestId(id: Int): Elem = requestId(id.toString)
 
+  /**
+   * Creates many requestId elements
+   * @param ids Takes ids exceptionally as Strings, but they should be integers
+   */
   def requestIds(ids: Seq[String]): NodeSeq = {
     if (ids.nonEmpty)
       ids map {requestId(_)}
