@@ -178,7 +178,7 @@ object OMISubscription {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
     val infoitemvaluelist = {
-      if (interval == -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
+      if (interval != -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
       else SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
     }
 

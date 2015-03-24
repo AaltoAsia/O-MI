@@ -14,18 +14,9 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import testHelpers.BeforeAll
-//import org.specs2.specification.{Step, Fragments}
-
-//from http://stackoverflow.com/questions/16936811/execute-code-before-and-after-specification
-//trait BeforeAll extends Specification {
-//  override def map(fs: =>Fragments) = 
-//    Step(beforeAll) ^ fs
-//
-//  protected def beforeAll()
-//}
 
 class SubscriptionTest extends Specification with BeforeAll {
-//  def afterAll:Unit = ()
+
   def beforeAll = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
@@ -202,13 +193,14 @@ class SubscriptionTest extends Specification with BeforeAll {
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
       SQLite.get(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")) === None
       
-      (0 to 11).foreach(n=>
+      (0 to 10).foreach(n=>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
       val test = OMISubscription.odfGeneration(testSub)
-      val intervalsPassed = (new Date().getTime - testTime)/ 1000
-      test.\\("value").length === intervalsPassed
+      val dataLength = test.\\("value").length
+      dataLength must be_>=(11)
       val test2 = OMISubscription.odfGeneration(testSub)
-      test2.\\("value").length === (SQLite.getSub(testSub).get.startTime.getTime - testTime)/1000 - intervalsPassed
+      val newDataLength = test2.\\("value").length
+      newDataLength === (((SQLite.getSub(testSub).get.startTime.getTime - testTime)/1000 - dataLength).toInt)
 
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
 
@@ -231,12 +223,12 @@ class SubscriptionTest extends Specification with BeforeAll {
       SQLite.removeSub(testSub)
     }
     "Event based subscription without callback should return all the new values when polled" in {
-      val testTime = new Date().getTime -10000
+      val testTime = new Date().getTime - 10000
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")),60.0,-1,None,Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n=>
-        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SnartOven/pollingtest"), n.toString(),new java.sql.Timestamp(testTime-5000 + n*1000))))
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(),new java.sql.Timestamp(testTime-5000 + n*1000))))
       val test = OMISubscription.odfGeneration(testSub)
-      test.\\("value").length === 5
+      test.\\("value").length === 6
       
     }
     
