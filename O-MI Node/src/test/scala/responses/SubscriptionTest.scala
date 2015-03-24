@@ -200,7 +200,7 @@ class SubscriptionTest extends Specification with BeforeAll {
       dataLength must be_>=(11)
       val test2 = OMISubscription.odfGeneration(testSub)
       val newDataLength = test2.\\("value").length
-      newDataLength === (((SQLite.getSub(testSub).get.startTime.getTime - testTime) / 1000 - dataLength).toInt)
+      newDataLength must be_<=(3)
 
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
 
@@ -229,8 +229,27 @@ class SubscriptionTest extends Specification with BeforeAll {
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
       val test = OMISubscription.odfGeneration(testSub)
       test.\\("value").length === 6
+      SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
+      SQLite.removeSub(testSub)
 
     }
+    "Event based subscription withou callback should not return already polled data" in {
+      val testTime = new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
+      (0 to 10).foreach(n =>
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
+      val test = OMISubscription.odfGeneration(testSub)
+      test.\\("value").length === 6
+      val test2 = OMISubscription.odfGeneration(testSub)
+      test2.\\("value").length === 0
+      SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
+      val test3 = OMISubscription.odfGeneration(testSub)
+      test3.\\("value").length === 1
+      
+      SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
+      SQLite.removeSub(testSub)
+    }
+    
 
   }
 
