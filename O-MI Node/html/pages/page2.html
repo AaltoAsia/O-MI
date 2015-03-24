@@ -1,11 +1,37 @@
 <fieldset>
-	<h2 class="fs-title">O-DF Request selection</h2>
-	<h3 class="fs-subtitle">Select which operation you want to use</h3>
-	<div id="icons">
-		<img class="icon selected" src="Resources/icons/read.png" alt="read" />
-		<img class="icon" src="Resources/icons/write.png" alt="write" />
-		<img class="icon" src="Resources/icons/cancel.png" alt="cancel" />
+	<div class="movedesc prev">
+		<p>Back</p>
+		<img src="Resources/prev.png" alt="Prev" />
 	</div>
-	<div id="options"></div>
-	<label>Skip Generation Check<input type="checkbox" id="skip" name="skip"/></label>
+	<div class="movedesc next">
+		<p>Send</p>
+		<img src="Resources/next.png" alt="Next" />
+	</div>
+
+	<div class="content row">
+		<h2 class="fs-title">O-DF Request selection</h2>
+		<h3 class="fs-subtitle">Select which operation you want to use</h3>
+		<div id="icons">
+			<img class="icon selected" src="Resources/icons/read.png" alt="read" />
+			<img class="icon" src="Resources/icons/write.png" alt="write" />
+			<img class="icon" src="Resources/icons/cancel.png" alt="cancel" />
+		</div>
+		
+		<div id="autodiv">
+			<label>Automatic request generation<input type="checkbox" id="autorequest" name="autorequest" checked /></label>
+		</div>
+		
+		<div id="optionCol" class="col">
+			<div id="options"></div>
+		</div>
+		<div id="requestCol" class="col">
+			<h3 class="fs-subtitle">See (and edit) the generated request</h3>
+			<div id="edit">
+				<div id="load">
+					<img class="loading rotate" src="Resources/loading.png" alt="Loading..." />
+				</div>
+				<textarea id="editRequest" rows="15"></textarea>
+			</div>
+		</div>
+	</div>
 </fieldset>

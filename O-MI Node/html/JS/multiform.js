@@ -8,39 +8,52 @@ var left, opacity, scale; // fieldset properties which we will animate
 var animating; // flag to prevent quick multi-click glitches
 var count;
 
-/* Event handler for the next button on the 3rd page */
-$(document).on('click', '#next', function() {
+/* Event handler for the next button */
+$(document).on('click', '.next', function() {
 	// Using global variable index
 	if (page === 1) {
 		if (!page1Verified()) {
 			alert("Please check at least one object");
 			return;
 		}
+		if(checkedObjects().length > 100){
+			if (confirm('You have checked lot of objects. This webform has automatic request generation ' +
+					'enabled by default. Do you want to disable automatic generation to prevent the page ' +
+					'from lagging?')){
+				$("#autorequest").prop("checked", false);
+				return;
+			}
+		}
+		updateRequest(1000); //from pages.js
 	} else if (page === 2) {
 		if (!page2Verified()) {
 			alert("Please specify TTL (Time to live) as numeric value");
 			return;
 		}
-		$("#request").html("");
-	} else if (page === 3) {
-		if (!page3Verified()) {
-			alert("Please generate the request");
-			return;
+		if(!($("#autorequest").prop("checked"))){
+			if(confirm('You have disabled automatic generation, thus your request might not be up-to-date. Do you want ' +
+					'to generate the message once more? (Note: your manual changes to the request will be overwritten)')) {
+				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
+			}
 		}
 		$("#responseBox").html("");
-	} else if (page === 4) {
+		
+		sendRequest(); // From submit.js, sending request on action
+	} else if (page === 3) {
 		return false;
 	}
 	animateNext();
 });
 
-$(document).on('click', '#prev', function() {
-	if (page === 4) {
+/* Event handler for clicking the previous button */
+$(document).on('click', '.prev', function() {
+	if (page === 3) {
 		send = false; // Polling variable
 	}
 	animatePrev();
 });
 
+/* Handle switching from current page to previous page */
 function animatePrev() {
 	if (animating || page === 1)
 		return false;
@@ -59,16 +72,11 @@ function animatePrev() {
 	
 	loadPages(page);
 	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
-	
-	if(page === 3){
-		if($("#skip").prop('checked')) {
-			 animatePrev();
-		}
-	}
 }	
 
+/* Handle switching from current page to next page */
 function animateNext() {
-	if (animating || page === 4)
+	if (animating || page === 3)
 		return false;
 
 	// Animate scrolling
@@ -84,25 +92,13 @@ function animateNext() {
 
 	// activate next step on progressbar using the page number
 	$("#progressbar li").eq((page - 1)).addClass("active");
-	
-	animating = false;
-	
-	loadPages(page);
 
+	loadPages(page);
+	animating = false;
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
-	
-	// If generation step checked
-	if(page === 3){
-		// From pages.js
-		generateRequest();
-		refreshEditor("request", "editRequest");
-		
-		if($("#skip").prop('checked')) {
-			 animateNext();
-		}
-	}
 }
+
 
 $(".submit").click(function() {
 	return false;
-})
+});

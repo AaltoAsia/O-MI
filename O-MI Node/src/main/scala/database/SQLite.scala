@@ -21,7 +21,6 @@ object SQLite {
     { _.toString }, // Path to String
     { Path(_) } // String to Path
     )
-
   private var historyLength = 10
   //path where the file is stored
   private val dbPath = "./sensorDB.sqlite3"
@@ -32,6 +31,7 @@ object SQLite {
   private val objects = TableQuery[DBNode]
   private val subs = TableQuery[DBSubscription]
   private val buffered = TableQuery[BufferedPath]
+  private val meta = TableQuery[DBMetaData]
 
   private var setEventHooks: List[Seq[Path] => Unit] = List()
   def attachSetHook(f: Seq[Path] => Unit) =
@@ -52,7 +52,8 @@ object SQLite {
       latestValues.schema.create,
       objects.schema.create,
       subs.schema.create,
-      buffered.schema.create)
+      buffered.schema.create,
+      meta.schema.create)
     runSync(setup)
   }
 
@@ -91,11 +92,40 @@ object SQLite {
         //existing path and less than history length of data or buffering.
         false
       }
-
     }
   /**
+   * Used to store metadata for a sensor to database
+   * @param path path to sensor
+   * @param data metadata to be stored as string
+   * 
+   */
+  def setMetaData(path:Path,data:String)
+  {
+    val qry = meta.filter(_.path === path).map(_.data)
+    val count = runSync(qry.result).length
+    if(count == 0)
+    {
+      runSync(meta += (path,data))
+    }
+    else
+    {
+      runSync(qry.update(data))
+    }
+  }
+  /**
+   * Used to get metadata from database for given path
+   * @param path path to sensor whose metadata is requested
+   * 
+   * @param return meta data as Option[String], none if no data is found
+   */
+  def getMetaData(path:Path):Option[String]=
+  {
+    val qry = meta.filter(_.path === path).map(_.data)
+    runSync(qry.result).headOption
+  }
+  /**
    * Used to set many values efficiently to the database.
-   * Currently works only for list of tuples consisting of path and value.
+   * @param data list of tuples consisting of path and TimedValue.
    */
   def setMany(data: List[(String, TimedValue)]) {
     var path = Path("")

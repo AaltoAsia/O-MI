@@ -57,19 +57,20 @@ object DataFormaterTest extends Specification {
      fdata(0).value shouldEqual "-272C"
      fdata(4).value shouldEqual "-268C"
   }
-  "return null for values that are missing in the beginning" in {
-     SQLite.remove(Path("path/to/test/sensor1"))
-     timeNow = new java.util.Date().getTime
-     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-272C",new Timestamp(timeNow-4000)))
-     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-271C",new Timestamp(timeNow-3000)))
-     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-270C",new Timestamp(timeNow-2000)))
-     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-269C",new Timestamp(timeNow-1000)))
-     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-268C",new Timestamp(timeNow)))
-     var fdata = DataFormater.FormatSubData(Path("path/to/test/sensor1"),new Timestamp(timeNow-10000), 2,Some(new Timestamp(timeNow)))
-     fdata.length shouldEqual 5
-     fdata(0) shouldEqual null
-     fdata(4).value shouldEqual "-268C"
-  }
+// No longer returns null values at the beginning
+//  "return null for values that are missing in the beginning" in {
+//     SQLite.remove(Path("path/to/test/sensor1"))
+//     timeNow = new java.util.Date().getTime
+//     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-272C",new Timestamp(timeNow-4000)))
+//     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-271C",new Timestamp(timeNow-3000)))
+//     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-270C",new Timestamp(timeNow-2000)))
+//     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-269C",new Timestamp(timeNow-1000)))
+//     SQLite.set(new DBSensor(Path("path/to/test/sensor1"),"-268C",new Timestamp(timeNow)))
+//     var fdata = DataFormater.FormatSubData(Path("path/to/test/sensor1"),new Timestamp(timeNow-10000), 2,Some(new Timestamp(timeNow)))
+//     fdata.length shouldEqual 5
+//     fdata(0) shouldEqual null
+//     fdata(4).value shouldEqual "-268C"
+//  }
     "fill all data with old latest data if no new data available" in {
      SQLite.remove(Path("path/to/test/sensor1"))
      timeNow = new java.util.Date().getTime

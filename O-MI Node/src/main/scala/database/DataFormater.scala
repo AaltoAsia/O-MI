@@ -7,8 +7,7 @@ import parsing.Types.Path
 object DataFormater {
   /***
    * Method to convert database "raw" data so that it corresponds to the data
-   * that would've been sent if a callback address were provided.
-   * Can have null values in the beginning if no data was received before the subscription 
+   * that would've been sent if a callback address were provided. 
    * 
    *
    * @param path sensors path as Path
@@ -79,8 +78,6 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[T
   //Try to fill gaps in FormatedData
   //if gap(null) is found fill in using previous value
   //if first is null search for older values in database
-  //if no older values, use null. Therefore returned data can start with 
-  // one or more null values
   for(n<-0 until formatedData.length)
   {
     if(formatedData(n)==null)
@@ -100,6 +97,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[T
     }
   }
   }
-  formatedData
+  //remove null values from the beginning if where were no subdata in the database before start time.
+  formatedData.dropWhile(_ == null)
 }
 }

@@ -1,9 +1,11 @@
+/* Returns formatted xml */
 function formatXml(xml) {
     var formattedXML = hljs.highlightAuto(formatNoHighlight(xml));
 
     return formattedXML;
 }
 
+/* Format the given text as xml without highlight */
 function formatNoHighlight(xml) {
 	var formatted = '';
     var reg = /(>)(<)(\/*)/g;

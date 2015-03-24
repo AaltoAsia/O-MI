@@ -1,5 +1,6 @@
+/* Class for managing all checkbox instances */
 function ObjectBoxManager(){
-	this.objects = [];
+	this.objects = []; // Array for storing objects
 	
 	/* Created a DOM checkbox and adds the reference object to objects array */
 	this.addObject = function(id) {
@@ -9,6 +10,7 @@ function ObjectBoxManager(){
 		this.push(new ObjectBox(id, 0));
 	}
 	
+	/* Pushes an object into the array */
 	this.push = function(o) {
 		this.objects.push(o);
 	};
@@ -28,6 +30,7 @@ function ObjectBoxManager(){
 	};
 }
 
+/* Class for simulating a single checkbox instance */
 function ObjectBox(id, depth, parent){
 	this.id = id;
 	this.depth = depth;
@@ -77,18 +80,13 @@ function ObjectBox(id, depth, parent){
 	};
 }
 
+/* Event handler for checking all checkboxes (button click) */
 $(document).on('click', '#checkall', function() {
 	console.log("Checking all boxes");
-	
 	$(".checkbox").prop('checked', true);
-	
-	/*
-	$(".checkbox").each(function(){
-		$(this).prop('checked', true);
-		update(this);
-	}); */
 });
 
+/* Event handler for unchecking all checkboxes (button click) */
 $(document).on('click', '#uncheckall', function() {
 	console.log("Unchecking all boxes");
 	$(".checkbox").prop('checked', false);
@@ -100,27 +98,29 @@ $(document).on('click', '.checkbox', function() {
 	update(this);
 });
 
+/* Update the parents and children of the checked checkbox (obj) */
 function update(obj) {
 	var ref = $(obj); //Reference (jquery object) of the clicked button
 	var id = ref.attr('id');
 	
 	//Parent item clicked
 	if(id){
-		propChildren(ref);
+		propChildren(ref, true);
 		propParent(ref);
 	} else { 
 		propParent(ref);
 	}
 }
 
-function propChildren(parent){
+/* Prop all children to match the propped checkbox, if dig is true, sends an ajax query to the server for deeper objects */
+function propChildren(parent, dig){
 	var parentId = $(parent).attr("id");
 	
 	//Find child items and mark their value the same as their parent
 	var children = getChildren(parentId);
 	var url = $("#url-field").val();
 	
-	if(children.length == 0 && parentId){
+	if(children.length == 0 && parentId && dig){
 		// Using manager from submit.js
 		// TODO: Change manager to static class
 		var o = manager.find(parentId);
@@ -129,7 +129,7 @@ function propChildren(parent){
 	
 	children.each(function(){
 		$(this).prop('checked', $(parent).is(':checked'));
-		propChildren(this);
+		propChildren(this, false);
 	});
 }
 
@@ -166,10 +166,12 @@ function jq(prefix, myid) {
 	return prefix + myid.replace( /(:|\.|\[|\]|\/)/g, "\\$1" );
 }
 
+/* Returns true if checkbox (element) has a child, otherwise returns false */
 function isParent(element, index, array){
 	return element != "checkbox" && element != "lower";
 }
 
+/* Returns true if checkbox with given id is root, otherwise returns false */
 function isRootBox(jqid){
-	return $(jqid).attr('class').split(' ').length == 1;
+	return $(jqid).attr('class').split(' ').length === 1;
 }

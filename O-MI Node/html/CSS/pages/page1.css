@@ -1,0 +1,46 @@
+#url-field {
+	max-width: 50%;
+}
+
+#objectContainer {
+	border-width: 5px;
+	border-style: groove;
+	width: 90%;
+	min-height: 5em;
+	max-height: 20em;
+	padding: 5px 0;
+	margin: 0 auto;
+	display: inline-block;
+	
+	overflow: auto;
+}
+
+#objectList {
+	position: relative;
+	list-style-type: none;
+	max-width: 100%;
+}
+
+#objectList ul {
+	list-style-type: none;
+}
+
+#objectList li {
+	display: table-row;
+}
+
+#objectList label {
+	display: inline-block;
+	float: left;
+}
+
+#objectList input {
+	float: left;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	margin: 0;
+	vertical-align: bottom;
+	position: relative;
+	*overflow: hidden;
+}
