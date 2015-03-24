@@ -206,25 +206,15 @@ object Read {
                   for (sensor <- sensors) {
                     intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
                   }
-
-                  intervaldata
+                  val metaData = SQLite.getMetaData(infoItem.path)
+                  if( metaData.isEmpty )
+                    intervaldata
+                  else
+                    //TODO: make sure that this really works, combined NodeSeq and String
+                    intervaldata ++ XML.loadString(metaData.get)
               }else{
                 <Error> Item not found in the database </Error>
               }
-            /*<<<<<<< HEAD: TODO: REMOVEME if not needed
-            } else {
-              val sensor = SQLite.get(infoItem.path)
-              if(sensor.nonEmpty){
-                sensor.get match {
-                  case dbsensor: DBSensor =>
-                    <value dateTime={ dbsensor.time.toString.replace(' ', 'T')}>{ dbsensor.value }</value>
-                  case dbobject: DBObject =>
-                      <Error> Found wrong type (InfoItem/Object) </Error>
-                }
-              } else {
-                <Error> Item not found in the database </Error>
-              }
-            =======*/
             }
           </InfoItem>
         }
@@ -234,7 +224,14 @@ object Read {
           <InfoItem name={ infoItem.path.last }>
             {
               SQLite.get(infoItem.path) match {
-                case Some(sensor: DBSensor) => <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                case Some(sensor: DBSensor) => 
+                val value = <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                  val metaData = SQLite.getMetaData(infoItem.path)
+                  if( metaData.isEmpty )
+                    value
+                  else
+                    //TODO: make sure that this really works, combined NodeSeq and String
+                    value ++ XML.loadString(metaData.get)
                 case _ => <Error> Item not found in the database </Error>
               }
 
