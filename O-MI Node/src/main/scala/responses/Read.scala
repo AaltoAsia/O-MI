@@ -27,9 +27,10 @@ object Read {
 	def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: Path): (Path, Boolean) = path.lastOption match {
-      case Some("value") => (path.init, true) 
-      case _             => (path, false)
+    def restNormalizePath(path: Path): (Path, Int) = path.lastOption match {
+      case Some("value") => (path.init, 1) 
+      case Some("MetaData") => (path.init, 2) 
+      case _             => (path, 0)
     }
 
     // safeguard
@@ -40,16 +41,23 @@ object Read {
 
 		SQLite.get(path) match {
 			case Some(sensor: DBSensor) =>
-        if (wasValue)
+        if (wasValue == 1){
           return Some(Left(sensor.value))
-        else
+        }else if (wasValue == 2){
+          val metaData = SQLite.getMetaData(path)
+          if(metaData.isEmpty)
+            return Some(Right(omiResult(returnCode(404,s"No metadata found for $path")).head))
+          else
+            return Some(Left(metaData.get))
+
+        }else{
           return Some(Right(
             <InfoItem name={ sensor.path.last }>
               <value dateTime={ sensor.time.toString.replace(' ', 'T') }>
                 { sensor.value }
               </value>
             </InfoItem>))
-
+        }
       case Some(sensormap: DBObject) =>
         var resultChildren = Buffer[xml.Node]()
 
