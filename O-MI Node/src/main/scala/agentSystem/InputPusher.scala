@@ -24,7 +24,7 @@ trait InputPusher {
   /** Function for handling sequences of path and value pairs.
     *
     */
-  def handlePathValuePairs( pairs: Seq[(String,String)] ): Unit
+  def handlePathValuePairs( pairs: Seq[(String,TimedValue)] ): Unit
 }
 
 /** Object for pushing data from sensors to db.
@@ -67,7 +67,7 @@ object InputPusher extends InputPusher{
   /** Function for handling sequences of path and value pairs.
     *
     */
-  override def handlePathValuePairs( pairs: Seq[(String,String)] ) : Unit ={
+  override def handlePathValuePairs( pairs: Seq[(String,TimedValue)] ) : Unit ={
     SQLite.setMany(pairs.toList)
   }
 

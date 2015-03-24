@@ -12,6 +12,7 @@ import akka.util.{ByteString, Timeout}
 import akka.pattern.ask
 import scala.language.postfixOps
 
+import java.sql.Timestamp
 import java.io.File
 
 /* JSON4s */
@@ -118,7 +119,7 @@ class SensorAgent(uri : String) extends AgentActor {
           // Object id
           val path = split.dropRight(2) ++  split.takeRight(2).reverse
 
-          ("Objects/" + path.mkString("/"), value)
+          ("Objects/" + path.mkString("/"), TimedValue(Some(new Timestamp(date.getTime)),value))
         }))
       }
       system.log.debug("Successfully saved to Database.")

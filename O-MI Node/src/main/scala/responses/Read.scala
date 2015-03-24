@@ -86,11 +86,19 @@ object Read {
 
   //takes the return value of OmiParser straight
   def OMIReadResponse(read: OneTimeRead): xml.NodeSeq = {
+    if (read.requestId.isEmpty) {
     omiOdfResult(
         returnCode200 ++
         requestIds(read.requestId) ++
         odfMsgWrapper(odfGeneration(read))
-    )
+        )
+    }
+
+    else {
+      val id = read.requestId.head.toInt
+      OMISubscription.OMISubscriptionResponse(id)
+      
+    }
   }
   /**
    * helper function for generating whold O-DF xml.
@@ -98,7 +106,6 @@ object Read {
    * @return generated O-DF xml as String
    */
   def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
-    if (read.requestId.isEmpty) {
       <Objects>
         { 
           odfObjectGeneration(
@@ -109,13 +116,7 @@ object Read {
             read.oldest)
         }
       </Objects>
-    }
 
-    else {
-      val id = read.requestId.head.toInt
-      OMISubscription.OMISubscriptionResponse(id)
-      
-    }
   }
 
   /**
@@ -135,8 +136,8 @@ object Read {
         <id>{ obj.path.last }</id>
         {
           if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-            odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
-            odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
+              odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
+              odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
 
           } else {
             //TODO: sqlite get begin to end
@@ -167,7 +168,8 @@ object Read {
     node
   }
   /**
-   * helper function for generating O-DF's InfoItem nodes
+   * helper function for generating O-DF's InfoItem nodes. If any of the values begin, end, newest or oldest are defined, it uses them for generation.
+   * otherwise it fetches just the present value of the sensor.
    * @param infoItems nodes to generate
    * @param begin the start time of the time interval from where to get sensors
    * @param end the end time of the time interval from where to get sensors
@@ -182,13 +184,13 @@ object Read {
                             oldest: Option[Int] ): xml.NodeSeq = {
 
       var node: xml.NodeSeq = xml.NodeSeq.Empty
-      for (infoItem <- infoItems) {
-        node ++= 
-        <InfoItem name={ infoItem.path.last }>
-          {
-            //val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
-            // The parametres in database (fromStart, fromEnd)
-            if(end.nonEmpty || begin.nonEmpty){
+      if(begin != None || end != None || newest != None || oldest != None) {
+        for (infoItem <- infoItems) {
+          node ++= 
+          <InfoItem name={ infoItem.path.last }>
+            {
+              //val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
+              // The parametres in database (fromStart, fromEnd)
               val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
               if(sensors.nonEmpty){
 
@@ -201,6 +203,7 @@ object Read {
               }else{
                 <Error> Item not found in the database </Error>
               }
+            /*<<<<<<< HEAD: TODO: REMOVEME if not needed
             } else {
               val sensor = SQLite.get(infoItem.path)
               if(sensor.nonEmpty){
@@ -210,13 +213,29 @@ object Read {
                   case dbobject: DBObject =>
                       <Error> Found wrong type (InfoItem/Object) </Error>
                 }
-              }else{
+              } else {
                 <Error> Item not found in the database </Error>
               }
+            =======*/
             }
-          }
-        </InfoItem>
+          </InfoItem>
+        }
+      } else {
+        for (infoItem <- infoItems) {
+          node ++= 
+          <InfoItem name={ infoItem.path.last }>
+            {
+              SQLite.get(infoItem.path) match {
+                case Some(sensor: DBSensor) => <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+                case _ => <Error> Item not found in the database </Error>
+              }
+
+            }
+
+          </InfoItem>
+        }
       }
+      
       node
   }
 

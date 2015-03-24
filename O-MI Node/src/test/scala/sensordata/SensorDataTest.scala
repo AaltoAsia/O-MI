@@ -41,9 +41,9 @@ class SensorDataTest extends Specification {
     "vtt_otakaari4_temperature_10624":"-545.39"}
       """)))
       val nonBlockingWait = Future{
-        Thread.sleep(2400)
+        Thread.sleep(5000)
       }
-      Await.result(nonBlockingWait, duration.Duration.apply(2450, "ms"))
+      Await.result(nonBlockingWait, duration.Duration.Inf)
       database.SQLite.get(parsing.Types.Path("Objects/vtt_otakaari4_10624/temperature")) must beSome
       database.SQLite.get(parsing.Types.Path("Objects/vtt_otakaari4_100/humidity")) must beSome
       database.SQLite.get(parsing.Types.Path("Objects/vtt_otakaari4_100/temperature")) must beSome

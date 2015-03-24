@@ -13,8 +13,19 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
+//import org.specs2.specification.{Step, Fragments}
+
+//from http://stackoverflow.com/questions/16936811/execute-code-before-and-after-specification
+//trait BeforeAllAfterAll extends Specification {
+//  override def map(fragments: =>Fragments) = 
+//    Step(beforeAll) ^ fragments ^ Step(afterAll)
+//
+//  protected def beforeAll()
+//  protected def afterAll()
+//}
 
 class SubscriptionTest extends Specification with Before {
+//  def afterAll:Unit = ()
   def before = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
@@ -87,7 +98,10 @@ class SubscriptionTest extends Specification with Before {
 
     "Return with no values when interval is larger than time elapsed and no callback given" in {
 
-      val subxml = OMISubscription.OMISubscriptionResponse(0)
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
+      val parserlist = OmiParser.parse(simpletestfile)
+
+      val subxml = Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head
 
       val correctxml = 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
@@ -111,7 +125,7 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
-      trim(subxml.head).toString == trim(correctxml).toString
+      trim(subxml.head).toString === trim(correctxml).toString
 
     }
 
@@ -161,9 +175,60 @@ class SubscriptionTest extends Specification with Before {
           </omi:response>
         </omi:omiEnvelope>
 
-        println(xmlreturn)
-
       (requestID, trim(xmlreturn.head).toString) == (-1, trim(correctxml).toString)
+    }
+
+    "Return with error when subscription doesn't exist" in {
+      val xmlreturn = OMISubscription.OMISubscriptionResponse(1234)
+
+      val correctxml = 
+      <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <omi:response>
+          <omi:result>
+            <omi:return returnCode="400" description="A subscription with this id has expired or doesn't exist">
+            </omi:return>
+            <omi:requestId>1234</omi:requestId>
+          </omi:result>
+        </omi:response>
+      </omi:omiEnvelope>
+
+      trim(xmlreturn.head).toString == trim(correctxml).toString
+    }
+    "Return polled data only once" in {
+      val testTime =new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,1,None,Some(new java.sql.Timestamp(testTime))))
+//      SQLite.startBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      
+      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.get(Path("Objects/ReadTest/SmartOven/pollingtest")) === None
+      
+      (0 to 11).foreach(n=>
+        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+      val test = OMISubscription.odfGeneration(testSub)
+      val intervalsPassed = (new Date().getTime - testTime)/ 1000
+      test.\\("value").length === intervalsPassed
+      val test2 = OMISubscription.odfGeneration(testSub)
+      test2.\\("value").length === 0
+
+      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+
+//      SQLite.stopBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.removeSub(testSub)
+    }
+    "TTL should decrease by some multiple of interval" in {
+      val testTime =new Date().getTime - 10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,3,None,Some(new java.sql.Timestamp(testTime))))
+      val ttlFirst = SQLite.getSub(testSub).get.ttl
+      ttlFirst === 60.0
+      (0 to 10).foreach(n=>
+        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+      val test = OMISubscription.odfGeneration(testSub)
+      val test2 = OMISubscription.odfGeneration(testSub)
+      val ttlEnd = SQLite.getSub(testSub).get.ttl
+      (ttlFirst-ttlEnd) % 3 === 0
+      
+      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.removeSub(testSub)
     }
 
   }

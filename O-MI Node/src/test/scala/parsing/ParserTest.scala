@@ -35,7 +35,7 @@ class ParserTest extends Specification {
                   "56"
                 )
               ),
-              ""
+              Seq.empty
             )
           )
         ),
@@ -49,7 +49,7 @@ class ParserTest extends Specification {
                   "1"
                 )
               ),
-              ""
+              Seq.empty
             )
           )
         )
@@ -62,7 +62,7 @@ class ParserTest extends Specification {
               "180"
             )
           ),
-          ""
+          Seq.empty
         ),
         OdfInfoItem(Path("Objects/SmartHouse/Moisture"),
           Seq(
@@ -71,7 +71,7 @@ class ParserTest extends Specification {
               "0.20"
             )
           ),
-          ""
+          Seq.empty
         )
       )
     ),
@@ -85,7 +85,7 @@ class ParserTest extends Specification {
               "30"
             )
           ),
-          ""
+          Seq.empty
         )
       )
     ),
@@ -347,7 +347,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(),
-                  ""))),
+                  Seq.empty))),
             OdfObject(
               List(
                 "Objects",
@@ -362,7 +362,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerConsumption"),
                   List(),
-                  "")))),
+                  Seq.empty)))),
           List(
             OdfInfoItem(
               List(
@@ -370,14 +370,14 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(),
-              ""),
+              Seq.empty),
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "Moisture"),
               List(),
-              ""))),
+              Seq.empty))),
         OdfObject(
           List(
             "Objects",
@@ -390,7 +390,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(),
-              ""))),
+              Seq.empty))),
         OdfObject(
           List(
             "Objects",
@@ -468,7 +468,7 @@ class ParserTest extends Specification {
                     "SmartFridge",
                     "PowerConsumption"),
                   List(),
-                  ""))),
+                  Seq.empty))),
             OdfObject(
               List(
                 "Objects",
@@ -483,7 +483,7 @@ class ParserTest extends Specification {
                     "SmartOven",
                     "PowerConsumption"),
                   List(),
-                  "")))),
+                  Seq.empty)))),
           List(
             OdfInfoItem(
               List(
@@ -491,14 +491,14 @@ class ParserTest extends Specification {
                 "SmartHouse",
                 "PowerConsumption"),
               List(),
-              ""),
+              Seq.empty),
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "Moisture"),
               List(),
-              ""))),
+              Seq.empty))),
         OdfObject(
           List(
             "Objects",
@@ -511,7 +511,7 @@ class ParserTest extends Specification {
                 "SmartCar",
                 "Fuel"),
               List(),
-              ""))),
+              Seq.empty))),
         OdfObject(
           List(
             "Objects",

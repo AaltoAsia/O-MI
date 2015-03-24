@@ -16,12 +16,10 @@ function generateRequest(){
 	
 	console.log("Generated the O-DF request");
 	
-	//var formattedXML = formatXml(request);
 	$("#editRequest").html(request);
-	
-    //$("#request").html(formattedXML.value); //Update the request textbox on the webpage
 }
 
+/* Returns all checkboxes that are checked */
 function checkedObjects() {
 	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
 }

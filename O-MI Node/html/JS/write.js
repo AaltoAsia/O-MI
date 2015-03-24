@@ -27,6 +27,12 @@ function writeXML(items, omi){
 		writeRead(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
 	} else if (omi.operation === 'cancel'){
 		writeCancel(writer, omi.requestId);
+	} else if(omi.operation === 'write'){
+		writer.writeAttributeString('msgformat', 'omi.xsd');
+		writeMsg(writer);
+		writer.writeStartElement("Objects");
+		writer.writeStartElement("Object");
+		writer.writeElementString("id", "testdummy");
 	}
 	
 	writer.writeEndElement();
@@ -37,25 +43,27 @@ function writeXML(items, omi){
     return request;
 }
 
+function writeMsg(writer){
+	writer.writeStartElement('omi:msg');
+	writer.writeAttributeString( 'xmlns', 'omi.xsd');
+	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
+}
+
 function writeRead(writer, items, interval, begin, end, newest, oldest, callback){
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
 	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	if(begin){
-		console.log(new Date(begin).getTime());
 		if(new Date(begin).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
 		}
 	}
 	if(end){
-		console.log(new Date(end).getTime());
 		if(new Date(end).getTime() > 0){
 			writer.writeAttributeString('end', end);
 		}
 	}
-	console.log("Newest: " + newest);
-	console.log("Oldest: " + oldest);
 	if(newest){
 		if($.isNumeric(newest)){
 			writer.writeAttributeString('newest', newest);
@@ -70,9 +78,8 @@ function writeRead(writer, items, interval, begin, end, newest, oldest, callback
 	if(callback) writer.writeAttributeString('callback', callback);
 	
 	//(third line)
-	writer.writeStartElement('omi:msg');
-	writer.writeAttributeString( 'xmlns', 'omi.xsd');
-	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
+	writeMsg(writer);
+	
 	writer.writeStartElement('Objects');
 	//Payload
 	var ids = [];
@@ -98,7 +105,7 @@ function addChildren(object, items){
 	
 	for(var i = 0; i < items.length; i++){
 		var c = $(items[i]).attr('class');
-		if(c.indexOf(object.id) > -1){
+		if(c.split(" ").indexOf(object.id) > -1){
 			children.push(items[i]);
 		}
 	}

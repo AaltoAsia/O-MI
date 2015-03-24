@@ -59,7 +59,7 @@ class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
   def genODF( path: Seq[String], value: String, deepnest : Int = 1) : OdfNode =
   {
     if(deepnest == path.size){
-      OdfInfoItem( path, Seq( TimedValue( None, value ) ), "" )
+      OdfInfoItem( path, Seq( TimedValue( None, value ) ), Seq.empty )
     } else {
       genODF(path, value, deepnest + 1) match {
         case i: OdfInfoItem =>

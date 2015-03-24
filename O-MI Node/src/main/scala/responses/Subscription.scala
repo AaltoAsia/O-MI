@@ -90,11 +90,22 @@ object OMISubscription {
    **/
 
 	def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
-    omiResult{
+    SQLite.getSub(id) match {
+    case None => {
+      omiResult{
+      returnCode(400, "A subscription with this id has expired or doesn't exist") ++
+      requestId(id)
+      }
+    }
+
+    case _ => {
+      omiResult{
       returnCode200 ++
       requestId(id) ++
       odfMsgWrapper(odfGeneration(id))
+      }
     }
+  }
 	}
 
   /**
@@ -113,18 +124,24 @@ object OMISubscription {
         {createFromPaths(subdata.paths, 1)}
         </Objects>
       }
-
       case None => {
-        if (SQLite.isExpired(id)) {
-        subdata.paths.foreach{p => SQLite.stopBuffering(p)}
-        return xml.NodeSeq.Empty //fix so a message saying sub has expired is sent?
+        
+        val start = subdata.startTime.getTime
+        val currentTimeLong = new Date().getTime()
+        //calculate new start time to be divisible by interval to keep the scheduling
+        //also reduce ttl by the amount that startTime was changed
+        val intervalMillisLong = (subdata.interval*1000).toLong
+        val newStartTimeLong = start + (intervalMillisLong*((currentTimeLong-start) / intervalMillisLong)) //subdata.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - subdata.startTime.getTime) / intervalMillisLong).toLong)
+        val newTTL:Double = if(subdata.ttl <= 0.0) subdata.ttl else { //-1 and -2 have special meanings
+          ((subdata.ttl*1000.toLong) - (newStartTimeLong - start))/1000.0
         }
 
-        else {
+        
+        SQLite.setSubStartTime(subdata.id, new Timestamp(newStartTimeLong), newTTL)
+
         <Objects>
         {createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval)}
         </Objects>
-        }
       }
     }
   }
@@ -160,9 +177,8 @@ object OMISubscription {
     def createFromPaths(paths: Array[Path], index: Int): xml.NodeSeq = {
       var node : xml.NodeSeq = xml.NodeSeq.Empty
 
-      if (paths.isEmpty) return node
-
-      else {
+      if (paths.isEmpty == false)
+        {
         var slices = Buffer[Path]()
         var previous = paths.head
 
@@ -219,9 +235,8 @@ object OMISubscription {
     def createFromPathsNoCallback(paths: Array[Path], index: Int, starttime:Timestamp, interval:Double): xml.NodeSeq = {
       var node : xml.NodeSeq = xml.NodeSeq.Empty
 
-      if (paths.isEmpty) return node
-
-      else {
+      if (paths.isEmpty == false)
+        {
         var slices = Buffer[Path]()
         var previous = paths.head
 
