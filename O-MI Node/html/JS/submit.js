@@ -239,6 +239,7 @@ function printResponse(response){
 
 /* Handle the ajax errors */
 function handleError(jqXHR, errortype, exc) {
+	console.log(jqXHR.responseText);
 	$("#responseBox").html(formatNoHighlight(jqXHR.responseText));
 	refreshEditor("response", "responseBox");
 	
