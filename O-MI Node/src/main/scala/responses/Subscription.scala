@@ -57,7 +57,8 @@ object OMISubscription {
 	}
 
   /**
-   * Used for getting only the infoitems from the request (objects can't be subscribed to (?))
+   * Used for getting only the infoitems from the request. If an Object is subscribed to, get all the infoitems
+   * that are children (or children's children etc.) of that object.
    *
    * @param A hierarchy of the ODF-structure that the parser creates
    * @return Paths of the infoitems
@@ -66,6 +67,11 @@ object OMISubscription {
     def getInfoItemPaths(objects: List[OdfObject]): Buffer[Path] = {
     var paths = Buffer[Path]()
     for (obj <- objects) {
+/*      //just an object has been subscribed to
+      if (obj.childs.nonEmpty == false && obj.sensors.nonEmpty == false) {
+
+      }*/
+
       if (obj.childs.nonEmpty) {
         paths ++= getInfoItemPaths(obj.childs.toList)
       }
@@ -81,6 +87,10 @@ object OMISubscription {
       }
     return paths
   }
+
+/*  def getObjectChildren(object: DBObject) {
+    
+  }*/
 
 	/**
    * Subscription response
