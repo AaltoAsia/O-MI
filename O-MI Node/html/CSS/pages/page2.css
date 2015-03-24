@@ -18,6 +18,16 @@
 	margin-left: 4%;
 }
 
+#edit .loading {
+	position: absolute;
+	width: 5em;
+	height: 5em;
+	top: 14em;
+   	left: 37.5em;
+	display: none;
+	z-index: 10;
+}
+
 #editRequest {
 	max-width: 90%;
 	height: auto;

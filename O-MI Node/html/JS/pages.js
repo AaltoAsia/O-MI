@@ -31,13 +31,21 @@ function loadPages(page) {
 
 /* Set a 0.5 second timeout to automatically update the request */
 function updateRequest(){
+	$("#editRequest .CodeMirror").hide();
+	
+	var loadSelector = $("#edit .loading");
+	loadSelector.show();
+	
 	if(timeout){
 		clearTimeout(timeout);
 	}
 	timeout = setTimeout(function(){
 		generateRequest(); // From pages.js
 		refreshEditor("request", "editRequest");
-	}, 500);
+		
+		loadSelector.hide();
+		$("#editRequest .CodeMirror").show();
+	}, 1000);
 }
 
 /* Refresh CodeMirror editor */
