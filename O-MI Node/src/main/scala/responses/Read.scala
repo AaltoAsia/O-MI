@@ -244,4 +244,10 @@ object Read {
       node
   }
 
+/*  def getMetadata(infoitem: OdfInfoItem): xml.Node = {
+    <MetaData>
+      {for(metaitem <- infoitem.)}
+    </MetaData>
+  }*/
+
 }
