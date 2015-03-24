@@ -126,7 +126,21 @@ object OMISubscription {
           case -2 => {
             <Error> Interval not supported </Error>
           }; // not supported
-          case -1 => ???; //eventsub
+          case -1 => {
+            val start = subdata.startTime.getTime
+            val currentTimeLong = new Date().getTime()
+            val newStartTimeLong = currentTimeLong
+            val newTTL: Double = {
+              if (subdata.ttl <= 0) subdata.ttl
+              else ((subdata.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
+            }
+            
+            SQLite.setSubStartTime(subdata.id,new Timestamp(newStartTimeLong), newTTL)
+
+            <Objects>
+              { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
+            </Objects>
+          }; //eventsub
           case 0 => {
             <Error> Interval not supported </Error>
           }; //not supported
@@ -138,7 +152,7 @@ object OMISubscription {
             val intervalMillisLong = (subdata.interval * 1000).toLong
             val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //subdata.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - subdata.startTime.getTime) / intervalMillisLong).toLong)
             val newTTL: Double = if (subdata.ttl <= 0.0) subdata.ttl else { //-1 and 0 have special meanings
-              ((subdata.ttl * 1000.toLong) - (newStartTimeLong - start)) / 1000.0
+              ((subdata.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
             }
 
             SQLite.setSubStartTime(subdata.id, new Timestamp(newStartTimeLong), newTTL)
@@ -179,7 +193,11 @@ object OMISubscription {
 
   def getAllvalues(sensor: database.DBSensor, starttime: Timestamp, interval: Double): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
-    val infoitemvaluelist = DataFormater.FormatSubData(sensor.path, starttime, interval, None)
+
+    val infoitemvaluelist = {
+      if (interval == -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
+      else SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
+    }
 
     for (innersensor <- infoitemvaluelist) {
       node ++= <value dateTime={ innersensor.time.toString.replace(' ', 'T') }>{ innersensor.value }</value>
