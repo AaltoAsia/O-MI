@@ -4,10 +4,16 @@ val scalaBuildVersion = "2.11.4"
 
 scalaVersion := scalaBuildVersion
 
+// build options
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
 
+// build api options
+scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-diagrams", "-encoding", "utf8")
+
+autoAPIMappings := true 
+
 // STM
-libraryDependencies += ("org.scala-stm" %% "scala-stm" % "0.7")
+//libraryDependencies += ("org.scala-stm" %% "scala-stm" % "0.7")
 
 // SPRAY
 libraryDependencies ++= {
@@ -25,7 +31,6 @@ libraryDependencies ++= {
   )
 }
 
-oneJarSettings
 
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
@@ -39,6 +44,8 @@ libraryDependencies ++= Seq(
 )
 
 cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 
+
+oneJarSettings
 
 Revolver.settings
 
