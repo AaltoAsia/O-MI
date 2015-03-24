@@ -223,6 +223,8 @@ object OMISubscription {
               <InfoItem name={ sensor.path.last }>
                 <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>
               </InfoItem>
+
+            node ++= Read.getMetaDataXML(sensor.path)
           }
 
           case Some(obj: database.DBObject) => {
@@ -278,6 +280,8 @@ object OMISubscription {
               <InfoItem name={ sensor.path.last }>
                 { getAllvalues(sensor, starttime, interval) }
               </InfoItem>
+
+            node ++= Read.getMetaDataXML(sensor.path)
           }
 
           case Some(obj: database.DBObject) => {

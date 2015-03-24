@@ -197,7 +197,6 @@ object Read {
           node ++= 
           <InfoItem name={ infoItem.path.last }>
             {
-              //val sensors = SQLite.getNBetween(infoItem.path, begin, end, newest, oldest )
               // The parametres in database (fromStart, fromEnd)
               val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
               if(sensors.nonEmpty){
@@ -227,6 +226,8 @@ object Read {
             =======*/
             }
           </InfoItem>
+
+          node ++= getMetaDataXML(infoItem.path)
         }
       } else {
         for (infoItem <- infoItems) {
@@ -241,16 +242,19 @@ object Read {
             }
 
           </InfoItem>
+
+          node ++= getMetaDataXML(infoItem.path)
         }
       }
       
       node
   }
 
-/*  def getMetadata(infoitem: OdfInfoItem): xml.Node = {
-    <MetaData>
-      {for(metaitem <- infoitem.)}
-    </MetaData>
-  }*/
+  def getMetaDataXML(path: Path): xml.NodeSeq = {
+    SQLite.getMetaData(path) match {
+      case Some(metadata: String) => xml.XML.loadString(metadata)
+      case _ => xml.NodeSeq.Empty
+      }
+  }
 
 }
