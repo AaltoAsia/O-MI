@@ -13,20 +13,20 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
+import testHelpers.BeforeAll
 //import org.specs2.specification.{Step, Fragments}
 
 //from http://stackoverflow.com/questions/16936811/execute-code-before-and-after-specification
-//trait BeforeAllAfterAll extends Specification {
-//  override def map(fragments: =>Fragments) = 
-//    Step(beforeAll) ^ fragments ^ Step(afterAll)
+//trait BeforeAll extends Specification {
+//  override def map(fs: =>Fragments) = 
+//    Step(beforeAll) ^ fs
 //
 //  protected def beforeAll()
-//  protected def afterAll()
 //}
 
-class SubscriptionTest extends Specification with Before {
+class SubscriptionTest extends Specification with BeforeAll {
 //  def afterAll:Unit = ()
-  def before = {
+  def beforeAll = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
     calendar.set(Calendar.HOUR_OF_DAY, 12)
@@ -196,40 +196,50 @@ class SubscriptionTest extends Specification with Before {
     }
     "Return polled data only once" in {
       val testTime =new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,1,None,Some(new java.sql.Timestamp(testTime))))
-//      SQLite.startBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")),60.0,1,None,Some(new java.sql.Timestamp(testTime))))
+//      SQLite.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
       
-      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
-      SQLite.get(Path("Objects/ReadTest/SmartOven/pollingtest")) === None
+      SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
+      SQLite.get(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")) === None
       
       (0 to 11).foreach(n=>
-        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
       val test = OMISubscription.odfGeneration(testSub)
       val intervalsPassed = (new Date().getTime - testTime)/ 1000
-      test.\\("value").length === intervalsPassed.min(12)
+      test.\\("value").length === intervalsPassed
       val test2 = OMISubscription.odfGeneration(testSub)
       test2.\\("value").length === (SQLite.getSub(testSub).get.startTime.getTime - testTime)/1000 - intervalsPassed
 
-      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
 
-//      SQLite.stopBuffering(Path("Objects/ReadTest/SmartOven/pollingtest"))
+//      SQLite.stopBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
     "TTL should decrease by some multiple of interval" in {
       val testTime =new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/ReadTest/SmartOven/pollingtest")),60.0,3,None,Some(new java.sql.Timestamp(testTime))))
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")),60.0,3,None,Some(new java.sql.Timestamp(testTime))))
       val ttlFirst = SQLite.getSub(testSub).get.ttl
       ttlFirst === 60.0
       (0 to 10).foreach(n=>
-        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
       val test = OMISubscription.odfGeneration(testSub)
       val test2 = OMISubscription.odfGeneration(testSub)
       val ttlEnd = SQLite.getSub(testSub).get.ttl
       (ttlFirst-ttlEnd) % 3 === 0
       
-      SQLite.remove(Path("Objects/ReadTest/SmartOven/pollingtest"))
+      SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
+    "Event based subscription without callback should return all the new values when polled" in {
+      val testTime = new Date().getTime -10000
+      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")),60.0,-1,None,Some(new java.sql.Timestamp(testTime))))
+      (0 to 10).foreach(n=>
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SnartOven/pollingtest"), n.toString(),new java.sql.Timestamp(testTime-5000 + n*1000))))
+      val test = OMISubscription.odfGeneration(testSub)
+      test.\\("value").length === 5
+      
+    }
+    
 
   }
 

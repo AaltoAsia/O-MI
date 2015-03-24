@@ -14,12 +14,13 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._
+import testHelpers.BeforeAll
 
-class CancelTest extends Specification with Before {
+class CancelTest extends Specification with BeforeAll {
 
   implicit val system = ActorSystem("on-core")
   val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
-  def before = {
+  def beforeAll = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
     calendar.set(Calendar.HOUR_OF_DAY, 12)

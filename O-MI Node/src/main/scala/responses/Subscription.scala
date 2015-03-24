@@ -129,7 +129,6 @@ object OMISubscription {
           case -1 => { //Event based subscription
             val start = subdata.startTime.getTime
             val currentTimeLong = new Date().getTime()
-//            val newStartTimeLong = currentTimeLong
             val newTTL: Double = {
               if (subdata.ttl <= 0) subdata.ttl
               else ((subdata.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
@@ -162,22 +161,6 @@ object OMISubscription {
             </Objects>
           }
         }
-
-        //        val start = subdata.startTime.getTime
-        //        val currentTimeLong = new Date().getTime()
-        //        //calculate new start time to be divisible by interval to keep the scheduling
-        //        //also reduce ttl by the amount that startTime was changed
-        //        val intervalMillisLong = (subdata.interval * 1000).toLong
-        //        val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //subdata.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - subdata.startTime.getTime) / intervalMillisLong).toLong)
-        //        val newTTL: Double = if (subdata.ttl <= 0.0) subdata.ttl else { //-1 and 0 have special meanings
-        //          ((subdata.ttl * 1000.toLong) - (newStartTimeLong - start)) / 1000.0
-        //        }
-        //
-        //        SQLite.setSubStartTime(subdata.id, new Timestamp(newStartTimeLong), newTTL)
-        //
-        //        <Objects>
-        //        { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
-        //        </ Objects >
       }
     }
   }
