@@ -1,0 +1,6 @@
+#responseBox {
+	position: relative;
+	width: 90%;
+	border: 1px solid black;
+	margin: 1em auto;
+}

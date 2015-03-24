@@ -43,19 +43,15 @@ function writeRead(writer, items, interval, begin, end, newest, oldest, callback
 	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	if(begin){
-		console.log(new Date(begin).getTime());
 		if(new Date(begin).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
 		}
 	}
 	if(end){
-		console.log(new Date(end).getTime());
 		if(new Date(end).getTime() > 0){
 			writer.writeAttributeString('end', end);
 		}
 	}
-	console.log("Newest: " + newest);
-	console.log("Oldest: " + oldest);
 	if(newest){
 		if($.isNumeric(newest)){
 			writer.writeAttributeString('newest', newest);

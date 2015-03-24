@@ -537,9 +537,9 @@ object SQLite {
     {
         val id = getNextId()
         sub.id = id
-        Await.result(db.run(DBIO.seq(
+        runSync(DBIO.seq(
           subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
-        )), Duration(5, "seconds"))
+        ))
 
         //returns the id for reference
         id

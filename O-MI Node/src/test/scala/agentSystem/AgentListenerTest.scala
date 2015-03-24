@@ -14,9 +14,9 @@ import parsing._
 import parsing.Types._
 import parsing.Types.Path._
 
-class AgentListenerTest extends Specification with BeforeAfter {
-def before = SQLite.clearDB()
-def after = SQLite.clearDB()
+class AgentListenerTest extends Specification {
+//def before = SQLite.clearDB()
+//def after = SQLite.clearDB()
   //def before = SQLite.init
 //  def after = {
 //    SQLite.remove("Objects/AgentTest")
@@ -94,41 +94,56 @@ def after = SQLite.clearDB()
 
   "InputDataHandler" should {
     sequential
-    "receive sended data" in new Actors {
-      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
-      val probe = TestProbe()
-      EventFilter.debug(message = "Got data \n" + testOdf) intercept {
-        actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:35:52"))), probe.ref)
-      }
-      SQLite.clearDB()
-    }
-
     "save sent data into database" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
-      SQLite.clearDB()
-      actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:36:52"))), probe.ref)
+      
+      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      
+      actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
       awaitCond(SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
     }
-
-    "log warning when it encounters node with no information" in new Actors {
+    
+    "receive sended data" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
-      SQLite.clearDB()
-      EventFilter.warning(start = "Throwing away node: ") intercept {
-        actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("15:34:52", "15:37:52"))), probe.ref)
+      
+      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      
+      EventFilter.debug(message = "Got data \n" + testOdf) intercept {
+        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       }
-      SQLite.clearDB()
+      
     }
+
+// Doesn't work as intended    
+//
+//    "log warning when it encounters node with no information" in new Actors {
+//      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+//      val probe = TestProbe()
+//      
+//      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+//      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+//      
+//      EventFilter.warning(start = "Throwing away node: ") intercept {
+//        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+//      }
+//      
+//    }
 
     "log warning when sending malformed data" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
+      
+      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      
       EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
       }
-      SQLite.clearDB()
     }
 
     "write info to log when it receives PeerClosed message" in new Actors {
