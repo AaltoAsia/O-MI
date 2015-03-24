@@ -1,6 +1,6 @@
 package agents
-import agentSystem._
 import parsing.Types._
+import agentSystem._
 import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
 import akka.event.{Logging, LoggingAdapter}
 import akka.io.{ IO, Tcp }
@@ -16,44 +16,46 @@ import java.io.File
 import java.sql.Timestamp
 import System.currentTimeMillis
 
-case class Start()
 /** A generic agent that read standart input stream and send given valus to AgentListenr via client.
   * @param Path where sensor is.
   * @param Client actor that handles connection with AgentListener
   */
-
-class GenericTestAgent( path: Seq[String])  extends IAgentActor {
+class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
 
   case class Msg(msg: String)
   import scala.concurrent.ExecutionContext.Implicits.global
-  // XXX: infinite event loop hack!
-/** A partial function for reacting received messages.
-  * Event loop hack. Better than while(true) if there will be other messages.
-  * 
-  */
+  run
+  // XXX: infinite event loop!
+  /** A partial function for reacting received messages.
+    * Event loop.
+    *  
+    */
   def receive = {
-    case Start => run()
     case Msg(value) =>
       genODF(path, value) match {
         case i: OdfInfoItem =>
         case o: OdfObject =>
           InputPusher.handleObjects(Seq(o))
-          println("Writed to DB" )
       }
       run()
   }
 
-/** Function to loop for getting new values to sensor. 
-  * Part of event loop hack. 
-  */
-  def run() = {
+  /** Function to loop for getting new values to sensor. 
+    * Part of event loop hack. 
+    */
+  def run() : Unit = {
     Future {
-      self ! Msg(StdIn.readLine)
+      for(line <- io.Source.fromFile(fileToRead).getLines)
+      self ! Msg(line)
     }
   }
 
 /** Functiong for generating O-DF message
-*/
+  * @param path Path of InfoItem/Object.
+  * @param value Value of Infoitem.
+  * @param deepnest Recursion parameter.
+  * @return OdfNode containing structure and data of sensors.
+  */
   def genODF( path: Seq[String], value: String, deepnest : Int = 1) : OdfNode =
   {
     if(deepnest == path.size){
@@ -69,14 +71,26 @@ class GenericTestAgent( path: Seq[String])  extends IAgentActor {
   }
 }
 
-object GenericTestAgent {
-  def props( path: Seq[String]) : Props = {Props(new GenericAgent(path)) }
+/** Helper obejct for creating GenericAgent.
+  *
+  */
+object GenericAgent {
+  def apply( path: Seq[String], file: File) : Props = props(path, file)
+  def props( path: Seq[String], file: File) : Props = {Props(new GenericAgent(path,file)) }
 }
 
-class GenericTestBoot extends Bootable {
+/** Class for handling configuration and creating of GenericAgent.
+  *
+  */
+class GenericBoot extends Bootable {
   private var configPath : String = ""
   private var agentActor : ActorRef = null
-
+  /** Startup function that handles configuration and creates GenericAgent.
+    * 
+    * @param system ActorSystem were GenericAgent will live.
+    * @param pathToConfig Path to config file.
+    * @return Boolean indicating successfulnes of startup.
+    */
   override def startup( system: ActorSystem, pathToConfig: String) : Boolean = {
     if(pathToConfig.isEmpty || !(new File(pathToConfig).exists()))
       return false 
@@ -84,13 +98,19 @@ class GenericTestBoot extends Bootable {
     configPath = pathToConfig
     val lines = io.Source.fromFile(configPath).getLines().toArray
     var path = lines.head.split("/")
-    println( lines.head ) 
-    agentActor = system.actorOf(GenericAgent.props(path), "Generic-Agent")    
-    agentActor ! Start
+    var file = new File(lines.last)
+    if(!file.canRead)
+      return false
+    
+    agentActor = system.actorOf(GenericAgent.props(path, file), "Generic-Agent")    
     return true
   }
   override def shutdown() : Unit = {}
-  override def getAgentActor() : ActorRef = agentActor 
+  /** Simple getter fucntion for GenericAgent.
+    *
+    * @return Sequence of ActorRef containing only ActorRef of GenericAgent
+    */
+  override def getAgentActor() : Seq[ActorRef] = Seq(agentActor)
 
 }
 
