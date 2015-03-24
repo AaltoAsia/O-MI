@@ -206,7 +206,7 @@ class SubscriptionTest extends Specification with Before {
         SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime+n*1000))))
       val test = OMISubscription.odfGeneration(testSub)
       val intervalsPassed = (new Date().getTime - testTime)/ 1000
-      test.\\("value").length === intervalsPassed
+      test.\\("value").length === intervalsPassed.min(12)
       val test2 = OMISubscription.odfGeneration(testSub)
       test2.\\("value").length === (SQLite.getSub(testSub).get.startTime.getTime - testTime)/1000 - intervalsPassed
 

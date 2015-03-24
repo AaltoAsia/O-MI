@@ -106,7 +106,7 @@ object OMISubscription {
   }
 
   /**
-   * Used for generating data in ODF-format. When the subscription has callback set it acts like a onetimeread with a requestID,
+   * Used for generating data in ODF-format. When the subscription has callback set it acts like a OneTimeRead with a requestID,
    * when it doesn't have a callback it generates the values accumulated in the database.
    *
    * @param Id of the subscription
@@ -121,21 +121,21 @@ object OMISubscription {
           { createFromPaths(subdata.paths, 1) }
         </Objects>
       }
-      case None => {
+      case None => { //subscription polling
         subdata.interval match {
           case -2 => {
             <Error> Interval not supported </Error>
           }; // not supported
-          case -1 => {
+          case -1 => { //Event based subscription
             val start = subdata.startTime.getTime
             val currentTimeLong = new Date().getTime()
-            val newStartTimeLong = currentTimeLong
+//            val newStartTimeLong = currentTimeLong
             val newTTL: Double = {
               if (subdata.ttl <= 0) subdata.ttl
-              else ((subdata.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
+              else ((subdata.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
             }
             
-            SQLite.setSubStartTime(subdata.id,new Timestamp(newStartTimeLong), newTTL)
+            SQLite.setSubStartTime(subdata.id,new Timestamp(currentTimeLong), newTTL)
 
             <Objects>
               { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
@@ -144,7 +144,7 @@ object OMISubscription {
           case 0 => {
             <Error> Interval not supported </Error>
           }; //not supported
-          case _ => {
+          case _ => { //Interval based subscription
             val start = subdata.startTime.getTime
             val currentTimeLong = new Date().getTime()
             //calculate new start time to be divisible by interval to keep the scheduling
