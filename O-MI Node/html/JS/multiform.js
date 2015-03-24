@@ -31,7 +31,7 @@ $(document).on('click', '.next', function() {
 			return;
 		}
 		if(!($("#autorequest").prop("checked"))){
-			if(confirm('You have disabled automatic updating, thus your request might not be up-to-date. Do you want ' +
+			if(confirm('You have disabled automatic generation, thus your request might not be up-to-date. Do you want ' +
 					'to generate the message once more? (Note: your manual changes to the request will be overwritten)')) {
 				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
 			}

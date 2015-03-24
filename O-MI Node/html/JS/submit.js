@@ -191,7 +191,6 @@ function ajaxPost(server, request, subscribeLocal){
 			clearInfo();
 		},
 		error: function(a, b, c){
-			$("#infoBox").text("Error sending message");
 			handleError(a, b, c);
 		},
 	});
@@ -240,7 +239,9 @@ function printResponse(response){
 
 /* Handle the ajax errors */
 function handleError(jqXHR, errortype, exc) {
-	console.log(jqXHR);
-	alert("Error sending to server: (" + exc +")");
+	$("#responseBox").html(formatNoHighlight(jqXHR.responseText));
+	refreshEditor("response", "responseBox");
+	
+	console.log("Error sending to server: (" + exc +")");
 }
 
