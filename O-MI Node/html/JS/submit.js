@@ -6,8 +6,8 @@ var page = 1; // Start at page 1
 
 var manager;
 
+/* Initial settings */
 $(function() {
-	
 	manager = new ObjectBoxManager();
 	
 	loadThemes();
@@ -28,11 +28,12 @@ $(function() {
 			}
 		}
 	});
-	
-	$(document).on('click', '#prev4', function(){
-		send = false;
+	$(document).on("mouseenter", ".help", function(){
+		$(this).children("p").show();
 	});
-	
+	$(document).on("mouseleave", ".help", function(){
+		$(this).children("p").hide();
+	});
 
 function loadThemes(){
 	iconSelect = new IconSelect("themes",{
@@ -69,16 +70,17 @@ function loadThemes(){
 });
 
 
-/* Get the objects through ajax get */
+/* Get the objects from the server through ajax get */
 function getObjects() {
 	console.log("Sending AJAX GET for the objects...");
 	
 	objectUrl = $("#url-field").val();
 
-	// Sent ajax get-request for the objects
+	// Send ajax get-request for the objects
 	ajaxGet(0, objectUrl, "");
 }
 
+/* Sends an ajax query for objects */
 function ajaxGet(indent, url, listId){
 	
 	setInfo(0);
@@ -100,13 +102,10 @@ function ajaxGet(indent, url, listId){
 }
 
 /*
- * Display the objects as checkboxes in objectList @param {XML Object} the
- * received XML data
+ * Display the objects as checkboxes in objectList 
+ * @param {XML Object} the received XML data
  */
 function displayObjects(data, indent, url, listId) {
-	// console.log("Got the Objects as XML: \n" + new
-	// XMLSerializer().serializeToString(data));
-
 	// Basic objects
 	if(indent === 0){
 		// Clear the list beforehand, in case objects is changed in between the
@@ -140,6 +139,7 @@ function displayObjects(data, indent, url, listId) {
 	}
 }
 
+/* Add infoitem-checkboxes to the DOM */
 function addInfoItems(parent, id) {
 	var margin = "20px";
 	
@@ -160,7 +160,7 @@ function addInfoItems(parent, id) {
 function sendRequest()
 {
 	// Server URL
-	var server = $("#send-field").val();
+	var server = getServerUrl();
 
     var request = requestEditor.getValue(); // Get the request string
 
@@ -186,10 +186,11 @@ function ajaxPost(server, request, subscribeLocal){
 		dataType: "text",
 		success: function(response){
 			printResponse(response);
+		},
+		complete: function(a, b) {
 			clearInfo();
 		},
 		error: function(a, b, c){
-			$("#infoBox").text("Error sending message");
 			handleError(a, b, c);
 		},
 	});
@@ -208,12 +209,21 @@ function getSub(){
 		}
 		var subRequest = omi.getSub(omi.requestId, checkedObjects());
 		console.log("Request: " + subRequest);
-		var server =  $("#send-field").val();
+		var server = getServerUrl();
 		
 		ajaxPost(server, subRequest, getSubscribeLocal());
 	} else {
 		alert("No request id found!");
 	}
+}
+
+function getServerUrl() {
+	var o = $("#url-field").val();
+	if(o) {
+		return o.replace("/Objects", "");
+	}
+	console.log("Couldn't find server url");
+	return "";
 }
 
 /* Do something with the response from the server */
@@ -229,6 +239,9 @@ function printResponse(response){
 
 /* Handle the ajax errors */
 function handleError(jqXHR, errortype, exc) {
-	console.log("Error: " + (exc | errortype));
+	$("#responseBox").html(formatNoHighlight(jqXHR.responseText));
+	refreshEditor("response", "responseBox");
+	
+	console.log("Error sending to server: (" + exc +")");
 }
 

@@ -82,6 +82,19 @@ class DBData(tag: Tag)
 }
 
 /**
+ * class DBMetaData to store metadata for sensors as XML string
+ */
+class DBMetaData(tag: Tag)
+  extends Table[(Path, String)](tag, "Metadata") {
+  // This is the primary key column:
+  def path = column[Path]("PATH", O.PrimaryKey)
+  def data = column[String]("METADATA")
+
+  // Every table needs a * projection with the same type as the table's type parameter
+  def * : ProvenShape[(Path, String)] = (path, data)
+}
+
+/**
  * class DBNode to store object hierarchy
  * used internally by the object SQLite
  */

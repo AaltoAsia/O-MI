@@ -1,9 +1,37 @@
-<label>TTL*<input type="text" name="ttl" id="ttl" placeholder="TTL" value="0" /></label>
-<label>Interval<input type="text" name="interval" id="interval" placeholder="Interval" /></label>
-<label>Timeframe
-	<input type="text" name="begin" id="begin" placeholder="Begin" />
-	<input type="text" name="end" id="end" placeholder="End" />
-</label>
-<label>Newest<input type="text" name="newest" id="newest" placeholder="Newest" /></label>
-<label>Oldest<input type="text" name="oldest" id="oldest" placeholder="Oldest" /></label>
-<label>Callback<input type="text" name="callback" id="callback" placeholder="Callback" /></label>
+<div class="help">
+	<p>The Time-To-Live (in seconds) for the O-MI requests. (0 = while active connection) (-1 = forever)</p>
+	<label>TTL*<input type="text" name="ttl" id="ttl" value="0" /></label>
+</div>
+
+<div class="help">
+	<p>The inteval (in seconds) for subscription requests</p>
+	<label>Interval<input type="text" name="interval" id="interval" /></label>
+</div>
+
+<div class="help">
+	<p>
+		The timeframe (unix time) [begin][end] for the request.
+		<br> E.g [2015-03-18T23:35:40] [2015-03-19T23:50:00]
+		<br> The response will contain objects that have timestamp between the given timeframe
+	</p>
+	<label>
+		Timeframe
+		<input type="text" name="begin" id="begin" placeholder="Begin" />
+		<input type="text" name="end" id="end" placeholder="End" />
+	</label>
+</div>
+
+<div class="help">
+	<p>Retrieve the newest available number of historical data available</p>
+	<label>Newest<input type="text" name="newest" id="newest" /></label>
+</div>
+
+<div class="help">
+	<p>Retrieve the oldest available number of historical data available.</p>
+	<label>Oldest<input type="text" name="oldest" id="oldest" /></label>
+</div>
+
+<div class="help">
+	<p>URL address to an O-MI node with a callback service where O-MI responses are received.</p>
+	<label>Callback<input type="text" name="callback" id="callback" /></label>
+</div>

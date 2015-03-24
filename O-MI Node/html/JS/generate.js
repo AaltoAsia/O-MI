@@ -19,6 +19,7 @@ function generateRequest(){
 	$("#editRequest").html(request);
 }
 
+/* Returns all checkboxes that are checked */
 function checkedObjects() {
 	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)
 }

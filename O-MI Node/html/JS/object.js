@@ -1,3 +1,5 @@
+/* Classes that store information used in XML generation */
+
 function OdfObject(id){
 	this.id = id;
 	this.subObjects = [];

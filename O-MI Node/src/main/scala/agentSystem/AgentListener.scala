@@ -19,7 +19,6 @@ import parsing.Types.Path._
 
 /** AgentListener handles connections from agents.
   */
-
 class AgentListener extends Actor with ActorLogging {
    
   import Tcp._
@@ -88,43 +87,6 @@ class InputDataHandler(
     case PeerClosed =>
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
-  }
-
-}
-
-trait IInputPusher {
-  def handleObjects( objs: Seq[OdfObject] ) : Unit
-  def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit  
-  def handlePathValuePairs( pairs: Seq[(String,String)] ): Unit
-}
-object InputPusher extends IInputPusher{
-  
-  override def handleObjects( objs: Seq[OdfObject] ) : Unit = {
-    for(obj <- objs){
-      if(obj.childs.nonEmpty)
-        handleObjects(obj.childs)
-      if(obj.sensors.nonEmpty)
-        handleInfoItems(obj.sensors)
-    }
-  }
-  override def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
-    for( info <- infoitems ){
-      for(timedValue <- info.timedValues){
-          val sensorData = timedValue.time match {
-              case None =>
-                val currentTime = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(info.path, timedValue.value, currentTime)
-              case Some(timestamp) =>
-                new DBSensor(info.path, timedValue.value,  timestamp)
-            }
-  //          println(s"Saving to path ${info.path}")
-
-            SQLite.set(sensorData)
-      }  
-    }
-  } 
-  override def handlePathValuePairs( pairs: Seq[(String,String)] ) : Unit ={
-    SQLite.setMany(pairs.toList.map((a => (a._1,TimedValue(None,a._2)))))
   }
 
 }
