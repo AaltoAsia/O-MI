@@ -42,16 +42,31 @@ $(document).on('click', '.next', function() {
 	} else if (page === 3) {
 		return false;
 	}
-	animateNext();
+	
+	transitionButton(this, animateNext);
 });
 
 /* Event handler for clicking the previous button */
 $(document).on('click', '.prev', function() {
+	if(page === 1){
+		return false;
+	}
 	if (page === 3) {
 		send = false; // Polling variable
 	}
-	animatePrev();
+	$(this).addClass("resize");
+	
+	transitionButton(this, animatePrev);
 });
+
+/* Set timeout for prev/next button animation defininf classes */
+function transitionButton(button, func){
+	$(button).addClass("resize");
+	setTimeout(function(){
+		$(".resize").removeClass("resize");
+	}, 250);
+	setTimeout(func, 500);
+}
 
 /* Handle switching from current page to previous page */
 function animatePrev() {
@@ -96,6 +111,8 @@ function animateNext() {
 	loadPages(page);
 	animating = false;
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	$(".resize").removeClass("resize");
 }
 
 

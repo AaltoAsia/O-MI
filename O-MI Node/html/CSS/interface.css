@@ -46,6 +46,18 @@
 	box-shadow:1px 8px 22px 1px #333;
 }
 
+.prev, .next {
+	-webkit-transition:width 250ms ease-in-out, height 250ms ease-in-out;
+    -moz-transition:width 250ms ease-in-out, height 250ms ease-in-out;
+    -o-transition:width 250ms ease-in-out, height 250ms ease-in-out;
+    transition:width 250ms ease-in-out, height 250ms ease-in-out;
+}
+
+.resize {
+	width: 8%;
+	height: 16%;
+}
+
 .hidden {
 	opacity: 0.5;
 }
