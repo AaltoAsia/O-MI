@@ -51,22 +51,34 @@ function loadThemes(){
     icons.push({'iconFilePath':'Resources/icons/light.svg', 'iconValue':'light'});
     icons.push({'iconFilePath':'Resources/icons/white.svg', 'iconValue':'white'});
     icons.push({'iconFilePath':'Resources/icons/green.svg', 'iconValue':'green'});
+    icons.push({'iconFilePath':'Resources/icons/test_repeat.svg', 'iconValue':'test_repeat'});
     iconSelect.refresh(icons);
 
     for(var i = 0; i < iconSelect.getIcons().length; i++){
     	iconSelect.getIcons()[i].element.onclick = function(){
             iconSelect.setSelectedIndex(this.childNodes[0].getAttribute('icon-index'));
-            
-            $('body').css({
-            	"background": "url('Resources/icons/" + iconSelect.getSelectedValue() + ".svg') no-repeat center center fixed",
-            	"-webkit-background-size": "cover",
-        		"-moz-background-size": "cover",
-        		"-o-background-size": "cover",
-        		"background-size": "cover"
-            }); 
+
+            $('body').css(getCSS(iconSelect.getSelectedValue())); 
         };
     }
 }
+
+function getCSS(value){
+	if(value.split("_").indexOf("repeat") > -1){
+		return {
+			"background": "url('Resources/icons/" + value + ".svg')",
+			"background-size": "100px 100px"
+		};
+	}
+	return {
+    	"background": "url('Resources/icons/" + value + ".svg') no-repeat center center fixed",
+    	"-webkit-background-size": "cover",
+		"-moz-background-size": "cover",
+		"-o-background-size": "cover",
+		"background-size": "cover"
+    };
+}
+
 });
 
 
