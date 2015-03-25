@@ -78,7 +78,6 @@ function getCSS(value){
 		"background-size": "cover"
     };
 }
-
 });
 
 

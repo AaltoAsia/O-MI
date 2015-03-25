@@ -16,6 +16,10 @@ function loadPages(page) {
 	
 	if (selector.is(':empty')) {
 		selector.load("pages/page" + page + ".html");
+		
+		if(page === 1){
+			setTimeout(getObjects, 500);
+		}
 	}
 	
 	// Load operation options (page 2)
