@@ -5,6 +5,7 @@ import parsing.Types._
 import parsing.Types.Path._
 import database._
 import scala.xml
+import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
@@ -129,7 +130,7 @@ object OMISubscription {
     subdata.callback match {
       case Some(callback: String) => {
         <Objects>
-          { createFromPaths(subdata.paths, 1) }
+          { createFromPaths(subdata.paths, 1, subdata.startTime, subdata.interval, true) }
         </Objects>
       }
       case None => { //subscription polling
@@ -148,7 +149,7 @@ object OMISubscription {
             SQLite.setSubStartTime(subdata.id,new Timestamp(currentTimeLong), newTTL)
 
             <Objects>
-              { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
+              { createFromPaths(subdata.paths, 1, subdata.startTime, subdata.interval, false) }
             </Objects>
           }; //eventsub
           case 0 => {
@@ -168,7 +169,7 @@ object OMISubscription {
             SQLite.setSubStartTime(subdata.id, new Timestamp(newStartTimeLong), newTTL)
 
             <Objects>
-              { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
+              { createFromPaths(subdata.paths, 1, subdata.startTime, subdata.interval, false) }
             </Objects>
           }
         }
@@ -201,14 +202,15 @@ object OMISubscription {
   }
 
   /**
-   * Creates the right hierarchy from the infoitems that have been subscribed to.
+   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false), get the values
+   * accumulated between the sub starttime and current time.
    *
    * @param The paths of the infoitems that have been subscribed to
    * @param Index of the current 'level'. Used because it recursively drills deeper.
    * @return The ODF hierarchy as XML
    */
 
-  def createFromPaths(paths: Array[Path], index: Int): xml.NodeSeq = {
+  def createFromPaths(paths: Array[Path], index: Int, starttime: Timestamp, interval: Double, hascallback: Boolean): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
     if (paths.isEmpty == false) {
@@ -219,17 +221,28 @@ object OMISubscription {
         var slicedpath = Path(path.toSeq.slice(0, index + 1))
         SQLite.get(slicedpath) match {
           case Some(sensor: database.DBSensor) => {
+
             node ++=
               <InfoItem name={ sensor.path.last }>
-                <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>
+              {
+              if(hascallback) {<value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>}
+              else {getAllvalues(sensor, starttime, interval)}
+              }
+
+              {
+              val metaData = SQLite.getMetaData(sensor.path)
+              if( metaData.isEmpty == false ) {XML.loadString(metaData.get)}
+              else {xml.NodeSeq.Empty}
+              }
               </InfoItem>
-          }
+
+            }
 
           case Some(obj: database.DBObject) => {
             if (path(index) == previous(index)) {
               slices += path
             } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPaths(slices.toArray, index + 1) }</Object>
+              node ++= <Object><id>{ previous(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
               slices = Buffer[Path](path)
             }
 
@@ -243,7 +256,7 @@ object OMISubscription {
         //in case this is the last item in the array, we check if there are any non processed paths left
         if (path == paths.last) {
           if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1) }</Object>
+            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
           }
         }
       }
@@ -262,49 +275,5 @@ object OMISubscription {
    * @param Interval of the subscription
    * @return The ODF hierarchy as XML
    */
-
-  def createFromPathsNoCallback(paths: Array[Path], index: Int, starttime: Timestamp, interval: Double): xml.NodeSeq = {
-    var node: xml.NodeSeq = xml.NodeSeq.Empty
-
-    if (paths.isEmpty == false) {
-      var slices = Buffer[Path]()
-      var previous = paths.head
-
-      for (path <- paths) {
-        var slicedpath = Path(path.toSeq.slice(0, index + 1))
-        SQLite.get(slicedpath) match {
-          case Some(sensor: database.DBSensor) => {
-            node ++=
-              <InfoItem name={ sensor.path.last }>
-                { getAllvalues(sensor, starttime, interval) }
-              </InfoItem>
-          }
-
-          case Some(obj: database.DBObject) => {
-            if (path(index) == previous(index)) {
-              slices += path
-            } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPathsNoCallback(slices.toArray, index + 1, starttime, interval) }</Object>
-              slices = Buffer[Path](path)
-            }
-
-          }
-
-          case None => { node ++= <Error> Item not found in the database </Error> }
-        }
-
-        previous = path
-
-        if (path == paths.last) {
-          if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPathsNoCallback(slices.toArray, index + 1, starttime, interval) }</Object>
-          }
-        }
-      }
-
-    }
-
-    return node
-  }
 
 }
