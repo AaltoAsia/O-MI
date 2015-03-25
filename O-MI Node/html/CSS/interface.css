@@ -28,6 +28,7 @@
 	top: 50%;
 	left: 2.5%;
 	width: 7.5%;
+	height: 15%;
 	z-index: 1;
 }
 
@@ -36,11 +37,13 @@
 	top: 50%;
 	right: 2.5%;
 	width: 7.5%;
+	height: 15%;
 	z-index: 1;
 }
 
 .prev:hover:not(.hidden), .next:hover:not(.hidden) {
 	cursor: pointer;
+	box-shadow:1px 8px 22px 1px #333;
 }
 
 .hidden {
