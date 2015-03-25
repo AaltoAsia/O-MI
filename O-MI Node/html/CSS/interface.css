@@ -72,10 +72,28 @@
 	z-index: -20;
 }
 
-.page {
-	max-height: 35em;
-	overflow: auto;
-	outline: 1px black solid;
+@media screen and (min-height: 800px) {
+	#formcontent {
+		height: 35em;
+	}
+	
+	.page {
+		max-height: 35em;
+		overflow: auto;
+		outline: 1px black solid;
+	}
+}
+
+@media screen and (max-height: 801px) {
+	#formcontent {
+		height: 85%;
+	}
+	
+	.page {
+		max-height: 100%;
+		overflow: auto;
+		outline: 1px black solid;
+	}
 }
 
 .currentpage {
