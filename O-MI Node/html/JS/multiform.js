@@ -42,7 +42,6 @@ $(document).on('click', '.next', function() {
 	} else if (page === 3) {
 		return false;
 	}
-	
 	transitionButton(this, animateNext);
 });
 
@@ -54,8 +53,6 @@ $(document).on('click', '.prev', function() {
 	if (page === 3) {
 		send = false; // Polling variable
 	}
-	$(this).addClass("resize");
-	
 	transitionButton(this, animatePrev);
 });
 
@@ -64,8 +61,8 @@ function transitionButton(button, func){
 	$(button).addClass("resize");
 	setTimeout(function(){
 		$(".resize").removeClass("resize");
-	}, 250);
-	setTimeout(func, 500);
+	}, 150);
+	setTimeout(func, 300);
 }
 
 /* Handle switching from current page to previous page */

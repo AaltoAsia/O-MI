@@ -26,36 +26,36 @@
 .prev {
 	position: absolute;
 	top: 50%;
+	width: 5em;
+	height: 5em;
 	left: 2.5%;
-	width: 7.5%;
-	height: 15%;
 	z-index: 1;
 }
 
 .next {
 	position: absolute;
 	top: 50%;
+	width: 5em;
+	height: 5em;
 	right: 2.5%;
-	width: 7.5%;
-	height: 15%;
 	z-index: 1;
+}
+
+.prev, .next {
+	-webkit-transition:width 150ms ease-in-out, height 150ms ease-in-out;
+    -moz-transition:width 150ms ease-in-out, height 150ms ease-in-out;
+    -o-transition:width 150ms ease-in-out, height 150ms ease-in-out;
+    transition:width 150ms ease-in-out, height 150ms ease-in-out;
+}
+
+.resize {
+	width: 5.5em;
+	height: 5.5em;
 }
 
 .prev:hover:not(.hidden), .next:hover:not(.hidden) {
 	cursor: pointer;
-	box-shadow:1px 8px 22px 1px #333;
-}
-
-.prev, .next {
-	-webkit-transition:width 250ms ease-in-out, height 250ms ease-in-out;
-    -moz-transition:width 250ms ease-in-out, height 250ms ease-in-out;
-    -o-transition:width 250ms ease-in-out, height 250ms ease-in-out;
-    transition:width 250ms ease-in-out, height 250ms ease-in-out;
-}
-
-.resize {
-	width: 8%;
-	height: 16%;
+	box-shadow: 0 0 22px 5px #333;
 }
 
 .hidden {
