@@ -3,6 +3,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import akka.pattern.ask
 import scala.language.postfixOps
+import java.sql.Timestamp
 
 /* JSON4s */
 import org.json4s._
@@ -116,7 +117,7 @@ package sensordata {
           val objectId: String = split(0) + "_" + split(1) + "_" + split.last
           val infoItemName: String = split.drop(2).dropRight(1).mkString("_")
 
-          ("Objects/" + objectId + "/" + infoItemName, value)
+          ("Objects/" + objectId + "/" + infoItemName, TimedValue(Some(new Timestamp(date.getTime)),value))
         }))
       }
     }

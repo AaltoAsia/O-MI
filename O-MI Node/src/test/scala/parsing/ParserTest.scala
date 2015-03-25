@@ -34,8 +34,7 @@ class ParserTest extends Specification {
                   None,
                   "56"
                 )
-              ),
-              Seq.empty
+              )
             )
           )
         ),
@@ -48,9 +47,7 @@ class ParserTest extends Specification {
                   Some(Timestamp.valueOf("2014-12-18 15:34:52")),
                   "1"
                 )
-              ),
-              Seq.empty
-            )
+              )            )
           )
         )
       ),
@@ -61,8 +58,7 @@ class ParserTest extends Specification {
               Some(Timestamp.valueOf("2014-12-18 15:34:52")),
               "180"
             )
-          ),
-          Seq.empty
+          )
         ),
         OdfInfoItem(Path("Objects/SmartHouse/Moisture"),
           Seq(
@@ -70,9 +66,8 @@ class ParserTest extends Specification {
               Some(new Timestamp(1418916892.toLong*1000)),
               "0.20"
             )
-          ),
-          Seq.empty
-        )
+          )
+      )
       )
     ),
     OdfObject(Path("Objects/SmartCar"),
@@ -84,8 +79,7 @@ class ParserTest extends Specification {
               Some(Timestamp.valueOf("2014-12-18 15:34:52")),
               "30"
             )
-          ),
-          Seq.empty
+          )
         )
       )
     ),
@@ -346,8 +340,8 @@ class ParserTest extends Specification {
                     "SmartHouse",
                     "SmartFridge",
                     "PowerConsumption"),
-                  List(),
-                  Seq.empty))),
+                  List()
+                ))),
             OdfObject(
               List(
                 "Objects",
@@ -361,23 +355,23 @@ class ParserTest extends Specification {
                     "SmartHouse",
                     "SmartOven",
                     "PowerConsumption"),
-                  List(),
-                  Seq.empty)))),
+                  List()
+                )))),
           List(
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "PowerConsumption"),
-              List(),
-              Seq.empty),
+              List()
+            ),
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "Moisture"),
-              List(),
-              Seq.empty))),
+              List()
+            ))),
         OdfObject(
           List(
             "Objects",
@@ -389,8 +383,8 @@ class ParserTest extends Specification {
                 "Objects",
                 "SmartCar",
                 "Fuel"),
-              List(),
-              Seq.empty))),
+              List()
+            ))),
         OdfObject(
           List(
             "Objects",
@@ -467,8 +461,8 @@ class ParserTest extends Specification {
                     "SmartHouse",
                     "SmartFridge",
                     "PowerConsumption"),
-                  List(),
-                  Seq.empty))),
+                  List()
+                ))),
             OdfObject(
               List(
                 "Objects",
@@ -482,23 +476,23 @@ class ParserTest extends Specification {
                     "SmartHouse",
                     "SmartOven",
                     "PowerConsumption"),
-                  List(),
-                  Seq.empty)))),
+                  List()
+                )))),
           List(
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "PowerConsumption"),
-              List(),
-              Seq.empty),
+              List()
+            ),
             OdfInfoItem(
               List(
                 "Objects",
                 "SmartHouse",
                 "Moisture"),
-              List(),
-              Seq.empty))),
+              List()
+            ))),
         OdfObject(
           List(
             "Objects",
@@ -510,8 +504,8 @@ class ParserTest extends Specification {
                 "Objects",
                 "SmartCar",
                 "Fuel"),
-              List(),
-              Seq.empty))),
+              List()
+            ))),
         OdfObject(
           List(
             "Objects",

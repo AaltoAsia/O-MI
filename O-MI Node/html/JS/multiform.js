@@ -31,7 +31,7 @@ $(document).on('click', '.next', function() {
 			return;
 		}
 		if(!($("#autorequest").prop("checked"))){
-			if(confirm('You have disabled automatic updating, thus your request might not be up-to-date. Do you want ' +
+			if(confirm('You have disabled automatic generation, thus your request might not be up-to-date. Do you want ' +
 					'to generate the message once more? (Note: your manual changes to the request will be overwritten)')) {
 				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
 			}
@@ -42,16 +42,28 @@ $(document).on('click', '.next', function() {
 	} else if (page === 3) {
 		return false;
 	}
-	animateNext();
+	transitionButton(this, animateNext);
 });
 
 /* Event handler for clicking the previous button */
 $(document).on('click', '.prev', function() {
+	if(page === 1){
+		return false;
+	}
 	if (page === 3) {
 		send = false; // Polling variable
 	}
-	animatePrev();
+	transitionButton(this, animatePrev);
 });
+
+/* Set timeout for prev/next button animation defininf classes */
+function transitionButton(button, func){
+	$(button).addClass("resize");
+	setTimeout(function(){
+		$(".resize").removeClass("resize");
+	}, 150);
+	setTimeout(func, 300);
+}
 
 /* Handle switching from current page to previous page */
 function animatePrev() {
@@ -96,6 +108,8 @@ function animateNext() {
 	loadPages(page);
 	animating = false;
 	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	$(".resize").removeClass("resize");
 }
 
 

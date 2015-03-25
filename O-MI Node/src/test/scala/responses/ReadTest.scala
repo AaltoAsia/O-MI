@@ -13,9 +13,10 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
+import testHelpers.BeforeAll
 
-class ReadTest extends Specification with Before {
-  def before = {
+class ReadTest extends Specification with BeforeAll {
+  def beforeAll = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))
     calendar.set(Calendar.HOUR_OF_DAY, 12)

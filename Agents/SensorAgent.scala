@@ -12,6 +12,7 @@ import akka.util.{ByteString, Timeout}
 import akka.pattern.ask
 import scala.language.postfixOps
 
+import java.sql.Timestamp
 import java.io.File
 
 /* JSON4s */
@@ -41,12 +42,10 @@ import scala.xml._
 import scala.collection.mutable.Map
 
 
-// Need to wrap in a package to get application supervisor actor
-// "you need to provide exactly one argument: the class of the application supervisor actor"
-/**
-  * The main program for getting SensorData
+/** Agent for the korean server's JSon data
+  * 
   */
-class SensorAgent(uri : String) extends IAgentActor {
+class SensorAgent(uri : String) extends AgentActor {
   // Used to inform that database might be busy
   var loading = false
 
@@ -56,9 +55,9 @@ class SensorAgent(uri : String) extends IAgentActor {
   implicit val system = context.system
   implicit val formats = DefaultFormats
   implicit val timeout = akka.util.Timeout(10 seconds)
+  queueSensors
   def receive = {
-    case Start => 
-    queueSensors
+    case _ => 
   }
   def httpRef = IO(Http) //If problems change to def
     def queueSensors(): Unit = {
@@ -102,13 +101,13 @@ class SensorAgent(uri : String) extends IAgentActor {
     /**
      * Generate ODF from the parsed & formatted Json data
      * @param list of sensor-value pairs
-     * @return generated XML Node
      */
     private def addToDatabase(list: List[(String, String)]): Unit = {
       // Define dateformat for dateTime value
       val date = new java.util.Date()
       var i = 0
 
+      system.log.debug("Data gained. Saving to Database.")
       if (!list.isEmpty) {
         // InfoItems filtered out
         SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
@@ -119,22 +118,35 @@ class SensorAgent(uri : String) extends IAgentActor {
 
           // Object id
           val path = split.dropRight(2) ++  split.takeRight(2).reverse
-         // system.log.debug("Data gained from: " + path.mkString("/"))
 
-          ("Objects/" + path.mkString("/"), value)
+          ("Objects/" + path.mkString("/"), TimedValue(Some(new Timestamp(date.getTime)),value))
         }))
       }
+      system.log.debug("Successfully saved to Database.")
     }
 }
 
+/** Helper obejct for creating SensorAgent.
+  *
+  */
 object SensorAgent {
+  def apply( uri: String) : Props = props(uri)
   def props( uri: String) : Props = {Props(new SensorAgent(uri)) }
 }
 
+/** Class for handling configuration and creating of GenericAgent.
+  *
+  */
 class SensorBoot extends Bootable {
   private var configPath : String = ""
   private var agentActor : ActorRef = null
 
+  /** Startup function that handles configuration and creates SensorAgent.
+    * 
+    * @param system ActorSystem were GenericAgent will live.
+    * @param pathToConfig Path to config file.
+    * @return Boolean indicating successfulnes of startup.
+    */
   override def startup( system: ActorSystem, pathToConfig: String) : Boolean = { 
     if(pathToConfig.isEmpty || !(new File(pathToConfig).exists()))
       return false 
@@ -143,11 +155,14 @@ class SensorBoot extends Bootable {
     val lines = scala.io.Source.fromFile(configPath).getLines().toArray
     var uri = lines.head
     agentActor = system.actorOf(SensorAgent.props(uri), "Sensor-Agent")    
-    agentActor ! Start
     return true
   }
   override def shutdown() : Unit = {}
-  override def getAgentActor() : ActorRef = agentActor 
+  /** Simple getter fucntion for SensorAgent.
+    *
+    * @return Sequence of ActorRef containing only ActorRef of SensorAgent.
+    */
+  override def getAgentActor() : Seq[ActorRef] = Seq(agentActor) 
 
 }
 
