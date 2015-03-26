@@ -10,13 +10,15 @@ import java.util.Date
 import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
 
-import agentSystem.{AgentListener, AgentLoader}
+import agentSystem.{AgentListener, AgentLoader, InputPusher}
 import responses._
+import parsing.OdfParser
 import parsing.Types._
 import parsing.Types.Path._
 import database.SQLite
 import database._
 
+import xml._
 import sensordata.SensorData
 
 // Initialize functionality seperated for testing purposes
@@ -35,7 +37,11 @@ object Starter {
     //val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
     //sensorData.queueSensors()
 
-    
+    //Peer/Usability testing
+    /*
+    val odf = OdfParser.parse( XML.loadFile("src/main/resources/UserTestStructure.xml").toString)
+    InputPusher.handleObjects(odf.filter{o => o.isRight}.map{o => o.right.get})
+    */
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))

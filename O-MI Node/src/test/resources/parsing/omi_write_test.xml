@@ -27,6 +27,11 @@
 		    <Object>
 				<id>SmartCar</id>
 				<InfoItem name="Fuel">
+	    <MetaData>
+		<InfoItem name="Units">
+		    <value type="xs:String">Litre</value>
+		</InfoItem>
+	    </MetaData>
 					<value dateTime="2014-12-18T15:34:52">30</value>
 				</InfoItem>
 		    </Object>
