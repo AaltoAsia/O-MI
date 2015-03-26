@@ -248,8 +248,10 @@ object Read {
   }
 
   def getMetaDataXML(path: Path): xml.NodeSeq = {
+//    SQLite.getMetaData(path).fold(xml.NodeSeq.Empty)(xml.XML.loadString(_))
     SQLite.getMetaData(path) match {
       case Some(metadata: String) => xml.XML.loadString(metadata)
+      case None => xml.NodeSeq.Empty
       }
   }
 

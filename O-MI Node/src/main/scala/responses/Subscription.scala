@@ -1,6 +1,7 @@
 package responses
 
 import Common._
+import ErrorResponse.intervalNotSupported
 import parsing.Types._
 import parsing.Types.Path._
 import database._
@@ -14,6 +15,13 @@ import java.sql.Timestamp
 import java.util.Date
 
 object OMISubscription {
+  
+//  val subsWithoutCallback = SQLite.getAllSubs(Some(false)).map(n=>(n,n.startTime.getTime,n.ttlToMillis))
+  def checkSubs ={
+    val currentTime = new Date().getTime
+    val subs = SQLite.getAllSubs(Some(false)).filter(n=> (n.startTime.getTime + n.ttlToMillis) < currentTime)
+    subs.foreach(n=>SQLite.removeSub(n.id))
+  }
   /**
    * Creates a subscription in the database and generates the immediate answer to a subscription
    *
@@ -65,7 +73,7 @@ object OMISubscription {
   def getInfoItemPaths(objects: List[OdfObject]): Buffer[Path] = {
     var paths = Buffer[Path]()
     for (obj <- objects) {
-/*      //just an object has been subscribed to
+      /*      //just an object has been subscribed to
       if (obj.childs.nonEmpty == false && obj.sensors.nonEmpty == false) {
 
       }*/
@@ -86,12 +94,11 @@ object OMISubscription {
     return paths
   }
 
-
-/*  def getObjectChildren(object: DBObject) {
+  /*  def getObjectChildren(object: DBObject) {
     
   }*/
 
-	/**
+  /**
    * Subscription response
    *
    * @param Id of the subscription
@@ -99,7 +106,8 @@ object OMISubscription {
    */
 
   def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
-    SQLite.getSub(id) match {
+    val sub = SQLite.getSub(id)
+    sub match {
       case None => {
         omiResult {
           returnCode(400, "A subscription with this id has expired or doesn't exist") ++
@@ -107,12 +115,8 @@ object OMISubscription {
         }
       }
 
-      case _ => {
-        omiResult {
-          returnCode200 ++
-            requestId(id) ++
-            odfMsgWrapper(odfGeneration(id))
-        }
+      case Some(subscription) => {
+        odfGeneration(subscription)
       }
     }
   }
@@ -125,55 +129,82 @@ object OMISubscription {
    * @return The data in ODF-format
    */
 
-  def odfGeneration(id: Int): xml.NodeSeq = {
-    val subdata = SQLite.getSub(id).get
-    subdata.callback match {
+  def odfGeneration(sub: DBSub): xml.NodeSeq = {
+    //    val subdata = SQLite.getSub(id).get
+    //    omiResult {
+    //      returnCode200 ++
+    //        requestId(sub.id) ++
+    //        odfMsgWrapper(odfGeneration(sub))
+    //    }
+    sub.callback match {
       case Some(callback: String) => {
-        <Objects>
-          { createFromPaths(subdata.paths, 1, subdata.startTime, subdata.interval, true) }
-        </Objects>
+        omiResult {
+          returnCode200 ++
+            requestId(sub.id) ++
+            odfMsgWrapper(
+              <Objects>
+                { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, true) }
+              </Objects>)
+        }
+
       }
       case None => { //subscription polling
-        subdata.interval match {
-          case -2 => {
-            <Error> Interval not supported </Error>
-          }; // not supported
-          case -1 => { //Event based subscription
-            val start = subdata.startTime.getTime
-            val currentTimeLong = new Date().getTime()
-            val newTTL: Double = {
-              if (subdata.ttl <= 0) subdata.ttl
-              else ((subdata.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
-            }
-            
-            SQLite.setSubStartTime(subdata.id,new Timestamp(currentTimeLong), newTTL)
-
-            <Objects>
-              { createFromPaths(subdata.paths, 1, subdata.startTime, subdata.interval, false) }
-            </Objects>
-          }; //eventsub
-          case 0 => {
-            <Error> Interval not supported </Error>
-          }; //not supported
-          case _ => { //Interval based subscription
-            val start = subdata.startTime.getTime
-            val currentTimeLong = new Date().getTime()
-            //calculate new start time to be divisible by interval to keep the scheduling
-            //also reduce ttl by the amount that startTime was changed
-            val intervalMillisLong = (subdata.interval * 1000).toLong
-            val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //subdata.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - subdata.startTime.getTime) / intervalMillisLong).toLong)
-            val newTTL: Double = if (subdata.ttl <= 0.0) subdata.ttl else { //-1 and 0 have special meanings
-              ((subdata.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
-            }
-
-            SQLite.setSubStartTime(subdata.id, new Timestamp(newStartTimeLong), newTTL)
-
-            <Objects>
-              { createFromPaths(subdata.paths, 1, subdata.startTime, subdata.interval, false) }
-            </Objects>
-          }
-        }
+        pollSub(sub)
       }
+    }
+  }
+
+  def pollSub(sub: DBSub): xml.NodeSeq = {
+    val interval = sub.interval
+
+    if (interval == -2) { // not supported
+      intervalNotSupported
+    } else if (interval == -1) { //Event based subscription
+      val start = sub.startTime.getTime
+      val currentTimeLong = new Date().getTime()
+      val newTTL: Double = {
+        if (sub.ttl <= 0) sub.ttl
+        else ((sub.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
+      }
+
+      SQLite.setSubStartTime(sub.id, new Timestamp(currentTimeLong), newTTL)
+
+      omiResult {
+        returnCode200 ++
+          requestId(sub.id) ++
+          odfMsgWrapper(
+            <Objects>
+              { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, false) }
+            </Objects>)
+      }
+
+    } else if (interval == 0) {
+      intervalNotSupported
+    } else if (interval > 0) { //Interval based subscription
+
+      val start = sub.startTime.getTime
+      val currentTimeLong = new Date().getTime()
+      //calculate new start time to be divisible by interval to keep the scheduling
+      //also reduce ttl by the amount that startTime was changed
+      val intervalMillisLong = (sub.interval * 1000).toLong
+      val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //sub.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - sub.startTime.getTime) / intervalMillisLong).toLong)
+      val newTTL: Double = if (sub.ttl <= 0.0) sub.ttl else { //-1 and 0 have special meanings
+        ((sub.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
+      }
+
+      SQLite.setSubStartTime(sub.id, new Timestamp(newStartTimeLong), newTTL)
+
+      omiResult {
+        returnCode200 ++
+          requestId(sub.id) ++
+          odfMsgWrapper(
+            <Objects>
+              { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, false) }
+            </Objects>)
+      }
+
+    } else {
+      intervalNotSupported
     }
   }
 
@@ -224,16 +255,15 @@ object OMISubscription {
 
             node ++=
               <InfoItem name={ sensor.path.last }>
-              {
-              if(hascallback) {<value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>}
-              else {getAllvalues(sensor, starttime, interval)}
-              }
-
-              {
-              val metaData = SQLite.getMetaData(sensor.path)
-              if( metaData.isEmpty == false ) {XML.loadString(metaData.get)}
-              else {xml.NodeSeq.Empty}
-              }
+                {
+                  if (hascallback) { <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value> }
+                  else { getAllvalues(sensor, starttime, interval) }
+                }
+                {
+                  val metaData = SQLite.getMetaData(sensor.path)
+                  if (metaData.isEmpty == false) { XML.loadString(metaData.get) }
+                  else { xml.NodeSeq.Empty }
+                }
               </InfoItem>
 
             node ++= Read.getMetaDataXML(sensor.path)

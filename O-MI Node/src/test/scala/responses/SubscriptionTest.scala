@@ -195,10 +195,10 @@ class SubscriptionTest extends Specification with BeforeAll {
 
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
       val dataLength = test.\\("value").length
       dataLength must be_>=(10)
-      val test2 = OMISubscription.odfGeneration(testSub)
+      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       val newDataLength = test2.\\("value").length
       newDataLength must be_<=(3)
 
@@ -214,8 +214,8 @@ class SubscriptionTest extends Specification with BeforeAll {
       ttlFirst === 60.0
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
-      val test2 = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
+      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       val ttlEnd = SQLite.getSub(testSub).get.ttl
       (ttlFirst - ttlEnd) % 3 === 0
 
@@ -227,7 +227,7 @@ class SubscriptionTest extends Specification with BeforeAll {
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
       test.\\("value").length === 6
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
@@ -238,12 +238,12 @@ class SubscriptionTest extends Specification with BeforeAll {
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
       test.\\("value").length === 6
-      val test2 = OMISubscription.odfGeneration(testSub)
+      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       test2.\\("value").length === 0
       SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
-      val test3 = OMISubscription.odfGeneration(testSub)
+      val test3 = OMISubscription.OMISubscriptionResponse(testSub)
       test3.\\("value").length === 1
       
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
