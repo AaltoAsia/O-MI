@@ -91,7 +91,7 @@ object OMISubscription {
     
   }*/
 
-	/**
+  /**
    * Subscription response
    *
    * @param Id of the subscription
@@ -236,8 +236,7 @@ object OMISubscription {
               }
               </InfoItem>
 
-            node ++= Read.getMetaDataXML(sensor.path)
-          }
+            }
 
           case Some(obj: database.DBObject) => {
             if (path(index) == previous(index)) {
@@ -258,62 +257,6 @@ object OMISubscription {
         if (path == paths.last) {
           if (slices.isEmpty == false) {
             node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
-          }
-        }
-      }
-
-    }
-
-    return node
-  }
-
-  /**
-   * Creates the right hierarchy from the infoitems that have been subscribed to and no callback is given (one infoitem may have many values)
-   *
-   * @param The paths of the infoitems that have been subscribed to
-   * @param Index of the current 'level'. Used because it recursively drills deeper.
-   * @param Start time of the subscription
-   * @param Interval of the subscription
-   * @return The ODF hierarchy as XML
-   */
-
-  def createFromPathsNoCallback(paths: Array[Path], index: Int, starttime: Timestamp, interval: Double): xml.NodeSeq = {
-    var node: xml.NodeSeq = xml.NodeSeq.Empty
-
-    if (paths.isEmpty == false) {
-      var slices = Buffer[Path]()
-      var previous = paths.head
-
-      for (path <- paths) {
-        var slicedpath = Path(path.toSeq.slice(0, index + 1))
-        SQLite.get(slicedpath) match {
-          case Some(sensor: database.DBSensor) => {
-            node ++=
-              <InfoItem name={ sensor.path.last }>
-                { getAllvalues(sensor, starttime, interval) }
-              </InfoItem>
-
-            node ++= Read.getMetaDataXML(sensor.path)
-          }
-
-          case Some(obj: database.DBObject) => {
-            if (path(index) == previous(index)) {
-              slices += path
-            } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPathsNoCallback(slices.toArray, index + 1, starttime, interval) }</Object>
-              slices = Buffer[Path](path)
-            }
-
-          }
-
-          case None => { node ++= <Error> Item not found in the database </Error> }
-        }
-
-        previous = path
-
-        if (path == paths.last) {
-          if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPathsNoCallback(slices.toArray, index + 1, starttime, interval) }</Object>
           }
         }
       }

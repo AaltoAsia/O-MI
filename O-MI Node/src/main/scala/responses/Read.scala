@@ -217,7 +217,6 @@ object Read {
             }
           </InfoItem>
 
-          node ++= getMetaDataXML(infoItem.path)
         }
       } else {
         for (infoItem <- infoItems) {
@@ -240,18 +239,17 @@ object Read {
 
           </InfoItem>
 
-          node ++= getMetaDataXML(infoItem.path)
         }
       }
       
       node
   }
 
-  def getMetaDataXML(path: Path): xml.NodeSeq = {
+/*  def getMetaDataXML(path: Path): xml.NodeSeq = {
     SQLite.getMetaData(path) match {
       case Some(metadata: String) => xml.XML.loadString(metadata)
       case _ => xml.NodeSeq.Empty
       }
-  }
+  }*/
 
 }
