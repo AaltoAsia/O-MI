@@ -143,8 +143,8 @@ trait OmiService extends HttpService {
 
                 case write: Write => 
                   log.debug(write.toString) 
-                  ErrorResponse.notImplemented
                   returnStatus = 501
+                  ErrorResponse.notImplemented
 
                 case subscription: Subscription => 
                   log.debug(subscription.toString) 

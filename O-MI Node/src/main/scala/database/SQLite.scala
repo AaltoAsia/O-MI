@@ -14,18 +14,27 @@ import java.sql.Timestamp
 import slick.jdbc.StaticQuery
 
 import parsing.Types._
-
-object SQLite {
-
+object SQLite extends DataBase{
+  dbPath = "./sensorDB.sqlite3"
+  db = Database.forConfig("sqlite-conf")
+  initialize()
+}
+class testDB(name:String) extends DataBase
+{
+  dbPath = "./"+name+".sqlite3"
+  db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+  initialize()
+}
+trait DataBase {
+  protected var db:Database = null
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) } // String to Path
     )
   private var historyLength = 10
-  //path where the file is stored
-  private val dbPath = "./sensorDB.sqlite3"
+  //path where the file is stored, a default value
+  protected var dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
-  private val init = !new File(dbPath).exists()
   //tables for latest values and hierarchy
   private val latestValues = TableQuery[DBData]
   private val objects = TableQuery[DBNode]
@@ -34,30 +43,31 @@ object SQLite {
   private val meta = TableQuery[DBMetaData]
 
   private var setEventHooks: List[Seq[Path] => Unit] = List()
+  
   def attachSetHook(f: Seq[Path] => Unit) =
     setEventHooks = f :: setEventHooks
-
-  //initializing database
-  private val db = Database.forConfig("sqlite-conf")
-  //private val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
-
+  //private val db = Database.forURL("jdbc:sqlite:", driver="org.sqlite.JDBC")
   private def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
     io => Await.result(db.run(io), Duration.Inf)
 
   private def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
     io => Await.ready(db.run(io), Duration.Inf)
-
-  if (init) {
-    val setup = DBIO.seq(
+  protected def initialize(){
+    if(!new File(dbPath).exists())
+    {
+      val setup = DBIO.seq(
       latestValues.schema.create,
       objects.schema.create,
       subs.schema.create,
       buffered.schema.create,
       meta.schema.create)
-    runSync(setup)
+    runSync(setup)  
+    }
   }
-
-
+   def destroy(){
+     db.close()
+     new File(dbPath).delete()
+   }
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
@@ -122,6 +132,11 @@ object SQLite {
   {
     val qry = meta.filter(_.path === path).map(_.data)
     runSync(qry.result).headOption
+  }
+  def RemoveMetaData(path:Path)=
+  {
+    val qry = meta.filter(_.path === path)
+    runSync(qry.delete)
   }
   /**
    * Used to set many values efficiently to the database.
@@ -225,7 +240,7 @@ object SQLite {
         info = (sub._3, sub._5)
         paths = sub._2.split(";")
       }
-
+      implicit var imp_db = this
       paths.foreach {
         p =>
           result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)

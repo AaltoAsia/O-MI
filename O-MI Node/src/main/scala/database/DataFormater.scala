@@ -21,9 +21,9 @@ object DataFormater {
    * sent if callback address were provided 
    *
    */
-def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[Timestamp]):Array[DBSensor] =
+def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[Timestamp])(implicit database: DataBase = SQLite):Array[DBSensor] =
 {
-  var rawdata = SQLite.getNBetween(path, Some(starttime), None, None,None)
+  var rawdata = database.getNBetween(path, Some(starttime), None, None,None)
   var deltaTime =
     endTime match{
     case Some(time:Timestamp)=>
@@ -84,7 +84,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[T
     {
       if(n==0)
       {
-        rawdata = SQLite.getNBetween(path, None, Some(starttime), None,None)
+        rawdata = database.getNBetween(path, None, Some(starttime), None,None)
         if(!rawdata.isEmpty)
         {
           formatedData(n) = rawdata.last
