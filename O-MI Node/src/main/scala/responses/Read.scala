@@ -143,6 +143,8 @@ object Read {
       <Object>
         <id>{ obj.path.last }</id>
         {
+          //TODO: make sure to get all children of an object when only an object is asked for
+          //note: we can check it's just an object when it has no sensors or subobjects
           if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
               odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
               odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
@@ -245,11 +247,38 @@ object Read {
       node
   }
 
-/*  def getMetaDataXML(path: Path): xml.NodeSeq = {
-    SQLite.getMetaData(path) match {
-      case Some(metadata: String) => xml.XML.loadString(metadata)
-      case _ => xml.NodeSeq.Empty
+  // should return all the children and childrens children etc of an object.
+  //TODO: support begin and end etc.
+  def buildObjectChildren(children: Array[DBItem]): xml.NodeSeq = {
+    var node: xml.NodeSeq = xml.NodeSeq.Empty
+
+    for(child <- children) {
+      child match {
+        case sensor: DBSensor => {
+          node ++=
+          <InfoItem name={ sensor.path.last }>
+            {
+              <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+            }
+
+          </InfoItem>
+        }
+
+        case objekti: DBObject => {
+          node ++=
+          <Object>
+            <id>{ objekti.path.last }</id>
+            {
+              val children = objekti.childs
+              if (children.isEmpty == false) {buildObjectChildren(objekti.childs)}
+              else {xml.NodeSeq.Empty}
+            }
+          </Object>
+        }
       }
-  }*/
+    }
+
+    node
+  }
 
 }
