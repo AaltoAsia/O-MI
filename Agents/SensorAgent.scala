@@ -117,8 +117,9 @@ class SensorAgent(uri : String) extends AgentActor {
           val split = sensor.split('_')
 
           // Object id
-          val path = split.dropRight(2) ++  split.takeRight(2).reverse
-
+          val path = if(split(0) == "vtt") split.dropRight(2) ++  split.takeRight(2).reverse
+          else split
+          println("Saving to path: " +"Objects/" + path.mkString("/"))
           ("Objects/" + path.mkString("/"), TimedValue(Some(new Timestamp(date.getTime)),value))
         }))
       }
