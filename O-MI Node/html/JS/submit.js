@@ -263,10 +263,12 @@ function handleError(jqXHR, errortype, exc) {
 }
 
 function restart() {
+	$("#progressbar li").removeClass("active");
 	$("#page3").empty();
 	$("#page2").empty();
 	$("#page1").empty();
 	loadPages(1);
 	page = 1;
+	$("#progressbar li").eq(0).addClass("active");
 }
 
