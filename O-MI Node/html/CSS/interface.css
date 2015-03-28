@@ -125,37 +125,6 @@
 	outline: red solid 5px;
 }
 
-
-#info {
-	position: absolute;
-	margin-top: 25em;
-	left: 0;
-	z-index: 1;
-	width: 7em;
-	height: 7em;
-}
-
-#info p {
-	position: absolute;
-	left: 7em;
-	width: 7em;
-	height: auto;
-	background-color: white;
-	outline: 3px black solid;
-	display: none;
-}
-
-#info p .rotate {
-	display: inline;
-}
-
-#info img {
-	position: absolute;
-	left: 0;
-	width: 100%;
-	height: 100%;
-}
-
 .help p {
 	position: absolute;
 	left: 21em;
