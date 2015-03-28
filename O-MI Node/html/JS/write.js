@@ -10,6 +10,10 @@ function writeXML(items, omi){
     writer.indentChar = ' ';
     writer.indentation = 2;
 	
+	if(omi.operation === 'poll'){
+		return writeSubscribe(omi.requestId, items, omi.ttl);
+	} 
+    
 	writer.writeStartDocument();
 	//(first line)
 	writer.writeStartElement('omi:omiEnvelope');
@@ -24,15 +28,11 @@ function writeXML(items, omi){
 	writer.writeStartElement('omi:'+ omi.operation);
 	
 	if(omi.operation === 'read'){
-		writeRead(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
+		writeObjects(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
 	} else if (omi.operation === 'cancel'){
 		writeCancel(writer, omi.requestId);
 	} else if(omi.operation === 'write'){
-		writer.writeAttributeString('msgformat', 'omi.xsd');
-		writeMsg(writer);
-		writer.writeStartElement("Objects");
-		writer.writeStartElement("Object");
-		writer.writeElementString("id", "testdummy");
+		writeObjects(writer, items);
 	}
 	
 	writer.writeEndElement();
@@ -49,7 +49,7 @@ function writeMsg(writer){
 	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 }
 
-function writeRead(writer, items, interval, begin, end, newest, oldest, callback){
+function writeObjects(writer, items, interval, begin, end, newest, oldest, callback){
 	writer.writeAttributeString('msgformat', 'omi.xsd');
 	
 	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
