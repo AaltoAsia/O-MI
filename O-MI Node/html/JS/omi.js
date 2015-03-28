@@ -44,7 +44,7 @@ Omi.prototype.saveOptions = function(){
 	this.save[this.operation]["newest"] = this.newest;
 	this.save[this.operation]["oldest"] = this.oldest;
 	this.save[this.operation]["callback"] = this.callback;
-	this.save[this.operation]["requestId"] = this.requestId;
+	this.save[this.operation]["request-id"] = this.requestId;
 }
 
 /* Change request id */
