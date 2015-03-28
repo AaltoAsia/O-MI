@@ -170,22 +170,23 @@ function addInfoItems(parent, id) {
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
+	if(generating){
+		setTimeout(sendRequest, 500);
+		return;
+	}
+	
 	// Server URL
 	var server = getServerUrl();
 
     var request = requestEditor.getValue(); // Get the request string
 
-    ajaxPost(server, request, getSubscribeLocal());
-}
-
-function getSubscribeLocal(){
-	return ($.isNumeric(omi.interval) && omi.callback.length === 0);
+    ajaxPost(server, request);
 }
 
 // Test
 var count = 0;
 
-function ajaxPost(server, request, subscribeLocal){
+function ajaxPost(server, request){
 	setInfo(1);
 	
 	$.ajax({

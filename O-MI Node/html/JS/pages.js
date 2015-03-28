@@ -1,6 +1,7 @@
 var requestEditor, responseEditor;
 var timeout; //Used for request generation timeout
 var requestInterval = 1000; // Interval in milliseconds for automatic request generation
+var generating = false; // TODO: used as global variable, see submit.js
 
 /* Load pages from separate html files */
 function loadPages(page) {
@@ -42,6 +43,8 @@ function loadPages(page) {
 function updateRequest(interval){
 	// If automatic update allowed by user
 	if($("#autorequest").prop("checked") || interval === 0){
+		generating = true;
+		
 		$("#editRequest .CodeMirror").hide();
 			
 		if(timeout){
@@ -51,19 +54,25 @@ function updateRequest(interval){
 		if(interval === 0){
 			generateRequest(); // From generate.js
 			refreshEditor("request", "editRequest");
+			generating = false;
 		} else {
 			var loadSelector = $("#edit .loading");
 			loadSelector.show();
 			
 			timeout = setTimeout(function(){
-				generateRequest(); // From generate.js
-				refreshEditor("request", "editRequest");
-				
-				loadSelector.hide();
-				$("#editRequest .CodeMirror").show();
+				handleRequestGeneration(loadSelector);
 			}, interval);
 		}
 	}
+}
+
+function handleRequestGeneration(loadSelector) {
+	generateRequest(); // From generate.js
+	refreshEditor("request", "editRequest");
+	
+	loadSelector.hide();
+	$("#editRequest .CodeMirror").show();
+	generating = false;
 }
 
 /* Refresh CodeMirror editor */
