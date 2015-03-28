@@ -172,7 +172,6 @@ function sendRequest()
 {
 	if(generating){
 		setTimeout(sendRequest, 500);
-		return;
 	}
 	
 	// Server URL
@@ -223,7 +222,7 @@ function getSub(){
 		console.log("Request: " + subRequest);
 		var server = getServerUrl();
 		
-		ajaxPost(server, subRequest, getSubscribeLocal());
+		ajaxPost(server, subRequest);
 	} else {
 		alert("No request id found!");
 	}

@@ -25,6 +25,8 @@ function loadPages(page) {
 	
 	// Load operation options (page 2)
 	if (page === 2) {
+		refreshEditor("request", "editRequest");
+		
 		$("#options").change(function(){
 			updateRequest(requestInterval);
 		});
@@ -36,6 +38,9 @@ function loadPages(page) {
 			loadOptions();
 		}
 		$("#response .CodeMirror").remove();
+	}
+	if(page === 3){
+		refreshEditor("response", "responseBox");
 	}
 }
 
@@ -60,19 +65,15 @@ function updateRequest(interval){
 			loadSelector.show();
 			
 			timeout = setTimeout(function(){
-				handleRequestGeneration(loadSelector);
+				generateRequest(); // From generate.js
+				refreshEditor("request", "editRequest");
+				
+				loadSelector.hide();
+				$("#editRequest .CodeMirror").show();
+				generating = false;
 			}, interval);
 		}
 	}
-}
-
-function handleRequestGeneration(loadSelector) {
-	generateRequest(); // From generate.js
-	refreshEditor("request", "editRequest");
-	
-	loadSelector.hide();
-	$("#editRequest .CodeMirror").show();
-	generating = false;
 }
 
 /* Refresh CodeMirror editor */
