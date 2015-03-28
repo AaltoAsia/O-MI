@@ -131,21 +131,27 @@ function displayObjects(data, indent, url, listId) {
 				manager.addObject(id);
 				
 				// Get lower hierarchy values
-				//ajaxGet(indent + 1, url + "/" + id, "list-" + id);
+				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
 			});
 		});
 	} else {
 		// Subobjects/Infoitems
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
+			var sub = [];
 			
 			$(this).find("Object").each(function(){
 				var name = $(this).find("id").text();
 
 				//ajaxGet(indent + 1, url + "/" + name);
 				manager.find(id).addChild(id, name, listId);
+				sub.push(name);
 			});
 			addInfoItems(this, id, indent);
+			
+			for(var i = 0; i < sub.length; i++){
+				ajaxGet(indent + 1, url + "/" + sub[i], "list-" + id);
+			}
 		});
 	}
 }
