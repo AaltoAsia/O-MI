@@ -143,9 +143,12 @@ object Read {
       <Object>
         <id>{ obj.path.last }</id>
         {
-          //TODO: make sure to get all children of an object when only an object is asked for
-          //note: we can check it's just an object when it has no sensors or subobjects
-          if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
+          //we can check it's just an object when it has no sensors or childs
+          //we check if it has any children in the database, if not, it's probably an error
+          if (obj.childs.isEmpty && obj.sensors.isEmpty && SQLite.getChilds(obj.path).nonEmpty) {
+            buildObjectChildren(SQLite.getChilds(obj.path))
+          }
+          else if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
               odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
               odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
 
@@ -247,33 +250,35 @@ object Read {
       node
   }
 
-  // should return all the children and childrens children etc of an object.
   //TODO: support begin and end etc.
   def buildObjectChildren(children: Array[DBItem]): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
-    for(child <- children) {
-      child match {
-        case sensor: DBSensor => {
-          node ++=
-          <InfoItem name={ sensor.path.last }>
-            {
-              <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
-            }
+    if(children.isEmpty == false ) {
+      //sort so infoitems come first (not PERFECTLY sure how this sorts..)
+      for(child <- children.sortBy(_.path.toString)) {
+        SQLite.get(child.path) match {
+          case Some(sensor: DBSensor) => {
+            node ++=
+            <InfoItem name={ sensor.path.last }>
+              {
+                <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+              }
 
-          </InfoItem>
-        }
+            </InfoItem>
+          }
 
-        case objekti: DBObject => {
-          node ++=
-          <Object>
-            <id>{ objekti.path.last }</id>
-            {
-              val children = objekti.childs
-              if (children.isEmpty == false) {buildObjectChildren(objekti.childs)}
-              else {xml.NodeSeq.Empty}
-            }
-          </Object>
+          case Some(objekti: DBObject) => {
+            node ++=
+            <Object>
+              <id>{ objekti.path.last }</id>
+              { 
+                buildObjectChildren(SQLite.getChilds(objekti.path))
+              }
+            </Object>
+          }
+
+          case _ => //do nothing
         }
       }
     }

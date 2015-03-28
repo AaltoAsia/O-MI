@@ -79,12 +79,13 @@ class ReadTest extends Specification with BeforeAll {
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
 
-    "Give plain object when asked for" in {
+    "Give object and its children when asked for" in {
         lazy val plainxml = Source.fromFile("src/test/resources/responses/PlainRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/PlainRightRequest.xml")
 
         val parserlist = OmiParser.parse(plainxml)
         val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        //println(resultXML)
 
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
