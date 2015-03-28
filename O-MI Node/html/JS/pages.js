@@ -26,17 +26,16 @@ function loadPages(page) {
 	// Load operation options (page 2)
 	if (page === 2) {
 		refreshEditor("request", "editRequest");
-		
+
+		if($('#options').is(':empty')){
+			loadOptions();
+		}
 		$("#options").change(function(){
 			updateRequest(requestInterval);
 		});
 		$(document).on("click", "#autorequest", function(){
 			updateRequest(requestInterval);
 		});
-		
-		if($('#options').is(':empty')){
-			loadOptions();
-		}
 		$("#response .CodeMirror").remove();
 	}
 	if(page === 3){

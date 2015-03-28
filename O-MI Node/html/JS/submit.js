@@ -1,7 +1,6 @@
 /* IconSelect object */
 var iconSelect, objectUrl, omi, iconValue;
 
-var send = false;
 var page = 1; // Start at page 1
 
 var manager;
@@ -17,16 +16,16 @@ $(function() {
 	/* Click events for buttons */
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-send', sendRequest);
-	$(document).on('click', '#stop', function(){
-		send = false;
+	$(document).on('click', '#resend', function(){
+		console.log("Resending request.");
+		
+		$("#responseBox").html("");
+		refreshEditor("response", "responseBox");
+		
+		sendRequest();
 	});
-	$(document).on('click', '#poll', function(){
-		send = true;
-		if(omi){
-			if(omi.operation === "read" && getSubscribeLocal()){
-				getSub();
-			}
-		}
+	$(document).on('click', '#restart', function(){
+		restart();
 	});
 	$(document).on("mouseenter", ".help", function(){
 		$(this).children("p").show();
@@ -261,5 +260,13 @@ function handleError(jqXHR, errortype, exc) {
 	refreshEditor("response", "responseBox");
 	
 	console.log("Error sending to server: (" + exc +")");
+}
+
+function restart() {
+	$("#page3").empty();
+	$("#page2").empty();
+	$("#page1").empty();
+	loadPages(1);
+	page = 1;
 }
 
