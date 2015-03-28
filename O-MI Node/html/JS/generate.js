@@ -13,7 +13,14 @@ function generateRequest(){
 	var callback = $("#callback").val();
 	var requestId = $("#request-id").val();
 	
-	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
+	if(!omi){
+		omi = new Omi();
+	} 
+	if(omi.operation && omi.operation != operation){
+		omi.saveOptions();
+	}
+	
+	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
 	
 	var request = omi.getRequest(checkedObjects());
 	

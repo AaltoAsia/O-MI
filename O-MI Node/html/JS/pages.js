@@ -136,4 +136,20 @@ function loadOptions() {
 	iconValue = $("#icons").find(".selected").attr("alt");
 	$("#options").empty();
 	$("#options").load("forms/" + iconValue + ".html");
+	
+	if(omi){
+		var save = omi.save[iconValue];
+		if(save){
+			setTimeout(function(){
+				if(save["ttl"]) $("#ttl").val(save["ttl"]); 
+				if(save["interval"]) $("#interval").val(save["interval"]);
+				if(save["begin"]) $("#begin").val(save["begin"]);
+				if(save["end"]) $("#end").val(save["end"]);
+				if(save["newest"]) $("#newest").val(save["newest"]);
+				if(save["oldest"]) $("#oldest").val(save["oldest"]);
+				if(save["callback"]) $("#callback").val(save["callback"]);
+				if(save["request-id"]) $("#request-id").val(save["request-id"]);
+			}, 100);
+		}
+	}
 }
