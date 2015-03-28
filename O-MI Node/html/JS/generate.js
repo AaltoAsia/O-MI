@@ -1,7 +1,10 @@
 /* Generate the O-DF request */
 function generateRequest(){
 	var operation = $("#icons").find(".selected").attr("alt"); //Get the selected operation from the IconSelect object
-	var ttl = $("#ttl").val().replace(/\s/g, ''); 
+	var ttl = $("#ttl").val(); 
+	if(ttl){
+		ttl = ttl.replace(/\s/g, '');
+	}
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
 	var end = $("#end").val();

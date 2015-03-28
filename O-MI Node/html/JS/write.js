@@ -118,7 +118,6 @@ function addChildren(object, items){
 			object.subObjects.push(subobj);
 		} else {
 			var infoitem = new InfoItem(child.name);
-			console.log(infoitem);
 			object.infoItems.push(infoitem);
 		}
 	}
