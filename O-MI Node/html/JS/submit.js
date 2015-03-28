@@ -48,7 +48,6 @@ function loadThemes(){
 	var icons = [];
     icons.push({'iconFilePath':'Resources/icons/dark.svg', 'iconValue':'dark'});
     icons.push({'iconFilePath':'Resources/icons/light.svg', 'iconValue':'light'});
-    icons.push({'iconFilePath':'Resources/icons/white.svg', 'iconValue':'white'});
     icons.push({'iconFilePath':'Resources/icons/green.svg', 'iconValue':'green'});
     icons.push({'iconFilePath':'Resources/icons/test_repeat.svg', 'iconValue':'test_repeat'});
     iconSelect.refresh(icons);
