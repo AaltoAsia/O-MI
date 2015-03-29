@@ -7,6 +7,10 @@ Code-Gardeners
 
 Software project course repository. Implementation of Internet of Things standards Open Messaging Interface and Open Data Format. 
 
+Dependies
+---------
+SQLite 
+
 
 Compiling
 ---------
@@ -37,3 +41,48 @@ Setup development environment
 
 6. Create an Eclipse project with `sbt eclipse` and then you can import `Existing Projects into Workspace` from eclipse.
 
+Running
+-------
+To run O-MI Node you need to run corresponding startup script for your OS.
+1. __ for Windows
+2. __ fo r Unix
+
+This will run O-MI Node with two internal Agents, GenericAgent and SensorAgent.
+More Information in next section.
+
+Configuration
+-------------
+File application.conf is main connfiguration file that is given to O-MI Node
+at start. File it's self contains few parameter.
+
+interface = "0.0.0.0"
+Defines were O-MI Node is started.
+
+port = 8080
+Defines witch port O-IM Node listens for HTTP requests.
+
+agent-input-port = 8181
+Defines port used for listening external agents' sensor updates.
+  
+num-latest-values-stored = 10
+Defines how many latest values are stored for each sensor.
+
+settings-read-odfpath = "Objects/OMI-Service/Settings/"
+Defines path in DB were these values can be found.
+
+
+agent-system {
+   agents {
+       "agents.SensorBoot" = "configs/SensorConfig"
+       "agents.GenericBoot" = "configs/GenericConfig"
+    }     
+}
+For internal agents configuration have Bootable's classname and Agent's
+configuration file pairs.
+
+Application.conf also have some Akka, Spray and SQLite  specific values:
+Akka Configuration documentation:
+http://doc.akka.io/docs/akka/2.3.9/general/configuration.html
+Spray-can server Configuration documentation:
+http://spray.io/documentation/1.2.2/spray-can/configuration/
+SQLite:
