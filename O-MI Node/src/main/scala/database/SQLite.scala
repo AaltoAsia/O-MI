@@ -435,7 +435,7 @@ trait DataBase {
    * @return Array[DBItem] of DBObjects containing childs
    *  of given object. Empty if no childs found or invalid path.
    */
-  private def getChilds(path: Path): Array[DBItem] =
+  def getChilds(path: Path): Array[DBItem] =
     {
       var childs = Array[DBItem]()
       val objectQuery = for {
@@ -451,6 +451,38 @@ trait DataBase {
       }
       childs
     }
+
+/*  def getAllChildPaths(path: Path): Array[Path] =
+    {
+      var childs = Array[Path]()
+      val infoItemQuery = for {
+        c <- latestValues if c.parentPath === path
+      } yield (c.path)
+
+      val objectQuery = for {
+        c <- objects if c.parentPath === path
+      } yield (c.path)
+
+      var strinfo = runSync(infoItemQuery.result)
+      var strobj = runSync(objectQuery.result)
+      childs = Array.ofDim[DBItem](strobj.length + strinfo.length)
+      var index = 0
+
+      strinfo foreach {
+        case (cpath: Path) =>
+          childs(Math.min(index, childs.length - 1)) = Path(cpath)
+          index += 1
+      }
+
+      strobj foreach {
+        case (cpath: Path) =>
+          childs(Math.min(index, childs.length - 1)) = Path(cpath)
+          index += 1
+      }
+
+      childs
+    }*/
+
   /**
    * Checks whether given path exists on the database
    * @param path path to be checked

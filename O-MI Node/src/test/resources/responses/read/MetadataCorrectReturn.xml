@@ -1,0 +1,21 @@
+<omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
+  <omi:response>
+    <omi:result msgformat="odf">
+      <omi:return returnCode="200"></omi:return><omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+        <Objects>
+          <Object>
+          <id>Metatest</id>
+            <InfoItem name="Temperature">
+              <value dateTime="1970-01-17T12:56:15.723">asd</value>
+              <MetaData>
+                <InfoItem name="TemperatureFormat">
+                  <value dateTime="1970-01-17T12:56:15.723">Celsius</value>
+                </InfoItem>
+              </MetaData>
+            </InfoItem>
+          </Object>
+        </Objects>
+      </omi:msg>
+    </omi:result>
+  </omi:response>
+</omi:omiEnvelope>

@@ -58,16 +58,19 @@ $(document).on('click', '.prev', function() {
 
 /* Set timeout for prev/next button animation defininf classes */
 function transitionButton(button, func){
-	$(button).addClass("resize");
-	setTimeout(function(){
-		$(".resize").removeClass("resize");
-	}, 150);
-	setTimeout(func, 300);
+	if(!animating){
+		$(button).addClass("resize");
+		setTimeout(function(){
+			$(".resize").removeClass("resize");
+		}, 150);
+		setTimeout(func, 300);
+	}
+	animating = true;
 }
 
 /* Handle switching from current page to previous page */
 function animatePrev() {
-	if (animating || page === 1)
+	if (page === 1)
 		return false;
 	
 	current_fs = $("#page" + page);
@@ -88,7 +91,7 @@ function animatePrev() {
 
 /* Handle switching from current page to next page */
 function animateNext() {
-	if (animating || page === 3)
+	if (page === 3)
 		return false;
 
 	// Animate scrolling
