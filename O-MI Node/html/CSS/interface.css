@@ -57,8 +57,8 @@
 	cursor: pointer;
 	box-shadow:
         0 0 20px 10px #fff,  /* inner white */
-        0 0 100px 10px #f0f, /* middle magenta */
-        0 0 140px 15px #0ff; /* outer cyan */
+        0 0 50px 5px #f0f, /* middle magenta */
+        0 0 70px 5px #0ff; /* outer cyan */
 }
 
 .hidden {
