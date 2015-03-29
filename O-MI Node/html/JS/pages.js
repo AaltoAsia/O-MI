@@ -23,6 +23,18 @@ function loadPages(page) {
 		}
 	}
 	
+	if(page === 1){
+		$(document).on('click', '.drop', function(event){
+			event.stopPropagation();
+		    
+			$(this).toggleClass("down");
+			
+			var id = $(this).attr("id").replace("drop-", "");
+			
+			$("#list-" + id).toggleClass("closed-list");
+		});
+	}
+	
 	// Load operation options (page 2)
 	if (page === 2) {
 		refreshEditor("request", "editRequest");
