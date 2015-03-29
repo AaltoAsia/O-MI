@@ -245,12 +245,29 @@ class SubscriptionTest extends Specification with BeforeAll {
       SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
       val test3 = OMISubscription.OMISubscriptionResponse(testSub)
       test3.\\("value").length === 1
-      
+
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
-    
 
+    "Subscriptions should be removed from database when their ttl expires" in {
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="2.0"""")
+      val parserlist = OmiParser.parse(simpletestfile)
+      val testSub = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])._1
+      val temp = SQLite.getSub(testSub).get
+      //      println(temp.callback)
+      //      println(temp.id)
+      //      println(temp.interval)
+      //      println(temp.paths)
+      //      println(temp.startTime)
+      //      println(temp.ttl)
+      //      println("\n\n\n\n\n\n")
+      SQLite.getSub(testSub) must beSome
+      Thread.sleep(3000)
+      SQLite.getSub(testSub) must beNone
+      SQLite.removeSub(testSub)
+    }
+    
   }
 
 }

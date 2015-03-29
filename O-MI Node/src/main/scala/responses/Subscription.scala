@@ -23,14 +23,14 @@ object OMISubscription {
 //  val subsWithoutCallback = SQLite.getAllSubs(Some(false)).map(n=>(n,n.startTime.getTime,n.ttlToMillis))
   
   /**
-   * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds,startTime).
+   * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
-  type SubTuple = (Int,Long,Long)
+  type SubTuple = (Int,Long)
   
   /**
    * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
    */
-  val subOrder:Ordering[SubTuple] = Ordering.by(n => n._2+n._3)
+  val subOrder:Ordering[SubTuple] = Ordering.by(_._2)
     
   /**
    * PriorityQueue with subOrder ordering. value with earliest timeout is first.
@@ -39,7 +39,7 @@ object OMISubscription {
    * This queue contains only subs that have no callback address defined.
    */
   private lazy val subQueue: PriorityQueue[SubTuple] = {
-    val subArray = SQLite.getAllSubs(Some(false)).map(n=>(n.id,n.ttlToMillis,n.startTime.getTime))
+    val subArray = SQLite.getAllSubs(Some(false)).map(n=>(n.id,n.ttlToMillis + n.startTime.getTime))
     new PriorityQueue()(subOrder.reverse) ++ subArray
   }
   
@@ -51,14 +51,27 @@ object OMISubscription {
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system = ActorSystem()
   
+  //tuple with scheduled event and the time it executes
+  //used to keep only 1 schedule running, no need for multiple schedulers
+  var scheduledTimes:(akka.actor.Cancellable,Long) = null
+  
   def checkSubs: Unit = {
     val currentTime = date.getTime
-    while(subQueue.headOption.exists(n => (n._2+n._3)<= currentTime)){
+    while(subQueue.headOption.exists(_._2<= currentTime)){
       SQLite.removeSub(subQueue.dequeue()._1)
     }
-    subQueue.headOption.foreach{ n=>
-      val nextRun = currentTime - (n._2+n._3)
-      val asd = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
+    subQueue.headOption.foreach{ n =>
+      val nextRun = currentTime - (n._2)
+      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
+      if(scheduledTimes == null){
+        scheduledTimes = (cancellable, currentTime + nextRun)
+      } else if(scheduledTimes._2 > (currentTime+ nextRun)){
+        scheduledTimes._1.cancel()
+        scheduledTimes = (cancellable,currentTime + nextRun)
+      } else{
+        cancellable.cancel()
+        
+      }
     }
 //    val subs = SQLite.getAllSubs(Some(false)).filter(n=> (n.startTime.getTime + n.ttlToMillis) < currentTime)
 //    subs.foreach(n=>SQLite.removeSub(n.id))
@@ -88,7 +101,10 @@ object OMISubscription {
               requestIdInt = SQLite.saveSub(
                 new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
                 
-              if(callback.isEmpty) subQueue.enqueue((requestIdInt,(ttlInt * 1000).toLong,timeStamp.get.getTime)) 
+              if(callback.isEmpty) {
+                subQueue.enqueue((requestIdInt,(ttlInt * 1000).toLong + timeStamp.get.getTime))
+                checkSubs
+              }
               requestIdInt
             }
         }
@@ -394,5 +410,7 @@ object OMISubscription {
 
     return node
   }
+  //run the checkSubs method to start scheduling subscription removing
+//  checkSubs
 
 }
