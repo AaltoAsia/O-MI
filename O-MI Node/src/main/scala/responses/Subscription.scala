@@ -10,6 +10,10 @@ import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
+import scala.collection.mutable.PriorityQueue
+import scala.math.Ordering
+import akka.actor.ActorSystem
+import scala.concurrent.duration._
 
 import java.sql.Timestamp
 import java.util.Date
@@ -17,10 +21,47 @@ import java.util.Date
 object OMISubscription {
   
 //  val subsWithoutCallback = SQLite.getAllSubs(Some(false)).map(n=>(n,n.startTime.getTime,n.ttlToMillis))
-  def checkSubs ={
-    val currentTime = new Date().getTime
-    val subs = SQLite.getAllSubs(Some(false)).filter(n=> (n.startTime.getTime + n.ttlToMillis) < currentTime)
-    subs.foreach(n=>SQLite.removeSub(n.id))
+  
+  /**
+   * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds,startTime).
+   */
+  type SubTuple = (Int,Long,Long)
+  
+  /**
+   * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
+   */
+  val subOrder:Ordering[SubTuple] = Ordering.by(n => n._2+n._3)
+    
+  /**
+   * PriorityQueue with subOrder ordering. value with earliest timeout is first.
+   * This val is lazy and is computed when needed for the first time
+   * 
+   * This queue contains only subs that have no callback address defined.
+   */
+  private lazy val subQueue: PriorityQueue[SubTuple] = {
+    val subArray = SQLite.getAllSubs(Some(false)).map(n=>(n.id,n.ttlToMillis,n.startTime.getTime))
+    new PriorityQueue()(subOrder.reverse) ++ subArray
+  }
+  
+  /**
+   * Date object for getting current time
+   */
+  private def date = new Date()
+  
+  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val system = ActorSystem()
+  
+  def checkSubs: Unit = {
+    val currentTime = date.getTime
+    while(subQueue.headOption.exists(n => (n._2+n._3)<= currentTime)){
+      SQLite.removeSub(subQueue.dequeue()._1)
+    }
+    subQueue.headOption.foreach{ n=>
+      val nextRun = currentTime - (n._2+n._3)
+      val asd = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
+    }
+//    val subs = SQLite.getAllSubs(Some(false)).filter(n=> (n.startTime.getTime + n.ttlToMillis) < currentTime)
+//    subs.foreach(n=>SQLite.removeSub(n.id))
   }
   /**
    * Creates a subscription in the database and generates the immediate answer to a subscription
@@ -43,10 +84,11 @@ object OMISubscription {
               val ttlInt = subscription.ttl.toInt
               val interval = subscription.interval.toInt
               val callback = subscription.callback
-
+              val timeStamp = Some(new Timestamp(date.getTime()))
               requestIdInt = SQLite.saveSub(
-                new DBSub(paths.toArray, ttlInt, interval, callback, Some(new Timestamp(new Date().getTime()))))
-
+                new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
+                
+              if(callback.isEmpty) subQueue.enqueue((requestIdInt,(ttlInt * 1000).toLong,timeStamp.get.getTime)) 
               requestIdInt
             }
         }
@@ -161,7 +203,7 @@ object OMISubscription {
       intervalNotSupported
     } else if (interval == -1) { //Event based subscription
       val start = sub.startTime.getTime
-      val currentTimeLong = new Date().getTime()
+      val currentTimeLong = date.getTime()
       val newTTL: Double = {
         if (sub.ttl <= 0) sub.ttl
         else ((sub.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
@@ -183,7 +225,7 @@ object OMISubscription {
     } else if (interval > 0) { //Interval based subscription
 
       val start = sub.startTime.getTime
-      val currentTimeLong = new Date().getTime()
+      val currentTimeLong = date.getTime()
       //calculate new start time to be divisible by interval to keep the scheduling
       //also reduce ttl by the amount that startTime was changed
       val intervalMillisLong = (sub.interval * 1000).toLong
