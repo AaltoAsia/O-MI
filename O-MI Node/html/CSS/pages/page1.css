@@ -1,5 +1,5 @@
 #url-field {
-	max-width: 50%;
+	max-width: 100%;
 }
 
 #objectContainer {
@@ -43,4 +43,12 @@
 	vertical-align: bottom;
 	position: relative;
 	*overflow: hidden;
+}
+
+.row {
+	width: 100%;
+}
+
+.row .col {
+	display: inline-block;
 }
