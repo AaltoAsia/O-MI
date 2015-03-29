@@ -54,12 +54,12 @@ class SubscriptionTest extends Specification with BeforeAll {
       count = count + 1000
     }
 
-    lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
+    lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
     val parserlist = OmiParser.parse(simpletestfile)
 
     val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
 
-    lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/SubscriptionRequestWithCallback.xml").getLines.mkString("\n")
+    lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequestWithCallback.xml").getLines.mkString("\n")
     val parserlistcallback = OmiParser.parse(simpletestfilecallback)
 
     val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[Subscription])
@@ -68,7 +68,7 @@ class SubscriptionTest extends Specification with BeforeAll {
   "Subscription response" should {
     sequential
     "Return with just a requestId when subscribed" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n")
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
 
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
@@ -89,7 +89,7 @@ class SubscriptionTest extends Specification with BeforeAll {
 
     "Return with no values when interval is larger than time elapsed and no callback given" in {
 
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubRetrieve.xml").getLines.mkString("\n")
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubRetrieve.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
 
       val subxml = Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head
@@ -152,7 +152,7 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
 
     "Return error code when asked for nonexisting infoitem" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/BuggyRequest.xml").getLines.mkString("\n")
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/BuggyRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
 
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])

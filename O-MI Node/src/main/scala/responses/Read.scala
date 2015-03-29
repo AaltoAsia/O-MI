@@ -111,7 +111,7 @@ object Read {
   /**
    * helper function for generating whold O-DF xml.
    * @param nodes in Objects node to be generated
-   * @return generated O-DF xml as String
+   * @return generated O-DF xml
    */
   def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
       <Objects>
@@ -130,7 +130,7 @@ object Read {
   /**
    * helper function for generating O-DF's Object nodes, recursive
    * @param nodes to generate
-   * @return generated xml as String
+   * @return generated xml
    */
   def odfObjectGeneration(objects: List[OdfObject],
                           begin: Option[Timestamp],
@@ -146,7 +146,7 @@ object Read {
           //we can check it's just an object when it has no sensors or childs
           //we check if it has any children in the database, if not, it's probably an error
           if (obj.childs.isEmpty && obj.sensors.isEmpty && SQLite.getChilds(obj.path).nonEmpty) {
-            buildObjectChildren(SQLite.getChilds(obj.path))
+            buildObjectChildren(SQLite.getChilds(obj.path), begin, end, newest, oldest)
           }
           else if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
               odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
@@ -188,7 +188,7 @@ object Read {
    * @param end the end time of the time interval from where to get sensors
    * @param newest get only this many newest items
    * @param oldest get only this many oldest items
-   * @return generated xml as String
+   * @return generated xml as
    */
   def odfInfoItemGeneration(infoItems: List[OdfInfoItem],
                             begin: Option[Timestamp],
@@ -197,61 +197,30 @@ object Read {
                             oldest: Option[Int] ): xml.NodeSeq = {
 
       var node: xml.NodeSeq = xml.NodeSeq.Empty
-      if(begin != None || end != None || newest != None || oldest != None) {
-        for (infoItem <- infoItems) {
-          node ++= 
-          <InfoItem name={ infoItem.path.last }>
-            {
-              // The parametres in database (fromStart, fromEnd)
-              val sensors = SQLite.getNBetween(infoItem.path, begin, end, oldest, newest )
-              if(sensors.nonEmpty){
-
-                  var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty 
-                  for (sensor <- sensors) {
-                    intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
-                  }
-                  val metaData = SQLite.getMetaData(infoItem.path)
-                  if( metaData.isEmpty )
-                    intervaldata
-                  else
-                    //TODO: make sure that this really works, combined NodeSeq and String
-                    intervaldata ++ XML.loadString(metaData.get)
-              }else{
-                <Error> Item not found in the database </Error>
-              }
-            }
-          </InfoItem>
-
+      for (infoItem <- infoItems) {
+        node ++= getInfoItem(infoItem.path, begin, end, newest, oldest)
         }
-      } else {
-        for (infoItem <- infoItems) {
-          node ++= 
-          <InfoItem name={ infoItem.path.last }>
-            {
-              SQLite.get(infoItem.path) match {
-                case Some(sensor: DBSensor) => 
-                val value = <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
-                  val metaData = SQLite.getMetaData(infoItem.path)
-                  if( metaData.isEmpty )
-                    value
-                  else
-                    //TODO: make sure that this really works, combined NodeSeq and String
-                    value ++ XML.loadString(metaData.get)
-                case _ => <Error> Item not found in the database </Error>
-              }
-
-            }
-
-          </InfoItem>
-
-        }
-      }
       
       node
   }
 
-  //TODO: support begin and end etc.
-  def buildObjectChildren(children: Array[DBItem]): xml.NodeSeq = {
+  /**
+   * Used when just an object is requested (returns the object and all its children as xml)
+   * 
+   * @param Array of objects or infoitems (just their paths are used)
+   * @param begin the start time of the time interval from where to get sensors
+   * @param end the end time of the time interval from where to get sensors
+   * @param newest get only this many newest items
+   * @param oldest get only this many oldest items
+   * @return generated xml as
+   */
+
+  def buildObjectChildren(children: Array[DBItem],
+                            begin: Option[Timestamp],
+                            end: Option[Timestamp],
+                            newest: Option[Int],
+                            oldest: Option[Int]): xml.NodeSeq = {
+
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
     if(children.isEmpty == false ) {
@@ -259,13 +228,7 @@ object Read {
       for(child <- children.sortBy(_.path.toString)) {
         SQLite.get(child.path) match {
           case Some(sensor: DBSensor) => {
-            node ++=
-            <InfoItem name={ sensor.path.last }>
-              {
-                <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
-              }
-
-            </InfoItem>
+            node ++= getInfoItem(sensor.path, begin, end, newest, oldest)
           }
 
           case Some(objekti: DBObject) => {
@@ -273,7 +236,7 @@ object Read {
             <Object>
               <id>{ objekti.path.last }</id>
               { 
-                buildObjectChildren(SQLite.getChilds(objekti.path))
+                buildObjectChildren(SQLite.getChilds(objekti.path), begin, end, newest, oldest)
               }
             </Object>
           }
@@ -282,6 +245,66 @@ object Read {
         }
       }
     }
+
+    node
+  }
+
+  /**
+   * Helper function for infoitem generation
+   * 
+   * @param The path of the infoitem
+   * @param begin the start time of the time interval from where to get sensors
+   * @param end the end time of the time interval from where to get sensors
+   * @param newest get only this many newest items
+   * @param oldest get only this many oldest items
+   * @return generated xml
+   */
+
+  def getInfoItem(infoitempath: Path,
+                    begin: Option[Timestamp],
+                    end: Option[Timestamp],
+                    newest: Option[Int],
+                    oldest: Option[Int]): xml.NodeSeq = {
+
+    var node: xml.NodeSeq = xml.NodeSeq.Empty
+    var many = if(begin != None || end != None || newest != None || oldest != None) {true} else {false}
+    var notfound = false
+
+    node ++=
+      <InfoItem name={infoitempath.last}>
+      {
+      var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty
+      // if one of begin, end, newest or oldest was defined
+      if(many) {
+          val sensors = SQLite.getNBetween(infoitempath, begin, end, oldest, newest)
+          if (sensors.isEmpty) {
+            notfound = true
+          } else {
+            for (sensor <- sensors) {
+              intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>
+            }
+          }
+      }
+
+      // if none of the above were defined get just the latest value
+      else {
+        val sensor = SQLite.get(infoitempath)
+        sensor match {
+          case Some(sensor: DBSensor) => {intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>}
+          case _ => {notfound = true}
+        }
+      }
+
+      if(notfound) {intervaldata ++= <Error> Item not found in the database </Error>}
+
+      val metaData = SQLite.getMetaData(infoitempath)
+      if( metaData.isEmpty )
+        intervaldata
+      else
+        intervaldata ++ XML.loadString(metaData.get)
+
+      }
+      </InfoItem>
 
     node
   }

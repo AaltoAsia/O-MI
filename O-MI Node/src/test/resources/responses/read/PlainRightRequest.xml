@@ -1,0 +1,37 @@
+<omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
+  <omi:response>
+    <omi:result msgformat="odf">
+      <omi:return returnCode="200"/>
+      <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+        <Objects>
+          <Object>
+            <id>ReadTest</id>
+            <Object>
+              <id>Refrigerator123</id>
+              <InfoItem name="PowerConsumption"><value dateTime="1970-01-17T12:56:15.723">0.123</value></InfoItem>
+              <InfoItem name="RefrigeratorDoorOpenWarning"><value dateTime="1970-01-17T12:56:15.723">door closed</value></InfoItem>
+              <InfoItem name="RefrigeratorProbeFault"><value dateTime="1970-01-17T12:56:15.723">Nothing wrong with probe</value></InfoItem>
+            </Object>
+            <Object>
+              <id>RoomSensors1</id>
+              <InfoItem name="CarbonDioxide"><value dateTime="1970-01-17T12:56:15.723">too much</value></InfoItem>
+              <Object>
+                <id>Temperature</id>
+                <InfoItem name="Inside"><value dateTime="1970-01-17T12:56:15.723">21.2</value></InfoItem>
+                <InfoItem name="Outside"><value dateTime="1970-01-17T12:56:15.723">12.2</value></InfoItem>
+              </Object>
+            </Object>
+            <Object>
+              <id>SmartCar</id>
+              <InfoItem name="Fuel"><value dateTime="1970-01-17T12:56:15.723">30</value></InfoItem>
+            </Object>
+            <Object>
+              <id>SmartOven</id>
+              <InfoItem name="Temperature"><value dateTime="1970-01-17T12:56:20.723">117</value></InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </omi:msg>
+    </omi:result>
+  </omi:response>
+</omi:omiEnvelope>

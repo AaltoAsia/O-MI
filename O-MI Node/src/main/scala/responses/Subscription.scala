@@ -86,11 +86,6 @@ object OMISubscription {
     return paths
   }
 
-
-/*  def getObjectChildren(object: DBObject) {
-    
-  }*/
-
   /**
    * Subscription response
    *

@@ -48,20 +48,27 @@ class ReadTest extends Specification with BeforeAll {
 
     var count = 0
 
+    //for begin and end testing
     SQLite.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
     for (value <- intervaltestdata){
         SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
         count = count + 1000
     }
-  }
-//  def after = {
-//    SQLite.remove(Path("Objects/ReadTest"))
-//  }
+
+    //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
+    SQLite.remove(Path("Objects/Metatest/Temperature"))
+    SQLite.set(new DBSensor(Path("Objects/Metatest/Temperature"), "asd", testtime))
+    SQLite.setMetaData(Path("Objects/Metatest/Temperature"),
+        """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
+
+}
 
   "Read response" should {
+    sequential
+
     "Give correct XML when asked for multiple values" in {
-        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SimpleXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/correctXMLfirsttest.xml")
+        lazy val simpletestfile = Source.fromFile("src/test/resources/responses/read/SimpleXMLReadRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
         val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
@@ -70,8 +77,8 @@ class ReadTest extends Specification with BeforeAll {
     }
 
     "Give a history of values when begin and end is used" in {
-        lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/IntervalXMLTest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/CorrectIntervalXML.xml")
+        lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/read/IntervalXMLTest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
         val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
@@ -80,8 +87,8 @@ class ReadTest extends Specification with BeforeAll {
     }
 
     "Give object and its children when asked for" in {
-        lazy val plainxml = Source.fromFile("src/test/resources/responses/PlainRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/PlainRightRequest.xml")
+        lazy val plainxml = Source.fromFile("src/test/resources/responses/read/PlainRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/PlainRightRequest.xml")
 
         val parserlist = OmiParser.parse(plainxml)
         val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
@@ -92,14 +99,23 @@ class ReadTest extends Specification with BeforeAll {
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
-        lazy val erroneousxml = Source.fromFile("src/test/resources/responses/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
-        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/WrongRequestReturn.xml")
+        lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
         val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         //returnCode should not be 200
         resultXML should be equalTo(trim(correctxmlreturn))
         //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+    }
+
+    "Return with correct metadata" in {
+        lazy val metarequestxml = Source.fromFile("src/test/resources/responses/read/MetadataRequest.xml").getLines.mkString("\n")
+        lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/MetadataCorrectReturn.xml")
+        val parserlist = OmiParser.parse(metarequestxml)
+        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+
+        resultXML should be equalTo(trim(correctxmlreturn))
     }
 
 }
@@ -140,7 +156,7 @@ class ReadTest extends Specification with BeforeAll {
         RESTXML should be equalTo(None)
     }
 
-    "Return right xml when asked for Objects" in {
+    "Return right xml when asked for" in {
         val RESTXML = Read.generateODFREST(Path("Objects/ReadTest"))
 
         val rightXML = <Object><id>ReadTest</id><Object><id>Refrigerator123</id></Object><Object><id>RoomSensors1</id></Object><Object><id>SmartCar</id></Object>

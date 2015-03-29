@@ -82,6 +82,7 @@ object Types {
                           timedValues: Seq[ TimedValue],
                           metadata: Option[InfoItemMetaData] = None
                         ) extends OdfNode
+
   /** case class that represents an Object in the O-DF
    *  
    *  @param path path to the Object as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge")
