@@ -256,21 +256,9 @@ class SubscriptionTest extends Specification with BeforeAll {
       val parserlist = OmiParser.parse(simpletestfile)
       val testSub = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])._1
       val temp = SQLite.getSub(testSub).get
-      //      println(temp.callback)
-      //      println(temp.id)
-      //      println(temp.interval)
-      //      println(temp.paths)
-      //      println(temp.startTime)
-      //      println(temp.ttl)
-      //      println("\n\n\n\n\n\n")
       SQLite.getSub(testSub) must beSome
-//      Thread.sleep(3000)
-//      val nonBlockingWait = Future{
-        Thread.sleep(4000)
-//      }
-//      Await.result(nonBlockingWait, scala.concurrent.duration.Duration.Inf)
+        Thread.sleep(3000)
       SQLite.getSub(testSub) must beNone
-//      SQLite.removeSub(testSub)
     }
     
   }
