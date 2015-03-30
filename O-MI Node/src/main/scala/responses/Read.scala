@@ -303,6 +303,7 @@ object Read {
       else
         intervaldata ++ XML.loadString(metaData.get)
 
+
       }
       </InfoItem>
 

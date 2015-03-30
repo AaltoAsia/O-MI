@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import testHelpers.BeforeAll
+import scala.concurrent.{Await, Future}
 
 class SubscriptionTest extends Specification with BeforeAll {
 
@@ -195,10 +196,10 @@ class SubscriptionTest extends Specification with BeforeAll {
 
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
       val dataLength = test.\\("value").length
       dataLength must be_>=(10)
-      val test2 = OMISubscription.odfGeneration(testSub)
+      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       val newDataLength = test2.\\("value").length
       newDataLength must be_<=(3)
 
@@ -214,8 +215,8 @@ class SubscriptionTest extends Specification with BeforeAll {
       ttlFirst === 60.0
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
-      val test2 = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
+      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       val ttlEnd = SQLite.getSub(testSub).get.ttl
       (ttlFirst - ttlEnd) % 3 === 0
 
@@ -227,7 +228,7 @@ class SubscriptionTest extends Specification with BeforeAll {
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
       test.\\("value").length === 6
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
@@ -238,19 +239,28 @@ class SubscriptionTest extends Specification with BeforeAll {
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
-      val test = OMISubscription.odfGeneration(testSub)
+      val test = OMISubscription.OMISubscriptionResponse(testSub)
       test.\\("value").length === 6
-      val test2 = OMISubscription.odfGeneration(testSub)
+      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       test2.\\("value").length === 0
       SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
-      val test3 = OMISubscription.odfGeneration(testSub)
+      val test3 = OMISubscription.OMISubscriptionResponse(testSub)
       test3.\\("value").length === 1
-      
+
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
     }
-    
 
+    "Subscriptions should be removed from database when their ttl expires" in {
+      val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
+      val parserlist = OmiParser.parse(simpletestfile)
+      val testSub = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])._1
+      val temp = SQLite.getSub(testSub).get
+      SQLite.getSub(testSub) must beSome
+        Thread.sleep(3000)
+      SQLite.getSub(testSub) must beNone
+    }
+    
   }
 
 }
