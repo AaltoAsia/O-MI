@@ -8,93 +8,129 @@ import xml._
  * for documentation.
  */
 object Common {
+
+  sealed case class OmiResponse(inner: OmiResult) {
+    val xml =
+      <omi:response>
+        { inner.xml }
+      </omi:response>
+  }
+
+  sealed case class OmiResult(inner: OmiResultChildren, format: String = "") {
+    val xml: NodeSeq =
+      if (format.isEmpty) {
+        <omi:result>
+          { inner.map(_.xml) : NodeSeq // if type is NodeSeq, xml library will insert it right
+          }
+        </omi:result>
+
+      } else {
+        <omi:result msgformat={ format }>
+          { inner.map(_.xml) : NodeSeq }
+        </omi:result>
+      }
+
+    /** Many <return> tags are allowed inside OmiResponse */
+    def ++(other: OmiResult) = {
+      val ourxml = this.xml
+      new OmiResult(Seq()){ // XXX: override hack
+        override val xml: NodeSeq = ourxml ++ other.xml
+      }
+    }
+  }
+
+  type OmiResultChildren = Seq[OmiResultChild]
+
+  /** Anything that can go inside <omi:return> */
+  sealed trait OmiResultChild {
+    val xml: Elem
+  }
+
+  sealed case class OmiRequestId(id: String) extends OmiResultChild {
+    val xml = 
+      <omi:requestId>{ id }</omi:requestId>
+  }
+
+  sealed case class OmiOdfMsg(innerxml: NodeSeq) extends OmiResultChild {
+    val xml = 
+      <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+          { innerxml }
+      </omi:msg>
+  }
+
+  sealed case class OmiReturnCode(code: String, description: String = "")
+      extends OmiResultChild {
+    val xml =
+      if (description.isEmpty) {
+        <omi:return returnCode={ code.toString }></omi:return>
+      } else {
+        <omi:return returnCode={ code } description={ description }>
+        </omi:return>
+      }
+  }
+
+
+
   /**
    * Wraps innerxml to O-MI Envelope
    */
-  def omiEnvelope(ttl: Double)(innerxml: NodeSeq): NodeSeq = {
+  def omiEnvelope(ttl: Double)(innerxml: OmiResponse): NodeSeq = {
     <omi:omiEnvelope xmlns:omi="omi.xsd"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd"
 	  	version="1.0" ttl={ ttl.toString }>
-      { innerxml }
+      { innerxml.xml }
     </omi:omiEnvelope>
   }
 
-  def omiEnvelope: NodeSeq => NodeSeq = omiEnvelope(0)
-
+  def omiEnvelope: OmiResponse => NodeSeq = omiEnvelope(0)
 
   /**
    * Wraps innerxml to O-MI Envelope and response
    */
-  def omiResponse(ttl: Double)(innerxml: NodeSeq) = {
-    omiEnvelope(ttl)(
-      <omi:response>
-        { innerxml }
-      </omi:response>
-    )
-  }
+  def omiResponse(ttl: Double)(inner: OmiResult) = omiEnvelope(ttl)(OmiResponse(inner))
 
-  def omiResponse: NodeSeq => NodeSeq = omiResponse(0)
+  def omiResponse: OmiResult => NodeSeq = omiResponse(0)
+  def omiResponse(results: Seq[OmiResult]): NodeSeq = omiResponse(0)(results.reduceLeft(_ ++ _))
 
-
-
-  def result(innerxml: NodeSeq): Elem = {
-    <omi:result>
-      { innerxml }
-    </omi:result>
-  }
+  def odfResultWrapper(inner: OmiResultChildren) = OmiResult(inner, "odf")
+  def resultWrapper(inner: OmiResultChildren) = OmiResult(inner)
 
   /**
    * Wraps innerxml to O-MI Envelope, response and result with msgformat odf
    */
-  def omiOdfResult(innerxml: NodeSeq): NodeSeq = omiResponse(
-      <omi:result msgformat="odf">
-        { innerxml }
-      </omi:result>
-    )
+  def omiOdfResult(inner: OmiResultChildren): NodeSeq = omiResponse(odfResultWrapper(inner))
 
   /**
    * Wraps innerxml to O-MI Envelope, response and result
    */
-  def omiResult(innerxml: NodeSeq): NodeSeq = omiResponse(result(innerxml))
-
-
-  def returnCode(code: Int): Elem =
-    <omi:return returnCode={ code.toString }></omi:return>
+  def omiResult(inner: OmiResultChildren): NodeSeq = omiResponse(resultWrapper(inner))
 
   /**
    * NOTE: Contains implementation specific "description" attribute
    * that can have a more detailed error message.
    */
-  def returnCode(code: Int, description: String): Elem =
-    <omi:return returnCode={ code.toString } description={ description }>
-    </omi:return>
+  def returnCode(code: Int, description: String): Seq[OmiResultChild] =
+    Seq(OmiReturnCode(code.toString, description))
 
-  val returnCode200: Elem = returnCode(200)
+  def returnCode(code: Int): Seq[OmiResultChild] = Seq(OmiReturnCode(code.toString))
 
-  def odfMsgWrapper(innerxml: NodeSeq): Elem = {
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-        { innerxml }
-    </omi:msg>
-  }
+  val returnCode200 = returnCode(200)
 
-  // Should not be called directly because id is supposed to be Int
-  private def requestId(id: String): Elem = {
-    <omi:requestId>{ id }</omi:requestId>
-  }
+  def odfMsgWrapper(innerxml: NodeSeq): Seq[OmiResultChild] = Seq(OmiOdfMsg(innerxml))
 
   /**
    * Creates requestId element
    */
-  def requestId(id: Int): Elem = requestId(id.toString)
+  def requestId(id: Int): Seq[OmiResultChild] = Seq(OmiRequestId(id.toString))
 
   /**
    * Creates many requestId elements
    * @param ids Takes ids exceptionally as Strings, but they should be integers
    */
-  def requestIds(ids: Seq[String]): NodeSeq = {
+  def requestIds(ids: Seq[String]): Seq[OmiResultChild] = {
     if (ids.nonEmpty)
-      ids map {requestId(_)}
-    else NodeSeq.Empty
+      ids map {OmiRequestId(_)}
+    else Seq()
   }
 }
 
