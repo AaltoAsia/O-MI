@@ -4,7 +4,8 @@ function ObjectBoxManager(){
 	
 	/* Created a DOM checkbox and adds the reference object to objects array */
 	this.addObject = function(id) {
-		$('<li><div id="drop-' + id + '" class="drop"></div><label><input type="checkbox" class="checkbox" id="' + id + '"/>' + id + '</label></li>').appendTo("#objectList"); 
+		$('<li><div id="drop-' + id + '" class="drop"></div><label><input type="checkbox" class="checkbox" id="' + id + '"/>' +
+				id + '</label></li>').appendTo("#objectList"); 
 		$('<ul id="list-' + id + '" class="closed-list"></ul>').appendTo("#objectList");
 		
 		this.push(new ObjectBox(id, 0));
@@ -60,7 +61,7 @@ function ObjectBox(id, depth, parent){
 		return o;
 	};
 	
-	this.addChild = function(parendId, name, listId) {
+	this.addChild = function(parentId, name, listId) {
 		var margin = "20px";
 		
 		var str = '<li><div id="drop-' + name + '" class="drop"></div><label><input type="checkbox" class="checkbox ' + this.id + '" id="' + name + '"/>' + name + '</label></li>';

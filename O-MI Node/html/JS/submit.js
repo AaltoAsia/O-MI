@@ -142,7 +142,7 @@ function displayObjects(data, indent, url, listId) {
 				var name = $(this).find("id").text();
 
 				//ajaxGet(indent + 1, url + "/" + name);
-				manager.find(id).addChild(id, name, listId);
+				manager.find(id).addChild(id, name, "list-" + id);
 				sub.push(name);
 			});
 			addInfoItems(this, id, indent);
