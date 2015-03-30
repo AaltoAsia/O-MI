@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import testHelpers.BeforeAll
+import scala.concurrent.{Await, Future}
 
 class SubscriptionTest extends Specification with BeforeAll {
 
@@ -251,7 +252,7 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
 
     "Subscriptions should be removed from database when their ttl expires" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="2.0"""")
+      val simpletestfile = Source.fromFile("src/test/resources/responses/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
       val parserlist = OmiParser.parse(simpletestfile)
       val testSub = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])._1
       val temp = SQLite.getSub(testSub).get
@@ -263,9 +264,13 @@ class SubscriptionTest extends Specification with BeforeAll {
       //      println(temp.ttl)
       //      println("\n\n\n\n\n\n")
       SQLite.getSub(testSub) must beSome
-      Thread.sleep(3000)
+//      Thread.sleep(3000)
+//      val nonBlockingWait = Future{
+        Thread.sleep(4000)
+//      }
+//      Await.result(nonBlockingWait, scala.concurrent.duration.Duration.Inf)
       SQLite.getSub(testSub) must beNone
-      SQLite.removeSub(testSub)
+//      SQLite.removeSub(testSub)
     }
     
   }

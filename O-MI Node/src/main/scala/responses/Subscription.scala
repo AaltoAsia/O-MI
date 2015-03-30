@@ -7,10 +7,7 @@ import parsing.Types.Path._
 import database._
 import scala.xml
 import scala.xml._
-import scala.collection.mutable.Buffer
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.Map
-import scala.collection.mutable.PriorityQueue
+import scala.collection.mutable.{Buffer, PriorityQueue}
 import scala.math.Ordering
 import akka.actor.ActorSystem
 import scala.concurrent.duration._
@@ -19,9 +16,7 @@ import java.sql.Timestamp
 import java.util.Date
 
 object OMISubscription {
-  
-//  val subsWithoutCallback = SQLite.getAllSubs(Some(false)).map(n=>(n,n.startTime.getTime,n.ttlToMillis))
-  
+   
   /**
    * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
@@ -36,48 +31,60 @@ object OMISubscription {
    * PriorityQueue with subOrder ordering. value with earliest timeout is first.
    * This val is lazy and is computed when needed for the first time
    * 
-   * This queue contains only subs that have no callback address defined.
+   * This queue contains only subs that have no callback address defined and have ttl > 0.
    */
   private lazy val subQueue: PriorityQueue[SubTuple] = {
-    val subArray = SQLite.getAllSubs(Some(false)).map(n=>(n.id,n.ttlToMillis + n.startTime.getTime))
+    val subArray = SQLite.getAllSubs(Some(false)).filter(n=>n.ttl > 0).map(n=>(n.id,n.ttlToMillis + n.startTime.getTime))
     new PriorityQueue()(subOrder.reverse) ++ subArray
   }
   
   /**
-   * Date object for getting current time
+   * method for getting current time without always having to call new Date() directly
+   * 
+   * @return new Date object
    */
   private def date = new Date()
   
+  //bring the ActorSystem in scope
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system = ActorSystem()
   
   //tuple with scheduled event and the time it executes
   //used to keep only 1 schedule running, no need for multiple schedulers
   var scheduledTimes:(akka.actor.Cancellable,Long) = null
-  
+
+  /**
+   * This method is called by scheduler and when new sub is added to subQueue.
+   * 
+   * This method removes all subscriptions that have expired from the priority queue and
+   * schedules new checkSub method call.
+   */
   def checkSubs: Unit = {
+
     val currentTime = date.getTime
     while(subQueue.headOption.exists(_._2<= currentTime)){
       SQLite.removeSub(subQueue.dequeue()._1)
     }
     subQueue.headOption.foreach{ n =>
-      val nextRun = currentTime - (n._2)
+      val nextRun = ((n._2) - currentTime)
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
       if(scheduledTimes == null){
         scheduledTimes = (cancellable, currentTime + nextRun)
       } else if(scheduledTimes._2 > (currentTime+ nextRun)){
         scheduledTimes._1.cancel()
         scheduledTimes = (cancellable,currentTime + nextRun)
-      } else{
-        cancellable.cancel()
-        
-      }
+
+      } 
+// Lines commented below break the program for some reason.
+//      else if((!scheduledTimes._1.isCancelled) && scheduledTimes._2 < (currentTime+nextRun)){
+//        cancellable.cancel()
+//      }
     }
-//    val subs = SQLite.getAllSubs(Some(false)).filter(n=> (n.startTime.getTime + n.ttlToMillis) < currentTime)
-//    subs.foreach(n=>SQLite.removeSub(n.id))
   }
   /**
-   * Creates a subscription in the database and generates the immediate answer to a subscription
+   * Creates a subscription in the database and generates the immediate answer to a subscription.
+   * If the subscription doesn't have callback and has finite ttl this method adds it in the subQueue
+   * priority queue.
    *
    * @param subscription an object of Subscription class which contains information about the request
    * @return A tuple with the first element containing the requestId and the second element
@@ -101,7 +108,7 @@ object OMISubscription {
               requestIdInt = SQLite.saveSub(
                 new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
                 
-              if(callback.isEmpty) {
+              if(callback.isEmpty && ttlInt > 0) {
                 subQueue.enqueue((requestIdInt,(ttlInt * 1000).toLong + timeStamp.get.getTime))
                 checkSubs
               }
@@ -188,12 +195,6 @@ object OMISubscription {
    */
 
   def odfGeneration(sub: DBSub): xml.NodeSeq = {
-    //    val subdata = SQLite.getSub(id).get
-    //    omiResult {
-    //      returnCode200 ++
-    //        requestId(sub.id) ++
-    //        odfMsgWrapper(odfGeneration(sub))
-    //    }
     sub.callback match {
       case Some(callback: String) => {
         omiResult {
@@ -212,27 +213,33 @@ object OMISubscription {
     }
   }
 
-  def pollSub(sub: DBSub): xml.NodeSeq = {
-    val interval = sub.interval
+  /**
+   * Help method for odfGeneration, also used for generating data in ODF-format
+   * 
+   * @param subId the Id of the subscription
+   * @return The data in ODF-format
+   */
+  private def pollSub(subId: DBSub): xml.NodeSeq = {
+    val interval = subId.interval
 
     if (interval == -2) { // not supported
       intervalNotSupported
     } else if (interval == -1) { //Event based subscription
-      val start = sub.startTime.getTime
+      val start = subId.startTime.getTime
       val currentTimeLong = date.getTime()
       val newTTL: Double = {
-        if (sub.ttl <= 0) sub.ttl
-        else ((sub.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
+        if (subId.ttl <= 0) subId.ttl
+        else ((subId.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
       }
 
-      SQLite.setSubStartTime(sub.id, new Timestamp(currentTimeLong), newTTL)
+      SQLite.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
 
       omiResult {
         returnCode200 ++
-          requestId(sub.id) ++
+          requestId(subId.id) ++
           odfMsgWrapper(
             <Objects>
-              { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, false) }
+              { createFromPaths(subId.paths, 1, subId.startTime, subId.interval, false) }
             </Objects>)
       }
 
@@ -240,24 +247,24 @@ object OMISubscription {
       intervalNotSupported
     } else if (interval > 0) { //Interval based subscription
 
-      val start = sub.startTime.getTime
+      val start = subId.startTime.getTime
       val currentTimeLong = date.getTime()
       //calculate new start time to be divisible by interval to keep the scheduling
       //also reduce ttl by the amount that startTime was changed
-      val intervalMillisLong = (sub.interval * 1000).toLong
+      val intervalMillisLong = (subId.interval * 1000).toLong
       val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //sub.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - sub.startTime.getTime) / intervalMillisLong).toLong)
-      val newTTL: Double = if (sub.ttl <= 0.0) sub.ttl else { //-1 and 0 have special meanings
-        ((sub.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
+      val newTTL: Double = if (subId.ttl <= 0.0) subId.ttl else { //-1 and 0 have special meanings
+        ((subId.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
       }
 
-      SQLite.setSubStartTime(sub.id, new Timestamp(newStartTimeLong), newTTL)
+      SQLite.setSubStartTime(subId.id, new Timestamp(newStartTimeLong), newTTL)
 
       omiResult {
         returnCode200 ++
-          requestId(sub.id) ++
+          requestId(subId.id) ++
           odfMsgWrapper(
             <Objects>
-              { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, false) }
+              { createFromPaths(subId.paths, 1, subId.startTime, subId.interval, false) }
             </Objects>)
       }
 
