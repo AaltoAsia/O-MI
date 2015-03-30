@@ -6,7 +6,7 @@ import database._
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.{ Future, Await }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
@@ -19,7 +19,7 @@ import akka.pattern.ask
 
 /* Object for generating responses for omi:cancel requests */
 object OMICancel {
-  implicit val timeout: Timeout = Timeout(Duration(6000, "ms")) // NOTE: ttl will timeout from OmiService
+  implicit val timeout: Timeout = Timeout( 10.seconds ) // NOTE: ttl will timeout from OmiService
 
   
   /**
@@ -45,7 +45,7 @@ object OMICancel {
       jobs.map {
         case Success(removeFuture) =>
           // NOTE: ttl will timeout from OmiService
-          result {
+          resultWrapper {
             Await.result(removeFuture, Duration.Inf) match {
               case true => returnCode200
               case false => returnCode(404, "Subscription with requestId not found")
@@ -53,9 +53,9 @@ object OMICancel {
             }
           }
         case Failure(n: NumberFormatException) =>
-          result { returnCode(400, "Invalid requestId") }
+          resultWrapper { returnCode(400, "Invalid requestId") }
         case _ =>
-          result { returnCode(501, "Internal server error") }
+          resultWrapper { returnCode(501, "Internal server error") }
       }
     }
   }
