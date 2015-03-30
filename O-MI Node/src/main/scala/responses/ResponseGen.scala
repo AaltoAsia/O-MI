@@ -63,12 +63,9 @@ trait ResponseGen[R <: OmiRequest] {
       } match {
         case Success(res : OmiResult) => res
 
-        case Failure(e: TimeoutException) => OmiResult(
-          returnCode(408, "TTL timeout, consider increasing TTL or is the server overloaded?")
-        )
-        case Failure(e) => OmiResult(
-          returnCode(501, "Internal server error: " + e.getMessage())
-        )
+        case Failure(e: TimeoutException) => ErrorResponse.ttlTimeOut
+
+        case Failure(e) => ErrorResponse.internalError(e)
       }
 
     omiResponse(result)

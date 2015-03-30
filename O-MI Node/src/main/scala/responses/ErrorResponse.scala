@@ -6,23 +6,29 @@ import parsing.Types._
 import xml._
 
 object ErrorResponse {
+
   def parseErrorResponse(parseError: ParseError): NodeSeq =
     parseErrorResponse(Seq(parseError))
-  def parseErrorResponse(parseErrors: Iterable[ParseError]): NodeSeq = {
+
+  def parseErrorResponse(parseErrors: Iterable[ParseError]): NodeSeq =
     omiResult(
       returnCode(400, parseErrors.mkString(", "))
     )
-  }
 
-  def ttlTimeOut = {
-    omiResult(
-      returnCode(500, "Could not produce response with in ttl.")
-    )
-  }
-  def notImplemented = {
+
+  val notImplemented =
     omiResult(
       returnCode(501, "Not implemented.")
     )
-  }
+  
+  val ttlTimeOut =
+    resultWrapper(
+      returnCode(500, "TTL timeout, consider increasing TTL or is the server overloaded?")
+    )
+  def internalError(e: Throwable) =
+    resultWrapper(
+      returnCode(501, "Internal server error: " + e.getMessage())
+    )
+
 
 }
