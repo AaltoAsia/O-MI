@@ -119,7 +119,7 @@ class SensorAgent(uri : String) extends AgentActor {
           // Object id
           val path = if(split(0) == "vtt") split.dropRight(2) ++  split.takeRight(2).reverse
           else split
-          println("Saving to path: " +"Objects/" + path.mkString("/"))
+          system.log.debug("Saving to path: " +"Objects/" + path.mkString("/"))
           OdfInfoItem(Seq("Objects") ++ path.toSeq, Seq(TimedValue(Some(new Timestamp(date.getTime)),value)))
         })
         InputPusher.handleInfoItems(data);
