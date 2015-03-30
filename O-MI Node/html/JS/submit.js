@@ -1,7 +1,6 @@
 /* IconSelect object */
 var iconSelect, objectUrl, omi, iconValue;
 
-var send = false;
 var page = 1; // Start at page 1
 
 var manager;
@@ -17,16 +16,16 @@ $(function() {
 	/* Click events for buttons */
 	$(document).on('click', '#object-button', getObjects);
 	$(document).on('click', '#request-send', sendRequest);
-	$(document).on('click', '#stop', function(){
-		send = false;
+	$(document).on('click', '#resend', function(){
+		console.log("Resending request.");
+		
+		$("#responseBox").html("");
+		refreshEditor("response", "responseBox");
+		
+		sendRequest();
 	});
-	$(document).on('click', '#poll', function(){
-		send = true;
-		if(omi){
-			if(omi.operation === "read" && getSubscribeLocal()){
-				getSub();
-			}
-		}
+	$(document).on('click', '#restart', function(){
+		restart();
 	});
 	$(document).on("mouseenter", ".help", function(){
 		$(this).children("p").show();
@@ -49,7 +48,6 @@ function loadThemes(){
 	var icons = [];
     icons.push({'iconFilePath':'Resources/icons/dark.svg', 'iconValue':'dark'});
     icons.push({'iconFilePath':'Resources/icons/light.svg', 'iconValue':'light'});
-    icons.push({'iconFilePath':'Resources/icons/white.svg', 'iconValue':'white'});
     icons.push({'iconFilePath':'Resources/icons/green.svg', 'iconValue':'green'});
     icons.push({'iconFilePath':'Resources/icons/test_repeat.svg', 'iconValue':'test_repeat'});
     iconSelect.refresh(icons);
@@ -131,21 +129,27 @@ function displayObjects(data, indent, url, listId) {
 				manager.addObject(id);
 				
 				// Get lower hierarchy values
-				//ajaxGet(indent + 1, url + "/" + id, "list-" + id);
+				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
 			});
 		});
 	} else {
 		// Subobjects/Infoitems
 		$(data).find("Object").each(function(){
 			var id = $($(this).find("id")[0]).text();
+			var sub = [];
 			
 			$(this).find("Object").each(function(){
 				var name = $(this).find("id").text();
 
 				//ajaxGet(indent + 1, url + "/" + name);
 				manager.find(id).addChild(id, name, listId);
+				sub.push(name);
 			});
 			addInfoItems(this, id, indent);
+			
+			for(var i = 0; i < sub.length; i++){
+				ajaxGet(indent + 1, url + "/" + sub[i], "list-" + id);
+			}
 		});
 	}
 }
@@ -170,22 +174,22 @@ function addInfoItems(parent, id) {
 /* Send the O-DF request using AJAX */
 function sendRequest()
 {
+	if(generating){
+		setTimeout(sendRequest, 500);
+	}
+	
 	// Server URL
 	var server = getServerUrl();
 
     var request = requestEditor.getValue(); // Get the request string
 
-    ajaxPost(server, request, getSubscribeLocal());
-}
-
-function getSubscribeLocal(){
-	return ($.isNumeric(omi.interval) && omi.callback.length === 0);
+    ajaxPost(server, request);
 }
 
 // Test
 var count = 0;
 
-function ajaxPost(server, request, subscribeLocal){
+function ajaxPost(server, request){
 	setInfo(1);
 	
 	$.ajax({
@@ -222,7 +226,7 @@ function getSub(){
 		console.log("Request: " + subRequest);
 		var server = getServerUrl();
 		
-		ajaxPost(server, subRequest, getSubscribeLocal());
+		ajaxPost(server, subRequest);
 	} else {
 		alert("No request id found!");
 	}
@@ -255,5 +259,15 @@ function handleError(jqXHR, errortype, exc) {
 	refreshEditor("response", "responseBox");
 	
 	console.log("Error sending to server: (" + exc +")");
+}
+
+function restart() {
+	$("#progressbar li").removeClass("active");
+	$("#page3").empty();
+	$("#page2").empty();
+	$("#page1").empty();
+	loadPages(1);
+	page = 1;
+	$("#progressbar li").eq(0).addClass("active");
 }
 

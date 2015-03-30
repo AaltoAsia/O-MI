@@ -4,15 +4,17 @@
 </div>
 
 <div class="help">
-	<p>The inteval (in seconds) for subscription requests</p>
+	<p>
+		The interval (in seconds) for subscription requests (interval -1 = answer subscriptions every time new values are published)
+	</p>
 	<label>Interval<input type="text" name="interval" id="interval" /></label>
 </div>
 
 <div class="help">
 	<p>
-		The timeframe (unix time) [begin][end] for the request.
+		The timeframe (ISO 8601 datetime: YYYY-MM-DD{T}HH:MM:SS) [begin][end] for querying old objects.
 		<br> E.g [2015-03-18T23:35:40] [2015-03-19T23:50:00]
-		<br> The response will contain objects that have timestamp between the given timeframe
+		<br> The response will contain Existing objects that have timestamp between the given timeframe
 	</p>
 	<label>
 		Timeframe

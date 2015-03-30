@@ -2,6 +2,9 @@
 function generateRequest(){
 	var operation = $("#icons").find(".selected").attr("alt"); //Get the selected operation from the IconSelect object
 	var ttl = $("#ttl").val(); 
+	if(ttl){
+		ttl = ttl.replace(/\s/g, '');
+	}
 	var interval = $("#interval").val();
 	var begin = $("#begin").val();
 	var end = $("#end").val();
@@ -10,7 +13,14 @@ function generateRequest(){
 	var callback = $("#callback").val();
 	var requestId = $("#request-id").val();
 	
-	omi = new Omi(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
+	if(!omi){
+		omi = new Omi();
+	} 
+	if(omi.operation && omi.operation != operation){
+		omi.saveOptions();
+	}
+	
+	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
 	
 	var request = omi.getRequest(checkedObjects());
 	
