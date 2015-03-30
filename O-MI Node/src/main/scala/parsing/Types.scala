@@ -1,9 +1,14 @@
 package parsing
 import java.sql.Timestamp
 
+/**
+ * Contains Types that are returned by the parsers and useful traits
+ * that can be used anywhere in the project.
+ */
 object Types {
+
   /**
-   * Trait for subscription like classes
+   * Trait for subscription like classes. Offers a common interface for subscription types.
    */
   trait SubLike {
     // Note: defs can be implemented also as val and lazy val
@@ -20,10 +25,21 @@ object Types {
     */
   abstract sealed trait ParseMsg
 
+  /**
+   * Trait that represents any Omi request. Provides some data that are common
+   * for all omi requests.
+   */
+  sealed trait OmiRequest {
+    def ttl: Double
+    def callback: Option[String]
+    def hasCallback = callback.isDefined
+  }
+
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */
   case class ParseError(msg: String) extends ParseMsg
+
   case class OneTimeRead( ttl: Double,
                           sensors: Seq[ OdfObject],
                           begin: Option[Timestamp] = None,
@@ -32,12 +48,14 @@ object Types {
                           oldest: Option[Int] = None,
                           callback: Option[String] = None,
                           requestId: Seq[ String] = Seq.empty
-                        ) extends ParseMsg
+                        ) extends ParseMsg with OmiRequest
+
   case class Write( ttl: Double,
                     sensors: Seq[ OdfObject],
                     callback: Option[String] = None,
                     requestId: Seq[ String] = Seq.empty
-                  ) extends ParseMsg
+                  ) extends ParseMsg with OmiRequest
+
   case class Subscription(  ttl: Double,
                             interval: Double,
                             sensors: Seq[ OdfObject],
@@ -47,14 +65,20 @@ object Types {
                             oldest: Option[Int] = None,
                             callback: Option[String] = None,
                             requestId: Seq[ String] = Seq.empty
-                            ) extends ParseMsg with SubLike
+                            ) extends ParseMsg with SubLike with OmiRequest
+
+  case class Cancel(  ttl: Double,
+                      requestId: Seq[ String]
+                      ) extends ParseMsg with OmiRequest {
+
+                        /** Note: Callbacks are not supported for Cancel */
+                        val callback = None
+                      }
+
   case class Result(  returnValue: String,
                       returnCode: String,
                       parseMsgOp: Option[ Seq[ OdfObject] ],
                       requestId: Seq[ String] = Seq.empty
-                    ) extends ParseMsg
-  case class Cancel(  ttl: Double,
-                      requestId: Seq[ String]
                     ) extends ParseMsg
 
 
@@ -66,10 +90,13 @@ object Types {
   case class TimedValue( time: Option[Timestamp], value: String)
 
   case class InfoItemMetaData(data: String)
+
+
   /** absract trait that reprasents an node in the O-DF either Object or InfoItem
     *
     */
   abstract sealed trait OdfNode
+
 
   /** case class that represents an InfoItem in the O-DF
    *  
@@ -82,6 +109,7 @@ object Types {
                           timedValues: Seq[ TimedValue],
                           metadata: Option[InfoItemMetaData] = None
                         ) extends OdfNode
+
   /** case class that represents an Object in the O-DF
    *  
    *  @param path path to the Object as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge")
@@ -105,6 +133,9 @@ object Types {
    */
   class Path(pathSeq: Seq[String]){
     import Path._
+    /**
+     * Removes extra path elements and holds the Path as Seq[String]
+     */
     val toSeq = {
       val normalized = pathSeq.filterNot(_ == "")
       normalized.toSeq
