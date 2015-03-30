@@ -57,8 +57,8 @@ class OMICancelGen(val subHandler: ActorRef
         }
       case Failure(n: NumberFormatException) =>
         resultWrapper { returnCode(400, "Invalid requestId") }
-      case _ =>
-        resultWrapper { returnCode(501, "Internal server error") }
+      case Failure(e) =>
+        ErrorResponse.internalError(e)
 
     }.reduceLeft(_ ++ _)
   }

@@ -92,28 +92,12 @@ object Read {
     }
   }
 
-  //takes the return value of OmiParser straight
-  def OMIReadResponse(read: OneTimeRead): xml.NodeSeq = {
-    if (read.requestId.isEmpty) {
-    omiOdfResult(
-        returnCode200 ++
-        requestIds(read.requestId) ++
-        odfMsgWrapper(odfGeneration(read))
-        )
-    }
+}
 
-    else {
-      val id = read.requestId.head.toInt
-      OMISubscription.OMISubscriptionResponse(id)
-      
-    }
-  }
-  /**
-   * helper function for generating whold O-DF xml.
-   * @param nodes in Objects node to be generated
-   * @return generated O-DF xml
-   */
-  def odfGeneration(read: OneTimeRead): xml.NodeSeq = {
+object ReadResponseGen extends ResponseGen[OneTimeRead] {
+
+  override def genMsg(read: OneTimeRead): OmiOdfMsg = {
+    OmiOdfMsg(
       <Objects>
         { 
           odfObjectGeneration(
@@ -124,6 +108,7 @@ object Read {
             read.oldest)
         }
       </Objects>
+    )
 
   }
 

@@ -125,16 +125,14 @@ trait OmiService extends HttpService {
                   log.debug(oneTimeRead.toString)
 
                   if (oneTimeRead.requestId.isEmpty) {
-                    val readResponse = Read.OMIReadResponse(oneTimeRead)
+                    ReadResponseGen.runRequest(oneTimeRead)
                   } else {
-                    Future {
-                      var responses = NodeSeq.Empty
-                      for (reqId <- oneTimeRead.requestId) {
-                        val data = OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
-                        responses = responses ++ data
-                      }
-                      responses
+                    var responses = NodeSeq.Empty
+                    for (reqId <- oneTimeRead.requestId) {
+                      val data = OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                      responses = responses ++ data
                     }
+                    responses
                   }
 
 

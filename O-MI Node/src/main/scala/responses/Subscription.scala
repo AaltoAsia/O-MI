@@ -97,7 +97,7 @@ object OMISubscription {
     SQLite.getSub(id) match {
       case None => {
         omiResult {
-          returnCode(400, "A subscription with this id has expired or doesn't exist") ++
+          returnCode(404, "A subscription with this id has expired or doesn't exist") ++
             requestId(id)
         }
       }
