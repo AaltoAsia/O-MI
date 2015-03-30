@@ -100,6 +100,7 @@ trait OmiService extends HttpService {
       }
     }
 
+  val CancelResponseGen = new OMICancelGen(subscriptionHandler)
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
@@ -123,10 +124,10 @@ trait OmiService extends HttpService {
                 case oneTimeRead: OneTimeRead =>
                   log.debug(oneTimeRead.toString)
 
-                  val response = Future{
-                    if (oneTimeRead.requestId.isEmpty) {
-                      Read.OMIReadResponse(oneTimeRead)
-                    } else {
+                  if (oneTimeRead.requestId.isEmpty) {
+                    val readResponse = Read.OMIReadResponse(oneTimeRead)
+                  } else {
+                    Future {
                       var responses = NodeSeq.Empty
                       for (reqId <- oneTimeRead.requestId) {
                         val data = OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
@@ -136,10 +137,6 @@ trait OmiService extends HttpService {
                     }
                   }
 
-                  val ttl = oneTimeRead.ttl.toDouble // FIXME: can fail, should be done in parsers!
-                  val timeout = if (ttl > 0) ttl seconds else Duration.Inf
-
-                  Await.result(response, timeout)
 
                 case write: Write => 
                   log.debug(write.toString) 
@@ -158,12 +155,8 @@ trait OmiService extends HttpService {
 
                 case cancel: Cancel =>
                   log.debug(cancel.toString)
-                  val response = Future{ OMICancel.OMICancelResponse(cancel, subscriptionHandler) }
 
-                  val ttl = cancel.ttl.toDouble // FIXME: can fail, should be done in parsers!
-                  val timeout = if (ttl > 0) ttl seconds else Duration.Inf
-
-                  Await.result(response, timeout)
+                  CancelResponseGen.runRequest(cancel)
 
                 case _ => log.warning("Unknown request")
                   returnStatus = 400

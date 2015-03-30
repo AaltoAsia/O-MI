@@ -30,7 +30,8 @@ object Common {
         </omi:result>
       }
 
-    /** Many <return> tags are allowed inside OmiResponse */
+    // TODO: better way for multiple OmiResults
+    /** Many <return> tags are allowed inside OmiResponse. This can be used to define them. */
     def ++(other: OmiResult) = {
       val ourxml = this.xml
       new OmiResult(Seq()){ // XXX: override hack

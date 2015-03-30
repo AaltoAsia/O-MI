@@ -17,9 +17,14 @@ import akka.util.Timeout
 import Timeout._
 import akka.pattern.ask
 
-/* Object for generating responses for omi:cancel requests */
-object OMICancel {
-  implicit val timeout: Timeout = Timeout( 10.seconds ) // NOTE: ttl will timeout from OmiService
+/** class for generating responses for omi:cancel requests.
+ * Should be instantiated once and use that one object for all requests.
+ * class needed for saving subHandler.
+ */
+class OMICancelGen(val subHandler: ActorRef
+                  ) extends ResponseGen[Cancel] {
+
+  implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
 
   
   /**
@@ -28,35 +33,33 @@ object OMICancel {
    * @param Cancel the cancel request given by the parser
    * @return ActorRef the subscription handler actor
    */
-  def OMICancelResponse(request: Cancel, subHandler: ActorRef): NodeSeq = {
+  override def genResult(request: Cancel) = {
 
-    var requestIds = request.requestId
+    val requestIds = request.requestId
 
-    omiResponse {
-      var nodes = NodeSeq.Empty
 
-      val jobs = requestIds.map { id =>
-        Try {
-          val parsedId = id.toInt
-          subHandler ? RemoveSubscription(parsedId)
-        }
-      }
-
-      jobs.map {
-        case Success(removeFuture) =>
-          // NOTE: ttl will timeout from OmiService
-          resultWrapper {
-            Await.result(removeFuture, Duration.Inf) match {
-              case true => returnCode200
-              case false => returnCode(404, "Subscription with requestId not found")
-              case _ => returnCode(501, "Internal server error")
-            }
-          }
-        case Failure(n: NumberFormatException) =>
-          resultWrapper { returnCode(400, "Invalid requestId") }
-        case _ =>
-          resultWrapper { returnCode(501, "Internal server error") }
+    val jobs = requestIds.map { id =>
+      Try {
+        val parsedId = id.toInt
+        subHandler ? RemoveSubscription(parsedId)
       }
     }
+
+    jobs.map {
+      case Success(removeFuture) =>
+        // NOTE: ttl will timeout from OmiService
+        resultWrapper {
+          Await.result(removeFuture, Duration.Inf) match {
+            case true => returnCode200
+            case false => returnCode(404, "Subscription with requestId not found")
+            case _ => returnCode(501, "Internal server error")
+          }
+        }
+      case Failure(n: NumberFormatException) =>
+        resultWrapper { returnCode(400, "Invalid requestId") }
+      case _ =>
+        resultWrapper { returnCode(501, "Internal server error") }
+
+    }.reduceLeft(_ ++ _)
   }
 }
