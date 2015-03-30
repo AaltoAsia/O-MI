@@ -100,6 +100,7 @@ trait OmiService extends HttpService {
       }
     }
 
+  // XXX: lazy maybe fixes bug
   lazy val CancelResponseGen = new OMICancelGen(subscriptionHandler)
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
