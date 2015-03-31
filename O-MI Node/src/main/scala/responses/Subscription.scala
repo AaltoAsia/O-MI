@@ -287,7 +287,7 @@ object OMISubscription {
       else {
         /*filter out elements that have the same value as previous entry*/
         SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
-          .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.forall(n => n.value == b.value)) a else a :+ b)
+          .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b)
       }
     }
 
