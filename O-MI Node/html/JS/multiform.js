@@ -21,7 +21,6 @@ $(document).on('click', '.next', function() {
 					'enabled by default. Do you want to disable automatic generation to prevent the page ' +
 					'from lagging?')){
 				$("#autorequest").prop("checked", false);
-				return;
 			}
 		}
 		updateRequest(1000); //from pages.js
