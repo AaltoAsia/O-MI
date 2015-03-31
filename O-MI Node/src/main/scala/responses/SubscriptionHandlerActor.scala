@@ -195,7 +195,6 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
     val checkTime = currentTimeMillis()
 
-    // FIXME: only dequeue and dequeueAll returns elements in priority order
     while (intervalSubs.headOption.map(_.nextRunTime.getTime <= checkTime).getOrElse(false)) {
 
       val TimedSub(sub, id, time) = intervalSubs.dequeue()
