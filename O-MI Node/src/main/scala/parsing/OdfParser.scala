@@ -18,7 +18,7 @@ import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.Schema
 import javax.xml.validation.SchemaFactory
 import javax.xml.validation.Validator
-
+import scala.xml.Utility.trim
 import org.xml.sax.SAXException;
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
@@ -81,7 +81,11 @@ object OdfParser extends Parser[OdfParseResult] {
 
     val subnodes = Map(
       "value" -> getChilds(node, "value", false, true, true))
-    val metaData = (node \ "MetaData").headOption.getOrElse("").toString 
+    val metaDataOpt = (node \ "MetaData").headOption
+    val metaData = if(metaDataOpt.nonEmpty)
+      trim(metaDataOpt.get).toString
+    else
+      ""
 
     val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
     if (errors.nonEmpty)

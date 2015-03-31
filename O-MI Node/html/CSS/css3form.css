@@ -9,11 +9,13 @@ html {
 }
 
 body {
+	height: 95%;
 	font-family: montserrat, arial, verdana;
 }
 /*form styles*/
 #msform {
 	width: 85em;
+	height: 90%;
 	margin: 1em auto;
 	text-align: center;
 	position: relative;
@@ -88,7 +90,7 @@ body {
 }
 /*progressbar*/
 #progressbar {
-	margin-bottom: 30px;
+	margin-bottom: 10px;
 	overflow: hidden;
 	/*CSS counters to number the steps*/
 	counter-reset: step;

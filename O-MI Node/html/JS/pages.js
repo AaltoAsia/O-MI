@@ -1,6 +1,7 @@
 var requestEditor, responseEditor;
 var timeout; //Used for request generation timeout
 var requestInterval = 1000; // Interval in milliseconds for automatic request generation
+var generating = false; // TODO: used as global variable, see submit.js
 
 /* Load pages from separate html files */
 function loadPages(page) {
@@ -16,21 +17,29 @@ function loadPages(page) {
 	
 	if (selector.is(':empty')) {
 		selector.load("pages/page" + page + ".html");
+		
+		if(page === 1){
+			setTimeout(getObjects, 500);
+		}
 	}
 	
 	// Load operation options (page 2)
 	if (page === 2) {
+		refreshEditor("request", "editRequest");
+
+		if($('#options').is(':empty')){
+			loadOptions();
+		}
 		$("#options").change(function(){
 			updateRequest(requestInterval);
 		});
 		$(document).on("click", "#autorequest", function(){
 			updateRequest(requestInterval);
 		});
-		
-		if($('#options').is(':empty')){
-			loadOptions();
-		}
 		$("#response .CodeMirror").remove();
+	}
+	if(page === 3){
+		refreshEditor("response", "responseBox");
 	}
 }
 
@@ -38,6 +47,8 @@ function loadPages(page) {
 function updateRequest(interval){
 	// If automatic update allowed by user
 	if($("#autorequest").prop("checked") || interval === 0){
+		generating = true;
+		
 		$("#editRequest .CodeMirror").hide();
 			
 		if(timeout){
@@ -47,6 +58,7 @@ function updateRequest(interval){
 		if(interval === 0){
 			generateRequest(); // From generate.js
 			refreshEditor("request", "editRequest");
+			generating = false;
 		} else {
 			var loadSelector = $("#edit .loading");
 			loadSelector.show();
@@ -57,6 +69,7 @@ function updateRequest(interval){
 				
 				loadSelector.hide();
 				$("#editRequest .CodeMirror").show();
+				generating = false;
 			}, interval);
 		}
 	}
@@ -123,4 +136,20 @@ function loadOptions() {
 	iconValue = $("#icons").find(".selected").attr("alt");
 	$("#options").empty();
 	$("#options").load("forms/" + iconValue + ".html");
+	
+	if(omi){
+		var save = omi.save[iconValue];
+		if(save){
+			setTimeout(function(){
+				if(save["ttl"]) $("#ttl").val(save["ttl"]); 
+				if(save["interval"]) $("#interval").val(save["interval"]);
+				if(save["begin"]) $("#begin").val(save["begin"]);
+				if(save["end"]) $("#end").val(save["end"]);
+				if(save["newest"]) $("#newest").val(save["newest"]);
+				if(save["oldest"]) $("#oldest").val(save["oldest"]);
+				if(save["callback"]) $("#callback").val(save["callback"]);
+				if(save["request-id"]) $("#request-id").val(save["request-id"]);
+			}, 100);
+		}
+	}
 }

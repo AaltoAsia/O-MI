@@ -1,20 +1,90 @@
 package responses
 
 import Common._
+import ErrorResponse.intervalNotSupported
 import parsing.Types._
 import parsing.Types.Path._
 import database._
 import scala.xml
-import scala.collection.mutable.Buffer
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.Map
+import scala.xml._
+import scala.collection.mutable.{Buffer, PriorityQueue}
+import scala.math.Ordering
+import akka.actor.ActorSystem
+import scala.concurrent.duration._
 
 import java.sql.Timestamp
 import java.util.Date
 
 object OMISubscription {
+   
   /**
-   * Creates a subscription in the database and generates the immediate answer to a subscription
+   * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
+   */
+  type SubTuple = (Int,Long)
+  
+  /**
+   * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
+   */
+  val subOrder:Ordering[SubTuple] = Ordering.by(_._2)
+    
+  /**
+   * PriorityQueue with subOrder ordering. value with earliest timeout is first.
+   * This val is lazy and is computed when needed for the first time
+   * 
+   * This queue contains only subs that have no callback address defined and have ttl > 0.
+   */
+  private lazy val subQueue: PriorityQueue[SubTuple] = {
+    val subArray = SQLite.getAllSubs(Some(false)).filter(n=>n.ttl > 0).map(n=>(n.id,n.ttlToMillis + n.startTime.getTime))
+    new PriorityQueue()(subOrder.reverse) ++ subArray
+  }
+  
+  /**
+   * method for getting current time without always having to call new Date() directly
+   * 
+   * @return new Date object
+   */
+  private def date = new Date()
+  
+  //bring the ActorSystem in scope
+  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val system = ActorSystem()
+  
+  //tuple with scheduled event and the time it executes
+  //used to keep only 1 schedule running, no need for multiple schedulers
+  var scheduledTimes:(akka.actor.Cancellable,Long) = null
+
+  /**
+   * This method is called by scheduler and when new sub is added to subQueue.
+   * 
+   * This method removes all subscriptions that have expired from the priority queue and
+   * schedules new checkSub method call.
+   */
+  def checkSubs: Unit = {
+
+    val currentTime = date.getTime
+    while(subQueue.headOption.exists(_._2<= currentTime)){
+      SQLite.removeSub(subQueue.dequeue()._1)
+    }
+    subQueue.headOption.foreach{ n =>
+      val nextRun = ((n._2) - currentTime)
+      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
+      if(scheduledTimes == null){
+        scheduledTimes = (cancellable, currentTime + nextRun)
+      } else if(scheduledTimes._2 > (currentTime+ nextRun)){
+        scheduledTimes._1.cancel()
+        scheduledTimes = (cancellable,currentTime + nextRun)
+
+      } 
+// Lines commented below break the program for some reason.
+//      else if((!scheduledTimes._1.isCancelled) && scheduledTimes._2 < (currentTime+nextRun)){
+//        cancellable.cancel()
+//      }
+    }
+  }
+  /**
+   * Creates a subscription in the database and generates the immediate answer to a subscription.
+   * If the subscription doesn't have callback and has finite ttl this method adds it in the subQueue
+   * priority queue.
    *
    * @param subscription an object of Subscription class which contains information about the request
    * @return A tuple with the first element containing the requestId and the second element
@@ -34,10 +104,14 @@ object OMISubscription {
               val ttlInt = subscription.ttl.toInt
               val interval = subscription.interval.toInt
               val callback = subscription.callback
-
+              val timeStamp = Some(new Timestamp(date.getTime()))
               requestIdInt = SQLite.saveSub(
-                new DBSub(paths.toArray, ttlInt, interval, callback, Some(new Timestamp(new Date().getTime()))))
-
+                new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
+                
+              if(callback.isEmpty && ttlInt > 0) {
+                subQueue.enqueue((requestIdInt,(ttlInt * 1000).toLong + timeStamp.get.getTime))
+                checkSubs
+              }
               requestIdInt
             }
         }
@@ -64,7 +138,7 @@ object OMISubscription {
   def getInfoItemPaths(objects: List[OdfObject]): Buffer[Path] = {
     var paths = Buffer[Path]()
     for (obj <- objects) {
-/*      //just an object has been subscribed to
+      /*      //just an object has been subscribed to
       if (obj.childs.nonEmpty == false && obj.sensors.nonEmpty == false) {
 
       }*/
@@ -86,11 +160,7 @@ object OMISubscription {
   }
 
 
-/*  def getObjectChildren(object: DBObject) {
-    
-  }*/
-
-	/**
+  /**
    * Subscription response
    *
    * @param Id of the subscription
@@ -98,7 +168,8 @@ object OMISubscription {
    */
 
   def OMISubscriptionResponse(id: Int): xml.NodeSeq = {
-    SQLite.getSub(id) match {
+    val sub = SQLite.getSub(id)
+    sub match {
       case None => {
         omiResult {
           returnCode(400, "A subscription with this id has expired or doesn't exist") ++
@@ -106,12 +177,8 @@ object OMISubscription {
         }
       }
 
-      case _ => {
-        omiResult {
-          returnCode200 ++
-            requestId(id) ++
-            odfMsgWrapper(odfGeneration(id))
-        }
+      case Some(subscription) => {
+        odfGeneration(subscription)
       }
     }
   }
@@ -124,55 +191,82 @@ object OMISubscription {
    * @return The data in ODF-format
    */
 
-  def odfGeneration(id: Int): xml.NodeSeq = {
-    val subdata = SQLite.getSub(id).get
-    subdata.callback match {
+  def odfGeneration(sub: DBSub): xml.NodeSeq = {
+    sub.callback match {
       case Some(callback: String) => {
-        <Objects>
-          { createFromPaths(subdata.paths, 1) }
-        </Objects>
+        omiResult {
+          returnCode200 ++
+            requestId(sub.id) ++
+            odfMsgWrapper(
+              <Objects>
+                { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, true) }
+              </Objects>)
+        }
+
       }
       case None => { //subscription polling
-        subdata.interval match {
-          case -2 => {
-            <Error> Interval not supported </Error>
-          }; // not supported
-          case -1 => { //Event based subscription
-            val start = subdata.startTime.getTime
-            val currentTimeLong = new Date().getTime()
-            val newTTL: Double = {
-              if (subdata.ttl <= 0) subdata.ttl
-              else ((subdata.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
-            }
-            
-            SQLite.setSubStartTime(subdata.id,new Timestamp(currentTimeLong), newTTL)
-
-            <Objects>
-              { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
-            </Objects>
-          }; //eventsub
-          case 0 => {
-            <Error> Interval not supported </Error>
-          }; //not supported
-          case _ => { //Interval based subscription
-            val start = subdata.startTime.getTime
-            val currentTimeLong = new Date().getTime()
-            //calculate new start time to be divisible by interval to keep the scheduling
-            //also reduce ttl by the amount that startTime was changed
-            val intervalMillisLong = (subdata.interval * 1000).toLong
-            val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //subdata.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - subdata.startTime.getTime) / intervalMillisLong).toLong)
-            val newTTL: Double = if (subdata.ttl <= 0.0) subdata.ttl else { //-1 and 0 have special meanings
-              ((subdata.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
-            }
-
-            SQLite.setSubStartTime(subdata.id, new Timestamp(newStartTimeLong), newTTL)
-
-            <Objects>
-              { createFromPathsNoCallback(subdata.paths, 1, subdata.startTime, subdata.interval) }
-            </Objects>
-          }
-        }
+        pollSub(sub)
       }
+    }
+  }
+
+  /**
+   * Help method for odfGeneration, also used for generating data in ODF-format
+   * 
+   * @param subId the Id of the subscription
+   * @return The data in ODF-format
+   */
+  private def pollSub(subId: DBSub): xml.NodeSeq = {
+    val interval = subId.interval
+
+    if (interval == -2) { // not supported
+      intervalNotSupported
+    } else if (interval == -1) { //Event based subscription
+      val start = subId.startTime.getTime
+      val currentTimeLong = date.getTime()
+      val newTTL: Double = {
+        if (subId.ttl <= 0) subId.ttl
+        else ((subId.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
+      }
+
+      SQLite.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
+
+      omiResult {
+        returnCode200 ++
+          requestId(subId.id) ++
+          odfMsgWrapper(
+            <Objects>
+              { createFromPaths(subId.paths, 1, subId.startTime, subId.interval, false) }
+            </Objects>)
+      }
+
+    } else if (interval == 0) {
+      intervalNotSupported
+    } else if (interval > 0) { //Interval based subscription
+
+      val start = subId.startTime.getTime
+      val currentTimeLong = date.getTime()
+      //calculate new start time to be divisible by interval to keep the scheduling
+      //also reduce ttl by the amount that startTime was changed
+      val intervalMillisLong = (subId.interval * 1000).toLong
+      val newStartTimeLong = start + (intervalMillisLong * ((currentTimeLong - start) / intervalMillisLong)) //sub.startTime.getTime + ((intervalMillisLong) * ((currentTimeLong - sub.startTime.getTime) / intervalMillisLong).toLong)
+      val newTTL: Double = if (subId.ttl <= 0.0) subId.ttl else { //-1 and 0 have special meanings
+        ((subId.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
+      }
+
+      SQLite.setSubStartTime(subId.id, new Timestamp(newStartTimeLong), newTTL)
+
+      omiResult {
+        returnCode200 ++
+          requestId(subId.id) ++
+          odfMsgWrapper(
+            <Objects>
+              { createFromPaths(subId.paths, 1, subId.startTime, subId.interval, false) }
+            </Objects>)
+      }
+
+    } else {
+      intervalNotSupported
     }
   }
 
@@ -201,14 +295,15 @@ object OMISubscription {
   }
 
   /**
-   * Creates the right hierarchy from the infoitems that have been subscribed to.
+   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false), get the values
+   * accumulated between the sub starttime and current time.
    *
    * @param The paths of the infoitems that have been subscribed to
    * @param Index of the current 'level'. Used because it recursively drills deeper.
    * @return The ODF hierarchy as XML
    */
 
-  def createFromPaths(paths: Array[Path], index: Int): xml.NodeSeq = {
+  def createFromPaths(paths: Array[Path], index: Int, starttime: Timestamp, interval: Double, hascallback: Boolean): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
     if (paths.isEmpty == false) {
@@ -219,17 +314,26 @@ object OMISubscription {
         var slicedpath = Path(path.toSeq.slice(0, index + 1))
         SQLite.get(slicedpath) match {
           case Some(sensor: database.DBSensor) => {
+
             node ++=
               <InfoItem name={ sensor.path.last }>
-                <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value>
+                {
+                  if (hascallback) { <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value> }
+                  else { getAllvalues(sensor, starttime, interval) }
+                }
+                {
+                  val metaData = SQLite.getMetaData(sensor.path)
+                  if (metaData.isEmpty == false) { XML.loadString(metaData.get) }
+                  else { xml.NodeSeq.Empty }
+                }
               </InfoItem>
-          }
+            }
 
           case Some(obj: database.DBObject) => {
             if (path(index) == previous(index)) {
               slices += path
             } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPaths(slices.toArray, index + 1) }</Object>
+              node ++= <Object><id>{ previous(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
               slices = Buffer[Path](path)
             }
 
@@ -243,7 +347,7 @@ object OMISubscription {
         //in case this is the last item in the array, we check if there are any non processed paths left
         if (path == paths.last) {
           if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1) }</Object>
+            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
           }
         }
       }
@@ -252,59 +356,5 @@ object OMISubscription {
 
     return node
   }
-
-  /**
-   * Creates the right hierarchy from the infoitems that have been subscribed to and no callback is given (one infoitem may have many values)
-   *
-   * @param The paths of the infoitems that have been subscribed to
-   * @param Index of the current 'level'. Used because it recursively drills deeper.
-   * @param Start time of the subscription
-   * @param Interval of the subscription
-   * @return The ODF hierarchy as XML
-   */
-
-  def createFromPathsNoCallback(paths: Array[Path], index: Int, starttime: Timestamp, interval: Double): xml.NodeSeq = {
-    var node: xml.NodeSeq = xml.NodeSeq.Empty
-
-    if (paths.isEmpty == false) {
-      var slices = Buffer[Path]()
-      var previous = paths.head
-
-      for (path <- paths) {
-        var slicedpath = Path(path.toSeq.slice(0, index + 1))
-        SQLite.get(slicedpath) match {
-          case Some(sensor: database.DBSensor) => {
-            node ++=
-              <InfoItem name={ sensor.path.last }>
-                { getAllvalues(sensor, starttime, interval) }
-              </InfoItem>
-          }
-
-          case Some(obj: database.DBObject) => {
-            if (path(index) == previous(index)) {
-              slices += path
-            } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPathsNoCallback(slices.toArray, index + 1, starttime, interval) }</Object>
-              slices = Buffer[Path](path)
-            }
-
-          }
-
-          case None => { node ++= <Error> Item not found in the database </Error> }
-        }
-
-        previous = path
-
-        if (path == paths.last) {
-          if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPathsNoCallback(slices.toArray, index + 1, starttime, interval) }</Object>
-          }
-        }
-      }
-
-    }
-
-    return node
-  }
-
 }
+

@@ -6,7 +6,7 @@ import parsing._
 import parsing.Types._
 import parsing.Types.Path._
 import java.sql.Timestamp
-
+import scala.xml.Utility.trim
 /*
  * Test class for testing parsing parsing package
  * tests e1   - e99 are for testing OmiParser general methods
@@ -77,8 +77,15 @@ class ParserTest extends Specification {
           Seq(
             TimedValue(
               Some(Timestamp.valueOf("2014-12-18 15:34:52")),
-              "30"
-            )
+              "30")
+            ),
+              Some(InfoItemMetaData(trim(
+	    <MetaData>
+		<InfoItem name="Units">
+		    <value type="xs:String">Litre</value>
+		</InfoItem>
+	    </MetaData>).toString
+              )
           )
         )
       )

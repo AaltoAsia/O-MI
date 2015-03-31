@@ -19,6 +19,7 @@ import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.Schema
 import javax.xml.validation.SchemaFactory
 import javax.xml.validation.Validator
+import scala.xml.Utility.trim
 
 import org.xml.sax.SAXException
 /** Parsing object for parsing messages with O-MI protocol*/
@@ -36,7 +37,7 @@ object OmiParser extends Parser[ParseMsg] {
    *  @return sequence of ParseResults, type ParseResult is defined in the OdfParser class.
    */
   private def parseODF(msg: Node) = {
-    OdfParser.parse(new PrettyPrinter(80, 2).format(msg))
+    OdfParser.parse(trim(msg).toString)
   }
 
   /**

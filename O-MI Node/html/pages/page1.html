@@ -9,11 +9,17 @@
 	
 	<div class="content">
 		<h2 class="fs-title">Query for objects</h2>
-		<h3 class="fs-subtitle">Specify the URL for getting objects</h3>
-		<input type="text" name="url" id="url-field" value="http://localhost:8080/Objects" />
+		<h3 class="fs-subtitle">Specify the URL for getting objects. (Objects from default URL queried automatically)</h3>
+		<div class="row">
+			<div class="col" style="width:60%">
+				<input type="text" name="url" id="url-field" value="http://localhost:8080/Objects" />
+			</div>
+			<div class="col">
+				<input type="button" name="objects" id="object-button" class="action-button highlight-button"
+				 value="Get Objects" />
+			</div>
+		</div>
 	  	<script>$("#url-field").val("http://" + window.location.host + "/Objects");</script>
-	  	<h3 class="fs-subtitle">Press the button to get the objects</h3>
-		<input type="button" name="objects" id="object-button" class="action-button highlight-button" value="Get Objects" />
 		<h3 class="fs-subtitle">You can Check All or Uncheck All checkboxes of the received objects</h3>
 		<div>
 			<input type="button" name="all" id="checkall" class="action-button" value="Check All" />

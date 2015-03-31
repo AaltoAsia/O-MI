@@ -5,5 +5,5 @@ function page1Verified(){
 
 /* Returns whether the input on the 2nd page is valid (numerical TTL) */
 function page2Verified(){
-	return ($.isNumeric($("#ttl").val())) && !($('#request').is(':empty'));
+	return ($.isNumeric($("#ttl").val().replace(/\s/g, ''))) && !($('#request').is(':empty'));
 }
