@@ -299,8 +299,8 @@ object OMISubscription {
   }
 
   /**
-   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false), get the values
-   * accumulated between the sub starttime and current time.
+   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false),
+   * get the values accumulated between the sub starttime and current time.
    *
    * @param The paths of the infoitems that have been subscribed to
    * @param Index of the current 'level'. Used because it recursively drills deeper.
@@ -337,7 +337,12 @@ object OMISubscription {
             if (path(index) == previous(index)) {
               slices += path
             } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
+              node ++= <Object>
+                         <id>
+                           { previous(index) }
+                         </id>
+                         { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                       </Object>
               slices = Buffer[Path](path)
             }
 
@@ -351,7 +356,12 @@ object OMISubscription {
         //in case this is the last item in the array, we check if there are any non processed paths left
         if (path == paths.last) {
           if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
+            node ++= <Object>
+                       <id>
+                         { slices.last.toSeq(index) }
+                       </id>
+                       { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                     </Object>
           }
         }
       }
@@ -360,5 +370,6 @@ object OMISubscription {
 
     return node
   }
+  checkSubs
 }
 
