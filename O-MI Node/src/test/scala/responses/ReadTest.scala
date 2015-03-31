@@ -70,7 +70,7 @@ class ReadTest extends Specification with BeforeAll {
         lazy val simpletestfile = Source.fromFile("src/test/resources/responses/read/SimpleXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -80,7 +80,7 @@ class ReadTest extends Specification with BeforeAll {
         lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/read/IntervalXMLTest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         resultXML should be equalTo(trim(correctxmlreturn))
         OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -91,7 +91,7 @@ class ReadTest extends Specification with BeforeAll {
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/PlainRightRequest.xml")
 
         val parserlist = OmiParser.parse(plainxml)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
         //println(resultXML)
 
         resultXML should be equalTo(trim(correctxmlreturn))
@@ -102,7 +102,7 @@ class ReadTest extends Specification with BeforeAll {
         lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
         
         //returnCode should not be 200
         resultXML should be equalTo(trim(correctxmlreturn))
@@ -113,7 +113,7 @@ class ReadTest extends Specification with BeforeAll {
         lazy val metarequestxml = Source.fromFile("src/test/resources/responses/read/MetadataRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/MetadataCorrectReturn.xml")
         val parserlist = OmiParser.parse(metarequestxml)
-        val resultXML = trim(Read.OMIReadResponse(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
 
         resultXML should be equalTo(trim(correctxmlreturn))
     }
