@@ -14,17 +14,28 @@ import java.sql.Timestamp
 import slick.jdbc.StaticQuery
 
 import parsing.Types._
+/**
+ * Database object available everywhere in the code. To be used during actual runtime.
+ */
 object SQLite extends DataBase{
   dbPath = "./sensorDB.sqlite3"
   db = Database.forConfig("sqlite-conf")
   initialize()
 }
+/**
+ * Database class to be used during tests instead of object SQLite to prevent
+ * problems caused by overlapping test data.
+ * @param name name of the test database. Data will be stored to file named [name].sqlite3 
+ */
 class testDB(name:String) extends DataBase
 {
   dbPath = "./"+name+".sqlite3"
   db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
   initialize()
 }
+/**
+ * base Database trait used in object SQLite and class testDB 
+ */
 trait DataBase {
   protected var db:Database = null
   implicit val pathColumnType = MappedColumnType.base[Path, String](
@@ -52,6 +63,9 @@ trait DataBase {
 
   private def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
     io => Await.ready(db.run(io), Duration.Inf)
+  /**
+  * Initializing method, creates the file and tables. 
+  */
   protected def initialize(){
     if(!new File(dbPath).exists())
     {
@@ -64,6 +78,11 @@ trait DataBase {
     runSync(setup)  
     }
   }
+   /**
+    * Metohod to completely remove database. Removes the actual database file.
+    * Should not be called on object SQLite
+    * Should be called after tests when using a database created from the testDB class
+    */
    def destroy(){
      db.close()
      new File(dbPath).delete()
@@ -73,7 +92,7 @@ trait DataBase {
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
    *  Does not remove excess rows if path is set ot buffer
    *
-   *  @param data data is of type DBSensor
+   *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return boolean whether added data was new
    */
   def set(data: DBSensor) =
@@ -106,7 +125,7 @@ trait DataBase {
   /**
    * Used to store metadata for a sensor to database
    * @param path path to sensor
-   * @param data metadata to be stored as string
+   * @param data metadata to be stored as string e.g a XML block as string
    * 
    */
   def setMetaData(path:Path,data:String)
@@ -180,7 +199,7 @@ trait DataBase {
     historyLength = newLength
   }
   /**
-   * Remove is used to remove sensor given its path. Removes all unused objects along the path too.
+   * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
    *
    *
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
@@ -289,6 +308,7 @@ trait DataBase {
    * removes the path from buffering table or dimishes the count by one
    * also clear all buffered data if count is only 1
    * leaves only historyLength amount of data if count is only 1
+   * 
    * @param path path as Path object
    */
   def stopBuffering(path: Path):Boolean= {
@@ -374,7 +394,7 @@ trait DataBase {
    *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
    * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
    * the end.
-   * All parameters except path are optional, given only path returns all values in DB for that path
+   * All parameters except path are optional, given only path returns all values in the database for that path
    *
    * @param path path as Path object
    * @param start optional start Timestamp
@@ -419,7 +439,7 @@ trait DataBase {
 
   /**
    * Empties all the data from the database
-   *
+   * 
    */
   def clearDB() = {
     runWait(DBIO.seq(
@@ -516,6 +536,7 @@ trait DataBase {
    * getAllSubs is used to search the database for subscription information
    * Can also filter subscriptions based on whether it has a callback address
    * @param hasCallBack optional boolean value to filter results based on having callback address
+   * 
    * None -> all subscriptions
    * Some(True) -> only with callback
    * Some(False) -> only without callback
@@ -544,6 +565,13 @@ trait DataBase {
       }
       res
     }
+  /**
+   * Method to modify start time and ttl values of a subscription based on id
+   * 
+   * @param id id number of the subscription to be modified
+   * @param newTime time value to be set as start time
+   * @param newTTL new TTL value to be set
+   */
   def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double)
   {
    runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
