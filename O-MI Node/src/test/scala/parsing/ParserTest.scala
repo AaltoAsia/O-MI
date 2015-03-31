@@ -445,7 +445,7 @@ class ParserTest extends Specification {
   </omi:read>
 </omi:omiEnvelope>
 """)
-    temp.head should be equalTo (ParseError("No Objects to parse"))
+    temp should be equalTo (Seq.empty)
 
   }
 
@@ -523,8 +523,7 @@ class ParserTest extends Specification {
       Some(Timestamp.valueOf("2014-12-18 15:34:52")),
       Some(5),
       Some(3),
-      Some("http://testing.test"),
-      Seq("123456","456789")
+      Some("http://testing.test")
       )))
   }
   def e401 = {
