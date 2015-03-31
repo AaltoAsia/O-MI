@@ -157,7 +157,7 @@ class SensorBoot extends Bootable {
     configPath = pathToConfig
     val lines = scala.io.Source.fromFile(configPath).getLines().toArray
     var uri = lines.head
-    agentActor = system.actorOf(SensorAgent.props(uri), "Sensor-Agent")    
+    agentActor = system.actorOf(SensorAgent.props(uri), SensorAgent.getClass.getName)    
     return true
   }
   override def shutdown() : Unit = {}
