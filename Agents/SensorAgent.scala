@@ -110,7 +110,7 @@ class SensorAgent(uri : String) extends AgentActor {
       system.log.debug("Data gained. Saving to Database.")
       if (!list.isEmpty) {
         // InfoItems filtered out
-        SQLite.setMany(list.filter(_._1.split('_').length > 3).map(item => {
+        val data = list.filter(_._1.split('_').length > 3).map(item => {
           val sensor: String = item._1
           val value: String = item._2 // Currently as string, convert to double?
           // Split name from underlines
@@ -119,9 +119,11 @@ class SensorAgent(uri : String) extends AgentActor {
           // Object id
           val path = if(split(0) == "vtt") split.dropRight(2) ++  split.takeRight(2).reverse
           else split
-          println("Saving to path: " +"Objects/" + path.mkString("/"))
-          ("Objects/" + path.mkString("/"), TimedValue(Some(new Timestamp(date.getTime)),value))
-        }))
+          system.log.debug("Saving to path: " +"Objects/" + path.mkString("/"))
+          OdfInfoItem(Seq("Objects") ++ path.toSeq, Seq(TimedValue(Some(new Timestamp(date.getTime)),value)))
+        })
+        InputPusher.handleInfoItems(data);
+        //InputPusher.handlePathValuePairs(data);
       }
       system.log.debug("Successfully saved to Database.")
     }
