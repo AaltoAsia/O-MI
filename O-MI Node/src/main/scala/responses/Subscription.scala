@@ -70,15 +70,17 @@ object OMISubscription {
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
       if(scheduledTimes == null){
         scheduledTimes = (cancellable, currentTime + nextRun)
-      } else if(scheduledTimes._2 > (currentTime+ nextRun)){
+      } else if(scheduledTimes._1.isCancelled){
+        scheduledTimes = (cancellable, currentTime + nextRun)
+      }else if(scheduledTimes._2 > (currentTime+ nextRun)){
         scheduledTimes._1.cancel()
         scheduledTimes = (cancellable,currentTime + nextRun)
 
-      } 
+      }
 // Lines commented below break the program for some reason.
-//      else if((!scheduledTimes._1.isCancelled) && scheduledTimes._2 < (currentTime+nextRun)){
-//        cancellable.cancel()
-//      }
+      else if((scheduledTimes._2 > currentTime) && scheduledTimes._2 < (currentTime+nextRun)){
+        cancellable.cancel()
+      }
     }
   }
   /**
