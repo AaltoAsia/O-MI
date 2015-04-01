@@ -253,10 +253,10 @@ class SubscriptionTest extends Specification with BeforeAll {
     "Event based subscription should return new values only when the value changes" in {
       val testTime = new Date().getTime - 10000
       val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
-      (0 to 10).foreach(n =>
-        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), if (n == 5) 1.toString() else 0.toString(), new java.sql.Timestamp(testTime - 5000 + n * 900))))
+      (0 to 10).zip(Array(1,1,1,2,3,3,4,5,5,6,7)).foreach(n =>
+        SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n._2.toString(), new java.sql.Timestamp(testTime + n._1 * 900))))
       val test = OMISubscription.OMISubscriptionResponse(testSub)
-      test.\\("value").length === 3
+      test.\\("value").length === 7
       val test2 = OMISubscription.OMISubscriptionResponse(testSub)
       test2.\\("value").length === 0
       SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
