@@ -7,7 +7,7 @@ import parsing.Types.Path._
 import database._
 import scala.xml
 import scala.xml._
-import scala.collection.mutable.{Buffer, PriorityQueue}
+import scala.collection.mutable.{ Buffer, PriorityQueue }
 import scala.math.Ordering
 import akka.actor.ActorSystem
 import scala.concurrent.duration._
@@ -16,69 +16,66 @@ import java.sql.Timestamp
 import java.util.Date
 
 object OMISubscription {
-   
+
   /**
    * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
-  type SubTuple = (Int,Long)
-  
+  type SubTuple = (Int, Long)
+
   /**
    * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
    */
-  val subOrder:Ordering[SubTuple] = Ordering.by(_._2)
-    
+  val subOrder: Ordering[SubTuple] = Ordering.by(_._2)
+
   /**
    * PriorityQueue with subOrder ordering. value with earliest timeout is first.
    * This val is lazy and is computed when needed for the first time
-   * 
+   *
    * This queue contains only subs that have no callback address defined and have ttl > 0.
    */
   private lazy val subQueue: PriorityQueue[SubTuple] = {
-    val subArray = SQLite.getAllSubs(Some(false)).filter(n=>n.ttl > 0).map(n=>(n.id,n.ttlToMillis + n.startTime.getTime))
+    val subArray = SQLite.getAllSubs(Some(false)).filter(n => n.ttl > 0).map(n => (n.id, n.ttlToMillis + n.startTime.getTime))
     new PriorityQueue()(subOrder.reverse) ++ subArray
   }
-  
+
   /**
    * method for getting current time without always having to call new Date() directly
-   * 
+   *
    * @return new Date object
    */
   private def date = new Date()
-  
+
   //bring the ActorSystem in scope
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system = ActorSystem()
-  
+
   //tuple with scheduled event and the time it executes
   //used to keep only 1 schedule running, no need for multiple schedulers
-  var scheduledTimes:(akka.actor.Cancellable,Long) = null
+  var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
 
   /**
    * This method is called by scheduler and when new sub is added to subQueue.
-   * 
+   *
    * This method removes all subscriptions that have expired from the priority queue and
    * schedules new checkSub method call.
    */
   def checkSubs: Unit = {
-
     val currentTime = date.getTime
-    while(subQueue.headOption.exists(_._2<= currentTime)){
+    while (subQueue.headOption.exists(_._2 <= currentTime)) {
       SQLite.removeSub(subQueue.dequeue()._1)
     }
-    subQueue.headOption.foreach{ n =>
+    subQueue.headOption.foreach { n =>
       val nextRun = ((n._2) - currentTime)
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
-      if(scheduledTimes == null){
-        scheduledTimes = (cancellable, currentTime + nextRun)
-      } else if(scheduledTimes._2 > (currentTime+ nextRun)){
-        scheduledTimes._1.cancel()
-        scheduledTimes = (cancellable,currentTime + nextRun)
-
-      } 
-// Lines commented below break the program for some reason.
-//      else if((!scheduledTimes._1.isCancelled) && scheduledTimes._2 < (currentTime+nextRun)){
-//        cancellable.cancel()
-//      }
+      if (scheduledTimes.forall(_._1.isCancelled)) {
+        scheduledTimes = Some((cancellable, currentTime + nextRun))
+      } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {
+        scheduledTimes.foreach(_._1.cancel())
+        scheduledTimes=Some((cancellable,currentTime+nextRun))
+      } // Lines commented below break the program for some reason.
+      else if (scheduledTimes.exists(n =>((n._2 > currentTime) && (n._2 < (currentTime + nextRun))))) {
+        cancellable.cancel()
+      }
     }
   }
   /**
@@ -107,9 +104,9 @@ object OMISubscription {
               val timeStamp = Some(new Timestamp(date.getTime()))
               requestIdInt = SQLite.saveSub(
                 new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
-                
-              if(callback.isEmpty && ttlInt > 0) {
-                subQueue.enqueue((requestIdInt,(ttlInt * 1000).toLong + timeStamp.get.getTime))
+
+              if (callback.isEmpty && ttlInt > 0) {
+                subQueue.enqueue((requestIdInt, (ttlInt * 1000).toLong + timeStamp.get.getTime))
                 checkSubs
               }
               requestIdInt
@@ -158,7 +155,6 @@ object OMISubscription {
     }
     return paths
   }
-
 
   /**
    * Subscription response
@@ -212,7 +208,7 @@ object OMISubscription {
 
   /**
    * Help method for odfGeneration, also used for generating data in ODF-format
-   * 
+   *
    * @param subId the Id of the subscription
    * @return The data in ODF-format
    */
@@ -284,7 +280,11 @@ object OMISubscription {
 
     val infoitemvaluelist = {
       if (interval != -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
-      else SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
+      else {
+        /*filter out elements that have the same value as previous entry*/
+        SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
+          .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b)
+      }
     }
 
     for (innersensor <- infoitemvaluelist) {
@@ -295,8 +295,8 @@ object OMISubscription {
   }
 
   /**
-   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false), get the values
-   * accumulated between the sub starttime and current time.
+   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false),
+   * get the values accumulated between the sub starttime and current time.
    *
    * @param The paths of the infoitems that have been subscribed to
    * @param Index of the current 'level'. Used because it recursively drills deeper.
@@ -327,13 +327,18 @@ object OMISubscription {
                   else { xml.NodeSeq.Empty }
                 }
               </InfoItem>
-            }
+          }
 
           case Some(obj: database.DBObject) => {
             if (path(index) == previous(index)) {
               slices += path
             } else {
-              node ++= <Object><id>{ previous(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
+              node ++= <Object>
+                         <id>
+                           { previous(index) }
+                         </id>
+                         { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                       </Object>
               slices = Buffer[Path](path)
             }
 
@@ -347,7 +352,12 @@ object OMISubscription {
         //in case this is the last item in the array, we check if there are any non processed paths left
         if (path == paths.last) {
           if (slices.isEmpty == false) {
-            node ++= <Object><id>{ slices.last.toSeq(index) }</id>{ createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }</Object>
+            node ++= <Object>
+                       <id>
+                         { slices.last.toSeq(index) }
+                       </id>
+                       { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                     </Object>
           }
         }
       }
@@ -356,5 +366,6 @@ object OMISubscription {
 
     return node
   }
+  checkSubs
 }
 
