@@ -195,7 +195,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
     val checkTime = currentTimeMillis()
 
-    while (intervalSubs.headOption.map(_.nextRunTime.getTime <= checkTime).getOrElse(false)) {
+    while (intervalSubs.headOption.exists(_.nextRunTime.getTime <= checkTime)) {
 
       val TimedSub(sub, id, time) = intervalSubs.dequeue()
 
@@ -250,7 +250,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     }
 
     // Schedule for next
-    intervalSubs.headOption map { next =>
+    intervalSubs.headOption foreach { next =>
 
       val nextRun = next.nextRunTime.getTime - currentTimeMillis()
       system.scheduler.scheduleOnce(nextRun.milliseconds, self, HandleIntervals)

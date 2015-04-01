@@ -51,7 +51,7 @@ object OMISubscription {
 
   //tuple with scheduled event and the time it executes
   //used to keep only 1 schedule running, no need for multiple schedulers
-  var scheduledTimes: (akka.actor.Cancellable, Long) = null
+  var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
 
   /**
    * This method is called by scheduler and when new sub is added to subQueue.
@@ -60,7 +60,6 @@ object OMISubscription {
    * schedules new checkSub method call.
    */
   def checkSubs: Unit = {
-
     val currentTime = date.getTime
     while (subQueue.headOption.exists(_._2 <= currentTime)) {
       SQLite.removeSub(subQueue.dequeue()._1)
@@ -68,16 +67,13 @@ object OMISubscription {
     subQueue.headOption.foreach { n =>
       val nextRun = ((n._2) - currentTime)
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
-      if (scheduledTimes == null) {
-        scheduledTimes = (cancellable, currentTime + nextRun)
-      } else if (scheduledTimes._1.isCancelled) {
-        scheduledTimes = (cancellable, currentTime + nextRun)
-      } else if (scheduledTimes._2 > (currentTime + nextRun)) {
-        scheduledTimes._1.cancel()
-        scheduledTimes = (cancellable, currentTime + nextRun)
-
+      if (scheduledTimes.forall(_._1.isCancelled)) {
+        scheduledTimes = Some((cancellable, currentTime + nextRun))
+      } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {
+        scheduledTimes.foreach(_._1.cancel())
+        scheduledTimes=Some((cancellable,currentTime+nextRun))
       } // Lines commented below break the program for some reason.
-      else if ((scheduledTimes._2 > currentTime) && scheduledTimes._2 < (currentTime + nextRun)) {
+      else if (scheduledTimes.exists(n =>((n._2 > currentTime) && (n._2 < (currentTime + nextRun))))) {
         cancellable.cancel()
       }
     }
