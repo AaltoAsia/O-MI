@@ -3,6 +3,14 @@ var timeout; //Used for request generation timeout
 var requestInterval = 1000; // Interval in milliseconds for automatic request generation
 var generating = false; // TODO: used as global variable, see submit.js
 
+$(document).on("click", "#autorequest", function(){
+	updateRequest(requestInterval);
+});
+
+$(document).on("click", "#generate", function(){
+	updateRequest(requestInterval);
+});
+
 /* Load pages from separate html files */
 function loadPages(page) {
 	$(".page").addClass("behind");
@@ -31,9 +39,6 @@ function loadPages(page) {
 			loadOptions();
 		}
 		$("#options").change(function(){
-			updateRequest(requestInterval);
-		});
-		$(document).on("click", "#autorequest", function(){
 			updateRequest(requestInterval);
 		});
 		$("#response .CodeMirror").remove();
