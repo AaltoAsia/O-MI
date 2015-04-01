@@ -6,34 +6,26 @@
 function writeXML(items, omi){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
-	writer.formatting = 'indented';
-    writer.indentChar = ' ';
-    writer.indentation = 2;
+	setWriterSettings(writer);
 	
 	if(omi.operation === 'poll'){
-		return writeSubscribe(omi.requestId, items, omi.ttl);
-	} 
-    
+		return writePoll(writer, omi.ttl, omi.requestId);
+	}
+	
 	writer.writeStartDocument();
-	//(first line)
-	writer.writeStartElement('omi:omiEnvelope');
-	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
-	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
-	writer.writeAttributeString('version', '1.0');
 	
-	if(omi.ttl) writer.writeAttributeString('ttl', omi.ttl);
-	
+	writeOmiInfo(writer, omi.ttl);
+
 	//(second line)
 	writer.writeStartElement('omi:'+ omi.operation);
 	
 	if(omi.operation === 'read'){
 		writeObjects(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
 	} else if (omi.operation === 'cancel'){
-		writeCancel(writer, omi.requestId);
+		writeRequestId(writer, omi.requestId);
 	} else if(omi.operation === 'write'){
 		writeObjects(writer, items);
-	}
+	} 
 	
 	writer.writeEndElement();
     writer.writeEndDocument();
@@ -142,7 +134,7 @@ function writeObject(object, writer){
 	writer.writeEndElement();
 }
 
-function writeCancel(writer, requestId) {
+function writeRequestId(writer, requestId) {
 	writer.writeStartElement('omi:requestId');
 	writer.writeString(requestId);
 	writer.writeEndElement();
@@ -151,19 +143,12 @@ function writeCancel(writer, requestId) {
 function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, oldest, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
-	writer.formatting = 'indented';
-    writer.indentChar = ' ';
-    writer.indentation = 2;
+	
+	setWriterSettings(writer);
 	
 	writer.writeStartDocument();
 	//(first line)
-	writer.writeStartElement('omi:omiEnvelope');
-	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
-	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
-	writer.writeAttributeString('version', '1.0');
-	
-	if(ttl) writer.writeAttributeString('ttl', ttl);
+	writeOmiInfo(writer, ttl);
 	
 	//(second line)
 	writer.writeStartElement('omi:read');
@@ -172,19 +157,16 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	if(begin){
-		console.log(new Date(begin).getTime());
 		if(new Date(begin).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
 		}
 	}
 	if(end){
-		console.log(new Date(end).getTime());
 		if(new Date(end).getTime() > 0){
 			writer.writeAttributeString('end', end);
 		}
 	}
-	console.log("Newest: " + newest);
-	console.log("Oldest: " + oldest);
+
 	if(newest){
 		if($.isNumeric(newest)){
 			writer.writeAttributeString('newest', newest);
@@ -199,12 +181,10 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
 	//(third line)
-	writer.writeStartElement('omi:requestId');
-	writer.writeString(requestId);
-	writer.writeEndElement();
-	writer.writeStartElement('omi:msg');
-	writer.writeAttributeString( 'xmlns', 'omi.xsd');
-	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
+	writeRequestId(writer, requestId);
+	
+	writeMsg(writer);
+	
 	writer.writeStartElement('Objects');
 	//Payload
 	var ids = [];
@@ -229,4 +209,30 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
     var request = writer.flush();
 
     return request;
+}
+
+function writePoll(writer, ttl, requestId) {
+	writer.writeStartDocument();
+	writeOmiInfo(writer, ttl);
+	writer.writeStartElement('omi:read');
+	writeRequestId(writer, requestId);
+	writer.writeEndDocument();
+	
+	return writer.flush();
+}
+
+function writeOmiInfo(writer, ttl) {
+	writer.writeStartElement('omi:omiEnvelope');
+	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+	writer.writeAttributeString('xmlns:omi', 'omi.xsd' );
+	writer.writeAttributeString('xsi:schemaLocation', 'omi.xsd omi.xsd');
+	writer.writeAttributeString('version', '1.0');
+	
+	if(ttl) writer.writeAttributeString('ttl', ttl);
+}
+
+function setWriterSettings(writer) {
+	writer.formatting = 'indented';
+    writer.indentChar = ' ';
+    writer.indentation = 2;
 }

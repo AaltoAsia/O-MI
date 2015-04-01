@@ -108,17 +108,20 @@ object OmiParser extends Parser[ParseMsg] {
           "msgformat" -> getParameter(node, "msgformat"),
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
-          "msg" -> getChild(node, "msg"),
+          "msg" -> getChild(node, "msg", true, true),
           "requestId" -> getChild(node, "requestId", true, true))
 
-        if (subnodes("msg").isRight)
+        if (subnodes("msg").isRight && subnodes("msg").right.get.nonEmpty)
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
 
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
           
-        val odf = parseODF(subnodes("Objects").right.get.head)
+        val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
+            parseODF(subnodes("Objects").right.get.head)
+          else
+            Seq.empty
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
@@ -153,73 +156,89 @@ object OmiParser extends Parser[ParseMsg] {
           "oldest" -> getParameter(node, "oldest", true),
           "callback" -> getParameter(node, "callback", true))
         val subnodes = Map(
-          "msg" -> getChild(node, "msg"),
+          "msg" -> getChild(node, "msg",true,true),
           "requestId" -> getChild(node, "requestId", true, true)
         )
-
-        if (subnodes("msg").isRight){
-          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
-        }
-
-        val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
-        
-        if (errors.nonEmpty)
-          return errors.toSeq
-
-        val odf = parseODF(subnodes("Objects").right.get.head)
-        val left = odf.filter(_.isLeft)
-        val right = odf.filter(_.isRight)
-
-        val begin = parameters("begin").right.get match {
-          case "" => None
-          case str => Some(new Timestamp(dateFormat.parse(str).getTime))
-        }
-        val end = parameters("end").right.get match {
-          case "" => None
-          case str => Some(new Timestamp(dateFormat.parse(str).getTime))
-        }
-        val newest = parameters("newest").right.get match {
-          case "" => None
-          case str => Some(str.toInt)
-        }
-        val oldest = parameters("oldest").right.get match {
-          case "" => None
-          case str => Some(str.toInt)
-        }
-        val callback = parameters("callback").right.get match {
-          case "" => None
-          case str => Some(str)
-        }
-
-        if (left.isEmpty && !right.isEmpty) {
-          if (parameters("interval").right.get.isEmpty) {
-            Seq(OneTimeRead(ttl,
-              right.map(_.right.get),
-              begin,
-              end,
-              newest,
-              oldest,
-              callback,
-              subnodes("requestId").right.get.map {
-                id => id.text
-              }))
-          } else {
-            Seq(Subscription(ttl,
-              parameters("interval").right.get.toDouble,
-              right.map(_.right.get),
-              begin,
-              end,
-              newest,
-              oldest,
-              callback,
-              subnodes("requestId").right.get.map {
-                id => id.text
-              }))
+        if(subnodes("msg").isRight && 
+          subnodes("msg").right.get.nonEmpty
+        ) {
+          if(subnodes("msg").isRight &&
+            subnodes("msg").right.get.nonEmpty &&
+            subnodes("requestId").isRight &&
+            subnodes("requestId").right.get.isEmpty
+          ){
+            subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
           }
-        } else if (!left.isEmpty) {
-          left.map(_.left.get)
-        } else { Seq(ParseError("No Objects to parse")) }
 
+          val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
+          
+          if (errors.nonEmpty)
+            return errors.toSeq
+
+          val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
+              parseODF(subnodes("Objects").right.get.head)
+            else
+              Seq.empty
+          val left = odf.filter(_.isLeft)
+          val right = odf.filter(_.isRight)
+
+          val begin = parameters("begin").right.get match {
+            case "" => None
+            case str => Some(new Timestamp(dateFormat.parse(str).getTime))
+          }
+          val end = parameters("end").right.get match {
+            case "" => None
+            case str => Some(new Timestamp(dateFormat.parse(str).getTime))
+          }
+          val newest = parameters("newest").right.get match {
+            case "" => None
+            case str => Some(str.toInt)
+          }
+          val oldest = parameters("oldest").right.get match {
+            case "" => None
+            case str => Some(str.toInt)
+          }
+          val callback = parameters("callback").right.get match {
+            case "" => None
+            case str => Some(str)
+          }
+
+          if (left.isEmpty && !right.isEmpty) {
+            if (parameters("interval").right.get.isEmpty) {
+              Seq(OneTimeRead(ttl,
+                right.map(_.right.get),
+                begin,
+                end,
+                newest,
+                oldest,
+                callback,
+                subnodes("requestId").right.get.map {
+                  id => id.text
+                }))
+            } else {
+              Seq(Subscription(ttl,
+                parameters("interval").right.get.toDouble,
+                right.map(_.right.get),
+                begin,
+                end,
+                newest,
+                oldest,
+                callback,
+                subnodes("requestId").right.get.map {
+                  id => id.text
+                }))
+            }
+          } else if (!left.isEmpty) {
+            left.map(_.left.get)
+          } else { Seq.empty }
+        } else {
+              Seq(OneTimeRead(ttl,
+                Seq.empty,
+                requestId = subnodes("requestId").right.get.map {
+                  id => id.text
+                }))
+         
+        }
       }
 
       /*
@@ -263,7 +282,11 @@ object OmiParser extends Parser[ParseMsg] {
           "requestId" -> getChild(node, "requestId", true, true)
         )
 
-        if (subnodes("msg").isRight && !subnodes("msg").right.get.isEmpty) {
+        if (subnodes("msg").isRight &&
+          subnodes("msg").right.get.nonEmpty &&
+          subnodes("requestId").isRight &&
+          subnodes("requestId").right.get.isEmpty
+        ){
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true, true)
         }
         
@@ -285,7 +308,10 @@ object OmiParser extends Parser[ParseMsg] {
             }))
 
         if (subnodes("Objects").right.get.nonEmpty) {
-          val odf = parseODF(subnodes("Objects").right.get.head)
+          val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
+            parseODF(subnodes("Objects").right.get.head)
+          else
+            Seq.empty
           val left = odf.filter(_.isLeft)
           val right = odf.filter(_.isRight)
 
