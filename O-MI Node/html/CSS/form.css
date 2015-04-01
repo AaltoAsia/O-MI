@@ -36,9 +36,3 @@ fieldset .content {
 #themes {
 	float: right;
 }
-
-#restart {
-	position: absolute;
-	top: 1em;
-	right: 0;
-}
