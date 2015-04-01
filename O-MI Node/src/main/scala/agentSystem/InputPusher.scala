@@ -25,6 +25,10 @@ trait InputPusher {
     *
     */
   def handlePathValuePairs( pairs: Seq[(String,TimedValue)] ): Unit
+  /** Function for handling sequences of path and MetaData pairs.
+    *
+    */
+  def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit
 }
 
 /** Object for pushing data from sensors to db.
@@ -67,6 +71,9 @@ object InputPusher extends InputPusher{
     */
   override def handlePathValuePairs( pairs: Seq[(String,TimedValue)] ) : Unit ={
     SQLite.setMany(pairs.toList)
+  }
+  def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit ={
+    pairs.foreach{ pair => SQLite.setMetaData(pair._1, pair._2)}
   }
 
 }

@@ -49,6 +49,10 @@ import scala.util.Random
   */
 class SmartHouseAgent(uri : String) extends AgentActor {
   // Used to inform that database might be busy
+  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val system = context.system
+  implicit val formats = DefaultFormats
+  implicit val timeout = akka.util.Timeout(10 seconds)
   def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = {
     o.flatten{ o =>
       o.sensors ++ getSensors(o.childs)
@@ -61,12 +65,14 @@ class SmartHouseAgent(uri : String) extends AgentActor {
   }.flatten{o =>
     o.sensors ++ getSensors(o.childs)
   }
+  InputPusher.handlePathMetaDataPairs( 
+    odf.filter{info => info.metadata.nonEmpty }.map{
+      info  => (info.path, info.metadata.get.data)
+    }
+  )
+  system.log.info("Successfully saved SmartHouse MetaData to DB")
   // bring the actor system in scope
   // Define formats
-  import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val system = context.system
-  implicit val formats = DefaultFormats
-  implicit val timeout = akka.util.Timeout(10 seconds)
   queueSensors
   def receive = {
     case _ => 
@@ -75,6 +81,7 @@ class SmartHouseAgent(uri : String) extends AgentActor {
     val date = new java.util.Date()
     odf = odf.map{ info => OdfInfoItem(info.path, Seq(TimedValue(Some(new Timestamp(date.getTime)),Random.nextDouble.toString)))}
     InputPusher.handleInfoItems(odf)
+    system.log.info("Successfully saved SmartHouse data to DB.")
     akka.pattern.after(30 seconds, using = system.scheduler)(Future { queueSensors() })
   }
 
