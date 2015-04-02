@@ -44,8 +44,8 @@ Setup development environment
 Running
 -------
 To run O-MI Node you need to run corresponding startup script for your OS.
-1. __ for Windows
-2. __ fo r Unix
+1. start.bat for Windows
+2. start.sh for Unix and Mac
 
 This will run O-MI Node with two internal Agents, GenericAgent and SensorAgent.
 More Information in next section.

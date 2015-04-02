@@ -30,10 +30,10 @@ object ErrorResponse {
     resultWrapper(
       returnCode(500, "TTL timeout, consider increasing TTL or is the server overloaded?")
     )
+
   def internalError(e: Throwable) =
     resultWrapper(
       returnCode(501, "Internal server error: " + e.getMessage())
     )
-
 
 }
