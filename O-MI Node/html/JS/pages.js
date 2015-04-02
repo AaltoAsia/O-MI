@@ -159,19 +159,20 @@ function loadOptions() {
 				if(save["callback"]) $("#callback").val(save["callback"]);
 				if(save["requestId"]) {
 					for(var i = 0; i < save["requestId"].length; i++){
+						console.log(i + "/" + $(".requestId").length);
 						if(i >= $(".requestId").length){
 							createInput($($(".requestId")[i - 1]).parent());
 						}
 						$($(".requestId")[i]).val(save["requestId"][i]);
 					}
 				}
-			}, 100);
+			}, 50);
 		}
 	}
 }
 
 function createInput(elem) {
 	var clone = $(elem).clone();
-	clone.val();
-	$(elem).append(clone);
+	$(elem).parent().append(clone);
+	clone.val("");
 }
