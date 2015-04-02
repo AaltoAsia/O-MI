@@ -288,6 +288,7 @@ object ReadResponseGen extends ResponseGen[OneTimeRead] {
       else
         intervaldata ++ XML.loadString(metaData.get)
 
+
       }
       </InfoItem>
 

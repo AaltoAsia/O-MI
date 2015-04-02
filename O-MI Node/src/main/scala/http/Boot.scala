@@ -38,8 +38,12 @@ object Starter {
     //sensorData.queueSensors()
 
     //Peer/Usability testing
-    val odf = OdfParser.parse( XML.loadFile("src/main/resources/UserTestStructure.xml").toString)
+    /*
+    val odf = OdfParser.parse( XML.loadFile("SmartHouse.xml").toString)
+    println(odf)
+    system.log.warning(odf.filter{o => o.isLeft}.map{o => o.left.get.msg}.mkString("\n"))
     InputPusher.handleObjects(odf.filter{o => o.isRight}.map{o => o.right.get})
+    */
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     SQLite.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))

@@ -15,6 +15,40 @@
 	    </Object>
 	</Object>
 	<Object>
+	    <id>WorkingRoom</id>
+	    <InfoItem name="Temperature"><value>23.2</value></InfoItem>
+	    <InfoItem name="Moisture"><value>0.12</value></InfoItem>
+	    <InfoItem name="Light"><value>On</value></InfoItem>
+	    <InfoItem name="Consumption"><value>5</value></InfoItem>
+	    <InfoItem name="CO2"><value>0.05</value></InfoItem>
+	    <Object>
+		<id>AirContitioner</id>
+		<InfoItem name="Power"><value>Off</value></InfoItem>
+		<InfoItem name="TemperatureFlow"><value>0.0</value></InfoItem>
+		<InfoItem name="AirFlow"><value>0.0</value></InfoItem>
+		<InfoItem name="TargetTemperature"><value>22.3</value></InfoItem>
+		<InfoItem name="Temperature"><value>23.2</value></InfoItem>
+		<InfoItem name="Consumption"><value>0.0</value></InfoItem>
+	    </Object>
+	</Object>
+	<Object>
+	    <id>BedRoom</id>
+	    <InfoItem name="Temperature"><value>23.2</value></InfoItem>
+	    <InfoItem name="Moisture"><value>0.12</value></InfoItem>
+	    <InfoItem name="Light"><value>On</value></InfoItem>
+	    <InfoItem name="Consumption"><value>5</value></InfoItem>
+	    <InfoItem name="CO2"><value>0.05</value></InfoItem>
+	    <Object>
+		<id>AirContitioner</id>
+		<InfoItem name="Power"><value>Off</value></InfoItem>
+		<InfoItem name="TemperatureFlow"><value>0.0</value></InfoItem>
+		<InfoItem name="AirFlow"><value>0.0</value></InfoItem>
+		<InfoItem name="TargetTemperature"><value>22.3</value></InfoItem>
+		<InfoItem name="Temperature"><value>23.2</value></InfoItem>
+		<InfoItem name="Consumption"><value>0.0</value></InfoItem>
+	    </Object>
+	</Object>
+	<Object>
 	    <id>LivingRoom</id>
 	    <InfoItem name="Temperature"><value>23.2</value></InfoItem>
 	    <InfoItem name="Moisture"><value>0.12</value></InfoItem>
@@ -32,7 +66,7 @@
 	    </Object>
 	</Object>
 	<Object>
-	    <id>Kithcen</id>
+	    <id>Kitchen</id>
 	    <InfoItem name="Temperature"><value>22.3</value></InfoItem>
 	    <InfoItem name="Moisture"><value>0.1</value></InfoItem>
 	    <InfoItem name="Light"><value>On</value></InfoItem>
@@ -50,6 +84,15 @@
 		<InfoItem name="Power"><value>0</value></InfoItem>
 		<InfoItem name="Temperature"><value>0.0</value></InfoItem>
 		<InfoItem name="Light"><value>Off</value></InfoItem>
+		<InfoItem name="Consumption"><value>0.0</value></InfoItem>
+	    </Object>
+	    <Object>
+		<id>AirContitioner</id>
+		<InfoItem name="Power"><value>Off</value></InfoItem>
+		<InfoItem name="TemperatureFlow"><value>0.0</value></InfoItem>
+		<InfoItem name="AirFlow"><value>0.0</value></InfoItem>
+		<InfoItem name="TargetTemperature"><value>22.3</value></InfoItem>
+		<InfoItem name="Temperature"><value>23.2</value></InfoItem>
 		<InfoItem name="Consumption"><value>0.0</value></InfoItem>
 	    </Object>
 	</Object>

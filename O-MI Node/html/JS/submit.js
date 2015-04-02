@@ -33,6 +33,17 @@ $(function() {
 	$(document).on("mouseleave", ".help", function(){
 		$(this).children("p").hide();
 	});
+	
+	/* event handler for drop down list */
+	$(document).on('click', '.drop', function(event){
+		event.stopPropagation();
+
+		$(this).toggleClass("down");
+		
+		var id = $(this).attr("id").replace("drop-", "");
+		
+		$("#list-" + id).toggleClass("closed-list");
+	});
 
 function loadThemes(){
 	iconSelect = new IconSelect("themes",{
@@ -142,7 +153,7 @@ function displayObjects(data, indent, url, listId) {
 				var name = $(this).find("id").text();
 
 				//ajaxGet(indent + 1, url + "/" + name);
-				manager.find(id).addChild(id, name, listId);
+				manager.find(id).addChild(id, name, "list-" + id);
 				sub.push(name);
 			});
 			addInfoItems(this, id, indent);
@@ -176,9 +187,10 @@ function sendRequest()
 {
 	if(generating){
 		setTimeout(sendRequest, 500);
+		return;
 	}
 	
-	// Server URL
+	// O-MI node Server URL
 	var server = getServerUrl();
 
     var request = requestEditor.getValue(); // Get the request string

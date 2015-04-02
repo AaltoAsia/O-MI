@@ -82,7 +82,7 @@ class DBData(tag: Tag)
 }
 
 /**
- * class DBMetaData to store metadata for sensors as XML string
+ * class DBMetaData to store metadata for sensors as string e.g XML block as string
  */
 class DBMetaData(tag: Tag)
   extends Table[(Path, String)](tag, "Metadata") {

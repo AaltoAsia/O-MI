@@ -9,7 +9,7 @@ object ErrorResponse {
 
   def parseErrorResponse(parseError: ParseError): NodeSeq =
     parseErrorResponse(Seq(parseError))
-
+    
   def parseErrorResponse(parseErrors: Iterable[ParseError]): NodeSeq =
     omiResult(
       returnCode(400, parseErrors.mkString(", "))
@@ -21,6 +21,11 @@ object ErrorResponse {
       returnCode(501, "Not implemented.")
     )
   
+  val intervalNotSupported =
+    omiResult {
+      returnCode(501, "Interval not supported")
+    }
+
   val ttlTimeOut =
     resultWrapper(
       returnCode(500, "TTL timeout, consider increasing TTL or is the server overloaded?")

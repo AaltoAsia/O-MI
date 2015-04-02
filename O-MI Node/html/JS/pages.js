@@ -3,6 +3,14 @@ var timeout; //Used for request generation timeout
 var requestInterval = 1000; // Interval in milliseconds for automatic request generation
 var generating = false; // TODO: used as global variable, see submit.js
 
+$(document).on("click", "#autorequest", function(){
+	updateRequest(requestInterval);
+});
+
+$(document).on("click", "#generate", function(){
+	updateRequest(requestInterval);
+});
+
 /* Load pages from separate html files */
 function loadPages(page) {
 	$(".page").addClass("behind");
@@ -23,18 +31,6 @@ function loadPages(page) {
 		}
 	}
 	
-	if(page === 1){
-		$(document).on('click', '.drop', function(event){
-			event.stopPropagation();
-		    
-			$(this).toggleClass("down");
-			
-			var id = $(this).attr("id").replace("drop-", "");
-			
-			$("#list-" + id).toggleClass("closed-list");
-		});
-	}
-	
 	// Load operation options (page 2)
 	if (page === 2) {
 		refreshEditor("request", "editRequest");
@@ -43,9 +39,6 @@ function loadPages(page) {
 			loadOptions();
 		}
 		$("#options").change(function(){
-			updateRequest(requestInterval);
-		});
-		$(document).on("click", "#autorequest", function(){
 			updateRequest(requestInterval);
 		});
 		$("#response .CodeMirror").remove();
