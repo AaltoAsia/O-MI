@@ -4,7 +4,7 @@
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
   color: black;
-  height: 37.5em;
+  min-height: 35em;
 }
 
 /* PADDING */

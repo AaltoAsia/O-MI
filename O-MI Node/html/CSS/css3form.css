@@ -14,9 +14,9 @@ body {
 }
 /*form styles*/
 #msform {
-	width: 85em;
-	height: 90%;
-	margin: 1em auto;
+	width: 80em;
+	height: 85%;
+	margin: 0 auto;
 	text-align: center;
 	position: relative;
 }
