@@ -8,7 +8,7 @@ function Omi() {
 	this.newest;
 	this.oldest;
 	this.callback;
-	this.requestId;
+	this.requestIds;
 
 	this.request;
 	this.subscribe;
@@ -16,7 +16,7 @@ function Omi() {
 	this.save = {};
 }
 
-Omi.prototype.update = function(operation, ttl, interval, begin, end, newest, oldest, callback, requestId){
+Omi.prototype.update = function(operation, ttl, interval, begin, end, newest, oldest, callback, requestIds){
 	this.operation = operation;
 	this.ttl = ttl;
 	this.interval = interval;
@@ -25,7 +25,7 @@ Omi.prototype.update = function(operation, ttl, interval, begin, end, newest, ol
 	this.newest = newest;
 	this.oldest = oldest;
 	this.callback = callback;
-	this.requestId = requestId;
+	this.requestIds = requestIds;
 	this.request = "";
 	this.subscribe = "";
 }
@@ -44,7 +44,7 @@ Omi.prototype.saveOptions = function(){
 	this.save[this.operation]["newest"] = this.newest;
 	this.save[this.operation]["oldest"] = this.oldest;
 	this.save[this.operation]["callback"] = this.callback;
-	this.save[this.operation]["request-id"] = this.requestId;
+	this.save[this.operation]["requestId"] = this.requestIds;
 }
 
 /* Change request id */

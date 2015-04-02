@@ -33,7 +33,7 @@ function loadPages(page) {
 	
 	// Load operation options (page 2)
 	if (page === 2) {
-		refreshEditor("request", "editRequest");
+		//refreshEditor("request", "editRequest");
 
 		if($('#options').is(':empty')){
 			loadOptions();
@@ -41,7 +41,7 @@ function loadPages(page) {
 		$("#options").change(function(){
 			updateRequest(requestInterval);
 		});
-		$("#response .CodeMirror").remove();
+		//$("#response .CodeMirror").remove();
 	}
 	if(page === 3){
 		refreshEditor("response", "responseBox");
@@ -153,8 +153,21 @@ function loadOptions() {
 				if(save["newest"]) $("#newest").val(save["newest"]);
 				if(save["oldest"]) $("#oldest").val(save["oldest"]);
 				if(save["callback"]) $("#callback").val(save["callback"]);
-				if(save["request-id"]) $("#request-id").val(save["request-id"]);
+				if(save["requestId"]) {
+					for(var i = 0; i < save["requestId"].length; i++){
+						if(i >= $(".requestId").length){
+							createInput($(".requestId")[i]);
+						}
+						$($(".requestId")[i]).val(save["requestId"][i]);
+					}
+				}
 			}, 100);
 		}
 	}
+}
+
+function createInput(elem) {
+	var clone = $(elem).clone();
+	clone.val();
+	$(elem).append(clone);
 }

@@ -9,7 +9,7 @@ function writeXML(items, omi){
 	setWriterSettings(writer);
 	
 	if(omi.operation === 'poll'){
-		return writePoll(writer, omi.ttl, omi.requestId);
+		return writePoll(writer, omi.ttl, omi.requestIds);
 	}
 	
 	writer.writeStartDocument();
@@ -22,7 +22,7 @@ function writeXML(items, omi){
 	if(omi.operation === 'read'){
 		writeObjects(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
 	} else if (omi.operation === 'cancel'){
-		writeRequestId(writer, omi.requestId);
+		writeRequestId(writer, omi.requestIds);
 	} else if(omi.operation === 'write'){
 		writeObjects(writer, items);
 	} 
@@ -134,10 +134,12 @@ function writeObject(object, writer){
 	writer.writeEndElement();
 }
 
-function writeRequestId(writer, requestId) {
-	writer.writeStartElement('omi:requestId');
-	writer.writeString(requestId);
-	writer.writeEndElement();
+function writeRequestId(writer, requestIds) {
+	for(var i = 0; i < requestIds.length; i++){
+		writer.writeStartElement('omi:requestId');
+		writer.writeString(requestIds[i]);
+		writer.writeEndElement();
+	}
 }
 
 function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, oldest, callback){

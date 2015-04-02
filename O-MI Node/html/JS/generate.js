@@ -11,7 +11,11 @@ function generateRequest(){
 	var newest = $("#newest").val();
 	var oldest = $("#oldest").val();
 	var callback = $("#callback").val();
-	var requestId = $("#request-id").val();
+	var requestIds = [];
+	
+	$(".requestId").each(function(){
+		requestIds.push($(this).val());
+	});
 	
 	if(!omi){
 		omi = new Omi();
@@ -20,7 +24,7 @@ function generateRequest(){
 		omi.saveOptions();
 	}
 	
-	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestId);
+	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestIds);
 	
 	var request = omi.getRequest(checkedObjects());
 	
