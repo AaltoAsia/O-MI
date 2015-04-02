@@ -11,6 +11,10 @@ $(document).on("click", "#generate", function(){
 	updateRequest(requestInterval);
 });
 
+$(document).on("click", "#addbutton", function(){
+	createInput($(this).parent().children().last());
+});
+
 /* Load pages from separate html files */
 function loadPages(page) {
 	$(".page").addClass("behind");
@@ -156,7 +160,7 @@ function loadOptions() {
 				if(save["requestId"]) {
 					for(var i = 0; i < save["requestId"].length; i++){
 						if(i >= $(".requestId").length){
-							createInput($(".requestId")[i]);
+							createInput($($(".requestId")[i - 1]).parent());
 						}
 						$($(".requestId")[i]).val(save["requestId"][i]);
 					}
