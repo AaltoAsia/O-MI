@@ -22,8 +22,6 @@ $(document).on('click', '.next', function() {
 			return;
 		}
 		$("#responseBox").html("");
-		
-		sendRequest(); // From submit.js, sending request on action
 	} else if (page === 3) {
 		return false;
 	}
@@ -115,6 +113,7 @@ function animateNext() {
 				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
 			}
 		}
+		sendRequest(); // From submit.js, sending request on action
 	}
 }
 
