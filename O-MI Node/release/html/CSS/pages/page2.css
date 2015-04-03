@@ -1,0 +1,70 @@
+#operation-select {
+	float: left;
+	margin-left: 2%;
+}
+
+#autodiv {
+	display: table;
+	margin: 0 auto;
+}
+
+#autorequest {
+	margin-bottom: 3%;
+}
+
+.row .col {
+	display: inline-block;
+	vertical-align: text-top;
+}
+
+#optionCol {
+	width: 25%;
+}
+
+#requestCol {
+	width: 70%;
+	margin-left: 4%;
+}
+
+#edit .loading {
+	position: absolute;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	width: 5em;
+	height: 5em;
+	display: none;
+	z-index: 10;
+}
+
+#editRequest {
+	max-width: 90%;
+	height: auto;
+	text-align: left;
+	outline: black solid 2px;
+}
+
+.icon {
+	display: inline-block;
+	width: 4em;
+	height: 4em;
+	margin: 0 1em;
+	border: 1px solid black;
+	box-shadow: 3px 3px 3px #888888;
+}
+
+.icon:hover, #addbutton:hover {
+	cursor: pointer;
+}
+
+#addbutton {
+	position: relative;
+	left: 105%;
+	bottom: -3em;
+	width: 1em;
+	height: 1em;
+	background-image: urL('../../Resources/add.png');
+	background-size: 1em 1em;
+	z-index: 10;
+}

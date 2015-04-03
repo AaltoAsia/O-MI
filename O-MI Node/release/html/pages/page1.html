@@ -1,0 +1,33 @@
+<fieldset>
+	<div class="movedesc prev hidden">
+		<img src="Resources/prev.png" alt="Prev" />
+	</div>
+	<div class="movedesc next">
+		<p>Generate</p>
+		<img src="Resources/next.png" alt="Next" />
+	</div>
+	
+	<div class="content">
+		<h2 class="fs-title">Query for objects</h2>
+		<h3 class="fs-subtitle">Specify the URL for getting objects. (Objects from default URL queried automatically)</h3>
+		<div class="row">
+			<div class="col" style="width:60%">
+				<input type="text" name="url" id="url-field" value="http://localhost:8080/Objects" />
+			</div>
+			<div class="col">
+				<input type="button" name="objects" id="object-button" class="action-button highlight-button"
+				 value="Get Objects" />
+			</div>
+		</div>
+	  	<script>$("#url-field").val("http://" + window.location.host + "/Objects");</script>
+		<h3 class="fs-subtitle">You can Check All or Uncheck All checkboxes of the received objects</h3>
+		<div>
+			<input type="button" name="all" id="checkall" class="action-button" value="Check All" />
+			<input type="button" name="all" id="uncheckall" class="action-button" value="Uncheck All" />
+		</div>
+		<h3 class="fs-subtitle">Objects displayed below, check the objects to select them or dig deeper into the hierarchy</h3>
+		<div id="objectContainer">
+			<ul id="objectList"></ul>
+		</div>
+	</div>
+</fieldset>

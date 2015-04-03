@@ -1,0 +1,82 @@
+#url-field {
+	max-width: 100%;
+}
+
+#objectContainer {
+	border-width: 5px;
+	border-style: groove;
+	width: 90%;
+	min-height: 5em;
+	max-height: 18em;
+	padding: 5px 0;
+	margin: 0 auto;
+	display: inline-block;
+	
+	overflow: auto;
+}
+
+#objectList {
+	position: relative;
+	list-style-type: none;
+	max-width: 100%;
+	
+	width: auto;
+}
+
+#objectList ul {
+	list-style-type: none;
+}
+
+#objectList li {
+	display: table-row;
+}
+
+#objectList li label {
+	display: inline-block;
+	float: left;
+}
+
+#objectList li input {
+	float: left;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	margin: 0;
+	margin-left: 1.5em;
+	vertical-align: bottom;
+	position: relative;
+	*overflow: hidden;
+}
+
+
+#objectList li .drop {
+	position: absolute;
+	background-image: url("../../Resources/drop.png");
+	width: 1em;
+	height: 1em;
+	background-repeat: no-repeat;
+	/* background-position: center center; */
+	background-size: 1em 1em;
+	
+	z-index: 10;
+}
+
+#objectList li .down {
+	background-image: url("../../Resources/dropdown.png");
+}
+
+#objectList li .drop:hover {
+	cursor: pointer;
+}
+
+#objectList .closed-list {
+	display: none;
+}
+
+.row {
+	width: 100%;
+}
+
+.row .col {
+	display: inline-block;
+}

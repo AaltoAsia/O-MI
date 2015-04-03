@@ -85,4 +85,4 @@ Akka Configuration documentation:
 http://doc.akka.io/docs/akka/2.3.9/general/configuration.html
 Spray-can server Configuration documentation:
 http://spray.io/documentation/1.2.2/spray-can/configuration/
-SQLite:
+Slick:
