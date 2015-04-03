@@ -1,0 +1,971 @@
+<Objects>
+    <Object>
+	<id>SmartHouse</id>
+	<InfoItem name="FrontDoor"><value>Closed</value></InfoItem>
+	<InfoItem name="BackDoor"><value>Closed</value></InfoItem>
+	<Object>
+	    <id>Kitchen</id>
+	    <InfoItem name="Temperature">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.05</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="MaxValue">
+			<value type="xs:double">300</value>
+		    </InfoItem>
+		    <InfoItem name="MinValue">
+			<value type="xs:double">-100</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">Celsius</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">Heatenings</value>
+		    </InfoItem>
+		</MetaData>
+		<value>22.3</value>
+	    </InfoItem>
+	    <InfoItem name="Humitidy">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.01</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="CO2">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.1</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="Light">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">binary</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>Off</value>
+	    </InfoItem>
+	    <InfoItem name="Consumption">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">kW/h</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>15</value>
+	    </InfoItem>
+	    <Object>
+		<id>AirContitioner</id>
+		<InfoItem name="Power">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>Off</value>
+		</InfoItem>
+		<InfoItem name="TemperatureFlow">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius per second</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="AirFlow">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Litres per second</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="TargetTemperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>22.3</value>
+		</InfoItem>
+		<InfoItem name="Temperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="MaxValue">
+			    <value type="xs:double">300</value>
+			</InfoItem>
+			<InfoItem name="MinValue">
+			    <value type="xs:double">-100</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>23.2</value>
+		</InfoItem>
+		<InfoItem name="Consumption">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">kW/h</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+	    </Object>
+	    <Object>
+		<id>Fridge</id>
+		<InfoItem name="Temperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="MaxValue">
+			    <value type="xs:double">300</value>
+			</InfoItem>
+			<InfoItem name="MinValue">
+			    <value type="xs:double">-100</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>2.3</value>
+		</InfoItem>
+		<InfoItem name="Humitidy">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.01</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">prosents</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.05</value>
+		</InfoItem>
+		<InfoItem name="Light">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>Off</value>
+		</InfoItem>
+		<InfoItem name="Consumption">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">kW/h</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>15</value>
+		</InfoItem>
+	    </Object>
+	    <Object>
+		<id>Oven</id>
+		<InfoItem name="Power">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0</value>
+		</InfoItem>
+		<InfoItem name="Temperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="MaxValue">
+			    <value type="xs:double">300</value>
+			</InfoItem>
+			<InfoItem name="MinValue">
+			    <value type="xs:double">-100</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="Light">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>Off</value>
+		</InfoItem>
+		<InfoItem name="Consumption">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">kW/h</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>15</value>
+		</InfoItem>
+	    </Object>
+	</Object>
+	<Object>
+	    <id>Sauna</id>
+	    <InfoItem name="Temperature">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.05</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="MaxValue">
+			<value type="xs:double">300</value>
+		    </InfoItem>
+		    <InfoItem name="MinValue">
+			<value type="xs:double">-100</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">Celsius</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">Heatenings</value>
+		    </InfoItem>
+		</MetaData>
+		<value>22.3</value>
+	    </InfoItem>
+	    <InfoItem name="Humitidy">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.01</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="CO2">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.1</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="Light">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">binary</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>Off</value>
+	    </InfoItem>
+	    <InfoItem name="Consumption">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">kW/h</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>15</value>
+	    </InfoItem>
+	    <Object>
+		<id>Kiuas</id>
+		<InfoItem name="Power">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>On</value>
+		</InfoItem>
+	    </Object>
+	</Object>
+	<Object>
+	    <id>LivingRoom</id>
+	    <InfoItem name="Temperature">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.05</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="MaxValue">
+			<value type="xs:double">300</value>
+		    </InfoItem>
+		    <InfoItem name="MinValue">
+			<value type="xs:double">-100</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">Celsius</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">Heatenings</value>
+		    </InfoItem>
+		</MetaData>
+		<value>22.3</value>
+	    </InfoItem>
+	    <InfoItem name="Humitidy">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.01</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="CO2">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.1</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="Light">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">binary</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>Off</value>
+	    </InfoItem>
+	    <InfoItem name="Consumption">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">kW/h</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>15</value>
+	    </InfoItem>
+	    <Object>
+		<id>AirContitioner</id>
+		<InfoItem name="Power">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>Off</value>
+		</InfoItem>
+		<InfoItem name="TemperatureFlow">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius per second</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="AirFlow">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Litres per second</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="TargetTemperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>22.3</value>
+		</InfoItem>
+		<InfoItem name="Temperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="MaxValue">
+			    <value type="xs:double">300</value>
+			</InfoItem>
+			<InfoItem name="MinValue">
+			    <value type="xs:double">-100</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>23.2</value>
+		</InfoItem>
+		<InfoItem name="Consumption">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">kW/h</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+	    </Object>
+	</Object>
+	<Object>
+	    <id>WorkingRoom</id>
+	    <InfoItem name="Temperature">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.05</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="MaxValue">
+			<value type="xs:double">300</value>
+		    </InfoItem>
+		    <InfoItem name="MinValue">
+			<value type="xs:double">-100</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">Celsius</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">Heatenings</value>
+		    </InfoItem>
+		</MetaData>
+		<value>22.3</value>
+	    </InfoItem>
+	    <InfoItem name="Humitidy">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.01</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="CO2">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="Accuracy">
+			<value type="xs:double">0.1</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">prosents</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>0.05</value>
+	    </InfoItem>
+	    <InfoItem name="Light">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">binary</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>Off</value>
+	    </InfoItem>
+	    <InfoItem name="Consumption">
+		<MetaData>
+		    <InfoItem name="Latency">
+			<value type="xs:double">2.3</value>
+		    </InfoItem>
+		    <InfoItem name="UpdateInterval">
+			<value type="xs:double">1</value>
+		    </InfoItem>
+		    <InfoItem name="Unit">
+			<value type="xs:string">kW/h</value>
+		    </InfoItem>
+		    <InfoItem name="Producter">
+			<value type="xs:string">TheCompany</value>
+		    </InfoItem>
+		</MetaData>
+		<value>15</value>
+	    </InfoItem>
+	    <Object>
+		<id>AirContitioner</id>
+		<InfoItem name="Power">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">binary</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>Off</value>
+		</InfoItem>
+		<InfoItem name="TemperatureFlow">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius per second</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="AirFlow">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Litres per second</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+		<InfoItem name="TargetTemperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>22.3</value>
+		</InfoItem>
+		<InfoItem name="Temperature">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">22.3</value>
+			</InfoItem>
+			<InfoItem name="Accuracy">
+			    <value type="xs:double">0.05</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="MaxValue">
+			    <value type="xs:double">300</value>
+			</InfoItem>
+			<InfoItem name="MinValue">
+			    <value type="xs:double">-100</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">Celsius</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">Heatenings</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>23.2</value>
+		</InfoItem>
+		<InfoItem name="Consumption">
+		    <MetaData>
+			<InfoItem name="Latency">
+			    <value type="xs:double">2.3</value>
+			</InfoItem>
+			<InfoItem name="UpdateInterval">
+			    <value type="xs:double">1</value>
+			</InfoItem>
+			<InfoItem name="Unit">
+			    <value type="xs:string">kW/h</value>
+			</InfoItem>
+			<InfoItem name="Producter">
+			    <value type="xs:string">TheCompany</value>
+			</InfoItem>
+		    </MetaData>
+		    <value>0.0</value>
+		</InfoItem>
+	    </Object>
+	</Object>
+    </Object>
+</Objects>
