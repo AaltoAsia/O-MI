@@ -87,25 +87,32 @@ inTask(release)(Seq(
 ))
 
 
+// TODO: move to .scala file, currently no empty lines are allowed
 release <<= (resourceDirectory in Compile, releaseDir, baseDirectory, artifact, artifactPath in release, oneJar)  map {
   case (resourceDir, releaseDir, baseDirectory, art, defPath, jar) =>
     val resultPath = releaseDir / defPath.getName()
-    println(s" jarpath: $jar res: $resultPath")
+    //
+    // Files to put in release (path: File -> path_in_zip: String)
     var zipFileList = 
       Seq(
         resourceDir / "application.conf" -> "application.conf",
         baseDirectory / "start.sh" -> "start.sh",
         baseDirectory / "start.bat" -> "start.bat",
+        baseDirectory / "SmartHouse.xml" -> "SmartHouse.xml",
+        baseDirectory / "README-release.md" -> "README.md",
         jar -> jar.getName()
       )
-    val directories = Seq("configs", "deploy")
+    val directories = Seq("configs", "deploy", "html")
+    //
     directories foreach { dir =>
-      zipFileList ++= 
-        IO.listFiles(baseDirectory / dir) map { file =>
-          file -> (Path(dir) / file.getName).toString
-        }
+      val paths = Path.allSubpaths(baseDirectory / dir)
+      val pathsWithoutVimBac = paths filter {_._1.toString.last =! '~'}
+      zipFileList ++=
+        pathsWithoutVimBac map {case (path, relative) => path -> (dir + "/" + relative)}
     }
+    println(zipFileList.mkString(",\n"))
     IO.zip(zipFileList, resultPath)
+    println(s"Finished: $resultPath with jar file from: $jar")
     resultPath
 }
 
