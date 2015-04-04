@@ -106,7 +106,7 @@ release <<= (resourceDirectory in Compile, releaseDir, baseDirectory, artifact, 
     //
     directories foreach { dir =>
       val paths = Path.allSubpaths(baseDirectory / dir)
-      val pathsWithoutVimBac = paths filter {_._1.toString.last =! '~'}
+      val pathsWithoutVimBac = paths filter {_._1.toString.last != '~'}
       zipFileList ++=
         pathsWithoutVimBac map {case (path, relative) => path -> (dir + "/" + relative)}
     }
