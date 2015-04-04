@@ -7,8 +7,8 @@ Code-Gardeners
 
 Software project course repository. Implementation of Internet of Things standards Open Messaging Interface and Open Data Format. 
 
-Dependies
----------
+Dependencies
+------------
 SQLite 
 
 
@@ -43,11 +43,12 @@ Setup development environment
 
 Running
 -------
-To run O-MI Node you need to run corresponding startup script for your OS.
+To run O-MI Node run the corresponding startup script for your OS:
 1. start.bat for Windows
 2. start.sh for Unix and Mac
 
-This will run O-MI Node with two internal Agents, GenericAgent and SensorAgent.
+This will run O-MI Node with configuration in application.conf.
+By default it has some example and demo agents.
 More Information in next section.
 
 Configuration
