@@ -27,7 +27,7 @@ object OmiParser extends Parser[ParseMsg] {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
   private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
 
-  override def schemaPath = getClass.getResource("/omi.xsd")
+  override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
   /**
    * This method calls the OdfParser class to parse the data when the O-MI message has been parsed.

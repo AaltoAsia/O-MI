@@ -21,7 +21,7 @@ abstract trait Parser[Result] {
 
   def stringOptioner(str: String) : Option[String] = if(str.nonEmpty) Some(str) else None
   def parse(xml_msg: String) : Seq[Result]
-  def schemaPath : URL
+  def schemaPath : javax.xml.transform.Source
 
   /**
    * private helper function for getting parameter of an node.
