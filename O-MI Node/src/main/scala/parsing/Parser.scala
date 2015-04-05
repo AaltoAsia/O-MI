@@ -5,6 +5,7 @@ import scala.xml._
 import scala.util.Try
 
 import java.io.File;
+import java.net.URL;
 import java.io.StringReader
 import java.io.IOException
 
@@ -20,7 +21,7 @@ abstract trait Parser[Result] {
 
   def stringOptioner(str: String) : Option[String] = if(str.nonEmpty) Some(str) else None
   def parse(xml_msg: String) : Seq[Result]
-  def schemaPath : String
+  def schemaPath : URL
 
   /**
    * private helper function for getting parameter of an node.
@@ -114,7 +115,7 @@ abstract trait Parser[Result] {
       val xsdPath = schemaPath
       val factory : SchemaFactory =
         SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val schema: Schema = factory.newSchema(new File(xsdPath))
+      val schema: Schema = factory.newSchema(xsdPath)
       val validator: Validator = schema.newValidator()
       validator.validate(new StreamSource(new StringReader(xml)))
     } catch {
