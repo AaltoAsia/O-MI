@@ -1,7 +1,7 @@
 /*
  * The following code is an example on how to send an AJAX request to the server, in order to get the sensor data OMI.
  * The jQuery's $(function(){ ... }) is to make sure that jQuery is loaded, but it's not mandatory in case jQuery is loaded
- * before using the code.
+ * before using the code. Also Zepto.js can be used instead of jQuery.
  */
 
 $(function(){
