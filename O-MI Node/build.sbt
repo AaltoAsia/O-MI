@@ -8,7 +8,7 @@ scalaVersion := scalaBuildVersion
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
 
 // build api options
-scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-diagrams", "-encoding", "utf8")
+scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8")
 
 autoAPIMappings := true 
 
