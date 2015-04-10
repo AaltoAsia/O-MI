@@ -37,7 +37,7 @@ class testDB(name:String) extends DataBase
  * base Database trait used in object SQLite and class testDB 
  */
 trait DataBase {
-  protected var db:Database = null
+  @volatile protected var db:Database = null
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) } // String to Path
@@ -47,11 +47,11 @@ trait DataBase {
   protected var dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
   //tables for latest values and hierarchy
-  private val latestValues = TableQuery[DBData]
-  private val objects = TableQuery[DBNode]
-  private val subs = TableQuery[DBSubscription]
-  private val buffered = TableQuery[BufferedPath]
-  private val meta = TableQuery[DBMetaData]
+  private val latestValues = TableQuery[DBData]//table for sensor data
+  private val objects = TableQuery[DBNode]//table for storing hierarchy
+  private val subs = TableQuery[DBSubscription]//table for storing subscription information
+  private val buffered = TableQuery[BufferedPath]//table for aa currently buffered paths
+  private val meta = TableQuery[DBMetaData]//table for metadata information
 
   private var setEventHooks: List[Seq[Path] => Unit] = List()
   
@@ -471,37 +471,6 @@ trait DataBase {
       }
       childs
     }
-
-/*  def getAllChildPaths(path: Path): Array[Path] =
-    {
-      var childs = Array[Path]()
-      val infoItemQuery = for {
-        c <- latestValues if c.parentPath === path
-      } yield (c.path)
-
-      val objectQuery = for {
-        c <- objects if c.parentPath === path
-      } yield (c.path)
-
-      var strinfo = runSync(infoItemQuery.result)
-      var strobj = runSync(objectQuery.result)
-      childs = Array.ofDim[DBItem](strobj.length + strinfo.length)
-      var index = 0
-
-      strinfo foreach {
-        case (cpath: Path) =>
-          childs(Math.min(index, childs.length - 1)) = Path(cpath)
-          index += 1
-      }
-
-      strobj foreach {
-        case (cpath: Path) =>
-          childs(Math.min(index, childs.length - 1)) = Path(cpath)
-          index += 1
-      }
-
-      childs
-    }*/
 
   /**
    * Checks whether given path exists on the database
