@@ -159,7 +159,6 @@ function loadOptions() {
 				if(save["callback"]) $("#callback").val(save["callback"]);
 				if(save["requestId"]) {
 					for(var i = 0; i < save["requestId"].length; i++){
-						console.log(i + "/" + $(".requestId").length);
 						if(i >= $(".requestId").length){
 							createInput($($(".requestId")[i - 1]).parent());
 						}
