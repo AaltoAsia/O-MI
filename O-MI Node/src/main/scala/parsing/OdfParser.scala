@@ -76,9 +76,11 @@ object OdfParser extends Parser[OdfParseResult] {
    * @param current path parsed from xml
    */
   private def parseInfoItem(node: Node, currentPath: Path): Seq[InfoItemResult] = {
+    //Get parameters
     var parameters: Map[String, Either[ParseError, String]] = Map(
       "name" -> getParameter(node, "name"))
 
+    //Get subnodes
     val subnodes = Map(
       "value" -> getChilds(node, "value", false, true, true))
     val metaDataOpt = (node \ "MetaData").headOption
@@ -86,13 +88,15 @@ object OdfParser extends Parser[OdfParseResult] {
       trim(metaDataOpt.get).toString
     else
       ""
-
+    //Check for malformed parameters and subnodes.
     val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
     if (errors.nonEmpty)
       return errors.map(e => Left(e)).toSeq
 
+    //Update path
     val path = currentPath / parameters("name").right.get
 
+    //Go througth value sub nodes.
     val timedValues: Seq[TimedValue] = subnodes("value").right.get.toSeq.map { value: Node =>
       var timeStr = getParameter(value, "unixTime", true).right.get
       if (timeStr.isEmpty) {
@@ -114,6 +118,7 @@ object OdfParser extends Parser[OdfParseResult] {
       }
     }
 
+    //Check MetaData
     if(metaData.nonEmpty)
       Seq(Right(OdfInfoItem(path, timedValues,Some(InfoItemMetaData(metaData)))))
     else
@@ -132,17 +137,20 @@ object OdfParser extends Parser[OdfParseResult] {
    * @param current path parsed from xml
    */
   private def parseObject(node: Node, currentPath: Path): Seq[ObjectResult] = {
+    //Get subnodes
     val subnodes = Map(
       "id" -> getChild(node, "id"),
       "Object" -> getChilds(node, "Object", true, true, true),
       "InfoItem" -> getChilds(node, "InfoItem", true, true, true)
     )
-
+    //Check for malformed subnodes
     val errors = subnodes.filter(_._2.isLeft).map(_._2.left.get)
     if (errors.nonEmpty)
       return errors.map(e => Left(e)).toSeq
 
+    //Update path
     val path = currentPath / subnodes("id").right.get.text
+    //If no InfoItems found return, else go througth sub Objects and InfoItems
     if (subnodes("InfoItem").right.get.isEmpty && subnodes("Object").right.get.isEmpty) {
       Seq(Right(OdfObject(path, Seq.empty[OdfObject], Seq.empty[OdfInfoItem])))
     } else {

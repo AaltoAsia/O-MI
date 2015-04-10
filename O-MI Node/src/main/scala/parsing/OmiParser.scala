@@ -104,24 +104,31 @@ object OmiParser extends Parser[ParseMsg] {
         Write request 
       */
       case "write" => {
+        //Get parameters
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
           "callback" -> getParameter(node, "callback", true))
+
+        //Get sub nodes
         val subnodes = Map(
           "msg" -> getChild(node, "msg", true, true),
           "requestId" -> getChild(node, "requestId", true, true))
 
+        //Get O-DF part if msg exist
         if (subnodes("msg").isRight && subnodes("msg").right.get.nonEmpty)
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
-
+        
+        //Hendle errors
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
           
+        //Parse O-DF
         val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
             parseODF(subnodes("Objects").right.get.head)
           else
             Seq.empty
+        //Seperate errors and data
         val left = odf.filter(_.isLeft)
         val right = odf.filter(_.isRight)
 
@@ -129,6 +136,8 @@ object OmiParser extends Parser[ParseMsg] {
           case "" => None
           case str => Some(str)
         }
+
+        //return errors or data
         if (left.isEmpty && !right.isEmpty) {
           Seq(Write(ttl,
             right.map(_.right.get),
@@ -143,6 +152,7 @@ object OmiParser extends Parser[ParseMsg] {
         Read request 
       */
       case "read" => {
+        //Get parameters
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
           "interval" -> getParameter(node, "interval", true,
@@ -153,10 +163,12 @@ object OmiParser extends Parser[ParseMsg] {
           "newest" -> getParameter(node, "newest", true),
           "oldest" -> getParameter(node, "oldest", true),
           "callback" -> getParameter(node, "callback", true))
+        //Get sub nodes
         val subnodes = Map(
           "msg" -> getChild(node, "msg",true,true),
           "requestId" -> getChild(node, "requestId", true, true)
         )
+
         if(subnodes("msg").isRight && 
           subnodes("msg").right.get.nonEmpty
         ) {
@@ -173,13 +185,16 @@ object OmiParser extends Parser[ParseMsg] {
           if (errors.nonEmpty)
             return errors.toSeq
 
+          //Parse O-DF
           val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
               parseODF(subnodes("Objects").right.get.head)
             else
               Seq.empty
+          //Seperate data and errors
           val left = odf.filter(_.isLeft)
           val right = odf.filter(_.isRight)
 
+          //Handle parameters
           val begin = parameters("begin").right.get match {
             case "" => None
             case str => Some(new Timestamp(dateFormat.parse(str).getTime))
@@ -201,6 +216,7 @@ object OmiParser extends Parser[ParseMsg] {
             case str => Some(str)
           }
 
+          //Return OneTimeRead, Subcription or errors
           if (left.isEmpty && !right.isEmpty) {
             if (parameters("interval").right.get.isEmpty) {
               Seq(OneTimeRead(ttl,
@@ -265,17 +281,20 @@ object OmiParser extends Parser[ParseMsg] {
       }
 
       case "result" => {
+        //Get parameters
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat", true)
         )
         
+        //Get sub nodes
         // NOTE: Result does not have to contain msg
         val subnodes = Map(
           "return" -> getChild(node, "return",tolerateEmpty = true),
           "msg" -> getChild(node, "msg", true, true),
           "requestId" -> getChild(node, "requestId", true, true)
         )
-
+        
+        //Check does msg exists
         if (subnodes("msg").isRight &&
           subnodes("msg").right.get.nonEmpty &&
           subnodes("requestId").isRight &&
@@ -284,15 +303,17 @@ object OmiParser extends Parser[ParseMsg] {
           subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true, true)
         }
         
+        //Check return
         if (subnodes("return").isRight) {
           parameters += "returnCode" -> getParameter(subnodes("return").right.get.head, "returnCode", true)
         }
         
+        //handle errors
         val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
         if (errors.nonEmpty)
           return errors.toSeq
 
-        
+        //Return right kind of result
         if (!subnodes.contains("msg") || subnodes("msg").right.get.isEmpty)
           return Seq(Result(subnodes("return").right.get.text,
             parameters("returnCode").right.get,
