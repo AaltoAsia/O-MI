@@ -64,7 +64,7 @@ object OdfParser extends Parser[OdfParseResult] {
     }
   }
 
-  private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
+  private def dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
   /**
    * private helper type for parseInfoItem
    *

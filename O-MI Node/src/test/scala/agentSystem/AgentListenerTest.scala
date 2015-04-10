@@ -3,28 +3,18 @@ package agentSystem
 import org.specs2.mutable._
 import akka.testkit.{ TestProbe, TestKit, EventFilter }
 import akka.actor._
-import org.specs2.specification.Scope
-import com.typesafe.config.ConfigFactory
+//import org.specs2.specification.Scope
+//import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
 import akka.io.Tcp._
 import scala.io.Source
 import database._
-
+import testHelpers.Actors
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
 
 class AgentListenerTest extends Specification {
-//def before = SQLite.clearDB()
-//def after = SQLite.clearDB()
-  //def before = SQLite.init
-//  def after = {
-//    SQLite.remove("Objects/AgentTest")
-//  }
-//  
-  class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
-  akka.loggers = ["akka.testkit.TestEventListener"]
-  """))) with Scope
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)

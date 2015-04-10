@@ -3,21 +3,16 @@ package responses
 import org.specs2.mutable._
 import akka.testkit.{ TestKit, TestActorRef, TestProbe }
 import akka.actor._
-import com.typesafe.config.ConfigFactory
-import org.specs2.specification.Scope
 import database.{ DBSub, DBSensor }
 import parsing.Types.Path
 import scala.concurrent._
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration.Duration
+import testHelpers.Actors
 
 class SubscriptionHandlerActorTest extends Specification {
   
-
-  class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
-  akka.loggers = ["akka.testkit.TestEventListener"]
-  """))) with Scope
 
   database.SQLite.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
   val testPath = Path("SubscriptionHandlerTest/testData")
