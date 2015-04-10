@@ -12,7 +12,6 @@ import MediaTypes._
 import responses._
 import parsing._
 import parsing.Types._
-import sensordata.SensorData
 import database.SQLite
 
 import scala.concurrent.duration._

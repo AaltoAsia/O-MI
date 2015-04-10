@@ -132,10 +132,8 @@ object OmiParser extends Parser[ParseMsg] {
         if (left.isEmpty && !right.isEmpty) {
           Seq(Write(ttl,
             right.map(_.right.get),
-            callback,
-            subnodes("requestId").right.get.map {
-              id => id.text
-            }))
+            callback
+            ))
         } else if (!left.isEmpty) {
           left.map(_.left.get)
         } else { Seq(ParseError("No Objects to parse")) }
@@ -219,10 +217,6 @@ object OmiParser extends Parser[ParseMsg] {
               Seq(Subscription(ttl,
                 parameters("interval").right.get.toDouble,
                 right.map(_.right.get),
-                begin,
-                end,
-                newest,
-                oldest,
                 callback,
                 subnodes("requestId").right.get.map {
                   id => id.text

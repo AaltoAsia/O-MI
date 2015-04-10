@@ -19,7 +19,6 @@ import database.SQLite
 import database._
 
 import xml._
-import sensordata.SensorData
 
 // Initialize functionality seperated for testing purposes
 object Starter {
@@ -34,8 +33,6 @@ object Starter {
     // Create test data
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
-    //val sensorData = new SensorData("http://zanagi.herokuapp.com/sensors/")
-    //sensorData.queueSensors()
 
     //Peer/Usability testing
     /*
