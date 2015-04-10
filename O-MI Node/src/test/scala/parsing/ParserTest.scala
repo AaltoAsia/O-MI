@@ -519,10 +519,6 @@ class ParserTest extends Specification {
             "SmartCottage"),
           List(),
           List())),
-      Some(Timestamp.valueOf("2014-12-18 15:34:52")),
-      Some(Timestamp.valueOf("2014-12-18 15:34:52")),
-      Some(5),
-      Some(3),
       Some("http://testing.test")
       )))
   }

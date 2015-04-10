@@ -40,6 +40,21 @@ object Types {
    */
   case class ParseError(msg: String) extends ParseMsg
 
+  /** case class that represents Read request without interval, aka. One-Time-Read request,
+   *  @param ttl Time-To-Live in seconds.
+   *  @param senosrs Sensors to be readen.
+   *  @param begin Optional. Values measured after begin's Timestamp are requested.
+   *         Defines begin of Timeframe. If not given, but end is given,
+   *         oldest value's timestamp is expected value. If neither of 
+   *         end or begin is given, request will return only current value.
+   *         Oldest and newest can affect the request.
+   *  @param end Optional. Values measured before end Timestamp are requested. Defines
+   *         end of Timeframe. If not given, current time is expected value. 
+   *  @param newest Optional count of newest values request from timeframe.
+   *  @param oldest Optional count of oldest values request from timeframe.
+   *  @param callback Optional callback address were responses are send.
+   *  @param requestId Optional value that indicates which older request answered.
+   */
   case class OneTimeRead( ttl: Double,
                           sensors: Seq[ OdfObject],
                           begin: Option[Timestamp] = None,
@@ -50,23 +65,34 @@ object Types {
                           requestId: Seq[ String] = Seq.empty
                         ) extends ParseMsg with OmiRequest
 
+  /** Case class that represents Write request.
+   *  @param ttl Time-To-Live in seconds.
+   *  @param senosrs Objects to be writen.
+   *  @param callback Optional callback address were responses are send.
+   */
   case class Write( ttl: Double,
                     sensors: Seq[ OdfObject],
-                    callback: Option[String] = None,
-                    requestId: Seq[ String] = Seq.empty
+                    callback: Option[String] = None
                   ) extends ParseMsg with OmiRequest
 
+  /** Case class that represents Read request with interval, aka. Subcription request.
+   *  @param ttl Time-To-Live in seconds.
+   *  @param interval Interval of responses in seconds.
+   *  @param senosrs Sensors to be readen.
+   *  @param callback Optional callback address were responses are send.
+   *  @param requestId Optional value that indicates which older request answered.
+   */
   case class Subscription(  ttl: Double,
                             interval: Double,
                             sensors: Seq[ OdfObject],
-                            begin: Option[Timestamp] = None,
-                            end: Option[Timestamp] = None,
-                            newest: Option[Int] = None,
-                            oldest: Option[Int] = None,
                             callback: Option[String] = None,
                             requestId: Seq[ String] = Seq.empty
                             ) extends ParseMsg with SubLike with OmiRequest
 
+  /** Case class that represents Write request.
+   *  @param ttl Time-To-Live in seconds.
+   *  @param requestId RequestIds of older requests to be canceled.
+   */
   case class Cancel(  ttl: Double,
                       requestId: Seq[ String]
                       ) extends ParseMsg with OmiRequest {
@@ -89,6 +115,10 @@ object Types {
     */
   case class TimedValue( time: Option[Timestamp], value: String)
 
+  /** case classs that represnts MetaData of InfoItem
+    *
+    * @param data xml MetaData node stored as string.
+    */
   case class InfoItemMetaData(data: String)
 
 
@@ -115,8 +145,6 @@ object Types {
    *  @param path path to the Object as a Seq[String] e.g. Seq("Objects","SmartHouse","SmartFridge")
    *  @param childs Object's childs found in xml structure.
    *  @param sensors Object's InfoItems found in xml structure.
-   *  @param metadata Object may contain metadata, 
-   *         metadata can contain e.g. value type, units or similar information
    */
   case class OdfObject( path: Path,
                         childs: Seq[OdfObject],
@@ -167,7 +195,8 @@ object Types {
     override def toString: String = this.mkString("/")
   }
 
-
+  /** Helper object for Path, contains implicit conversion between Path and Seq[String]
+    */
   object Path {
     def apply(pathStr: String): Path = new Path(pathStr)
     def apply(pathSeq: Seq[String]): Path = new Path(pathSeq)
