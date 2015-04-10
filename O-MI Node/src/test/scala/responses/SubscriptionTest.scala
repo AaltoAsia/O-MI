@@ -84,7 +84,7 @@ class SubscriptionTest extends Specification with BeforeAll {
           </omi:response>
         </omi:omiEnvelope>
 
-      trim(xmlreturn.head).toString == trim(correctxml).toString
+      trim(xmlreturn.head).toString() === trim(correctxml).toString()
 
     }
 
@@ -117,7 +117,7 @@ class SubscriptionTest extends Specification with BeforeAll {
           </omi:response>
         </omi:omiEnvelope>
 
-      trim(subxml.head).toString === trim(correctxml).toString
+      trim(subxml.head) === trim(correctxml)
 
     }
 
@@ -148,7 +148,7 @@ class SubscriptionTest extends Specification with BeforeAll {
           </omi:response>
         </omi:omiEnvelope>
 
-      trim(subxml.head).toString == trim(correctxml).toString
+      trim(subxml.head) === trim(correctxml)
 
     }
 
@@ -167,12 +167,11 @@ class SubscriptionTest extends Specification with BeforeAll {
           </omi:response>
         </omi:omiEnvelope>
 
-      (requestID, trim(xmlreturn.head).toString) == (-1, trim(correctxml).toString)
+      (requestID, trim(xmlreturn.head)) === (-1, trim(correctxml))
     }
 
     "Return with error when subscription doesn't exist" in {
       val xmlreturn = OMISubscription.OMISubscriptionResponse(1234)
-      println(xmlreturn.head)
 
       val correctxml =
         <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
@@ -184,10 +183,7 @@ class SubscriptionTest extends Specification with BeforeAll {
           </omi:response>
         </omi:omiEnvelope>
 
-      //TODO: why this doesn't match
-      //trim(xmlreturn.head).toString == trim(correctxml).toString
-
-      1 == 1
+      trim(xmlreturn.head) === trim(correctxml)
     }
     "Return polled data only once" in {
       val testTime = new Date().getTime - 10000
