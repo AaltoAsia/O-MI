@@ -1,7 +1,26 @@
-/* 
+/**
+ * Class that simulates the parent-child relationship of objects and SubObjects + InfoItems
+ * @param {string} id The ID of the Object
+ */
+function OdfObject(id){
+	this.id = id;
+	this.subObjects = []; // Child objects
+	this.infoItems = []; // Child items
+}
+
+/**
+ * Class with a single variable stored
+ * @param {string} name The name of the info item
+ */
+function InfoItem(name){
+	this.name = name;
+}
+
+/**
 * Write the O-DF message (XML) based on form input
 * @param {Array} Array of objects, that have their 
-* @param {Object} OMI object 
+* @param {Object} OMI object
+* @returns The generated request
 */
 function writeXML(items, omi){
 	//Using the same format as in demo
@@ -26,20 +45,34 @@ function writeXML(items, omi){
 	} else if(omi.operation === 'write'){
 		writeObjects(writer, items);
 	} 
-	
 	writer.writeEndElement();
     writer.writeEndDocument();
 
     var request = writer.flush();
-
     return request;
 }
 
+/**
+ * Writes the omi:msg element and its attributes
+ * @param {XMLWriter} writer The XMLWriter instance used in writing the XML
+ */
 function writeMsg(writer){
 	writer.writeStartElement('omi:msg');
 	writer.writeAttributeString( 'xmlns', 'omi.xsd');
 	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 }
+
+/**
+ * Writes the content of the O-MI request
+ * @param {XMLWriter} writer The XMLWriter instance used in writing the XML
+ * @param {Array} items The array of checked checkboxes
+ * @param {Number} interval The interval of the subscription requests (can be undefined)
+ * @param {string} begin The datetime string for the beginning of the request's timespan (can be undefined)
+ * @param {string} end The datetime string for the end of the request's timespan (can be undefined)
+ * @param {Number} newest The number of newest values (can be undefined)
+ * @param {Number} oldest The number of oldest values (can be undefined)
+ * @param {string} callback The URL of the subscription callback address (can be undefined)
+ */
 
 function writeObjects(writer, items, interval, begin, end, newest, oldest, callback){
 	writer.writeAttributeString('msgformat', 'omi.xsd');
@@ -104,6 +137,7 @@ function addChildren(object, items){
 	
 	for(var i = 0; i < children.length; i++){
 		var child = children[i];
+		
 		if(child.id){ //Object
 			var subobj = new OdfObject(child.id);
 			addChildren(subobj, items);
@@ -149,15 +183,11 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 	setWriterSettings(writer);
 	
 	writer.writeStartDocument();
-	//(first line)
+
 	writeOmiInfo(writer, ttl);
-	
-	//(second line)
 	writer.writeStartElement('omi:read');
 	writer.writeAttributeString('msgformat', 'omi.xsd');
-	
-	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
-	
+
 	if(begin){
 		if(new Date(begin).getTime() > 0){
 			writer.writeAttributeString('begin', begin);
@@ -179,16 +209,11 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 			writer.writeAttributeString('oldest', oldest);
 		}
 	}
-	
-	//if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
-	
-	//(third line)
+
 	writeRequestId(writer, requestId);
-	
-	writeMsg(writer);
-	
+	writeMsg(writer)
 	writer.writeStartElement('Objects');
-	//Payload
+
 	var ids = [];
 	var objects = [];
 	

@@ -1,12 +1,9 @@
-/* Returns formatted xml */
+/**
+ * Formats an XML String
+ * @param {String} xml The XML String
+ * @returns The formatted XML
+ */
 function formatXml(xml) {
-    var formattedXML = hljs.highlightAuto(formatNoHighlight(xml));
-
-    return formattedXML;
-}
-
-/* Format the given text as xml without highlight */
-function formatNoHighlight(xml) {
 	var formatted = '';
     var reg = /(>)(<)(\/*)/g;
     xml = xml.replace(reg, '$1\r\n$2$3');

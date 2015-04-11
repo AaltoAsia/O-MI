@@ -3,6 +3,16 @@ var timeout; //Used for request generation timeout
 var requestInterval = 1000; // Interval in milliseconds for automatic request generation
 var generating = false; // TODO: used as global variable, see submit.js
 
+//Page 2 definitions
+$(document).on('click', '.icon', function() {
+	if(!$(this).hasClass("selected")){
+		$(".icon").removeClass("selected");
+		$(this).addClass("selected");
+		loadOptions();
+		updateRequest(requestInterval);
+	}
+});
+
 $(document).on("click", "#autorequest", function(){
 	updateRequest(requestInterval);
 });
@@ -129,16 +139,6 @@ function loadSides(page) {
 		next.prop("disabled", true);
 	}
 }
-
-// Page 2 definitions
-$(document).on('click', '.icon', function() {
-	if(!$(this).hasClass("selected")){
-		$(".icon").removeClass("selected");
-		$(this).addClass("selected");
-		loadOptions();
-		updateRequest(requestInterval);
-	}
-});
 
 /* Load form options */
 function loadOptions() {

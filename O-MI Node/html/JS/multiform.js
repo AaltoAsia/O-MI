@@ -1,16 +1,18 @@
 /* 
-Orginal Page: http://thecodeplayer.com/walkthrough/jquery-multi-step-form-with-progress-bar 
-
+Original Page: http://thecodeplayer.com/walkthrough/jquery-multi-step-form-with-progress-bar 
  */
+
 //jQuery time
 var current_fs, next_fs, previous_fs; // fieldsets
 var left, opacity, scale; // fieldset properties which we will animate
 var animating; // flag to prevent quick multi-click glitches
 var count;
 
+// Variable to keep count on which page we are
+var page = 1; 
+
 /* Event handler for the next button */
 $(document).on('click', '.next', function() {
-	// Using global variable index
 	if (page === 1) {
 		if (!page1Verified()) {
 			alert("Please check at least one object");
@@ -39,7 +41,11 @@ $(document).on('click', '.prev', function() {
 	transitionButton(this, animatePrev);
 });
 
-/* Set timeout for prev/next button animation defininf classes */
+/**
+ * Set timeout for prev/next button animation
+ * @param {Object} button The button clicked
+ * @param {Function} func The function to be called after timeout
+ */
 function transitionButton(button, func){
 	if(!animating){
 		$(button).addClass("resize");
@@ -51,52 +57,53 @@ function transitionButton(button, func){
 	animating = true;
 }
 
-/* Handle switching from current page to previous page */
+/**
+ * Handle switching from current page to previous page
+ */
 function animatePrev() {
 	if (page === 1)
-		return false;
-	
-	current_fs = $("#page" + page);
-	previous_fs = $("#page" + (page - 1));
-	next_fs = $("#page" + (page + 1));
-	
-	page -= 1; // Update index
-	animating = true;
+		return;
 
+	// Update pages and page index
+	page -= 1;
+	loadPages(page);
+	
 	// de-activate current step on progressbar
 	$("#progressbar li").eq(page).removeClass("active");
 	
-	animating = false;
-	
-	loadPages(page);
+	previous_fs = $("#page" + page);
 	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	// Allow animation again
+	animating = false;
 }	
 
-/* Handle switching from current page to next page */
+/**
+ * Handle switching from current page to next page
+ */
 function animateNext() {
 	if (page === 3)
-		return false;
+		return ;
 
 	// Animate scrolling
 	$("html, body").animate({ scrollTop: 0 }, "slow");
-
-	animating = true;
 	
-	current_fs = $("#page" + page);
-	next_fs = $("#page" + (page + 1));
-	prev_fs = $("#page" + (page - 1));
+	// Update pages and page index
+	page += 1;
+	loadPages(page);
 	
-	page += 1; // Update index
-
 	// activate next step on progressbar using the page number
 	$("#progressbar li").eq((page - 1)).addClass("active");
-
-	loadPages(page);
-	animating = false;
-	next_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	next_fs = $("#page" + page);
+	next_fs.animate({ scrollTop: 0 }, "slow");
 	
 	$(".resize").removeClass("resize");
 	
+	// Allow animation again
+	animating = false;
+	
+	// Ask about automatic request generation on page 2 if many checkboxes checked
 	if(page === 2){
 		if(checkedObjects().length > 100){
 			if (confirm('You have checked lot of objects. This webform has automatic request generation ' +
@@ -106,7 +113,10 @@ function animateNext() {
 			}
 		}
 		updateRequest(1000); //from pages.js
-	} else if(page === 3){
+	} 
+	
+	// Ask about request generation on page 3 if automatic generation disabled
+	if(page === 3){
 		if(!($("#autorequest").prop("checked"))){
 			if(confirm('You have disabled automatic generation, thus your request might not be up-to-date. Do you want ' +
 					'to generate the message once more before sending? (Note: your manual changes to the request will be overwritten)')) {
@@ -117,7 +127,18 @@ function animateNext() {
 	}
 }
 
+/**
+ * Returns whether the input on the 1st page is valid (at least 1 object selected)
+ * @returns true if at least 1 object selected on page 1, otherwise returns false
+ */
+function page1Verified(){
+	return $("#objectList").find("input").filter(":checked").length > 0;
+}
 
-$(".submit").click(function() {
-	return false;
-});
+/**
+ * Returns whether the input on the 2nd page is valid (numberical ttl)
+ * @returns true if ttl exists and it's numerical, otherwise returns false
+ */
+function page2Verified(){
+	return ($.isNumeric($("#ttl").val().replace(/\s/g, ''))) && !($('#request').is(':empty'));
+}
