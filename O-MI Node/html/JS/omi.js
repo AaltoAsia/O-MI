@@ -2,6 +2,7 @@
  * Class used to store parameters from XML generation
  * NOTE: this was made as an emergency solution to a usability problem, it is extremely inefficient and might
  * not be fixed due to time constraints
+ * @constructor
  */
 function Omi() {
 	this.operation;

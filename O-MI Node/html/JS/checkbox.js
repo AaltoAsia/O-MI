@@ -1,5 +1,6 @@
 /**
  * Class for managing all checkbox instances
+ * @constructor
  */
 function ObjectBoxManager(){
 	this.objects = []; // Array for storing objects
@@ -45,6 +46,7 @@ function ObjectBoxManager(){
 
 /**
  * Class for simulating a single checkbox instance
+ * @constructor
  * @param {string} id The id of the checkbox
  * @param {Number} depth The depth of the checkbox/object in the object tree
  * @param {ObjectBox} parent The parent of the current checkbox/object

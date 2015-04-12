@@ -1,5 +1,6 @@
 /**
  * Class that simulates the parent-child relationship of objects and SubObjects + InfoItems
+ * @constructor
  * @param {string} id The ID of the Object
  */
 function OdfObject(id){
@@ -10,6 +11,7 @@ function OdfObject(id){
 
 /**
  * Class with a single variable stored
+ * @constructor
  * @param {string} name The name of the info item
  */
 function InfoItem(name){
@@ -125,6 +127,11 @@ function writeObjects(writer, items, interval, begin, end, newest, oldest, callb
 	}
 }
 
+/**
+ * Adds child items to a object
+ * @param {OdfObject} object The object where the child items are added
+ * @param {Array} items Child items to be added
+ */
 function addChildren(object, items){
 	var children = [];
 	
@@ -149,12 +156,17 @@ function addChildren(object, items){
 	}
 }
 
-/* Writes an object and its children to the xml */
+/**
+ * Writes an object and its children to the xml
+ * @param {OdfObject} object The object to be written
+ * @param {XMLWriter} writer The current xml writer
+ */
+/*  */
 function writeObject(object, writer){
 	writer.writeStartElement('Object');
 	writer.writeElementString('id', object.id);
 	
-	// Write InfoItems BEFORE SubObjects
+	// Write InfoItems BEFORE SubObjects (schema)
 	for(var i = 0; i < object.infoItems.length; i++){
 		writer.writeStartElement('InfoItem');
 		writer.writeAttributeString('name', object.infoItems[i].name);
@@ -168,6 +180,11 @@ function writeObject(object, writer){
 	writer.writeEndElement();
 }
 
+/**
+ * Writes request ID to the XML
+ * @param {XMLWriter} writer The current xml writer
+ * @param {Array} requestIds The array of requestId's to be written
+ */
 function writeRequestId(writer, requestIds) {
 	for(var i = 0; i < requestIds.length; i++){
 		writer.writeStartElement('omi:requestId');
@@ -176,6 +193,19 @@ function writeRequestId(writer, requestIds) {
 	}
 }
 
+/**
+ * Writes and returns a O-MI subscription (read) request
+ * @param requestId
+ * @param items
+ * @param ttl
+ * @param interval
+ * @param begin
+ * @param end
+ * @param newest
+ * @param oldest
+ * @param callback
+ * @returns
+ */
 function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, oldest, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
@@ -233,21 +263,31 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 	writer.writeEndElement();
     writer.writeEndDocument();
 
-    var request = writer.flush();
-
-    return request;
+    return writer.flush();
 }
 
-function writePoll(writer, ttl, requestId) {
+/**
+ * Writes a O-MI poll request (read request using requestId from cancel/subscription)
+ * @param {XMLWriter} writer The current xml writer
+ * @param {Number} ttl Time-to-live
+ * @param {Array} requestIds The array of requestId's to be written
+ * @returns The request XML
+ */
+function writePoll(writer, ttl, requestIds) {
 	writer.writeStartDocument();
 	writeOmiInfo(writer, ttl);
 	writer.writeStartElement('omi:read');
-	writeRequestId(writer, requestId);
+	writeRequestId(writer, requestIds);
 	writer.writeEndDocument();
 	
 	return writer.flush();
 }
 
+/**
+ * Writes the omi:omiEnvelope xml element, its attribute strings, and ttl
+ * @param {XMLWriter} writer The current xml writer
+ * @param {Number} ttl Time-to-live
+ */
 function writeOmiInfo(writer, ttl) {
 	writer.writeStartElement('omi:omiEnvelope');
 	writer.writeAttributeString('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
@@ -258,6 +298,10 @@ function writeOmiInfo(writer, ttl) {
 	if(ttl) writer.writeAttributeString('ttl', ttl);
 }
 
+/**
+ * Sets XML writer settings
+ * @param {XMLWriter} writer The current xml writer
+ */
 function setWriterSettings(writer) {
 	writer.formatting = 'indented';
     writer.indentChar = ' ';
