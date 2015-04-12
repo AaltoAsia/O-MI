@@ -36,7 +36,9 @@ class AgentLoader  extends Actor with ActorLogging {
   
   case class ConfigUpdated()
   //Container for bootables
-  protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty 
+  protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty
+  //getter method to allow testing
+  private[agentSystem] def getBootables = bootables
   //Classloader for loading classes in jars.
   private val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
@@ -46,7 +48,7 @@ class AgentLoader  extends Actor with ActorLogging {
   loadAndStart
 
   /** Method for handling received messages.
-    * Should handlei:
+    * Should handle:
     *   -- ConfigUpdate with updating running AgentActors.
     *   -- Terminated with trying to restart AgentActor. 
     */
@@ -83,7 +85,7 @@ class AgentLoader  extends Actor with ActorLogging {
             log.warning("Agent allready running: "+ c)
           }
         } catch {
-          case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caucht")
+          case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caught")
           case e: Exception => log.warning(s"Classloading failed. $e")
         }
       }
@@ -101,7 +103,7 @@ class AgentLoader  extends Actor with ActorLogging {
             log.warning("Failed to start: "+ b.getClass.getName)
           } 
         } catch {
-          case e: InvalidActorNameException  => log.warning("Tryed to create same named actors")
+          case e: InvalidActorNameException  => log.warning("Tried to create same named actors")
           case e: Exception => log.warning(s"Classloading failed. $e")
         }
       } else {
@@ -138,7 +140,7 @@ class AgentLoader  extends Actor with ActorLogging {
     val nestedJars = jars flatMap { jar =>
       val jarFile = new JarFile(jar)
       val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))
-      jarEntries map { entry ⇒ new File("jar:file:%s!/%s" format (jarFile.getName, entry.getName)) }
+      jarEntries map { entry => new File("jar:file:%s!/%s" format (jarFile.getName, entry.getName)) }
     }
 
     val urls = (jars ++ nestedJars) map { _.toURI.toURL }
@@ -155,7 +157,7 @@ class AgentLoader  extends Actor with ActorLogging {
       def run = {
         log.warning("Shutting down Akka...")
 
-        for (bootable ← bootables) {
+        for (bootable <- bootables) {
           log.info("Shutting down " + bootable.getClass.getName)
           bootable.shutdown()
         }
@@ -168,7 +170,7 @@ class AgentLoader  extends Actor with ActorLogging {
   /** Simple function for getting Bootable's name and Agent config file path pairs.
     *
     */
-  private def getClassnamesWithConfigPath : Array[(String,String)]= {
+  private[agentSystem] def getClassnamesWithConfigPath : Array[(String,String)]= {
     settings.agents.unwrapped().asScala.map{ case (s: String, o: Object) => (s, o.toString)}.toArray 
   }
   /** Supervison strategy for supervising AgentActors.
