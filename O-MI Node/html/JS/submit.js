@@ -248,8 +248,8 @@ function ajaxPost(server, request) {
 }
 
 /**
- * 
- * @returns The URL of the server based on the URL field on the page
+ * Gets the server url to send requests to
+ * @returns {string} The URL of the server based on the URL field on the page
  */
 function getServerUrl() {
 	var o = $("#url-field").val();

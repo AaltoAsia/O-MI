@@ -1,7 +1,7 @@
 /**
  * Formats an XML String
- * @param {String} xml The XML String
- * @returns The formatted XML
+ * @param {string} xml The XML String
+ * @returns {string} The formatted XML
  */
 function formatXml(xml) {
 	var formatted = '';

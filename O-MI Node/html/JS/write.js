@@ -22,7 +22,7 @@ function InfoItem(name){
 * Write the O-DF message (XML) based on form input
 * @param {Array} Array of objects, that have their 
 * @param {Object} OMI object
-* @returns The generated request
+* @returns {string} The generated request
 */
 function writeXML(items, omi){
 	//Using the same format as in demo
@@ -204,7 +204,7 @@ function writeRequestId(writer, requestIds) {
  * @param newest
  * @param oldest
  * @param callback
- * @returns
+ * @returns {string} The generated request XML
  */
 function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, oldest, callback){
 	//Using the same format as in demo
@@ -271,7 +271,7 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
  * @param {XMLWriter} writer The current xml writer
  * @param {Number} ttl Time-to-live
  * @param {Array} requestIds The array of requestId's to be written
- * @returns The request XML
+ * @returns {string} The generated request XML
  */
 function writePoll(writer, ttl, requestIds) {
 	writer.writeStartDocument();
