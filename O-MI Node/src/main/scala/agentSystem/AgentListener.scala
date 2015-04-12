@@ -5,14 +5,10 @@ import akka.io.{ IO, Tcp  }
 import akka.util.ByteString
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
-import java.util.Date
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.lang.Exception
-import scala.util.control._
+
 
 import parsing.OdfParser
-import database._
+
 
 import parsing.Types._
 import parsing.Types.Path._

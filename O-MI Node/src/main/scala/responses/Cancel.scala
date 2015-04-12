@@ -2,19 +2,14 @@ package responses
 
 import Common._
 import parsing.Types._
-import database._
-
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import scala.xml._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
-
 import akka.actor.ActorRef
 import akka.util.Timeout
-import Timeout._
 import akka.pattern.ask
 
 /** class for generating responses for omi:cancel requests.

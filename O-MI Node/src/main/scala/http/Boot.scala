@@ -7,15 +7,10 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
 import java.util.Date
-import java.text.SimpleDateFormat;
 import java.net.InetSocketAddress
-
 import agentSystem.{AgentListener, AgentLoader, InputPusher}
 import responses._
-import parsing.OdfParser
 import parsing.Types._
-import parsing.Types.Path._
-import database.SQLite
 import database._
 
 import xml._

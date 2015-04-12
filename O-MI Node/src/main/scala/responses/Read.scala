@@ -2,7 +2,6 @@ package responses
 
 
 import parsing.Types._
-import parsing.Types.Path._
 import database._
 import Common._
 

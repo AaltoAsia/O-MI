@@ -1,31 +1,18 @@
 package parsing
-import parsing.Types._
 
+import parsing.Types._
 import java.sql.Timestamp
 import scala.xml._
 import scala.util.Try
 import scala.collection.mutable.Map
-
-import java.io.File
-import java.io.StringReader
-import java.io.StringBufferInputStream
-import java.io.IOException
-import java.sql.Timestamp
 import java.text.SimpleDateFormat
-
-//Schema validation
-import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.Schema
-import javax.xml.validation.SchemaFactory
-import javax.xml.validation.Validator
 import scala.xml.Utility.trim
-
 import org.xml.sax.SAXException
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[ParseMsg] {
   private val implementedRequest = Seq("read", "write", "cancel", "response")
-  private val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
+  private def dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
 
   override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 

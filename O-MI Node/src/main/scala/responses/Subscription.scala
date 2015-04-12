@@ -3,7 +3,6 @@ package responses
 import Common._
 import ErrorResponse.intervalNotSupported
 import parsing.Types._
-import parsing.Types.Path._
 import database._
 import scala.xml
 import scala.xml._

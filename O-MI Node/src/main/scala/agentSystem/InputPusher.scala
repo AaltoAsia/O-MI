@@ -1,14 +1,10 @@
 package agentSystem
 
 import database._
-
 import parsing.Types._
 import parsing.Types.Path._
-
 import java.util.Date
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.lang.Exception
+
 /** Trait for pushing data from sensors to db.
   *
   */

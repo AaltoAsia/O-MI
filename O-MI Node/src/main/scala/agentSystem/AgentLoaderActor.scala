@@ -3,21 +3,11 @@ package agentSystem
 import http._
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import akka.io.{ IO, Tcp }
 import akka.event.{Logging, LoggingAdapter}
-import akka.util.ByteString
-import akka.util.Timeout
-import akka.pattern.ask
-import xml._
-import io._
-import scala.concurrent.duration._
 import scala.collection.mutable.Map
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import scala.collection.JavaConverters._
-import java.net.InetSocketAddress
 import java.net.URLClassLoader
-import java.lang.Boolean.getBoolean
 import java.util.jar.JarFile
 import java.io.File
 /** Helper Object for creating AgentLoader.

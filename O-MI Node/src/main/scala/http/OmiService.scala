@@ -2,8 +2,6 @@ package http
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingAdapter
-import akka.pattern.ask
-
 import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
@@ -12,10 +10,7 @@ import MediaTypes._
 import responses._
 import parsing._
 import parsing.Types._
-import database.SQLite
 
-import scala.concurrent.duration._
-import scala.concurrent._
 import xml._
 
 class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {

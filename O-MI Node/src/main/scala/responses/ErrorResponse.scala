@@ -1,7 +1,6 @@
 package responses
 
 import Common._
-import parsing._
 import parsing.Types._
 import xml._
 
