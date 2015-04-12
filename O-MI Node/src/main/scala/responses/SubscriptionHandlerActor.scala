@@ -108,6 +108,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   }
 
   /**
+   * @param id The id of subscription to remove
    * @return true on success
    */
   private def removeSub(id: Int): Boolean = {
@@ -116,6 +117,11 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       case None => false
     }
   }
+  
+  /**
+   * @param sub The subscription to remove
+   * @return true on success
+   */
   private def removeSub(sub: DBSub): Boolean = {
     if (sub.isEventBased) {
       sub.paths.foreach { path =>

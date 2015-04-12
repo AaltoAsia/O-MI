@@ -65,15 +65,13 @@ class InputDataHandler(
 
   import Tcp._
 
-  // timestamp format to use when data doesn't have its own
-  val dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
   /** Partial function for handling received messages.
     */
   def receive = {
     case Received(data) => 
       val dataString = data.decodeString("UTF-8")
 
-      log.debug(s"Got data from $sender") // \n" + dataString)
+      log.debug(s"Got data from $sender")
 
       val parsedEntries = OdfParser.parse(dataString)
       val errors = parsedEntries.filter( _.isLeft ).map( e => e.left.get) 

@@ -63,7 +63,8 @@ object OdfParser extends Parser[OdfParseResult] {
       case _ => Seq(Left(ParseError("Unknown node in O-DF at path: " + currentPath.mkString("/"))))
     }
   }
-
+  
+  //Changed to def from val because of concurrency problems
   private def dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
   /**
    * private helper type for parseInfoItem
