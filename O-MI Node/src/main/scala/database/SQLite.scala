@@ -13,6 +13,8 @@ import scala.collection.mutable.Buffer
 import java.sql.Timestamp
 import slick.jdbc.StaticQuery
 
+
+
 import parsing.Types._
 /**
  * Database object available everywhere in the code. To be used during actual runtime.
@@ -37,7 +39,7 @@ class testDB(name:String) extends DataBase
  * base Database trait used in object SQLite and class testDB 
  */
 trait DataBase {
-  @volatile protected var db:Database = null
+  protected var db:Database = null
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) } // String to Path
@@ -95,8 +97,7 @@ trait DataBase {
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return boolean whether added data was new
    */
-  def set(data: DBSensor) =
-    {
+  def set(data: DBSensor) = this.synchronized {
       var count = 0
       var buffering = false
       //search database for sensor's path
@@ -128,8 +129,7 @@ trait DataBase {
    * @param data metadata to be stored as string e.g a XML block as string
    * 
    */
-  def setMetaData(path:Path,data:String)
-  {
+  def setMetaData(path:Path,data:String) = this.synchronized {
     val qry = meta.filter(_.path === path).map(_.data)
     val count = runSync(qry.result).length
     if(count == 0)
@@ -161,7 +161,7 @@ trait DataBase {
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(String, TimedValue)]) {
+  def setMany(data: List[(String, TimedValue)]) = this.synchronized {
     var path = Path("")
     var len = 0
     var add = Seq[(Path,String,Timestamp)]()
@@ -205,7 +205,7 @@ trait DataBase {
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
    * @return boolean whether something was removed
    */
-  def remove(path: Path): Boolean = {
+  def remove(path: Path): Boolean = this.synchronized {
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
     var deleted = false
@@ -276,7 +276,7 @@ trait DataBase {
    *
    */
   private def removeExcess(path: Path) =
-    {
+    this.synchronized {
       var pathQuery = latestValues.filter(_.path === path)
       var qry = runSync(pathQuery.sortBy(_.timestamp).result)
       var count = qry.length
@@ -293,7 +293,7 @@ trait DataBase {
    * @param path path as Path object
    * 
    */
-  def startBuffering(path: Path):Boolean = {
+  def startBuffering(path: Path):Boolean = this.synchronized {
     val pathQuery = buffered.filter(_.path === path)
     var len = runSync(pathQuery.result).length
     if (len == 0) {
@@ -311,7 +311,7 @@ trait DataBase {
    * 
    * @param path path as Path object
    */
-  def stopBuffering(path: Path):Boolean= {
+  def stopBuffering(path: Path):Boolean = this.synchronized {
       val pathQuery = buffered.filter(_.path === path)
       val str = runSync(pathQuery.result)
       var len = str.length
@@ -441,7 +441,7 @@ trait DataBase {
    * Empties all the data from the database
    * 
    */
-  def clearDB() = {
+  def clearDB() = this.synchronized {
     runWait(DBIO.seq(
       latestValues.delete,
       objects.delete,
@@ -573,9 +573,8 @@ trait DataBase {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double)
-  {
-   runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = this.synchronized {
+    runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
   }
   /**
    * Returns DBSub object wrapped in Option for given id.
@@ -608,8 +607,7 @@ trait DataBase {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: DBSub): Int =
-    {
+  def saveSub(sub: DBSub): Int = this.synchronized {
         val id = getNextId()
         sub.id = id
         runSync(DBIO.seq(
