@@ -60,7 +60,7 @@ Omi.prototype.saveOptions = function(){
 
 /**
  * Generates and returns the O-MI request
- * @returns The generated request
+ * @returns {string} The generated request XML
  */
 Omi.prototype.getRequest = function(objects) {
 	if(this.request.length === 0){
@@ -71,7 +71,7 @@ Omi.prototype.getRequest = function(objects) {
 
 /**
  * Generates and returns the O-MI subscription request
- * @returns The generated request
+ * @returns {string} The generated request XML
  */
 Omi.prototype.getSub = function(requestId, objects) {
 	if(this.subscribe.length === 0){

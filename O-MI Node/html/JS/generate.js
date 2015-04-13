@@ -35,7 +35,7 @@ function generateRequest(){
 
 /**
  * Gets all checkboxes that are checked
- * @returns Array of checked checkboxes
+ * @returns {Array} The array of checked checkboxes
  */
 function checkedObjects() {
 	return $("#objectList").find("input").filter(":checked"); //Filter the selected objects (checkboxes that are checked)

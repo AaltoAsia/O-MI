@@ -129,7 +129,7 @@ function animateNext() {
 
 /**
  * Returns whether the input on the 1st page is valid (at least 1 object selected)
- * @returns true if at least 1 object selected on page 1, otherwise returns false
+ * @returns {Boolean} true if at least 1 object selected on page 1, otherwise returns false
  */
 function page1Verified(){
 	return $("#objectList").find("input").filter(":checked").length > 0;
@@ -137,7 +137,7 @@ function page1Verified(){
 
 /**
  * Returns whether the input on the 2nd page is valid (numberical ttl)
- * @returns true if ttl exists and it's numerical, otherwise returns false
+ * @returns {Boolean} true if ttl exists and it's numerical, otherwise returns false
  */
 function page2Verified(){
 	return ($.isNumeric($("#ttl").val().replace(/\s/g, ''))) && !($('#request').is(':empty'));
