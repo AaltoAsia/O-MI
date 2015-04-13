@@ -4,6 +4,17 @@ var iconSelect, omi, iconValue;
 /* ObjectBoxManager object for handling object checkboxes */
 var manager;
 
+var fullObjectsRequest = 
+'<?xml version="1.0" encoding="UTF-8" ?>\n' + 
+'<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">\n' +
+  '<omi:read msgformat="omi.xsd">\n' +
+    '<omi:msg xmlns="omi.xsd" xsi:schemaLocation="odf.xsd odf.xsd">\n' +
+      '<Objects>\n' +
+      '</Objects>\n' +
+    '</omi:msg>\n' +
+  '</omi:read>\n' +
+'</omi:omiEnvelope>\n';
+
 /* Initial settings */
 $(function() {
 	// Initialize ObjectBoxManager
@@ -114,34 +125,58 @@ $(function() {
 
 
 /**
- *  Gets the objects from the server through ajax get 
+ *  Gets the objects from the server using AJAX
  */
 function getObjects() {
-	console.log("Sending AJAX GET for the objects...");
+	console.log("Sending AJAX POST for the objects...");
 	
 	// Get user specified URL from the DOM
 	objectUrl = $("#url-field").val();
 
 	// Send ajax get-request for the objects
-	ajaxGet(0, objectUrl, "");
+	//loadXML("request/objects.xml", objectUrl);
+	ajaxObjectQuery(objectUrl, fullObjectsRequest);
+}
+
+/**
+ * Loads the XML using AJAX GET and call the send function upon loading
+ * @param {string} filepath The path to the XML file
+ * @param {Number} serverUrl The URL of the server to send the request to
+ */
+function loadXML(filepath, serverUrl) {
+	$.ajax({
+	    url: filepath, // path to xml
+	    type: 'GET',
+	    dataType: 'xml',
+	    success: function(xml){
+	    	/* Upon getting the XML request, send it by calling the sendAjaxRequest function */
+	    	/* Note: The function can be called anywhere by giving the xml string and server url as parameters */
+	    	ajaxObjectQuery(serverUrl, xml); 
+	    }
+	});
 }
 
 /**
  * Sends an ajax query for objects 
- * @param {Number} indent The depth of the object tree hierarchy
  * @param {string} url The URL of the server to get the objects data from
- * @param {string} listId The id of the list DOM object that's being queried
+ * @param {string} xml The XML string of the request to be sent
  */
-function ajaxGet(indent, url, listId){
+function ajaxObjectQuery(url, xml){
+	// Show loading animation
+	$("#objectContainer .loading").show();
+	
 	$.ajax({
-        type: "GET",
-		dataType: "xml",
-        url: url,
+		type: "POST",
+		url: url, // The server url here
+		data: xml, // The request here
+		contentType: "text/xml",
+		processData: false,
+		dataType: "text",
         success: function(data) {
-			displayObjects(data, indent, url, listId);
+			displayObjects(data);
 		},
 		error: function(a, b, c){
-			alert("Error accessing data discovery");
+			alert("Error accessing data discovery; The database might be updating.");
 		}
     });
 }
@@ -149,47 +184,53 @@ function ajaxGet(indent, url, listId){
 /**
  *  Display the objects as checkboxes in objectList 
  *  @param {XML Object} data The received XML data
- *  @param {Number} indent The depth of the object (recursive data discovery)
- *  @param {string} url The URL to the server (recursive data discovery)
- *  @param {string} listId The ID of the current list (recursive data discovery)
  */
-function displayObjects(data, indent, url, listId) {
-	if(indent === 0){
+function displayObjects(data) {
+	// Append objects as checkboxes to the webpage
+	$(data).find('Objects').each(function(){
 		// Clear the existing list
 		$("#objectList").empty();
 		
-		// Append objects as checkboxes to the webpage
-		$(data).find('Objects').each(function(){
-			$(this).find("Object").each(function(){
-				var id = $(this).find("id").text();
-				
-				manager.addObject(id);
-				
-				// Get lower hierarchy values (Subobjects/Infoitems)
-				ajaxGet(indent + 1, url + "/" + id, "list-" + id);
-			});
-		});
-	} else {
-		// Subobjects/Infoitems
-		$(data).find("Object").each(function(){
-			var id = $($(this).find("id")[0]).text();
-			var sub = [];
+		$(this).children("Object").each(function(){
+			var id = $($(this).children("id")[0]).text();
 			
-			$(this).find("Object").each(function(){
-				var name = $(this).find("id").text();
+			manager.addObject(id);
+		});
+	});
+	$(data).find('Objects').each(function(){
+		// Get lower hierarchy values (Subobjects/Infoitems)
+		$(this).children("Object").each(function(){
+			var id = $($(this).children("id")[0]).text();
 
-				//ajaxGet(indent + 1, url + "/" + name);
-				manager.find(id).addChild(id, name, "list-" + id);
-				sub.push(name);
-			});
-			addInfoItems(this, id, indent);
+			var pathArray = [id];
 			
-			for(var i = 0; i < sub.length; i++){
-				ajaxGet(indent + 1, url + "/" + sub[i], "list-" + id);
-			}
+			addSubObjects(this, id, pathArray);
 		});
-	}
+	});
+	
+	// Hide loading animation
+	$("#objectContainer .loading").hide();
 }
+
+/**
+ * Adds subobjects to the Object tree
+ * @param {Object} parent The parent object
+ * @param {string} id The id of the parent
+ * @param {Array} pathArray Array of string that specifies the object path
+ */
+function addSubObjects(parent, id, pathArray){
+	$(parent).children("Object").each(function(){
+		var name = $($(this).children("id")[0]).text();
+		
+		manager.find(id, pathArray).addChild(id, name, "list-" + id);
+		
+		pathArray.push(name);
+		addSubObjects(this, name, pathArray);
+		pathArray.pop();
+	});
+	addInfoItems(parent, id);
+}
+
 /**
  * Adds InfoItem checkboxes under the list of the current object
  * @param {Object} parent The parent Object of the the current object
@@ -198,7 +239,7 @@ function displayObjects(data, indent, url, listId) {
 function addInfoItems(parent, id) {
 	var margin = "20px";
 	
-	$(parent).find("InfoItem").each(function(){
+	$(parent).children("InfoItem").each(function(){
 		var name = $(this).attr('name');
 
 		// Append InfoItem as checkbox
@@ -234,6 +275,11 @@ function sendRequest() {
  * @param {string} request The XML request to be sent
  */
 function ajaxPost(server, request) {
+	// Show loading animation
+	$("#response .loading").show();
+	
+	console.log($("#response .loading"));
+	
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -246,6 +292,10 @@ function ajaxPost(server, request) {
 		},
 		error: function(a, b, c) {
 			handleError(a, b, c);
+		},
+		complete: function(e) {
+			// Hide loading animation
+			$("#response .loading").hide();
 		}
 	});
 }
@@ -287,10 +337,10 @@ function printResponse(response) {
  */
 function handleError(jqXHR, errortype, exc) {
 	console.log(jqXHR.responseText);
-	$("#responseBox").html(formatNoHighlight(jqXHR.responseText));
 	refreshEditor("response", "responseBox");
 	
 	console.log("Error sending to server: (" + exc +")");
+	printResponse(jqXHR.responseText)
 }
 
 /**

@@ -94,6 +94,7 @@ class AgentListenerTest extends Specification {
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
       awaitCond(SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
+      SQLite.getMetaData(Path("Objects/AgentTest/SmartHouse/Moisture")) must beSome 
     }
     
     "receive sended data" in new Actors {
@@ -103,8 +104,8 @@ class AgentListenerTest extends Specification {
       SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
       SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
       
-      EventFilter.debug(message = "Got data \n" + testOdf) intercept {
-        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+      EventFilter.debug(message = "Got data \n" + testOdf.replaceAll("AgentTest", "AgentTest123")) intercept {
+        actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("AgentTest", "AgentTest123"))), probe.ref)
       }
       
     }

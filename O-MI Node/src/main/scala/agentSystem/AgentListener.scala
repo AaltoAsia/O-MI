@@ -61,6 +61,7 @@ class InputDataHandler(
 
   import Tcp._
 
+  private var metaDataSaved: Boolean = false
   /** Partial function for handling received messages.
     */
   def receive = {
@@ -78,9 +79,29 @@ class InputDataHandler(
       }
 
      InputPusher.handleObjects(corrects)
+     if(!metaDataSaved){
+     InputPusher.handlePathMetaDataPairs(
+       corrects.flatten{
+         o =>
+           o.sensors ++ getSensors(o.childs)
+         }.filter{
+          info => info.metadata.nonEmpty 
+         }.map{
+          info  => (info.path, info.metadata.get.data)
+         }   
+
+      )
+    metaDataSaved = true
+    }
+
+
     case PeerClosed =>
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
-
+  def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = { 
+    o.flatten{ o =>
+    o.sensors ++ getSensors(o.childs)
+  }   
+}
 }
