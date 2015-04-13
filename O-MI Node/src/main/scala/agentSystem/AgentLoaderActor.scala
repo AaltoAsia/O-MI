@@ -19,6 +19,7 @@ object AgentLoader{
   def props() : Props = Props(new AgentLoader())
 }
 
+  case class ConfigUpdated()
 
 /** AgentLoader loads agents from jars in deploy directory.
   * Supervise agents and startups bootables.
@@ -29,7 +30,6 @@ class AgentLoader  extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
   import context.system
 
-  case class ConfigUpdated()
   //Container for bootables
   protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty
   //getter method to allow testing
@@ -40,7 +40,7 @@ class AgentLoader  extends Actor with ActorLogging {
 
   //Settings for getting list of Bootables and configs from application.conf
   private val settings = Settings(context.system)
-  loadAndStart
+  //loadAndStart
 
   /** Method for handling received messages.
     * Should handle:
@@ -66,46 +66,46 @@ class AgentLoader  extends Actor with ActorLogging {
     */
   def loadAndStart = {
     val classnames = getClassnamesWithConfigPath
-      val toBeBooted =  classnames map { case (c: String, p: String) => 
-        try {
-          if(!bootables.exists{case (k:String, (b:Bootable, _ ) ) => k == c}){
-              Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
-          } else if(bootables.exists{case (k:String, (b:Bootable, config: String ) ) => k == c && p != config }){ 
-            log.warning("Agent config changed: "+ c +"\n Agent will be removed and restarted.")
-            val agents = bootables(c)._1.getAgentActor
-            bootables -= c
-            agents foreach{ a => a ! Stop}
-            Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
-          } else { 
-            log.warning("Agent allready running: "+ c)
-          }
-        } catch {
-          case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caught")
-          case e: Exception => log.warning(s"Classloading failed. $e")
+    val toBeBooted =  classnames map { case (c: String, p: String) => 
+      try {
+        if(!bootables.exists{case (k:String, (b:Bootable, _ ) ) => k == c}){
+          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        } else if(bootables.exists{case (k:String, (b:Bootable, config: String ) ) => k == c && p != config }){ 
+          log.warning("Agent config changed: "+ c +"\n Agent will be removed and restarted.")
+          val agents = bootables(c)._1.getAgentActor
+          bootables -= c
+          agents foreach{ a => a ! Stop}
+          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        } else { 
+          log.warning("Agent allready running: "+ c)
         }
-      }
-
-    for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
-      log.info("Starting up " + b.getClass.getName)
-      if(bootables.get(c).isEmpty){
-        try{
-          if(b.startup(context.system, p)){
-            log.info("Successfully started: "+ b.getClass.getName)
-            bootables += Tuple2(c, (b, p))
-            val agents = b.getAgentActor
-            agents.foreach{agent => context.watch(agent)}
-          } else {
-            log.warning("Failed to start: "+ b.getClass.getName)
-          } 
-        } catch {
-          case e: InvalidActorNameException  => log.warning("Tried to create same named actors")
-          case e: Exception => log.warning(s"Classloading failed. $e")
-        }
-      } else {
-        
-          log.warning("Multiple instances of: "+ b.getClass.getName)
+      } catch {
+        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caught")
+        case e: Exception => log.warning(s"Classloading failed. $e")
       }
     }
+
+  for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
+    log.info("Starting up " + b.getClass.getName)
+    if(bootables.get(c).isEmpty){
+      try{
+        if(b.startup(context.system, p)){
+          log.info("Successfully started: "+ b.getClass.getName)
+          bootables += Tuple2(c, (b, p))
+          val agents = b.getAgentActor
+          agents.foreach{agent => context.watch(agent)}
+        } else {
+          log.warning("Failed to start: "+ b.getClass.getName)
+        } 
+      } catch {
+        case e: InvalidActorNameException  => log.warning("Tried to create same named actors")
+        case e: Exception => log.warning(s"Classloading failed. $e")
+      }
+    } else {
+
+      log.warning("Multiple instances of: "+ b.getClass.getName)
+    }
+  }
 
   addShutdownHook( bootables.map{ 
       case ( c: String, ( b: Bootable, p:String) ) => b

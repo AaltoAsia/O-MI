@@ -8,7 +8,7 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import java.util.Date
 import java.net.InetSocketAddress
-import agentSystem.{AgentListener, AgentLoader, InputPusher}
+import agentSystem._
 import responses._
 import parsing.Types._
 import database._
@@ -52,6 +52,7 @@ object Starter {
     // create and start sensor data listener
     val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
     val agentLoader = system.actorOf(AgentLoader.props() , "agent-loader")
+    agentLoader ! ConfigUpdated  
 
     implicit val timeout = Timeout(5.seconds)
 

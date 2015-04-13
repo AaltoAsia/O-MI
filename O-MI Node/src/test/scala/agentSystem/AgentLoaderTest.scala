@@ -22,6 +22,8 @@ class AgentLoaderTest extends TestKit(ActorSystem()) with SpecificationLike with
   val actorRef = TestActorRef[AgentLoader]
   val actor = actorRef.underlyingActor
   val probe = TestProbe()
+  actorRef ! ConfigUpdated  
+
   "AgentLoaderActor" should {
     sequential
 
@@ -45,7 +47,7 @@ class AgentLoaderTest extends TestKit(ActorSystem()) with SpecificationLike with
       test1 must beSome
       test2 must beSome
       
-      actorRef.tell(actor.ConfigUpdated, probe.ref)
+      actorRef.tell(ConfigUpdated, probe.ref)
       
       Thread.sleep(1000)
 
