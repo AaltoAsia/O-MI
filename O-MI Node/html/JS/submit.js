@@ -148,7 +148,10 @@ function ajaxGet(indent, url, listId){
 
 /**
  *  Display the objects as checkboxes in objectList 
- *  @param {XML Object} the received XML data
+ *  @param {XML Object} data The received XML data
+ *  @param {Number} indent The depth of the object (recursive data discovery)
+ *  @param {string} url The URL to the server (recursive data discovery)
+ *  @param {string} listId The ID of the current list (recursive data discovery)
  */
 function displayObjects(data, indent, url, listId) {
 	if(indent === 0){
