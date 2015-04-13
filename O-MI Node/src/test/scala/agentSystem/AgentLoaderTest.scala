@@ -6,19 +6,19 @@ import akka.testkit.{TestKit,TestActorRef, TestProbe}
 import testHelpers.Actors
  
 
+                                  /*
 class AgentLoaderTest extends TestKit(ActorSystem()) with SpecificationLike with After {
   def after = system.shutdown()
 
-                                  /*
   "AgentLoaderActor" should {
     "do something" in new Actors{
       val actorRef = TestActorRef(AgentLoader.props())
       val actor = actorRef.underlyingActor
+  actorRef ! ConfigUpdated  
 
       1 ===1
     }
   }
-  */
   val actorRef = TestActorRef[AgentLoader]
   val actor = actorRef.underlyingActor
   val probe = TestProbe()
@@ -57,3 +57,4 @@ class AgentLoaderTest extends TestKit(ActorSystem()) with SpecificationLike with
 
   }
 }
+  */
