@@ -28,7 +28,7 @@ function ObjectBoxManager(){
 	/**
 	 * Finds an object from the objects array with the given ID
 	 * @param {string} id The id of the object to be found
-	 * @returns The object with the given id if found, otherwise returns undefined
+	 * @returns {Object} The object with the given id if found, otherwise returns undefined
 	 */
 	this.find = function(id) {
 		var o;
@@ -59,7 +59,7 @@ function ObjectBox(id, depth, parent){
 	
 	/**
 	 * Gets the path suffix of the data discovery (REST)
-	 * @returns The path suffix for the URL data discovery
+	 * @returns {string} The path suffix for the URL data discovery
 	 */
 	this.getPath = function() {
 		if(this.parent){
@@ -71,7 +71,7 @@ function ObjectBox(id, depth, parent){
 	/**
 	 * Finds a child object with the given id
 	 * @param {string} id The ID of the child object to be found
-	 * @returns The ObjectBox instance with the given id if found, otherwise returns undefined
+	 * @returns {ObjectBox} The ObjectBox instance with the given id if found, otherwise returns undefined
 	 */
 	this.find = function(id) {
 		if(this.id === id){
@@ -108,7 +108,7 @@ function ObjectBox(id, depth, parent){
 	
 	/**
 	 * Gets the depth of the current object
-	 * @returns The depth of the current object
+	 * @returns {Number} The depth of the current object
 	 */
 	this.getDepth = function() {
 		return this.depth;

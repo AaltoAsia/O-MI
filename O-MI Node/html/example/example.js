@@ -41,7 +41,6 @@ $(function(){
 	 * @param {Number} serverUrl The URL of the server to send the request to
 	 */
 	function sendAjaxRequest(xml, serverUrl) {
-		
 		/* Using the jQuery ajax shorthand function to send the POST request */
 		$.ajax({
 			type: "POST",
@@ -54,6 +53,7 @@ $(function(){
 				/* response here, do something with it */
 				
 				console.log(formatXML(response)); // Formatting the xml for the lulz and a cleaner structure
+				console.log(parseToJson(response)); // Check JSON parsing
 			},
 			error: function(a, b, c){
 				// Error handling if necessary
@@ -64,6 +64,7 @@ $(function(){
 	/**
 	 * Formats XML string, giving it the necessary indentations and line breaks
 	 * @param {string} xml The XML string
+	 * @returns {string} The formatted XML string
 	 */
 	function formatXML(xml) {
 		var formatted = '';
@@ -97,4 +98,39 @@ $(function(){
 	    });
 	    return formatted;
 	}
+	
+	/**
+	 * Parses XML to JSON string (brute force)
+	 * NOTE: Function was created to follow the O-MI schema, and the vtt/otaakari4 structure in mursu
+	 * @oaram {string} xml The xml string
+	 * @param {Number} buildingDepth The depth of the building Object in Objects tree
+	 * @returns {string} the JSON string
+	 */
+	function parseToJson(xml, buildingDepth){
+		var xmlDoc = $.parseXML(xml);
+		var str = '[';
+		
+		$(xmlDoc).find('Objects > Object > Object').each(function(){
+			var count = 0;
+			$(this).each(function(){
+				$($(this).find("Object")).each(function(){
+					if(count === 0){
+						str += '{';
+					} else {
+						str += ',{';
+					}
+					str += '"building":"' + $($(this).parent().find("id")[0]).text() + '"';
+					str += ', "roomID":"' + $(this).find("id").text() + '"';
+					str += ', "type":"' + $(this).find('InfoItem').attr('name') + '"';
+					str += ', "value":"' + $(this).find('value').text() + '"';
+					str += '}';
+					count += 1;
+				});
+			});
+		});
+		str += ']';
+		
+		return str;
+	}
+	
 });
