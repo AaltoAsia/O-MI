@@ -15,6 +15,18 @@
 	overflow: auto;
 }
 
+#objectContainer .loading {
+	position: absolute;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	width: 5em;
+	height: 5em;
+	display: none;
+	z-index: 10;
+}
+
 #objectList {
 	position: relative;
 	list-style-type: none;

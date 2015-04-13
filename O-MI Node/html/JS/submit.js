@@ -4,6 +4,17 @@ var iconSelect, omi, iconValue;
 /* ObjectBoxManager object for handling object checkboxes */
 var manager;
 
+var fullObjectsRequest = 
+'<?xml version="1.0" encoding="UTF-8" ?>\n' + 
+'<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">\n' +
+  '<omi:read msgformat="omi.xsd">\n' +
+    '<omi:msg xmlns="omi.xsd" xsi:schemaLocation="odf.xsd odf.xsd">\n' +
+      '<Objects>\n' +
+      '</Objects>\n' +
+    '</omi:msg>\n' +
+  '</omi:read>\n' +
+'</omi:omiEnvelope>\n';
+
 /* Initial settings */
 $(function() {
 	// Initialize ObjectBoxManager
@@ -123,7 +134,8 @@ function getObjects() {
 	objectUrl = $("#url-field").val();
 
 	// Send ajax get-request for the objects
-	loadXML("request/objects.xml", objectUrl);
+	//loadXML("request/objects.xml", objectUrl);
+	ajaxObjectQuery(objectUrl, fullObjectsRequest);
 }
 
 /**
@@ -150,6 +162,9 @@ function loadXML(filepath, serverUrl) {
  * @param {string} xml The XML string of the request to be sent
  */
 function ajaxObjectQuery(url, xml){
+	// Show loading animation
+	$("#objectContainer .loading").show();
+	
 	$.ajax({
 		type: "POST",
 		url: url, // The server url here
@@ -161,7 +176,7 @@ function ajaxObjectQuery(url, xml){
 			displayObjects(data);
 		},
 		error: function(a, b, c){
-			alert("Error accessing data discovery");
+			alert("Error accessing data discovery; The database might be updating.");
 		}
     });
 }
@@ -192,8 +207,17 @@ function displayObjects(data) {
 			addSubObjects(this, id, pathArray);
 		});
 	});
+	
+	// Hide loading animation
+	$("#objectContainer .loading").hide();
 }
 
+/**
+ * Adds subobjects to the Object tree
+ * @param {Object} parent The parent object
+ * @param {string} id The id of the parent
+ * @param {Array} pathArray Array of string that specifies the object path
+ */
 function addSubObjects(parent, id, pathArray){
 	$(parent).children("Object").each(function(){
 		var name = $($(this).children("id")[0]).text();
@@ -251,6 +275,11 @@ function sendRequest() {
  * @param {string} request The XML request to be sent
  */
 function ajaxPost(server, request) {
+	// Show loading animation
+	$("#response .loading").show();
+	
+	console.log($("#response .loading"));
+	
 	$.ajax({
 		type: "POST",
 		url: server,
@@ -263,6 +292,10 @@ function ajaxPost(server, request) {
 		},
 		error: function(a, b, c) {
 			handleError(a, b, c);
+		},
+		complete: function(e) {
+			// Hide loading animation
+			$("#response .loading").hide();
 		}
 	});
 }
