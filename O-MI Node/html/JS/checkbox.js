@@ -28,12 +28,14 @@ function ObjectBoxManager(){
 	/**
 	 * Finds an object from the objects array with the given ID
 	 * @param {string} id The id of the object to be found
+	 * @param {Array} pathArray The array containing the ids of all previous boxes
 	 * @returns {Object} The object with the given id if found, otherwise returns undefined
 	 */
-	this.find = function(id) {
+	this.find = function(id, pathArray) {
 		var o;
+		var pathStr = pathArray.join('/');
 		this.objects.forEach(function(elem, index, array){
-			var temp = elem.find(id);
+			var temp = elem.find(id, pathStr);
 			
 			if(temp){
 				o = temp;
@@ -71,15 +73,18 @@ function ObjectBox(id, depth, parent){
 	/**
 	 * Finds a child object with the given id
 	 * @param {string} id The ID of the child object to be found
+	 * @param {string} pathStr Path string of previous objects
 	 * @returns {ObjectBox} The ObjectBox instance with the given id if found, otherwise returns undefined
 	 */
-	this.find = function(id) {
+	this.find = function(id, pathStr) {
 		if(this.id === id){
-			return this;
+			if(pathStr == this.getPath()){
+				return this;
+			}
 		}
 		var o;
 		this.children.forEach(function(elem, index, array){
-			var temp = elem.find(id);
+			var temp = elem.find(id, pathStr);
 			
 			if(temp){
 				o = temp;

@@ -171,8 +171,6 @@ function ajaxObjectQuery(url, xml){
  *  @param {XML Object} data The received XML data
  */
 function displayObjects(data) {
-	console.log("displaying...");
-	
 	// Append objects as checkboxes to the webpage
 	$(data).find('Objects').each(function(){
 		// Clear the existing list
@@ -189,18 +187,22 @@ function displayObjects(data) {
 		$(this).children("Object").each(function(){
 			var id = $($(this).children("id")[0]).text();
 
-			addSubObjects(this, id);
+			var pathArray = [id];
+			
+			addSubObjects(this, id, pathArray);
 		});
 	});
 }
 
-function addSubObjects(parent, id){
+function addSubObjects(parent, id, pathArray){
 	$(parent).children("Object").each(function(){
 		var name = $($(this).children("id")[0]).text();
 		
-		manager.find(id).addChild(id, name, "list-" + id);
+		manager.find(id, pathArray).addChild(id, name, "list-" + id);
 		
-		addSubObjects(this, name);
+		pathArray.push(name);
+		addSubObjects(this, name, pathArray);
+		pathArray.pop();
 	});
 	addInfoItems(parent, id);
 }
