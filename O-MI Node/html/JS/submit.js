@@ -302,10 +302,10 @@ function printResponse(response) {
  */
 function handleError(jqXHR, errortype, exc) {
 	console.log(jqXHR.responseText);
-	$("#responseBox").html(formatNoHighlight(jqXHR.responseText));
 	refreshEditor("response", "responseBox");
 	
 	console.log("Error sending to server: (" + exc +")");
+	printResponse(jqXHR.responseText)
 }
 
 /**
