@@ -10,6 +10,8 @@ import scala.collection.JavaConverters._
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 import java.io.File
+import scala.concurrent._
+
 /** Helper Object for creating AgentLoader.
   *
   */
@@ -24,6 +26,9 @@ object AgentLoader{
   */
 class AgentLoader  extends Actor with ActorLogging {
   
+  import ExecutionContext.Implicits.global
+  import context.system
+
   case class ConfigUpdated()
   //Container for bootables
   protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty
