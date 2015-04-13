@@ -99,12 +99,16 @@ object ReadResponseGen extends ResponseGen[OneTimeRead] {
     OmiOdfMsg(
       <Objects>
         { 
+
+          if (read.sensors.isEmpty) buildObjectChildren(SQLite.getChilds(Path("Objects")), read.begin, read.end, read.newest, read.oldest)
+          else {
           odfObjectGeneration(
             read.sensors.toList,
             read.begin,
             read.end,
             read.newest,
             read.oldest)
+          }
         }
       </Objects>
     )
