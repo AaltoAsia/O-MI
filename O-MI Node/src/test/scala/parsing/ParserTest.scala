@@ -445,7 +445,7 @@ class ParserTest extends Specification {
   </omi:read>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo (Seq.empty)
+    temp should be equalTo (Seq(OneTimeRead(10.0,Seq.empty)))
 
   }
 

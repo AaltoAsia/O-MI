@@ -2,7 +2,6 @@ package responses
 
 
 import parsing.Types._
-import parsing.Types.Path._
 import database._
 import Common._
 
@@ -21,7 +20,7 @@ object Read {
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
    *
-   * @param path The path as String, elements split by a slash "/"
+   * @param orgPath The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
 	def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
@@ -114,7 +113,11 @@ object ReadResponseGen extends ResponseGen[OneTimeRead] {
 
   /**
    * helper function for generating O-DF's Object nodes, recursive
-   * @param nodes to generate
+   * @param objects List of OdfObjects of the node
+   * @param begin the start time of the time interval from where to get sensors
+   * @param end the end time of the time interval from where to get sensors
+   * @param newest get only this many newest items
+   * @param oldest get only this many oldest items
    * @return generated xml
    */
   def odfObjectGeneration(objects: List[OdfObject],
@@ -192,7 +195,7 @@ object ReadResponseGen extends ResponseGen[OneTimeRead] {
   /**
    * Used when just an object is requested (returns the object and all its children as xml)
    * 
-   * @param Array of objects or infoitems (just their paths are used)
+   * @param children Array of objects or infoitems (just their paths are used)
    * @param begin the start time of the time interval from where to get sensors
    * @param end the end time of the time interval from where to get sensors
    * @param newest get only this many newest items
@@ -237,7 +240,7 @@ object ReadResponseGen extends ResponseGen[OneTimeRead] {
   /**
    * Helper function for infoitem generation
    * 
-   * @param The path of the infoitem
+   * @param infoitempath The path of the infoitem
    * @param begin the start time of the time interval from where to get sensors
    * @param end the end time of the time interval from where to get sensors
    * @param newest get only this many newest items

@@ -97,7 +97,7 @@ def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[T
     }
   }
   }
-  //remove null values from the beginning if where were no subdata in the database before start time.
+  //remove null values from the beginning if there were no subdata in the database before start time.
   formatedData.dropWhile(_ == null)
 }
 }

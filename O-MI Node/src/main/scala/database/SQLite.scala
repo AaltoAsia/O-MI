@@ -145,7 +145,7 @@ trait DataBase {
    * Used to get metadata from database for given path
    * @param path path to sensor whose metadata is requested
    * 
-   * @param return meta data as Option[String], none if no data is found
+   * @return metadata as Option[String], none if no data is found
    */
   def getMetaData(path:Path):Option[String]=
   {

@@ -1,21 +1,17 @@
 package parsing
 import parsing.Types._
-
 import scala.xml._
 import scala.util.Try
-
-import java.io.File;
-import java.net.URL;
 import java.io.StringReader
 import java.io.IOException
-
+import org.xml.sax.SAXException;
 //Schema validation
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.Schema
 import javax.xml.validation.SchemaFactory
 import javax.xml.validation.Validator
-import org.xml.sax.SAXException;
+
 
 abstract trait Parser[Result] {
 

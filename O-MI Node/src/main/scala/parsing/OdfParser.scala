@@ -1,25 +1,13 @@
 package parsing
 import parsing.Types._
-
 import scala.collection.mutable.Map
-
 import scala.xml._
 import scala.util.Try
-
-import java.io.File;
-import java.io.StringReader
-import java.io.IOException
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
-
-//Schema validation
-import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.Schema
-import javax.xml.validation.SchemaFactory
-import javax.xml.validation.Validator
 import scala.xml.Utility.trim
-import org.xml.sax.SAXException;
+
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
@@ -63,7 +51,8 @@ object OdfParser extends Parser[OdfParseResult] {
       case _ => Seq(Left(ParseError("Unknown node in O-DF at path: " + currentPath.mkString("/"))))
     }
   }
-
+  
+  //Changed to def from val because of concurrency problems
   private def dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
   /**
    * private helper type for parseInfoItem

@@ -3,7 +3,6 @@ package responses
 import Common._
 import ErrorResponse.intervalNotSupported
 import parsing.Types._
-import parsing.Types.Path._
 import database._
 import scala.xml
 import scala.xml._
@@ -18,7 +17,7 @@ import java.util.Date
 object OMISubscription {
 
   /**
-   * typedef for (Int,Long,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
+   * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
   type SubTuple = (Int, Long)
 
@@ -60,10 +59,15 @@ object OMISubscription {
    * schedules new checkSub method call.
    */
   def checkSubs: Unit = {
+    
     val currentTime = date.getTime
+    
+    //exists returns false if Option is None
     while (subQueue.headOption.exists(_._2 <= currentTime)) {
       SQLite.removeSub(subQueue.dequeue()._1)
     }
+    
+    //foreach does nothing if Option is None
     subQueue.headOption.foreach { n =>
       val nextRun = ((n._2) - currentTime)
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds)(checkSubs)
@@ -72,7 +76,7 @@ object OMISubscription {
       } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {
         scheduledTimes.foreach(_._1.cancel())
         scheduledTimes=Some((cancellable,currentTime+nextRun))
-      } // Lines commented below break the program for some reason.
+      }
       else if (scheduledTimes.exists(n =>((n._2 > currentTime) && (n._2 < (currentTime + nextRun))))) {
         cancellable.cancel()
       }
@@ -128,7 +132,7 @@ object OMISubscription {
    * Used for getting only the infoitems from the request. If an Object is subscribed to, get all the infoitems
    * that are children (or children's children etc.) of that object.
    *
-   * @param A hierarchy of the ODF-structure that the parser creates
+   * @param objects A hierarchy of the ODF-structure that the parser creates
    * @return Paths of the infoitems
    */
 
@@ -159,7 +163,7 @@ object OMISubscription {
   /**
    * Subscription response
    *
-   * @param Id of the subscription
+   * @param id Id of the subscription
    * @return The response XML
    */
 
@@ -183,7 +187,7 @@ object OMISubscription {
    * Used for generating data in ODF-format. When the subscription has callback set it acts like a OneTimeRead with a requestID,
    * when it doesn't have a callback it generates the values accumulated in the database.
    *
-   * @param Id of the subscription
+   * @param sub subscription that the response is generated for
    * @return The data in ODF-format
    */
 
@@ -220,9 +224,20 @@ object OMISubscription {
     } else if (interval == -1) { //Event based subscription
       val start = subId.startTime.getTime
       val currentTimeLong = date.getTime()
+      
+      val ttlDecreased = ((subId.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
+      
+      //if subscription has expired just before polling:
+      if(subId.ttl > 0 && ttlDecreased < 0){
+        checkSubs
+        return omiResult {
+          returnCode(404, "A subscription with this id has expired or doesn't exist") ++
+            requestId(subId.id)
+        }
+      }
       val newTTL: Double = {
         if (subId.ttl <= 0) subId.ttl
-        else ((subId.ttl * 1000).toLong - (currentTimeLong - start)) / 1000.0
+        else ttlDecreased
       }
 
       SQLite.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
@@ -269,9 +284,9 @@ object OMISubscription {
   /**
    * Uses the Dataformater from database package to get a list of the values that have been accumulated during the start of the sub and the request
    *
-   * @param The InfoItem that's been subscribed to
-   * @param Start time of the subscription
-   * @param Interval of the subscription
+   * @param sensor The InfoItem that's been subscribed to
+   * @param starttime Start time of the subscription
+   * @param interval Interval of the subscription
    * @return The values accumulated in ODF format
    */
 
@@ -282,6 +297,7 @@ object OMISubscription {
       if (interval != -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
       else {
         /*filter out elements that have the same value as previous entry*/
+        //NOTE 
         SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
           .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b)
       }
@@ -298,8 +314,8 @@ object OMISubscription {
    * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false),
    * get the values accumulated between the sub starttime and current time.
    *
-   * @param The paths of the infoitems that have been subscribed to
-   * @param Index of the current 'level'. Used because it recursively drills deeper.
+   * @param paths The paths of the infoitems that have been subscribed to
+   * @param index Index of the current 'level'. Used because it recursively drills deeper.
    * @return The ODF hierarchy as XML
    */
 

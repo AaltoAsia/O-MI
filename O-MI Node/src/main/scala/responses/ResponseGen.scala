@@ -7,7 +7,6 @@ import parsing.Types.OmiRequest
 import scala.xml._
 import scala.util.{Try, Success, Failure}
 import scala.concurrent.duration._
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Await, ExecutionContext, TimeoutException}
 
 /**

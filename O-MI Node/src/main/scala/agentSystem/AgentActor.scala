@@ -7,7 +7,7 @@ import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLoggin
 trait AgentActor extends Actor with ActorLogging{
 }
 
-/** Parent rait for Bootables handling of creation of an AgentActor.
+/** Parent trait for Bootables handling of creation of an AgentActor.
   * Internal agents are modelled to be like Akka's microkernels.
   *
   */

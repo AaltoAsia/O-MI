@@ -3,23 +3,15 @@ package agentSystem
 import http._
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import akka.io.{ IO, Tcp }
 import akka.event.{Logging, LoggingAdapter}
-import akka.util.ByteString
-import akka.util.Timeout
-import akka.pattern.ask
-import xml._
-import io._
-import scala.concurrent.duration._
 import scala.collection.mutable.Map
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import scala.collection.JavaConverters._
-import java.net.InetSocketAddress
 import java.net.URLClassLoader
-import java.lang.Boolean.getBoolean
 import java.util.jar.JarFile
 import java.io.File
+import scala.concurrent._
+
 /** Helper Object for creating AgentLoader.
   *
   */
@@ -27,6 +19,7 @@ object AgentLoader{
   def props() : Props = Props(new AgentLoader())
 }
 
+  case class ConfigUpdated()
 
 /** AgentLoader loads agents from jars in deploy directory.
   * Supervise agents and startups bootables.
@@ -34,19 +27,23 @@ object AgentLoader{
   */
 class AgentLoader  extends Actor with ActorLogging {
   
-  case class ConfigUpdated()
+  import ExecutionContext.Implicits.global
+  import context.system
+
   //Container for bootables
-  protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty 
+  protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty
+  //getter method to allow testing
+  private[agentSystem] def getBootables = bootables
   //Classloader for loading classes in jars.
   private val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
 
   //Settings for getting list of Bootables and configs from application.conf
   private val settings = Settings(context.system)
-  loadAndStart
+  //loadAndStart
 
   /** Method for handling received messages.
-    * Should handlei:
+    * Should handle:
     *   -- ConfigUpdate with updating running AgentActors.
     *   -- Terminated with trying to restart AgentActor. 
     */
@@ -69,46 +66,46 @@ class AgentLoader  extends Actor with ActorLogging {
     */
   def loadAndStart = {
     val classnames = getClassnamesWithConfigPath
-      val toBeBooted =  classnames map { case (c: String, p: String) => 
-        try {
-          if(!bootables.exists{case (k:String, (b:Bootable, _ ) ) => k == c}){
-              Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
-          } else if(bootables.exists{case (k:String, (b:Bootable, config: String ) ) => k == c && p != config }){ 
-            log.warning("Agent config changed: "+ c +"\n Agent will be removed and restarted.")
-            val agents = bootables(c)._1.getAgentActor
-            bootables -= c
-            agents foreach{ a => a ! Stop}
-            Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
-          } else { 
-            log.warning("Agent allready running: "+ c)
-          }
-        } catch {
-          case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caucht")
-          case e: Exception => log.warning(s"Classloading failed. $e")
+    val toBeBooted =  classnames map { case (c: String, p: String) => 
+      try {
+        if(!bootables.exists{case (k:String, (b:Bootable, _ ) ) => k == c}){
+          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        } else if(bootables.exists{case (k:String, (b:Bootable, config: String ) ) => k == c && p != config }){ 
+          log.warning("Agent config changed: "+ c +"\n Agent will be removed and restarted.")
+          val agents = bootables(c)._1.getAgentActor
+          bootables -= c
+          agents foreach{ a => a ! Stop}
+          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        } else { 
+          log.warning("Agent allready running: "+ c)
         }
-      }
-
-    for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
-      log.info("Starting up " + b.getClass.getName)
-      if(bootables.get(c).isEmpty){
-        try{
-          if(b.startup(context.system, p)){
-            log.info("Successfully started: "+ b.getClass.getName)
-            bootables += Tuple2(c, (b, p))
-            val agents = b.getAgentActor
-            agents.foreach{agent => context.watch(agent)}
-          } else {
-            log.warning("Failed to start: "+ b.getClass.getName)
-          } 
-        } catch {
-          case e: InvalidActorNameException  => log.warning("Tryed to create same named actors")
-          case e: Exception => log.warning(s"Classloading failed. $e")
-        }
-      } else {
-        
-          log.warning("Multiple instances of: "+ b.getClass.getName)
+      } catch {
+        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caught")
+        case e: Exception => log.warning(s"Classloading failed. $e")
       }
     }
+
+  for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
+    log.info("Starting up " + b.getClass.getName)
+    if(bootables.get(c).isEmpty){
+      try{
+        if(b.startup(context.system, p)){
+          log.info("Successfully started: "+ b.getClass.getName)
+          bootables += Tuple2(c, (b, p))
+          val agents = b.getAgentActor
+          agents.foreach{agent => context.watch(agent)}
+        } else {
+          log.warning("Failed to start: "+ b.getClass.getName)
+        } 
+      } catch {
+        case e: InvalidActorNameException  => log.warning("Tried to create same named actors")
+        case e: Exception => log.warning(s"Classloading failed. $e")
+      }
+    } else {
+
+      log.warning("Multiple instances of: "+ b.getClass.getName)
+    }
+  }
 
   addShutdownHook( bootables.map{ 
       case ( c: String, ( b: Bootable, p:String) ) => b
@@ -138,7 +135,7 @@ class AgentLoader  extends Actor with ActorLogging {
     val nestedJars = jars flatMap { jar =>
       val jarFile = new JarFile(jar)
       val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))
-      jarEntries map { entry ⇒ new File("jar:file:%s!/%s" format (jarFile.getName, entry.getName)) }
+      jarEntries map { entry => new File("jar:file:%s!/%s" format (jarFile.getName, entry.getName)) }
     }
 
     val urls = (jars ++ nestedJars) map { _.toURI.toURL }
@@ -155,7 +152,7 @@ class AgentLoader  extends Actor with ActorLogging {
       def run = {
         log.warning("Shutting down Akka...")
 
-        for (bootable ← bootables) {
+        for (bootable <- bootables) {
           log.info("Shutting down " + bootable.getClass.getName)
           bootable.shutdown()
         }
@@ -168,7 +165,7 @@ class AgentLoader  extends Actor with ActorLogging {
   /** Simple function for getting Bootable's name and Agent config file path pairs.
     *
     */
-  private def getClassnamesWithConfigPath : Array[(String,String)]= {
+  private[agentSystem] def getClassnamesWithConfigPath : Array[(String,String)]= {
     settings.agents.unwrapped().asScala.map{ case (s: String, o: Object) => (s, o.toString)}.toArray 
   }
   /** Supervison strategy for supervising AgentActors.
