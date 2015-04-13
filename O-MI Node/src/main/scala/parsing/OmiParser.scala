@@ -227,7 +227,9 @@ object OmiParser extends Parser[ParseMsg] {
             }
           } else if (!left.isEmpty) {
             left.map(_.left.get)
-          } else { Seq.empty }
+          } else { 
+              Seq(OneTimeRead(ttl,Seq.empty))
+            }
         } else {
               Seq(OneTimeRead(ttl,
                 Seq.empty,
