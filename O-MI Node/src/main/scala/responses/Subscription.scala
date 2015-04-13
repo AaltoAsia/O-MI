@@ -316,6 +316,9 @@ object OMISubscription {
    *
    * @param paths The paths of the infoitems that have been subscribed to
    * @param index Index of the current 'level'. Used because it recursively drills deeper.
+   * @param starttime Start time of the subscription
+   * @param interval interval Interval of the subscription
+   * @param hascallback Boolean value indicating if callback exists
    * @return The ODF hierarchy as XML
    */
 
