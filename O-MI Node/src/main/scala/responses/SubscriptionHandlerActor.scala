@@ -48,7 +48,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   case class TimedSub(sub: DBSub, id: Int, nextRunTime: Timestamp)
     extends SavedSub
 
-  case class EventSub(sub: DBSub, id: Int)
+  case class EventSub(sub: DBSub, id: Int, lastValue: String)
     extends SavedSub
 
   object TimedSubOrdering extends Ordering[TimedSub] {
@@ -100,7 +100,12 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     } else if (dbsub.isEventBased) {
 
       for (path <- dbsub.paths)
-        eventSubs += path.toString -> EventSub(dbsub, id)
+        SQLite.get(path).foreach{
+          case sensor: DBSensor =>
+            eventSubs += path.toString -> EventSub(dbsub, id, sensor.value)
+          case x =>
+            log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
+        }
 
       log.debug(s"Added sub as EventSub: $id")
     }
@@ -146,33 +151,43 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   def checkEventSubs(paths: Seq[Path]): Unit = {
 
     for (path <- paths) {
+      var newestValue: Option[String] = None
+
       eventSubs.get(path.toString) match {
 
-        case Some(EventSub(subscription, id)) => {
+        case Some(EventSub(subscription, id, lastValue)) => {
 
           if (hasTTLEnded(subscription, currentTimeMillis())) {
             removeSub(subscription)
           } else {
+            if (newestValue.isEmpty)
+              newestValue = SQLite.get(path).map{
+                case DBSensor(_, v, _) => v
+                case _ => ""// noop, already logged at loadSub
+              }
+            
+            if (lastValue != newestValue.getOrElse("")){
 
-            // Callback stuff
-            def failed(reason: String) =
-              log.warning(s"Callback failed; subscription id:$id  reason: $reason")
+              // Callback stuff
+              def failed(reason: String) =
+                log.warning(s"Callback failed; subscription id:$id  reason: $reason")
 
-            val addr = subscription.callback 
-            if (addr == None) return
-            val callbackXml = OMISubscriptionResponse(id)
+              val addr = subscription.callback 
+              if (addr == None) return
+              val callbackXml = OMISubscriptionResponse(id)
 
-            val call = CallbackHandlers.sendCallback(addr.get, callbackXml)
+              val call = CallbackHandlers.sendCallback(addr.get, callbackXml)
 
-            call onComplete {
+              call onComplete {
 
-              case Success(CallbackSuccess) =>
-                log.debug(s"Callback sent; subscription id:$id addr:$addr")
+                case Success(CallbackSuccess) =>
+                  log.debug(s"Callback sent; subscription id:$id addr:$addr")
 
-              case Success(fail: CallbackFailure) =>
-                failed(fail.toString)
-              case Failure(e) =>
-                failed(e.getMessage)
+                case Success(fail: CallbackFailure) =>
+                  failed(fail.toString)
+                case Failure(e) =>
+                  failed(e.getMessage)
+              }
             }
           }
         }
@@ -185,7 +200,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
     val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
-    if (removeTime <= timeMillis && sub.ttl != -1) {
+    if (removeTime <= timeMillis && !sub.isImmortal) {
       log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${timeMillis - removeTime}ms")
       true
     } else

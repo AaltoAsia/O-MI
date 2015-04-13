@@ -102,7 +102,7 @@ object OdfParser extends Parser[OdfParseResult] {
           TimedValue(Some(timestamp), value.text)
         } catch {
           case e: Exception =>//TODO: better error msg.
-            return Seq( Left( ParseError( "unixTime have invalid value." ) ) )
+            return Seq( Left( ParseError( "unixTime has invalid value." ) ) )
         }
       }
     }

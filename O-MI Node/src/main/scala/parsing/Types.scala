@@ -18,6 +18,7 @@ object Types {
     def isEventBased = interval == -1
     def ttlToMillis: Long = (ttl * 1000).toLong
     def intervalToMillis: Long = (interval * 1000).toLong
+    def isImmortal = ttl == -1.0
   }
 
   /** absract trait that represent either error or request in the O-MI
