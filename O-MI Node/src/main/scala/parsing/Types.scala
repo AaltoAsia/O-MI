@@ -82,13 +82,11 @@ object Types {
    *  @param interval Interval of responses in seconds.
    *  @param senosrs Sensors to be readen.
    *  @param callback Optional callback address were responses are send.
-   *  @param requestId Optional value that indicates which older request answered.
    */
   case class Subscription(  ttl: Double,
                             interval: Double,
                             sensors: Seq[ OdfObject],
-                            callback: Option[String] = None,
-                            requestId: Seq[ String] = Seq.empty
+                            callback: Option[String] = None
                             ) extends ParseMsg with SubLike with OmiRequest
 
   /** Case class that represents Write request.
