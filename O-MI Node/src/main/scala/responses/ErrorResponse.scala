@@ -21,7 +21,7 @@ object ErrorResponse {
     )
   
   val intervalNotSupported =
-    omiResult {
+    resultWrapper {
       returnCode(501, "Interval not supported")
     }
 

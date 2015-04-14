@@ -130,6 +130,118 @@ object OMISubscription {
   }
 
   /**
+   * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false),
+   * get the values accumulated between the sub starttime and current time.
+   *
+   * @param paths The paths of the infoitems that have been subscribed to
+   * @param index Index of the current 'level'. Used because it recursively drills deeper.
+   * @param starttime Start time of the subscription
+   * @param interval interval Interval of the subscription
+   * @param hascallback Boolean value indicating if callback exists
+   * @return The ODF hierarchy as XML
+   */
+
+  def createFromPaths(
+        paths: Array[Path],
+        index: Int,
+        starttime: Timestamp,
+        interval: Double,
+        hascallback: Boolean
+      )(implicit SQLite: DB): xml.NodeSeq = {
+    var node: xml.NodeSeq = xml.NodeSeq.Empty
+
+    if (paths.isEmpty == false) {
+      var slices = Buffer[Path]()
+      var previous = paths.head
+
+      for (path <- paths) {
+        var slicedpath = Path(path.toSeq.slice(0, index + 1))
+        SQLite.get(slicedpath) match {
+          case Some(sensor: DBSensor) => {
+
+            node ++=
+              <InfoItem name={ sensor.path.last }>
+                {
+                  if (hascallback) { <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value> }
+                  else { getAllvalues(sensor, starttime, interval) }
+                }
+                {
+                  val metaData = SQLite.getMetaData(sensor.path)
+                  if (metaData.isEmpty == false) { XML.loadString(metaData.get) }
+                  else { xml.NodeSeq.Empty }
+                }
+              </InfoItem>
+          }
+
+          case Some(obj: DBObject) => {
+            if (path(index) == previous(index)) {
+              slices += path
+            } else {
+              node ++= <Object>
+                         <id>
+                           { previous(index) }
+                         </id>
+                         { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                       </Object>
+              slices = Buffer[Path](path)
+            }
+
+          }
+
+          case None => { node ++= <Error> Item not found in the database </Error> }
+        }
+
+        previous = path
+
+        //in case this is the last item in the array, we check if there are any non processed paths left
+        if (path == paths.last) {
+          if (slices.isEmpty == false) {
+            node ++= <Object>
+                       <id>
+                         { slices.last.toSeq(index) }
+                       </id>
+                       { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                     </Object>
+          }
+        }
+      }
+
+    }
+
+    return node
+  }
+
+  /**
+   * Uses the Dataformater from database package to get a list of the values that have been accumulated during the start of the sub and the request
+   *
+   * @param sensor The InfoItem that's been subscribed to
+   * @param starttime Start time of the subscription
+   * @param interval Interval of the subscription
+   * @return The values accumulated in ODF format
+   */
+
+  def getAllvalues(sensor: DBSensor, starttime: Timestamp, interval: Double
+      )(implicit SQLite: DB): xml.NodeSeq = {
+    var node: xml.NodeSeq = xml.NodeSeq.Empty
+
+    val infoitemvaluelist = {
+      if (interval != -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
+      else {
+        /*filter out elements that have the same value as previous entry*/
+        //NOTE 
+        SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
+          .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b)
+      }
+    }
+
+    for (innersensor <- infoitemvaluelist) {
+      node ++= <value dateTime={ innersensor.time.toString.replace(' ', 'T') }>{ innersensor.value }</value>
+    }
+
+    node
+  }
+
+  /**
    * Used for getting only the infoitems from the request. If an Object is subscribed to, get all the infoitems
    * that are children (or children's children etc.) of that object.
    *
@@ -161,54 +273,30 @@ object OMISubscription {
     return paths
   }
 
+  /**
+   * Poll Subscription response
+   */
   class PollResponseGen(implicit SQLite: DB) extends ResponseGen[PollRequest] {
     
-  }
 
-  /**
-   * Subscription response
-   *
-   * @param id Id of the subscription
-   * @return The response XML
-   */
+    override def genResult(poll: PollRequest) = {
+      val results = poll.requestIds.map{ id =>
 
-  def OMISubscriptionResponse(id: Int)(implicit SQLite: DB): xml.NodeSeq = {
-    val sub = SQLite.getSub(id)
-    sub match {
-      case None => {
-        omiResult {
-          returnCode(404, "A subscription with this id has expired or doesn't exist") ++
-            requestId(id)
+        val sub = SQLite.getSub(id)
+        sub match {
+          case None => {
+            resultWrapper {
+              returnCode(404, "A subscription with this id has expired or doesn't exist") ++
+                requestId(id)
+            }
+          }
+
+          case Some(subscription) => {
+            pollSub(subscription)
+          }
         }
       }
-
-      case Some(subscription) => {
-        // XXX: Not in use, missing ttl,callback information
-        //new PollResponseGen runRequest PollRequest
-        ???
-      }
-    }
-  }
-
-  /**
-   * Used for generating data in ODF-format. When the subscription has callback set it acts like a OneTimeRead with a requestID,
-   * when it doesn't have a callback it generates the values accumulated in the database.
-   *
-   * @param sub subscription that the response is generated for
-   * @return The data in ODF-format
-   */
-  class SubscriptionResponseGen(implicit SQLite: DB) extends ResponseGen[SubDataRequest] {
-    override def genResult(subreq: SubDataRequest) = {
-      val sub = subreq.sub
-      assert(sub.callback.isDefined)
-      odfResultWrapper {
-        returnCode200 ++
-        requestId(sub.id) ++
-        odfMsgWrapper(
-          <Objects>
-            { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, sub.callback.isDefined) }
-          </Objects>)
-      }
+      results.reduceLeft(_ ++ _)
     }
 
     /**
@@ -217,7 +305,7 @@ object OMISubscription {
      * @param subId the Id of the subscription
      * @return The data in ODF-format
      */
-    private def pollSub(subId: DBSub): xml.NodeSeq = {
+    private def pollSub(subId: DBSub): OmiResult = {
       val interval = subId.interval
 
       if (interval == -2) { // not supported
@@ -231,7 +319,7 @@ object OMISubscription {
         //if subscription has expired just before polling:
         if(subId.ttl > 0 && ttlDecreased < 0){
           checkSubs
-          return omiResult {
+          return resultWrapper {
             returnCode(404, "A subscription with this id has expired or doesn't exist") ++
               requestId(subId.id)
           }
@@ -243,7 +331,7 @@ object OMISubscription {
 
         SQLite.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
 
-        omiResult {
+        resultWrapper {
           returnCode200 ++
             requestId(subId.id) ++
             odfMsgWrapper(
@@ -268,7 +356,7 @@ object OMISubscription {
 
         SQLite.setSubStartTime(subId.id, new Timestamp(newStartTimeLong), newTTL)
 
-        omiResult {
+        odfResultWrapper {
           returnCode200 ++
             requestId(subId.id) ++
             odfMsgWrapper(
@@ -282,117 +370,30 @@ object OMISubscription {
       }
     }
 
-    /**
-     * Uses the Dataformater from database package to get a list of the values that have been accumulated during the start of the sub and the request
-     *
-     * @param sensor The InfoItem that's been subscribed to
-     * @param starttime Start time of the subscription
-     * @param interval Interval of the subscription
-     * @return The values accumulated in ODF format
-     */
+  }
 
-    def getAllvalues(sensor: DBSensor, starttime: Timestamp, interval: Double
-        ): xml.NodeSeq = {
-      var node: xml.NodeSeq = xml.NodeSeq.Empty
-
-      val infoitemvaluelist = {
-        if (interval != -1) DataFormater.FormatSubData(sensor.path, starttime, interval, None)
-        else {
-          /*filter out elements that have the same value as previous entry*/
-          //NOTE 
-          SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
-            .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b)
-        }
+  /**
+   * Used for generating data in ODF-format. When the subscription has callback set it acts like a OneTimeRead with a requestID,
+   * when it doesn't have a callback it generates the values accumulated in the database.
+   *
+   * @param sub subscription that the response is generated for
+   * @return The data in ODF-format
+   */
+  class SubscriptionResponseGen(implicit SQLite: DB) extends ResponseGen[SubDataRequest] {
+    override def genResult(subreq: SubDataRequest) = {
+      val sub = subreq.sub
+      assert(sub.callback.isDefined)
+      odfResultWrapper {
+        returnCode200 ++
+        requestId(sub.id) ++
+        odfMsgWrapper(
+          <Objects>
+            { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, sub.callback.isDefined) }
+          </Objects>)
       }
-
-      for (innersensor <- infoitemvaluelist) {
-        node ++= <value dateTime={ innersensor.time.toString.replace(' ', 'T') }>{ innersensor.value }</value>
-      }
-
-      node
     }
 
-    /**
-     * Creates the right hierarchy from the infoitems that have been subscribed to. If sub has no callback (hascallback == false),
-     * get the values accumulated between the sub starttime and current time.
-     *
-     * @param paths The paths of the infoitems that have been subscribed to
-     * @param index Index of the current 'level'. Used because it recursively drills deeper.
-     * @param starttime Start time of the subscription
-     * @param interval interval Interval of the subscription
-     * @param hascallback Boolean value indicating if callback exists
-     * @return The ODF hierarchy as XML
-     */
 
-    def createFromPaths(
-          paths: Array[Path],
-          index: Int,
-          starttime: Timestamp,
-          interval: Double,
-          hascallback: Boolean
-        ): xml.NodeSeq = {
-      var node: xml.NodeSeq = xml.NodeSeq.Empty
-
-      if (paths.isEmpty == false) {
-        var slices = Buffer[Path]()
-        var previous = paths.head
-
-        for (path <- paths) {
-          var slicedpath = Path(path.toSeq.slice(0, index + 1))
-          SQLite.get(slicedpath) match {
-            case Some(sensor: DBSensor) => {
-
-              node ++=
-                <InfoItem name={ sensor.path.last }>
-                  {
-                    if (hascallback) { <value dateTime={ sensor.time.toString.replace(' ', 'T') }>{ sensor.value }</value> }
-                    else { getAllvalues(sensor, starttime, interval) }
-                  }
-                  {
-                    val metaData = SQLite.getMetaData(sensor.path)
-                    if (metaData.isEmpty == false) { XML.loadString(metaData.get) }
-                    else { xml.NodeSeq.Empty }
-                  }
-                </InfoItem>
-            }
-
-            case Some(obj: DBObject) => {
-              if (path(index) == previous(index)) {
-                slices += path
-              } else {
-                node ++= <Object>
-                           <id>
-                             { previous(index) }
-                           </id>
-                           { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
-                         </Object>
-                slices = Buffer[Path](path)
-              }
-
-            }
-
-            case None => { node ++= <Error> Item not found in the database </Error> }
-          }
-
-          previous = path
-
-          //in case this is the last item in the array, we check if there are any non processed paths left
-          if (path == paths.last) {
-            if (slices.isEmpty == false) {
-              node ++= <Object>
-                         <id>
-                           { slices.last.toSeq(index) }
-                         </id>
-                         { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
-                       </Object>
-            }
-          }
-        }
-
-      }
-
-      return node
-    }
   }
 }
 

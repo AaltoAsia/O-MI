@@ -132,7 +132,7 @@ trait OmiService extends HttpService {
 
                   } else {
                       // Should give out poll result
-                      pollResponseGen.runRequest(PollRequest(oneTimeRead)) // FIXME: parse id in parsing (errorhandling)
+                      pollResponseGen.runRequest(PollRequest(oneTimeRead))
 
                   }
 

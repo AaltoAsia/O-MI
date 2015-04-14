@@ -8,10 +8,9 @@ import akka.pattern.ask
 import akka.actor.ActorLogging
 
 import responses._
-import database.SQLite._
 import database._
-import parsing.Types.{ SubLike, Path }
-import OMISubscription.{ OMISubscriptionResponse }
+import parsing.Types.{ SubLike, Path, SubDataRequest }
+import OMISubscription.SubscriptionResponseGen
 import CallbackHandlers._
 
 import scala.collection.mutable.PriorityQueue
@@ -39,6 +38,10 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   import context.system
 
   implicit val timeout = Timeout(5.seconds)
+
+  implicit val SQLite = new SQLiteConnection
+
+  val subscriptionResponseGen = new SubscriptionResponseGen
 
   sealed trait SavedSub {
     val sub: DBSub
@@ -76,7 +79,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   }
 
   private def loadSub(id: Int): Unit = {
-    getSub(id) match {
+    SQLite.getSub(id) match {
       case Some(dbsub) =>
         loadSub(id, dbsub)
       case None =>
@@ -117,7 +120,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
    * @return true on success
    */
   private def removeSub(id: Int): Boolean = {
-    getSub(id) match {
+    SQLite.getSub(id) match {
       case Some(dbsub) => removeSub(dbsub)
       case None => false
     }
@@ -168,26 +171,14 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
             
             if (lastValue != newestValue.getOrElse("")){
 
-              // Callback stuff
-              def failed(reason: String) =
-                log.warning(s"Callback failed; subscription id:$id  reason: $reason")
+              //def failed(reason: String) =
+              //  log.warning(s"Callback failed; subscription id:$id  reason: $reason")
 
               val addr = subscription.callback 
               if (addr == None) return
-              val callbackXml = OMISubscriptionResponse(id)
 
-              val call = CallbackHandlers.sendCallback(addr.get, callbackXml)
+              subscriptionResponseGen.runRequest(SubDataRequest(subscription))
 
-              call onComplete {
-
-                case Success(CallbackSuccess) =>
-                  log.debug(s"Callback sent; subscription id:$id addr:$addr")
-
-                case Success(fail: CallbackFailure) =>
-                  failed(fail.toString)
-                case Failure(e) =>
-                  failed(e.getMessage)
-              }
             }
           }
         }
@@ -235,24 +226,19 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
         intervalSubs += TimedSub(sub, id, newTime)
 
-        Future { // TODO: Maybe move this to wrap only the generation and sending
-          // because they are the only things that can take some time
 
-          log.debug(s"generateOmi for id:$id")
-          val omiMsg = generateOmi(id)
-          val callbackAddr = sub.callback.get
-          val interval = sub.interval
+        log.debug(s"generateOmi for id:$id")
+        subscriptionResponseGen.runRequest(SubDataRequest(sub))
+        val interval = sub.interval
+        val callbackAddr = sub.callback.get
+        log.info(s"Sending in progress; Subscription id:$id addr:$callbackAddr interval:$interval")
 
-          // Send, handle errors
 
+          /*
           def failed(reason: String) =
             log.warning(
               s"Callback failed; subscription id:$id interval:$interval  reason: $reason")
 
-          log.debug(s"Sending callback $id to $callbackAddr...")
-          val call = CallbackHandlers.sendCallback(callbackAddr, omiMsg)
-
-          call onComplete {
 
             case Success(CallbackSuccess) =>
               log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
@@ -267,6 +253,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
           case err: Throwable =>
             log.error(s"Error in callback handling of sub $id: ${err.getStackTrace.mkString("\n")}")
         }
+        */
       }
     }
 
@@ -280,7 +267,4 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     }
   }
 
-  def generateOmi(id: Int): xml.NodeSeq = {
-    return OMISubscriptionResponse(id)
-  }
 }

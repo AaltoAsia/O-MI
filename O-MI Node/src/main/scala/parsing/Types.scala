@@ -40,20 +40,10 @@ object Types {
   }
 
   case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-    def ttl = sub.ttl
-    def callback = sub.callback
+    val ttl = sub.ttl - (System.currentTimeMillis() - sub.startTime.getTime)*1000
+    val callback = sub.callback
   }
 
-  /*
-  case class SubDataRequest(
-      val id: Int,
-      val ttl: Double,
-      val interval: Double,
-      val paths: Array[Path],
-      val callback: Option[String],
-      val startTime: Timestamp
-    ) extends OmiRequest
-  */
 
   /** absract trait that represent either error or request in the O-MI
     *
