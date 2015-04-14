@@ -15,12 +15,19 @@ import slick.jdbc.StaticQuery
 
 import parsing.Types._
 
+object singleConnection extends DB {
+  val dbPath = "./sensorDB.sqlite3"
+  val db = Database.forConfig("sqlite-conf")
+  initialize()
+}
+
 /**
  * Database object available everywhere in the code. To be used during actual runtime.
  */
 class SQLiteConnection extends DB {
   val dbPath = "./sensorDB.sqlite3"
-  val db = Database.forConfig("sqlite-conf")
+  val db = singleConnection.db
+  //val db = Database.forConfig("sqlite-conf")
   initialize()
 }
 package object database {
