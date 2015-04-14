@@ -8,6 +8,16 @@ import java.sql.Timestamp
 object Types {
 
   /**
+   * Trait that represents any Omi request. Provides some data that are common
+   * for all omi requests.
+   */
+  sealed trait OmiRequest {
+    def ttl: Double
+    def callback: Option[String]
+    def hasCallback = callback.isDefined
+  }
+
+  /**
    * Trait for subscription like classes. Offers a common interface for subscription types.
    */
   trait SubLike extends OmiRequest {
@@ -19,23 +29,37 @@ object Types {
     def ttlToMillis: Long = (ttl * 1000).toLong
     def intervalToMillis: Long = (interval * 1000).toLong
     def isImmortal = ttl == -1.0
-    def requestId: Option[Int] = None
   }
+
+  case class PollRequest(ttl: Double, callback: Option[String], requestIds: Seq[Int]) extends OmiRequest
+
+  object PollRequest {
+    def apply(readRequest: OneTimeRead): PollRequest = {
+      PollRequest(readRequest.ttl, readRequest.callback, readRequest.requestId.map(_.toInt)) // FIXME: error handling should be done in parser
+    }
+  }
+
+  case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
+    def ttl = sub.ttl
+    def callback = sub.callback
+  }
+
+  /*
+  case class SubDataRequest(
+      val id: Int,
+      val ttl: Double,
+      val interval: Double,
+      val paths: Array[Path],
+      val callback: Option[String],
+      val startTime: Timestamp
+    ) extends OmiRequest
+  */
 
   /** absract trait that represent either error or request in the O-MI
     *
     */
   abstract sealed trait ParseMsg
 
-  /**
-   * Trait that represents any Omi request. Provides some data that are common
-   * for all omi requests.
-   */
-  sealed trait OmiRequest {
-    def ttl: Double
-    def callback: Option[String]
-    def hasCallback = callback.isDefined
-  }
 
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
@@ -89,7 +113,7 @@ object Types {
                             sensors: Seq[ OdfObject],
                             callback: Option[String] = None,
                             requestId: Seq[ String] = Seq.empty
-                            ) extends ParseMsg with SubLike with OmiRequest
+                            ) extends ParseMsg with SubLike
 
   /** Case class that represents Write request.
    *  @param ttl Time-To-Live in seconds.

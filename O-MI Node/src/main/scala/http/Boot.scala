@@ -45,7 +45,7 @@ object Starter {
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))
 
     // Clean old pollable subs
-    responses.Subscription.checkSubs(dbobject)
+    responses.OMISubscription.checkSubs()(dbobject)
   }
 
   def start(): Unit = {

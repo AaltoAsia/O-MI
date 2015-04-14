@@ -161,6 +161,10 @@ object OMISubscription {
     return paths
   }
 
+  class PollResponseGen(implicit SQLite: DB) extends ResponseGen[PollRequest] {
+    
+  }
+
   /**
    * Subscription response
    *
@@ -179,8 +183,9 @@ object OMISubscription {
       }
 
       case Some(subscription) => {
-        // XXX: Not in use
-        new SubscriptionResponseGen runRequest subscription
+        // XXX: Not in use, missing ttl,callback information
+        //new PollResponseGen runRequest PollRequest
+        ???
       }
     }
   }
@@ -192,23 +197,17 @@ object OMISubscription {
    * @param sub subscription that the response is generated for
    * @return The data in ODF-format
    */
-  class SubscriptionResponseGen(implicit SQLite: DB) extends ResponseGen[SubLike] {
-    def genResult(sub: SubLike) = {
-      sub.callback match {
-        case Some(callback: String) => {
-          odfResultWrapper {
-            returnCode200 ++
-              requestId(sub.id) ++
-              odfMsgWrapper(
-                <Objects>
-                  { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, true) }
-                </Objects>)
-          }
-
-        }
-        case None => { //subscription polling
-          pollSub(sub)
-        }
+  class SubscriptionResponseGen(implicit SQLite: DB) extends ResponseGen[SubDataRequest] {
+    override def genResult(subreq: SubDataRequest) = {
+      val sub = subreq.sub
+      assert(sub.callback.isDefined)
+      odfResultWrapper {
+        returnCode200 ++
+        requestId(sub.id) ++
+        odfMsgWrapper(
+          <Objects>
+            { createFromPaths(sub.paths, 1, sub.startTime, sub.interval, sub.callback.isDefined) }
+          </Objects>)
       }
     }
 

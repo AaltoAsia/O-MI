@@ -99,9 +99,11 @@ trait OmiService extends HttpService {
       }
     }
 
+  import OMISubscription._
   // XXX: lazy maybe fixes bug
   lazy val cancelResponseGen = new OMICancelGen(subscriptionHandler)
   lazy val readResponseGen = new ReadResponseGen
+  lazy val pollResponseGen = new PollResponseGen
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
@@ -129,10 +131,9 @@ trait OmiService extends HttpService {
                     readResponseGen.runRequest(oneTimeRead)
 
                   } else {
-                    oneTimeRead.requestId.map{reqId =>
-                      OMISubscription.OMISubscriptionResponse(reqId.toInt) // FIXME: parse id in parsing (errorhandling)
+                      // Should give out poll result
+                      pollResponseGen.runRequest(PollRequest(oneTimeRead)) // FIXME: parse id in parsing (errorhandling)
 
-                    }.reduceLeft(_ ++ _)
                   }
 
 

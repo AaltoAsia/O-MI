@@ -19,13 +19,13 @@ import parsing.Types._
  * Database object available everywhere in the code. To be used during actual runtime.
  */
 object SQLite extends DB {
-  dbPath = "./sensorDB.sqlite3"
-  db = Database.forConfig("sqlite-conf")
+  val dbPath = "./sensorDB.sqlite3"
+  val db = Database.forConfig("sqlite-conf")
   initialize()
 }
 class SQLiteConnection extends DB {
-  dbPath = "./sensorDB.sqlite3"
-  db = Database.forConfig("sqlite-conf")
+  val dbPath = "./sensorDB.sqlite3"
+  val db = Database.forConfig("sqlite-conf")
   initialize()
 }
 package object database {
@@ -67,8 +67,8 @@ package object database {
  */
 class testDB(name:String) extends DB
 {
-  dbPath = "./"+name+".sqlite3"
-  db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+  val dbPath = "./"+name+".sqlite3"
+  val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
   initialize()
 }
 /**
@@ -76,12 +76,12 @@ class testDB(name:String) extends DB
  */
 trait DB {
   import database._
-  protected var db: Database
+  protected val db: Database
 
   implicit val dbo = this
 
   //path where the file is stored, a default value
-  protected var dbPath = "./sensorDB.sqlite3"
+  protected val dbPath: String
   //check if the file already exists
   //tables for latest values and hierarchy
   private val latestValues = TableQuery[DBData]//table for sensor data
