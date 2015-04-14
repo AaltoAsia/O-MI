@@ -1,6 +1,6 @@
 package http
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingAdapter
 import spray.routing._
 import spray.http._
@@ -14,25 +14,35 @@ import database._
 
 import xml._
 
+/**
+ * Actor that handles incoming http messages
+ * @param subHandler ActorRef that is used in subscription handling
+ */
 class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
 
-  // the HttpService trait defines only one abstract member, which
-  // connects the services environment to the enclosing actor or test
+  /**
+   * the HttpService trait defines only one abstract member, which
+   * connects the services environment to the enclosing actor or test
+   */
   def actorRefFactory = context
 
-  // Used for O-MI subscriptions
+  //Used for O-MI subscriptions
   val subscriptionHandler = subHandler
 
-  // this actor only runs our route, but you could add
-  // other things here, like request stream processing
-  // or timeout handling
+  /**
+   * this actor only runs our route, but you could add
+   * other things here, like request stream processing
+   * or timeout handling
+   */
   def receive = runRoute(myRoute)
 
   implicit val dbobject = new SQLiteConnection
 
 }
 
-// this trait defines our service behavior independently from the service actor
+/**
+ * this trait defines our service behavior independently from the service actor
+ */
 trait OmiService extends HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
@@ -54,7 +64,7 @@ trait OmiService extends HttpService {
   val helloWorld =
     get {
       path("") { // Root
-        corsHeaders { 
+        corsHeaders {
           respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
             complete {
               <html>
@@ -118,7 +128,7 @@ trait OmiService extends HttpService {
 
           if (errors.isEmpty) {
             respondWithMediaType(`text/xml`) {
-              
+
               var returnStatus = 200
 
               //FIXME: Currently sending multiple omi:omiEnvelope
@@ -131,19 +141,18 @@ trait OmiService extends HttpService {
                     readResponseGen.runRequest(oneTimeRead)
 
                   } else {
-                      // Should give out poll result
-                      pollResponseGen.runRequest(PollRequest(oneTimeRead))
+                    // Should give out poll result
+                    pollResponseGen.runRequest(PollRequest(oneTimeRead))
 
                   }
 
-
-                case write: Write => 
-                  log.debug(write.toString) 
+                case write: Write =>
+                  log.debug(write.toString)
                   returnStatus = 501
                   ErrorResponse.notImplemented
 
-                case subscription: Subscription => 
-                  log.debug(subscription.toString) 
+                case subscription: Subscription =>
+                  log.debug(subscription.toString)
 
                   val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
 
@@ -157,7 +166,8 @@ trait OmiService extends HttpService {
 
                   cancelResponseGen.runRequest(cancel)
 
-                case _ => log.warning("Unknown request")
+                case _ =>
+                  log.warning("Unknown request")
                   returnStatus = 400
 
               }.mkString("\n")
@@ -168,9 +178,8 @@ trait OmiService extends HttpService {
           } else {
             //Errors found
             log.warning("Parse Errors: {}", errors.mkString(", "))
-            complete (400,
-              ErrorResponse.parseErrorResponse(errors)  
-            )
+            complete(400,
+              ErrorResponse.parseErrorResponse(errors))
           }
         }
       }

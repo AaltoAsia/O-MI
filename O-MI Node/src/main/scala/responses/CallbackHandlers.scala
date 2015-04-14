@@ -7,10 +7,9 @@ import spray.http._
 import spray.client.pipelining._
 
 
-
-
-
-
+/**
+ * Handles sending data to callback addresses 
+ */
 object CallbackHandlers {
   sealed trait CallbackResult
   // Base error

@@ -1,7 +1,3 @@
-/* 
-Original Page: http://thecodeplayer.com/walkthrough/jquery-multi-step-form-with-progress-bar 
- */
-
 //jQuery time
 var current_fs, next_fs, previous_fs; // fieldsets
 var left, opacity, scale; // fieldset properties which we will animate
@@ -35,9 +31,6 @@ $(document).on('click', '.prev', function() {
 	if(page === 1){
 		return false;
 	}
-	if (page === 3) {
-		send = false; // Polling variable
-	}
 	transitionButton(this, animatePrev);
 });
 
@@ -48,10 +41,15 @@ $(document).on('click', '.prev', function() {
  */
 function transitionButton(button, func){
 	if(!animating){
+		// Small resize animation for next/prev buttons
 		$(button).addClass("resize");
+		
+		// Timeout to stop the animation
 		setTimeout(function(){
 			$(".resize").removeClass("resize");
 		}, 150);
+		
+		// Call function after both ended
 		setTimeout(func, 300);
 	}
 	animating = true;
@@ -108,7 +106,7 @@ function animateNext() {
 		if(checkedObjects().length > 100){
 			if (confirm('You have checked lot of objects. This webform has automatic request generation ' +
 					'enabled by default. Do you want to disable automatic generation to prevent the page ' +
-					'from lagging?')){
+					'from lagging? (Note: Cancel keeps automatic generation)')){
 				$("#autorequest").prop("checked", false);
 			}
 		}
@@ -119,7 +117,7 @@ function animateNext() {
 	if(page === 3){
 		if(!($("#autorequest").prop("checked"))){
 			if(confirm('You have disabled automatic generation, thus your request might not be up-to-date. Do you want ' +
-					'to generate the message once more before sending? (Note: your manual changes to the request will be overwritten)')) {
+					'to generate the message once more before sending? (Note: Cancel sends the current request)')) {
 				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
 			}
 		}
