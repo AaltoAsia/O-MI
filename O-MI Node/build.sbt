@@ -5,7 +5,7 @@ val scalaBuildVersion = "2.11.4"
 scalaVersion := scalaBuildVersion
 
 // build options
-scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
+scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-Xlint")
 
 // build api options
 scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8")
