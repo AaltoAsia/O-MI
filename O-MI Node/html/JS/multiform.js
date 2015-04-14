@@ -108,7 +108,7 @@ function animateNext() {
 		if(checkedObjects().length > 100){
 			if (confirm('You have checked lot of objects. This webform has automatic request generation ' +
 					'enabled by default. Do you want to disable automatic generation to prevent the page ' +
-					'from lagging?')){
+					'from lagging? (Note: Cancel keeps automatic generation)')){
 				$("#autorequest").prop("checked", false);
 			}
 		}
@@ -119,7 +119,7 @@ function animateNext() {
 	if(page === 3){
 		if(!($("#autorequest").prop("checked"))){
 			if(confirm('You have disabled automatic generation, thus your request might not be up-to-date. Do you want ' +
-					'to generate the message once more before sending? (Note: your manual changes to the request will be overwritten)')) {
+					'to generate the message once more before sending? (Note: Cancel sends the current request)')) {
 				updateRequest(0); //from pages.js, create request manually due to possibly ungenerated request
 			}
 		}

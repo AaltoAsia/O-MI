@@ -15,7 +15,7 @@ body {
 /*form styles*/
 #msform {
 	width: 80em;
-	height: 85%;
+	min-height: 85%;
 	margin: 0 auto;
 	text-align: center;
 	position: relative;
