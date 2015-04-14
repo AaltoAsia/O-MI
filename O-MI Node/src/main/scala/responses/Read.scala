@@ -23,7 +23,7 @@ object Read {
    * @param orgPath The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-	def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
+	def generateODFREST(orgPath: Path)(implicit SQLite: DB): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
     def restNormalizePath(path: Path): (Path, Int) = path.lastOption match {
@@ -93,7 +93,7 @@ object Read {
 
 }
 
-object ReadResponseGen extends ResponseGen[OneTimeRead] {
+class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] {
 
   override def genMsg(read: OneTimeRead): OmiOdfMsg = {
     OmiOdfMsg(
@@ -147,17 +147,17 @@ object ReadResponseGen extends ResponseGen[OneTimeRead] {
           } else {
             //TODO: sqlite get begin to end
             SQLite.get(obj.path) match {
-              case Some(infoItem: database.DBSensor) =>
+              case Some(infoItem: DBSensor) =>
 
-              case Some(subobj: database.DBObject) =>
+              case Some(subobj: DBObject) =>
 
                 val childs: Array[DBItem] = subobj.childs
                 for (child <- childs) {
 
                   child match {
-                    case infoItem: database.DBSensor =>
+                    case infoItem: DBSensor =>
                       <InfoItem name={ infoItem.path.last }></InfoItem>
-                    case subobj: database.DBObject =>
+                    case subobj: DBObject =>
                       <Object><id>{ subobj.path.last }</id></Object>
                     case _ =>
                       <Error> Item not found or wrong type (InfoItem/Object) </Error>

@@ -9,9 +9,9 @@ import scala.util.{Try, Success, Failure}
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Await, ExecutionContext, TimeoutException}
 
-/**
- * xxxx Responses should inherit this and implement e.g. a singleton that takes other paramaters
- * through class constructor arguments. This trait leaves genResult and toXML defs abstract.
+/** Responses should inherit this and implement e.g. a class that takes other
+ * paramaters through class constructor arguments. This trait leaves genMsg def
+ * abstract genResult can also be overloaded.
  */
 trait ResponseGen[R <: OmiRequest] {
 
@@ -42,6 +42,12 @@ trait ResponseGen[R <: OmiRequest] {
   def genResult(request: R): OmiResult = odfResultWrapper(returnCode200 :+ genMsg(request))
 
   /**
+   * Extra action to run if internal error is caught. E.g. logging.
+   * @param Throwable Exceptions have e.g. .getMessage() that can be used
+   */
+  def actionOnInternalError: Throwable => Unit = { _ => /*noop*/ }
+
+  /**
    * Used to create an OmiEnvelope from this response objects. Should handle all response
    * related actions except for subscriptions. Subscriptions should have only message generation step
    * wrapped in a Response.
@@ -64,7 +70,9 @@ trait ResponseGen[R <: OmiRequest] {
 
         case Failure(e: TimeoutException) => ErrorResponse.ttlTimeOut
 
-        case Failure(e) => ErrorResponse.internalError(e)
+        case Failure(e) => 
+          actionOnInternalError(e)
+          ErrorResponse.internalError(e)
       }
 
     omiResponse(result)

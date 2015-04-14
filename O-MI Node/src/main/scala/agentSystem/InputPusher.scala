@@ -27,10 +27,26 @@ trait InputPusher {
   def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit
 }
 
-/** Object for pushing data from sensors to db.
+// XXX: FIXME: temp hack
+object InputPusher {
+  def handleObjects = 
+    new InputPusherForDB(new SQLiteConnection) handleObjects _
+
+  def handleInfoItems =
+    new InputPusherForDB(new SQLiteConnection) handleInfoItems _
+
+  def handlePathValuePairs =
+    new InputPusherForDB(new SQLiteConnection) handlePathValuePairs _
+
+  def handlePathMetaDataPairs =
+    new InputPusherForDB(new SQLiteConnection) handlePathMetaDataPairs _
+}
+
+/** Creates an object for pushing data from internal agents to db.
   *
   */
-object InputPusher extends InputPusher{
+class InputPusherForDB(val dbobject: DB) extends InputPusher{
+
   
   /** Function for handling sequences of OdfObject.
     *
@@ -57,7 +73,7 @@ object InputPusher extends InputPusher{
               case Some(timestamp) =>
                 new DBSensor(info.path, timedValue.value,  timestamp)
             }
-            SQLite.set(sensorData)
+            dbobject.set(sensorData)
       }  
     }
   } 
@@ -69,7 +85,7 @@ object InputPusher extends InputPusher{
     SQLite.setMany(pairs.toList)
   }
   def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit ={
-    pairs.foreach{ pair => SQLite.setMetaData(pair._1, pair._2)}
+    pairs.foreach{ pair => dbobject.setMetaData(pair._1, pair._2)}
   }
 
 }

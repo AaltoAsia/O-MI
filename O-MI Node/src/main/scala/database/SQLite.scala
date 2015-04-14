@@ -13,23 +13,59 @@ import scala.collection.mutable.Buffer
 import java.sql.Timestamp
 import slick.jdbc.StaticQuery
 
-
-
 import parsing.Types._
+
 /**
  * Database object available everywhere in the code. To be used during actual runtime.
  */
-object SQLite extends DataBase{
+object SQLite extends DB {
   dbPath = "./sensorDB.sqlite3"
   db = Database.forConfig("sqlite-conf")
   initialize()
 }
+class SQLiteConnection extends DB {
+  dbPath = "./sensorDB.sqlite3"
+  db = Database.forConfig("sqlite-conf")
+  initialize()
+}
+package object database {
+
+  private var histLength = 10
+  private var setEventHooks: List[Seq[Path] => Unit] = List()
+
+  implicit val pathColumnType = MappedColumnType.base[Path, String](
+    { _.toString }, // Path to String
+    { Path(_) } // String to Path
+    )
+  
+  def attachSetHook(f: Seq[Path] => Unit) =
+    setEventHooks = f :: setEventHooks
+  def getSetHooks = setEventHooks
+
+  /**
+   * sets the historylength to desired length
+   * default is 10
+   *
+   * @param newLength new length to be used
+   */
+  def setHistoryLength(newLength: Int) {
+    histLength = newLength
+  }
+  def historyLength = histLength
+
+  def set(implicit dbo: DB) = dbo.set _
+
+  def startBuffering(path: Path)(implicit dbo: DB):Boolean = dbo.startBuffering(path)
+
+}
+
+
 /**
  * Database class to be used during tests instead of object SQLite to prevent
  * problems caused by overlapping test data.
  * @param name name of the test database. Data will be stored to file named [name].sqlite3 
  */
-class testDB(name:String) extends DataBase
+class testDB(name:String) extends DB
 {
   dbPath = "./"+name+".sqlite3"
   db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
@@ -38,13 +74,12 @@ class testDB(name:String) extends DataBase
 /**
  * base Database trait used in object SQLite and class testDB 
  */
-trait DataBase {
-  protected var db:Database = null
-  implicit val pathColumnType = MappedColumnType.base[Path, String](
-    { _.toString }, // Path to String
-    { Path(_) } // String to Path
-    )
-  private var historyLength = 10
+trait DB {
+  import database._
+  protected var db: Database
+
+  implicit val dbo = this
+
   //path where the file is stored, a default value
   protected var dbPath = "./sensorDB.sqlite3"
   //check if the file already exists
@@ -55,16 +90,13 @@ trait DataBase {
   private val buffered = TableQuery[BufferedPath]//table for aa currently buffered paths
   private val meta = TableQuery[DBMetaData]//table for metadata information
 
-  private var setEventHooks: List[Seq[Path] => Unit] = List()
-  
-  def attachSetHook(f: Seq[Path] => Unit) =
-    setEventHooks = f :: setEventHooks
-  //private val db = Database.forURL("jdbc:sqlite:", driver="org.sqlite.JDBC")
+
   private def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
     io => Await.result(db.run(io), Duration.Inf)
 
   private def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
     io => Await.ready(db.run(io), Duration.Inf)
+
   /**
   * Initializing method, creates the file and tables. 
   */
@@ -77,7 +109,7 @@ trait DataBase {
       subs.schema.create,
       buffered.schema.create,
       meta.schema.create)
-    runSync(setup)  
+      runSync(setup)  
     }
   }
    /**
@@ -85,10 +117,11 @@ trait DataBase {
     * Should not be called on object SQLite
     * Should be called after tests when using a database created from the testDB class
     */
-   def destroy(){
+  def destroy() {
      db.close()
      new File(dbPath).delete()
-   }
+  }
+
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
@@ -97,7 +130,7 @@ trait DataBase {
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return boolean whether added data was new
    */
-  def set(data: DBSensor) = this.synchronized {
+  def set(data: DBSensor) = {
       var count = 0
       var buffering = false
       //search database for sensor's path
@@ -108,7 +141,7 @@ trait DataBase {
       runSync(DBIO.seq(latestValues += (data.path, data.value, data.time)))
       // Call hooks
       val argument = Seq(data.path)
-      setEventHooks foreach { _(argument) }
+      getSetHooks foreach { _(argument) }
 
       if (count > historyLength && !buffering) {
         //if table has more than historyLength and not buffering, remove excess data
@@ -129,7 +162,7 @@ trait DataBase {
    * @param data metadata to be stored as string e.g a XML block as string
    * 
    */
-  def setMetaData(path:Path,data:String) = this.synchronized {
+  def setMetaData(path:Path,data:String) = {
     val qry = meta.filter(_.path === path).map(_.data)
     val count = runSync(qry.result).length
     if(count == 0)
@@ -161,7 +194,7 @@ trait DataBase {
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(String, TimedValue)]) = this.synchronized {
+  def setMany(data: List[(String, TimedValue)]) = {
     var path = Path("")
     var len = 0
     var add = Seq[(Path,String,Timestamp)]()
@@ -170,13 +203,12 @@ trait DataBase {
         path = Path(p)
          // Call hooks
         val argument = Seq(path)
-        setEventHooks foreach { _(argument) }
+        getSetHooks foreach { _(argument) }
         add = add ++ Seq((path, v.value, v.time.getOrElse(new Timestamp(new java.util.Date().getTime))))
     }
     runSync((latestValues ++= add).transactionally)
     var OnlyPaths = data.map(_._1).distinct
-    OnlyPaths foreach{p
-      =>
+    OnlyPaths foreach{p =>
         path = Path(p)
         var pathQuery = latestValues.filter(_.path === path)
         len = runSync(pathQuery.result).length
@@ -190,22 +222,13 @@ trait DataBase {
     }
   }
   /**
-   * sets the historylength to desired length
-   * default is 10
-   *
-   * @param newLength new length to be used
-   */
-  def setHistoryLength(newLength: Int) {
-    historyLength = newLength
-  }
-  /**
    * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
    *
    *
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
    * @return boolean whether something was removed
    */
-  def remove(path: Path): Boolean = this.synchronized {
+  def remove(path: Path): Boolean = {
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
     var deleted = false
@@ -259,7 +282,6 @@ trait DataBase {
         info = (sub._3, sub._5)
         paths = sub._2.split(";")
       }
-      implicit var imp_db = this
       paths.foreach {
         p =>
           result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)
@@ -276,7 +298,7 @@ trait DataBase {
    *
    */
   private def removeExcess(path: Path) =
-    this.synchronized {
+    {
       var pathQuery = latestValues.filter(_.path === path)
       var qry = runSync(pathQuery.sortBy(_.timestamp).result)
       var count = qry.length
@@ -293,7 +315,7 @@ trait DataBase {
    * @param path path as Path object
    * 
    */
-  def startBuffering(path: Path):Boolean = this.synchronized {
+  def startBuffering(path: Path):Boolean = {
     val pathQuery = buffered.filter(_.path === path)
     var len = runSync(pathQuery.result).length
     if (len == 0) {
@@ -311,7 +333,7 @@ trait DataBase {
    * 
    * @param path path as Path object
    */
-  def stopBuffering(path: Path):Boolean = this.synchronized {
+  def stopBuffering(path: Path):Boolean = {
       val pathQuery = buffered.filter(_.path === path)
       val str = runSync(pathQuery.result)
       var len = str.length
@@ -405,7 +427,12 @@ trait DataBase {
    * @return Array of DBSensors
    */
 
-  def getNBetween(path: Path, start: Option[Timestamp], end: Option[Timestamp], fromStart: Option[Int], fromEnd: Option[Int]): Array[DBSensor] = {
+  def getNBetween(
+      path: Path,
+      start: Option[Timestamp],
+      end: Option[Timestamp],
+      fromStart: Option[Int],
+      fromEnd: Option[Int]): Array[DBSensor] = {
     var result = Array[DBSensor]()
     var query = latestValues.filter(_.path === path)
     if (start != None) {
@@ -441,7 +468,7 @@ trait DataBase {
    * Empties all the data from the database
    * 
    */
-  def clearDB() = this.synchronized {
+  def clearDB = {
     runWait(DBIO.seq(
       latestValues.delete,
       objects.delete,
@@ -573,7 +600,7 @@ trait DataBase {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = this.synchronized {
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = {
     runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
   }
   /**
@@ -607,7 +634,7 @@ trait DataBase {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: DBSub): Int = this.synchronized {
+  def saveSub(sub: DBSub): Int = {
         val id = getNextId()
         sub.id = id
         runSync(DBIO.seq(

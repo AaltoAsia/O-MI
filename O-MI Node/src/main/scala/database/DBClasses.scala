@@ -5,7 +5,9 @@ import slick.lifted.ProvenShape
 import parsing.Types._
 import parsing.Types.Path._
 import java.sql.Timestamp
-import SQLite._
+
+import database._
+
 /**
  * DBSub class to represent subscription information
  * @param paths Array of paths representing all the sensors the subscription needs
@@ -18,7 +20,7 @@ class DBSub(var paths: Array[Path],
             val interval: Double,
             val callback: Option[String],
             var startTimeOption: Option[Timestamp]
-            ) extends SubLike {
+            )(implicit db: DB) extends SubLike {
   //this is assigned later when subscribtion is added to db
   var id: Int = 0
   val startTime: Timestamp =

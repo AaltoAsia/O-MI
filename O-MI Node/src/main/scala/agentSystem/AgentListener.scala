@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 
 
 import parsing.OdfParser
+import database.SQLiteConnection
 
 
 import parsing.Types._
@@ -45,8 +46,6 @@ class AgentListener extends Actor with ActorLogging {
       )
       agentCounter += 1
       connection ! Register(handler)
-    case obj: OdfObject => 
-      InputPusher.handleObjects(Seq(obj)) 
   }
 
 }
@@ -58,6 +57,8 @@ class AgentListener extends Actor with ActorLogging {
 class InputDataHandler(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
+
+  val inputPusher = new InputPusherForDB(new SQLiteConnection)
 
   import Tcp._
 
@@ -78,9 +79,9 @@ class InputDataHandler(
         log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
       }
 
-     InputPusher.handleObjects(corrects)
+     inputPusher.handleObjects(corrects)
      if(!metaDataSaved){
-     InputPusher.handlePathMetaDataPairs(
+     inputPusher.handlePathMetaDataPairs(
        corrects.flatten{
          o =>
            o.sensors ++ getSensors(o.childs)

@@ -23,7 +23,7 @@ object Starter {
   val settings = Settings(system)
   
   def init(): Unit = {
-    SQLite.setHistoryLength(settings.numLatestValues)
+    database.setHistoryLength(settings.numLatestValues)
 
     // Create test data
     val date = new Date();
@@ -36,10 +36,16 @@ object Starter {
     system.log.warning(odf.filter{o => o.isLeft}.map{o => o.left.get.msg}.mkString("\n"))
     InputPusher.handleObjects(odf.filter{o => o.isRight}.map{o => o.right.get})
     */
+
+    val dbobject = new SQLiteConnection
+
+    // Save settings as sensors
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
-    SQLite.set(new DBSensor(
+    dbobject.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))
 
+    // Clean old pollable subs
+    responses.Subscription.checkSubs(dbobject)
   }
 
   def start(): Unit = {

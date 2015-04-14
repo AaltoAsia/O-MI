@@ -10,7 +10,7 @@ object Types {
   /**
    * Trait for subscription like classes. Offers a common interface for subscription types.
    */
-  trait SubLike {
+  trait SubLike extends OmiRequest {
     // Note: defs can be implemented also as val and lazy val
     def interval: Double
     def ttl: Double
@@ -19,6 +19,7 @@ object Types {
     def ttlToMillis: Long = (ttl * 1000).toLong
     def intervalToMillis: Long = (interval * 1000).toLong
     def isImmortal = ttl == -1.0
+    def requestId: Option[Int] = None
   }
 
   /** absract trait that represent either error or request in the O-MI

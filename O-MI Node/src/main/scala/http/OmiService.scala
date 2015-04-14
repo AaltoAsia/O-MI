@@ -10,6 +10,7 @@ import MediaTypes._
 import responses._
 import parsing._
 import parsing.Types._
+import database._
 
 import xml._
 
@@ -27,6 +28,8 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
   // or timeout handling
   def receive = runRoute(myRoute)
 
+  implicit val dbobject = new SQLiteConnection
+
 }
 
 // this trait defines our service behavior independently from the service actor
@@ -34,6 +37,8 @@ trait OmiService extends HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
+
+  implicit val dbobject: DB
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -95,7 +100,8 @@ trait OmiService extends HttpService {
     }
 
   // XXX: lazy maybe fixes bug
-  lazy val CancelResponseGen = new OMICancelGen(subscriptionHandler)
+  lazy val cancelResponseGen = new OMICancelGen(subscriptionHandler)
+  lazy val readResponseGen = new ReadResponseGen
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
@@ -120,7 +126,7 @@ trait OmiService extends HttpService {
                   log.debug(oneTimeRead.toString)
 
                   if (oneTimeRead.requestId.isEmpty) {
-                    ReadResponseGen.runRequest(oneTimeRead)
+                    readResponseGen.runRequest(oneTimeRead)
 
                   } else {
                     oneTimeRead.requestId.map{reqId =>
@@ -148,7 +154,7 @@ trait OmiService extends HttpService {
                 case cancel: Cancel =>
                   log.debug(cancel.toString)
 
-                  CancelResponseGen.runRequest(cancel)
+                  cancelResponseGen.runRequest(cancel)
 
                 case _ => log.warning("Unknown request")
                   returnStatus = 400

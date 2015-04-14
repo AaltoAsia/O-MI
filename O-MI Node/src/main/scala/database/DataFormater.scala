@@ -21,8 +21,11 @@ object DataFormater {
    * sent if callback address were provided 
    *
    */
-def FormatSubData(path:Path,starttime:Timestamp,interval:Double,endTime:Option[Timestamp])(implicit database: DataBase = SQLite):Array[DBSensor] =
-{
+def FormatSubData(
+    path:Path,
+    starttime:Timestamp,
+    interval:Double,
+    endTime:Option[Timestamp])(implicit database: DB = SQLite):Array[DBSensor] = {
   var rawdata = database.getNBetween(path, Some(starttime), None, None,None)
   var deltaTime =
     endTime match{

@@ -66,7 +66,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
   def getEventSubs = eventSubs
 
   // Attach to db events
-  SQLite.attachSetHook(this.checkEventSubs _)
+  database.attachSetHook(this.checkEventSubs _)
 
   // load subscriptions at startup
   override def preStart() = {
