@@ -1,7 +1,3 @@
-/* 
-Original Page: http://thecodeplayer.com/walkthrough/jquery-multi-step-form-with-progress-bar 
- */
-
 //jQuery time
 var current_fs, next_fs, previous_fs; // fieldsets
 var left, opacity, scale; // fieldset properties which we will animate
@@ -35,9 +31,6 @@ $(document).on('click', '.prev', function() {
 	if(page === 1){
 		return false;
 	}
-	if (page === 3) {
-		send = false; // Polling variable
-	}
 	transitionButton(this, animatePrev);
 });
 
@@ -48,10 +41,15 @@ $(document).on('click', '.prev', function() {
  */
 function transitionButton(button, func){
 	if(!animating){
+		// Small resize animation for next/prev buttons
 		$(button).addClass("resize");
+		
+		// Timeout to stop the animation
 		setTimeout(function(){
 			$(".resize").removeClass("resize");
 		}, 150);
+		
+		// Call function after both ended
 		setTimeout(func, 300);
 	}
 	animating = true;

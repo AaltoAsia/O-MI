@@ -2,6 +2,9 @@
  * Class used to store parameters from XML generation
  * NOTE: this was made as an emergency solution to a usability problem, it is extremely inefficient and might
  * not be fixed due to time constraints
+ * Suggestion: The operation-specific inputs on page 2 are currently loaded from external html files, 
+ * these inputs should be put directly into the html files (pages/page2.html), input id's should be changed to classes and
+ * jQuery selectors should be changed to match these changes.
  * @constructor
  */
 function Omi() {
