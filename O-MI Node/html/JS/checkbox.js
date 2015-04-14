@@ -10,7 +10,7 @@ function ObjectBoxManager(){
 	 */
 	this.addObject = function(id) {
 		// Manual HTML code appending using jQuery
-		$('<li><div id="drop-' + id + '" class="drop"></div><label><input type="checkbox" class="checkbox" id="' + id + '"/>' +
+		$('<li><div id="drop-' + id + '" class="drop"></div><label><input type="checkbox" class="checkbox" id="' + id + '" name="' + id + '"/>' +
 				id + '</label></li>').appendTo("#objectList"); 
 		$('<ul id="list-' + id + '" class="closed-list"></ul>').appendTo("#objectList");
 		
@@ -28,14 +28,12 @@ function ObjectBoxManager(){
 	/**
 	 * Finds an object from the objects array with the given ID
 	 * @param {string} id The id of the object to be found
-	 * @param {Array} pathArray The array containing the ids of all previous boxes
 	 * @returns {Object} The object with the given id if found, otherwise returns undefined
 	 */
-	this.find = function(id, pathArray) {
+	this.find = function(id) {
 		var o;
-		var pathStr = pathArray.join('/');
 		this.objects.forEach(function(elem, index, array){
-			var temp = elem.find(id, pathStr);
+			var temp = elem.find(id);
 			
 			if(temp){
 				o = temp;
@@ -73,18 +71,15 @@ function ObjectBox(id, depth, parent){
 	/**
 	 * Finds a child object with the given id
 	 * @param {string} id The ID of the child object to be found
-	 * @param {string} pathStr Path string of previous objects
 	 * @returns {ObjectBox} The ObjectBox instance with the given id if found, otherwise returns undefined
 	 */
-	this.find = function(id, pathStr) {
+	this.find = function(id) {
 		if(this.id === id){
-			if(pathStr == this.getPath()){
-				return this;
-			}
+			return this;
 		}
 		var o;
 		this.children.forEach(function(elem, index, array){
-			var temp = elem.find(id, pathStr);
+			var temp = elem.find(id);
 			
 			if(temp){
 				o = temp;
@@ -96,11 +91,16 @@ function ObjectBox(id, depth, parent){
 	
 	/**
 	 * Creates a DOM checkbox and adds the reference object to children array
+	 * @param {string} parentId The ID of the parent
+	 * @param {Array} pathArray The array containing all previous object id's
+	 * @param {string} listId The id of the list that the object will be appended to
 	 */
-	this.addChild = function(parentId, name, listId) {
+	this.addChild = function(parentId, pathArray, listId) {
 		var margin = "20px"; // Custom margin of the list-items
+		var name = pathArray.join('-');
+		var text = pathArray[pathArray.length - 1];
 		
-		var str = '<li><div id="drop-' + name + '" class="drop"></div><label><input type="checkbox" class="checkbox ' + this.id + '" id="' + name + '"/>' + name + '</label></li>';
+		var str = '<li><div id="drop-' + name + '" class="drop"></div><label><input type="checkbox" class="checkbox ' + this.id + '" id="' + name + '" name="' + text + '"/>' + text + '</label></li>';
 		
 		$(str).appendTo("#" + listId);
 		$("#" + listId).last().css({ marginLeft: margin });

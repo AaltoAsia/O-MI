@@ -93,8 +93,6 @@
 	}
 	
 	.page {
-		max-height: 100%;
-		overflow: auto;
 		outline: 1px black solid;
 	}
 }
