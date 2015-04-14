@@ -220,10 +220,8 @@ object OmiParser extends Parser[ParseMsg] {
               Seq(Subscription(ttl,
                 parameters("interval").right.get.toDouble,
                 right.map(_.right.get),
-                callback,
-                subnodes("requestId").right.get.map {
-                  id => id.text
-                }))
+                callback
+                ))
             }
           } else if (!left.isEmpty) {
             left.map(_.left.get)
