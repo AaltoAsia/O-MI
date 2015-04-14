@@ -3,8 +3,9 @@
  * @constructor
  * @param {string} id The ID of the Object
  */
-function OdfObject(id){
+function OdfObject(id, text){
 	this.id = id;
+	this.text = text;
 	this.subObjects = []; // Child objects
 	this.infoItems = []; // Child items
 }
@@ -113,10 +114,11 @@ function writeObjects(writer, items, interval, begin, end, newest, oldest, callb
 	var objects = [];
 	
 	for(var i = 0; i < items.length; i++){
-		var cl = $(items[i]).attr("class");
+		var item = items[i];
+		var cl = $(item).attr("class");
 		
 		if(cl === "checkbox"){
-			var obj = new OdfObject(items[i].id);
+			var obj = new OdfObject(item.id, item.name);
 			addChildren(obj, items);
 			objects.push(obj);
 		}
@@ -146,7 +148,7 @@ function addChildren(object, items){
 		var child = children[i];
 		
 		if(child.id){ //Object
-			var subobj = new OdfObject(child.id);
+			var subobj = new OdfObject(child.id, child.name);
 			addChildren(subobj, items);
 			object.subObjects.push(subobj);
 		} else {
@@ -164,7 +166,7 @@ function addChildren(object, items){
 /*  */
 function writeObject(object, writer){
 	writer.writeStartElement('Object');
-	writer.writeElementString('id', object.id);
+	writer.writeElementString('id', object.text);
 	
 	// Write InfoItems BEFORE SubObjects (schema)
 	for(var i = 0; i < object.infoItems.length; i++){

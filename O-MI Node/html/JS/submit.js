@@ -204,7 +204,7 @@ function displayObjects(data) {
 
 			var pathArray = [id];
 			
-			addSubObjects(this, id, pathArray);
+			addSubObjects(this, pathArray);
 		});
 	});
 	
@@ -215,17 +215,16 @@ function displayObjects(data) {
 /**
  * Adds subobjects to the Object tree
  * @param {Object} parent The parent object
- * @param {string} id The id of the parent
  * @param {Array} pathArray Array of string that specifies the object path
  */
-function addSubObjects(parent, id, pathArray){
+function addSubObjects(parent, pathArray){
+	var id = pathArray.join('-');
 	$(parent).children("Object").each(function(){
 		var name = $($(this).children("id")[0]).text();
 		
-		manager.find(id, pathArray).addChild(id, name, "list-" + id);
-		
 		pathArray.push(name);
-		addSubObjects(this, name, pathArray);
+		manager.find(id).addChild(id, pathArray, "list-" + id);
+		addSubObjects(this, pathArray);
 		pathArray.pop();
 	});
 	addInfoItems(parent, id);
