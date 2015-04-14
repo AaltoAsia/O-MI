@@ -25,7 +25,7 @@ def FormatSubData(
     path:Path,
     starttime:Timestamp,
     interval:Double,
-    endTime:Option[Timestamp])(implicit database: DB = SQLite):Array[DBSensor] = {
+    endTime:Option[Timestamp])(implicit database: DB):Array[DBSensor] = {
   var rawdata = database.getNBetween(path, Some(starttime), None, None,None)
   var deltaTime =
     endTime match{
@@ -40,7 +40,7 @@ def FormatSubData(
   if(rawdata.isEmpty)
   {
     //found no data after subscription was set
-    rawdata = SQLite.getNBetween(path, None, None, None,None)
+    rawdata = database.getNBetween(path, None, None, None,None)
     if(rawdata.isEmpty)
     {
       //found no data at all for this path

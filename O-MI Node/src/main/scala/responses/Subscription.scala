@@ -32,9 +32,14 @@ object OMISubscription {
    *
    * This queue contains only subs that have no callback address defined and have ttl > 0.
    */
-  private lazy val subQueue: PriorityQueue[SubTuple] = {
-    val subArray = SQLite.getAllSubs(Some(false)).filter(n => n.ttl > 0).map(n => (n.id, n.ttlToMillis + n.startTime.getTime))
-    new PriorityQueue()(subOrder.reverse) ++ subArray
+  private val subQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
+
+  // helper method, fills subs to subQueue, called from Boot
+  def fillSubQueue()(implicit SQLite: DB) = {
+    if (subQueue.isEmpty) {
+      val subArray = SQLite.getAllSubs(Some(false)).filter(n => n.ttl > 0).map(n => (n.id, n.ttlToMillis + n.startTime.getTime))
+      subQueue ++= subArray
+    }
   }
 
   /**

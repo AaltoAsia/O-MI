@@ -82,7 +82,7 @@ class InputPusherForDB(val dbobject: DB) extends InputPusher{
     *
     */
   override def handlePathValuePairs( pairs: Seq[(String,TimedValue)] ) : Unit ={
-    SQLite.setMany(pairs.toList)
+    dbobject.setMany(pairs.toList)
   }
   def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit ={
     pairs.foreach{ pair => dbobject.setMetaData(pair._1, pair._2)}

@@ -18,11 +18,6 @@ import parsing.Types._
 /**
  * Database object available everywhere in the code. To be used during actual runtime.
  */
-object SQLite extends DB {
-  val dbPath = "./sensorDB.sqlite3"
-  val db = Database.forConfig("sqlite-conf")
-  initialize()
-}
 class SQLiteConnection extends DB {
   val dbPath = "./sensorDB.sqlite3"
   val db = Database.forConfig("sqlite-conf")

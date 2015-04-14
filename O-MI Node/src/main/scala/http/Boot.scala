@@ -44,6 +44,8 @@ object Starter {
     dbobject.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))
 
+    // Fill subs
+    responses.OMISubscription.fillSubQueue()(dbobject)
     // Clean old pollable subs
     responses.OMISubscription.checkSubs()(dbobject)
   }
