@@ -12,6 +12,11 @@ import scala.collection.mutable.Map
 
 import java.sql.Timestamp
 
+
+
+/**
+ * Object that handles ODF generation for read messages
+ */
 object Read {
 
 
@@ -93,8 +98,16 @@ object Read {
 
 }
 
+/**
+ * Object that is used for generation of the read response messages
+ */
 object ReadResponseGen extends ResponseGen[OneTimeRead] {
 
+  /**
+   * Method that generates a response message from OneTimeRead message
+   * @param read OneTimeRead to generate response from
+   * @return OMI-response for the read message
+   */
   override def genMsg(read: OneTimeRead): OmiOdfMsg = {
     OmiOdfMsg(
       <Objects>

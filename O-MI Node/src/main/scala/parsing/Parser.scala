@@ -12,7 +12,11 @@ import javax.xml.validation.Schema
 import javax.xml.validation.SchemaFactory
 import javax.xml.validation.Validator
 
-
+/**
+ * Parser trait that parsers inherit,
+ * defines methods for getting child objects, getting parameters and schema validation.
+ * Also forces all parsers to define parse method and schemaPath method
+ */
 abstract trait Parser[Result] {
 
   def stringOptioner(str: String) : Option[String] = if(str.nonEmpty) Some(str) else None
@@ -25,7 +29,7 @@ abstract trait Parser[Result] {
    * @param node were parameter should be.
    * @param paramName parameter's label
    * @param tolerateEmpty is nonexisting parameter accepted, is parameter's existent mandatory
-   * @param validation function if parameter musth confor some format
+   * @param validation function if parameter must confor some format
    * @return Either ParseError or parameter as String
    */
   protected def getParameter(

@@ -14,6 +14,9 @@ import scala.concurrent.duration._
 import java.sql.Timestamp
 import java.util.Date
 
+/**
+ * Object for adding subscriptions to database. Handles also subscriptions without callback addresses
+ */
 object OMISubscription {
 
   /**

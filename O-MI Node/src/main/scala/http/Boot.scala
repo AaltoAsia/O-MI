@@ -15,7 +15,9 @@ import database._
 
 import xml._
 
-// Initialize functionality seperated for testing purposes
+/**
+ * Initialize functionality, seperated for testing purposes
+ */
 object Starter {
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
@@ -63,7 +65,9 @@ object Starter {
   }
 }
 
-// MAIN
+/**
+ * Start point of the program
+ */
 object Boot extends App {
   Starter.init()
   Starter.start()

@@ -52,7 +52,7 @@ class AgentListener extends Actor with ActorLogging {
 }
 
 /** A handler for data received from a agent.
-  * @param Agent's adress 
+  * @param sourceAddress Agent's adress 
   */
 
 class InputDataHandler(
@@ -99,6 +99,12 @@ class InputDataHandler(
       log.info(s"Agent disconnected from $sourceAddress")
       context stop self
   }
+  
+  /**
+   * Recursively gets all sensors from given objects
+   * @param o Sequence of OdfObjects to process
+   * @return Sequence of OdfInfoitems(sensors)
+   */
   def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = { 
     o.flatten{ o =>
     o.sensors ++ getSensors(o.childs)
