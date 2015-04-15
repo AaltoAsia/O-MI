@@ -15,17 +15,20 @@ class SubscriptionHandlerActorTest extends Specification {
   
   implicit val SQLite = new SQLiteConnection // TestDB("subscriptionHandler-test")
 
-  SQLite.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
-  val testPath = Path("SubscriptionHandlerTest/testData")
-
-  val testSub1 = new DBSub(Array(testPath), 60, 2, Some("test"), None)
-  val testSub2 = new DBSub(Array(testPath), 60, -1, Some("test"), None)
-
-  val testId1 = Promise[Int]
-  val testId2 = Promise[Int]
-  val testId3 = SQLite.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
+  step {
+    SQLite.clearDB()
+    SQLite.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
+  }
 
   "SubscriptionHandlerActor" should {
+    val testPath = Path("SubscriptionHandlerTest/testData")
+
+    val testSub1 = new DBSub(Array(testPath), 60, 2, Some("test"), None)
+    val testSub2 = new DBSub(Array(testPath), 60, -1, Some("test"), None)
+
+    val testId1 = Promise[Int]
+    val testId2 = Promise[Int]
+    val testId3 = SQLite.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
     sequential
     "remove eventsub from memory if ttl has expired" in new Actors {
 

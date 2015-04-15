@@ -21,6 +21,10 @@ class AgentListenerTest extends Specification {
   val remote = new InetSocketAddress("remote", 4321)
   lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("")
 
+  step {
+    SQLite.clearDB()
+  }
+
   "AgentListener" should {
 
     "reply with Register message when it receives Connected message" in new Actors {
