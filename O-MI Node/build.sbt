@@ -52,7 +52,8 @@ Revolver.settings
 // Eclipse
 EclipseKeys.withSource := true
 
-
+// We have common database in some tests
+parallelExecution in Test := false
 
 
 ////////////////////////////

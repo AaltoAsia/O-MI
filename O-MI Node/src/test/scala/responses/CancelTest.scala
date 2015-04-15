@@ -20,6 +20,7 @@ class TestSubHandler(testdb: DB) extends SubscriptionHandlerActor {
   override implicit val SQLite = testdb
 }
 class CancelTest extends Specification with BeforeAll {
+  sequential
 
   implicit val system = ActorSystem("on-core")
 
@@ -78,7 +79,6 @@ class CancelTest extends Specification with BeforeAll {
   }
 
   "Cancel response" should {
-    sequential
     "Give correct XML when a single cancel is requested" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/SimpleXMLCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/SimpleXMLCancelReturn.xml")

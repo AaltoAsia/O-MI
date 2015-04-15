@@ -18,6 +18,7 @@ import testHelpers.BeforeAll
 import scala.concurrent.{ Await, Future }
 
 class SubscriptionTest extends Specification with BeforeAll {
+  sequential
 
   implicit val SQLite = new TestDB("subscription-response-test")
   val subsResponseGen = new OMISubscription.SubscriptionResponseGen
@@ -72,7 +73,6 @@ class SubscriptionTest extends Specification with BeforeAll {
   }
 
   "Subscription response" should {
-    sequential
     "Return with just a requestId when subscribed" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)

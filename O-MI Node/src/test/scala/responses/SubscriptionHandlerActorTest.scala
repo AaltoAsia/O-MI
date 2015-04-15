@@ -12,6 +12,7 @@ import scala.concurrent.duration.Duration
 import testHelpers.Actors
 
 class SubscriptionHandlerActorTest extends Specification {
+  sequential
   
   implicit val SQLite = new SQLiteConnection // TestDB("subscriptionHandler-test")
 
@@ -29,7 +30,6 @@ class SubscriptionHandlerActorTest extends Specification {
     val testId1 = Promise[Int]
     val testId2 = Promise[Int]
     val testId3 = SQLite.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
-    sequential
     "remove eventsub from memory if ttl has expired" in new Actors {
 
       val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
