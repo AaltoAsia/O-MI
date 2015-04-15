@@ -103,7 +103,7 @@ class SubscriptionTest extends Specification with BeforeAll {
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
-            <omi:result>
+            <omi:result msgformat="odf">
               <omi:return returnCode="200"></omi:return>
               <omi:requestId>0</omi:requestId>
               <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
@@ -133,7 +133,7 @@ class SubscriptionTest extends Specification with BeforeAll {
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
-            <omi:result>
+            <omi:result msgformat="odf">
               <omi:return returnCode="200"></omi:return>
               <omi:requestId>1</omi:requestId>
               <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
