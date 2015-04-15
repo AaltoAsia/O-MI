@@ -26,7 +26,7 @@ class OmiServiceSpec extends Specification
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
-    implicit val SQLite = new TestDB("system-test")
+    implicit val SQLite = new SQLiteConnection // TestDB("system-test")
     implicit val dbobject = SQLite
     
     val subscriptionHandler = akka.actor.ActorRef.noSender

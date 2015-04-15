@@ -16,13 +16,17 @@ import scala.xml.XML
 import akka.actor._
 import testHelpers.BeforeAll
 
+class TestSubHandler(testdb: DB) extends SubscriptionHandlerActor {
+  override implicit val SQLite = testdb
+}
 class CancelTest extends Specification with BeforeAll {
 
   implicit val system = ActorSystem("on-core")
 
-  implicit val SQLite = new TestDB("cancel test")
+  val testdb: DB = new TestDB("cancel-test")
+  implicit val SQLite = testdb
 
-  val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
+  val subHandler = system.actorOf(Props(new TestSubHandler(testdb)), "subscription-handler")
   val OMICancel = new OMICancelGen(subHandler)
   
   def beforeAll = {

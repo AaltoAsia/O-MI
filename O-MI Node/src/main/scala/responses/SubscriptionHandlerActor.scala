@@ -39,7 +39,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5.seconds)
 
-  implicit val SQLite = new SQLiteConnection
+  implicit val SQLite: DB = new SQLiteConnection
 
   val subscriptionResponseGen = new SubscriptionResponseGen
 
