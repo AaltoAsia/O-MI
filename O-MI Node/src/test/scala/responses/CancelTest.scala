@@ -19,6 +19,9 @@ import testHelpers.BeforeAll
 class CancelTest extends Specification with BeforeAll {
 
   implicit val system = ActorSystem("on-core")
+
+  implicit val SQLite = new TestDB("cancel test")
+
   val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
   val OMICancel = new OMICancelGen(subHandler)
   

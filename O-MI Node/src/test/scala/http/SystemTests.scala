@@ -17,6 +17,7 @@ import StatusCodes._
 import MediaTypes._
 import StatusCodes._
 
+import database._
 
 class OmiServiceSpec extends Specification
                         with XmlMatchers
@@ -24,6 +25,9 @@ class OmiServiceSpec extends Specification
                         with OmiService {
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
+
+    implicit val SQLite = new TestDB("system-test")
+    implicit val dbobject = SQLite
     
     val subscriptionHandler = akka.actor.ActorRef.noSender
     
@@ -31,7 +35,7 @@ class OmiServiceSpec extends Specification
 
     step {
       // clear if some other tests have left data
-      database.SQLite.clearDB()
+      SQLite.clearDB()
 
       // Initialize the OmiService
       Starter.init()
@@ -68,7 +72,7 @@ class OmiServiceSpec extends Specification
         }
       }
       "respond successfully to GET to some value" in {
-        database.SQLite.set(new database.DBSensor(Path("Objects/SystemTests/TestValue"), "123", new java.sql.Timestamp(1000)))
+        SQLite.set(new DBSensor(Path("Objects/SystemTests/TestValue"), "123", new java.sql.Timestamp(1000)))
         
         Get("/Objects/SystemTests/TestValue/value") ~> myRoute ~> check {
           mediaType === `text/plain`
@@ -104,12 +108,12 @@ class OmiServiceSpec extends Specification
       sequential
       val powerConsumptionValue = "180"
       val dataTime = new java.sql.Timestamp(1000)
-      val fridgeData = database.DBSensor(Path("Objects/SmartFridge22334411/PowerConsumption"),
+      val fridgeData = DBSensor(Path("Objects/SmartFridge22334411/PowerConsumption"),
         powerConsumptionValue,
         dataTime
       )
       log.debug("set data")
-      database.SQLite.set(fridgeData)
+      SQLite.set(fridgeData)
 
 
       val readTestRequestFridge: NodeSeq =
@@ -187,7 +191,7 @@ class OmiServiceSpec extends Specification
 
     step {
       // clear db
-      database.SQLite.clearDB()
+      SQLite.clearDB()
     }
 
       /** EXAMPLES:

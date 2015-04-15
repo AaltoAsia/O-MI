@@ -15,6 +15,7 @@ import parsing.Types._
 import parsing.Types.Path._
 
 class AgentListenerTest extends Specification {
+  implicit val SQLite = new SQLiteConnection
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)

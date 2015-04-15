@@ -10,6 +10,7 @@ import parsing.Types.Path._
 import java.sql.Timestamp
 
 object DataFormaterTest extends Specification {
+  implicit val SQLite = new TestDB("dataformatter-test")
   "SDataFromater" should {
   sequential
   var timeNow = new java.util.Date().getTime

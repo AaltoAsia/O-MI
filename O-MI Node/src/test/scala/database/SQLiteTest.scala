@@ -10,7 +10,7 @@ object SQLiteTest extends Specification {
   
   "SQLite" should {
     sequential
-    val db = new database.testDB("dbtest")
+    implicit val db = new TestDB("dbtest")
     var data1 = DBSensor(Path("path/to/sensor1/temp"),"21.5C",new java.sql.Timestamp(1000))
     var data2 = DBSensor(Path("path/to/sensor1/hum"),"40%",new java.sql.Timestamp(2000))
     var data3 = DBSensor(Path("path/to/sensor2/temp"),"24.5",new java.sql.Timestamp(3000))

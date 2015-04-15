@@ -16,6 +16,9 @@ import scala.xml.XML
 import testHelpers.BeforeAll
 
 class ReadTest extends Specification with BeforeAll {
+  implicit val SQLite = new TestDB("read-test")
+  val ReadResponseGen = new ReadResponseGen
+
   def beforeAll = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date(1421775723))

@@ -3,6 +3,7 @@ package responses
 import org.specs2.mutable._
 import scala.io.Source
 import responses._
+import responses.Common._
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
@@ -17,6 +18,10 @@ import testHelpers.BeforeAll
 import scala.concurrent.{ Await, Future }
 
 class SubscriptionTest extends Specification with BeforeAll {
+
+  implicit val SQLite = new TestDB("subscription-response-test")
+  val subsResponseGen = new OMISubscription.SubscriptionResponseGen
+  val pollResponseGen = new OMISubscription.PollResponseGen
 
   def beforeAll = {
     val calendar = Calendar.getInstance()
@@ -93,7 +98,7 @@ class SubscriptionTest extends Specification with BeforeAll {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubRetrieve.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
 
-      val subxml = OMISubscription.OMISubscriptionResponse(0)
+      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(0))))
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
@@ -123,7 +128,7 @@ class SubscriptionTest extends Specification with BeforeAll {
 
     "Return with right values and requestId in subscription generation" in {
 
-      val subxml = OMISubscription.OMISubscriptionResponse(1)
+      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(1))))
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
@@ -171,7 +176,7 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
 
     "Return with error when subscription doesn't exist" in {
-      val xmlreturn = OMISubscription.OMISubscriptionResponse(1234)
+      val xmlreturn = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(1234))))
 
       val correctxml =
         <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
@@ -187,7 +192,7 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
     "Return polled data only once" in {
       val testTime = new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")), 60.0, 1, None, Some(new java.sql.Timestamp(testTime))))
+      val testSub = SQLite.saveSub(new DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")), 60.0, 1, None, Some(new java.sql.Timestamp(testTime))))
       //      SQLite.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
 
       SQLite.remove(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"))
@@ -195,10 +200,10 @@ class SubscriptionTest extends Specification with BeforeAll {
 
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
-      val test = OMISubscription.OMISubscriptionResponse(testSub)
+      val test = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       val dataLength = test.\\("value").length
       dataLength must be_>=(10)
-      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
+      val test2 = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       val newDataLength = test2.\\("value").length
       newDataLength must be_<=(3)
 
@@ -209,13 +214,13 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
     "TTL should decrease by some multiple of interval" in {
       val testTime = new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")), 60.0, 3, None, Some(new java.sql.Timestamp(testTime))))
+      val testSub = SQLite.saveSub(new DBSub(Array(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest")), 60.0, 3, None, Some(new java.sql.Timestamp(testTime))))
       val ttlFirst = SQLite.getSub(testSub).get.ttl
       ttlFirst === 60.0
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime + n * 1000))))
-      val test = OMISubscription.OMISubscriptionResponse(testSub)
-      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
+      val test = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
+      val test2 = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       val ttlEnd = SQLite.getSub(testSub).get.ttl
       (ttlFirst - ttlEnd) % 3 === 0
 
@@ -224,10 +229,10 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
     "Event based subscription without callback should return all the new values when polled" in {
       val testTime = new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
+      val testSub = SQLite.saveSub(new DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
-      val test = OMISubscription.OMISubscriptionResponse(testSub)
+      val test = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test.\\("value").length === 6
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
       SQLite.removeSub(testSub)
@@ -235,15 +240,15 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
     "Event based subscription without callback should not return already polled data" in {
       val testTime = new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
+      val testSub = SQLite.saveSub(new DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n.toString(), new java.sql.Timestamp(testTime - 5000 + n * 1000))))
-      val test = OMISubscription.OMISubscriptionResponse(testSub)
+      val test = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test.\\("value").length === 6
-      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
+      val test2 = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test2.\\("value").length === 0
       SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
-      val test3 = OMISubscription.OMISubscriptionResponse(testSub)
+      val test3 = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test3.\\("value").length === 1
 
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
@@ -251,15 +256,15 @@ class SubscriptionTest extends Specification with BeforeAll {
     }
     "Event based subscription should return new values only when the value changes" in {
       val testTime = new Date().getTime - 10000
-      val testSub = SQLite.saveSub(new database.DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
+      val testSub = SQLite.saveSub(new DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
       (0 to 10).zip(Array(1,1,1,2,3,3,4,5,5,6,7)).foreach(n =>
         SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), n._2.toString(), new java.sql.Timestamp(testTime + n._1 * 900))))
-      val test = OMISubscription.OMISubscriptionResponse(testSub)
+      val test = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test.\\("value").length === 7
-      val test2 = OMISubscription.OMISubscriptionResponse(testSub)
+      val test2 = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test2.\\("value").length === 0
       SQLite.set(new DBSensor(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), "testvalue", new java.sql.Timestamp(new Date().getTime)))
-      val test3 = OMISubscription.OMISubscriptionResponse(testSub)
+      val test3 = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
       test3.\\("value").length === 1
 
       SQLite.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))

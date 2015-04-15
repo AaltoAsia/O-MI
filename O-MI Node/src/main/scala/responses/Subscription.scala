@@ -339,7 +339,7 @@ object OMISubscription {
 
         SQLite.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
 
-        resultWrapper {
+        odfResultWrapper {
           returnCode200 ++
             requestId(subId.id) ++
             odfMsgWrapper(

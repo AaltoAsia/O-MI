@@ -67,7 +67,7 @@ package object database {
  * problems caused by overlapping test data.
  * @param name name of the test database. Data will be stored to file named [name].sqlite3 
  */
-class testDB(name:String) extends DB
+class TestDB(name:String) extends DB
 {
   val dbPath = "./"+name+".sqlite3"
   val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
@@ -470,7 +470,7 @@ trait DB {
    * Empties all the data from the database
    * 
    */
-  def clearDB = {
+  def clearDB() = {
     runWait(DBIO.seq(
       latestValues.delete,
       objects.delete,
