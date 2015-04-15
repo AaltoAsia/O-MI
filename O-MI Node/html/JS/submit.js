@@ -26,7 +26,9 @@ $(function() {
 	loadOptions();
 	
 	// Click event listeners for buttons
-	$(document).on('click', '#object-button', getObjects);
+	//$(document).on('click', '#object-button', getObjects);
+	$(document).on('click', '#object-button', dataDiscovery);
+	
 	$(document).on('click', '#request-send', sendRequest);
 	$(document).on('click', '#resend', function(){
 		console.log("Resending request.");
@@ -125,7 +127,7 @@ $(function() {
 
 
 /**
- *  Gets the objects from the server using AJAX
+ *  Gets the objects from the server using AJAX (single read request)
  */
 function getObjects() {
 	console.log("Sending AJAX POST for the objects...");
@@ -136,6 +138,100 @@ function getObjects() {
 	// Send ajax get-request for the objects
 	//loadXML("request/objects.xml", objectUrl);
 	ajaxObjectQuery(objectUrl, fullObjectsRequest);
+}
+
+
+/**
+ * Gets the objects from the server using AJAX (multiple AJAX requests)
+ */
+function dataDiscovery() {
+	console.log("Sending AJAX GET for the objects...");
+	
+	// Get user specified URL from the DOM
+	objectUrl = $("#url-field").val() + "/Objects";
+
+	// Send ajax get-request for the objects
+	//loadXML("request/objects.xml", objectUrl);
+	ajaxGet(0, objectUrl, "");
+}
+
+/**
+ * Sends an ajax query for objects (data discovery) 
+ * @param {Number} indent The depth of the object tree hierarchy
+ * @param {string} url The URL of the server to get the objects data from
+ * @param {string} listId The id of the list DOM object that's being queried
+ */
+function ajaxGet(indent, url, listId, pathArray){
+	$.ajax({
+        type: "GET",
+		dataType: "xml",
+        url: url,
+        success: function(data) {
+			displayDiscoveryObjects(data, indent, url, listId, pathArray);
+		},
+		error: function(a, b, c){
+			alert("Error accessing data discovery");
+		}
+    });
+}
+
+/**
+ *  Display the objects as checkboxes in objectList (data discovery)
+ *  @param {XML Object} data The received XML data
+ *  @param {Number} indent The depth of the object (recursive data discovery)
+ *  @param {string} url The URL to the server (recursive data discovery)
+ *  @param {string} listId The ID of the current list (recursive data discovery)
+ *  @param {Array} pathArray The array containing previous objects
+ */
+function displayDiscoveryObjects(data, indent, url, listId, pathArray) {
+	if(indent === 0){
+		// Clear the existing list
+		$("#objectList").empty();
+		
+		// Append objects as checkboxes to the webpage
+		$(data).find('Objects').each(function(){
+			$(this).find("Object").each(function(){
+				var id = $(this).find("id").text();
+				
+				manager.addObject(id);
+				
+				var pathArray = [id];
+				
+				// Get lower hierarchy values (Subobjects/Infoitems)
+				ajaxGet(indent + 1, url + "/" + id, "list-" + id, pathArray);
+			});
+		});
+	} else {
+		// Subobjects/Infoitems
+		$(data).find("Object").each(function(){
+			//var id = $($(this).find("id")[0]).text();
+			var id = pathArray.join('-');
+			var sub = [];
+			var arrays = [];
+			
+			
+			$(this).find("Object").each(function(){
+				var name = $(this).find("id").text();
+
+				/*
+				//ajaxGet(indent + 1, url + "/" + name);
+				manager.find(id).addChild(id, name, "list-" + id);
+				sub.push(name);
+				*/
+				
+				pathArray.push(name);
+				arrays.push(pathArray.slice(0));
+				manager.find(id).addChild(id, pathArray, "list-" + id);
+				sub.push(name);
+				pathArray.pop();
+			});
+			addInfoItems(this, id, indent);
+			
+			for(var i = 0; i < sub.length; i++){
+				ajaxGet(indent + 1, url + "/" + sub[i], "list-" + id, arrays[i]);
+			}
+		});
+	}
 }
 
 /**
