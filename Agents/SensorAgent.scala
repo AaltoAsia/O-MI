@@ -5,7 +5,7 @@ import parsing.Types._
 import database._
 
 import scala.io.Source
-import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
+import akka.actor._
 import akka.event.{Logging, LoggingAdapter}
 import akka.io.{ IO, Tcp }
 import akka.util.{ByteString, Timeout}
@@ -45,17 +45,30 @@ import scala.collection.mutable.Map
 /** Agent for the korean server's JSon data
   * 
   */
-class SensorAgent(uri : String) extends AgentActor {
+class SensorAgent(configPath : String) extends InternalAgentActor(configPath) {
   // Used to inform that database might be busy
   var loading = false
-
+  var uri : Option[String] = None
   // bring the actor system in scope
   // Define formats
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system = context.system
   implicit val formats = DefaultFormats
   implicit val timeout = akka.util.Timeout(10 seconds)
-  queueSensors
+  override def preStart() : Unit = {
+    if(configPath.isEmpty || !(new File(configPath).exists())){
+      context.parent !  ActorInitializationException
+      return
+    }
+    val lines = scala.io.Source.fromFile(configPath).getLines().toArray
+    if(lines.isEmpty){
+      context.parent !  ActorInitializationException
+      return
+    }
+    uri = Some(lines.head)
+    
+    queueSensors
+  }
   def receive = {
     case _ => 
   }
@@ -69,7 +82,7 @@ class SensorAgent(uri : String) extends AgentActor {
 
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
-        (httpRef ? HttpRequest(GET, Uri(uri))).mapTo[HttpResponse]
+        (httpRef ? HttpRequest(GET, Uri(uri.get))).mapTo[HttpResponse]
 
       // wait for Future to complete
       futureResponse onComplete {
@@ -136,36 +149,3 @@ object SensorAgent {
   def apply( uri: String) : Props = props(uri)
   def props( uri: String) : Props = {Props(new SensorAgent(uri)) }
 }
-
-/** Class for handling configuration and creating of GenericAgent.
-  *
-  */
-class SensorBoot extends Bootable {
-  private var configPath : String = ""
-  private var agentActor : ActorRef = null
-
-  /** Startup function that handles configuration and creates SensorAgent.
-    * 
-    * @param system ActorSystem were GenericAgent will live.
-    * @param pathToConfig Path to config file.
-    * @return Boolean indicating successfulnes of startup.
-    */
-  override def startup( system: ActorSystem, pathToConfig: String) : Boolean = { 
-    if(pathToConfig.isEmpty || !(new File(pathToConfig).exists()))
-      return false 
-
-    configPath = pathToConfig
-    val lines = scala.io.Source.fromFile(configPath).getLines().toArray
-    var uri = lines.head
-    agentActor = system.actorOf(SensorAgent.props(uri), SensorAgent.getClass.getName)    
-    return true
-  }
-  override def shutdown() : Unit = {}
-  /** Simple getter fucntion for SensorAgent.
-    *
-    * @return Sequence of ActorRef containing only ActorRef of SensorAgent.
-    */
-  override def getAgentActor() : Seq[ActorRef] = Seq(agentActor) 
-
-}
-

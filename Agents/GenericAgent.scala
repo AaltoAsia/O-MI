@@ -1,7 +1,7 @@
 package agents
 import parsing.Types._
 import agentSystem._
-import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLogging}
+import akka.actor._
 import akka.event.{Logging, LoggingAdapter}
 import akka.io.{ IO, Tcp }
 import akka.util.{ByteString, Timeout}
@@ -20,11 +20,30 @@ import System.currentTimeMillis
   * @param Path where sensor is.
   * @param Client actor that handles connection with AgentListener
   */
-class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
-
+class GenericAgent( configPath: String) extends InternalAgentActor(configPath) {
+  var fileToRead : Option[File] = None 
+  var path : Option[Path] = None 
   case class Msg(msg: String)
+  
   import scala.concurrent.ExecutionContext.Implicits.global
-  run
+  
+  override def preStart() : Unit = {
+    if(configPath.isEmpty || !(new File(configPath).exists())){
+      context.parent !  ActorInitializationException
+      return
+    }
+
+    val lines = io.Source.fromFile(configPath).getLines().toArray
+    path = Some(lines.head.split("/").toSeq)
+    var file = new File(lines.last)
+    if(!file.canRead){
+      context.parent !  ActorInitializationException
+      return
+    }
+    fileToRead = Some(file)
+    run
+  } 
+    
   // XXX: infinite event loop!
   /** A partial function for reacting received messages.
     * Event loop.
@@ -32,12 +51,13 @@ class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
     */
   def receive = {
     case Msg(value) =>
-      genODF(path, value) match {
-        case i: OdfInfoItem =>
-        case o: OdfObject =>
-          InputPusher.handleObjects(Seq(o))
-      }
-      run()
+    if(path.nonEmpty && fileToRead.nonEmpty)
+      genODF(path.get, value) match {
+      case i: OdfInfoItem =>
+      case o: OdfObject =>
+        InputPusher.handleObjects(Seq(o))
+    }
+    run()
   }
 
   /** Function to loop for getting new values to sensor. 
@@ -45,7 +65,7 @@ class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
     */
   def run() : Unit = {
     Future {
-      for(line <- io.Source.fromFile(fileToRead).getLines)
+      for(line <- io.Source.fromFile(fileToRead.get).getLines)
       self ! Msg(line)
     }
   }
@@ -56,7 +76,7 @@ class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
   * @param deepnest Recursion parameter.
   * @return OdfNode containing structure and data of sensors.
   */
-  def genODF( path: Seq[String], value: String, deepnest : Int = 1) : OdfNode =
+  def genODF( path: Path, value: String, deepnest : Int = 1) : OdfNode =
   {
     if(deepnest == path.size){
       OdfInfoItem( path, Seq( TimedValue( None, value ) ), None )
@@ -75,42 +95,7 @@ class GenericAgent( path: Seq[String], fileToRead: File)  extends AgentActor {
   *
   */
 object GenericAgent {
-  def apply( path: Seq[String], file: File) : Props = props(path, file)
-  def props( path: Seq[String], file: File) : Props = {Props(new GenericAgent(path,file)) }
-}
-
-/** Class for handling configuration and creating of GenericAgent.
-  *
-  */
-class GenericBoot extends Bootable {
-  private var configPath : String = ""
-  private var agentActor : ActorRef = null
-  /** Startup function that handles configuration and creates GenericAgent.
-    * 
-    * @param system ActorSystem were GenericAgent will live.
-    * @param pathToConfig Path to config file.
-    * @return Boolean indicating successfulnes of startup.
-    */
-  override def startup( system: ActorSystem, pathToConfig: String) : Boolean = {
-    if(pathToConfig.isEmpty || !(new File(pathToConfig).exists()))
-      return false 
-
-    configPath = pathToConfig
-    val lines = io.Source.fromFile(configPath).getLines().toArray
-    var path = lines.head.split("/")
-    var file = new File(lines.last)
-    if(!file.canRead)
-      return false
-    
-    agentActor = system.actorOf(GenericAgent.props(path, file), "Generic-Agent")    
-    return true
-  }
-  override def shutdown() : Unit = {}
-  /** Simple getter fucntion for GenericAgent.
-    *
-    * @return Sequence of ActorRef containing only ActorRef of GenericAgent
-    */
-  override def getAgentActor() : Seq[ActorRef] = Seq(agentActor)
-
+  def apply( configPath: String) : Props = props(configPath)
+  def props( configPath: String) : Props = {Props(new GenericAgent(configPath)) }
 }
 

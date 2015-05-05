@@ -31,9 +31,9 @@ class AgentLoader  extends Actor with ActorLogging {
   import context.system
 
   //Container for bootables
-  protected var bootables : scala.collection.mutable.Map[String,(Bootable, String)] = Map.empty
+  protected var agents : scala.collection.mutable.Map[String,(ActorRef, String)] = Map.empty
   //getter method to allow testing
-  private[agentSystem] def getBootables = bootables
+  private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.
   private val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
@@ -66,52 +66,25 @@ class AgentLoader  extends Actor with ActorLogging {
     */
   def loadAndStart = {
     val classnames = getClassnamesWithConfigPath
-    val toBeBooted =  classnames map { case (c: String, p: String) => 
+    val toBeCreated =  classnames map { case (classname_jar: String, configPath: String) => 
       try {
-        if(!bootables.exists{case (k:String, (b:Bootable, _ ) ) => k == c}){
-          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
-        } else if(bootables.exists{case (k:String, (b:Bootable, config: String ) ) => k == c && p != config }){ 
-          log.warning("Agent config changed: "+ c +"\n Agent will be removed and restarted.")
-          val agents = bootables(c)._1.getAgentActor
-          bootables -= c
-          agents foreach{ a => a ! Stop}
-          Tuple3( c, p, classLoader.loadClass(c).newInstance.asInstanceOf[Bootable]) 
+        if(!agents.exists{case (classname: String, (ref: ActorRef, _ ) ) => classname == classname_jar}){
+          log.info("Instantitating agent: " + classname_jar )
+          val clazz = classLoader.loadClass(classname_jar)
+          val const = clazz.getConstructors()(0)
+          val agent = system.actorOf(Props.create(clazz, configPath), classname_jar)
+          Tuple2( classname_jar, Tuple2( agent, classname_jar)) 
         } else { 
-          log.warning("Agent allready running: "+ c)
+          log.warning("Agent allready running: "+ classname_jar)
         }
       } catch {
-        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + c +"\n" + e + " caught")
+        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + classname_jar +"\n" + e + " caught")
         case e: Exception => log.warning(s"Classloading failed. $e")
       }
     }
-
-  for ((c: String, p:String, b: Bootable)  <- toBeBooted) {
-    log.info("Starting up " + b.getClass.getName)
-    if(bootables.get(c).isEmpty){
-      try{
-        if(b.startup(context.system, p)){
-          log.info("Successfully started: "+ b.getClass.getName)
-          bootables += Tuple2(c, (b, p))
-          val agents = b.getAgentActor
-          agents.foreach{agent => context.watch(agent)}
-        } else {
-          log.warning("Failed to start: "+ b.getClass.getName)
-        } 
-      } catch {
-        case e: InvalidActorNameException  => log.warning("Tried to create same named actors")
-        case e: Exception => log.warning(s"Classloading failed. $e")
-      }
-    } else {
-
-      log.warning("Multiple instances of: "+ b.getClass.getName)
-    }
   }
 
-  addShutdownHook( bootables.map{ 
-      case ( c: String, ( b: Bootable, p:String) ) => b
-    }.to[immutable.Seq] )
 
-  }
   /** Creates classloader for loading classes from jars in deploy directory.
     *
     */
@@ -147,14 +120,14 @@ class AgentLoader  extends Actor with ActorLogging {
   /** Simple shutdown hook adder for AgentActors.
     *
     */
-  private def addShutdownHook(bootables: immutable.Seq[Bootable]): Unit = {
+  private def addShutdownHook(bootables: immutable.Seq[ActorRef]): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run = {
         log.warning("Shutting down Akka...")
 
         for (bootable <- bootables) {
           log.info("Shutting down " + bootable.getClass.getName)
-          bootable.shutdown()
+          bootable ! Stop
         }
 
         log.info("Successfully shut down Akka")
