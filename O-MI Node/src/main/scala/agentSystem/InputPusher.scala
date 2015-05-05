@@ -87,6 +87,13 @@ class InputPusherForDB(val dbobject: DB) extends Actor with ActorLogging with In
     *
     */
   override def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
+    /*
+     dbobject.setMany(
+      infoitems.map{ info => 
+        info.timedValues.map{ tv => (info.path, tv) }
+      }.flatten[(Path,TimedValue)].toList 
+    ) 
+  */
     for( info <- infoitems ){
       for(timedValue <- info.timedValues){
           val sensorData = timedValue.time match {
@@ -99,6 +106,7 @@ class InputPusherForDB(val dbobject: DB) extends Actor with ActorLogging with In
             dbobject.set(sensorData)
       }  
     }
+    //*/
     log.debug("Successfully saved InfoItems to DB")
   } 
   
@@ -106,7 +114,7 @@ class InputPusherForDB(val dbobject: DB) extends Actor with ActorLogging with In
     *
     */
   override def handlePathValuePairs( pairs: Seq[(Path,TimedValue)] ) : Unit ={
-    dbobject.setMany(pairs.map{p => (p._1.toString, p._2)}.toList)
+    dbobject.setMany(pairs.toList)
     log.debug("Successfully saved Path-TimedValue pairs to DB")    
   }
   def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit ={

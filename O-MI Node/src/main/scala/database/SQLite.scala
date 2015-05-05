@@ -196,13 +196,12 @@ trait DB {
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(String, TimedValue)]) = {
+  def setMany(data: List[(Path, TimedValue)]) = {
     var path = Path("")
     var len = 0
     var add = Seq[(Path,String,Timestamp)]()
     data.foreach {
-      case (p: String, v: TimedValue) =>
-        path = Path(p)
+      case (path: Path, v: TimedValue) =>
          // Call hooks
         val argument = Seq(path)
         getSetHooks foreach { _(argument) }
