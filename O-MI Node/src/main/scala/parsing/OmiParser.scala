@@ -91,6 +91,42 @@ object OmiParser extends Parser[ParseMsg] {
         Write request 
       */
       case "write" => {
+        parseWriteRequest(node, ttl)
+      }
+
+      /*
+        Read request 
+      */
+      case "read" => {
+        parseReadRequest(node, ttl)
+      }
+
+      /*
+        Cancel request 
+      */
+      case "cancel" => {
+        parseCancelRequest(node, ttl)
+      }
+
+      /*
+        Response 
+      */
+      case "response" => {
+        parseResponseRequest(node, ttl)
+      }
+
+      case "result" => {
+        parseResultNode(node, ttl)
+      }
+
+      /*
+        Unknown node 
+      */
+      case _ => Seq(new ParseError("Unknown node."))
+    }
+  }
+
+  private def parseWriteRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
         //Get parameters
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
@@ -133,12 +169,9 @@ object OmiParser extends Parser[ParseMsg] {
         } else if (!left.isEmpty) {
           left.map(_.left.get)
         } else { Seq(ParseError("No Objects to parse")) }
-      }
+  }  
 
-      /*
-        Read request 
-      */
-      case "read" => {
+  private def parseReadRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
         //Get parameters
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat"),
@@ -246,12 +279,9 @@ object OmiParser extends Parser[ParseMsg] {
                 }))
          
         }
-      }
-
-      /*
-        Cancel request 
-      */
-      case "cancel" => {
+  }  
+  
+  private def parseCancelRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
         val requestIds = getChild(node, "requestId", false, true)
         if (requestIds.isLeft)
           return Seq(requestIds.left.get)
@@ -260,12 +290,9 @@ object OmiParser extends Parser[ParseMsg] {
           requestIds.right.get.map {
             id => id.text
           }))
-      }
-
-      /*
-        Response 
-      */
-      case "response" => {
+  }  
+  
+  private def parseResponseRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
         val results = getChild(node, "result", true, true)
         if (results.isLeft)
           return Seq(results.left.get)
@@ -275,9 +302,9 @@ object OmiParser extends Parser[ParseMsg] {
           parseMsgs ++= parseNode(result, ttl)
 
         parseMsgs
-      }
-
-      case "result" => {
+  }  
+  
+  private def parseResultNode(node: Node, ttl: Double): Seq[ParseMsg] = {
         //Get parameters
         val parameters = Map(
           "msgformat" -> getParameter(node, "msgformat", true)
@@ -342,16 +369,7 @@ object OmiParser extends Parser[ParseMsg] {
         } else {
           Seq(ParseError("No Objects node in msg, possible but not implemented"))
         }
-      }
-
-      /*
-        Unknown node 
-      */
-      case _ => Seq(new ParseError("Unknown node."))
-    }
-  }
-
-  
+  }  
 }
 
 
