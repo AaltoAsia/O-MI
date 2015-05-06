@@ -27,14 +27,14 @@ abstract trait Parser[Result] {
    * @param xml String to check
    * @return ParseErrors found while checking, if empty, successful
    */
-  def schemaValitation(xml: String): Seq[ParseError] = {
+  def schemaValitation(xml: Node): Seq[ParseError] = {
     try {
       val xsdPath = schemaPath
       val factory : SchemaFactory =
         SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
       val schema: Schema = factory.newSchema(xsdPath)
       val validator: Validator = schema.newValidator()
-      validator.validate(new StreamSource(new StringReader(xml)))
+      validator.validate(new StreamSource(new StringReader(xml.toString)))
     } catch {
       case e: IOException =>
         return Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
@@ -45,4 +45,15 @@ abstract trait Parser[Result] {
     }
     return Seq.empty;
   }
+  /** 
+    * Temp function for fixing tests
+    */
+  def stripNamespaces(node : Node) : Node = { 
+    node match {
+      case e : Elem =>  
+      e.copy(scope = TopScope, child = e.child map (stripNamespaces))
+      case _ => node;
+    }   
+  }
+
 }

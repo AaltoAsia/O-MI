@@ -23,11 +23,11 @@ object OdfParser extends Parser[OdfObject] {
    *  @return Seq of ParseResults
    */
   def parse(xml_msg: String): Seq[OdfObject] = {
-    val schema_err = schemaValitation(xml_msg)
+    val root = Try(XML.loadString(xml_msg)).getOrElse(throw ParseError("Invalid XML"))
+    val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
       throw ParseError( schema_err.map{err => err.msg}.mkString("\n") )
 
-    val root = XML.loadString(xml_msg)
     val objects = scalaxb.fromXML[ObjectsType](root)
     objects.Object.map{ obj => parseObject( obj ) }.toSeq
   }

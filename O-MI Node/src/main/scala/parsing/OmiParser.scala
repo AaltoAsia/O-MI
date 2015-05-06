@@ -25,11 +25,11 @@ object OmiParser extends Parser[ParseMsg] {
     */
   def parse(xml_msg: String): Seq[ParseMsg] = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    val schema_err = schemaValitation(xml_msg)
+    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
+    val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
       return Seq( ParseError( schema_err.map{err => err.msg}.mkString("\n") )) 
 
-    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
     val envelope = scalaxb.fromXML[OmiEnvelope](root)  
     envelope.omienvelopeoption.value match {
       case read: ReadRequest => {
