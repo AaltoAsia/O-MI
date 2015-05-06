@@ -323,7 +323,7 @@ object SQLiteTest extends Specification {
          ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1019)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1020)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1021)),"val1")),
          ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1022)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1023)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1024)),"val1"))
          )
-     db.setMany(testdata)
+     db.setMany(testdata.map(n=> (Path(n._1), n._2)))
      db.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
      db.getNBetween(Path("path/to/setmany/test2"), None, None,None, None).length shouldEqual 10
      db.stopBuffering(Path("path/to/setmany/test1"))
