@@ -2,7 +2,7 @@ language: scala
 scala:
   - "2.11.2"
 notifications:
-  flowdock: 8fa39d3ba829b0083c135134658d0ac2 fe0612eaf41017111bd1db99f1c00b49
+  flowdock: fe0612eaf41017111bd1db99f1c00b49
 branches:
   only:
     - master
