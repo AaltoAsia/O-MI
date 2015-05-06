@@ -31,8 +31,7 @@ object Types {
     def isImmortal = ttl == -1.0
   }
 
-  case class PollRequest(ttl: Double, callback: Option[String], requestIds: Seq[Int]) extends OmiRequest
-
+  case class PollRequest(ttl: Double, callback: Option[String], requestIds: Seq[Int])  extends ParseMsg with OmiRequest
   object PollRequest {
     def apply(readRequest: OneTimeRead): PollRequest = {
       PollRequest(readRequest.ttl, readRequest.callback, readRequest.requestId.map(_.toInt)) // FIXME: error handling should be done in parser
@@ -54,7 +53,7 @@ object Types {
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */
-  case class ParseError(msg: String) extends ParseMsg
+  case class ParseError(msg: String) extends Exception(msg) with ParseMsg
 
   /** case class that represents Read request without interval, aka. One-Time-Read request,
    *  @param ttl Time-To-Live in seconds.

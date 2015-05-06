@@ -66,39 +66,39 @@ class InputDataHandler(
   /** Partial function for handling received messages.
     */
   def receive = {
-    case Received(data) => 
+    case Received(data) =>{ 
       val dataString = data.decodeString("UTF-8")
 
       log.debug(s"Got data from $sender")
-
-      val parsedEntries = OdfParser.parse(dataString)
-      val errors = parsedEntries.filter( _.isLeft ).map( e => e.left.get) 
-      val corrects = parsedEntries.filter( _.isRight ).map( c => c.right.get) 
-
-      for (error <- errors) {
-        log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
+      var parsedEntries : Seq[OdfObject] = Seq.empty
+      try {
+         parsedEntries = OdfParser.parse(dataString)
+      } catch {
+        case pe: ParseError =>
+        log.warning(s"Malformed odf received from agent ${sender()}: ${pe.msg}")
       }
 
-     inputPusher.handleObjects(corrects)
-     if(!metaDataSaved){
-     inputPusher.handlePathMetaDataPairs(
-       corrects.flatten{
-         o =>
-           o.sensors ++ getSensors(o.childs)
-         }.filter{
-          info => info.metadata.nonEmpty 
-         }.map{
-          info  => (info.path, info.metadata.get.data)
-         }   
+        inputPusher.handleObjects(parsedEntries)
+        if(!metaDataSaved){
+          inputPusher.handlePathMetaDataPairs(
+            parsedEntries.flatten{
+              o =>
+              o.sensors ++ getSensors(o.childs)
+            }.filter{
+              info => info.metadata.nonEmpty 
+            }.map{
+              info  => (info.path, info.metadata.get.data)
+            }   
 
-      )
-    metaDataSaved = true
-    }
+          )
+        metaDataSaved = true
+      }
 
-
-    case PeerClosed =>
-      log.info(s"Agent disconnected from $sourceAddress")
-      context stop self
+  }
+  case PeerClosed =>{
+    log.info(s"Agent disconnected from $sourceAddress")
+    context stop self
+  }
   }
   
   /**

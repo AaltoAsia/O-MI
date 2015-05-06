@@ -17,359 +17,122 @@ object OmiParser extends Parser[ParseMsg] {
   override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
   /**
-   * This method calls the OdfParser class to parse the data when the O-MI message has been parsed.
-   *  this method converts the Node message to xml string.
-   *
-   *  @param msg scala.xml.Node that contains the data in O-DF format
-   *  @return sequence of ParseResults, type ParseResult is defined in the OdfParser class.
-   */
-  private def parseODF(msg: Node) = {
-    OdfParser.parse(trim(msg).toString)
-  }
-
-  /**
-   * Parse the given XML string into sequence of ParseMsg classes
-   *
-   * @param xml_msg O-MI formatted message that is to be parsed
-   * @return sequence of ParseMsg classes, different message types are defined in
-   *         the TypeClasses.scala file
-   */
+    * Parse the given XML string into sequence of ParseMsg classes
+    *
+    * @param xml_msg O-MI formatted message that is to be parsed
+    * @return sequence of ParseMsg classes, different message types are defined in
+    *         the TypeClasses.scala file
+    */
   def parse(xml_msg: String): Seq[ParseMsg] = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val schema_err = schemaValitation(xml_msg)
     if (schema_err.nonEmpty)
-      return schema_err
+      return Seq( ParseError( schema_err.map{err => err.msg}.mkString("\n") )) 
 
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
-    
-    parse(root)
-  }
+    val envelope = scalaxb.fromXML[OmiEnvelope](root)  
+    envelope.omienvelopeoption.value match {
+      case read: ReadRequest => {
+        Seq( 
+          try { 
+            if( read.msg.isEmpty ) {
+              new PollRequest(
+                envelope.ttl,
+                read.callback match {
+                  case None => None
+                  case Some(uri) => Some(uri.toString)
+                },
+                read.requestId.map{id => id.value.toInt }
+              )
 
-  /**
-   * Parse the given XML string into sequence of ParseMsg classes
-   *
-   * @param xml_msg O-MI formatted message that is to be parsed
-   * @return sequence of ParseMsg classes, different message types are defined in
-   *         the TypeClasses.scala file
-   */
-  private def parse(xml_msg: NodeSeq): Seq[ParseMsg] = {
-
-    /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    val root = xml_msg.head
-
-    val request = root.child.collect {
-      case el: Elem => el
-    }.head
-
-    val ttl = (root \ "@ttl").text.toDouble
-
-    parseNode(request, ttl)
-    
-  }
-
-  private def isInteger: String => Boolean = _.forall(_.isDigit)
-  private def isDouble(str: String): Boolean =
-    try {
-      str.toDouble // XXX: Let's hope that some compiler optimization doesn't cut this line out
-                   // because the value is not used anywhere
-      true
+          } else if(read.interval.isEmpty){
+            OneTimeRead( 
+              envelope.ttl,
+              parseMsg(read.msg, read.msgformat),
+              read.begin match {
+                case None => None
+                case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+              },
+              read.end match {
+                case None => None
+                case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+              },
+              read.newest,
+              read.oldest,
+              read.callback match {
+                case None => None
+                case Some(uri) => Some(uri.toString)
+              },
+              read.requestId.map{id => id.value.toString }.toSeq
+            ) 
+        } else {
+          Subscription( 
+            envelope.ttl,
+            read.interval.get,
+            parseMsg(read.msg, read.msgformat),
+            read.callback match{
+              case None => None
+              case Some(uri) => Some(uri.toString)
+            }
+          )
+      }
     } catch {
-      case _: Throwable => false
+      case pe : ParseError => pe
     }
-
-  /**
-   * Private method that is called inside parse method. This method checks which O-MI message
-   *  type the message contains and handles them.
-   *
-   *  @param node scala.xml.Node that should contain the message to be parsed e.g. read or write messages
-   *  @param ttl of the omiEnvelope as string. ttl is in seconds.
-   *
-   */
-  private def parseNode(node: Node, ttl: Double): Seq[ParseMsg] = {
-    node.label match {
-      /*
-        Write request 
-      */
-      case "write" => {
-        parseWriteRequest(node, ttl)
+  )
       }
-
-      /*
-        Read request 
-      */
-      case "read" => {
-        parseReadRequest(node, ttl)
+      case write: WriteRequest => {
+        Seq( 
+          try {
+            Write(
+              envelope.ttl,
+              parseMsg(write.msg, write.msgformat),
+              write.callback match {
+                case None => None
+                case Some(uri) => Some(uri.toString)
+              }
+            )
+        } catch {
+          case pe : ParseError => pe
+        }
+      )
+  }
+  case cancel: CancelRequest => { 
+    Seq( 
+      Cancel(
+        envelope.ttl,
+        cancel.requestId.map{id => id.value.toString }.toSeq
+      )
+  )
       }
-
-      /*
-        Cancel request 
-      */
-      case "cancel" => {
-        parseCancelRequest(node, ttl)
+      case response: ResponseListType => {
+        response.result.map{
+          case result => 
+          try {
+            Result(
+              result.returnValue.value,
+              result.returnValue.returnCode,
+              Some(parseMsg(result.msg, result.msgformat)),
+              result.requestId.map{id => id.value }.toSeq
+            )
+        } catch {
+          case pe : ParseError => pe
+        }
       }
-
-      /*
-        Response 
-      */
-      case "response" => {
-        parseResponseRequest(node, ttl)
-      }
-
-      case "result" => {
-        parseResultNode(node, ttl)
-      }
-
-      /*
-        Unknown node 
-      */
-      case _ => Seq(new ParseError("Unknown node."))
     }
   }
+}
 
-  private def parseWriteRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
-        //Get parameters
-        val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat"),
-          "callback" -> getParameter(node, "callback", true))
+private def parseMsg(msg: Option[scalaxb.DataRecord[Any]], format: Option[String]) : Seq[OdfObject]= {
+  if(msg.isEmpty)
+    throw new ParseError("No msg element found in write request.")
 
-        //Get sub nodes
-        val subnodes = Map(
-          "msg" -> getChild(node, "msg", true, true),
-          "requestId" -> getChild(node, "requestId", true, true))
-
-        //Get O-DF part if msg exist
-        if (subnodes("msg").isRight && subnodes("msg").right.get.nonEmpty)
-          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
-        
-        //Hendle errors
-        val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
-        if (errors.nonEmpty)
-          return errors.toSeq
-          
-        //Parse O-DF
-        val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
-            parseODF(subnodes("Objects").right.get.head)
-          else
-            Seq.empty
-        //Seperate errors and data
-        val left = odf.filter(_.isLeft)
-        val right = odf.filter(_.isRight)
-
-        val callback = parameters("callback").right.get match {
-          case "" => None
-          case str => Some(str)
-        }
-
-        //return errors or data
-        if (left.isEmpty && !right.isEmpty) {
-          Seq(Write(ttl,
-            right.map(_.right.get),
-            callback
-            ))
-        } else if (!left.isEmpty) {
-          left.map(_.left.get)
-        } else { Seq(ParseError("No Objects to parse")) }
-  }  
-
-  private def parseReadRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
-        //Get parameters
-        val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat"),
-          "interval" -> getParameter(node, "interval", true,
-              isDouble
-            ),
-          "begin" -> getParameter(node, "begin", true),
-          "end" -> getParameter(node, "end", true),
-          "newest" -> getParameter(node, "newest", true),
-          "oldest" -> getParameter(node, "oldest", true),
-          "callback" -> getParameter(node, "callback", true))
-        //Get sub nodes
-        val subnodes = Map(
-          "msg" -> getChild(node, "msg",true,true),
-          "requestId" -> getChild(node, "requestId", true, true)
-        )
-
-        if(subnodes("msg").isRight && 
-          subnodes("msg").right.get.nonEmpty
-        ) {
-          if(subnodes("msg").isRight &&
-            subnodes("msg").right.get.nonEmpty &&
-            subnodes("requestId").isRight &&
-            subnodes("requestId").right.get.isEmpty
-          ){
-            subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects")
-          }
-
-          val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
-          
-          if (errors.nonEmpty)
-            return errors.toSeq
-
-          //Parse O-DF
-          val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
-              parseODF(subnodes("Objects").right.get.head)
-            else
-              Seq.empty
-          //Seperate data and errors
-          val left = odf.filter(_.isLeft)
-          val right = odf.filter(_.isRight)
-
-          //Handle parameters
-          val begin = parameters("begin").right.get match {
-            case "" => None
-            case str => Some(new Timestamp(dateFormat.parse(str).getTime))
-          }
-          val end = parameters("end").right.get match {
-            case "" => None
-            case str => Some(new Timestamp(dateFormat.parse(str).getTime))
-          }
-          val newest = parameters("newest").right.get match {
-            case "" => None
-            case str => Some(str.toInt)
-          }
-          val oldest = parameters("oldest").right.get match {
-            case "" => None
-            case str => Some(str.toInt)
-          }
-          val callback = parameters("callback").right.get match {
-            case "" => None
-            case str => Some(str)
-          }
-
-          //Return OneTimeRead, Subcription or errors
-          if (left.isEmpty && !right.isEmpty) {
-            if (parameters("interval").right.get.isEmpty) {
-              Seq(OneTimeRead(ttl,
-                right.map(_.right.get),
-                begin,
-                end,
-                newest,
-                oldest,
-                callback,
-                subnodes("requestId").right.get.map {
-                  id => id.text
-                }))
-            } else {
-              Seq(Subscription(ttl,
-                parameters("interval").right.get.toDouble,
-                right.map(_.right.get),
-                callback
-                ))
-            }
-          } else if (!left.isEmpty) {
-            left.map(_.left.get)
-          } else { 
-              Seq(OneTimeRead(ttl,
-                Seq.empty,
-                begin,
-                end,
-                newest,
-                oldest,
-                callback,
-                subnodes("requestId").right.get.map {
-                  id => id.text
-                }
-              ))
-            }
-        } else {
-              Seq(OneTimeRead(ttl,
-                Seq.empty,
-                requestId = subnodes("requestId").right.get.map {
-                  id => id.text
-                }))
-         
-        }
-  }  
-  
-  private def parseCancelRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
-        val requestIds = getChild(node, "requestId", false, true)
-        if (requestIds.isLeft)
-          return Seq(requestIds.left.get)
-
-        return Seq(Cancel(ttl,
-          requestIds.right.get.map {
-            id => id.text
-          }))
-  }  
-  
-  private def parseResponseRequest(node: Node, ttl: Double): Seq[ParseMsg] = {
-        val results = getChild(node, "result", true, true)
-        if (results.isLeft)
-          return Seq(results.left.get)
-
-        var parseMsgs: Seq[ParseMsg] = Seq.empty
-        for (result <- results.right.get)
-          parseMsgs ++= parseNode(result, ttl)
-
-        parseMsgs
-  }  
-  
-  private def parseResultNode(node: Node, ttl: Double): Seq[ParseMsg] = {
-        //Get parameters
-        val parameters = Map(
-          "msgformat" -> getParameter(node, "msgformat", true)
-        )
-        
-        //Get sub nodes
-        // NOTE: Result does not have to contain msg
-        val subnodes = Map(
-          "return" -> getChild(node, "return",tolerateEmpty = true),
-          "msg" -> getChild(node, "msg", true, true),
-          "requestId" -> getChild(node, "requestId", true, true)
-        )
-        
-        //Check does msg exists
-        if (subnodes("msg").isRight &&
-          subnodes("msg").right.get.nonEmpty &&
-          subnodes("requestId").isRight &&
-          subnodes("requestId").right.get.isEmpty
-        ){
-          subnodes += "Objects" -> getChild(subnodes("msg").right.get.head, "Objects", true, true)
-        }
-        
-        //Check return
-        if (subnodes("return").isRight) {
-          parameters += "returnCode" -> getParameter(subnodes("return").right.get.head, "returnCode", true)
-        }
-        
-        //handle errors
-        val errors = parameters.filter(_._2.isLeft).map(_._2.left.get) ++ subnodes.filter(_._2.isLeft).map(_._2.left.get)
-        if (errors.nonEmpty)
-          return errors.toSeq
-
-        //Return right kind of result
-        if (!subnodes.contains("msg") || subnodes("msg").right.get.isEmpty)
-          return Seq(Result(subnodes("return").right.get.text,
-            parameters("returnCode").right.get,
-            None,
-            subnodes("requestId").right.get.map {
-              id => id.text
-            }))
-
-        if (subnodes("Objects").right.get.nonEmpty) {
-          val odf = if(subnodes.exists(sn => sn._1 == "Objects")) 
-            parseODF(subnodes("Objects").right.get.head)
-          else
-            Seq.empty
-          val left = odf.filter(_.isLeft)
-          val right = odf.filter(_.isRight)
-
-          if (left.isEmpty && !right.isEmpty) {
-            return Seq(Result(subnodes("return").right.get.text,
-              parameters("returnCode").right.get,
-              Some(right.map(_.right.get)),
-              subnodes("requestId").right.get.map {
-                id => id.text
-              }))
-          } else if (!left.isEmpty) {
-            left.map(_.left.get)
-          } else {
-            Seq(ParseError("No Objects to parse"))
-          }
-        } else {
-          Seq(ParseError("No Objects node in msg, possible but not implemented"))
-        }
-  }  
+  format.get match {
+    case "omi.xsd" => parseOdf(msg.get.as[Elem])
+    case _ => throw new ParseError("Unknown msgformat attribute or not found for msg.")  
+  } 
+}
+private def parseOdf(node: Node) : Seq[OdfObject] = OdfParser.parse(node.toString) 
 }
 
 

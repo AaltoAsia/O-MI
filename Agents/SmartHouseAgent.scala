@@ -74,15 +74,19 @@ class SmartHouseAgent(configPath : String) extends InternalAgentActor(configPath
       return
     }
     odfFile = Some(lines.head)
+    try {
     odf = Some(
-      OdfParser.parse( XML.loadFile(odfFile.get).toString).filter{
-        o => o.isRight
-      }.map{
-        o => o.right.get
-      }.flatten{o =>
+      OdfParser.parse( XML.loadFile(odfFile.get).toString).flatten{o =>
       o.sensors ++ getSensors(o.childs)
     }
     )
+    } catch {
+      case pe : ParseError =>{
+        log.warning(pe.msg)
+        context.parent !  ActorInitializationException
+        return
+      }
+    }
     if(odf.isEmpty){
       context.parent !  ActorInitializationException
       return
