@@ -32,7 +32,7 @@ class CancelTest extends Specification with BeforeAll {
   
   def beforeAll = {
     val calendar = Calendar.getInstance()
-    calendar.setTime(new Date(1421775723))
+    calendar.setTime(new Date())
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)

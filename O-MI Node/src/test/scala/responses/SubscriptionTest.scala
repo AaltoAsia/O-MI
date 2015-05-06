@@ -17,14 +17,14 @@ import scala.xml.XML
 import testHelpers.BeforeAll
 import scala.concurrent.{ Await, Future }
 
-class SubscriptionTest extends Specification with BeforeAll {
+class SubscriptionTest extends Specification {
   sequential
 
   implicit val SQLite = new TestDB("subscription-response-test")
   val subsResponseGen = new OMISubscription.SubscriptionResponseGen
   val pollResponseGen = new OMISubscription.PollResponseGen()(SQLite)
 
-  def beforeAll = {
+//  def beforeAll = {
     val calendar = Calendar.getInstance()
     calendar.setTime(new Date())
     calendar.set(Calendar.HOUR_OF_DAY, 12)
@@ -70,14 +70,14 @@ class SubscriptionTest extends Specification with BeforeAll {
     val parserlistcallback = OmiParser.parse(simpletestfilecallback)
 
     val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[Subscription])
-  }
+//  }
 
   "Subscription response" should {
     "Return with just a requestId when subscribed" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
+//      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
+//      val parserlist = OmiParser.parse(simpletestfile)
 
-      val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
+//      val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[Subscription])
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
@@ -95,10 +95,10 @@ class SubscriptionTest extends Specification with BeforeAll {
 
     "Return with no values when interval is larger than time elapsed and no callback given" in {
 
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubRetrieve.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
+//      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubRetrieve.xml").getLines.mkString("\n")
+//      val parserlist = OmiParser.parse(simpletestfile)
 
-      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(0))))
+      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(requestID))))
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
@@ -128,7 +128,7 @@ class SubscriptionTest extends Specification with BeforeAll {
 
     "Return with right values and requestId in subscription generation" in {
 
-      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(1))))
+      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(requestIDcallback))))
 
 //      val correctxml =
       /*
