@@ -82,7 +82,7 @@
 	
 	.page {
 		max-height: 35em;
-		overflow: auto;
+		/*overflow: auto;*/
 		outline: 1px black solid;
 	}
 }

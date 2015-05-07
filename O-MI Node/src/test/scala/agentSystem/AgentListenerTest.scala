@@ -15,6 +15,7 @@ import parsing.Types._
 import parsing.Types.Path._
 
 class AgentListenerTest extends Specification {
+  sequential
   implicit val SQLite = new SQLiteConnection
 
   val local = new InetSocketAddress("localhost", 1234)
@@ -88,7 +89,6 @@ class AgentListenerTest extends Specification {
   }
 
   "InputDataHandler" should {
-    sequential
     "save sent data into database" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
