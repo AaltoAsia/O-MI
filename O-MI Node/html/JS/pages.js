@@ -46,7 +46,8 @@ function loadPages(page) {
 		selector.load("pages/page" + page + ".html");
 		
 		if(page === 1){
-			setTimeout(getObjects, 500);
+			// setTimeout(getObjects, 500);
+			setTimeout(dataDiscovery, 500);
 		}
 	}
 	

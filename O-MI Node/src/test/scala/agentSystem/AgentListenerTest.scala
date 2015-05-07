@@ -90,7 +90,7 @@ class AgentListenerTest extends Specification {
 
   "InputDataHandler" should {
     "save sent data into database" in new Actors {
-      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val actor = system.actorOf(Props(new InputDataHandler(local){override val inputPusher = new InputPusherForDB(SQLite)}))
       val probe = TestProbe()
       
       SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
@@ -146,7 +146,7 @@ class AgentListenerTest extends Specification {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
 
-      EventFilter.info(s"Agent disconnected from $local", occurrences = 1) intercept {
+      EventFilter.info(s"Agent disconnected from $local") intercept {
         actor.tell(PeerClosed, probe.ref)
       }
 

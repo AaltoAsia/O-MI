@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 
 
 import parsing.OdfParser
+import parsing.OmiParser
 import database.SQLiteConnection
 
 
@@ -66,39 +67,37 @@ class InputDataHandler(
   /** Partial function for handling received messages.
     */
   def receive = {
-    case Received(data) => 
+    case Received(data) =>{ 
       val dataString = data.decodeString("UTF-8")
 
       log.debug(s"Got data from $sender")
-
       val parsedEntries = OdfParser.parse(dataString)
-      val errors = parsedEntries.filter( _.isLeft ).map( e => e.left.get) 
-      val corrects = parsedEntries.filter( _.isRight ).map( c => c.right.get) 
+      val errors = getErrors(parsedEntries)
+      if(errors.nonEmpty){
+        log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
+        
+      } else {
+        inputPusher.handleObjects(getObjects(parsedEntries))
+        if(!metaDataSaved){
+          inputPusher.handlePathMetaDataPairs(
+            getObjects(parsedEntries).flatten{
+              o =>
+              o.sensors ++ getSensors(o.childs)
+            }.filter{
+              info => info.metadata.nonEmpty 
+            }.map{
+              info  => (info.path, info.metadata.get.data)
+            }   
 
-      for (error <- errors) {
-        log.warning(s"Malformed odf received from agent ${sender()}: ${error.msg}")
+          )
+          metaDataSaved = true
+        }
       }
-
-     inputPusher.handleObjects(corrects)
-     if(!metaDataSaved){
-     inputPusher.handlePathMetaDataPairs(
-       corrects.flatten{
-         o =>
-           o.sensors ++ getSensors(o.childs)
-         }.filter{
-          info => info.metadata.nonEmpty 
-         }.map{
-          info  => (info.path, info.metadata.get.data)
-         }   
-
-      )
-    metaDataSaved = true
-    }
-
-
-    case PeerClosed =>
-      log.info(s"Agent disconnected from $sourceAddress")
-      context stop self
+  }
+  case PeerClosed =>{
+    log.info(s"Agent disconnected from $sourceAddress")
+    context stop self
+  }
   }
   
   /**
