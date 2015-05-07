@@ -54,15 +54,15 @@ object Starter {
   }
 
   def start(): Unit = {
-    val subHandler = system.actorOf(Props(classOf[SubscriptionHandlerActor]), "subscription-handler")
+    val subHandler = system.actorOf(Props(classOf[SubscriptionHandler]), "subscription-handler")
 
     // create and start our service actor
     val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
 
     // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
-    val sensorDataListener = system.actorOf(Props(classOf[AgentListener]), "agent-listener")
-    val agentLoader = system.actorOf(AgentLoader.props() , "agent-loader")
+    val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
+    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
     agentLoader ! ConfigUpdated  
 
     implicit val timeout = Timeout(5.seconds)

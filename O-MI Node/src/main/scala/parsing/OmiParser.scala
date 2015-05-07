@@ -144,11 +144,16 @@ object OmiParser extends Parser[ParseMsg] {
 
     private def parseMsg(msg: Option[scalaxb.DataRecord[Any]], format: Option[String]) : Seq[OdfParseResult] = {
       if(msg.isEmpty)
-        throw new ParseError("No msg element found in write request.")
-
+        return Seq(Left(ParseError("No msg element found in write request.")))
+      if(format.isEmpty) return Seq(Left(ParseError("Missing msgformat attribute.")))
       format.get match {
         case "omi.xsd" => parseOdf(msg.get.as[Elem])
-        case _ => throw new ParseError("Unknown msgformat attribute or not found for msg.")  
+        case "omi" => parseOdf(msg.get.as[Elem])
+        case "odf" => parseOdf(msg.get.as[Elem])
+        case "odf.xsd" => parseOdf(msg.get.as[Elem])
+        
+        
+        case _ => return Seq(Left(ParseError("Unknown msgformat attribute")  ))
       } 
     }
     private def parseOdf(node: Node) : Seq[OdfParseResult]  = OdfParser.parse(node.toString) 

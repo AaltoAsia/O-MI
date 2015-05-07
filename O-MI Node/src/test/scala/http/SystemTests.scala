@@ -26,8 +26,8 @@ class OmiServiceSpec extends Specification
     def actorRefFactory = system
     lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
-    implicit val SQLite = new SQLiteConnection // TestDB("system-test")
-    implicit val dbobject = SQLite
+    implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
+    implicit val dbobject = dbConnection
     
     val subscriptionHandler = akka.actor.ActorRef.noSender
     
@@ -35,7 +35,7 @@ class OmiServiceSpec extends Specification
 
     step {
       // clear if some other tests have left data
-      SQLite.clearDB()
+      dbConnection.clearDB()
 
       // Initialize the OmiService
       Starter.init()
@@ -72,7 +72,7 @@ class OmiServiceSpec extends Specification
         }
       }
       "respond successfully to GET to some value" in {
-        SQLite.set(new DBSensor(Path("Objects/SystemTests/TestValue"), "123", new java.sql.Timestamp(1000)))
+        dbConnection.set(new DBSensor(Path("Objects/SystemTests/TestValue"), "123", new java.sql.Timestamp(1000)))
         
         Get("/Objects/SystemTests/TestValue/value") ~> myRoute ~> check {
           mediaType === `text/plain`
@@ -113,7 +113,7 @@ class OmiServiceSpec extends Specification
         dataTime
       )
       log.debug("set data")
-      SQLite.set(fridgeData)
+      dbConnection.set(fridgeData)
 
 
       val readTestRequestFridge: NodeSeq =
@@ -191,7 +191,7 @@ class OmiServiceSpec extends Specification
 
     step {
       // clear db
-      SQLite.clearDB()
+      dbConnection.clearDB()
     }
 
       /** EXAMPLES:

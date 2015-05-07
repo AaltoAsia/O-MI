@@ -33,13 +33,13 @@ case class RemoveSubscription(id: Int)
 /**
  * Handles interval counting and event checking for subscriptions
  */
-class SubscriptionHandlerActor extends Actor with ActorLogging {
+class SubscriptionHandler extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
   import context.system
 
   implicit val timeout = Timeout(5.seconds)
 
-  implicit val SQLite: DB = new SQLiteConnection
+  implicit val dbConnection: DB = new SQLiteConnection
 
   val subscriptionResponseGen = new SubscriptionResponseGen
 
@@ -73,13 +73,13 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
 
   // load subscriptions at startup
   override def preStart() = {
-    val subs = SQLite.getAllSubs(Some(true))
+    val subs = dbConnection.getAllSubs(Some(true))
     for (sub <- subs) loadSub(sub.id, sub)
 
   }
 
   private def loadSub(id: Int): Unit = {
-    SQLite.getSub(id) match {
+    dbConnection.getSub(id) match {
       case Some(dbsub) =>
         loadSub(id, dbsub)
       case None =>
@@ -103,7 +103,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
     } else if (dbsub.isEventBased) {
 
       for (path <- dbsub.paths)
-        SQLite.get(path).foreach{
+        dbConnection.get(path).foreach{
           case sensor: DBSensor =>
             eventSubs += path.toString -> EventSub(dbsub, id, sensor.value)
           case x =>
@@ -120,7 +120,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
    * @return true on success
    */
   private def removeSub(id: Int): Boolean = {
-    SQLite.getSub(id) match {
+    dbConnection.getSub(id) match {
       case Some(dbsub) => removeSub(dbsub)
       case None => false
     }
@@ -139,7 +139,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       //remove from intervalSubs
       intervalSubs = intervalSubs.filterNot(sub.id == _.id)
     }
-    SQLite.removeSub(sub.id)
+    dbConnection.removeSub(sub.id)
   }
 
   override def receive = {
@@ -164,7 +164,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
             removeSub(subscription)
           } else {
             if (newestValue.isEmpty)
-              newestValue = SQLite.get(path).map{
+              newestValue = dbConnection.get(path).map{
                 case DBSensor(_, v, _) => v
                 case _ => ""// noop, already logged at loadSub
               }
@@ -216,7 +216,7 @@ class SubscriptionHandlerActor extends Actor with ActorLogging {
       // Check if ttl has ended, comparing to original check time
       if (hasTTLEnded(sub, checkTime)) {
 
-        SQLite.removeSub(id)
+        dbConnection.removeSub(id)
 
       } else {
         val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt

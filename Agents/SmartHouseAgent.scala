@@ -48,7 +48,7 @@ import scala.util.Random
 /** Agent for the SmartHouse
   * 
   */
-class SmartHouseAgent(configPath : String) extends InternalAgentActor(configPath) {
+class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system = context.system

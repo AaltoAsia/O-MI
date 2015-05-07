@@ -8,7 +8,7 @@ import parsing.Types._
 
 object SQLiteTest extends Specification {
   
-  "SQLite" should {
+  "dbConnection" should {
     sequential
     implicit val db = new TestDB("dbtest")
     var data1 = DBSensor(Path("path/to/sensor1/temp"),"21.5C",new java.sql.Timestamp(1000))

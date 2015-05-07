@@ -4,5 +4,5 @@ import akka.actor.{ ActorSystem, Actor, ActorRef, Props, Terminated, ActorLoggin
 /** Parent trait for AgentActors. 
   *
   */
-abstract class InternalAgentActor( confgiPath : String )  extends Actor with ActorLogging{
+abstract class InternalAgent( confgiPath : String )  extends Actor with ActorLogging{
 }

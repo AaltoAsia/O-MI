@@ -38,9 +38,9 @@ object OMISubscription {
   private val subQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
 
   // helper method, fills subs to subQueue, called from Boot
-  def fillSubQueue()(implicit SQLite: DB) = {
+  def fillSubQueue()(implicit dbConnection: DB) = {
     if (subQueue.isEmpty) {
-      val subArray = SQLite.getAllSubs(Some(false)).filter(n => n.ttl > 0).map(n => (n.id, n.ttlToMillis + n.startTime.getTime))
+      val subArray = dbConnection.getAllSubs(Some(false)).filter(n => n.ttl > 0).map(n => (n.id, n.ttlToMillis + n.startTime.getTime))
       subQueue ++= subArray
     }
   }
@@ -66,13 +66,13 @@ object OMISubscription {
    * This method removes all subscriptions that have expired from the priority queue and
    * schedules new checkSub method call.
    */
-  def checkSubs()(implicit SQLite: DB): Unit = {
+  def checkSubs()(implicit dbConnection: DB): Unit = {
     
     val currentTime = date.getTime
     
     //exists returns false if Option is None
     while (subQueue.headOption.exists(_._2 <= currentTime)) {
-      SQLite.removeSub(subQueue.dequeue()._1)
+      dbConnection.removeSub(subQueue.dequeue()._1)
     }
     
     //foreach does nothing if Option is None
@@ -101,7 +101,7 @@ object OMISubscription {
    * containing the immediate xml that's used for responding to a subscription request
    */
 
-  def setSubscription(subscription: Subscription)(implicit SQLite: DB): (Int, xml.NodeSeq) = {
+  def setSubscription(subscription: Subscription)(implicit dbConnection: DB): (Int, xml.NodeSeq) = {
     var requestIdInt: Int = -1
     val paths = getInfoItemPaths(subscription.sensors.toList)
 
@@ -115,7 +115,7 @@ object OMISubscription {
               val interval = subscription.interval.toInt
               val callback = subscription.callback
               val timeStamp = Some(new Timestamp(date.getTime()))
-              requestIdInt = SQLite.saveSub(
+              requestIdInt = dbConnection.saveSub(
                 new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
 
               if (callback.isEmpty && ttlInt > 0) {
@@ -155,7 +155,7 @@ object OMISubscription {
         starttime: Timestamp,
         interval: Double,
         hascallback: Boolean
-      )(implicit SQLite: DB): xml.NodeSeq = {
+      )(implicit dbConnection: DB): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
     if (paths.isEmpty == false) {
@@ -164,7 +164,7 @@ object OMISubscription {
 
       for (path <- paths) {
         var slicedpath = Path(path.toSeq.slice(0, index + 1))
-        SQLite.get(slicedpath) match {
+        dbConnection.get(slicedpath) match {
           case Some(sensor: DBSensor) => {
 
             node ++=
@@ -174,7 +174,7 @@ object OMISubscription {
                   else { getAllvalues(sensor, starttime, interval) }
                 }
                 {
-                  val metaData = SQLite.getMetaData(sensor.path)
+                  val metaData = dbConnection.getMetaData(sensor.path)
                   if (metaData.isEmpty == false) { XML.loadString(metaData.get) }
                   else { xml.NodeSeq.Empty }
                 }
@@ -229,7 +229,7 @@ object OMISubscription {
    */
 
   def getAllvalues(sensor: DBSensor, starttime: Timestamp, interval: Double
-      )(implicit SQLite: DB): xml.NodeSeq = {
+      )(implicit dbConnection: DB): xml.NodeSeq = {
     var node: xml.NodeSeq = xml.NodeSeq.Empty
 
     val infoitemvaluelist = {
@@ -237,7 +237,7 @@ object OMISubscription {
       else {
         /*filter out elements that have the same value as previous entry*/
         //NOTE 
-        SQLite.getNBetween(sensor.path, Some(starttime), None, None, None)
+        dbConnection.getNBetween(sensor.path, Some(starttime), None, None, None)
           .foldLeft(Array[DBSensor]())((a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b)
       }
     }
@@ -257,7 +257,7 @@ object OMISubscription {
    * @return Paths of the infoitems
    */
 
-  def getInfoItemPaths(objects: List[OdfObject])(implicit SQLite: DB): Buffer[Path] = {
+  def getInfoItemPaths(objects: List[OdfObject])(implicit dbConnection: DB): Buffer[Path] = {
     var paths = Buffer[Path]()
     for (obj <- objects) {
       /*      //just an object has been subscribed to
@@ -271,7 +271,7 @@ object OMISubscription {
 
       if (obj.sensors.nonEmpty) {
         for (sensor <- obj.sensors) {
-          SQLite.get(sensor.path) match {
+          dbConnection.get(sensor.path) match {
             case Some(infoitem: DBSensor) => paths += infoitem.path
             case _ => //do nothing
           }
@@ -284,13 +284,13 @@ object OMISubscription {
   /**
    * Poll Subscription response
    */
-  class PollResponseGen(implicit SQLite: DB) extends ResponseGen[PollRequest] {
+  class PollResponseGen(implicit dbConnection: DB) extends ResponseGen[PollRequest] {
     
 
     override def genResult(poll: PollRequest) = {
       val results = poll.requestIds.map{ id =>
 
-        val sub = SQLite.getSub(id)
+        val sub = dbConnection.getSub(id)
         sub match {
           case None => {
             resultWrapper {
@@ -337,7 +337,7 @@ object OMISubscription {
           else ttlDecreased
         }
 
-        SQLite.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
+        dbConnection.setSubStartTime(subId.id, new Timestamp(currentTimeLong), newTTL)
 
         odfResultWrapper {
           returnCode200 ++
@@ -362,7 +362,7 @@ object OMISubscription {
           ((subId.ttl * 1000).toLong - (newStartTimeLong - start)) / 1000.0
         }
 
-        SQLite.setSubStartTime(subId.id, new Timestamp(newStartTimeLong), newTTL)
+        dbConnection.setSubStartTime(subId.id, new Timestamp(newStartTimeLong), newTTL)
 
         odfResultWrapper {
           returnCode200 ++
@@ -387,7 +387,7 @@ object OMISubscription {
    * @param sub subscription that the response is generated for
    * @return The data in ODF-format
    */
-  class SubscriptionResponseGen(implicit SQLite: DB) extends ResponseGen[SubDataRequest] {
+  class SubscriptionResponseGen(implicit dbConnection: DB) extends ResponseGen[SubDataRequest] {
     override def genResult(subreq: SubDataRequest) = {
       val sub = subreq.sub
       assert(sub.callback.isDefined)

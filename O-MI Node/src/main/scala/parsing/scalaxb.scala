@@ -1,3 +1,4 @@
+package parsing
 package scalaxb
 
 import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}

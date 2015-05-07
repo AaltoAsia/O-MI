@@ -45,7 +45,7 @@ import scala.collection.mutable.Map
 /** Agent for the korean server's JSon data
   * 
   */
-class SensorAgent(configPath : String) extends InternalAgentActor(configPath) {
+class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   var loading = false
   var uri : Option[String] = None

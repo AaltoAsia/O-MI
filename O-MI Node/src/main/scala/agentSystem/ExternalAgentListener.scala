@@ -17,7 +17,7 @@ import parsing.Types.Path._
 
 /** AgentListener handles connections from agents.
   */
-class AgentListener extends Actor with ActorLogging {
+class ExternalAgentListener extends Actor with ActorLogging {
    
   import Tcp._
   //Orginally a hack for getting different names for actors.
@@ -42,7 +42,7 @@ class AgentListener extends Actor with ActorLogging {
       log.info(s"Agent connected from $remote to $local")
 
       val handler = context.actorOf(
-        Props(classOf[InputDataHandler], remote),
+        Props(classOf[ExternalAgentHandler], remote),
         "agent-handler-"+agentCounter
       )
       agentCounter += 1
@@ -55,11 +55,11 @@ class AgentListener extends Actor with ActorLogging {
   * @param sourceAddress Agent's adress 
   */
 
-class InputDataHandler(
+class ExternalAgentHandler(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
 
-  val inputPusher = new InputPusherForDB(new SQLiteConnection)
+  val inputPusher = new DBPusher(new SQLiteConnection)
 
   import Tcp._
 

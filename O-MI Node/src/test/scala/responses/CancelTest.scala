@@ -17,7 +17,7 @@ import akka.actor._
 import testHelpers.BeforeAll
 
 class TestSubHandler(testdb: DB) extends SubscriptionHandlerActor {
-  override implicit val SQLite = testdb
+  override implicit val dbConnection = testdb
 }
 class CancelTest extends Specification with BeforeAll {
   sequential
@@ -25,7 +25,7 @@ class CancelTest extends Specification with BeforeAll {
   implicit val system = ActorSystem("on-core")
 
   val testdb: DB = new TestDB("cancel-test")
-  implicit val SQLite = testdb
+  implicit val dbConnection = testdb
 
   val subHandler = system.actorOf(Props(new TestSubHandler(testdb)), "subscription-handler")
   val OMICancel = new OMICancelGen(subHandler)
@@ -37,7 +37,7 @@ class CancelTest extends Specification with BeforeAll {
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
 
-    SQLite.clearDB()
+    dbConnection.clearDB()
     val testData = Map(
       Path("Objects/CancelTest/Refrigerator123/PowerConsumption") -> "0.123",
       Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",
@@ -63,18 +63,18 @@ class CancelTest extends Specification with BeforeAll {
         Path("Objects/ReadTest/RoomSensors1/Temperature/Outside")))
 
     for ((path, value) <- testData) {
-      SQLite.remove(path)
-      SQLite.set(new DBSensor(path, value, testtime))
+      dbConnection.remove(path)
+      dbConnection.set(new DBSensor(path, value, testtime))
     }
 
     // IDs [0-5]
     for (path <- singleSubs) {
-      SQLite.saveSub(new DBSub(Array(path), 0, 1, None, Some(testtime)))
+      dbConnection.saveSub(new DBSub(Array(path), 0, 1, None, Some(testtime)))
     }
 
     // IDs [6-7]
     for (paths <- multiSubs) {
-      SQLite.saveSub(new DBSub(paths, 0, 1, None, Some(testtime)))
+      dbConnection.saveSub(new DBSub(paths, 0, 1, None, Some(testtime)))
     }
   }
 

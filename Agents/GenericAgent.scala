@@ -20,7 +20,7 @@ import System.currentTimeMillis
   * @param Path where sensor is.
   * @param Client actor that handles connection with AgentListener
   */
-class GenericAgent( configPath: String) extends InternalAgentActor(configPath) {
+class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   var fileToRead : Option[File] = None 
   var path : Option[Path] = None 
   case class Msg(msg: String)

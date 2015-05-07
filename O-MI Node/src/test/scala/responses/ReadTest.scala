@@ -16,7 +16,7 @@ import scala.xml.XML
 import testHelpers.BeforeAll
 
 class ReadTest extends Specification with BeforeAll {
-  implicit val SQLite = new TestDB("read-test")
+  implicit val dbConnection = new TestDB("read-test")
   val ReadResponseGen = new ReadResponseGen
 
   def beforeAll = {
@@ -25,7 +25,7 @@ class ReadTest extends Specification with BeforeAll {
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
-    SQLite.clearDB()
+    dbConnection.clearDB()
     val testData = Map(
         Path("Objects/ReadTest/Refrigerator123/PowerConsumption") -> "0.123",
         Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",
@@ -45,23 +45,23 @@ class ReadTest extends Specification with BeforeAll {
                             "117")
 
     for ((path, value) <- testData){
-        SQLite.remove(path)
-        SQLite.set(new DBSensor(path, value, testtime))
+        dbConnection.remove(path)
+        dbConnection.set(new DBSensor(path, value, testtime))
     }
 
     var count = 0
 
     //for begin and end testing
-    SQLite.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
+    dbConnection.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
     for (value <- intervaltestdata){
-        SQLite.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
+        dbConnection.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
         count = count + 1000
     }
 
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
-    SQLite.remove(Path("Objects/Metatest/Temperature"))
-    SQLite.set(new DBSensor(Path("Objects/Metatest/Temperature"), "asd", testtime))
-    SQLite.setMetaData(Path("Objects/Metatest/Temperature"),
+    dbConnection.remove(Path("Objects/Metatest/Temperature"))
+    dbConnection.set(new DBSensor(Path("Objects/Metatest/Temperature"), "asd", testtime))
+    dbConnection.setMetaData(Path("Objects/Metatest/Temperature"),
         """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
 
 }

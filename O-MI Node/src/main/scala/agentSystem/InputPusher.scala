@@ -30,7 +30,7 @@ trait InputPusher {
 
 // XXX: FIXME: temp hack
 object InputPusher {
-  def props() : Props = Props(new InputPusherForDB(new SQLiteConnection))
+  def props() : Props = Props(new DBPusher(new SQLiteConnection))
   var ipdb : Option[ActorRef] = None //system.actorOf(props, "input-pusher-for-db")
   def handleObjects(objs: Seq[OdfObject]) = { 
     //new InputPusherForDB(new SQLiteConnection) handleObjects _
@@ -61,7 +61,7 @@ object InputPusher {
 /** Creates an object for pushing data from internal agents to db.
   *
   */
-class InputPusherForDB(val dbobject: DB) extends Actor with ActorLogging with InputPusher{
+class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPusher{
  
 
   override def receive = {

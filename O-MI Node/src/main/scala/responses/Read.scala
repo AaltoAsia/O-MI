@@ -28,7 +28,7 @@ object Read {
    * @param orgPath The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-	def generateODFREST(orgPath: Path)(implicit SQLite: DB): Option[Either[String, xml.Node]] = {
+	def generateODFREST(orgPath: Path)(implicit dbConnection: DB): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
     def restNormalizePath(path: Path): (Path, Int) = path.lastOption match {
@@ -43,12 +43,12 @@ object Read {
     val (path, wasValue) = restNormalizePath(orgPath)
 
 
-		SQLite.get(path) match {
+		dbConnection.get(path) match {
 			case Some(sensor: DBSensor) =>
         if (wasValue == 1){
           return Some(Left(sensor.value))
         }else if (wasValue == 2){
-          val metaData = SQLite.getMetaData(path)
+          val metaData = dbConnection.getMetaData(path)
           if(metaData.isEmpty)
             return Some(Right(omiResult(returnCode(404,s"No metadata found for $path")).head))
           else
@@ -66,7 +66,7 @@ object Read {
         var resultChildren = Buffer[xml.Node]()
 
         for (item <- sensormap.childs) {
-          SQLite.get(item.path) match {
+          dbConnection.get(item.path) match {
             case Some(sensor: DBSensor) => {
               resultChildren += <InfoItem name={ sensor.path.last }/>
             }
@@ -101,7 +101,7 @@ object Read {
 /**
  * Class that is used for generation of the read response messages
  */
-class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] {
+class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[OneTimeRead] {
 
   /**
    * Method that generates a response message from OneTimeRead message
@@ -113,7 +113,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
       <Objects>
         { 
 
-          if (read.sensors.isEmpty) buildObjectChildren(SQLite.getChilds(Path("Objects")), read.begin, read.end, read.newest, read.oldest)
+          if (read.sensors.isEmpty) buildObjectChildren(dbConnection.getChilds(Path("Objects")), read.begin, read.end, read.newest, read.oldest)
           else {
           odfObjectGeneration(
             read.sensors.toList,
@@ -150,8 +150,8 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
         {
           //we can check it's just an object when it has no sensors or childs
           //we check if it has any children in the database, if not, it's probably an error
-          if (obj.childs.isEmpty && obj.sensors.isEmpty && SQLite.getChilds(obj.path).nonEmpty) {
-            buildObjectChildren(SQLite.getChilds(obj.path), begin, end, newest, oldest)
+          if (obj.childs.isEmpty && obj.sensors.isEmpty && dbConnection.getChilds(obj.path).nonEmpty) {
+            buildObjectChildren(dbConnection.getChilds(obj.path), begin, end, newest, oldest)
           }
           else if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
               odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
@@ -159,7 +159,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
 
           } else {
             //TODO: sqlite get begin to end
-            SQLite.get(obj.path) match {
+            dbConnection.get(obj.path) match {
               case Some(infoItem: DBSensor) =>
 
               case Some(subobj: DBObject) =>
@@ -231,7 +231,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
     if(children.isEmpty == false ) {
       //sort so infoitems come first (not PERFECTLY sure how this sorts..)
       for(child <- children.sortBy(_.path.toString)) {
-        SQLite.get(child.path) match {
+        dbConnection.get(child.path) match {
           case Some(sensor: DBSensor) => {
             node ++= getInfoItem(sensor.path, begin, end, newest, oldest)
           }
@@ -241,7 +241,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
             <Object>
               <id>{ objekti.path.last }</id>
               { 
-                buildObjectChildren(SQLite.getChilds(objekti.path), begin, end, newest, oldest)
+                buildObjectChildren(dbConnection.getChilds(objekti.path), begin, end, newest, oldest)
               }
             </Object>
           }
@@ -281,7 +281,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
       var intervaldata : xml.NodeSeq = xml.NodeSeq.Empty
       // if one of begin, end, newest or oldest was defined
       if(many) {
-          val sensors = SQLite.getNBetween(infoitempath, begin, end, oldest, newest)
+          val sensors = dbConnection.getNBetween(infoitempath, begin, end, oldest, newest)
           if (sensors.isEmpty) {
             notfound = true
           } else {
@@ -293,7 +293,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
 
       // if none of the above were defined get just the latest value
       else {
-        val sensor = SQLite.get(infoitempath)
+        val sensor = dbConnection.get(infoitempath)
         sensor match {
           case Some(sensor: DBSensor) => {intervaldata ++= <value dateTime={ sensor.time.toString.replace(' ', 'T')}>{ sensor.value }</value>}
           case _ => {notfound = true}
@@ -302,7 +302,7 @@ class ReadResponseGen(implicit val SQLite: DB) extends ResponseGen[OneTimeRead] 
 
       if(notfound) {intervaldata ++= <Error> Item not found in the database </Error>}
 
-      val metaData = SQLite.getMetaData(infoitempath)
+      val metaData = dbConnection.getMetaData(infoitempath)
       if( metaData.isEmpty )
         intervaldata
       else

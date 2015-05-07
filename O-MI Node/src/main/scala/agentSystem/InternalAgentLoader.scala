@@ -15,8 +15,8 @@ import scala.concurrent._
 /** Helper Object for creating AgentLoader.
   *
   */
-object AgentLoader{
-  def props() : Props = Props(new AgentLoader())
+object InternalAgentLoader{
+  def props(): Props = Props(new InternalAgentLoader())
 }
 
   case class ConfigUpdated()
@@ -25,7 +25,7 @@ object AgentLoader{
   * Supervise agents and startups bootables.
   *
   */
-class AgentLoader  extends Actor with ActorLogging {
+class InternalAgentLoader  extends Actor with ActorLogging {
   
   import ExecutionContext.Implicits.global
   import context.system

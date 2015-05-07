@@ -14,11 +14,11 @@ import testHelpers.Actors
 class SubscriptionHandlerActorTest extends Specification {
   sequential
   
-  implicit val SQLite = new SQLiteConnection // TestDB("subscriptionHandler-test")
+  implicit val dbConnection = new SQLiteConnection // TestDB("subscriptionHandler-test")
 
   step {
-    SQLite.clearDB()
-    SQLite.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
+    dbConnection.clearDB()
+    dbConnection.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
   }
 
   "SubscriptionHandlerActor" should {
@@ -29,7 +29,7 @@ class SubscriptionHandlerActorTest extends Specification {
 
     val testId1 = Promise[Int]
     val testId2 = Promise[Int]
-    val testId3 = SQLite.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
+    val testId3 = dbConnection.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
     "remove eventsub from memory if ttl has expired" in new Actors {
 
       val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
@@ -40,7 +40,7 @@ class SubscriptionHandlerActorTest extends Specification {
       subscriptionActor.getEventSubs.exists(_._2.id == testId3) == true
       subscriptionActor.checkEventSubs(Array(testPath))
       subscriptionActor.getEventSubs.exists(_._2.id == testId3) == false
-      SQLite.removeSub(testId3)
+      dbConnection.removeSub(testId3)
 
     }
     "load given interval sub into memory when sent load message and remove when sent remove message" in new Actors {
@@ -50,7 +50,7 @@ class SubscriptionHandlerActorTest extends Specification {
       val probe = TestProbe()
       //      testId.future
 
-      testId1.success(SQLite.saveSub(testSub1))
+      testId1.success(dbConnection.saveSub(testSub1))
 
       val futureId: Int = Await.result(testId1.future, scala.concurrent.duration.Duration(1000, "ms"))
       //      subscriptionActor.eventSubs.isEmpty === true
@@ -68,7 +68,7 @@ class SubscriptionHandlerActorTest extends Specification {
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
 
-      testId2.success(SQLite.saveSub(testSub2))
+      testId2.success(dbConnection.saveSub(testSub2))
 
       val futureId: Int = Await.result(testId2.future, scala.concurrent.duration.Duration(1000, "ms"))
 

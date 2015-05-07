@@ -15,14 +15,14 @@ import parsing.Types._
 import parsing.Types.Path._
 
 class AgentListenerTest extends Specification {
-  implicit val SQLite = new SQLiteConnection
+  implicit val dbConnection = new SQLiteConnection
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)
   lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("")
 
   step {
-    SQLite.clearDB()
+    dbConnection.clearDB()
   }
 
   "AgentListener" should {
@@ -90,24 +90,24 @@ class AgentListenerTest extends Specification {
   "InputDataHandler" should {
     sequential
     "save sent data into database" in new Actors {
-      val actor = system.actorOf(Props(new InputDataHandler(local){override val inputPusher = new InputPusherForDB(SQLite)}))
+      val actor = system.actorOf(Props(new InputDataHandler(local)))
       val probe = TestProbe()
       
-      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
       
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
-      //SQLite.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
-      awaitCond(SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
-      SQLite.getMetaData(Path("Objects/AgentTest/SmartHouse/Moisture")) must beSome 
+      //dbConnection.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
+      awaitCond(dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
+      dbConnection.getMetaData(Path("Objects/AgentTest/SmartHouse/Moisture")) must beSome 
     }
     
     "receive sended data" in new Actors {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
       
-      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
       
       EventFilter.debug(message = "Got data \n" + testOdf.replaceAll("AgentTest", "AgentTest123")) intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("AgentTest", "AgentTest123"))), probe.ref)
@@ -121,8 +121,8 @@ class AgentListenerTest extends Specification {
 //      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
 //      val probe = TestProbe()
 //      
-//      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-//      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+//      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+//      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
 //      
 //      EventFilter.warning(start = "Throwing away node: ") intercept {
 //        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
@@ -134,8 +134,8 @@ class AgentListenerTest extends Specification {
       val actor = system.actorOf(Props(classOf[InputDataHandler], local))
       val probe = TestProbe()
       
-      SQLite.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-      SQLite.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
       
       EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
