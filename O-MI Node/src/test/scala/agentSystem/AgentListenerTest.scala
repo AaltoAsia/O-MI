@@ -25,10 +25,10 @@ class AgentListenerTest extends Specification {
     dbConnection.clearDB()
   }
 
-  "AgentListener" should {
+  "ExternalAgentListener" should {
 
     "reply with Register message when it receives Connected message" in new Actors {
-      val actor = system.actorOf(Props[AgentListener])
+      val actor = system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
 
       actor.tell(Connected(local, remote), probe.ref)
@@ -36,7 +36,7 @@ class AgentListenerTest extends Specification {
     }
 
     "log Connected event with ActorLogging" in new Actors {
-      val actor = system.actorOf(Props[AgentListener])
+      val actor = system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
 
       EventFilter.info(s"Agent connected from $local to $remote", occurrences = 1) intercept {
@@ -45,7 +45,7 @@ class AgentListenerTest extends Specification {
     }
 
     "be terminated when receive CommandFailed message" in new Actors {
-      val actor = system.actorOf(Props[AgentListener])
+      val actor = system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
       val bind = new Bind(probe.ref, remote)
 
@@ -56,7 +56,7 @@ class AgentListenerTest extends Specification {
     }
 
     "log CommandFailed message with ActorLogging" in new Actors {
-      val actor = system.actorOf(Props[AgentListener])
+      val actor = system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
       val bind = new Bind(probe.ref, remote)
 
@@ -66,7 +66,7 @@ class AgentListenerTest extends Specification {
     }
 
     "reply with Register messages to multiple actors" in new Actors {
-      val actor = system.actorOf(Props[AgentListener])
+      val actor = system.actorOf(Props[ExternalAgentListener])
       val probe1 = TestProbe()
       val probe2 = TestProbe()
       val probe3 = TestProbe()
@@ -87,10 +87,10 @@ class AgentListenerTest extends Specification {
     }
   }
 
-  "InputDataHandler" should {
+  "ExternalAgentHandler" should {
     sequential
     "save sent data into database" in new Actors {
-      val actor = system.actorOf(Props(new InputDataHandler(local)))
+      val actor = system.actorOf(Props(new ExternalAgentHandler(local)))
       val probe = TestProbe()
       
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
@@ -103,7 +103,7 @@ class AgentListenerTest extends Specification {
     }
     
     "receive sended data" in new Actors {
-      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
       
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
@@ -118,7 +118,7 @@ class AgentListenerTest extends Specification {
 // Doesn't work as intended    
 //
 //    "log warning when it encounters node with no information" in new Actors {
-//      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+//      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
 //      val probe = TestProbe()
 //      
 //      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
@@ -131,7 +131,7 @@ class AgentListenerTest extends Specification {
 //    }
 
     "log warning when sending malformed data" in new Actors {
-      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
       
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
@@ -143,7 +143,7 @@ class AgentListenerTest extends Specification {
     }
 
     "write info to log when it receives PeerClosed message" in new Actors {
-      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
 
       EventFilter.info(s"Agent disconnected from $local") intercept {
@@ -153,7 +153,7 @@ class AgentListenerTest extends Specification {
     }
 
     "be terminated when it receives PeerClosed message" in new Actors {
-      val actor = system.actorOf(Props(classOf[InputDataHandler], local))
+      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
 
       probe watch actor

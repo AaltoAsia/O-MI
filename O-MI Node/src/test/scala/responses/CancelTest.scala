@@ -16,7 +16,7 @@ import scala.xml.XML
 import akka.actor._
 import testHelpers.BeforeAll
 
-class TestSubHandler(testdb: DB) extends SubscriptionHandlerActor {
+class TestSubHandler(testdb: DB) extends SubscriptionHandler {
   override implicit val dbConnection = testdb
 }
 class CancelTest extends Specification with BeforeAll {

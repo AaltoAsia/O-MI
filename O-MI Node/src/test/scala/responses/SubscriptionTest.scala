@@ -158,7 +158,6 @@ class SubscriptionTest extends Specification {
 //      trim(subxml.head) === trim(correctxml)
 
         subxml.\\("value").head.text === "0.123"
-        subxml.\\("re")
     }
 
     "Return error code when asked for nonexisting infoitem" in {

@@ -32,7 +32,7 @@ class SubscriptionHandlerActorTest extends Specification {
     val testId3 = dbConnection.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
     "remove eventsub from memory if ttl has expired" in new Actors {
 
-      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
+      val subscriptionHandler = TestActorRef[SubscriptionHandler]
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
       subscriptionActor.getEventSubs.exists(_._2.id == testId3) == true
@@ -45,7 +45,7 @@ class SubscriptionHandlerActorTest extends Specification {
     }
     "load given interval sub into memory when sent load message and remove when sent remove message" in new Actors {
 
-      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
+      val subscriptionHandler = TestActorRef[SubscriptionHandler]
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
       //      testId.future
@@ -64,7 +64,7 @@ class SubscriptionHandlerActorTest extends Specification {
     }
 
     "load given event subs into memory when sent load message" in new Actors {
-      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
+      val subscriptionHandler = TestActorRef[SubscriptionHandler]
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
 
@@ -96,7 +96,7 @@ class SubscriptionHandlerActorTest extends Specification {
 //    }
 
     "remove given event sub from memory when sent remove message" in new Actors {
-      val subscriptionHandler = TestActorRef[SubscriptionHandlerActor]
+      val subscriptionHandler = TestActorRef[SubscriptionHandler]
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
 
