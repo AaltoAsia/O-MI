@@ -24,6 +24,9 @@ object Starter {
 
   val settings = Settings(system)
   
+  /**
+   * Setup database and apply config parameters
+   */
   def init(): Unit = {
     database.setHistoryLength(settings.numLatestValues)
 
@@ -53,6 +56,11 @@ object Starter {
     responses.OMISubscription.checkSubs()(dbobject)
   }
 
+  /**
+   * Start as stand-alone server.
+   * Creates single Actors.
+   * Binds to configured O-MI API port and agent interface port.
+   */
   def start(): Unit = {
     val subHandler = system.actorOf(Props(classOf[SubscriptionHandler]), "subscription-handler")
 
@@ -61,9 +69,13 @@ object Starter {
 
     // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
+
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
+
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
-    agentLoader ! ConfigUpdated  
+    // send config update to (re)load agents
+    agentLoader ! ConfigUpdated
+
 
     implicit val timeout = Timeout(5.seconds)
 
@@ -75,7 +87,7 @@ object Starter {
 }
 
 /**
- * Start point of the program
+ * Starting point of the stand-alone program
  */
 object Boot extends App {
   Starter.init()
