@@ -32,107 +32,126 @@ object OmiParser extends Parser[ParseMsg] {
 
     val envelope = scalaxb.fromXML[OmiEnvelope](root)  
     envelope.omienvelopeoption.value match {
-      case read: ReadRequest => {
-        Seq( 
-          try { 
-            if( read.msg.isEmpty ) {
-              new PollRequest(
-                envelope.ttl,
-                read.callback match {
-                  case None => None
-                  case Some(uri) => Some(uri.toString)
-                },
-                read.requestId.map{id => id.value.toInt }
-              )
+      case read: ReadRequest => parseRead(read, envelope.ttl )
+      case write: WriteRequest => parseWrite(write, envelope.ttl)
+      case cancel: CancelRequest => parseCancel(cancel, envelope.ttl)
+      case response: ResponseListType =>  parseResponse(response, envelope.ttl)
+    }
+  }
+  private def parseRead(read: ReadRequest, ttl: Double )  : Seq[ParseMsg] = {
+    if( read.msg.isEmpty ) {
+      Seq( 
+        OneTimeRead(
+          ttl,
+          Seq.empty,
+          callback = read.callback match {
+            case None => None
+            case Some(uri) => Some(uri.toString)
+          },
+          requestId = read.requestId.map{id => id.value}
+        )
+      )
+    } else {
+      val odf = parseMsg(read.msg, read.msgformat)
+      val errors = getErrors(odf) 
 
-          } else if(read.interval.isEmpty){
-            OneTimeRead( 
-              envelope.ttl,
-              parseMsg(read.msg, read.msgformat),
-              read.begin match {
-                case None => None
-                case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
-              },
-              read.end match {
-                case None => None
-                case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
-              },
-              read.newest,
-              read.oldest,
-              read.callback match {
-                case None => None
-                case Some(uri) => Some(uri.toString)
-              },
-              read.requestId.map{id => id.value.toString }.toSeq
-            ) 
-        } else {
+      if(errors.nonEmpty)
+        return errors
+
+      if(read.interval.isEmpty){
+        Seq( 
+          OneTimeRead( 
+            ttl,
+            getObjects(odf),
+            read.begin match {
+              case None => None
+              case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+            },
+            read.end match {
+              case None => None
+              case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+            },
+            read.newest,
+            read.oldest,
+            read.callback match {
+              case None => None
+              case Some(uri) => Some(uri.toString)
+            },
+            read.requestId.map{id => id.value.toString }.toSeq
+          )
+        ) 
+      } else {
+        Seq( 
           Subscription( 
-            envelope.ttl,
+            ttl,
             read.interval.get,
-            parseMsg(read.msg, read.msgformat),
+            getObjects(odf),
             read.callback match{
               case None => None
               case Some(uri) => Some(uri.toString)
             }
           )
-      }
-    } catch {
-      case pe : ParseError => pe
+        )
+      } 
     }
-  )
-      }
-      case write: WriteRequest => {
-        Seq( 
-          try {
-            Write(
-              envelope.ttl,
-              parseMsg(write.msg, write.msgformat),
-              write.callback match {
-                case None => None
-                case Some(uri) => Some(uri.toString)
-              }
-            )
-        } catch {
-          case pe : ParseError => pe
+  }
+
+  private def parseWrite(write: WriteRequest, ttl: Double) : Seq[ParseMsg]  = {
+    val odf = parseMsg(write.msg, write.msgformat)
+    val errors = getErrors(odf) 
+
+    if(errors.nonEmpty)
+      return errors
+    else
+      Seq( 
+      Write(
+        ttl,
+        getObjects(odf),
+        write.callback match {
+          case None => None
+          case Some(uri) => Some(uri.toString)
         }
       )
-  }
-  case cancel: CancelRequest => { 
+  )
+  } 
+
+  private def parseCancel(cancel: CancelRequest , ttl: Double)  : Seq[ParseMsg] = { 
     Seq( 
       Cancel(
-        envelope.ttl,
+        ttl,
         cancel.requestId.map{id => id.value.toString }.toSeq
       )
-  )
-      }
-      case response: ResponseListType => {
-        response.result.map{
-          case result => 
-          try {
-            Result(
-              result.returnValue.value,
-              result.returnValue.returnCode,
-              Some(parseMsg(result.msg, result.msgformat)),
-              result.requestId.map{id => id.value }.toSeq
-            )
-        } catch {
-          case pe : ParseError => pe
-        }
-      }
+    )
+  }
+  private def parseResponse(response: ResponseListType, ttl: Double) : Seq[ParseMsg] = {
+    response.result.map{
+      case result => 
+      val odf = parseMsg(result.msg, result.msgformat)
+      val errors = getErrors(odf) 
+
+      if(errors.nonEmpty)
+        return errors
+      else
+        Result(
+        result.returnValue.value,
+        result.returnValue.returnCode,
+        Some(getObjects(odf)),
+        result.requestId.map{id => id.value }.toSeq
+      )
     }
   }
-}
 
-private def parseMsg(msg: Option[scalaxb.DataRecord[Any]], format: Option[String]) : Seq[OdfObject]= {
-  if(msg.isEmpty)
-    throw new ParseError("No msg element found in write request.")
 
-  format.get match {
-    case "omi.xsd" => parseOdf(msg.get.as[Elem])
-    case _ => throw new ParseError("Unknown msgformat attribute or not found for msg.")  
-  } 
-}
-private def parseOdf(node: Node) : Seq[OdfObject] = OdfParser.parse(node.toString) 
-}
+    private def parseMsg(msg: Option[scalaxb.DataRecord[Any]], format: Option[String]) : Seq[OdfParseResult] = {
+      if(msg.isEmpty)
+        throw new ParseError("No msg element found in write request.")
+
+      format.get match {
+        case "omi.xsd" => parseOdf(msg.get.as[Elem])
+        case _ => throw new ParseError("Unknown msgformat attribute or not found for msg.")  
+      } 
+    }
+    private def parseOdf(node: Node) : Seq[OdfParseResult]  = OdfParser.parse(node.toString) 
+  }
 
 

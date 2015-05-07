@@ -165,7 +165,9 @@ object Types {
                       ) extends OdfNode
 
   type  OdfParseResult = Either[ParseError, OdfObject]
-
+  
+    def getObjects( odf: Seq[OdfParseResult] ) : Seq[OdfObject] = odf.collect{case Right(obj: OdfObject) => obj}
+    def getErrors( odf: Seq[OdfParseResult] ) : Seq[ParseError] = odf.collect{case Left(pe: ParseError) => pe}
   /**
    * Path is a wrapper for Seq[String] representing path to an O-DF Object
    * It abstracts path seperators ('/') from error prone actions such as joining

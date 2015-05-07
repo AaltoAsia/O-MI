@@ -10,7 +10,7 @@ import scala.xml.Utility.trim
 
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
-object OdfParser extends Parser[OdfObject] {
+object OdfParser extends Parser[OdfParseResult] {
 
   override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
 
@@ -22,14 +22,14 @@ object OdfParser extends Parser[OdfObject] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
    *  @return Seq of ParseResults
    */
-  def parse(xml_msg: String): Seq[OdfObject] = {
-    val root = Try(XML.loadString(xml_msg)).getOrElse(throw ParseError("Invalid XML"))
+  def parse(xml_msg: String): Seq[OdfParseResult] = {
+    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq( Left( ParseError("Invalid XML") ) ) )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
-      throw ParseError( schema_err.map{err => err.msg}.mkString("\n") )
+      return Seq( Left( ParseError( schema_err.map{err => err.msg}.mkString("\n") ) ) )
 
     val objects = scalaxb.fromXML[ObjectsType](root)
-    objects.Object.map{ obj => parseObject( obj ) }.toSeq
+    objects.Object.map{ obj => Right( parseObject( obj ) ) }.toSeq
   }
 
   private def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 

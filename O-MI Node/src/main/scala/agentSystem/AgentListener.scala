@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 
 
 import parsing.OdfParser
+import parsing.OmiParser
 import database.SQLiteConnection
 
 
@@ -70,18 +71,16 @@ class InputDataHandler(
       val dataString = data.decodeString("UTF-8")
 
       log.debug(s"Got data from $sender")
-      var parsedEntries : Seq[OdfObject] = Seq.empty
-      try {
-         parsedEntries = OdfParser.parse(dataString)
-      } catch {
-        case pe: ParseError =>
-        log.warning(s"Malformed odf received from agent ${sender()}: ${pe.msg}")
-      }
-
-        inputPusher.handleObjects(parsedEntries)
+      val parsedEntries = OdfParser.parse(dataString)
+      val errors = getErrors(parsedEntries)
+      if(errors.nonEmpty){
+        log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
+        
+      } else {
+        inputPusher.handleObjects(getObjects(parsedEntries))
         if(!metaDataSaved){
           inputPusher.handlePathMetaDataPairs(
-            parsedEntries.flatten{
+            getObjects(parsedEntries).flatten{
               o =>
               o.sensors ++ getSensors(o.childs)
             }.filter{
@@ -91,9 +90,9 @@ class InputDataHandler(
             }   
 
           )
-        metaDataSaved = true
+          metaDataSaved = true
+        }
       }
-
   }
   case PeerClosed =>{
     log.info(s"Agent disconnected from $sourceAddress")

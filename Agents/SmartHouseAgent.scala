@@ -3,6 +3,7 @@ package agents
 import agentSystem._
 import parsing.Types._
 import parsing.OdfParser
+import parsing.OmiParser
 import database._
 
 import scala.io.Source
@@ -74,19 +75,18 @@ class SmartHouseAgent(configPath : String) extends InternalAgentActor(configPath
       return
     }
     odfFile = Some(lines.head)
-    try {
-    odf = Some(
-      OdfParser.parse( XML.loadFile(odfFile.get).toString).flatten{o =>
-      o.sensors ++ getSensors(o.childs)
-    }
-    )
-    } catch {
-      case pe : ParseError =>{
-        log.warning(pe.msg)
+    val tmp = OdfParser.parse( XML.loadFile(odfFile.get).toString)
+    val errors = getErrors(tmp)
+    if(errors.nonEmpty) {
+        log.warning(errors.mkString("\n"))
         context.parent !  ActorInitializationException
         return
-      }
     }
+    odf = Some(
+      getObjects(tmp).flatten{o =>
+        o.sensors ++ getSensors(o.childs)
+      }
+    )
     if(odf.isEmpty){
       context.parent !  ActorInitializationException
       return
