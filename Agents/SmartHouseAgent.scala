@@ -2,6 +2,7 @@ package agents
 
 import agentSystem._
 import parsing.Types._
+import parsing.Types.OdfTypes._
 import parsing.OdfParser
 import parsing.OmiParser
 import database._
@@ -60,7 +61,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   
   def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = {
     o.flatten{ o =>
-      o.sensors ++ getSensors(o.childs)
+      o.infoItems ++ getSensors(o.objects)
     }
   }
   
@@ -84,7 +85,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     }
     odf = Some(
       getObjects(tmp).flatten{o =>
-        o.sensors ++ getSensors(o.childs)
+        o.infoItems ++ getSensors(o.objects)
       }
     )
     if(odf.isEmpty){
@@ -92,8 +93,8 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       return
     }
     InputPusher.handlePathMetaDataPairs( 
-      odf.get.filter{info => info.metadata.nonEmpty }.map{
-        info  => (info.path, info.metadata.get.data)
+      odf.get.filter{info => info.metaData.nonEmpty }.map{
+        info  => (info.path, info.metaData.get.data)
       }
     )
     system.log.info("Successfully saved SmartHouse MetaData to DB")
@@ -109,7 +110,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     val date = new java.util.Date()
     odf = Some( 
       odf.get.map{ info => 
-        OdfInfoItem( info.path, Seq( TimedValue( Some( new Timestamp( date.getTime)), Random.nextDouble.toString)))
+        OdfInfoItem( info.path, Seq( OdfValue(  Random.nextDouble.toString, "" , Some( new Timestamp( date.getTime) ) )))
       } 
     )
     InputPusher.handleInfoItems(odf.get)

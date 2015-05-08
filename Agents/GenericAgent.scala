@@ -1,5 +1,6 @@
 package agents
 import parsing.Types._
+import parsing.Types.OdfTypes._
 import agentSystem._
 import akka.actor._
 import akka.event.{Logging, LoggingAdapter}
@@ -76,16 +77,16 @@ class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   * @param deepnest Recursion parameter.
   * @return OdfNode containing structure and data of sensors.
   */
-  def genODF( path: Path, value: String, deepnest : Int = 1) : OdfNode =
+  def genODF( path: Path, value: String, deepnest : Int = 1) : OdfElement =
   {
     if(deepnest == path.size){
-      OdfInfoItem( path, Seq( TimedValue( None, value ) ), None )
+      OdfInfoItem( path, Seq( OdfValue( value, "", None ) ), None )
     } else {
       genODF(path, value, deepnest + 1) match {
         case i: OdfInfoItem =>
-          OdfObject( path.take(deepnest), Seq.empty, Seq(i)) 
+          OdfObject( path.take(deepnest), Seq(i), Seq.empty) 
         case o: OdfObject =>
-          OdfObject( path.take(deepnest), Seq(o), Seq.empty) 
+          OdfObject( path.take(deepnest), Seq.empty, Seq(o)) 
       }
     }
   }

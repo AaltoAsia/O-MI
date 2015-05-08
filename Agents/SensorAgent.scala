@@ -2,6 +2,7 @@ package agents
 
 import agentSystem._
 import parsing.Types._
+import parsing.Types.OdfTypes._
 import database._
 
 import scala.io.Source
@@ -133,7 +134,7 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
           val path = if(split(0) == "vtt") split.dropRight(2) ++  split.takeRight(2).reverse
           else split
           system.log.debug("Saving to path: " +"Objects/" + path.mkString("/"))
-          OdfInfoItem(Seq("Objects") ++ path.toSeq, Seq(TimedValue(Some(new Timestamp(date.getTime)),value)))
+          OdfInfoItem(Seq("Objects") ++ path.toSeq, Seq(OdfValue(value, "", Some(new Timestamp(date.getTime)))))
         })
         InputPusher.handleInfoItems(data);
         //InputPusher.handlePathValuePairs(data);
