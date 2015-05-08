@@ -3,6 +3,7 @@ import slick.driver.SQLiteDriver.api._
 import slick.jdbc.StaticQuery.interpolation
 import slick.lifted.ProvenShape
 import parsing.Types._
+import parsing.Types.OmiTypes.SubLike
 import parsing.Types.Path._
 import java.sql.Timestamp
 

@@ -2,6 +2,8 @@ package responses
 
 
 import parsing.Types._
+import parsing.Types.OmiTypes._
+import parsing.Types.OdfTypes._
 import database._
 import Common._
 
@@ -101,22 +103,22 @@ object Read {
 /**
  * Class that is used for generation of the read response messages
  */
-class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[OneTimeRead] {
+class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[ReadRequest] {
 
   /**
    * Method that generates a response message from OneTimeRead message
    * @param read OneTimeRead to generate response from
    * @return OMI-response for the read message
    */
-  override def genMsg(read: OneTimeRead): OmiOdfMsg = {
+  override def genMsg(read: ReadRequest): OmiOdfMsg = {
     OmiOdfMsg(
       <Objects>
         { 
 
-          if (read.sensors.isEmpty) buildObjectChildren(dbConnection.getChilds(Path("Objects")), read.begin, read.end, read.newest, read.oldest)
+          if(read.odf.objects.isEmpty) buildObjectChildren(dbConnection.getChilds(Path("Objects")), read.begin, read.end, read.newest, read.oldest)
           else {
           odfObjectGeneration(
-            read.sensors.toList,
+            read.odf.objects.toList,
             read.begin,
             read.end,
             read.newest,
@@ -150,12 +152,12 @@ class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[OneTime
         {
           //we can check it's just an object when it has no sensors or childs
           //we check if it has any children in the database, if not, it's probably an error
-          if (obj.childs.isEmpty && obj.sensors.isEmpty && dbConnection.getChilds(obj.path).nonEmpty) {
+          if (obj.objects.isEmpty && obj.infoItems.isEmpty && dbConnection.getChilds(obj.path).nonEmpty) {
             buildObjectChildren(dbConnection.getChilds(obj.path), begin, end, newest, oldest)
           }
-          else if (obj.childs.nonEmpty || obj.sensors.nonEmpty) {
-              odfInfoItemGeneration(obj.sensors.toList, begin, end, newest, oldest ) ++ 
-              odfObjectGeneration(obj.childs.toList, begin, end, newest, oldest )
+          else if (obj.objects.nonEmpty || obj.infoItems.nonEmpty) {
+              odfInfoItemGeneration(obj.infoItems.toList, begin, end, newest, oldest ) ++ 
+              odfObjectGeneration(obj.objects.toList, begin, end, newest, oldest )
 
           } else {
             //TODO: sqlite get begin to end

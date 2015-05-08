@@ -2,7 +2,7 @@ package responses
 
 import Common._
 import CallbackHandlers.sendCallback
-import parsing.Types.OmiRequest
+import parsing.Types.OmiTypes.OmiRequest
 
 import scala.xml._
 import scala.util.{Try, Success, Failure}
@@ -19,7 +19,7 @@ trait ResponseGen[R <: OmiRequest] {
     if (request.hasCallback){
       // TODO: Can't cancel this callback
       Future{ runGeneration(request) } map { xml =>
-        sendCallback(request.callback.get, xml)
+        sendCallback(request.callback.get.toString, xml)
       }
 
       omiResult(returnCode(200, "OK, callback job started"))

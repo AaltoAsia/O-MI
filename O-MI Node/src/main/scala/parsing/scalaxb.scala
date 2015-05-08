@@ -1,4 +1,5 @@
 package parsing
+package xmlGen
 package scalaxb
 
 import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}

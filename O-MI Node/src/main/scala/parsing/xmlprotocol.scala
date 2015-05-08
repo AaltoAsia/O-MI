@@ -2,6 +2,7 @@
     
 package parsing
 
+package xmlGen
 /**
 usage:
 val obj = scalaxb.fromXML[.Foo](node)
