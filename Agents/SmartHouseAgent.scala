@@ -51,13 +51,8 @@ import scala.util.Random
   */
 class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
-  import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val system = context.system
-  implicit val formats = DefaultFormats
-  implicit val timeout = akka.util.Timeout(10 seconds)
   
   private var odf : Option[Seq[OdfInfoItem]] = None   
-  private var odfFile : Option[String] = None   
   
   def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = {
     o.flatten{ o =>
@@ -65,31 +60,36 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     }
   }
   
-  override def preStart() : Unit = {
+  override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
     val lines = scala.io.Source.fromFile(configPath).getLines().toArray
     if(lines.isEmpty){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
-    odfFile = Some(lines.head)
-    val tmp = OdfParser.parse( XML.loadFile(odfFile.get).toString)
-    val errors = getErrors(tmp)
+    val file =  new File(lines.head)
+    if(!file.exists() || !file.canRead){
+      shutdown
+      return
+    }
+      
+    val xml = XML.loadFile(file)
+    val tmp_odf = OdfParser.parse( xml)
+    val errors = getErrors(tmp_odf)
     if(errors.nonEmpty) {
-        log.warning(errors.mkString("\n"))
-        context.parent !  ActorInitializationException
-        return
+      shutdown
+      return
     }
     odf = Some(
-      getObjects(tmp).flatten{o =>
+      getObjects(tmp_odf).flatten{o =>
         o.infoItems ++ getSensors(o.objects)
       }
     )
     if(odf.isEmpty){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
     InputPusher.handlePathMetaDataPairs( 
@@ -97,16 +97,9 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
         info  => (info.path, info.metaData.get.data)
       }
     )
-    system.log.info("Successfully saved SmartHouse MetaData to DB")
-    queueSensors
   }
   
-  // bring the actor system in scope
-  // Define formats
-  def receive = {
-    case _ => 
-  }
-  def queueSensors(): Unit = {
+  def loopOnce(): Unit = {
     val date = new java.util.Date()
     odf = Some( 
       odf.get.map{ info => 
@@ -114,17 +107,9 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       } 
     )
     InputPusher.handleInfoItems(odf.get)
-    system.log.info("Successfully saved SmartHouse data to DB.")
-    akka.pattern.after(10 seconds, using = system.scheduler)(Future { queueSensors() })
+    Thread.sleep(10000)
   }
 
+  def finish(): Unit = {
+  }
 }
-
-/** Helper obejct for creating SensorAgent.
-  *
-  */
-object SmartHouseAgent {
-  def apply( uri: String) : Props = props(uri)
-  def props( uri: String) : Props = {Props(new SmartHouseAgent(uri)) }
-}
-

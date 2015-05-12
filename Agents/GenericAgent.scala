@@ -24,13 +24,12 @@ import System.currentTimeMillis
 class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   var fileToRead : Option[File] = None 
   var path : Option[Path] = None 
-  case class Msg(msg: String)
+  var source : Option[Iterator[String]] = None
   
-  import scala.concurrent.ExecutionContext.Implicits.global
   
-  override def preStart() : Unit = {
+  override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
 
@@ -38,65 +37,22 @@ class GenericAgent( configPath: String) extends InternalAgent(configPath) {
     path = Some(lines.head.split("/").toSeq)
     var file = new File(lines.last)
     if(!file.canRead){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
-    fileToRead = Some(file)
-    run
+    source  = Some(io.Source.fromFile(file).getLines)
   } 
     
-  // XXX: infinite event loop!
-  /** A partial function for reacting received messages.
-    * Event loop.
-    *  
-    */
-  def receive = {
-    case Msg(value) =>
-    if(path.nonEmpty && fileToRead.nonEmpty)
-      genODF(path.get, value) match {
-      case i: OdfInfoItem =>
-      case o: OdfObject =>
-        InputPusher.handleObjects(Seq(o))
-    }
-    run()
-  }
-
   /** Function to loop for getting new values to sensor. 
-    * Part of event loop hack. 
     */
-  def run() : Unit = {
-    Future {
-      for(line <- io.Source.fromFile(fileToRead.get).getLines)
-      self ! Msg(line)
+  def loopOnce() : Unit = {
+    if(path.nonEmpty && source.nonEmpty){
+      val line = source.get.next
+      val date = new java.util.Date()
+      InputPusher.handlePathValuePairs(Seq( Tuple2( path.get, OdfValue( line, "",Some(new Timestamp(date.getTime)) ) )))
     }
   }
 
-/** Functiong for generating O-DF message
-  * @param path Path of InfoItem/Object.
-  * @param value Value of Infoitem.
-  * @param deepnest Recursion parameter.
-  * @return OdfNode containing structure and data of sensors.
-  */
-  def genODF( path: Path, value: String, deepnest : Int = 1) : OdfElement =
-  {
-    if(deepnest == path.size){
-      OdfInfoItem( path, Seq( OdfValue( value, "", None ) ), None )
-    } else {
-      genODF(path, value, deepnest + 1) match {
-        case i: OdfInfoItem =>
-          OdfObject( path.take(deepnest), Seq(i), Seq.empty) 
-        case o: OdfObject =>
-          OdfObject( path.take(deepnest), Seq.empty, Seq(o)) 
-      }
-    }
+  def finish= {
   }
 }
-
-/** Helper obejct for creating GenericAgent.
-  *
-  */
-object GenericAgent {
-  def apply( configPath: String) : Props = props(configPath)
-  def props( configPath: String) : Props = {Props(new GenericAgent(configPath)) }
-}
-

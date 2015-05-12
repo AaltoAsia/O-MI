@@ -12,6 +12,9 @@ import java.util.jar.JarFile
 import java.io.File
 import scala.concurrent._
 
+import java.nio.file.Paths
+import java.nio.file.StandardWatchEventKinds._
+
 /** Helper Object for creating AgentLoader.
   *
   */
@@ -30,8 +33,9 @@ class InternalAgentLoader  extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
   import context.system
 
+  case class AgentInfo(name: String, configPath: String, thread: Thread)
   //Container for bootables
-  protected var agents : scala.collection.mutable.Map[String,(ActorRef, String)] = Map.empty
+  protected var agents : scala.collection.mutable.Map[String,(InternalAgent, String)] = Map.empty
   //getter method to allow testing
   private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.
@@ -40,7 +44,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
 
   //Settings for getting list of Bootables and configs from application.conf
   private val settings = Settings(context.system)
-  //loadAndStart
+  start
 
   /** Method for handling received messages.
     * Should handle:
@@ -48,42 +52,42 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     *   -- Terminated with trying to restart AgentActor. 
     */
   def receive = {
-    case ConfigUpdated => loadAndStart
-    // If an AgentActor is terminated, try restarting by Bootable. 
-    case Terminated(agent:ActorRef) =>
-    /*
-     //FIX: one terminated causes n-1 terminated
-    val b = bootables.find{ case (classname: String, (b: Bootable, config: String) ) => b.getAgentActor.exist(agent)}
-    if(b.nonEmpty)
-    {
-      b.getAgentActor.foreach{a => a ! Stop}
-      b.get._2._1.startup(context.system, b.get._2._2)
-    }*/
+    case "Start" => start
   }
 
   /** Load Bootables from jars in deploy directory and start AgentActors up.
     *
     */
-  def loadAndStart = {
+  def start = {
     val classnames = getClassnamesWithConfigPath
-    val toBeCreated =  classnames map { case (classname_jar: String, configPath: String) => 
+    classnames.foreach{
+      case (classname: String, configPath: String) => 
       try {
-        if(!agents.exists{case (classname: String, (ref: ActorRef, _ ) ) => classname == classname_jar}){
-          log.info("Instantitating agent: " + classname_jar )
-          val clazz = classLoader.loadClass(classname_jar)
-          val const = clazz.getConstructors()(0)
-          val agent = system.actorOf(Props.create(clazz, configPath), classname_jar)
-          Tuple2( classname_jar, Tuple2( agent, classname_jar)) 
+        if(!agents.exists{
+            case (agentname: String, _ ) => classname == agentname
+          })
+        {
+          loadAndStart(classname, configPath)
         } else { 
-          log.warning("Agent allready running: "+ classname_jar)
+          log.warning("Agent allready running: "+ classname)
         }
       } catch {
-        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + classname_jar +"\n" + e + " caught")
+        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
         case e: Exception => log.warning(s"Classloading failed. $e")
       }
     }
+    addShutdownHook(agents)
   }
 
+  def loadAndStart(classname: String, configPath: String) ={
+    log.info("Instantitating agent: " + classname )
+    val clazz = classLoader.loadClass(classname)
+
+    val const = clazz.getConstructors()(0)
+    val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
+    agents += Tuple2( classname, Tuple2( agent, configPath) )
+    agent.start()
+  }
 
   /** Creates classloader for loading classes from jars in deploy directory.
     *
@@ -120,14 +124,14 @@ class InternalAgentLoader  extends Actor with ActorLogging {
   /** Simple shutdown hook adder for AgentActors.
     *
     */
-  private def addShutdownHook(bootables: immutable.Seq[ActorRef]): Unit = {
+  private def addShutdownHook(agents: Map[String, Tuple2[InternalAgent, String]]): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run = {
         log.warning("Shutting down Akka...")
 
-        for (bootable <- bootables) {
-          log.info("Shutting down " + bootable.getClass.getName)
-          bootable ! Stop
+        for (agent <- agents) {
+          log.info("Shutting down " + agent._1)
+          agent._2._1.shutdown
         }
 
         log.info("Successfully shut down Akka")

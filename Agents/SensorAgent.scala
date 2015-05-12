@@ -53,33 +53,27 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   // bring the actor system in scope
   // Define formats
   import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val system = context.system
-  implicit val formats = DefaultFormats
+  implicit val system =  ActorSystem("Sensor-Agent")
   implicit val timeout = akka.util.Timeout(10 seconds)
-  override def preStart() : Unit = {
+  
+  override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
     val lines = scala.io.Source.fromFile(configPath).getLines().toArray
     if(lines.isEmpty){
-      context.parent !  ActorInitializationException
+      shutdown
       return
     }
     uri = Some(lines.head)
     
-    queueSensors
-  }
-  def receive = {
-    case _ => 
   }
   def httpRef = IO(Http) //If problems change to def
-    def queueSensors(): Unit = {
+
+    def loopOnce(): Unit = {
       // Set loading to true, 
       loading = true
-
-      system.log.info("Queuing for new sensor data from: " + uri)
-
 
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
@@ -99,17 +93,12 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
           addToDatabase(list)
           //        
 
-          system.log.info("Sensors Added to Database!")
-
-          // Schedule for new future in 5 minutes
-          //TEST: 1 minute
-          akka.pattern.after(300 seconds, using = system.scheduler)(Future { queueSensors() })
           loading = false
 
         case Failure(error) =>
           loading = false
-          system.log.error("An error has occured: " + error.getMessage)
       }
+      Thread.sleep(300000)
     }
 
     /**
@@ -121,7 +110,6 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
       val date = new java.util.Date()
       var i = 0
 
-      system.log.debug("Data gained. Saving to Database.")
       if (!list.isEmpty) {
         // InfoItems filtered out
         val data = list.filter(_._1.split('_').length > 3).map(item => {
@@ -133,20 +121,13 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
           // Object id
           val path = if(split(0) == "vtt") split.dropRight(2) ++  split.takeRight(2).reverse
           else split
-          system.log.debug("Saving to path: " +"Objects/" + path.mkString("/"))
           OdfInfoItem(Seq("Objects") ++ path.toSeq, Seq(OdfValue(value, "", Some(new Timestamp(date.getTime)))))
         })
         InputPusher.handleInfoItems(data);
         //InputPusher.handlePathValuePairs(data);
       }
-      system.log.debug("Successfully saved to Database.")
     }
-}
-
-/** Helper obejct for creating SensorAgent.
-  *
-  */
-object SensorAgent {
-  def apply( uri: String) : Props = props(uri)
-  def props( uri: String) : Props = {Props(new SensorAgent(uri)) }
+    def finish = {
+      system.shutdown
+    }
 }
