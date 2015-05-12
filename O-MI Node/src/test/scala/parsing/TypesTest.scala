@@ -4,6 +4,8 @@ import org.specs2._
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
+import parsing.Types.OmiTypes._
+import parsing.Types.OdfTypes._
 
 /* Test class for testing ODF Types */
 class TypesTest extends Specification {
@@ -12,14 +14,14 @@ class TypesTest extends Specification {
   This is Specification to check inheritance for Types. Also testing Path Object
 
   Types should specify type inheritance for
-    ParseMsg inherited by
-      ParseError  		  $e1
-      OneTimeRead         $e2
-      Write			      $e3
-      Subscription	      $e4
-      Result	          $e5
-      Cancel		      $e6
-    ParseMsg not inherited by
+    OmiRequest inherited by
+      ReadRequest         $e2
+      WriteRequest			      $e3
+      SubscriptionRequest	      $e4
+      ResponseRequest	          $e5
+      CancelRequest		      $e6
+    OmiRequest not inherited by
+      ParseError        $e1
       OdfInfoItem		  $e10
       OdfObject		      $e11
     OdfNode inherited by
@@ -37,43 +39,43 @@ class TypesTest extends Specification {
     """
 
   def e1 = {
-    new ParseError("test error").isInstanceOf[ParseMsg]
+    !new ParseError("test error").isInstanceOf[OmiRequest]
   }
 
   def e2 = {
-    new OneTimeRead(10, Seq()).isInstanceOf[ParseMsg]
+    new ReadRequest(10, OdfObjects()).isInstanceOf[OmiRequest]
   }
 
   def e3 = {
-    new Write(10, Seq()).isInstanceOf[ParseMsg]
+    new WriteRequest(10, OdfObjects()).isInstanceOf[OmiRequest]
   }
 
   def e4 = {
-    new Subscription(0, 0, Seq()).isInstanceOf[ParseMsg]
+    new SubscriptionRequest(0, 0, OdfObjects()).isInstanceOf[OmiRequest]
   }
 
   def e5 = {
-    new Result("200", "", None).isInstanceOf[ParseMsg]
+    new ResponseRequest(Seq(OmiResult("1","200"))).isInstanceOf[OmiRequest]
   }
 
   def e6 = {
-    new Cancel(10, Seq()).isInstanceOf[ParseMsg]
+    new CancelRequest(10, Seq()).isInstanceOf[OmiRequest]
   }
   
   def e10 = {
-    !new OdfInfoItem(Seq(), Seq()).isInstanceOf[ParseMsg]
+    !new OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
   }
   
   def e11 = {
-    !new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[ParseMsg]
+    !new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OmiRequest]
   }
   
   def e100 = {
-    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfNode]
+    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
   }
   
   def e101 = {
-    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OdfNode]
+    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OmiRequest]
   }
   
   def e200 = {
