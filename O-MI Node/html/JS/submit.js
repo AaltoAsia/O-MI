@@ -7,8 +7,8 @@ var manager;
 var fullObjectsRequest = 
 '<?xml version="1.0" encoding="UTF-8" ?>\n' + 
 '<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">\n' +
-  '<omi:read msgformat="omi.xsd">\n' +
-    '<omi:msg xmlns="omi.xsd" xsi:schemaLocation="odf.xsd odf.xsd">\n' +
+  '<omi:read msgformat="odf">\n' +
+    '<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">\n' +
       '<Objects>\n' +
       '</Objects>\n' +
     '</omi:msg>\n' +

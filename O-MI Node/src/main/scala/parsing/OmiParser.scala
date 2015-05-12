@@ -25,7 +25,11 @@ object OmiParser extends Parser[OmiParseResult] {
     */
   def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    val root = Try(XML.loadString(xml_msg)).getOrElse(return Left( Seq( ParseError("Invalid XML" ) ) ) )
+    val root = Try(
+      XML.loadString(xml_msg)
+    ).getOrElse(
+      return Left( Seq( ParseError("Invalid XML" ) ) ) 
+    )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
       return Left( schema_err.map{pe : ParseError => ParseError("OmiParser: "+ pe.msg)} ) 
@@ -141,32 +145,12 @@ object OmiParser extends Parser[OmiParseResult] {
 
       val data = msg.get.as[Elem] 
       format.get match {
-        case "omi.xsd" => 
-          val odf = (data \ "@Objects")
-          if(odf.nonEmpty)
-            parseOdf(odf.head)
-          else 
-            Right( OdfObjects() )
-        case "omi" => 
-          val odf = (data \ "@Objects")
-          if(odf.nonEmpty)
-            parseOdf(odf.head)
-          else 
-            Right( OdfObjects() )
         case "odf" => 
           val odf = (data \ "@Objects")
           if(odf.nonEmpty)
             parseOdf(odf.head)
           else 
             Right( OdfObjects() )
-        case "odf.xsd" => 
-          val odf = (data \ "@Objects")
-          if(odf.nonEmpty)
-            parseOdf(odf.head)
-          else 
-            Right( OdfObjects() )
-        
-        
         case _ => return Left( Seq( ParseError("Unknown msgformat attribute")  ))
       } 
     }
