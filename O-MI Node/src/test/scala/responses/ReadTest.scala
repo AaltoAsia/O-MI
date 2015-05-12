@@ -1,11 +1,13 @@
 package responses
 
 import org.specs2.mutable._
+import org.specs2.matcher.XmlMatchers._
 import scala.io.Source
 import responses._
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
+import parsing.Types.OmiTypes._
 import database._
 import parsing.OdfParser._
 import java.util.Date;
@@ -73,20 +75,24 @@ class ReadTest extends Specification with BeforeAll {
         lazy val simpletestfile = Source.fromFile("src/test/resources/responses/read/SimpleXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/correctXMLfirsttest.xml")
         val parserlist = OmiParser.parse(simpletestfile)
-        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        parserlist.isRight === true
         
-        resultXML should be equalTo(trim(correctxmlreturn))
-        OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+        val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
+        
+        // ==/ is same as must beEqualToIgnoringSpace
+        resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
     }
 
     "Give a history of values when begin and end is used" in {
         lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/read/IntervalXMLTest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/CorrectIntervalXML.xml")
         val parserlist = OmiParser.parse(intervaltestfile)
-        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        parserlist.isRight === true
+        val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         
-        resultXML should be equalTo(trim(correctxmlreturn))
-        OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+        resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[OmiRequest]
     }
 
     "Give object and its children when asked for" in {
@@ -94,21 +100,23 @@ class ReadTest extends Specification with BeforeAll {
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/PlainRightRequest.xml")
 
         val parserlist = OmiParser.parse(plainxml)
-        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        parserlist.isRight === true
+        val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         //println(resultXML)
 
-        resultXML should be equalTo(trim(correctxmlreturn))
-        OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+        resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[OmiRequest]
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
         lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
-        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        parserlist.isRight === true
+        val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         
         //returnCode should not be 200
-        resultXML should be equalTo(trim(correctxmlreturn))
+        resultXML must beEqualToIgnoringSpace(correctxmlreturn)
         //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
 
@@ -116,9 +124,10 @@ class ReadTest extends Specification with BeforeAll {
         lazy val metarequestxml = Source.fromFile("src/test/resources/responses/read/MetadataRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/MetadataCorrectReturn.xml")
         val parserlist = OmiParser.parse(metarequestxml)
-        val resultXML = trim(ReadResponseGen.runGeneration(parserlist.head.asInstanceOf[OneTimeRead]).head)
+        parserlist.isRight === true
+        val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
 
-        resultXML should be equalTo(trim(correctxmlreturn))
+        resultXML must beEqualToIgnoringSpace(correctxmlreturn)
     }
 
 }

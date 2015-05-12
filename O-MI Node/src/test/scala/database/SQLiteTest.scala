@@ -3,6 +3,7 @@ package database
 import org.specs2.mutable._
 import database._
 import java.sql.Timestamp
+import parsing.Types.OdfTypes._
 
 import parsing.Types._
 
@@ -313,16 +314,17 @@ object SQLiteTest extends Specification {
    }
    "be able to add many values in one go" in{
      db.startBuffering(Path("path/to/setmany/test1"))
-     val testdata = 
-       List(("path/to/setmany/test1",TimedValue(Some(new Timestamp(1001)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1002)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1003)),"val1")),
-         ("path/to/setmany/test1",TimedValue(Some(new Timestamp(1004)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1005)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1006)),"val1")),
-         ("path/to/setmany/test1",TimedValue(Some(new Timestamp(1007)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1008)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1009)),"val1")),
-         ("path/to/setmany/test1",TimedValue(Some(new Timestamp(1010)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1011)),"val1")),("path/to/setmany/test1",TimedValue(Some(new Timestamp(1012)),"val1")),
-         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1013)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1014)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1015)),"val1")),
-         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1016)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1017)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1018)),"val1")),
-         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1019)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1020)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1021)),"val1")),
-         ("path/to/setmany/test2",TimedValue(Some(new Timestamp(1022)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1023)),"val1")),("path/to/setmany/test2",TimedValue(Some(new Timestamp(1024)),"val1"))
-         )
+     val testdata:List[(Path, OdfValue)] = {
+       List(
+         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1001)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1002)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1003)))),
+         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1004)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1005)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1006)))),
+         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1007)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1008)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1009)))),
+         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1010)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1011)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1012)))),
+         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1013)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1014)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1015)))),
+         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1016)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1017)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1018)))),
+         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1019)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1020)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1021)))),
+         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1022)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1023)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1024))))
+         )}
      db.setMany(testdata.map(n=> (Path(n._1), n._2)))
      db.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
      db.getNBetween(Path("path/to/setmany/test2"), None, None,None, None).length shouldEqual 10

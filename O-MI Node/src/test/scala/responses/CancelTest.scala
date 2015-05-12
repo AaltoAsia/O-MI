@@ -1,11 +1,13 @@
 package responses
 
 import org.specs2.mutable._
+import org.specs2.matcher.XmlMatchers._
 import scala.io.Source
 import responses._
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
+import parsing.Types.OmiTypes._
 import database._
 import parsing.OdfParser._
 import java.util.Date;
@@ -83,50 +85,58 @@ class CancelTest extends Specification with BeforeAll {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/SimpleXMLCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/SimpleXMLCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.runGeneration(parserlist.head.asInstanceOf[Cancel]).head)
+      
+      parserlist.isRight === true
+      
+      val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
-      resultXML should be equalTo (trim(correctxmlreturn))
-      OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when a cancel with multiple ids are requested" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultipleCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultipleCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.runGeneration(parserlist.head.asInstanceOf[Cancel]).head)
+      
+      parserlist.isRight === true
+      val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
-      resultXML should be equalTo (trim(correctxmlreturn))
-      OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when cancels with multiple paths is requested (multiple ids)" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultiplePathsRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultiplePathsReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.runGeneration(parserlist.head.asInstanceOf[Cancel]).head)
+      parserlist.isRight === true
+      val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
-      resultXML should be equalTo (trim(correctxmlreturn))
-      OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
     }
 
     "Give error XML when cancel is requested with non-existing id" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/ErrorCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/ErrorCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.runGeneration(parserlist.head.asInstanceOf[Cancel]).head)
+      parserlist.isRight === true
+      val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
-      resultXML should be equalTo (trim(correctxmlreturn))
-      OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when valid and invalid ids are mixed in cancel request" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MixedCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MixedCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      val resultXML = trim(OMICancel.runGeneration(parserlist.head.asInstanceOf[Cancel]).head)
+      parserlist.isRight === true
+      val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
-      resultXML should be equalTo (trim(correctxmlreturn))
-      OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
+      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
+      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
     }
   }
 }
