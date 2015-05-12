@@ -12,10 +12,6 @@ import java.util.jar.JarFile
 import java.io.File
 import scala.concurrent._
 
-import com.beachape.filemanagement.MonitorActor
-import com.beachape.filemanagement.RegistryTypes._
-import com.beachape.filemanagement.Messages._
-
 import java.nio.file.Paths
 import java.nio.file.StandardWatchEventKinds._
 
