@@ -61,7 +61,7 @@ function writeXML(items, omi){
  */
 function writeMsg(writer){
 	writer.writeStartElement('omi:msg');
-	writer.writeAttributeString( 'xmlns', 'omi.xsd');
+	writer.writeAttributeString( 'xmlns', 'odf.xsd');
 	writer.writeAttributeString( 'xsi:schemaLocation', 'odf.xsd odf.xsd');
 }
 
@@ -78,7 +78,7 @@ function writeMsg(writer){
  */
 
 function writeObjects(writer, items, interval, begin, end, newest, oldest, callback){
-	writer.writeAttributeString('msgformat', 'omi.xsd');
+	writer.writeAttributeString('msgformat', 'odf');
 	
 	if($.isNumeric(interval)) writer.writeAttributeString('interval', interval);
 	
@@ -109,6 +109,9 @@ function writeObjects(writer, items, interval, begin, end, newest, oldest, callb
 	writeMsg(writer);
 	
 	writer.writeStartElement('Objects');
+	writer.writeAttributeString( 'xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance');
+	writer.writeAttributeString( 'xsi:noNamespaceSchemaLocation','odf.xsd');
+
 	//Payload
 	var ids = [];
 	var objects = [];
@@ -218,7 +221,7 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 
 	writeOmiInfo(writer, ttl);
 	writer.writeStartElement('omi:read');
-	writer.writeAttributeString('msgformat', 'omi.xsd');
+	writer.writeAttributeString('msgformat', 'odf');
 
 	if(begin){
 		if(new Date(begin).getTime() > 0){

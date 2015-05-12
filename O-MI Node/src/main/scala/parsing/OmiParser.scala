@@ -141,32 +141,12 @@ object OmiParser extends Parser[OmiParseResult] {
 
       val data = msg.get.as[Elem] 
       format.get match {
-        case "omi.xsd" => 
-          val odf = (data \ "@Objects")
-          if(odf.nonEmpty)
-            parseOdf(odf.head)
-          else 
-            Right( OdfObjects() )
-        case "omi" => 
-          val odf = (data \ "@Objects")
-          if(odf.nonEmpty)
-            parseOdf(odf.head)
-          else 
-            Right( OdfObjects() )
         case "odf" => 
           val odf = (data \ "@Objects")
           if(odf.nonEmpty)
             parseOdf(odf.head)
           else 
             Right( OdfObjects() )
-        case "odf.xsd" => 
-          val odf = (data \ "@Objects")
-          if(odf.nonEmpty)
-            parseOdf(odf.head)
-          else 
-            Right( OdfObjects() )
-        
-        
         case _ => return Left( Seq( ParseError("Unknown msgformat attribute")  ))
       } 
     }
