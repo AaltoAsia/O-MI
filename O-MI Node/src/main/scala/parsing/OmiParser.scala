@@ -28,7 +28,7 @@ object OmiParser extends Parser[OmiParseResult] {
     val root = Try(XML.loadString(xml_msg)).getOrElse(return Left( Seq( ParseError("Invalid XML" ) ) ) )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
-      return Left( schema_err ) 
+      return Left( schema_err.map{pe : ParseError => ParseError("OmiParser: "+ pe.msg)} ) 
 
     val envelope = xmlGen.scalaxb.fromXML[xmlGen.OmiEnvelope](root)  
     envelope.omienvelopeoption.value match {
@@ -138,17 +138,39 @@ object OmiParser extends Parser[OmiParseResult] {
       if(msg.isEmpty)
         return Left( Seq( ParseError("No msg element found in write request.")))
       if(format.isEmpty) return Left( Seq( ParseError("Missing msgformat attribute.")))
+
+      val data = msg.get.as[Elem] 
       format.get match {
-        case "omi.xsd" => parseOdf(msg.get.as[Elem])
-        case "omi" => parseOdf(msg.get.as[Elem])
-        case "odf" => parseOdf(msg.get.as[Elem])
-        case "odf.xsd" => parseOdf(msg.get.as[Elem])
+        case "omi.xsd" => 
+          val odf = (data \ "@Objects")
+          if(odf.nonEmpty)
+            parseOdf(odf.head)
+          else 
+            Right( OdfObjects() )
+        case "omi" => 
+          val odf = (data \ "@Objects")
+          if(odf.nonEmpty)
+            parseOdf(odf.head)
+          else 
+            Right( OdfObjects() )
+        case "odf" => 
+          val odf = (data \ "@Objects")
+          if(odf.nonEmpty)
+            parseOdf(odf.head)
+          else 
+            Right( OdfObjects() )
+        case "odf.xsd" => 
+          val odf = (data \ "@Objects")
+          if(odf.nonEmpty)
+            parseOdf(odf.head)
+          else 
+            Right( OdfObjects() )
         
         
         case _ => return Left( Seq( ParseError("Unknown msgformat attribute")  ))
       } 
     }
-    private def parseOdf(node: Node) : OdfParseResult = OdfParser.parse(node.toString) 
+    private def parseOdf(node: Node) : OdfParseResult = OdfParser.parse(node) 
     private def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]) : Option[Timestamp] = gcal match {
       case None => None
       case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));

@@ -9,7 +9,7 @@ object OdfTypes{
 
   case class OdfObjects(
     objects:              Seq[OdfObject] = Seq.empty,
-    version:              Option[String]
+    version:              Option[String] = None
   ) extends OdfElement
 
   case class OdfObject(

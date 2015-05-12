@@ -33,8 +33,18 @@ object OdfParser extends Parser[OdfParseResult] {
     )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
-      return Left( schema_err )  
+      return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
 
+    println(root)
+    val objects = scalaxb.fromXML[ObjectsType](root)
+    Right(
+      OdfObjects( 
+        objects.Object.map{ obj => parseObject( obj ) }.toSeq,
+        objects.version 
+      )
+    )
+  }
+  def parse(root: xml.Node) = { 
     val objects = scalaxb.fromXML[ObjectsType](root)
     Right(
       OdfObjects( 
