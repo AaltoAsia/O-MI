@@ -7,6 +7,8 @@ usage:
 val obj = scalaxb.fromXML[.Foo](node)
 val document = scalaxb.toXML[.Foo](obj, "foo", .defaultScope)
 **/
+import scala.language.postfixOps
+
 object `package` extends XMLProtocol { }
 
 trait XMLProtocol extends scalaxb.XMLStandardTypes {
