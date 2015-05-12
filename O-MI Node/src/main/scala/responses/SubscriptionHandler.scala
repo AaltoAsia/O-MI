@@ -9,7 +9,8 @@ import akka.actor.ActorLogging
 
 import responses._
 import database._
-import parsing.Types.{ SubLike, Path, SubDataRequest }
+import parsing.Types.Path
+import parsing.Types.OmiTypes.{ SubLike, SubDataRequest }
 import OMISubscription.SubscriptionResponseGen
 import CallbackHandlers._
 

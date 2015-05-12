@@ -2,6 +2,7 @@ package agents
 
 import agentSystem._
 import parsing.Types._
+import parsing.Types.OdfTypes._
 import parsing.OdfParser
 import parsing.OmiParser
 import database._
@@ -52,11 +53,10 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   
   private var odf : Option[Seq[OdfInfoItem]] = None   
-  private var odfFile : Option[String] = None   
   
   def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = {
     o.flatten{ o =>
-      o.sensors ++ getSensors(o.childs)
+      o.infoItems ++ getSensors(o.objects)
     }
   }
   
@@ -70,16 +70,22 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       shutdown
       return
     }
-    odfFile = Some(lines.head)
-    val tmp = OdfParser.parse( XML.loadFile(odfFile.get).toString)
-    val errors = getErrors(tmp)
+    val file =  new File(lines.head)
+    if(!file.exists() || !file.canRead){
+      shutdown
+      return
+    }
+      
+    val xml = XML.loadFile(file)
+    val tmp_odf = OdfParser.parse( xml)
+    val errors = getErrors(tmp_odf)
     if(errors.nonEmpty) {
       shutdown
       return
     }
     odf = Some(
-      getObjects(tmp).flatten{o =>
-        o.sensors ++ getSensors(o.childs)
+      getObjects(tmp_odf).flatten{o =>
+        o.infoItems ++ getSensors(o.objects)
       }
     )
     if(odf.isEmpty){
@@ -87,8 +93,8 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       return
     }
     InputPusher.handlePathMetaDataPairs( 
-      odf.get.filter{info => info.metadata.nonEmpty }.map{
-        info  => (info.path, info.metadata.get.data)
+      odf.get.filter{info => info.metaData.nonEmpty }.map{
+        info  => (info.path, info.metaData.get.data)
       }
     )
   }
@@ -97,7 +103,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     val date = new java.util.Date()
     odf = Some( 
       odf.get.map{ info => 
-        OdfInfoItem( info.path, Seq( TimedValue( Some( new Timestamp( date.getTime)), Random.nextDouble.toString)))
+        OdfInfoItem( info.path, Seq( OdfValue(  Random.nextDouble.toString, "" , Some( new Timestamp( date.getTime) ) )))
       } 
     )
     InputPusher.handleInfoItems(odf.get)

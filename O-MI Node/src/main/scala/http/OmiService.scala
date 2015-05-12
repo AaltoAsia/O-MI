@@ -10,6 +10,7 @@ import MediaTypes._
 import responses._
 import parsing._
 import parsing.Types._
+import parsing.Types.OmiTypes._
 import database._
 
 import xml._
@@ -121,12 +122,9 @@ trait OmiService extends HttpService {
       corsHeaders {
         entity(as[NodeSeq]) { xml =>
           val omi = OmiParser.parse(xml.toString)
-          val errors = omi.collect {
-            case e: ParseError => e
-          }
-          val requests = omi diff errors // exclude errors from omi
 
-          if (errors.isEmpty) {
+          if (omi.isRight) {
+            val requests = omi.right.get
             respondWithMediaType(`text/xml`) {
 
               var returnStatus = 200
@@ -134,34 +132,30 @@ trait OmiService extends HttpService {
               //FIXME: Currently sending multiple omi:omiEnvelope
               val result = requests.map {
 
-                case oneTimeRead: OneTimeRead =>
-                  log.debug(oneTimeRead.toString)
+                case read: ReadRequest =>
+                  log.debug(read.toString)
+                  readResponseGen.runRequest(read)
 
-                  if (oneTimeRead.requestId.isEmpty) {
-                    readResponseGen.runRequest(oneTimeRead)
-
-                  } else {
+                  case poll: PollRequest =>
                     // Should give out poll result
-                    pollResponseGen.runRequest(PollRequest(oneTimeRead))
+                    pollResponseGen.runRequest(poll)
 
-                  }
-
-                case write: Write =>
+                case write: WriteRequest =>
                   log.debug(write.toString)
                   returnStatus = 501
                   ErrorResponse.notImplemented
 
-                case subscription: Subscription =>
+                case subscription: SubscriptionRequest =>
                   log.debug(subscription.toString)
 
                   val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
 
-                  if (subscription.callback.isDefined && subscription.callback.get.length > 3 && id >= 0) // XXX: hack check for valid url :D
+                  if (subscription.callback.isDefined && subscription.callback.get.toString.length > 3 && id >= 0) // XXX: hack check for valid url :D
                     subscriptionHandler ! NewSubscription(id)
 
                   response
 
-                case cancel: Cancel =>
+                case cancel: CancelRequest =>
                   log.debug(cancel.toString)
 
                   cancelResponseGen.runRequest(cancel)
@@ -176,6 +170,7 @@ trait OmiService extends HttpService {
 
             }
           } else {
+            val errors = omi.left.get
             //Errors found
             log.warning("Parse Errors: {}", errors.mkString(", "))
             complete(400,

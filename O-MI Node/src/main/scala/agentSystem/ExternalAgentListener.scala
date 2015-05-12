@@ -14,6 +14,7 @@ import database.SQLiteConnection
 
 import parsing.Types._
 import parsing.Types.Path._
+import parsing.Types.OdfTypes._
 
 /** AgentListener handles connections from agents.
   */
@@ -80,13 +81,10 @@ class ExternalAgentHandler(
         inputPusher.handleObjects(getObjects(parsedEntries))
         if(!metaDataSaved){
           inputPusher.handlePathMetaDataPairs(
-            getObjects(parsedEntries).flatten{
-              o =>
-              o.sensors ++ getSensors(o.childs)
-            }.filter{
-              info => info.metadata.nonEmpty 
+            getInfoItems(getObjects(parsedEntries)).filter{
+              info => info.metaData.nonEmpty 
             }.map{
-              info  => (info.path, info.metadata.get.data)
+              info  => (info.path, info.metaData.get.data)
             }   
 
           )
@@ -105,9 +103,9 @@ class ExternalAgentHandler(
    * @param o Sequence of OdfObjects to process
    * @return Sequence of OdfInfoitems(sensors)
    */
-  def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = { 
+  def getInfoItems(o:Seq[OdfObject]) : Seq[OdfInfoItem] = { 
     o.flatten{ o =>
-    o.sensors ++ getSensors(o.childs)
+    o.infoItems ++ getInfoItems(o.objects)
   }   
 }
 }

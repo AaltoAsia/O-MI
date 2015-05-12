@@ -19,7 +19,7 @@ import javax.xml.validation.Validator
  */
 abstract trait Parser[Result] {
 
-  def parse(xml_msg: String) : Seq[Result]
+  def parse(xml_msg: String) : Result
   def schemaPath : javax.xml.transform.Source
   
   /**

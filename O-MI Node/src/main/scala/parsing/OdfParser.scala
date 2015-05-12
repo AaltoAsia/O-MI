@@ -1,5 +1,8 @@
 package parsing
-import parsing.Types._
+
+import Types._
+import Types.OdfTypes._
+import xmlGen._
 import scala.collection.mutable.Map
 import scala.util.Try
 import scala.xml.XML
@@ -22,22 +25,38 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
    *  @return Seq of ParseResults
    */
-  def parse(xml_msg: String): Seq[OdfParseResult] = {
-    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq( Left( ParseError("Invalid XML") ) ) )
+  def parse(xml_msg: String): OdfParseResult = {
+    val root = Try(
+      XML.loadString(xml_msg)
+    ).getOrElse(
+      return  Left( Seq( ParseError("Invalid XML") ) ) 
+    )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
-      return Seq( Left( ParseError( schema_err.map{err => err.msg}.mkString("\n") ) ) )
+      return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
 
-    val objects = scalaxb.fromXML[ObjectsType](root)
-    objects.Object.map{ obj => Right( parseObject( obj ) ) }.toSeq
+    parse(root)
+  }
+  def parse(root: xml.Node): OdfParseResult = { 
+    val schema_err = schemaValitation(root)
+    if (schema_err.nonEmpty)
+      return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
+
+    val objects = xmlGen.scalaxb.fromXML[xmlGen.ObjectsType](root)
+    Right(
+      OdfObjects( 
+        objects.Object.map{ obj => parseObject( obj ) }.toSeq,
+        objects.version 
+      )
+    )
   }
 
   private def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
     val npath = path / obj.id.head.value
       OdfObject(
         npath, 
-        obj.Object.map{ child => parseObject( child, npath ) }.toSeq,
-        obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toSeq
+        obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toSeq,
+        obj.Object.map{ child => parseObject( child, npath ) }.toSeq
       ) 
   }
   
@@ -47,19 +66,21 @@ object OdfParser extends Parser[OdfParseResult] {
         npath,
         item.value.map{
           value => 
-          TimedValue(
+          OdfValue(
+            value.value,
+            value.typeValue,
             value.dateTime match {
               case None => value.unixTime match {
                 case None => None
                 case Some(seconds) => Some( new Timestamp(seconds/1000))
               }
               case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()))
-            },
-            value.value
+            }
           )
         },
+        None,
         if(item.MetaData.isEmpty) None
-        else Some( InfoItemMetaData( scalaxb.toXML[MetaData](item.MetaData.get, "MetaData", parsing.defaultScope).toString) )
+        else Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, "MetaData", xmlGen.defaultScope).toString) )
       ) 
   }
 }

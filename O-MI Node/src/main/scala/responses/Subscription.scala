@@ -3,6 +3,8 @@ package responses
 import Common._
 import ErrorResponse.intervalNotSupported
 import parsing.Types._
+import parsing.Types.OmiTypes._
+import parsing.Types.OdfTypes._
 import database._
 import scala.xml
 import scala.xml._
@@ -101,9 +103,9 @@ object OMISubscription {
    * containing the immediate xml that's used for responding to a subscription request
    */
 
-  def setSubscription(subscription: Subscription)(implicit dbConnection: DB): (Int, xml.NodeSeq) = {
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB): (Int, xml.NodeSeq) = {
     var requestIdInt: Int = -1
-    val paths = getInfoItemPaths(subscription.sensors.toList)
+    val paths = getInfoItemPaths(subscription.odf.objects.toList)
 
     if (paths.isEmpty == false) {
       val xml =
@@ -113,7 +115,10 @@ object OMISubscription {
 
               val ttlInt = subscription.ttl.toInt
               val interval = subscription.interval.toInt
-              val callback = subscription.callback
+              val callback = subscription.callback match {
+                case Some(uri) => Some(uri.toString)
+                case None => None 
+              }
               val timeStamp = Some(new Timestamp(date.getTime()))
               requestIdInt = dbConnection.saveSub(
                 new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
@@ -265,13 +270,13 @@ object OMISubscription {
 
       }*/
 
-      if (obj.childs.nonEmpty) {
-        paths ++= getInfoItemPaths(obj.childs.toList)
+      if (obj.objects.nonEmpty) {
+        paths ++= getInfoItemPaths(obj.objects.toList)
       }
 
-      if (obj.sensors.nonEmpty) {
-        for (sensor <- obj.sensors) {
-          dbConnection.get(sensor.path) match {
+      if (obj.infoItems.nonEmpty) {
+        for (infoItem <- obj.infoItems) {
+          dbConnection.get(infoItem.path) match {
             case Some(infoitem: DBSensor) => paths += infoitem.path
             case _ => //do nothing
           }
@@ -313,7 +318,7 @@ object OMISubscription {
      * @param subId the Id of the subscription
      * @return The data in ODF-format
      */
-    private def pollSub(subId: DBSub): OmiResult = {
+    private def pollSub(subId: DBSub): Common.OmiResult = {
       val interval = subId.interval
 
       if (interval == -2) { // not supported

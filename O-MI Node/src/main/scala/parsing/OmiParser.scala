@@ -1,6 +1,8 @@
 package parsing
 
-import parsing.Types._
+import Types._
+import Types.OmiTypes._
+import Types.OdfTypes._
 import java.sql.Timestamp
 import scala.xml._
 import scala.util.Try
@@ -10,9 +12,7 @@ import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import org.xml.sax.SAXException
 /** Parsing object for parsing messages with O-MI protocol*/
-object OmiParser extends Parser[ParseMsg] {
-  private val implementedRequest = Seq("read", "write", "cancel", "response")
-  private def dateFormat = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss")
+object OmiParser extends Parser[OmiParseResult] {
 
   override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
@@ -23,140 +23,146 @@ object OmiParser extends Parser[ParseMsg] {
     * @return sequence of ParseMsg classes, different message types are defined in
     *         the TypeClasses.scala file
     */
-  def parse(xml_msg: String): Seq[ParseMsg] = {
+  def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    val root = Try(XML.loadString(xml_msg)).getOrElse(return Seq(new ParseError("Invalid XML")))
+    val root = Try(
+      XML.loadString(xml_msg)
+    ).getOrElse(
+      return Left( Seq( ParseError("Invalid XML" ) ) ) 
+    )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
-      return Seq( ParseError( schema_err.map{err => err.msg}.mkString("\n") )) 
+      return Left( schema_err.map{pe : ParseError => ParseError("OmiParser: "+ pe.msg)} ) 
 
-    val envelope = scalaxb.fromXML[OmiEnvelope](root)  
+    val envelope = xmlGen.scalaxb.fromXML[xmlGen.OmiEnvelope](root)  
     envelope.omienvelopeoption.value match {
-      case read: ReadRequest => parseRead(read, envelope.ttl )
-      case write: WriteRequest => parseWrite(write, envelope.ttl)
-      case cancel: CancelRequest => parseCancel(cancel, envelope.ttl)
-      case response: ResponseListType =>  parseResponse(response, envelope.ttl)
+      case read: xmlGen.ReadRequest => parseRead(read, envelope.ttl )
+      case write: xmlGen.WriteRequest => parseWrite(write, envelope.ttl)
+      case cancel: xmlGen.CancelRequest => parseCancel(cancel, envelope.ttl)
+      case response: xmlGen.ResponseListType =>  parseResponse(response, envelope.ttl)
     }
   }
-  private def parseRead(read: ReadRequest, ttl: Double )  : Seq[ParseMsg] = {
+  private def parseRead(read: xmlGen.ReadRequest, ttl: Double )  : OmiParseResult = {
     if( read.msg.isEmpty ) {
-      Seq( 
-        OneTimeRead(
+      Right( Seq( 
+        PollRequest(
           ttl,
-          Seq.empty,
-          callback = read.callback match {
-            case None => None
-            case Some(uri) => Some(uri.toString)
-          },
-          requestId = read.requestId.map{id => id.value}
+          uriToStringOption(read.callback),
+          read.requestId.map{id => id.value.toInt}
         )
-      )
+      ) )
     } else {
       val odf = parseMsg(read.msg, read.msgformat)
-      val errors = getErrors(odf) 
+      val errors = OdfTypes.getErrors(odf) 
 
       if(errors.nonEmpty)
-        return errors
+        return Left( errors )
 
       if(read.interval.isEmpty){
-        Seq( 
-          OneTimeRead( 
+        Right( Seq( 
+          ReadRequest( 
             ttl,
-            getObjects(odf),
-            read.begin match {
-              case None => None
-              case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
-            },
-            read.end match {
-              case None => None
-              case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
-            },
+            odf.right.get,
+            gcalendarToTimestampOption(read.begin),
+            gcalendarToTimestampOption(read.end),
             read.newest,
             read.oldest,
-            read.callback match {
-              case None => None
-              case Some(uri) => Some(uri.toString)
-            },
-            read.requestId.map{id => id.value.toString }.toSeq
+            uriToStringOption(read.callback)
           )
-        ) 
+        ) ) 
       } else {
-        Seq( 
-          Subscription( 
+        Right( Seq( 
+          SubscriptionRequest( 
             ttl,
             read.interval.get,
-            getObjects(odf),
-            read.callback match{
-              case None => None
-              case Some(uri) => Some(uri.toString)
-            }
+            odf.right.get,
+            read.newest,
+            read.oldest,
+            uriToStringOption(read.callback)
           )
-        )
+        ) )
       } 
     }
   }
 
-  private def parseWrite(write: WriteRequest, ttl: Double) : Seq[ParseMsg]  = {
+  private def parseWrite(write: xmlGen.WriteRequest, ttl: Double) : OmiParseResult  = {
     val odf = parseMsg(write.msg, write.msgformat)
-    val errors = getErrors(odf) 
+    val errors = OdfTypes.getErrors(odf) 
 
     if(errors.nonEmpty)
-      return errors
+      return Left( errors )
     else
-      Seq( 
-      Write(
-        ttl,
-        getObjects(odf),
-        write.callback match {
-          case None => None
-          case Some(uri) => Some(uri.toString)
-        }
-      )
-  )
+      Right( Seq( 
+        WriteRequest(
+          ttl,
+          odf.right.get,
+          uriToStringOption(write.callback)
+        )
+      ) )
   } 
 
-  private def parseCancel(cancel: CancelRequest , ttl: Double)  : Seq[ParseMsg] = { 
-    Seq( 
-      Cancel(
+  private def parseCancel(cancel: xmlGen.CancelRequest , ttl: Double)  : OmiParseResult = { 
+    Right( Seq( 
+      CancelRequest(
         ttl,
-        cancel.requestId.map{id => id.value.toString }.toSeq
+        cancel.requestId.map{id => id.value.toInt }
       )
-    )
+    ) )
   }
-  private def parseResponse(response: ResponseListType, ttl: Double) : Seq[ParseMsg] = {
-    response.result.map{
-      case result => 
-      val odf = parseMsg(result.msg, result.msgformat)
-      val errors = getErrors(odf) 
+  private def parseResponse(response: xmlGen.ResponseListType, ttl: Double) : OmiParseResult = {
+    Right( Seq(
+      ResponseRequest(
+        response.result.map{
+          case result => 
+            val odf = parseMsg(result.msg, result.msgformat)
+            val errors = OdfTypes.getErrors(odf) 
 
-      if(errors.nonEmpty)
-        return errors
-      else
-        Result(
-        result.returnValue.value,
-        result.returnValue.returnCode,
-        Some(getObjects(odf)),
-        result.requestId.map{id => id.value }.toSeq
+          if(errors.nonEmpty)
+            return Left( errors )
+          
+          else
+            OmiResult(
+              result.returnValue.value,
+              result.returnValue.returnCode,
+              result.returnValue.description,
+              if(result.requestId.nonEmpty){
+                Seq(result.requestId.get.value.toInt )
+              } else {
+                Seq.empty
+              } ,
+              Some(odf.right.get)
+          )
+        }
       )
-    }
+    ) )
   }
 
 
-    private def parseMsg(msg: Option[scalaxb.DataRecord[Any]], format: Option[String]) : Seq[OdfParseResult] = {
+    private def parseMsg(msg: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]) : OdfParseResult = {
       if(msg.isEmpty)
-        return Seq(Left(ParseError("No msg element found in write request.")))
-      if(format.isEmpty) return Seq(Left(ParseError("Missing msgformat attribute.")))
+        return Left( Seq( ParseError("No msg element found in write request.")))
+      if(format.isEmpty) return Left( Seq( ParseError("Missing msgformat attribute.")))
+
+      val data = msg.get.as[Elem] 
       format.get match {
-        case "omi.xsd" => parseOdf(msg.get.as[Elem])
-        case "omi" => parseOdf(msg.get.as[Elem])
-        case "odf" => parseOdf(msg.get.as[Elem])
-        case "odf.xsd" => parseOdf(msg.get.as[Elem])
-        
-        
-        case _ => return Seq(Left(ParseError("Unknown msgformat attribute")  ))
+        case "odf" => 
+          val odf = (data \ "@Objects")
+          if(odf.nonEmpty)
+            parseOdf(odf.head)
+          else 
+            Right( OdfObjects() )
+        case _ => return Left( Seq( ParseError("Unknown msgformat attribute")  ))
       } 
     }
-    private def parseOdf(node: Node) : Seq[OdfParseResult]  = OdfParser.parse(node.toString) 
-  }
+    private def parseOdf(node: Node) : OdfParseResult = OdfParser.parse(node) 
+    private def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]) : Option[Timestamp] = gcal match {
+      case None => None
+      case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+    } 
+    private def uriToStringOption(opt: Option[java.net.URI]) : Option[String] = opt match {
+      case None => None
+      case Some(uri) => Some( uri.toString )
+    } 
+}
 
 

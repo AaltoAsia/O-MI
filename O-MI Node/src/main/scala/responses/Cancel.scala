@@ -2,6 +2,7 @@ package responses
 
 import Common._
 import parsing.Types._
+import parsing.Types.OmiTypes._
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
@@ -17,7 +18,7 @@ import akka.pattern.ask
  * class needed for saving subHandler.
  */
 class OMICancelGen(val subHandler: ActorRef
-                  ) extends ResponseGen[Cancel] {
+                  ) extends ResponseGen[CancelRequest] {
 
   implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
 
@@ -28,7 +29,7 @@ class OMICancelGen(val subHandler: ActorRef
    * @param Cancel the cancel request given by the parser
    * @return ActorRef the subscription handler actor
    */
-  override def genResult(request: Cancel) = {
+  override def genResult(request: CancelRequest) = {
 
     val requestIds = request.requestId
 

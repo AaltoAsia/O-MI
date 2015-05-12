@@ -1,5 +1,6 @@
 package agents
 import parsing.Types._
+import parsing.Types.OdfTypes._
 import agentSystem._
 import akka.actor._
 import akka.event.{Logging, LoggingAdapter}
@@ -47,7 +48,8 @@ class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   def loopOnce() : Unit = {
     if(path.nonEmpty && source.nonEmpty){
       val line = source.get.next
-      InputPusher.handlePathValuePairs(Seq( Tuple2( path.get, TimedValue(None, line) )))
+      val date = new java.util.Date()
+      InputPusher.handlePathValuePairs(Seq( Tuple2( path.get, OdfValue( line, "",Some(new Timestamp(date.getTime)) ) )))
     }
   }
 

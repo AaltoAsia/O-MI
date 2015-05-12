@@ -14,6 +14,7 @@ import java.sql.Timestamp
 import slick.jdbc.StaticQuery
 
 import parsing.Types._
+import parsing.Types.OdfTypes._
 
 object singleConnection extends DB {
   val dbPath = "./sensorDB.sqlite3"
@@ -196,16 +197,16 @@ trait DB {
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(Path, TimedValue)]) = {
+  def setMany(data: List[(Path, OdfValue)]) = {
     var path = Path("")
     var len = 0
     var add = Seq[(Path,String,Timestamp)]()
     data.foreach {
-      case (path: Path, v: TimedValue) =>
+      case (path: Path, v: OdfValue) =>
          // Call hooks
         val argument = Seq(path)
         getSetHooks foreach { _(argument) }
-        add = add ++ Seq((path, v.value, v.time.getOrElse(new Timestamp(new java.util.Date().getTime))))
+        add = add ++ Seq((path, v.value, v.timestamp.getOrElse(new Timestamp(new java.util.Date().getTime))))
     }
     runSync((latestValues ++= add).transactionally)
     var OnlyPaths = data.map(_._1).distinct

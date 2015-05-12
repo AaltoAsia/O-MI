@@ -3,6 +3,7 @@ package agentSystem
 import database._
 import parsing.Types._
 import parsing.Types.Path._
+import parsing.Types.OdfTypes._
 import java.util.Date
 import akka.actor._
 
@@ -21,7 +22,7 @@ trait InputPusher {
   /** Function for handling sequences of path and value pairs.
     *
     */
-  def handlePathValuePairs( pairs: Seq[(Path,TimedValue)] ): Unit
+  def handlePathValuePairs( pairs: Seq[(Path,OdfValue)] ): Unit
   /** Function for handling sequences of path and MetaData pairs.
     *
     */
@@ -42,7 +43,7 @@ object InputPusher {
     if(ipdb.nonEmpty)
       ipdb.get ! HandleInfoItems(items) 
   }
-  def handlePathValuePairs(pairs: Seq[(Path,TimedValue)]) = {
+  def handlePathValuePairs(pairs: Seq[(Path,OdfValue)]) = {
     //new InputPusherForDB(new SQLiteConnection) handlePathValuePairs _
     if(ipdb.nonEmpty)
       ipdb.get ! HandlePathValuePairs(pairs)
@@ -56,7 +57,7 @@ object InputPusher {
 
   case class HandleObjects(objs: Seq[OdfObject])
   case class HandleInfoItems(items: Seq[OdfInfoItem])
-  case class HandlePathValuePairs(pairs: Seq[(Path,TimedValue)])
+  case class HandlePathValuePairs(pairs: Seq[(Path,OdfValue)])
   case class HandlePathMetaDataPairs(pairs: Seq[(Path,String)])
 /** Creates an object for pushing data from internal agents to db.
   *
@@ -75,10 +76,10 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
     */
   override def handleObjects( objs: Seq[OdfObject] ) : Unit = {
     for(obj <- objs){
-      if(obj.childs.nonEmpty)
-        handleObjects(obj.childs)
-      if(obj.sensors.nonEmpty)
-        handleInfoItems(obj.sensors)
+      if(obj.objects.nonEmpty)
+        handleObjects(obj.objects)
+      if(obj.infoItems.nonEmpty)
+        handleInfoItems(obj.infoItems)
     }
     log.debug("Successfully saved Objects to DB")
   }
@@ -90,18 +91,18 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
     /*
      dbobject.setMany(
       infoitems.map{ info => 
-        info.timedValues.map{ tv => (info.path, tv) }
+        info.values.map{ tv => (info.path, tv) }
       }.flatten[(Path,TimedValue)].toList 
     ) 
   */
     for( info <- infoitems ){
-      for(timedValue <- info.timedValues){
-          val sensorData = timedValue.time match {
+      for(value <- info.values){
+          val sensorData = value.timestamp match {
               case None =>
                 val currentTime = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(info.path, timedValue.value, currentTime)
+                new DBSensor(info.path, value.value, currentTime)
               case Some(timestamp) =>
-                new DBSensor(info.path, timedValue.value,  timestamp)
+                new DBSensor(info.path, value.value,  timestamp)
             }
             dbobject.set(sensorData)
       }  
@@ -113,7 +114,7 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
   /** Function for handling sequences of path and value pairs.
     *
     */
-  override def handlePathValuePairs( pairs: Seq[(Path,TimedValue)] ) : Unit ={
+  override def handlePathValuePairs( pairs: Seq[(Path,OdfValue)] ) : Unit ={
     dbobject.setMany(pairs.toList)
     log.debug("Successfully saved Path-TimedValue pairs to DB")    
   }
