@@ -31,6 +31,7 @@ Seq(
 )
 }
 
+libraryDependencies += "com.beachape.filemanagement" %% "schwatcher" % "0.1.8"
 
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
