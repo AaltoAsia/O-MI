@@ -88,26 +88,25 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
     *
     */
   override def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
-    /*
+    
      dbobject.setMany(
       infoitems.map{ info => 
         info.values.map{ tv => (info.path, tv) }
-      }.flatten[(Path,TimedValue)].toList 
+      }.flatten[(Path,OdfValue)].toList 
     ) 
-  */
-    for( info <- infoitems ){
-      for(value <- info.values){
-          val sensorData = value.timestamp match {
-              case None =>
-                val currentTime = new java.sql.Timestamp(new Date().getTime())
-                new DBSensor(info.path, value.value, currentTime)
-              case Some(timestamp) =>
-                new DBSensor(info.path, value.value,  timestamp)
-            }
-            dbobject.set(sensorData)
-      }  
-    }
-    //*/
+  
+//    for( info <- infoitems ){
+//      for(value <- info.values){
+//          val sensorData = value.timestamp match {
+//              case None =>
+//                val currentTime = new java.sql.Timestamp(new Date().getTime())
+//                new DBSensor(info.path, value.value, currentTime)
+//              case Some(timestamp) =>
+//                new DBSensor(info.path, value.value,  timestamp)
+//            }
+//            dbobject.set(sensorData)
+//      }  
+//    }
     log.debug("Successfully saved InfoItems to DB")
   } 
   

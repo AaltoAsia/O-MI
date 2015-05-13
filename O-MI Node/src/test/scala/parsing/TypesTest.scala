@@ -24,7 +24,7 @@ class TypesTest extends Specification {
       ParseError        $e1
       OdfInfoItem		  $e10
       OdfObject		      $e11
-    OdfNode inherited by
+    OdfElement inherited by
       OdfInfoItem		  $e100
       OdfObject			  $e101
       
@@ -71,11 +71,11 @@ class TypesTest extends Specification {
   }
   
   def e100 = {
-    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
+    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfElement]
   }
   
   def e101 = {
-    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OmiRequest]
+    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OdfElement]
   }
   
   def e200 = {

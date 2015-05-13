@@ -84,7 +84,7 @@ class ReadTest extends Specification with BeforeAfterAll {
         
         // ==/ is same as must beEqualToIgnoringSpace
         resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+        OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give a history of values when begin and end is used" in {
@@ -95,7 +95,7 @@ class ReadTest extends Specification with BeforeAfterAll {
         val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         
         resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[OmiRequest]
+        OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give object and its children when asked for" in {
@@ -108,13 +108,16 @@ class ReadTest extends Specification with BeforeAfterAll {
         //println(resultXML)
 
         resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[OmiRequest]
+        OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
         lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
+        println("\n\n\n")
+        println(parserlist)
+        println("\n\n\n")
         parserlist.isRight === true
         val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         
