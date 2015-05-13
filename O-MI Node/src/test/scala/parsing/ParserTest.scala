@@ -222,7 +222,7 @@ class ParserTest extends Specification {
   def e101 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("""omi:write msgformat="odf"""", "omi:write"))
     temp.isLeft === true
-    temp.left.get should be equalTo Seq(ParseError("OmiParser: Missing msgformat attribute"))
+    temp.left.get should be equalTo Seq(ParseError("OmiParser: Missing msgformat attribute."))
     
 //    temp.head should be equalTo (ParseError("No msgformat parameter found in write."))
 
