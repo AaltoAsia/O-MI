@@ -49,7 +49,7 @@ object Starter {
     dbobject.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))
 
-    InputPusher.ipdb = Some(system.actorOf(InputPusher.props,"input-pusher-for-db"))
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(new SQLiteConnection)),"input-pusher-for-db")
     // Fill subs
     responses.OMISubscription.fillSubQueue()(dbobject)
     // Clean old pollable subs

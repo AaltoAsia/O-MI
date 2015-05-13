@@ -11,6 +11,10 @@ import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import org.xml.sax.SAXException
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
@@ -28,7 +32,7 @@ object OmiParser extends Parser[OmiParseResult] {
     val root = Try(
       XML.loadString(xml_msg)
     ).getOrElse(
-      return Left( Seq( ParseError("OmiParser: Invalid XML" ) ) ) 
+      return Left( Iterable( ParseError("OmiParser: Invalid XML" ) ) ) 
     )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
@@ -44,7 +48,7 @@ object OmiParser extends Parser[OmiParseResult] {
   }
   private def parseRead(read: xmlGen.ReadRequest, ttl: Double )  : OmiParseResult = {
     if( read.msg.isEmpty ) {
-      Right( Seq( 
+      Right( Iterable( 
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
@@ -59,7 +63,7 @@ object OmiParser extends Parser[OmiParseResult] {
         return Left( errors.map{pe : ParseError => ParseError("OmiParser: "+ pe.msg)} ) 
 
       if(read.interval.isEmpty){
-        Right( Seq( 
+        Right( Iterable( 
           ReadRequest( 
             ttl,
             odf.right.get,
@@ -71,7 +75,7 @@ object OmiParser extends Parser[OmiParseResult] {
           )
         ) ) 
       } else {
-        Right( Seq( 
+        Right( Iterable( 
           SubscriptionRequest( 
             ttl,
             read.interval.get,
@@ -92,7 +96,7 @@ object OmiParser extends Parser[OmiParseResult] {
     if(errors.nonEmpty)
       return Left( errors.map{pe : ParseError => ParseError("OmiParser: "+ pe.msg)} ) 
     else
-      Right( Seq( 
+      Right( Iterable( 
         WriteRequest(
           ttl,
           odf.right.get,
@@ -102,7 +106,7 @@ object OmiParser extends Parser[OmiParseResult] {
   } 
 
   private def parseCancel(cancel: xmlGen.CancelRequest , ttl: Double)  : OmiParseResult = { 
-    Right( Seq( 
+    Right( Iterable( 
       CancelRequest(
         ttl,
         cancel.requestId.map{id => id.value.toInt }
@@ -110,7 +114,7 @@ object OmiParser extends Parser[OmiParseResult] {
     ) )
   }
   private def parseResponse(response: xmlGen.ResponseListType, ttl: Double) : OmiParseResult = {
-    Right( Seq(
+    Right( Iterable(
       ResponseRequest(
         response.result.map{
           case result => 
@@ -126,9 +130,9 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.returnCode,
               result.returnValue.description,
               if(result.requestId.nonEmpty){
-                Seq(result.requestId.get.value.toInt )
+                Iterable(result.requestId.get.value.toInt )
               } else {
-                Seq.empty
+                seqAsJavaList(Seq.empty)
               } ,
               Some(odf.right.get)
           )
@@ -140,8 +144,8 @@ object OmiParser extends Parser[OmiParseResult] {
 
     private def parseMsg(msg: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]) : OdfParseResult = {
       if(msg.isEmpty)
-        return Left( Seq( ParseError("OmiParser: No msg element found in write request.")))
-      if(format.isEmpty) return Left( Seq( ParseError("OmiParser: Missing msgformat attribute.")))
+        return Left( Iterable( ParseError("OmiParser: No msg element found in write request.")))
+      if(format.isEmpty) return Left( Iterable( ParseError("OmiParser: Missing msgformat attribute.")))
 
       val data = msg.get.as[Elem] 
       format.get match {
@@ -150,8 +154,8 @@ object OmiParser extends Parser[OmiParseResult] {
           if(odf.nonEmpty)
             parseOdf(odf.head)
           else 
-            Left(Seq(ParseError("No Objects child found in msg.")))
-        case _ => return Left( Seq( ParseError("OmiParser: Unknown msgformat attribute")  ))
+            Left(Iterable(ParseError("No Objects child found in msg.")))
+        case _ => return Left( Iterable( ParseError("OmiParser: Unknown msgformat attribute")  ))
       } 
     }
     private def parseOdf(node: Node) : OdfParseResult = OdfParser.parse(node) 

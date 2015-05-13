@@ -6,63 +6,69 @@ import parsing.Types.Path._
 import parsing.Types.OdfTypes._
 import java.util.Date
 import akka.actor._
+import java.lang.Iterable
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
+
 
 /** Trait for pushing data from sensors to db.
   *
   */
-trait InputPusher {
+
+//trait InputPusher {
   /** Function for handling sequences of OdfObject.
     *
     */
-  def handleObjects( objs: Seq[OdfObject] ) : Unit
+  //def handleObjects( objs: Iterable[OdfObject] ) : Unit
   /** Function for handling sequences of OdfInfoItem.
     *
     */
-  def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit  
+  //def handleInfoItems( infoitems: Iterable[OdfInfoItem]) : Unit  
   /** Function for handling sequences of path and value pairs.
     *
     */
-  def handlePathValuePairs( pairs: Seq[(Path,OdfValue)] ): Unit
+  //def handlePathValuePairs( pairs: Iterable[(Path,OdfValue)] ): Unit
   /** Function for handling sequences of path and MetaData pairs.
     *
     */
-  def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit
-}
+  //def handlePathMetaDataPairs( pairs: Iterable[(Path,String)] ): Unit
+//}
 
+/*
 // XXX: FIXME: temp hack
-object InputPusher {
+object InputPusher extends InputPusher {
   def props() : Props = Props(new DBPusher(new SQLiteConnection))
   var ipdb : Option[ActorRef] = None //system.actorOf(props, "input-pusher-for-db")
-  def handleObjects(objs: Seq[OdfObject]) = { 
+  def handleObjects(objs: Iterable[OdfObject]) = { 
     //new InputPusherForDB(new SQLiteConnection) handleObjects _
     if(ipdb.nonEmpty)
       ipdb.get ! HandleObjects(objs) 
   }
-  def handleInfoItems(items: Seq[OdfInfoItem]) = {
+  def handleInfoItems(items: Iterable[OdfInfoItem]) = {
     //new InputPusherForDB(new SQLiteConnection) handleInfoItems _
     if(ipdb.nonEmpty)
       ipdb.get ! HandleInfoItems(items) 
   }
-  def handlePathValuePairs(pairs: Seq[(Path,OdfValue)]) = {
+  def handlePathValuePairs(pairs: Iterable[(Path,OdfValue)]) = {
     //new InputPusherForDB(new SQLiteConnection) handlePathValuePairs _
     if(ipdb.nonEmpty)
       ipdb.get ! HandlePathValuePairs(pairs)
   }
-  def handlePathMetaDataPairs(pairs: Seq[(Path,String)]) = {
+  def handlePathMetaDataPairs(pairs: Iterable[(Path,String)]) = {
     //new InputPusherForDB(new SQLiteConnection) handlePathMetaDataPairs _
     if(ipdb.nonEmpty)
       ipdb.get ! HandlePathMetaDataPairs(pairs)
   }
-}
+}*/
 
-  case class HandleObjects(objs: Seq[OdfObject])
-  case class HandleInfoItems(items: Seq[OdfInfoItem])
-  case class HandlePathValuePairs(pairs: Seq[(Path,OdfValue)])
-  case class HandlePathMetaDataPairs(pairs: Seq[(Path,String)])
+  case class HandleObjects(objs: Iterable[OdfObject])
+  case class HandleInfoItems(items: Iterable[OdfInfoItem])
+  case class HandlePathValuePairs(pairs: Iterable[(Path,OdfValue)])
+  case class HandlePathMetaDataPairs(pairs: Iterable[(Path,String)])
 /** Creates an object for pushing data from internal agents to db.
   *
   */
-class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPusher{
+class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPusher{
  
 
   override def receive = {
@@ -74,7 +80,7 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
   /** Function for handling sequences of OdfObject.
     *
     */
-  override def handleObjects( objs: Seq[OdfObject] ) : Unit = {
+  override def handleObjects( objs: Iterable[OdfObject] ) : Unit = {
     for(obj <- objs){
       if(obj.objects.nonEmpty)
         handleObjects(obj.objects)
@@ -87,14 +93,14 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
   /** Function for handling sequences of OdfInfoItem.
     *
     */
-  override def handleInfoItems( infoitems: Seq[OdfInfoItem]) : Unit = {
-    /*
-     dbobject.setMany(
-      infoitems.map{ info => 
+  override def handleInfoItems( infoitems: Iterable[OdfInfoItem]) : Unit = {
+    
+      val infos = infoitems.map{ info => 
         info.values.map{ tv => (info.path, tv) }
-      }.flatten[(Path,TimedValue)].toList 
-    ) 
-  */
+      }.flatten[(Path,OdfValue)].toList 
+     // println(infos.mkString("\n"))
+     dbobject.setMany(infos) 
+  /*
     for( info <- infoitems ){
       for(value <- info.values){
           val sensorData = value.timestamp match {
@@ -107,18 +113,18 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with InputPushe
             dbobject.set(sensorData)
       }  
     }
-    //*/
+    */
     log.debug("Successfully saved InfoItems to DB")
   } 
   
   /** Function for handling sequences of path and value pairs.
     *
     */
-  override def handlePathValuePairs( pairs: Seq[(Path,OdfValue)] ) : Unit ={
+  override def handlePathValuePairs( pairs: Iterable[(Path,OdfValue)] ) : Unit ={
     dbobject.setMany(pairs.toList)
     log.debug("Successfully saved Path-TimedValue pairs to DB")    
   }
-  def handlePathMetaDataPairs( pairs: Seq[(Path,String)] ): Unit ={
+  def handlePathMetaDataPairs( pairs: Iterable[(Path,String)] ): Unit ={
     pairs.foreach{ pair => dbobject.setMetaData(pair._1, pair._2)}
     log.debug("Successfully saved Path-MetaData pairs to DB")    
   }

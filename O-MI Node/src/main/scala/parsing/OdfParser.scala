@@ -10,7 +10,8 @@ import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
-
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
@@ -23,13 +24,13 @@ object OdfParser extends Parser[OdfParseResult] {
    * Public method for parsing the xml string into seq of ParseResults.
    *
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
-   *  @return Seq of ParseResults
+   *  @return Iterable of ParseResults
    */
   def parse(xml_msg: String): OdfParseResult = {
     val root = Try(
       XML.loadString(xml_msg)
     ).getOrElse(
-      return  Left( Seq( ParseError("Invalid XML") ) ) 
+      return  Left( Iterable( ParseError("Invalid XML") ) ) 
     )
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
@@ -45,7 +46,7 @@ object OdfParser extends Parser[OdfParseResult] {
     val objects = xmlGen.scalaxb.fromXML[xmlGen.ObjectsType](root)
     Right(
       OdfObjects( 
-        objects.Object.map{ obj => parseObject( obj ) }.toSeq,
+        objects.Object.map{ obj => parseObject( obj ) }.toIterable,
         objects.version 
       )
     )
@@ -55,8 +56,8 @@ object OdfParser extends Parser[OdfParseResult] {
     val npath = path / obj.id.head.value
       OdfObject(
         npath, 
-        obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toSeq,
-        obj.Object.map{ child => parseObject( child, npath ) }.toSeq
+        obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
+        obj.Object.map{ child => parseObject( child, npath ) }.toIterable
       ) 
   }
   

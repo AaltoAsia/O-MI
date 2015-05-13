@@ -12,6 +12,7 @@ import scala.collection.mutable.Map
 import akka.actor.ActorRef
 import akka.util.Timeout
 import akka.pattern.ask
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /** class for generating responses for omi:cancel requests.
  * Should be instantiated once and use that one object for all requests.

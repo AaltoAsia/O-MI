@@ -2,20 +2,15 @@ package agents
 import parsing.Types._
 import parsing.Types.OdfTypes._
 import agentSystem._
-import akka.actor._
-import akka.event.{Logging, LoggingAdapter}
-import akka.io.{ IO, Tcp }
-import akka.util.{ByteString, Timeout}
-import akka.pattern.ask
 import xml._
 import io._
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import java.net.InetSocketAddress
-import java.net.URLClassLoader
 import java.io.File
 import java.sql.Timestamp
 import System.currentTimeMillis
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 /** A generic agent that read standart input stream and send given valus to AgentListenr via client.
   * @param Path where sensor is.
@@ -54,5 +49,6 @@ class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   }
 
   def finish= {
+	    println("GenericAgent has died.")
   }
 }

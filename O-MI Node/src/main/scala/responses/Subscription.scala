@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 
 import java.sql.Timestamp
 import java.util.Date
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
  * Object for adding subscriptions to database. Handles also subscriptions without callback addresses
