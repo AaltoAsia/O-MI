@@ -2,7 +2,7 @@
 <!-- edited by Kary Främling (Aalto University) -->
 <!-- Root Data Model Schema -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
-    attributeFormDefault="unqualified">
+    attributeFormDefault="unqualified" xmlns="odf.xsd" targetNamespace="odf.xsd">
     <xs:element name="Object" type="ObjectType"/>
     <xs:element name="InfoItem" type="InfoItemType"/>
     <xs:element name="value" type="valueType"/>

@@ -109,8 +109,6 @@ function writeObjects(writer, items, interval, begin, end, newest, oldest, callb
 	writeMsg(writer);
 	
 	writer.writeStartElement('Objects');
-	writer.writeAttributeString( 'xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance');
-	writer.writeAttributeString( 'xsi:noNamespaceSchemaLocation','odf.xsd');
 
 	//Payload
 	var ids = [];
