@@ -16,12 +16,12 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._
-import testHelpers.BeforeAll
+import testHelpers.BeforeAfterAll
 
 class TestSubHandler(testdb: DB) extends SubscriptionHandler {
   override implicit val dbConnection = testdb
 }
-class CancelTest extends Specification with BeforeAll {
+class CancelTest extends Specification with BeforeAfterAll {
   sequential
 
   implicit val system = ActorSystem("on-core")
@@ -78,6 +78,10 @@ class CancelTest extends Specification with BeforeAll {
     for (paths <- multiSubs) {
       dbConnection.saveSub(new DBSub(paths, 0, 1, None, Some(testtime)))
     }
+  }
+  
+  def afterAll = {
+    testdb.destroy()
   }
 
   "Cancel response" should {

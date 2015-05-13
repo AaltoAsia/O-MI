@@ -140,8 +140,8 @@ object OmiParser extends Parser[OmiParseResult] {
 
     private def parseMsg(msg: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]) : OdfParseResult = {
       if(msg.isEmpty)
-        return Left( Seq( ParseError("OmiParser: No msg element found in write request.")))
-      if(format.isEmpty) return Left( Seq( ParseError("OmiParser: Missing msgformat attribute.")))
+        return Left( Seq( ParseError("No msg element found in write request.")))
+      if(format.isEmpty) return Left( Seq( ParseError("Missing msgformat attribute.")))
 
       val data = msg.get.as[Elem] 
       format.get match {
@@ -151,7 +151,7 @@ object OmiParser extends Parser[OmiParseResult] {
             parseOdf(odf.head)
           else 
             Left(Seq(ParseError("No Objects child found in msg.")))
-        case _ => return Left( Seq( ParseError("OmiParser: Unknown msgformat attribute")  ))
+        case _ => return Left( Seq( ParseError("Unknown msgformat attribute")  ))
       } 
     }
     private def parseOdf(node: Node) : OdfParseResult = OdfParser.parse(node) 

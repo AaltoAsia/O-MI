@@ -15,9 +15,9 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
-import testHelpers.BeforeAll
+import testHelpers.BeforeAfterAll
 
-class ReadTest extends Specification with BeforeAll {
+class ReadTest extends Specification with BeforeAfterAll {
   implicit val dbConnection = new TestDB("read-test")
   val ReadResponseGen = new ReadResponseGen
 
@@ -67,6 +67,9 @@ class ReadTest extends Specification with BeforeAll {
         """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
 
 }
+  def afterAll ={
+    dbConnection.destroy()
+  }
 
   "Read response" should {
     sequential
