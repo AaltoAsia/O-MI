@@ -1,4 +1,4 @@
-<Objects>
+<Objects xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
     <Object>
 	<id>SmartHouse</id>
 	<InfoItem name="FrontDoor"><value>Closed</value></InfoItem>
