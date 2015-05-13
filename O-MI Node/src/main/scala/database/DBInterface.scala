@@ -211,7 +211,7 @@ trait DB {
         getSetHooks foreach { _(argument) }
 
         lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
-        add = add append (path, v.value, v.timestamp.getOrElse(newTimestamp))
+        add = add :+ (path, v.value, v.timestamp.getOrElse(newTimestamp))
     }
 
     // Add to latest values in a transaction
