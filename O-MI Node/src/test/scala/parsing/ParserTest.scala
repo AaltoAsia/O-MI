@@ -148,7 +148,7 @@ class ParserTest extends Specification {
 
   def e1 = {
     val temp = OmiParser.parse("incorrect xml")
-    temp should be equalTo Left(Seq(ParseError("Invalid XML, schema failure: Content is not allowed in prolog.")))
+    temp should be equalTo Left(Seq(ParseError("OmiParser: Invalid XML")))
 
   }
 
@@ -158,19 +158,18 @@ class ParserTest extends Specification {
   def e2 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "pmi:omiEnvelope"))
     temp.isLeft === true
-    temp match {
-      case Left(x) => x.head.msg must startWith("Invalid XML, schema failure: The prefix \"pmi\" for")
-    }
+    temp.left.get.head.msg must startWith("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for")
+
+    
 
   }
 
   def e3 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:omiEnvelope", "omi:Envelope"))
     temp.isLeft === true
-    temp match { 
-      case Left(x) => x.head.msg must endWith(
+    temp.left.get.head.msg must endWith(
       "Cannot find the declaration of element 'omi:Envelope'.")
-    }
+    
 
   }
 
@@ -180,9 +179,8 @@ class ParserTest extends Specification {
          </omi:omiEnvelope>
       """)
     temp.isLeft === true
-    temp match {
-      case Left(x) => x.head.msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-    }
+    temp.left.get.head.msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+    
 //    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
@@ -190,9 +188,8 @@ class ParserTest extends Specification {
   def e5 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl="""""))
     temp.isLeft === true
-    temp match {
-      case Left(x) => x.head.msg must endWith("'' is not a valid value for 'double'.")
-    }
+    temp.left.get.head.msg must endWith("'' is not a valid value for 'double'.")
+    
 //    temp.head.asInstanceOf[ParseError].msg must endWith("'' is not a valid value for 'double'.")
 
   }
@@ -200,16 +197,15 @@ class ParserTest extends Specification {
   def e6 = {
     val temp = OmiParser.parse(omi_response_test_file.replace("omi:response", "omi:respnse"))
     temp.isLeft === true
-    temp match{
-      case Left(x) => x.head.msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-    }
+    temp.left.get.head.msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+    
 //    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
   def e100 = {
     OmiParser.parse(omi_write_test_file) should be equalTo Right(List(
-      WriteRequest(10, OdfObjects(), Some("http://testing.test"))))
+      WriteRequest(10, OdfObjects(Seq(), Some("test")), Some("http://testing.test"))))
     //      List(
     //      Write("10", List(
     //        OdfObject(Seq("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
@@ -226,9 +222,8 @@ class ParserTest extends Specification {
   def e101 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("""omi:write msgformat="odf"""", "omi:write"))
     temp.isLeft === true
-    temp match {
-      case Left(x) => x should be equalTo Seq(ParseError("No msgformat parameter found in write."))
-    }
+    temp.left.get should be equalTo Seq(ParseError("OmiParser: Missing msgformat attribute"))
+    
 //    temp.head should be equalTo (ParseError("No msgformat parameter found in write."))
 
   }
@@ -241,9 +236,8 @@ class ParserTest extends Specification {
   def e103 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("omi:msg", "omi:msn"))
     temp.isLeft === true
-    temp match {
-      case Left(x) => x should be equalTo Seq(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
-    }
+    temp.left.get should be equalTo Seq(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
+    
 //    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
   }
 
@@ -257,10 +251,9 @@ class ParserTest extends Specification {
   </omi:write>
 </omi:omiEnvelope>
 """)
-temp.isLeft === true
-temp match{
-      case Left(x) => x.head should be equalTo ParseError("No Objects child found in msg.")
-    }
+//temp.isLeft === true
+temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
+    
 //    temp.head should be equalTo (ParseError("No Objects child found in msg."))
 
   }

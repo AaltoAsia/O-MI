@@ -316,14 +316,14 @@ object SQLiteTest extends Specification {
      db.startBuffering(Path("path/to/setmany/test1"))
      val testdata:List[(Path, OdfValue)] = {
        List(
-         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1001)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1002)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1003)))),
-         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1004)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1005)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1006)))),
-         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1007)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1008)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1009)))),
-         ("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1010)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1011)))),("path/to/setmany/test1",OdfValue("val1", Some(new Timestamp(1012)))),
-         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1013)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1014)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1015)))),
-         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1016)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1017)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1018)))),
-         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1019)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1020)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1021)))),
-         ("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1022)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1023)))),("path/to/setmany/test2",OdfValue("val1", Some(new Timestamp(1024))))
+         (Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1001)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1002)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1003)))),
+         (Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1004)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1005)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1006)))),
+         (Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1007)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1008)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1009)))),
+         (Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1010)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1011)))),(Path("path/to/setmany/test1"),OdfValue("val1", "", Some(new Timestamp(1012)))),
+         (Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1013)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1014)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1015)))),
+         (Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1016)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1017)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1018)))),
+         (Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1019)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1020)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1021)))),
+         (Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1022)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1023)))),(Path("path/to/setmany/test2"),OdfValue("val1", "", Some(new Timestamp(1024))))
          )}
      db.setMany(testdata.map(n=> (Path(n._1), n._2)))
      db.getNBetween(Path("path/to/setmany/test1"), None, None,None, None).length shouldEqual 12
