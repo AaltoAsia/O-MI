@@ -193,30 +193,41 @@ trait DB {
     val qry = meta.filter(_.path === path)
     runSync(qry.delete)
   }
+
+
   /**
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(Path, OdfValue)]) = {
-    var path = Path("")
-    var len = 0
-    var add = Seq[(Path,String,Timestamp)]()
+  def setMany(data: List[(Path, OdfValue)]): Unit = {
+    var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
+
+    // Reformat data and add missing timestamps
     data.foreach {
       case (path: Path, v: OdfValue) =>
+
          // Call hooks
         val argument = Seq(path)
         getSetHooks foreach { _(argument) }
-        add = add ++ Seq((path, v.value, v.timestamp.getOrElse(new Timestamp(new java.util.Date().getTime))))
+
+        lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
+        add = add append (path, v.value, v.timestamp.getOrElse(newTimestamp))
     }
+
+    // Add to latest values in a transaction
     runSync((latestValues ++= add).transactionally)
-    var OnlyPaths = data.map(_._1).distinct
-    OnlyPaths foreach{p =>
-        path = Path(p)
-        var pathQuery = latestValues.filter(_.path === path)
-        len = runSync(pathQuery.result).length
+
+    // Add missing hierarchy and remove excess buffering
+    var onlyPaths = data.map(_._1).distinct
+    onlyPaths foreach{p =>
+        val path = Path(p)
+
+        var pathQuery = objects.filter(_.path === path)
+        val len = runSync(pathQuery.result).length
         if (len == 0) {
           addObjects(path)
         }
+
         var buffering = runSync(buffered.filter(_.path === path).result).length > 0
         if (!buffering) {
           removeExcess(path)
