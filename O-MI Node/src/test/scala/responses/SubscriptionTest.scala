@@ -17,10 +17,10 @@ import java.util.TimeZone
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
-import testHelpers.BeforeAll
+import testHelpers.BeforeAfterAll
 import scala.concurrent.{ Await, Future }
 
-class SubscriptionTest extends Specification with BeforeAll {
+class SubscriptionTest extends Specification with BeforeAfterAll {
   sequential
 
   implicit val dbConnection = new TestDB("subscription-response-test")
@@ -73,6 +73,9 @@ class SubscriptionTest extends Specification with BeforeAll {
     //  val parserlistcallback = OmiParser.parse(simpletestfilecallback)
 
     //  val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[SubscriptionRequest])
+  }
+  def afterAll ={
+    dbConnection.destroy()
   }
 
   "Subscription response" should {

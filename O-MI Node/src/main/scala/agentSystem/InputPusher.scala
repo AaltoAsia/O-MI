@@ -10,57 +10,6 @@ import java.lang.Iterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
-
-/** Trait for pushing data from sensors to db.
-  *
-  */
-
-//trait InputPusher {
-  /** Function for handling sequences of OdfObject.
-    *
-    */
-  //def handleObjects( objs: Iterable[OdfObject] ) : Unit
-  /** Function for handling sequences of OdfInfoItem.
-    *
-    */
-  //def handleInfoItems( infoitems: Iterable[OdfInfoItem]) : Unit  
-  /** Function for handling sequences of path and value pairs.
-    *
-    */
-  //def handlePathValuePairs( pairs: Iterable[(Path,OdfValue)] ): Unit
-  /** Function for handling sequences of path and MetaData pairs.
-    *
-    */
-  //def handlePathMetaDataPairs( pairs: Iterable[(Path,String)] ): Unit
-//}
-
-/*
-// XXX: FIXME: temp hack
-object InputPusher extends InputPusher {
-  def props() : Props = Props(new DBPusher(new SQLiteConnection))
-  var ipdb : Option[ActorRef] = None //system.actorOf(props, "input-pusher-for-db")
-  def handleObjects(objs: Iterable[OdfObject]) = { 
-    //new InputPusherForDB(new SQLiteConnection) handleObjects _
-    if(ipdb.nonEmpty)
-      ipdb.get ! HandleObjects(objs) 
-  }
-  def handleInfoItems(items: Iterable[OdfInfoItem]) = {
-    //new InputPusherForDB(new SQLiteConnection) handleInfoItems _
-    if(ipdb.nonEmpty)
-      ipdb.get ! HandleInfoItems(items) 
-  }
-  def handlePathValuePairs(pairs: Iterable[(Path,OdfValue)]) = {
-    //new InputPusherForDB(new SQLiteConnection) handlePathValuePairs _
-    if(ipdb.nonEmpty)
-      ipdb.get ! HandlePathValuePairs(pairs)
-  }
-  def handlePathMetaDataPairs(pairs: Iterable[(Path,String)]) = {
-    //new InputPusherForDB(new SQLiteConnection) handlePathMetaDataPairs _
-    if(ipdb.nonEmpty)
-      ipdb.get ! HandlePathMetaDataPairs(pairs)
-  }
-}*/
-
   case class HandleObjects(objs: Iterable[OdfObject])
   case class HandleInfoItems(items: Iterable[OdfInfoItem])
   case class HandlePathValuePairs(pairs: Iterable[(Path,OdfValue)])

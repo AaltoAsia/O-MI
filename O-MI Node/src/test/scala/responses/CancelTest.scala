@@ -16,12 +16,12 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._
-import testHelpers.BeforeAll
+import testHelpers.BeforeAfterAll
 
 class TestSubHandler(testdb: DB) extends SubscriptionHandler {
   override implicit val dbConnection = testdb
 }
-class CancelTest extends Specification with BeforeAll {
+class CancelTest extends Specification with BeforeAfterAll {
   sequential
 
   implicit val system = ActorSystem("on-core")
@@ -79,6 +79,10 @@ class CancelTest extends Specification with BeforeAll {
       dbConnection.saveSub(new DBSub(paths, 0, 1, None, Some(testtime)))
     }
   }
+  
+  def afterAll = {
+    testdb.destroy()
+  }
 
   "Cancel response" should {
     "Give correct XML when a single cancel is requested" in {
@@ -91,7 +95,7 @@ class CancelTest extends Specification with BeforeAll {
       val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
       resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when a cancel with multiple ids are requested" in {
@@ -103,7 +107,7 @@ class CancelTest extends Specification with BeforeAll {
       val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
       resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when cancels with multiple paths is requested (multiple ids)" in {
@@ -114,7 +118,7 @@ class CancelTest extends Specification with BeforeAll {
       val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
       resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give error XML when cancel is requested with non-existing id" in {
@@ -125,7 +129,7 @@ class CancelTest extends Specification with BeforeAll {
       val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
       resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when valid and invalid ids are mixed in cancel request" in {
@@ -136,7 +140,7 @@ class CancelTest extends Specification with BeforeAll {
       val resultXML = OMICancel.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])
 
       resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
   }
 }

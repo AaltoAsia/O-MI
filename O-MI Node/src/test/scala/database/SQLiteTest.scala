@@ -313,6 +313,7 @@ object SQLiteTest extends Specification {
      db.removeSub(id9)
    }
    "be able to add many values in one go" in{
+     db.clearDB()
      db.startBuffering(Path("path/to/setmany/test1"))
      val testdata:List[(Path, OdfValue)] = {
        List(

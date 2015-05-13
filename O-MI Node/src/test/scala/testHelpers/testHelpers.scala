@@ -7,10 +7,25 @@ import com.typesafe.config.ConfigFactory
 import org.specs2.specification.Scope
 
 trait BeforeAll extends Specification {
-  override def map(fs: =>Fragments) = 
+  override def map(fs: =>Fragments) ={
     Step(beforeAll) ^ fs
+  }
 
   protected def beforeAll()
+}
+trait AfterAll extends Specification {
+  override def map(fs: =>Fragments) ={
+    fs ^ Step(afterAll)
+  }
+    
+  protected def afterAll()
+}
+trait BeforeAfterAll extends Specification {
+  override def map(fs: => Fragments)={
+    Step(beforeAll) ^ fs ^ Step(afterAll)
+  }
+  protected def beforeAll()
+  protected def afterAll()
 }
 
 abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
