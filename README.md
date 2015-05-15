@@ -1,9 +1,9 @@
 Code-Gardeners
 ==============
 
-[![Coverage Status](https://coveralls.io/repos/SnowblindFatal/Code-Gardeners/badge.png?branch=development)](https://coveralls.io/r/SnowblindFatal/Code-Gardeners?branch=development)
-
-[![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=development)](https://travis-ci.org/SnowblindFatal/Code-Gardeners)
+[![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=development)](https://travis-ci.org/TK009/Code-Gardeners)
+[![Coverage Status](https://coveralls.io/repos/SnowblindFatal/Code-Gardeners/badge.png?branch=development)](https://coveralls.io/r/TK009/Code-Gardeners?branch=development)
+[![Codacy Badge](https://www.codacy.com/project/badge/a4c681fb3fef4d21bb561a1b160c6d07)](https://www.codacy.com/app/tkinnunen/Code-Gardeners)
 
 Software project course repository. Implementation of Internet of Things standards Open Messaging Interface and Open Data Format. 
 
