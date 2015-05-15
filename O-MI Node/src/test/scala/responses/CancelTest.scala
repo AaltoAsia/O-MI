@@ -17,6 +17,9 @@ import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._
 import testHelpers.BeforeAfterAll
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 class TestSubHandler(testdb: DB) extends SubscriptionHandler {
   override implicit val dbConnection = testdb

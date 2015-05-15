@@ -16,6 +16,9 @@ import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
 import testHelpers.BeforeAfterAll
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 class ReadTest extends Specification with BeforeAfterAll {
   implicit val dbConnection = new TestDB("read-test")

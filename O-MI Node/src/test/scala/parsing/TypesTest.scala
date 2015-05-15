@@ -6,6 +6,9 @@ import parsing.Types._
 import parsing.Types.Path._
 import parsing.Types.OmiTypes._
 import parsing.Types.OdfTypes._
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /* Test class for testing ODF Types */
 class TypesTest extends Specification {

@@ -19,9 +19,10 @@ import scala.xml.Utility.trim
 import scala.xml.XML
 import testHelpers.BeforeAfterAll
 import scala.concurrent.{ Await, Future }
+import scala.collection.mutable.Iterable
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.JavaConversions.iterableAsScalaterable
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 class SubscriptionTest extends Specification with BeforeAfterAll {
   sequential
