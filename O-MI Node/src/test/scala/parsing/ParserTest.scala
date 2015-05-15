@@ -599,7 +599,8 @@ class ParserTest extends Specification {
 
   }
   def e402 = {
-    val temp = OdfParser.parse("""<Object>
+    val temp = OdfParser.parse("""
+      <Object>
         <Object>
       <id>SmartHouse</id>
       <InfoItem name="PowerConsumption">
@@ -622,7 +623,7 @@ class ParserTest extends Specification {
   }
   def e403 = {
     val temp = OdfParser.parse("""
-    <Objects>
+    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
         <Object>
         <id></id>
         </Object>
@@ -633,7 +634,7 @@ class ParserTest extends Specification {
   }
   def e404 = {
     val temp = OdfParser.parse("""
-    <Objects>
+    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
         <Object>
         <id>SmartHouse</id>
         <InfoItem name="">

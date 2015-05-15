@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Objects>
+<Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
     <Object>
 	<id>SmartHouse</id>
 	<InfoItem name="PowerConsumption">

@@ -70,18 +70,19 @@ object OdfParser extends Parser[OdfParseResult] {
           OdfValue(
             value.value,
             value.typeValue,
-            value.dateTime match {
-              case None => value.unixTime match {
-                case None => None
-                case Some(seconds) => Some( new Timestamp(seconds/1000))
-              }
-              case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()))
-            }
+            timeSolver(value)
           )
         },
         None,
         if(item.MetaData.isEmpty) None
         else Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, "MetaData", xmlGen.defaultScope).toString) )
       ) 
+  }
+  private def timeSolver(value: ValueType ) = value.dateTime match {
+    case None => value.unixTime match {
+      case None => None
+      case Some(seconds) => Some( new Timestamp(seconds.toLong * 1000))
+    }
+    case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()))
   }
 }
