@@ -376,36 +376,38 @@ trait DB {
    * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
    */
   def get(path: Path): Option[DBItem] =
-    {
-      var result: Option[DBItem] = None
-        //search database for given path
-        val pathQuery = latestValues.filter(_.path === path)
-        //if path is found from latest values it must be Sensor otherwise check if it is an object
-        var qry = runSync(pathQuery.sortBy(_.timestamp).result)
-        var count = qry.length
-        if (count > 0) {
-          //path is sensor
-          //case class matching
-          val latest = qry.drop(count - 1)
-          latest.head match {
-            case (path: Path, value: String, time: java.sql.Timestamp) =>
-              result = Some(DBSensor(path, value, time))
-          }
-        } else {
-          var childs = getChilds(path)
-          //childs is empty only if given path does not exist or ends in sensor.
-          //But code here is never executed if path ends in sensor 
-          //therefore childs is only empty if given path doesn't exist
-          if (!childs.isEmpty) {
-            //path is an object
-            //create object and give it reference to its childs
-            var obj = DBObject(path)
-            obj.childs = childs
-            result = Some(obj)
-          }
-        }
-      result
+  {
+    //search database for given path
+    val pathQuery = latestValues.filter(_.path === path)
+    //if path is found from latest values it must be Sensor otherwise check if it is an object
+    val qry = runSync(pathQuery.sortBy(_.timestamp).result)
+    if (qry.length > 0) {
+      //path is sensor
+      //case class matching
+      qry.last match {
+        case (path: Path, value: String, time: java.sql.Timestamp) =>
+          return Some(DBSensor(path, value, time))
+      }
+    } else {
+      //LatestValues  only contains sensor values, so if empty either path doesn't exist or is object
+      val hierarchyQuery = objects.filter(_.path === path)
+      val hierQry = runSync(hierarchyQuery.result) 
+      //query is empty if no object is found in path
+      if(hierQry.nonEmpty){
+        var childs = getChilds(path)
+        //therefore childs is only empty if given path doesn't exist
+        //path is an object
+        //create object and give it reference to its childs
+        var obj = DBObject(path)
+
+        if (!childs.isEmpty) 
+          obj.childs = childs
+        
+        return Some(obj)
+      }
+      return None
     }
+  }
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
