@@ -12,10 +12,17 @@ Dependencies
 SQLite 
 
 
-Compiling
----------
+Compiling and packaging
+-----------------------
 
-1. Follow the instructions 1-4 in 'Setup development environment' below
+1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
+2. `sbt release`
+3. Result can be found in ./release/o-mi-node-0.1-SNAPSHOT.zip
+
+Compiling a jar
+---------------
+
+1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. `sbt one-jar`
 3. Result can be found in ./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar
 
@@ -27,19 +34,20 @@ Setup development environment
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI Node/` project directory
-5. You can
+5. You can (_optional step_)
     - `sbt compile`: compile the project
     - `sbt test`: run tests
     - `sbt run`: run the project or better:
     - `sbt re-start`:  run the project in background
     - `sbt re-stop`: close the background process
-    - `sbt clean coverage test`: generate test coverage 
+    - `sbt clean coverage test`: generate test coverage
 
+    _extra info:_
     - run any of above commands again when there is a file change by adding `~` in front, like `sbt ~re-start`
     - all commands above compiles the needed files that are not yet compiled
     - run many commands in sequence easier if you open sbt command line with `sbt`
 
-6. Create an Eclipse project with `sbt eclipse` and then you can import `Existing Projects into Workspace` from eclipse.
+6. (_optional step_) Create an Eclipse project with `sbt eclipse` and then you can File->import `Existing Projects into Workspace` from eclipse.
 
 Running
 -------
@@ -53,7 +61,11 @@ By default it has some example and demo agents.
 More Information in next section.
 
 Configuration
--------------
+=============
+
+Basic configuration
+-------------------
+
 File application.conf is the main connfiguration file that is read 
 at start. 
 
@@ -84,7 +96,11 @@ agent-system {
 For internal agents, configuration has Bootable's classname and Agent's
 configuration file pairs.
 
-NOTE: application.conf can also have a lot of Akka, Spray and SQLite specific settings:
+NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
+
+Library Config
+--------------
+
 - [Akka Actors](http://doc.akka.io/docs/akka/2.3.9/general/configuration.html)
 - [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
