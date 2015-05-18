@@ -22,8 +22,9 @@ object InternalAgentLoader{
   def props(): Props = Props(new InternalAgentLoader())
 }
 
-  case class ConfigUpdated()
 
+  case class ThreadException( agent: InternalAgent, exception: Exception)
+  case class ThreadInitialisationException( agent: InternalAgent, exception: Exception)
 /** AgentLoader loads agents from jars in deploy directory.
   * Supervise agents and startups bootables.
   *
@@ -44,7 +45,9 @@ class InternalAgentLoader  extends Actor with ActorLogging {
 
   //Settings for getting list of Bootables and configs from application.conf
   private val settings = Settings(context.system)
-  start
+  InternalAgent.setLoader(self)
+  InternalAgent.setLog(log)
+  start()
 
   /** Method for handling received messages.
     * Should handle:
@@ -53,12 +56,24 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     */
   def receive = {
     case "Start" => start
+    case ThreadException( agent: InternalAgent, exception: Exception ) =>
+      log.warning(s"InternalAgent caugth exception: $exception")
+      val agentInfo = agents.find{ info: Tuple2[String,Tuple2[InternalAgent,String]] => info._2._1 == agent}
+      if(agentInfo.isEmpty){
+         log.warning("Exception from not stored agent!:$agent.name")
+      } else {
+        log.warning(s"Trying to relaunch:" + agentInfo.get._1)
+        agents -= agentInfo.get._1
+        loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
+      }
+    case ThreadInitialisationException( agent: InternalAgent, exception: Exception) =>
+      log.warning(s"InternalAgent initialisation failed. $exception")
   }
 
   /** Load Bootables from jars in deploy directory and start AgentActors up.
     *
     */
-  def start = {
+  def start() = {
     val classnames = getClassnamesWithConfigPath
     classnames.foreach{
       case (classname: String, configPath: String) => 
