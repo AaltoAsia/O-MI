@@ -38,7 +38,7 @@ class OmiServiceSpec extends Specification
       dbConnection.clearDB()
 
       // Initialize the OmiService
-      Starter.init()
+      Boot.init()
     }
       
     "Data discovery, GET: OmiService" should {
@@ -82,7 +82,7 @@ class OmiServiceSpec extends Specification
         
       }
 
-      val settingsPath = "/" +Path(Starter.settings.settingsOdfPath).toString
+      val settingsPath = "/" +Path(Boot.settings.settingsOdfPath).toString
 
       // Somewhat overcomplicated test; Serves as an example for other tests
       "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" in {
