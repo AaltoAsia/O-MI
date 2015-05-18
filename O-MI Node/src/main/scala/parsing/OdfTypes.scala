@@ -13,7 +13,7 @@ object OdfTypes{
   sealed trait OdfElement
 
   case class OdfObjects(
-    objects:              Iterable[OdfObject] = seqAsJavaList(Seq.empty),
+    objects:              Iterable[OdfObject] = asJavaIterable(Seq.empty[OdfObject]),
     version:              Option[String] = None
   ) extends OdfElement
 
@@ -51,12 +51,12 @@ object OdfTypes{
   def getObjects( odf: OdfParseResult ) : Iterable[OdfObject] = 
     odf match{
       case Right(objs: OdfObjects) => objs.objects
-      case _ => seqAsJavaList(Seq.empty)
+      case _ => asJavaIterable(Seq.empty[OdfObject])
     }
   def getErrors( odf: OdfParseResult ) : Iterable[ParseError] = 
     odf match {
       case Left(pes: Iterable[ParseError]) => pes
-      case _ => seqAsJavaList(Seq.empty)
+      case _ => asJavaIterable(Seq.empty[ParseError])
     }
 
 }

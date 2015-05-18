@@ -56,7 +56,7 @@ case class ReadRequest(
 case class PollRequest(
   ttl: Double,
   callback: Option[ String ] = None,
-  requestIds: Iterable[ Int ] = seqAsJavaList(Seq.empty)
+  requestIds: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest
 
 case class SubscriptionRequest(
@@ -83,7 +83,7 @@ case class ResponseRequest(
 
 case class CancelRequest(
   ttl: Double,
-  requestId: Iterable[ Int ] = seqAsJavaList(Seq.empty)
+  requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest {
       def callback = None
     }
@@ -92,7 +92,7 @@ case class OmiResult(
   value: String,
   returnCode: String,
   description: Option[String] = None,
-  requestId: Iterable[ Int ] = seqAsJavaList(Seq.empty),
+  requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int]),
   odf: Option[OdfTypes.OdfObjects] = None
 )
 
@@ -105,6 +105,6 @@ case class OmiResult(
   def getErrors( omi: OmiParseResult ) : Iterable[ParseError] = 
     omi match{
       case Left( pes: Iterable[ParseError]) => pes
-      case _ => seqAsJavaList(Seq.empty)
+      case _ => asJavaIterable(Seq.empty[ParseError])
     }
 }
