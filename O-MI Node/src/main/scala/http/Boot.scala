@@ -1,8 +1,9 @@
 package http
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorSystem, Props, ActorRef}
 import akka.io.{IO, Tcp}
 import spray.can.Http
+//import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
@@ -16,80 +17,106 @@ import database._
 import xml._
 
 /**
- * Initialize functionality, seperated for testing purposes
+ * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
+ * seperated for testing purposes and for easier implementation of different starting methods (standalone, servlet)
  */
-object Starter {
+trait Starter {
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
 
+  /** Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]] */
   val settings = Settings(system)
   
-  /**
-   * Setup database and apply config parameters
-   */
+
+
+
+  /** Setup database and apply config [[settings]] */
   def init(): Unit = {
     database.setHistoryLength(settings.numLatestValues)
 
-    // Create test data
+    // Current time for odf values of the settings
     val date = new Date();
-    val testTime = new java.sql.Timestamp(date.getTime)
+    val currentTime = new java.sql.Timestamp(date.getTime)
 
-    //Peer/Usability testing
-    /*
-    val odf = OdfParser.parse( XML.loadFile("SmartHouse.xml").toString)
-    println(odf)
-    system.log.warning(odf.filter{o => o.isLeft}.map{o => o.left.get.msg}.mkString("\n"))
-    InputPusher.handleObjects(odf.filter{o => o.isRight}.map{o => o.right.get})
-    */
+    val dbConnection = new SQLiteConnection
 
-    val dbobject = new SQLiteConnection
-
-    // Save settings as sensors
+    // Save settings as sensors values
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
-    dbobject.set(new DBSensor(
-      Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, testTime))
+    dbConnection.set(new DBSensor(
+      Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, currentTime))
 
+    // Create input pusher actor for handling input
     InputPusher.ipdb = Some(system.actorOf(InputPusher.props,"input-pusher-for-db"))
-    // Fill subs
-    responses.OMISubscription.fillSubQueue()(dbobject)
-    // Clean old pollable subs
-    responses.OMISubscription.checkSubs()(dbobject)
+
+    // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
+    responses.OMISubscription.fillSubQueue()(dbConnection)
+    // Clean old pollable subs, TODO: join with SubscriptionHandler logic
+    responses.OMISubscription.checkSubs()(dbConnection)
   }
+
+
+
 
   /**
    * Start as stand-alone server.
    * Creates single Actors.
    * Binds to configured O-MI API port and agent interface port.
+   *
+   * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(): Unit = {
+  def start(): ActorRef = {
     val subHandler = system.actorOf(Props(classOf[SubscriptionHandler]), "subscription-handler")
 
-    // create and start our service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
-
-    // TODO: FIXME: Move to an optional agent module
     // create and start sensor data listener
-
+    // TODO: Maybe refactor to an internal agent!
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
     // send config update to (re)load agents
     agentLoader ! ConfigUpdated
 
+    // create omi service actor
+    val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
 
-    implicit val timeout = Timeout(5.seconds)
 
-    // start a new HTTP server on port 8080 with our service actor as the handler
-    IO(Http) ? Http.Bind(omiService, interface = settings.interface, port = settings.port)
+
+    implicit val timeoutForBind = Timeout(5.seconds)
+
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,
       new InetSocketAddress("localhost", settings.agentPort))
+
+    return omiService
+  }
+
+
+
+  /** start a new HTTP server on configured port with our service actor as the handler */
+  def bindHttp(service: ActorRef): Unit = {
+
+    implicit val timeoutForBind = Timeout(5.seconds)
+
+    IO(Http) ? Http.Bind(service, interface = settings.interface, port = settings.port)
   }
 }
+
+
 
 /**
  * Starting point of the stand-alone program
  */
-object Boot extends App {
-  Starter.init()
-  Starter.start()
+object Boot extends Starter {
+  def main(args: Array[String]) = {
+    init()
+    val serviceActor = start()
+    bindHttp(serviceActor)
+  }
+}
+
+
+/**
+ * Starting point of the servlet program
+ */
+class ServletBoot extends Starter {// with WebBoot {
+  init()
+  val serviceActor = start()
 }
