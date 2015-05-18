@@ -34,6 +34,7 @@ public abstract class InternalAgent extends Thread {
 	    
 	    shutdown();
 	    finish();
+	    return;
 	}
 	try{
 	    while(isRunning()){
@@ -45,9 +46,9 @@ public abstract class InternalAgent extends Thread {
 		loader.tell( new ThreadException(this, e), null);
 	    
 	    shutdown();
+	} finally {
 	    finish();
 	}
-	finish();
     }
 
     public final boolean isRunning(){

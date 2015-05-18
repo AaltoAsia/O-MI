@@ -12,6 +12,8 @@ import java.util.jar.JarFile
 import java.io.File
 import scala.concurrent._
 
+import java.util.Date
+import java.sql.Timestamp
 import java.nio.file.Paths
 import java.nio.file.StandardWatchEventKinds._
 
@@ -36,7 +38,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
 
   case class AgentInfo(name: String, configPath: String, thread: Thread)
   //Container for bootables
-  protected var agents : scala.collection.mutable.Map[String,(InternalAgent, String)] = Map.empty
+  protected var agents : scala.collection.mutable.Map[String,(InternalAgent, String, Timestamp)] = Map.empty
   //getter method to allow testing
   private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.
@@ -58,10 +60,11 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     case "Start" => start
     case ThreadException( agent: InternalAgent, exception: Exception ) =>
       log.warning(s"InternalAgent caugth exception: $exception")
-      val agentInfo = agents.find{ info: Tuple2[String,Tuple2[InternalAgent,String]] => info._2._1 == agent}
+      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[InternalAgent,String, Timestamp]] => info._2._1 == agent}
+      var date = new Date()
       if(agentInfo.isEmpty){
          log.warning("Exception from not stored agent!:$agent.name")
-      } else {
+       } else if(date.getTime - agentInfo.get._2._3.getTime > 300000 ) {
         log.warning(s"Trying to relaunch:" + agentInfo.get._1)
         agents -= agentInfo.get._1
         loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
@@ -100,7 +103,8 @@ class InternalAgentLoader  extends Actor with ActorLogging {
 
     val const = clazz.getConstructors()(0)
     val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
-    agents += Tuple2( classname, Tuple2( agent, configPath) )
+    val date = new Date()
+    agents += Tuple2( classname, Tuple3( agent, configPath, new Timestamp(date.getTime) ) )
     agent.start()
   }
 
@@ -139,7 +143,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
   /** Simple shutdown hook adder for AgentActors.
     *
     */
-  private def addShutdownHook(agents: Map[String, Tuple2[InternalAgent, String]]): Unit = {
+  private def addShutdownHook(agents: Map[String, Tuple3[InternalAgent, String, Timestamp]]): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run = {
         log.warning("Shutting down Akka...")
