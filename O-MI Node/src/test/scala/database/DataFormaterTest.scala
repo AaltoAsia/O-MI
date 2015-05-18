@@ -6,11 +6,15 @@ import java.sql.Timestamp
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
+import testHelpers.AfterAll
 
 import java.sql.Timestamp
 
-object DataFormaterTest extends Specification {
+object DataFormaterTest extends Specification with AfterAll{
   implicit val dbConnection = new TestDB("dataformatter-test")
+  def afterAll ={
+    dbConnection.destroy()
+  }
   "SDataFromater" should {
   sequential
   var timeNow = new java.util.Date().getTime

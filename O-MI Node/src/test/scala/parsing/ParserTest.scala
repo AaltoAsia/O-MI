@@ -9,6 +9,10 @@ import parsing.Types.OdfTypes._
 import parsing.Types.Path._
 import java.sql.Timestamp
 import scala.xml.Utility.trim
+//import java.lang.Iterable
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 /*
  * Test class for testing parsing parsing package
  * tests e1   - e99 are for testing OmiParser general methods
@@ -24,14 +28,117 @@ class ParserTest extends Specification {
   lazy val omi_response_test_file = Source.fromFile("src/test/resources/parsing/omi_response_test.xml").getLines.mkString("\n")
   lazy val omi_cancel_test_file = Source.fromFile("src/test/resources/parsing/omi_cancel_test.xml").getLines.mkString("\n")
   lazy val odf_test_file = Source.fromFile("src/test/resources/parsing/odf_test.xml").getLines.mkString("\n")
-  val write_response_odf = Seq(/*
+  val write_response_odf: OdfObjects = {
+    /*Right(
+      Iterable(
+        WriteRequest(
+          10.0, */ OdfObjects(
+      Iterable(
+        OdfObject(
+          Path("Objects/SmartHouse"), Iterable(
+            OdfInfoItem(
+              Path("Objects/SmartHouse/PowerConsumption"), Iterable(
+                OdfValue(
+                  "180", "xs:string", Some(
+                    Timestamp.valueOf("2014-12-18 15:34:52")))), None, None), OdfInfoItem(
+              Path("Objects/SmartHouse/Moisture"), Iterable(
+                OdfValue(
+                  "0.20", "xs:string", Some(
+                    new Timestamp(1418916892L * 1000)))), None, None)), Iterable(
+            OdfObject(
+              Path("Objects/SmartHouse/SmartFridge"), Iterable(
+                OdfInfoItem(
+                  Path("Objects/SmartHouse/SmartFridge/PowerConsumption"), Iterable(
+                    OdfValue(
+                      "56", "xs:string", None)), None, None)), Iterable(), None, None), OdfObject(
+              Path("Objects/SmartHouse/SmartOven"), Iterable(
+                OdfInfoItem(
+                  Path("Objects/SmartHouse/SmartOven/PowerOn"), Iterable(
+                    OdfValue(
+                      "1", "xs:string", Some(
+                        Timestamp.valueOf("2014-12-18 15:34:52")))), None, None)), Iterable(), None, None)), None, None), OdfObject(
+          Path("Objects/SmartCar"), Iterable(
+            OdfInfoItem(
+              Path("Objects/SmartCar/Fuel"), Iterable(
+                OdfValue(
+                  "30", "xs:string", Some(
+                    Timestamp.valueOf("2014-12-18 15:34:52")))), None, Some(
+                OdfMetaData(
+                  """<MetaData xmlns="omi.xsd" xmlns:tns0="odf.xsd" xmlns:tns="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><tns0:InfoItem name="Units"><tns0:value type="xs:String">Litre</tns0:value></tns0:InfoItem></MetaData>""")))), Iterable(), None, None), OdfObject(
+          Path("Objects/SmartCottage"), Iterable(), Iterable(
+            OdfObject(
+              Path("Objects/SmartCottage/Heater"), Iterable(), Iterable(), None, None), OdfObject(
+              Path("Objects/SmartCottage/Sauna"), Iterable(), Iterable(), None, None), OdfObject(
+              Path("Objects/SmartCottage/Weather"), Iterable(), Iterable(), None, None)), None, None)), None)
+  }
+  val readOdf: OdfObjects ={
+          OdfObjects(
+            Iterable(
+              OdfObject(
+                Path("Objects/SmartHouse"),
+                Iterable(
+                  OdfInfoItem(
+                    Path("Objects/SmartHouse/PowerConsumption"),
+                    Iterable(),
+                    None,
+                    None),
+                  OdfInfoItem(
+                    Path("Objects/SmartHouse/Moisture"),
+                    Iterable(),
+                    None,
+                    None)),
+                Iterable(
+                  OdfObject(
+                    Path("Objects/SmartHouse/SmartFridge"),
+                    Iterable(
+                      OdfInfoItem(
+                        Path("Objects/SmartHouse/SmartFridge/PowerConsumption"),
+                        Iterable(),
+                        None,
+                        None)),
+                    Iterable(),
+                    None,
+                    None),
+                  OdfObject(
+                    Path("Objects/SmartHouse/SmartOven"),
+                    Iterable(
+                      OdfInfoItem(
+                        Path("Objects/SmartHouse/SmartOven/PowerConsumption"),
+                        Iterable(),
+                        None,
+                        None)),
+                    Iterable(),
+                    None,
+                    None)),
+                None,
+                None),
+              OdfObject(
+                Path("Objects/SmartCar"),
+                Iterable(
+                  OdfInfoItem(
+                    Path("Objects/SmartCar/Fuel"),
+                    Iterable(),
+                    None,
+                    None)),
+                Iterable(),
+                None,
+                None),
+              OdfObject(
+                Path("Objects/SmartCottage"),
+                Iterable(),
+                Iterable(),
+                None,
+                None)),
+            None)
+  }
+  /*
     OdfObject(Path("Objects/SmartHouse"),
-      Seq(
+      Iterable(
         OdfObject(Path("Objects/SmartHouse/SmartFridge"),
-          Seq(),
-          Seq(
+          Iterable(),
+          Iterable(
             OdfInfoItem(Path("Objects/SmartHouse/SmartFridge/PowerConsumption"),
-              Seq(
+              Iterable(
                 TimedValue(
                   None,
                   "56"
@@ -41,10 +148,10 @@ class ParserTest extends Specification {
           )
         ),
         OdfObject(Path("Objects/SmartHouse/SmartOven"),
-          Seq(),
-          Seq(
+          Iterable(),
+          Iterable(
             OdfInfoItem(Path("Objects/SmartHouse/SmartOven/PowerOn"),
-              Seq(
+              Iterable(
                 TimedValue(
                   Some(Timestamp.valueOf("2014-12-18 15:34:52")),
                   "1"
@@ -53,9 +160,9 @@ class ParserTest extends Specification {
           )
         )
       ),
-      Seq(    
+      Iterable(    
         OdfInfoItem(Path("Objects/SmartHouse/PowerConsumption"),
-          Seq(
+          Iterable(
             TimedValue(
               Some(Timestamp.valueOf("2014-12-18 15:34:52")),
               "180"
@@ -63,7 +170,7 @@ class ParserTest extends Specification {
           )
         ),
         OdfInfoItem(Path("Objects/SmartHouse/Moisture"),
-          Seq(
+          Iterable(
             TimedValue(
               Some(new Timestamp(1418916892.toLong*1000)),
               "0.20"
@@ -73,10 +180,10 @@ class ParserTest extends Specification {
       )
     ),
     OdfObject(Path("Objects/SmartCar"),
-      Seq(),
-      Seq(
+      Iterable(),
+      Iterable(
         OdfInfoItem(Path("Objects/SmartCar/Fuel"),
-          Seq(
+          Iterable(
             TimedValue(
               Some(Timestamp.valueOf("2014-12-18 15:34:52")),
               "30")
@@ -93,15 +200,14 @@ class ParserTest extends Specification {
       )
     ),
     OdfObject(Path("Objects/SmartCottage"),
-      Seq(
-        OdfObject(Path("Objects/SmartCottage/Heater"), Seq(), Seq()),
-        OdfObject(Path("Objects/SmartCottage/Sauna"), Seq(), Seq()),
-        OdfObject(Path("Objects/SmartCottage/Weather"), Seq(), Seq())
+      Iterable(
+        OdfObject(Path("Objects/SmartCottage/Heater"), Iterable(), Iterable()),
+        OdfObject(Path("Objects/SmartCottage/Sauna"), Iterable(), Iterable()),
+        OdfObject(Path("Objects/SmartCottage/Weather"), Iterable(), Iterable())
       ),
-      Seq()
+      Iterable()
     )*/
-  )
-  
+
   def is = s2"""
   This is Specification to check the parsing functionality.
 
@@ -148,7 +254,7 @@ class ParserTest extends Specification {
 
   def e1 = {
     val temp = OmiParser.parse("incorrect xml")
-    temp should be equalTo Left(Seq(ParseError("OmiParser: Invalid XML")))
+    temp should be equalTo Left(Iterable(ParseError("OmiParser: Invalid XML")))
 
   }
 
@@ -160,8 +266,6 @@ class ParserTest extends Specification {
     temp.isLeft === true
     temp.left.get.head.msg must startWith("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for")
 
-    
-
   }
 
   def e3 = {
@@ -169,7 +273,6 @@ class ParserTest extends Specification {
     temp.isLeft === true
     temp.left.get.head.msg must endWith(
       "Cannot find the declaration of element 'omi:Envelope'.")
-    
 
   }
 
@@ -180,8 +283,8 @@ class ParserTest extends Specification {
       """)
     temp.isLeft === true
     temp.left.get.head.msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-    
-//    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+
+    //    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
@@ -189,8 +292,8 @@ class ParserTest extends Specification {
     val temp = OmiParser.parse(omi_read_test_file.replace("""ttl="10"""", """ttl="""""))
     temp.isLeft === true
     temp.left.get.head.msg must endWith("'' is not a valid value for 'double'.")
-    
-//    temp.head.asInstanceOf[ParseError].msg must endWith("'' is not a valid value for 'double'.")
+
+    //    temp.head.asInstanceOf[ParseError].msg must endWith("'' is not a valid value for 'double'.")
 
   }
 
@@ -198,17 +301,17 @@ class ParserTest extends Specification {
     val temp = OmiParser.parse(omi_response_test_file.replace("omi:response", "omi:respnse"))
     temp.isLeft === true
     temp.left.get.head.msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-    
-//    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+
+    //    temp.head.asInstanceOf[ParseError].msg must endWith("One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
 
   }
 
   def e100 = {
-    OmiParser.parse(omi_write_test_file) should be equalTo Right(List(
-      WriteRequest(10, OdfObjects(Seq(), Some("test")), Some("http://testing.test"))))
-    //      List(
-    //      Write("10", List(
-    //        OdfObject(Seq("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
+    OmiParser.parse(omi_write_test_file) should be equalTo Right(Iterable(WriteRequest(10.0, write_response_odf, Some("http://testing.test"))))
+    //    Right(Iterable(WriteRequest(10, OdfObjects(Iterable(), Some("test")), Some("http://testing.test"))))
+    //      Iterable(
+    //      Write("10", Iterable(
+    //        OdfObject(Iterable("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
     //        ODFNode("/Objects/SmartHouse/SmartOven/PowerOn", InfoItem, Some("1"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
     //        ODFNode("/Objects/SmartHouse/PowerConsumption", InfoItem, Some("180"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
     //        ODFNode("/Objects/SmartHouse/Moisture", InfoItem, Some("0.20"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
@@ -217,28 +320,28 @@ class ParserTest extends Specification {
     //        ODFNode("/Objects/SmartCottage/Sauna", NodeObject, Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
     //        ODFNode("/Objects/SmartCottage/Weather", NodeObject, Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")), Some( Timestamp.valueOf("2014-12-18 15:34:52.0")))),
     //        "test",
-    //        Seq()))
+    //        Iterable()))
   }
   def e101 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("""omi:write msgformat="odf"""", "omi:write"))
     temp.isLeft === true
-    temp.left.get should be equalTo Seq(ParseError("OmiParser: Missing msgformat attribute"))
-    
-//    temp.head should be equalTo (ParseError("No msgformat parameter found in write."))
+    temp.left.get.iterator().next() should be equalTo ParseError("OmiParser: Missing msgformat attribute.")
+
+    //    temp.head should be equalTo (ParseError("No msgformat parameter found in write."))
 
   }
 
-//  def e102 = {
-//    val temp = OmiParser.parse(omi_write_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-//    temp.head should be equalTo (ParseError("Unknown message format."))
-//  }
+  //  def e102 = {
+  //    val temp = OmiParser.parse(omi_write_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+  //    temp.head should be equalTo (ParseError("Unknown message format."))
+  //  }
 
   def e103 = {
     val temp = OmiParser.parse(omi_write_test_file.replace("omi:msg", "omi:msn"))
     temp.isLeft === true
-    temp.left.get should be equalTo Seq(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
-    
-//    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
+    temp.left.get.iterator().next() should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected.")
+
+    //    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected."))
   }
 
   def e104 = {
@@ -251,10 +354,10 @@ class ParserTest extends Specification {
   </omi:write>
 </omi:omiEnvelope>
 """)
-//temp.isLeft === true
-temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
-    
-//    temp.head should be equalTo (ParseError("No Objects child found in msg."))
+    temp.isLeft === true
+    temp.left.get.iterator().next() should be equalTo ParseError("No Objects child found in msg.")
+
+    //    temp.head should be equalTo (ParseError("No Objects child found in msg."))
 
   }
 
@@ -270,18 +373,25 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
   </omi:write>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Left(Seq(ParseError("No Objects to parse")))
+    temp.isRight === true
+    //    temp.right.get.iterator().next() match{
+    //      case WriteRequest(a,b,c) => println(a);println(b.getClass);println(b.eq(OdfObjects()))
+    //      case _ => println("WWWWWWWWWWWWWWWWWWWWWWWW\n\n\n")
+    //    }
+    temp.right.get.iterator().next() should be equalTo WriteRequest(10.0, OdfObjects())
 
   }
 
   def e106 = {
-    OmiParser.parse(omi_write_test_file.replace("callback=\"http://testing.test\" ", "")) should be equalTo Right(List(
-      WriteRequest(10, OdfObjects())))
+    OmiParser.parse(omi_write_test_file.replace("callback=\"http://testing.test\" ", "")) should be equalTo Right(Iterable(WriteRequest(10.0, write_response_odf)))
   }
 
   def e200 = {
-    OmiParser.parse(omi_response_test_file) should be equalTo Right(List(
-      ResponseRequest(List(OmiResult("", "200")))))
+    val temp = OmiParser.parse(omi_response_test_file)
+    temp.isRight === true
+    temp.right.get.iterator().next() === ResponseRequest(Iterable(OmiResult("", "200", None, seqAsJavaList(Seq.empty), Some(write_response_odf))))
+    //    OmiParser.parse(omi_response_test_file) should be equalTo Right(Iterable(
+    //      ResponseRequest(Iterable(OmiResult("","200", None, seqAsJavaList(Seq.empty),Some(write_response_odf))))))
   }
 
   /*
@@ -293,11 +403,11 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
   }
   */
 
-//  def e202 = {
-//    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-//    temp.head should be equalTo (ParseError("Unknown message format."))
-//
-//  }
+  //  def e202 = {
+  //    val temp = OmiParser.parse(omi_response_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+  //    temp.head should be equalTo (ParseError("Unknown message format."))
+  //
+  //  }
 
   //  def e203 = {
   //    OmiParser.parse(omi_response_test_file.replace("omi:msg", "omi:msn")) match {
@@ -319,13 +429,15 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
   </omi:response>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Left(Seq(ParseError("No Objects node in msg, possible but not implemented")))
+    temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
 
   }
 
   def e205 = {
     val temp = OmiParser.parse(omi_response_test_file.replace("<omi:return returnCode=\"200\" />", ""))
-    temp should be equalTo Left(Seq(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msg'. One of '{\"omi.xsd\":return}' is expected.")))
+    temp.isLeft === true
+
+    temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msg'. One of '{\"omi.xsd\":return}' is expected.")
 
   }
 
@@ -344,104 +456,114 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
   </omi:response>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Left(Seq(ParseError("No Objects to parse")))
+    temp.isRight === true
+
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None, Iterable(), Some(OdfObjects(Iterable(), None)))))
 
   }
 
   def e207 = {
     val temp = OmiParser.parse(omi_response_test_file.replace("returnCode=\"200\"", ""))
-    temp should be equalTo Left(Seq(ParseError("Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'.")))
+    temp.isLeft === true
+    temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'.")
   }
 
   def e300 = {
-    OmiParser.parse(omi_read_test_file) should be equalTo Right(Seq(ResponseRequest(List(OmiResult("","")))))
-//        List(
-//      OneTimeRead(10, List(
-//        OdfObject(
-//          List("Objects", "SmartHouse"),
-//          List(
-//            OdfObject(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "SmartFridge"),
-//              List(),
-//              List(
-//                OdfInfoItem(
-//                  List(
-//                    "Objects",
-//                    "SmartHouse",
-//                    "SmartFridge",
-//                    "PowerConsumption"),
-//                  List()
-//                ))),
-//            OdfObject(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "SmartOven"),
-//              List(),
-//              List(
-//                OdfInfoItem(
-//                  List(
-//                    "Objects",
-//                    "SmartHouse",
-//                    "SmartOven",
-//                    "PowerConsumption"),
-//                  List()
-//                )))),
-//          List(
-//            OdfInfoItem(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "PowerConsumption"),
-//              List()
-//            ),
-//            OdfInfoItem(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "Moisture"),
-//              List()
-//            ))),
-//        OdfObject(
-//          List(
-//            "Objects",
-//            "SmartCar"),
-//          List(),
-//          List(
-//            OdfInfoItem(
-//              List(
-//                "Objects",
-//                "SmartCar",
-//                "Fuel"),
-//              List()
-//            ))),
-//        OdfObject(
-//          List(
-//            "Objects",
-//            "SmartCottage"),
-//          List(),
-//          List()))
-//      )))
- }
+    val temp = OmiParser.parse(omi_read_test_file) // should be equalTo Right(Iterable(ResponseRequest(Iterable(OmiResult("", "")))))
+   
+    
+
+    temp.isRight === true
+    temp.right.get.head should be equalTo ReadRequest(10.0,readOdf)
+    
+    //        Iterable(
+    //      OneTimeRead(10, Iterable(
+    //        OdfObject(
+    //          Iterable("Objects", "SmartHouse"),
+    //          Iterable(
+    //            OdfObject(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "SmartFridge"),
+    //              Iterable(),
+    //              Iterable(
+    //                OdfInfoItem(
+    //                  Iterable(
+    //                    "Objects",
+    //                    "SmartHouse",
+    //                    "SmartFridge",
+    //                    "PowerConsumption"),
+    //                  Iterable()
+    //                ))),
+    //            OdfObject(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "SmartOven"),
+    //              Iterable(),
+    //              Iterable(
+    //                OdfInfoItem(
+    //                  Iterable(
+    //                    "Objects",
+    //                    "SmartHouse",
+    //                    "SmartOven",
+    //                    "PowerConsumption"),
+    //                  Iterable()
+    //                )))),
+    //          Iterable(
+    //            OdfInfoItem(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "PowerConsumption"),
+    //              Iterable()
+    //            ),
+    //            OdfInfoItem(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "Moisture"),
+    //              Iterable()
+    //            ))),
+    //        OdfObject(
+    //          Iterable(
+    //            "Objects",
+    //            "SmartCar"),
+    //          Iterable(),
+    //          Iterable(
+    //            OdfInfoItem(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartCar",
+    //                "Fuel"),
+    //              Iterable()
+    //            ))),
+    //        OdfObject(
+    //          Iterable(
+    //            "Objects",
+    //            "SmartCottage"),
+    //          Iterable(),
+    //          Iterable()))
+    //      )))
+  }
 
   def e301 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("""omi:read msgformat="odf"""", "omi:read"))
-    temp should be equalTo Left(Seq(ParseError("No msgformat parameter found in read.")))
+    temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
 
   }
 
-//  def e302 = {
-//    val temp = OmiParser.parse(omi_read_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
-//    temp.head should be equalTo (ParseError("Unknown message format."))
-//
-//  }
+  //  def e302 = {
+  //    val temp = OmiParser.parse(omi_read_test_file.replace("""msgformat="odf"""", """msgformat="pdf""""))
+  //    temp.head should be equalTo (ParseError("Unknown message format."))
+  //
+  //  }
 
   def e303 = {
     val temp = OmiParser.parse(omi_read_test_file.replace("omi:msg", "omi:msn"))
-    temp should be equalTo Left(Seq(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected.")))
+    temp.isLeft === true
+    temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestId, \"omi.xsd\":msg}' is expected.")
 
   }
 
@@ -455,7 +577,7 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
   </omi:read>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
+    temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
 
   }
 
@@ -471,91 +593,99 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
   </omi:read>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Right(Seq(ReadRequest(10.0,OdfObjects())))
+    temp should be equalTo Right(Iterable(ReadRequest(10.0, OdfObjects())))
 
   }
 
   def e306 = {
-    OmiParser.parse(omi_subscription_test_file) should be equalTo Right(List(
-        SubscriptionRequest(1,2,OdfObjects())))
-//      Subscription(10, 40, List(
-//        OdfObject(
-//          List("Objects", "SmartHouse"),
-//          List(
-//            OdfObject(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "SmartFridge"),
-//              List(),
-//              List(
-//                OdfInfoItem(
-//                  List(
-//                    "Objects",
-//                    "SmartHouse",
-//                    "SmartFridge",
-//                    "PowerConsumption"),
-//                  List()
-//                ))),
-//            OdfObject(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "SmartOven"),
-//              List(),
-//              List(
-//                OdfInfoItem(
-//                  List(
-//                    "Objects",
-//                    "SmartHouse",
-//                    "SmartOven",
-//                    "PowerConsumption"),
-//                  List()
-//                )))),
-//          List(
-//            OdfInfoItem(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "PowerConsumption"),
-//              List()
-//            ),
-//            OdfInfoItem(
-//              List(
-//                "Objects",
-//                "SmartHouse",
-//                "Moisture"),
-//              List()
-//            ))),
-//        OdfObject(
-//          List(
-//            "Objects",
-//            "SmartCar"),
-//          List(),
-//          List(
-//            OdfInfoItem(
-//              List(
-//                "Objects",
-//                "SmartCar",
-//                "Fuel"),
-//              List()
-//            ))),
-//        OdfObject(
-//          List(
-//            "Objects",
-//            "SmartCottage"),
-//          List(),
-//          List())),
-//      Some("http://testing.test")
-//      )))
+    val temp = OmiParser.parse(omi_subscription_test_file)
+    temp.isRight === true
+    temp.right.get.head should be equalTo SubscriptionRequest(10.0,40, readOdf)
+//      SubscriptionRequest(1, 2, read)))
+    //      Subscription(10, 40, Iterable(
+    //        OdfObject(
+    //          Iterable("Objects", "SmartHouse"),
+    //          Iterable(
+    //            OdfObject(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "SmartFridge"),
+    //              Iterable(),
+    //              Iterable(
+    //                OdfInfoItem(
+    //                  Iterable(
+    //                    "Objects",
+    //                    "SmartHouse",
+    //                    "SmartFridge",
+    //                    "PowerConsumption"),
+    //                  Iterable()
+    //                ))),
+    //            OdfObject(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "SmartOven"),
+    //              Iterable(),
+    //              Iterable(
+    //                OdfInfoItem(
+    //                  Iterable(
+    //                    "Objects",
+    //                    "SmartHouse",
+    //                    "SmartOven",
+    //                    "PowerConsumption"),
+    //                  Iterable()
+    //                )))),
+    //          Iterable(
+    //            OdfInfoItem(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "PowerConsumption"),
+    //              Iterable()
+    //            ),
+    //            OdfInfoItem(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartHouse",
+    //                "Moisture"),
+    //              Iterable()
+    //            ))),
+    //        OdfObject(
+    //          Iterable(
+    //            "Objects",
+    //            "SmartCar"),
+    //          Iterable(),
+    //          Iterable(
+    //            OdfInfoItem(
+    //              Iterable(
+    //                "Objects",
+    //                "SmartCar",
+    //                "Fuel"),
+    //              Iterable()
+    //            ))),
+    //        OdfObject(
+    //          Iterable(
+    //            "Objects",
+    //            "SmartCottage"),
+    //          Iterable(),
+    //          Iterable())),
+    //      Some("http://testing.test")
+    //      )))
   }
+  def e400 = {
+    OdfParser.parse(odf_test_file) should be equalTo Left(Iterable(ParseError("No name parameter found in InfoItem.")))
+    //    OdfParser.parse(odf_test_file)  should be equalTo( write_response_odf.map( o => Right(o) ))
+  }
+  
   def e401 = {
     val temp = OdfParser.parse("incorrect xml")
-    temp should be equalTo Left(Seq(ParseError("Invalid XML, schema failure: Content is not allowed in prolog.")))
+    temp should be equalTo Left(Iterable(ParseError("Invalid XML")))
 
   }
   def e402 = {
-    val temp = OdfParser.parse("""<Object>
+    val temp = OdfParser.parse("""
+      <Object>
         <Object>
       <id>SmartHouse</id>
       <InfoItem name="PowerConsumption">
@@ -573,23 +703,23 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
         </Object>
     </Object>
 """)
-    temp should be equalTo Left(Seq(ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'Object'. One of '{id}' is expected.")))
+    temp should be equalTo Left(Iterable(ParseError("OdfParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'Object'. One of '{id}' is expected.")))
 
   }
   def e403 = {
     val temp = OdfParser.parse("""
-    <Objects>
+    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
         <Object>
         <id></id>
         </Object>
     </Objects>
 """)
-    temp should be equalTo Left(Seq(ParseError("id's value not found in Object.")))
+    temp should be equalTo Left(Iterable(ParseError("OdfParser: id's value not found in Object.")))
 
   }
   def e404 = {
     val temp = OdfParser.parse("""
-    <Objects>
+    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
         <Object>
         <id>SmartHouse</id>
         <InfoItem name="">
@@ -597,18 +727,16 @@ temp should be equalTo Left(Seq(ParseError("No Objects child found in msg.")))
         </Object>
     </Objects>
 """)
-    temp should be equalTo Left(Seq(ParseError("No name parameter found in InfoItem.")))
+    temp should be equalTo Left(Iterable(ParseError("No name parameter found in InfoItem.")))
 
   }
-  def e400 = {
-    OdfParser.parse(odf_test_file) should be equalTo Left(Seq(ParseError("No name parameter found in InfoItem.")))
-//    OdfParser.parse(odf_test_file)  should be equalTo( write_response_odf.map( o => Right(o) ))
-  }
+  
 
   def e500 = {
-    OmiParser.parse(omi_cancel_test_file)  should be equalTo Right(Seq(CancelRequest(10, Seq(123,456))))
+    val temp = OmiParser.parse(omi_cancel_test_file)
+    temp.isRight === true
+    temp.right.get.head should be equalTo CancelRequest(10, Iterable(123, 456))
   }
-
 
 }
 

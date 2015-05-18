@@ -4,6 +4,10 @@ package Types
 import OdfTypes._
 
 import java.sql.Timestamp
+import java.lang.Iterable
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.seqAsJavaList
 
 object OmiTypes{
 
@@ -52,7 +56,7 @@ case class ReadRequest(
 case class PollRequest(
   ttl: Double,
   callback: Option[ String ] = None,
-  requestIds: Seq[ Int ] = Seq.empty
+  requestIds: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest
 
 case class SubscriptionRequest(
@@ -71,7 +75,7 @@ case class WriteRequest(
 ) extends OmiRequest
 
 case class ResponseRequest(
-  results: Seq[OmiResult]  
+  results: Iterable[OmiResult]  
 ) extends OmiRequest {
       def callback = None
       def ttl = 0
@@ -79,7 +83,7 @@ case class ResponseRequest(
 
 case class CancelRequest(
   ttl: Double,
-  requestId: Seq[ Int ] = Seq.empty
+  requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest {
       def callback = None
     }
@@ -88,19 +92,19 @@ case class OmiResult(
   value: String,
   returnCode: String,
   description: Option[String] = None,
-  requestId: Seq[ Int ] = Seq.empty,
+  requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int]),
   odf: Option[OdfTypes.OdfObjects] = None
 )
 
-  type  OmiParseResult = Either[Seq[ParseError], Seq[OmiRequest]]
-  def getRequests( omi: OmiParseResult ) : Seq[OmiRequest] = 
+  type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
+  def getRequests( omi: OmiParseResult ) : Iterable[OmiRequest] = 
     omi match{
-      case Right(requests: Seq[OmiRequest]) => requests
-      case _ => Seq.empty
+      case Right(requests: Iterable[OmiRequest]) => requests
+      case _ => seqAsJavaList(Seq.empty)
     }
-  def getErrors( omi: OmiParseResult ) : Seq[ParseError] = 
+  def getErrors( omi: OmiParseResult ) : Iterable[ParseError] = 
     omi match{
-      case Left( pes: Seq[ParseError]) => pes
-      case _ => Seq.empty
+      case Left( pes: Iterable[ParseError]) => pes
+      case _ => asJavaIterable(Seq.empty[ParseError])
     }
 }

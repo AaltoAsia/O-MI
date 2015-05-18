@@ -14,6 +14,7 @@ import parsing.Types.OmiTypes._
 import database._
 
 import xml._
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
  * Actor that handles incoming http messages

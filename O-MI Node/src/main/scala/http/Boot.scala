@@ -46,7 +46,7 @@ trait Starter {
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, currentTime))
 
     // Create input pusher actor for handling input
-    InputPusher.ipdb = Some(system.actorOf(InputPusher.props,"input-pusher-for-db"))
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(new SQLiteConnection)),"input-pusher-for-db")
 
     // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
     responses.OMISubscription.fillSubQueue()(dbConnection)

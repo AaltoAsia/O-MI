@@ -10,6 +10,9 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration.Duration
 import testHelpers.Actors
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 class SubscriptionHandlerActorTest extends Specification {
   sequential

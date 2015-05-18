@@ -2,27 +2,32 @@ package parsing
 package Types
 
 import java.sql.Timestamp
+import java.lang.Iterable
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+
 
 object OdfTypes{
 
   sealed trait OdfElement
 
   case class OdfObjects(
-    objects:              Seq[OdfObject] = Seq.empty,
+    objects:              Iterable[OdfObject] = asJavaIterable(Seq.empty[OdfObject]),
     version:              Option[String] = None
   ) extends OdfElement
 
   case class OdfObject(
     path:                 Path,
-    infoItems:            Seq[OdfInfoItem],
-    objects:              Seq[OdfObject],
+    infoItems:            Iterable[OdfInfoItem],
+    objects:              Iterable[OdfObject],
     desctription:         Option[OdfDesctription] = None,
     typeValue:            Option[String] = None
   ) extends OdfElement
 
   case class OdfInfoItem(
     path:                 Types.Path,
-    values:               Seq[OdfValue],
+    values:               Iterable[OdfValue],
     desctription:         Option[OdfDesctription] = None,
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement
@@ -42,16 +47,16 @@ object OdfTypes{
     lang:                 Option[String]
   ) extends OdfElement
   
-  type  OdfParseResult = Either[Seq[ParseError], OdfObjects]
-  def getObjects( odf: OdfParseResult ) : Seq[OdfObject] = 
+  type  OdfParseResult = Either[Iterable[ParseError], OdfObjects]
+  def getObjects( odf: OdfParseResult ) : Iterable[OdfObject] = 
     odf match{
       case Right(objs: OdfObjects) => objs.objects
-      case _ => Seq.empty
+      case _ => asJavaIterable(Seq.empty[OdfObject])
     }
-  def getErrors( odf: OdfParseResult ) : Seq[ParseError] = 
+  def getErrors( odf: OdfParseResult ) : Iterable[ParseError] = 
     odf match {
-      case Left(pes: Seq[ParseError]) => pes
-      case _ => Seq.empty
+      case Left(pes: Iterable[ParseError]) => pes
+      case _ => asJavaIterable(Seq.empty[ParseError])
     }
 
 }

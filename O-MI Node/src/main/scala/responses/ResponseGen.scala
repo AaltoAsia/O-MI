@@ -8,6 +8,7 @@ import scala.xml._
 import scala.util.{Try, Success, Failure}
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Await, ExecutionContext, TimeoutException}
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /** Responses should inherit this and implement e.g. a class that takes other
  * paramaters through class constructor arguments. This trait leaves genMsg def

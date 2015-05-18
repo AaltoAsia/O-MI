@@ -25,6 +25,7 @@ import scala.collection.mutable.{ Map, HashMap }
 import xml._
 import scala.concurrent.duration._
 import scala.concurrent._
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 // MESSAGES
 case object HandleIntervals

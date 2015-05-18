@@ -15,9 +15,12 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import scala.xml.Utility.trim
 import scala.xml.XML
-import testHelpers.BeforeAll
+import testHelpers.BeforeAfterAll
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
-class ReadTest extends Specification with BeforeAll {
+class ReadTest extends Specification with BeforeAfterAll {
   implicit val dbConnection = new TestDB("read-test")
   val ReadResponseGen = new ReadResponseGen
 
@@ -67,6 +70,9 @@ class ReadTest extends Specification with BeforeAll {
         """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
 
 }
+  def afterAll ={
+    dbConnection.destroy()
+  }
 
   "Read response" should {
     sequential
@@ -81,7 +87,7 @@ class ReadTest extends Specification with BeforeAll {
         
         // ==/ is same as must beEqualToIgnoringSpace
         resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[ResponseRequest]
+        OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give a history of values when begin and end is used" in {
@@ -92,7 +98,7 @@ class ReadTest extends Specification with BeforeAll {
         val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         
         resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[OmiRequest]
+        OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give object and its children when asked for" in {
@@ -105,13 +111,16 @@ class ReadTest extends Specification with BeforeAll {
         //println(resultXML)
 
         resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-        OmiParser.parse(resultXML.toString()) should beAnInstanceOf[OmiRequest]
+        OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
         lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
+        println("\n\n\n")
+        println(parserlist)
+        println("\n\n\n")
         parserlist.isRight === true
         val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         

@@ -22,7 +22,7 @@ case class MetaData(InfoItem: InfoItemType*)
 case class InfoItemType(otherName: Seq[QlmID] = Nil,
   description: Option[Description] = None,
   MetaData: Option[MetaData] = None,
-  value: Seq[ValueType] = Nil,
+  value: Iterable[ValueType] = Nil,
   name: String,
   attributes: Map[String, scalaxb.DataRecord[Any]])
 

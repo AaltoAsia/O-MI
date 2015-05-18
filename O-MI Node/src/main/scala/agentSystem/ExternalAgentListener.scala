@@ -15,6 +15,8 @@ import database.SQLiteConnection
 import parsing.Types._
 import parsing.Types.Path._
 import parsing.Types.OdfTypes._
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 /** AgentListener handles connections from agents.
   */
@@ -103,7 +105,7 @@ class ExternalAgentHandler(
    * @param o Sequence of OdfObjects to process
    * @return Sequence of OdfInfoitems(sensors)
    */
-  def getInfoItems(o:Seq[OdfObject]) : Seq[OdfInfoItem] = { 
+  def getInfoItems(o:Iterable[OdfObject]) : Iterable[OdfInfoItem] = { 
     o.flatten{ o =>
     o.infoItems ++ getInfoItems(o.objects)
   }   

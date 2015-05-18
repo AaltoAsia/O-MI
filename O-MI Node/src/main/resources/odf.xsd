@@ -1,46 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited by Kary Främling (Aalto University) -->
 <!-- Root Data Model Schema -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
-    attributeFormDefault="unqualified" xmlns="odf.xsd" targetNamespace="odf.xsd">
-    <xs:element name="Object" type="ObjectType"/>
-    <xs:element name="InfoItem" type="InfoItemType"/>
-    <xs:element name="value" type="valueType"/>
-    <xs:element name="Objects" type="ObjectsType">
-	<xs:annotation>
-	    <xs:documentation>Data Model Root Element</xs:documentation>
-	</xs:annotation>
-    </xs:element>
-    <xs:complexType name="ObjectsType">
-	<xs:sequence>
-	    <xs:element ref="Object" minOccurs="0" maxOccurs="unbounded"/>
-	</xs:sequence>
-	<xs:attribute name="version" use="optional">
-	    <xs:annotation>
-		<xs:documentation>Schema version used.</xs:documentation>
-	    </xs:annotation>
-	    <xs:simpleType>
-		<xs:restriction base="xs:string"/>
-	    </xs:simpleType>
-	</xs:attribute>
-    </xs:complexType>
-    <xs:complexType name="ObjectType">
-	<xs:sequence>
-	    <xs:element name="id" type="qlmID" maxOccurs="unbounded"/>
-	    <xs:element ref="description" minOccurs="0"/>
-	    <xs:element ref="InfoItem" minOccurs="0" maxOccurs="unbounded"/>
-	    <xs:element ref="Object" minOccurs="0" maxOccurs="unbounded"/>
-	</xs:sequence>
-	<xs:attribute name="type"/>
-	<xs:anyAttribute>
-	    <xs:annotation>
-		<xs:documentation>Proprietary or extended attributes.</xs:documentation>
-	    </xs:annotation>
-	</xs:anyAttribute>
-    </xs:complexType>
-    <xs:complexType name="InfoItemType">
-	<xs:sequence>
-	    <xs:element name="name" type="qlmID" minOccurs="0" maxOccurs="unbounded">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="odf.xsd" targetNamespace="odf.xsd" elementFormDefault="qualified" attributeFormDefault="unqualified" >
+	<xs:element name="Object" type="ObjectType"/>
+	<xs:element name="InfoItem" type="InfoItemType"/>
+	<xs:element name="value" type="valueType"/>
+	<xs:element name="Objects" type="ObjectsType">
 		<xs:annotation>
 			<xs:documentation>Data Model Root Element</xs:documentation>
 		</xs:annotation>

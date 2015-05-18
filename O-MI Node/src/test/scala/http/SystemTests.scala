@@ -120,7 +120,7 @@ class OmiServiceSpec extends Specification
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
             <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-              <omi:read msgformat="omi.xsd">
+              <omi:read msgformat="odf">
                 <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
                   <Objects>
                     <Object>
@@ -136,7 +136,7 @@ class OmiServiceSpec extends Specification
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
             <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-              <omi:read msgformat="omi.xsd">
+              <omi:read msgformat="odf">
                 <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
                   <sss>
                     <Object>

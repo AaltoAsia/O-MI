@@ -42,6 +42,8 @@ import scala.xml._
 // Mutable map for sensordata
 import scala.collection.mutable.Map
 
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 /** Agent for the korean server's JSon data
   * 
@@ -129,5 +131,6 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
     }
     def finish = {
       system.shutdown
+	    println("SensorAgent has died.")
     }
 }

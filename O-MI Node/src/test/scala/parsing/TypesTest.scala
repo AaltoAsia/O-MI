@@ -6,6 +6,9 @@ import parsing.Types._
 import parsing.Types.Path._
 import parsing.Types.OmiTypes._
 import parsing.Types.OdfTypes._
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /* Test class for testing ODF Types */
 class TypesTest extends Specification {
@@ -24,7 +27,7 @@ class TypesTest extends Specification {
       ParseError        $e1
       OdfInfoItem		  $e10
       OdfObject		      $e11
-    OdfNode inherited by
+    OdfElement inherited by
       OdfInfoItem		  $e100
       OdfObject			  $e101
       
@@ -71,11 +74,11 @@ class TypesTest extends Specification {
   }
   
   def e100 = {
-    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
+    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfElement]
   }
   
   def e101 = {
-    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OmiRequest]
+    new OdfObject(Seq(), Seq(), Seq()).isInstanceOf[OdfElement]
   }
   
   def e200 = {

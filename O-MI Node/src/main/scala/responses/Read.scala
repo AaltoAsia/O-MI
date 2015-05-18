@@ -13,6 +13,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
 import java.sql.Timestamp
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 
 

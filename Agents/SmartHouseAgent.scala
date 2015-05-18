@@ -44,6 +44,8 @@ import scala.xml._
 // Mutable map for sensordata
 import scala.collection.mutable.Map
 import scala.util.Random
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 
 /** Agent for the SmartHouse
@@ -52,9 +54,9 @@ import scala.util.Random
 class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   
-  private var odf : Option[Seq[OdfInfoItem]] = None   
+  private var odf : Option[Iterable[OdfInfoItem]] = None   
   
-  def getSensors(o:Seq[OdfObject]) : Seq[OdfInfoItem] = {
+  def getSensors(o:Iterable[OdfObject]) : Iterable[OdfInfoItem] = {
     o.flatten{ o =>
       o.infoItems ++ getSensors(o.objects)
     }
@@ -109,7 +111,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     val date = new java.util.Date()
     odf = Some( 
       odf.get.map{ info => 
-        OdfInfoItem( info.path, Seq( OdfValue(  Random.nextDouble.toString, "" , Some( new Timestamp( date.getTime) ) )))
+        OdfInfoItem( info.path, Iterable( OdfValue(  Random.nextDouble.toString, "" , Some( new Timestamp( date.getTime) ) )))
       } 
     )
     println("SmartHouseAgent pushed data to DB.")
@@ -118,5 +120,6 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   }
 
   def finish(): Unit = {
+	    println("SmartHouseAgent has died.")
   }
 }
