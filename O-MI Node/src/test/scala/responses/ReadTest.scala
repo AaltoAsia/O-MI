@@ -118,9 +118,6 @@ class ReadTest extends Specification with BeforeAfterAll {
         lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
         lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
         val parserlist = OmiParser.parse(erroneousxml)
-        println("\n\n\n")
-        println(parserlist)
-        println("\n\n\n")
         parserlist.isRight === true
         val resultXML = ReadResponseGen.runGeneration(parserlist.right.get.head.asInstanceOf[ReadRequest])
         

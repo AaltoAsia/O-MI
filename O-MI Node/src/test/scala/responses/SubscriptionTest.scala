@@ -296,7 +296,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     "Subscriptions should be removed from database when their ttl expires" in {
       val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
       val parserlist = OmiParser.parse(simpletestfile)
-      parserlist.isRight === false
+      parserlist.isRight === true
       val testSub = OMISubscription.setSubscription(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])._1
       val temp = dbConnection.getSub(testSub).get
       dbConnection.getSub(testSub) must beSome
