@@ -34,14 +34,6 @@ object Starter {
     val date = new Date();
     val testTime = new java.sql.Timestamp(date.getTime)
 
-    //Peer/Usability testing
-    /*
-    val odf = OdfParser.parse( XML.loadFile("SmartHouse.xml").toString)
-    println(odf)
-    system.log.warning(odf.filter{o => o.isLeft}.map{o => o.left.get.msg}.mkString("\n"))
-    InputPusher.handleObjects(odf.filter{o => o.isRight}.map{o => o.right.get})
-    */
-
     val dbobject = new SQLiteConnection
 
     // Save settings as sensors
@@ -82,6 +74,8 @@ object Starter {
     IO(Http) ? Http.Bind(omiService, interface = settings.interface, port = settings.port)
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,
       new InetSocketAddress("localhost", settings.agentPort))
+    IO(Tcp)  ? Tcp.Bind(agentLoader,
+      new InetSocketAddress("localhost", settings.cliPort))
   }
 }
 

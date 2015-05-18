@@ -62,8 +62,6 @@ class ExternalAgentHandler(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
 
-  val inputPusher = new DBPusher(new SQLiteConnection)
-
   import Tcp._
 
   private var metaDataSaved: Boolean = false
@@ -80,9 +78,9 @@ class ExternalAgentHandler(
         log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
         
       } else {
-        inputPusher.handleObjects(getObjects(parsedEntries))
+        InputPusher.handleObjects(getObjects(parsedEntries))
         if(!metaDataSaved){
-          inputPusher.handlePathMetaDataPairs(
+          InputPusher.handlePathMetaDataPairs(
             getInfoItems(getObjects(parsedEntries)).filter{
               info => info.metaData.nonEmpty 
             }.map{

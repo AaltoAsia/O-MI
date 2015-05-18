@@ -19,7 +19,7 @@ interface IInputPusher {
 }
 
 public class InputPusher {
-	public static ActorRef ipdb = null; 
+    public static ActorRef ipdb = null; 
 
     public static void handleObjects( Iterable<OdfObject> objs) { 
     	if(ipdb != null)

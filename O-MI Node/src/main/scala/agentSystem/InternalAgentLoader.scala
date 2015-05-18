@@ -4,6 +4,7 @@ import http._
 import akka.actor._
 import akka.actor.SupervisorStrategy._
 import akka.event.{Logging, LoggingAdapter}
+import akka.io.{ IO, Tcp  }
 import scala.collection.mutable.Map
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -24,6 +25,9 @@ object InternalAgentLoader{
   def props(): Props = Props(new InternalAgentLoader())
 }
 
+  case class ReStartCmd(agent: String)
+  case class StartCmd(agent: String)
+  case class StopCmd(agent: String)
 
   case class ThreadException( agent: InternalAgent, exception: Exception)
   case class ThreadInitialisationException( agent: InternalAgent, exception: Exception)
@@ -33,6 +37,7 @@ object InternalAgentLoader{
   */
 class InternalAgentLoader  extends Actor with ActorLogging {
   
+  import Tcp._
   import ExecutionContext.Implicits.global
   import context.system
 
@@ -57,20 +62,72 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     *   -- Terminated with trying to restart AgentActor. 
     */
   def receive = {
-    case "Start" => start
+    case StartCmd(agent: String) =>{
+    
+      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[InternalAgent,String, Timestamp]] => info._1 == agent}
+      if(agentInfo.isEmpty){
+         log.warning("Command for not stored agent!: " + agent)
+       } else if(!agentInfo.get._2._1.isAlive){
+        log.warning(s"Re-Starting: " + agentInfo.get._1)
+        agents -= agentInfo.get._1
+        agentInfo.get._2._1.shutdown();
+        Thread.sleep(3000)
+        loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
+      }
+    } 
+    case ReStartCmd(agent: String) =>{
+      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[InternalAgent,String, Timestamp]] => info._1 == agent}
+      if(agentInfo.isEmpty){
+         log.warning("Command for not stored agent!: " + agent)
+       } else  if(agentInfo.get._2._1.isAlive){
+        log.warning(s"Re-Starting: " + agentInfo.get._1)
+        agents -= agentInfo.get._1
+        agentInfo.get._2._1.shutdown();
+        Thread.sleep(3000)
+        loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
+      }
+    }
+    case StopCmd(agent: String) => {
+      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[InternalAgent,String, Timestamp]] => info._1 == agent}
+      if(agentInfo.isEmpty){
+         log.warning("Command for not stored agent!: " + agent)
+       } else  if(agentInfo.get._2._1.isAlive){
+        log.warning(s"Stopping: " + agentInfo.get._1)
+        agents -= agentInfo.get._1
+        agentInfo.get._2._1.shutdown();
+      }
+    }
     case ThreadException( agent: InternalAgent, exception: Exception ) =>
       log.warning(s"InternalAgent caugth exception: $exception")
       val agentInfo = agents.find{ info: Tuple2[String,Tuple3[InternalAgent,String, Timestamp]] => info._2._1 == agent}
       var date = new Date()
       if(agentInfo.isEmpty){
-         log.warning("Exception from not stored agent!:$agent.name")
+         log.warning("Exception from not stored agent!: "+ agent)
        } else if(date.getTime - agentInfo.get._2._3.getTime > 300000 ) {
         log.warning(s"Trying to relaunch:" + agentInfo.get._1)
         agents -= agentInfo.get._1
         loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
       }
     case ThreadInitialisationException( agent: InternalAgent, exception: Exception) =>
-      log.warning(s"InternalAgent initialisation failed. $exception")
+      log.warning(s"InternalAgent $agent initialisation failed. $exception")
+
+    case Bound(localAddress) =>
+      // TODO: do something?
+      // It seems that this branch was not executed?
+   
+    case CommandFailed(b: Bind) =>
+      log.warning(s"CLI connection failed: $b")
+      context stop self
+   
+    case Connected(remote, local) =>
+      val connection = sender()
+      log.info(s"CLI connected from $remote to $local")
+
+      val cli = context.actorOf(
+        Props(classOf[InternalAgentCLI], remote),
+        "cli-"+remote.toString.tail
+      )
+      connection ! Register(cli)
   }
 
   /** Load Bootables from jars in deploy directory and start AgentActors up.
@@ -94,7 +151,6 @@ class InternalAgentLoader  extends Actor with ActorLogging {
         case e: Exception => log.warning(s"Classloading failed. $e")
       }
     }
-    addShutdownHook(agents)
   }
 
   def loadAndStart(classname: String, configPath: String) ={
