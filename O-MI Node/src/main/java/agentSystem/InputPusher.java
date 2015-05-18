@@ -10,6 +10,7 @@ import parsing.Types.OdfTypes.OdfValue;
 import parsing.Types.Path;
 import akka.actor.ActorRef;
 import scala.Tuple2;
+
 interface IInputPusher {
     public abstract void handleObjects( Iterable<OdfObject> objs);
     public abstract void handleInfoItems( Iterable<OdfInfoItem> items);

@@ -74,7 +74,6 @@ object Starter {
 
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
     // send config update to (re)load agents
-    agentLoader ! ConfigUpdated
 
 
     implicit val timeout = Timeout(5.seconds)

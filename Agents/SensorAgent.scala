@@ -60,11 +60,19 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   
   override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
+      InternalAgent.log.warning("ConfigPath's file didn't exist. Shutting down.")
       shutdown
       return
     }
-    val lines = scala.io.Source.fromFile(configPath).getLines().toArray
+    val configFile = new File(configPath)
+    if(!configFile.canRead){
+      InternalAgent.log.warning("ConfigPath's file couldn't be read. Shutting down.")
+      shutdown
+      return
+    }
+    val lines = scala.io.Source.fromFile(configFile).getLines().toArray
     if(lines.isEmpty){
+      InternalAgent.log.warning("ConfigPath's file was empty. Shutting down.")
       shutdown
       return
     }

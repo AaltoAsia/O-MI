@@ -24,6 +24,7 @@ class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   
   override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
+      InternalAgent.log.warning("ConfigPath's file didn't exist. Shutting down.")
       shutdown
       return
     }
@@ -32,6 +33,7 @@ class GenericAgent( configPath: String) extends InternalAgent(configPath) {
     path = Some(lines.head.split("/").toSeq)
     var file = new File(lines.last)
     if(!file.canRead){
+      InternalAgent.log.warning("ConfigPath's file couldn't be read. Shutting down.")
       shutdown
       return
     }
