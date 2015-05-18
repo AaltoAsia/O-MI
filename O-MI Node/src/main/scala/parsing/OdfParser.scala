@@ -12,6 +12,7 @@ import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import java.util.Objects
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
@@ -46,7 +47,8 @@ object OdfParser extends Parser[OdfParseResult] {
     val objects = xmlGen.scalaxb.fromXML[xmlGen.ObjectsType](root)
     Right(
       OdfObjects( 
-        objects.Object.map{ obj => parseObject( obj ) }.toIterable,
+        if(objects.Object.isEmpty) asJavaIterable(Seq.empty[OdfObject])
+        else objects.Object.map{ obj => parseObject( obj ) }.toIterable,
         objects.version 
       )
     )

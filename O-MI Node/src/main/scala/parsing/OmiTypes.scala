@@ -100,7 +100,7 @@ case class OmiResult(
   def getRequests( omi: OmiParseResult ) : Iterable[OmiRequest] = 
     omi match{
       case Right(requests: Iterable[OmiRequest]) => requests
-      case _ => seqAsJavaList(Seq.empty)
+      case _ => asJavaIterable(Seq.empty[OmiRequest])
     }
   def getErrors( omi: OmiParseResult ) : Iterable[ParseError] = 
     omi match{
