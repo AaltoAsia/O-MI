@@ -14,9 +14,12 @@ import parsing._
 import parsing.Types._
 import parsing.Types.Path._
 
+import http.Boot
+
 class AgentListenerTest extends Specification {
   sequential
   implicit val dbConnection = new SQLiteConnection
+  Boot.initImputPusher(dbConnection)
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)

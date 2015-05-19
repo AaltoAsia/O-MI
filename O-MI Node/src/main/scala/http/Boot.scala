@@ -24,29 +24,37 @@ trait Starter {
   // we need an ActorSystem to host our application in
   implicit val system = ActorSystem("on-core")
 
-  /** Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]] */
+  /**
+   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
+   */
   val settings = Settings(system)
   
 
+  /**
+   * This is called in [[init]]. Create input pusher actor for handling agent input.
+   * @param dbConnection Use a specific db connection for all agents, intended for testing
+   */
+  def initImputPusher(dbConnection: DB = new SQLiteConnection) = {
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),"input-pusher-for-db")
+  }
 
 
-  /** Setup database and apply config [[settings]] */
-  def init(): Unit = {
+  /** 
+   * Setup database and apply config [[settings]].
+   *
+   * @param dbConnection Use a specific db connection for one-time db actions, intended for testing
+   */
+  def init(dbConnection: DB = new SQLiteConnection): Unit = {
     database.setHistoryLength(settings.numLatestValues)
 
     // Current time for odf values of the settings
     val date = new Date();
     val currentTime = new java.sql.Timestamp(date.getTime)
 
-    val dbConnection = new SQLiteConnection
-
     // Save settings as sensors values
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     dbConnection.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, currentTime))
-
-    // Create input pusher actor for handling input
-    InputPusher.ipdb = system.actorOf(Props(new DBPusher(new SQLiteConnection)),"input-pusher-for-db")
 
     // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
     responses.OMISubscription.fillSubQueue()(dbConnection)
@@ -60,7 +68,7 @@ trait Starter {
   /**
    * Start as stand-alone server.
    * Creates single Actors.
-   * Binds to configured O-MI API port and agent interface port.
+   * Binds to configured external agent interface port.
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
@@ -90,7 +98,8 @@ trait Starter {
 
 
 
-  /** start a new HTTP server on configured port with our service actor as the handler */
+  /** Start a new HTTP server on configured port with our service actor as the handler.
+   */
   def bindHttp(service: ActorRef): Unit = {
 
     implicit val timeoutForBind = Timeout(5.seconds)
@@ -102,7 +111,7 @@ trait Starter {
 
 
 /**
- * Starting point of the stand-alone program
+ * Starting point of the stand-alone program.
  */
 object Boot extends Starter {
   def main(args: Array[String]) = {
@@ -114,7 +123,7 @@ object Boot extends Starter {
 
 
 /**
- * Starting point of the servlet program
+ * Starting point of the servlet program.
  */
 class ServletBoot extends Starter {// with WebBoot {
   init()

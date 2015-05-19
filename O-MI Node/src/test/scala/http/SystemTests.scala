@@ -38,7 +38,7 @@ class OmiServiceSpec extends Specification
       dbConnection.clearDB()
 
       // Initialize the OmiService
-      Boot.init()
+      Boot.init(dbConnection)
     }
       
     "Data discovery, GET: OmiService" should {

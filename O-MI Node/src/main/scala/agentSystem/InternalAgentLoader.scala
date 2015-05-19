@@ -12,8 +12,6 @@ import java.util.jar.JarFile
 import java.io.File
 import scala.concurrent._
 
-import java.nio.file.Paths
-import java.nio.file.StandardWatchEventKinds._
 
 /** Helper Object for creating AgentLoader.
   *

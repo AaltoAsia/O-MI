@@ -12,25 +12,13 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
 import slick.jdbc.StaticQuery
+import slick.jdbc.meta.MTable
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
 
-object singleConnection extends DB {
-  val dbPath = "./sensorDB.sqlite3"
-  val db = Database.forConfig("sqlite-conf")
-  initialize()
-}
 
-/**
- * Database object available everywhere in the code. To be used during actual runtime.
- */
-class SQLiteConnection extends DB {
-  val dbPath = "./sensorDB.sqlite3"
-  val db = singleConnection.db
-  //val db = Database.forConfig("sqlite-conf")
-  initialize()
-}
+
 package object database {
 
   private var histLength = 10
@@ -38,7 +26,7 @@ package object database {
 
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
-    { Path(_) } // String to Path
+    { Path(_) }     // String to Path
     )
   
   def attachSetHook(f: Seq[Path] => Unit) =
@@ -56,6 +44,7 @@ package object database {
   }
   def historyLength = histLength
 
+  /** compatibility method for [[DB.set]] */
   def set(implicit dbo: DB) = dbo.set _
 
   def startBuffering(path: Path)(implicit dbo: DB):Boolean = dbo.startBuffering(path)
@@ -64,16 +53,56 @@ package object database {
 
 
 /**
+ * Changed to using single connection because of sqlite.
+ * Might work also with many Database.forConfig calls but it's not tested.
+ */
+object singleConnection extends DB {
+  val db = Database.forConfig("sqlite-conf")
+  initialize()
+
+  def destroy() = {
+    db.close()
+  }
+}
+
+/**
+ * Database class for sqlite. Actually uses config parameters through forConfig in singleConnection.
+ * To be used during actual runtime.
+ */
+class SQLiteConnection extends DB {
+  override val db = singleConnection.db
+
+  def destroy() = {
+     db.close()
+
+     val confUrl = slick.util.GlobalConfig.driverConfig("sqlite-conf").getString("url")
+     // XXX: trusting string operations
+     val dbPath = confUrl.split(":").last
+
+     if (dbPath.split(".").lastOption.getOrElse("") == "sqlite3")
+       new File(dbPath).delete()
+  }
+}
+
+
+
+/**
  * Database class to be used during tests instead of object SQLite to prevent
  * problems caused by overlapping test data.
- * @param name name of the test database. Data will be stored to file named [name].sqlite3 
+ * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(name:String) extends DB
+class TestDB(val name:String = "") extends DB
 {
-  val dbPath = "./"+name+".sqlite3"
-  val db = Database.forURL("jdbc:sqlite:"+dbPath, driver="org.sqlite.JDBC")
+  val db = Database.forURL("jdbc:sqlite::memory:", driver="org.sqlite.JDBC")
   initialize()
+  def destroy() = {
+     db.close()
+  }
 }
+
+
+
+
 /**
  * base Database trait used in object SQLite and class testDB 
  */
@@ -83,9 +112,6 @@ trait DB {
 
   implicit val dbo = this
 
-  //path where the file is stored, a default value
-  protected val dbPath: String
-  //check if the file already exists
   //tables for latest values and hierarchy
   private val latestValues = TableQuery[DBData]//table for sensor data
   private val objects = TableQuery[DBNode]//table for storing hierarchy
@@ -100,30 +126,39 @@ trait DB {
   private def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
     io => Await.ready(db.run(io), Duration.Inf)
 
+
   /**
   * Initializing method, creates the file and tables. 
   */
   protected def initialize(){
-    if(!new File(dbPath).exists())
-    {
-      val setup = DBIO.seq(
+    val setup = DBIO.seq(
       latestValues.schema.create,
       objects.schema.create,
       subs.schema.create,
       buffered.schema.create,
-      meta.schema.create)
-      runSync(setup)  
+      meta.schema.create
+    )
+    
+    val existingTables = MTable.getTables
+
+    runSync(existingTables).headOption match {
+      case Some(table) =>
+        //noop
+        println("Not creating tables, found table: " + table.name.name)
+      case None =>
+        // run transactionally so there are all or no tables
+        runSync(setup.transactionally)
     }
   }
-   /**
-    * Metohod to completely remove database. Removes the actual database file.
-    * Should not be called on object SQLite
-    * Should be called after tests when using a database created from the testDB class
-    */
-  def destroy() {
-     db.close()
-     new File(dbPath).delete()
-  }
+
+
+ /**
+  * Metohod to completely remove database. Removes the actual database file.
+  * Should not be called on object SQLite
+  * Should be called after tests when using a database created from the testDB class
+  */
+  def destroy(): Unit
+
 
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
@@ -158,7 +193,9 @@ trait DB {
         //existing path and less than history length of data or buffering.
         false
       }
-    }
+  }
+
+
   /**
    * Used to store metadata for a sensor to database
    * @param path path to sensor
@@ -177,6 +214,8 @@ trait DB {
       runSync(qry.update(data))
     }
   }
+
+
   /**
    * Used to get metadata from database for given path
    * @param path path to sensor whose metadata is requested
@@ -234,6 +273,8 @@ trait DB {
         }
     }
   }
+
+
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
    *
@@ -270,6 +311,8 @@ trait DB {
     }
     return deleted
   }
+
+
   /**
    * Returns array of DBSensors for given subscription id.
    * Array consists of all sensor values after beginning of the subscription
@@ -301,6 +344,7 @@ trait DB {
       }
       result.toArray
     }
+
   def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
 
   /**
@@ -320,6 +364,8 @@ trait DB {
         runSync(pathQuery.filter(_.timestamp < oldtime).delete)
       }
     }
+
+
   /**
    * put the path to buffering table if it is not there yet, otherwise
    * increases the count on that item, to prevent removing buffered data
@@ -339,6 +385,8 @@ trait DB {
       false
     }
   }
+
+
   /**
    * removes the path from buffering table or dimishes the count by one
    * also clear all buffered data if count is only 1
@@ -363,6 +411,8 @@ trait DB {
         false
       }
   }
+
+
   /**
    * Used to get data from database based on given path.
    * returns Some(DBSensor) if path leads to sensor and if
@@ -408,6 +458,8 @@ trait DB {
       return None
     }
   }
+
+
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
@@ -424,6 +476,8 @@ trait DB {
       }
     
   }
+
+
   /**
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
    * search is targeted between these two times. If only start is given,all values from start time onwards are
@@ -441,7 +495,6 @@ trait DB {
    *
    * @return Array of DBSensors
    */
-
   def getNBetween(
       path: Path,
       start: Option[Timestamp],
@@ -479,6 +532,7 @@ trait DB {
     
   }
 
+
   /**
    * Empties all the data from the database
    * 
@@ -490,6 +544,7 @@ trait DB {
       subs.delete,
       buffered.delete))
   }
+
 
   /**
    * Used to get childs of an object with given path
@@ -514,6 +569,7 @@ trait DB {
       childs
     }
 
+
   /**
    * Checks whether given path exists on the database
    * @param path path to be checked
@@ -523,6 +579,7 @@ trait DB {
     {
       runSync(objects.filter(_.path === path).result).length > 0
     }
+
 
   /**
    * Check whether subscription with given ID has expired. i.e if subscription has been in database for
@@ -552,6 +609,8 @@ trait DB {
           true
         }
     }
+
+
   /**
    * Removes subscription information from database for given ID
    * @param id id number that was generated during saving
@@ -575,6 +634,8 @@ trait DB {
     
     false
   }
+
+
   /**
    * getAllSubs is used to search the database for subscription information
    * Can also filter subscriptions based on whether it has a callback address
@@ -608,6 +669,8 @@ trait DB {
       }
       res
     }
+
+
   /**
    * Method to modify start time and ttl values of a subscription based on id
    * 
@@ -618,6 +681,8 @@ trait DB {
   def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = {
     runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
   }
+
+
   /**
    * Returns DBSub object wrapped in Option for given id.
    * Returns None if no subscription data matches the id
@@ -639,6 +704,8 @@ trait DB {
         }
       res
     }
+
+
   /**
    * Saves subscription information to database
    * adds timestamp at current time to keep track of expiring
@@ -659,6 +726,8 @@ trait DB {
         //returns the id for reference
         id
     }
+
+
   /**
    * Private helper method to find next free id number
    * @return the next free id number
