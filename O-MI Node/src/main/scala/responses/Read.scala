@@ -63,6 +63,11 @@ object Read {
               <value dateTime={ sensor.time.toString.replace(' ', 'T') }>
                 { sensor.value }
               </value>
+              {
+                val metaData = dbConnection.getMetaData(path)
+                if(metaData.nonEmpty)
+                  <MetaData/>
+              }
             </InfoItem>))
         }
       case Some(sensormap: DBObject) =>
