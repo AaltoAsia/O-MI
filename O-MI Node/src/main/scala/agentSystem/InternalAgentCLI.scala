@@ -19,13 +19,13 @@ class InternalAgentCLI(
       args match {
         case Array("start", agent) =>
           log.debug(s"Got start command from $sender for $agent")
-          context.parent ! StartCmd(agent)
+          context.parent ! StartCmd(agent.dropRight(1))
         case Array("re-start", agent) =>
           log.debug(s"Got re-start command from $sender for $agent")
-          context.parent ! ReStartCmd(agent)
+          context.parent ! ReStartCmd(agent.dropRight(1))
         case Array("stop", agent) => 
           log.debug(s"Got stop command from $sender for $agent")
-          context.parent ! StopCmd(agent)
+          context.parent ! StopCmd(agent.dropRight(1))
         case cmd: Array[String] => log.warning(s"Unknown command from $sender: "+ cmd.mkString(" "))
       }
     }
