@@ -64,19 +64,19 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   
   override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
-      println("ConfigPath was empty or didn't exist, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("ConfigPath was empty or didn't exist, SmartHouseAgent shutting down.")
       shutdown
       return
     }
     val lines = scala.io.Source.fromFile(configPath).getLines().toArray
     if(lines.isEmpty){
-      println("Config file was empty, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("Config file was empty, SmartHouseAgent shutting down.")
       shutdown
       return
     }
     val file =  new File(lines.head)
     if(!file.exists() || !file.canRead){
-      println("File "+ lines.head + " doesn't exist or can't be read, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("File "+ lines.head + " doesn't exist or can't be read, SmartHouseAgent shutting down.")
       shutdown
       return
     }
@@ -85,8 +85,8 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     val tmp_odf = OdfParser.parse( xml)
     val errors = getErrors(tmp_odf)
     if(errors.nonEmpty) {
-      println("Odf has errors, SmartHouseAgent shutting down.")
-      println("SmartHouse: "+errors.mkString("\n"))
+      InternalAgent.log.warning("Odf has errors, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("SmartHouse: "+errors.mkString("\n"))
       shutdown
       return
     }
@@ -96,7 +96,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       }
     )
     if(odf.isEmpty){
-      println("Odf was empty, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("Odf was empty, SmartHouseAgent shutting down.")
       shutdown
       return
     }
@@ -114,7 +114,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
         OdfInfoItem( info.path, Iterable( OdfValue(  Random.nextDouble.toString, "" , Some( new Timestamp( date.getTime) ) )))
       } 
     )
-    println("SmartHouseAgent pushed data to DB.")
+    InternalAgent.log.info("SmartHouseAgent pushed data to DB.")
     InputPusher.handleInfoItems(odf.get)
     Thread.sleep(10000)
   }

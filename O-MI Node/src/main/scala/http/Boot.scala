@@ -80,8 +80,6 @@ trait Starter {
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
-    // send config update to (re)load agents
-    agentLoader ! ConfigUpdated
 
     // create omi service actor
     val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
@@ -92,6 +90,8 @@ trait Starter {
 
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,
       new InetSocketAddress("localhost", settings.agentPort))
+    IO(Tcp)  ? Tcp.Bind(agentLoader,
+      new InetSocketAddress("localhost", settings.cliPort))
 
     return omiService
   }

@@ -51,7 +51,7 @@ import scala.collection.JavaConversions.asJavaIterable
 class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   var loading = false
-  var uri : Option[String] = None
+  var uri : Option[Uri] = None
   // bring the actor system in scope
   // Define formats
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -60,15 +60,23 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   
   override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
+      InternalAgent.log.warning("ConfigPath's file didn't exist. Shutting down.")
       shutdown
       return
     }
-    val lines = scala.io.Source.fromFile(configPath).getLines().toArray
+    val configFile = new File(configPath)
+    if(!configFile.canRead){
+      InternalAgent.log.warning("ConfigPath's file couldn't be read. Shutting down.")
+      shutdown
+      return
+    }
+    val lines = scala.io.Source.fromFile(configFile).getLines().toArray
     if(lines.isEmpty){
+      InternalAgent.log.warning("ConfigPath's file was empty. Shutting down.")
       shutdown
       return
     }
-    uri = Some(lines.head)
+    uri = Some(Uri(lines.head))
     
   }
   def httpRef = IO(Http) //If problems change to def
@@ -79,7 +87,7 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
 
       // send GET request with absolute URI (http://121.78.237.160:2100/)
       val futureResponse: Future[HttpResponse] =
-        (httpRef ? HttpRequest(GET, Uri(uri.get))).mapTo[HttpResponse]
+        (httpRef ? HttpRequest(GET, uri.get)).mapTo[HttpResponse]
 
       // wait for Future to complete
       futureResponse onComplete {
@@ -131,6 +139,6 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
     }
     def finish = {
       system.shutdown
-	    println("SensorAgent has died.")
+	    InternalAgent.log.info("SensorAgent has died.")
     }
 }
