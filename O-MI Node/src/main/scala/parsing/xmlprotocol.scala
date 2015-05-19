@@ -12,9 +12,8 @@ import scala.language.postfixOps
 object `package` extends XMLProtocol { }
 
 trait XMLProtocol extends scalaxb.XMLStandardTypes {
-  val defaultScope = scalaxb.toScope(None -> "omi.xsd",
-    Some("tns0") -> "odf.xsd",
-    Some("tns") -> "omi.xsd",
+  val defaultScope = scalaxb.toScope(None -> "odf.xsd",
+    Some("omi") -> "omi.xsd",
     Some("xs") -> "http://www.w3.org/2001/XMLSchema",
     Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance")
   implicit lazy val OmiEnvelopeFormat: scalaxb.XMLFormat[OmiEnvelope] = new DefaultOmiEnvelopeFormat {}

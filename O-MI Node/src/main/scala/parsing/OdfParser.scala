@@ -77,7 +77,7 @@ object OdfParser extends Parser[OdfParseResult] {
         },
         None,
         if(item.MetaData.isEmpty) None
-        else Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, "MetaData", xmlGen.defaultScope).toString) )
+        else Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, Some("odf"),Some("MetaData"), xmlGen.defaultScope).toString) )
       ) 
   }
   private def timeSolver(value: ValueType ) = value.dateTime match {
