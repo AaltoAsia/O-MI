@@ -69,6 +69,9 @@ object DBConversion {
     )
   }
   def sensorsToObjects( objects: Array[DBSensor] )(implicit dbConnection: DB) : ObjectsType ={
+    val path = objects.head.path
+    if(objects.contains{sen : DBSensor => sen.path.head != "Objects"})
+      throw new Exception("Different root nodes in InfoItem generation")
     val subobjs = objects.map{
       sobj : DBSensor => 
         DBSensor( sobj.path.tail,  sobj.value, sobj.time )
