@@ -14,7 +14,6 @@ import scala.collection.JavaConversions.asJavaIterable
 
 /** A generic agent that read standart input stream and send given valus to AgentListenr via client.
   * @param Path where sensor is.
-  * @param Client actor that handles connection with AgentListener
   */
 class GenericAgent( configPath: String) extends InternalAgent(configPath) {
   var fileToRead : Option[File] = None 
