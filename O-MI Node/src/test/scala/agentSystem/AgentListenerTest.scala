@@ -30,7 +30,7 @@ class AgentListenerTest extends Specification {
   }
 
   "ExternalAgentListener" should {
-
+    sequential
     "reply with Register message when it receives Connected message" in new Actors {
       val actor = system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
@@ -68,7 +68,6 @@ class AgentListenerTest extends Specification {
         actor.tell(CommandFailed(bind), probe.ref)
       }
     }
-
     "reply with Register messages to multiple actors" in new Actors {
       val actor = system.actorOf(Props[ExternalAgentListener])
       val probe1 = TestProbe()
@@ -90,7 +89,6 @@ class AgentListenerTest extends Specification {
       probe5.expectMsgType[Register]
     }
   }
-
 
   "ExternalAgentHandler" should {
     sequential

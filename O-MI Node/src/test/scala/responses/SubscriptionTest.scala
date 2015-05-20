@@ -105,7 +105,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     }
 
     "Return with no values when interval is larger than time elapsed and no callback given" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
+      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequestWithLargeInterval.xml").getLines.mkString("\n")
       val parserlist = OmiParser.parse(simpletestfile)
       parserlist.isRight === true
       val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])
@@ -141,11 +141,13 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     }
 
     "Return with right values and requestId in subscription generation" in {
-      lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequestWithCallback.xml").getLines.mkString("\n")
+      lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
       val parserlistcallback = OmiParser.parse(simpletestfilecallback)
       parserlistcallback.isRight === true
       val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.right.get.head.asInstanceOf[SubscriptionRequest])
 
+      //XXX: Stupid hack, for interval
+      Thread.sleep(1000)
       val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(requestIDcallback))))
 
       //      val correctxml =
