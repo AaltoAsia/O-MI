@@ -37,11 +37,12 @@ libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
 //slick
 libraryDependencies ++= Seq(
-"com.typesafe.slick"  %%  "slick" % "3.0.0-RC1",
-"com.typesafe.slick" %% "slick-codegen" % "3.0.0-RC1",
+"com.typesafe.slick"  %%  "slick" % "3.0.0",
+"com.typesafe.slick" %% "slick-codegen" % "3.0.0",
 "org.slf4j" % "slf4j-nop" % "1.6.4",
 "org.xerial" % "sqlite-jdbc" % "3.7.2",
-"com.zaxxer" % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
+"com.zaxxer" % "HikariCP-java6" % "2.3.3", // XXX: manually updated dependency, slick had 2.0.1
+"com.h2database" % "h2" % "1.4.187"
 )
 
 cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 

@@ -18,8 +18,8 @@ import http.Boot
 
 class AgentListenerTest extends Specification {
   sequential
-  implicit val dbConnection = new SQLiteConnection
-  Boot.initImputPusher(dbConnection)
+  implicit val dbConnection = new TestDB("agent-listener")
+  Boot.initImputPusher(dbConnection, "agent-listener-test-input-pusher")
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)
