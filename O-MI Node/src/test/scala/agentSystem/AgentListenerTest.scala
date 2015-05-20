@@ -19,11 +19,11 @@ import http.Boot
 class AgentListenerTest extends Specification {
   sequential
   implicit val dbConnection = new TestDB("agent-listener")
-  Boot.initImputPusher(dbConnection, "agent-listener-test-input-pusher")
+  Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
 
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("remote", 4321)
-  lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("")
+  lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("\n")
 
   step {
     dbConnection.clearDB()
@@ -94,16 +94,17 @@ class AgentListenerTest extends Specification {
     sequential
 
     "save sent data into database" in new Actors {
-      val actor = system.actorOf(Props(new ExternalAgentHandler(local)))
+      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
+      val testPath = Path("Objects/AgentTest/SmartHouse/Moisture")
       
-      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      dbConnection.remove(testPath)
+      dbConnection.get(testPath) === None
       
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //dbConnection.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
-      awaitCond(dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) != None, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
-      dbConnection.getMetaData(Path("Objects/AgentTest/SmartHouse/Moisture")) must beSome 
+      awaitCond({dbConnection.get(testPath).nonEmpty}, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
+      dbConnection.getMetaData(testPath) must beSome 
     }
     
     "receive sended data" in new Actors {

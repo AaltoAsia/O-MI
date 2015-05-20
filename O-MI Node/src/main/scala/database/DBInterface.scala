@@ -81,7 +81,8 @@ class SQLiteConnection extends DB {
      // XXX: trusting string operations
      val dbPath = confUrl.split(":").last
 
-     if (dbPath.split(".").lastOption.getOrElse("") == "sqlite3")
+     val fileExt = dbPath.split(".").lastOption.getOrElse("")
+     if (fileExt == "sqlite3" || fileExt == "db")
        new File(dbPath).delete()
   }
 }
