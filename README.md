@@ -1,7 +1,7 @@
 Code-Gardeners
 ==============
 
-[![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=master)](https://travis-ci.org/SnowblindFatal/Code-Gardeners)
+[![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=master)](https://travis-ci.org/TK009/Code-Gardeners)
 [![Coverage Status](https://coveralls.io/repos/TK009/Code-Gardeners/badge.svg)](https://coveralls.io/r/TK009/Code-Gardeners)
 [![Codacy Badge](https://www.codacy.com/project/badge/a4c681fb3fef4d21bb561a1b160c6d07)](https://www.codacy.com/app/tkinnunen/Code-Gardeners)
 
