@@ -1,17 +1,17 @@
 package database
-import slick.driver.SQLiteDriver.api._
+import slick.driver.H2Driver.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-import slick.jdbc.StaticQuery.interpolation
+//import slick.jdbc.StaticQuery.interpolation
 import slick.lifted.ProvenShape
 import java.io.File
 import scala.collection.mutable.Map
 import scala.collection.mutable.Buffer
 import java.sql.Timestamp
-import slick.jdbc.StaticQuery
+//import slick.jdbc.StaticQuery
 import slick.jdbc.meta.MTable
 
 import parsing.Types._
@@ -57,10 +57,12 @@ package object database {
  * Might work also with many Database.forConfig calls but it's not tested.
  */
 object singleConnection extends DB {
-  val db = Database.forConfig("sqlite-conf")
+  val db = Database.forConfig("h2-conf")
+  //val db = Database.forURL("jdbc:h2:file:./sensorDB.h2", driver="org.h2.Driver")
   initialize()
 
   def destroy() = {
+    println("[WARN] Destroying sqlite connection, to drop the database: remove db file!")
     db.close()
   }
 }
@@ -93,10 +95,14 @@ class SQLiteConnection extends DB {
  */
 class TestDB(val name:String = "") extends DB
 {
-  val db = Database.forURL("jdbc:sqlite::memory:", driver="org.sqlite.JDBC")
+  println("TestDB: " + name)
+  val db = Database.forURL(s"jdbc:h2:mem:$name;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver",
+    keepAliveConnection=true)
+  //val db = Database.forConfig("h2-conf")
   initialize()
   def destroy() = {
-     db.close()
+    println("remove " + name)
+    db.close()
   }
 }
 
@@ -113,24 +119,25 @@ trait DB {
   implicit val dbo = this
 
   //tables for latest values and hierarchy
-  private val latestValues = TableQuery[DBData]//table for sensor data
-  private val objects = TableQuery[DBNode]//table for storing hierarchy
-  private val subs = TableQuery[DBSubscription]//table for storing subscription information
-  private val buffered = TableQuery[BufferedPath]//table for aa currently buffered paths
-  private val meta = TableQuery[DBMetaData]//table for metadata information
+  protected val latestValues = TableQuery[DBData]//table for sensor data
+  protected val objects = TableQuery[DBNode]//table for storing hierarchy
+  protected val subs = TableQuery[DBSubscription]//table for storing subscription information
+  protected val buffered = TableQuery[BufferedPath]//table for aa currently buffered paths
+  protected val meta = TableQuery[DBMetaData]//table for metadata information
 
 
-  private def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
+  protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
     io => Await.result(db.run(io), Duration.Inf)
 
-  private def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
+  protected def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
     io => Await.ready(db.run(io), Duration.Inf)
 
 
   /**
-  * Initializing method, creates the file and tables. 
+  * Initializing method, creates the file and tables.
+  * This method blocks everything else in this object.
   */
-  protected def initialize(){
+  def initialize() = this.synchronized {
     val setup = DBIO.seq(
       latestValues.schema.create,
       objects.schema.create,

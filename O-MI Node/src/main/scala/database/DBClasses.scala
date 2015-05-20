@@ -1,5 +1,5 @@
 package database
-import slick.driver.SQLiteDriver.api._
+import slick.driver.H2Driver.api._
 import slick.jdbc.StaticQuery.interpolation
 import slick.lifted.ProvenShape
 import parsing.Types._

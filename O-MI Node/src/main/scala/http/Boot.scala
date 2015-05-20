@@ -34,8 +34,8 @@ trait Starter {
    * This is called in [[init]]. Create input pusher actor for handling agent input.
    * @param dbConnection Use a specific db connection for all agents, intended for testing
    */
-  def initImputPusher(dbConnection: DB = new SQLiteConnection) = {
-    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),"input-pusher-for-db")
+  def initImputPusher(dbConnection: DB = new SQLiteConnection, actorname: String = "input-pusher-for-db") = {
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),actorname)
   }
 
 
@@ -55,6 +55,9 @@ trait Starter {
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
     dbConnection.set(new DBSensor(
       Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, currentTime))
+
+    // Create input pusher actor
+    initImputPusher()
 
     // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
     responses.OMISubscription.fillSubQueue()(dbConnection)
