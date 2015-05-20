@@ -64,7 +64,7 @@ class ParserTest extends Specification {
                   "30", "xs:string", Some(
                     Timestamp.valueOf("2014-12-18 15:34:52")))), None, Some(
                 OdfMetaData(
-                  """<MetaData xmlns="omi.xsd" xmlns:tns0="odf.xsd" xmlns:tns="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><tns0:InfoItem name="Units"><tns0:value type="xs:String">Litre</tns0:value></tns0:InfoItem></MetaData>""")))), Iterable(), None, None), OdfObject(
+                  """<MetaData xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><InfoItem name="Units"><value type="xs:String">Litre</value></InfoItem></MetaData>""")))), Iterable(), None, None), OdfObject(
           Path("Objects/SmartCottage"), Iterable(), Iterable(
             OdfObject(
               Path("Objects/SmartCottage/Heater"), Iterable(), Iterable(), None, None), OdfObject(
@@ -456,7 +456,7 @@ class ParserTest extends Specification {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None,asJavaIterable(Seq.empty[Int]),Some(OdfObjects(asJavaIterable(Seq.empty[OdfObject]))))))
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None,asJavaIterable(Iterable.empty[Int]),Some(OdfObjects(asJavaIterable(Iterable.empty[OdfObject]))))))
 
   }
 

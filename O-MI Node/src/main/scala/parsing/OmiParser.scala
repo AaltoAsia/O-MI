@@ -99,7 +99,9 @@ object OmiParser extends Parser[OmiParseResult] {
     Right(Iterable(
       CancelRequest(
         ttl,
-        cancel.requestId.map { id => id.value.toInt })))
+        cancel.requestId.map { id => id.value.toInt }.toIterable
+      )
+    ))
   }
   private def parseResponse(response: xmlGen.ResponseListType, ttl: Double): OmiParseResult = {
     Right(Iterable(
@@ -112,9 +114,9 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.returnCode,
               result.returnValue.description,
               if (result.requestId.nonEmpty) {
-                Iterable(result.requestId.get.value.toInt)
+                asJavaIterable(Iterable(result.requestId.get.value.toInt))
               } else {
-                asJavaIterable(Seq.empty[Int])
+                asJavaIterable(Iterable.empty[Int])
               },
               if (result.msg.isEmpty)
                 None
@@ -126,7 +128,9 @@ object OmiParser extends Parser[OmiParseResult] {
                 else
                   Some(odf.right.get)
               })
-        })))
+        }.toIterable
+      )
+    ))
   }
 
   private def parseMsg(msg: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = {

@@ -47,7 +47,7 @@ object OdfParser extends Parser[OdfParseResult] {
     val objects = xmlGen.scalaxb.fromXML[xmlGen.ObjectsType](root)
     Right(
       OdfObjects( 
-        if(objects.Object.isEmpty) asJavaIterable(Seq.empty[OdfObject])
+        if(objects.Object.isEmpty) asJavaIterable(Iterable.empty[OdfObject])
         else objects.Object.map{ obj => parseObject( obj ) }.toIterable,
         objects.version 
       )
