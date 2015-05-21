@@ -120,7 +120,7 @@ release <<= (resourceDirectory in Compile, releaseDir, baseDirectory, artifact, 
     resultPath
 }
 
-
+ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
 
 
 
