@@ -2,10 +2,12 @@ package responses
 
 import database._
 import parsing.xmlGen._
+import parsing.xmlGen.scalaxb._
 import parsing.Types.Path
 import xml.XML
+import xml.Node
 
-object DBConversion {
+object DBConversions {
   def sensorToInfoItem(sensor: Array[DBSensor], metaData : Option[String] = None) : InfoItemType = {
     val path = sensor.head.path
     if(sensor.contains{sen : DBSensor => sen.path != path})

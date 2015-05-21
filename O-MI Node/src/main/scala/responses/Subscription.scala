@@ -2,6 +2,7 @@ package responses
 
 import Common._
 import ErrorResponse.intervalNotSupported
+import parsing.xmlGen._
 import parsing.Types._
 import parsing.Types.OmiTypes._
 import parsing.Types.OdfTypes._
@@ -406,8 +407,6 @@ object OMISubscription {
           </Objects>)
       }
     }
-
-
   }
 }
 
