@@ -1,4 +1,4 @@
-package response
+package responses
 
 import database._
 import parsing.xmlGen._
