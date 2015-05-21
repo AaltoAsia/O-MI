@@ -30,7 +30,7 @@ object DBConversion {
       attributes = Map.empty
     )
   }
-  def sensorsToObject(obj: Array[DBSensor] )(implicit dbConnection: DB) : ObjectType = {
+  def sensorsToObject(obj: Array[DBSensor], rec_path: Path)(implicit dbConnection: DB) : ObjectType = {
     val path = obj.head.path
     if(obj.contains{sen : DBSensor => sen.path.head != path.head})
       throw new Exception("Different root nodes in InfoItem generation")
@@ -59,11 +59,11 @@ object DBConversion {
       )),
     InfoItem= sensors.map{
       case ( path :  Path, sensor :Array[DBSensor] ) => 
-      sensorToInfoItem(sensor)  
+      sensorToInfoItem(sensor,dbConnection.getMetaData(rec_path))  
     }.toSeq,
     Object = subobjs.map{
       case ( path :  String, sensors :Array[DBSensor] ) => 
-      sensorsToObject(sensors)
+      sensorsToObject(sensors,rec_path)
     }.toSeq,
       attributes = Map.empty
     )
@@ -82,7 +82,7 @@ object DBConversion {
     ObjectsType(
       Object = subobjs.map{
         case ( path :  String, sensors :Array[DBSensor] ) => 
-        sensorsToObject(sensors)
+        sensorsToObject(sensors, Path("Objects") / path)
       }.toSeq
     )
   }
