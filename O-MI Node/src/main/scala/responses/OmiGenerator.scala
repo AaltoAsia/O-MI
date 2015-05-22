@@ -5,14 +5,14 @@ import parsing.xmlGen._
 import parsing.xmlGen.scalaxb._
 import parsing.Types.Path
 import xml.XML
-import xml.Node
+import xml.NodeSeq
 
 object OmiGenerator {
   
   import DBConversions._
   
-  def omiEnvelope[R <: OmiEnvelopeOption ](ttl: Double, request: R , version: String = "1.0") = {
-    OmiEnvelope( DataRecord[OmiEnvelopeOption]( request), version, ttl)
+  def omiEnvelopeForResponse(ttl: Double, request: ResponseListType , version: String = "1.0") = {
+      OmiEnvelope( DataRecord( request), version, ttl)
   }
   
   def omiResponse( results: RequestResultType) : ResponseListType = {
@@ -21,7 +21,7 @@ object OmiGenerator {
     )
   }
   
-  def omiResult(returnType: ReturnType, requestId: Option[String] = None, msgformat: Option[String] = None, msg: Option[Node] = None) : RequestResultType = {
+  def omiResult(returnType: ReturnType, requestId: Option[String] = None, msgformat: Option[String] = None, msg: Option[NodeSeq] = None) : RequestResultType = {
     RequestResultType(
         returnType,
         requestId match{
@@ -46,7 +46,7 @@ object OmiGenerator {
     ReturnType(value, returnCode, description, attributes = Map.empty)
   }
 
-  def odfMsg( value: Node ) : Node ={
+  def odfMsg( value: NodeSeq )={
     <omi:msg xmlns="odf.xsd">
       {value}
     </omi:msg>
