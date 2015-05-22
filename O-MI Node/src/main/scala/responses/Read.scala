@@ -1,6 +1,6 @@
 package responses
 
-
+import parsing.xmlGen._
 import parsing.Types._
 import parsing.Types.OmiTypes._
 import parsing.Types.OdfTypes._
@@ -109,14 +109,14 @@ object Read {
 /**
  * Class that is used for generation of the read response messages
  */
-class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[ReadRequest] {
+class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[OmiTypes.ReadRequest] {
 
   /**
    * Method that generates a response message from OneTimeRead message
    * @param read OneTimeRead to generate response from
    * @return OMI-response for the read message
    */
-  override def genMsg(read: ReadRequest): OmiOdfMsg = {
+  override def genMsg(read: OmiTypes.ReadRequest): OmiOdfMsg = {
     OmiOdfMsg(
       <Objects>
         { 
@@ -135,6 +135,7 @@ class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[ReadReq
     )
 
   }
+
 
   /**
    * helper function for generating O-DF's Object nodes, recursive

@@ -15,9 +15,9 @@ object OmiGenerator {
       OmiEnvelope( DataRecord( request), version, ttl)
   }
   
-  def omiResponse( results: RequestResultType) : ResponseListType = {
+  def omiResponse( results: RequestResultType*) : ResponseListType = {
     ResponseListType(
-      results
+      results:_*
     )
   }
   

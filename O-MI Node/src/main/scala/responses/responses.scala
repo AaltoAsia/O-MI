@@ -8,7 +8,7 @@ import xml.XML
 import xml.Node
 import scala.language.existentials
 
-class Responses(implicit dbConnection: DB){
+object Result{
   import OmiGenerator._
   import DBConversions._
   private val scope = scalaxb.toScope(
@@ -18,70 +18,35 @@ class Responses(implicit dbConnection: DB){
     Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance"
   )
 
-  def successResponse = {
-    omiEnvelopeForResponse(
-      1,
-      omiResponse(
-        omiResult(
-          omiReturn("200") 
-        )
-      ) 
-    )
- }
+  def successResult : RequestResultType = simpleResult( "200", None)
 
-  def readResponse(sensors: Array[DBSensor])  = {
-    omiEnvelopeForResponse(
-      1,
-      omiResponse(
-        omiResult(
-          omiReturn("200"),
-          None,
-          Some("odf"),
-          Some( odfMsg( scalaxb.toXML[ObjectsType]( sensorsToObjects( sensors ), Some("odf"), Some("Objects"), scope )  ) )
-        )
-      ) 
+  def readResult(sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =  odfResult( "200", None, None, sensors)
+
+  def pollResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
+    odfResult( "200", None, Some(requestId), sensors)
+
+  def subscriptionResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
+    odfResult( "200", None, Some(requestId), sensors)  
+
+  def odfResult( returnCode: String, returnDescription: Option[String], requestId: Option[String], sensors: Array[DBSensor])(implicit dbConnection: DB): RequestResultType  = {
+    omiResult(
+      omiReturn(
+        returnCode,
+        returnDescription
+      ),
+      requestId,
+      Some("odf"),
+      Some( odfMsg( scalaxb.toXML[ObjectsType]( sensorsToObjects( sensors ), Some("odf"), Some("Objects"), scope ) ) )
     )
   }
 
-  def pollResponse( requestId: String, sensors: Array[DBSensor])  = {
-    omiEnvelopeForResponse(
-      1,
-      omiResponse(
-        omiResult(
-          omiReturn("200"),
-          Some(requestId),
-          Some("odf"),
-          Some( odfMsg( scalaxb.toXML[ObjectsType]( sensorsToObjects( sensors ), Some("odf"), Some("Objects"), scope ) ) )
-        )
-      ) 
+  def simpleResult(code: String, description: Option[String] ) : RequestResultType = {
+    omiResult(
+      omiReturn(
+        code,
+        description
+      )
     )
   }
 
-  def subscriptionResponse( requestId: String, sensors: Array[DBSensor])  = {
-    omiEnvelopeForResponse(
-      1,
-      omiResponse(
-        omiResult(
-          omiReturn("200"),
-          Some(requestId),
-          Some("odf"),
-          Some( odfMsg( scalaxb.toXML[ObjectsType]( sensorsToObjects( sensors ), Some("odf"), Some("Objects"), scope ) ) )
-        )
-      ) 
-    )
-  }
-
-  def errorResponse(code: String, description: String )  = {
-    omiEnvelopeForResponse(
-      1,
-      omiResponse(
-        omiResult(
-          omiReturn(
-            code,
-            Some(description)
-          )
-        )
-      ) 
-    )
-  }
 }
