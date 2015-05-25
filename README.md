@@ -1,4 +1,4 @@
-Code-Gardeners
+O-MI Node Server
 ==============
 
 [![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=development)](https://travis-ci.org/TK009/Code-Gardeners)
@@ -9,7 +9,7 @@ Software project course repository. Implementation of Internet of Things standar
 
 Dependencies
 ------------
-SQLite 
+java 
 
 
 Compiling and packaging
@@ -69,19 +69,40 @@ Basic configuration
 File application.conf is the main connfiguration file that is read 
 at start. 
 
+`omi-service` configuration options:
+
+
 `interface = "0.0.0.0"`
-Defines at which interface or hostname O-MI Node is started.
+
+Defines at which interface ip or hostname to bind the O-MI Node. 
+O-MI Node accepts O-MI messages only for this address.
+Use `"0.0.0.0"` for binding to all interfaces.
+
 
 `port = 8080`
+
 Defines which port O-IM Node listens for HTTP requests.
 
-`agent-input-port = 8181`
-Defines port used for listening external agents' sensor updates.
   
+`external-agent-interface = "localhost"`
+
+Defines interface used for listening sensor updates of external agents.
+Should be restricted to localhost or LAN ip, otherwise anyone could
+send sensor data from the internet.
+
+
+`external-agent-port = 8181`
+
+Defines port used for listening sensor updates of external agents.
+
+
 `num-latest-values-stored = 10`
+
 Defines how many latest values are stored for each sensor.
 
+
 `settings-read-odfpath = "Objects/OMI-Service/Settings/"`
+
 Defines path in O-DF hierarchy where values of the settings can be found.
 
 
@@ -93,8 +114,8 @@ agent-system {
     }     
 }
 ```
-For internal agents, configuration has Bootable's classname and Agent's
-configuration file pairs.
+For internal agents, configuration has classname and
+configuration filepath of the agents in pairs.
 
 NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
 
