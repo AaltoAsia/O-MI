@@ -14,7 +14,7 @@ class RequestHandler(implicit val dbConnection: DB) {
   def handleRequest(request: OmiRequest) : NodeSeq = request match {
     case read : ReadRequest =>
       scalaxb.toXML[xmlGen.OmiEnvelope](
-        OmiGenerator.omiEnvelopeForResponse(
+        OmiGenerator.omiEnvelope(
           1.0,
           OmiGenerator.omiResponse(
             Result.readResult(getSensors(read))
@@ -22,9 +22,10 @@ class RequestHandler(implicit val dbConnection: DB) {
         ),
         Some("omi"), Some("omiEnvelope"), scope
       )
+
     case poll : PollRequest =>
       scalaxb.toXML[xmlGen.OmiEnvelope](
-        OmiGenerator.omiEnvelopeForResponse(
+        OmiGenerator.omiEnvelope(
           1.0,
           OmiGenerator.omiResponse(
             poll.requestIds.map{
@@ -36,9 +37,10 @@ class RequestHandler(implicit val dbConnection: DB) {
         ),
         Some("omi"), Some("omiEnvelope"), scope
       )
+
     case subscription : SubscriptionRequest =>
       scalaxb.toXML[xmlGen.OmiEnvelope](
-        OmiGenerator.omiEnvelopeForResponse(
+        OmiGenerator.omiEnvelope(
           1.0, 
           OmiGenerator.omiResponse(
             Result.simpleResult("505", Some( "Not implemented." ) ) 
@@ -46,9 +48,10 @@ class RequestHandler(implicit val dbConnection: DB) {
         ),
         Some("omi"), Some("omiEnvelope"), scope
       )
+
     case write : WriteRequest =>
       scalaxb.toXML[xmlGen.OmiEnvelope](
-        OmiGenerator.omiEnvelopeForResponse(
+        OmiGenerator.omiEnvelope(
           1.0, 
           OmiGenerator.omiResponse(
             Result.simpleResult("505", Some( "Not implemented." ) ) 
@@ -58,7 +61,7 @@ class RequestHandler(implicit val dbConnection: DB) {
       )
     case response : ResponseRequest =>
       scalaxb.toXML[xmlGen.OmiEnvelope](
-        OmiGenerator.omiEnvelopeForResponse(
+        OmiGenerator.omiEnvelope(
           1.0, 
           OmiGenerator.omiResponse(
             Result.simpleResult("505", Some( "Not implemented." ) ) 
