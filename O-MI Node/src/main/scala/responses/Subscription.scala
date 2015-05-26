@@ -109,7 +109,7 @@ object OMISubscription {
     var requestIdInt: Int = -1
     val paths = getInfoItemPaths(subscription.odf.objects.toList)
 
-    if (paths.isEmpty == false) {
+    if (paths.nonEmpty) {
       val xml =
         omiResult {
           returnCode200 ++

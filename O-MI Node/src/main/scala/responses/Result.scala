@@ -25,8 +25,18 @@ object Result{
   def pollResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
     odfResult( "200", None, Some(requestId), sensors)
 
-  def subscriptionResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
+  def subDataResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
     odfResult( "200", None, Some(requestId), sensors)  
+    
+  def subscriptionResult( requestId: String): RequestResultType ={
+    omiResult(
+      omiReturn(
+        "200",
+        Some("Successfully started subcription")
+      ),
+      Some(requestId)
+    )
+  }
 
   def odfResult( returnCode: String, returnDescription: Option[String], requestId: Option[String], sensors: Array[DBSensor])(implicit dbConnection: DB): RequestResultType  = {
     omiResult(

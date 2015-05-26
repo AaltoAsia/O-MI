@@ -18,9 +18,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
  * Actor that handles incoming http messages
- * @param subHandler ActorRef that is used in subscription handling
+ * @param requestHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {
 
   /**
    * the HttpService trait defines only one abstract member, which
@@ -29,7 +29,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
   def actorRefFactory = context
 
   //Used for O-MI subscriptions
-  val subscriptionHandler = subHandler
+  val requestHandler = reqHandler
 
   /**
    * this actor only runs our route, but you could add
@@ -48,7 +48,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 trait OmiService extends HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
-  val subscriptionHandler: ActorRef
+  val requestHandler: RequestHandler
 
   implicit val dbobject: DB
 
@@ -113,9 +113,6 @@ trait OmiService extends HttpService {
 
   import OMISubscription._
   // XXX: lazy maybe fixes bug
-  lazy val cancelResponseGen = new OMICancelGen(subscriptionHandler)
-  lazy val readResponseGen = new ReadResponseGen
-  lazy val pollResponseGen = new PollResponseGen
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
@@ -131,43 +128,8 @@ trait OmiService extends HttpService {
               var returnStatus = 200
 
               //FIXME: Currently sending multiple omi:omiEnvelope
-              val result = requests.map {
-
-                case read: ReadRequest =>
-                  log.debug(read.toString)
-                  readResponseGen.runRequest(read)
-
-                  case poll: PollRequest =>
-                    // Should give out poll result
-                    pollResponseGen.runRequest(poll)
-
-                case write: WriteRequest =>
-                  log.debug(write.toString)
-                  returnStatus = 501
-                  ErrorResponse.notImplemented
-
-                case subscription: SubscriptionRequest =>
-                  log.debug(subscription.toString)
-
-                  val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
-
-                  if (subscription.callback.isDefined && subscription.callback.get.toString.length > 3 && id >= 0) // XXX: hack check for valid url :D
-                    subscriptionHandler ! NewSubscription(id)
-
-                  response
-
-                case cancel: CancelRequest =>
-                  log.debug(cancel.toString)
-
-                  cancelResponseGen.runRequest(cancel)
-
-                case _ =>
-                  log.warning("Unknown request")
-                  returnStatus = 400
-
-              }.mkString("\n")
-
-              complete(returnStatus, result)
+              val (response,returnCode) = requestHandler.handleRequest(requests.head)
+              complete(returnCode, response)
 
             }
           } else {

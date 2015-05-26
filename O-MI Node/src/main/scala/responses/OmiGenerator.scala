@@ -4,17 +4,17 @@ import database._
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb._
 import parsing.Types.Path
-import xml.XML
-import xml.NodeSeq
 import parsing.xmlGen.scalaxb.DataRecord._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
+import xml.XML
+import xml.NodeSeq
 
 object OmiGenerator {
   
   import DBConversions._
   
-  def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, request: R , version: String = "1.0") = {
-      OmiEnvelope( DataRecord[R]( request), version, ttl)
+  def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") = {
+      OmiEnvelope( DataRecord[R](Some("omi"), Some(requestName), request), version, ttl)
   }
   
   def omiResponse( results: RequestResultType*) : ResponseListType = {
