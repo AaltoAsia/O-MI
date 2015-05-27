@@ -1,5 +1,6 @@
 package http
 
+import responses.RequestHandler
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
@@ -30,6 +31,7 @@ class OmiServiceSpec extends Specification
     implicit val dbobject = dbConnection
     
     val subscriptionHandler = akka.actor.ActorRef.noSender
+    val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
     
     "System tests for features of OMI Node service".title
 

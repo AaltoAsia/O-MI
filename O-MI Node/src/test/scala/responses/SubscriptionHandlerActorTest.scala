@@ -83,24 +83,23 @@ class SubscriptionHandlerActorTest extends Specification {
       subscriptionHandler.tell(NewSubscription(testSub1), probe.ref)
       //      subscriptionActor.eventSubs.isEmpty === true
 
-      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 2
-      subscriptionActor.getIntervalSubs.exists(_.id == 2) === true
-      subscriptionHandler.tell(RemoveSubscription(2), probe.ref)
+      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 0
+      //subscriptionActor.getIntervalSubs.exists(_.id == 0) === true
+      subscriptionHandler.tell(RemoveSubscription(0), probe.ref)
       probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
-      subscriptionActor.getIntervalSubs.exists(_.id == 2) === false
+      subscriptionActor.getIntervalSubs.exists(_.id == 0) === false
     }
 
     "load given event subs into memory when sent load message" in new Actors {
-      subscriptionActor.getEventSubs.exists(_._2.id == 2) == false
       val subscriptionHandler = TestActorRef[SubscriptionHandler]
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
       val duration = scala.concurrent.duration.Duration(1000, "ms")
+      subscriptionActor.getEventSubs.exists(_._2.id == 0) === false
 
       subscriptionHandler.tell(NewSubscription(testSub1), probe.ref)
 
-      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 2
-      subscriptionActor.getIntervalSubs.exists(_.id == 2) === true
+      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 0
 
     }
 
@@ -125,10 +124,10 @@ class SubscriptionHandlerActorTest extends Specification {
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
 
-      subscriptionActor.getEventSubs.exists(_._2.id == 2) === true
-      subscriptionHandler.tell(RemoveSubscription(2), probe.ref)
+      //subscriptionActor.getEventSubs.exists(_._2.id == 0) === true
+      subscriptionHandler.tell(RemoveSubscription(0), probe.ref)
       probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
-      subscriptionActor.getEventSubs.exists(_._2.id == 2) === false
+      subscriptionActor.getEventSubs.exists(_._2.id == 0) === false
     }
   }
 }
