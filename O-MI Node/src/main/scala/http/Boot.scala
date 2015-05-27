@@ -92,7 +92,7 @@ trait Starter {
     implicit val timeoutForBind = Timeout(5.seconds)
 
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,
-      new InetSocketAddress("localhost", settings.agentPort))
+      new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
     IO(Tcp)  ? Tcp.Bind(agentLoader,
       new InetSocketAddress("localhost", settings.cliPort))
 
