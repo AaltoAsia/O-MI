@@ -2,6 +2,7 @@ package responses
 
 import parsing.Types.OmiTypes._
 import parsing.Types.OdfTypes._
+import parsing.Types.Path
 import parsing.xmlGen
 import parsing.xmlGen.scalaxb
 import database._
@@ -65,6 +66,15 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
         ),
         500
       )
+      case Failure(e: RequestHandlingException) => 
+        actionOnInternalError(e)
+        (
+          xmlFromResults(
+            1.0,
+            Result.simpleResult(e.errorCode.toString, Some( e.getMessage()))
+          ),
+          501
+        )
       case Failure(e) => 
         actionOnInternalError(e)
         (
@@ -81,13 +91,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
 
   def xmlFromRequest(request: OmiRequest) : (NodeSeq, Int) = request match {
     case read : ReadRequest =>
-      (
-        xmlFromResults(
-          1.0,
-          Result.readResult(getSensors(read))
-        ),
-        200
-      )
+      handleRead(read)
 
     case poll : PollRequest =>
       (
@@ -103,23 +107,8 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
       )
 
     case subscription : SubscriptionRequest =>
-      implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
-      val subFuture = subscriptionHandler ? NewSubscription(subscription)
-      var returnCode = 200
-      println("Waitting for results... ")
-      (
-        xmlFromResults(
-          1.0,
-          Await.result(subFuture, Duration.Inf) match {
-            case -1 => 
-              returnCode = 501
-              Result.simpleResult("501", Some( "Internal server error when trying to create subscription."))
-            case id: Int =>
-              Result.subscriptionResult(id.toString) 
-          }
-        ),
-        returnCode
-      )
+      handleSubscription(subscription)
+
     case write : WriteRequest =>
     (
       xmlFromResults(
@@ -169,12 +158,41 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
   )
   
   def getSensors(request: OdfRequest): Array[DBSensor] = {
-    getPaths(request).map{path => dbConnection.get(path) }.collect{ case Some(sensor:DBSensor) => sensor }.toArray
+    val items = getPaths(request).map{path => dbConnection.get(path) }
+    val objects = items.collect{ case Some(sensor:DBObject) => sensor }
+    val sensors = items.collect{ case Some(sensor:DBSensor) => sensor }
+    (sensors ++ objects.flatMap{ obj : DBObject => getDBChildSensors(obj) }).toArray
   }
 
-  def getPaths(request: OdfRequest) = getInfoItems( request.odf.objects ).map( info => info.path )
-
+  def getDBChildSensors( obj: DBObject) : Array[DBSensor] = {
+    obj.childs.collect{ 
+      case sen: DBSensor => sen 
+    }.toArray ++ 
+    obj.childs.collect{
+      case sub: DBObject =>
+        sub.childs = dbConnection.getChilds(sub.path)
+        sub
+      }.flatMap{ 
+      sub =>
+        getDBChildSensors(sub) 
+    } 
+  }
+  def getPaths(request: OdfRequest) : Array[Path] = {
+    request.odf.objects.flatMap{
+        obj => 
+        if(obj.infoItems.nonEmpty || obj.objects.nonEmpty)
+          (obj.infoItems ++ getInfoItems(obj.objects)).map{ info => info.path }
+        else
+          Seq(obj.path)
+    }.toArray
+  }
   
+  def getObjects( objects: Iterable[OdfObject] ) : Iterable[OdfObject] = {
+    objects.flatten{
+        obj => 
+        Seq(obj) ++ getObjects(obj.objects)
+    }
+  }
   def getInfoItems( objects: Iterable[OdfObject] ) : Iterable[OdfInfoItem] = {
     objects.flatten{
         obj => 
@@ -241,6 +259,62 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
       ),
       returnCode
     )
+  }
+
+  def handleRead(read: ReadRequest) : (NodeSeq, Int) ={
+    println("Handling read...")
+    val infoItems = getInfoItems(read.odf.objects)
+    println("Handling infoItems: " + infoItems)
+    val emptyObjects = getObjects(read.odf.objects).filter{obj => obj.infoItems.isEmpty && obj.objects.isEmpty } 
+    println("Handling empty Objects: " + emptyObjects)
+    val paths = emptyObjects.map{ obj => obj.path } ++ infoItems.map{info => info.path}
+    println("Handling paths: " + paths)
+    val dbItems = paths.map{ path => dbConnection.get(path) }
+    println("Handling DBItems: " + dbItems)
+    println("Handling DBSensors: " )
+    val sensors = getDBSensorRecursively( dbItems.collect{case Some(item: DBItem) => item }.toArray )
+    println("Got DBSensors: " )
+    println(sensors.map{ c => c.path}.mkString("\n"))
+    (
+      xmlFromResults(
+        1.0,
+        Result.readResult(sensors)
+      ),
+      200
+    )
+  }
+  def handleSubscription( subscription: SubscriptionRequest ) : ( NodeSeq, Int) = {
+      implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
+      val subFuture = subscriptionHandler ? NewSubscription(subscription)
+      var returnCode = 200
+      println("Waitting for results... ")
+      (
+        xmlFromResults(
+          1.0,
+          Await.result(subFuture, Duration.Inf) match {
+            case -1 => 
+              returnCode = 501
+              Result.simpleResult("501", Some( "Internal server error when trying to create subscription."))
+            case id: Int =>
+              Result.subscriptionResult(id.toString) 
+          }
+        ),
+        returnCode
+      )
+  }
+  //RENAME
+  def getDBSensorRecursively(dbItems: Array[DBItem] ) : Array[DBSensor] = {
+    val sensors : Array[DBSensor] = dbItems.flatMap{
+      case sensor: DBSensor =>
+        println("InfoItem:\n" + sensor.path)
+        Seq(sensor)
+      case obj: DBObject => 
+        obj.childs = dbConnection.getChilds(obj.path)
+        println("Childs:\n" + obj.childs.filter{ c => c.path.nonEmpty }.map{ c => c.path }.mkString("\n"))
+        getDBSensorRecursively(obj.childs)
+    }.toArray
+    println("ALL: " + sensors.map{s => s.path}.mkString("\n") )
+    sensors
   }
 
   def notImplemented = xmlFromResults(

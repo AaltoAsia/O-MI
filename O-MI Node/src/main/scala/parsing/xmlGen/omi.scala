@@ -30,7 +30,7 @@ trait RequestBaseTypable {
   val msg: Option[scalaxb.DataRecord[Any]]
   val callback: Option[java.net.URI]
   val msgformat: Option[String]
-  val targetType: TargetType
+  val targetType: TargetType 
 }
 
 
@@ -41,7 +41,8 @@ case class RequestBaseType(nodeList: Option[NodesType] = None,
   msg: Option[scalaxb.DataRecord[Any]] = None,
   callback: Option[java.net.URI] = None,
   msgformat: Option[String] = None,
-  targetType: TargetType) extends RequestBaseTypable
+  targetType: TargetType = Node
+) extends RequestBaseTypable
 
 
 /** Read request type.
@@ -51,7 +52,7 @@ case class ReadRequest(nodeList: Option[NodesType] = None,
   msg: Option[scalaxb.DataRecord[Any]] = None,
   callback: Option[java.net.URI] = None,
   msgformat: Option[String] = None,
-  targetType: TargetType,
+  targetType: TargetType = Node,
   interval: Option[Double] = None,
   oldest: Option[Int] = None,
   begin: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
@@ -66,7 +67,8 @@ case class WriteRequest(nodeList: Option[NodesType] = None,
   msg: Option[scalaxb.DataRecord[Any]] = None,
   callback: Option[java.net.URI] = None,
   msgformat: Option[String] = None,
-  targetType: TargetType) extends RequestBaseTypable with OmiEnvelopeOption
+  targetType: TargetType = Node
+) extends RequestBaseTypable with OmiEnvelopeOption
 
 
 /** List of results.
@@ -95,7 +97,8 @@ case class RequestResultType(returnValue: ReturnType,
   nodeList: Option[NodesType] = None,
   omiEnvelope: Option[OmiEnvelope] = None,
   msgformat: Option[String] = None,
-  targetType: TargetTypeType)
+  targetType: TargetTypeType = NodeValue
+)
 
 
 /** Return status of request. Use HTTP codes / descriptions when applicable.

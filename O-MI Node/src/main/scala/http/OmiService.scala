@@ -126,7 +126,6 @@ trait OmiService extends HttpService {
             respondWithMediaType(`text/xml`) {
 
               var returnStatus = 200
-
               //FIXME: Currently sending multiple omi:omiEnvelope
               val (response,returnCode) = requestHandler.handleRequest(requests.head)
               complete(returnCode, response)

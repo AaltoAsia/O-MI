@@ -39,8 +39,7 @@ object OmiGenerator {
         if(msgformat.nonEmpty && msg.nonEmpty)
           msgformat
         else
-          None,
-        targetType = DeviceValue
+          None
       )
   } 
 

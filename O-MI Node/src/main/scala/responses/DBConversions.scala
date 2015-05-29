@@ -9,17 +9,19 @@ import xml.Node
 
 object DBConversions {
   def sensorToInfoItem(sensor: Array[DBSensor], metaData : Option[String] = None) : InfoItemType = {
-    val path = sensor.head.path
-    if(sensor.contains{sen : DBSensor => sen.path != path})
-      throw new Exception("Different paths in InfoItem generation")
-    
+    if(sensor.isEmpty)
+      throw new RequestHandlingException(500,"Empty Array[Sensors] passed to generate InfoItems")
+
+    if(sameSubTree(sensor.map{ sen => sen.path }))
+      throw new RequestHandlingException(500,"Different root nodes in InfoItem generation")
+    val name = sensor.head.path.last 
     InfoItemType(
-      name = path.last,
-      value = sensor.map{ value : DBSensor =>
+      name = name,
+      value = sensor.map{ sen : DBSensor =>
       ValueType(
-        value.value,
+        sen.value,
         "",
-        unixTime = Some(value.time.getTime/1000),
+        unixTime = Some(sen.time.getTime/1000),
         attributes = Map.empty
       )
       },
@@ -33,22 +35,29 @@ object DBConversions {
     )
   }
   def sensorsToObject(obj: Array[DBSensor], rec_path: Path)(implicit dbConnection: DB) : ObjectType = {
-    val path = obj.head.path
-    if(obj.contains{sen : DBSensor => sen.path.head != path.head})
-      throw new Exception("Different root nodes in InfoItem generation")
-    val sensors = obj.filter{ 
-      sensor : DBSensor =>
-        sensor.path.tail.length == 1
+    if(obj.isEmpty)
+      throw new RequestHandlingException(500,"Empty Array[Sensors] passed to generate Object")
+
+    if(sameSubTree(obj.map{ sobj => sobj.path }))
+      throw new RequestHandlingException(500,"Different root nodes in InfoItem generation")
+
+    val id = obj.head.path.head 
+    val sensors = obj.map{
+      sobj =>
+        DBSensor( Path(sobj.path).tail,  sobj.value, sobj.time )
+    }.filter{ 
+      sensor : DBSensor =>//InfoItems
+        sensor.path.length == 1
     }.groupBy{
       sensor : DBSensor =>
-        sensor.path
+        sensor.path.head
     }
-    val subobjs = obj.filter{
+    val subobjs = obj.map{
+      sobj =>
+        DBSensor( Path(sobj.path).tail,  sobj.value, sobj.time )
+    }.filter{
       sensor : DBSensor => 
         sensor.path.length > 2
-    }.map{
-      sobj : DBSensor => 
-        DBSensor( sobj.path.tail,  sobj.value, sobj.time )
     }.groupBy{
       sobj : DBSensor => 
        sobj.path.head
@@ -56,29 +65,32 @@ object DBConversions {
 
     ObjectType(
       Seq( QlmID(
-        path.head,
-        attributes = Map.empty
+          id,
+          attributes = Map.empty
       )),
-    InfoItem= sensors.map{
-      case ( path :  Path, sensor :Array[DBSensor] ) => 
-      sensorToInfoItem(sensor,dbConnection.getMetaData(rec_path))  
-    }.toSeq,
-    Object = subobjs.map{
-      case ( path :  String, sensors :Array[DBSensor] ) => 
-      sensorsToObject(sensors,rec_path)
-    }.toSeq,
+      InfoItem= sensors.map{
+        case ( path :  String, sensor :Array[DBSensor] ) => 
+          sensorToInfoItem(sensor)  
+      }.toSeq,
+      Object = subobjs.map{
+        case ( path :  String, sensors :Array[DBSensor] ) => 
+          sensorsToObject(sensors,rec_path)
+      }.toSeq,
       attributes = Map.empty
     )
   }
   def sensorsToObjects( objects: Array[DBSensor] )(implicit dbConnection: DB) : ObjectsType ={
-    val path = objects.head.path
-    if(objects.contains{sen : DBSensor => sen.path.head != "Objects"})
-      throw new Exception("Different root nodes in InfoItem generation")
+    if(objects.isEmpty)
+      throw RequestHandlingException( 404, "No such items found. ")
+    
+    if( sameSubTree( objects.map{ sobj => sobj.path }))
+      throw RequestHandlingException( 500,"Paths doens't start with same node")
+
     val subobjs = objects.map{
-      sobj : DBSensor => 
+      sobj : DBSensor =>//Get sensors without 'Objects' as first in path 
         DBSensor( sobj.path.tail,  sobj.value, sobj.time )
     }.groupBy{
-      sobj : DBSensor => 
+      sobj : DBSensor =>//Group by first level
        sobj.path.head
     }
     ObjectsType(
@@ -88,4 +100,10 @@ object DBConversions {
       }.toSeq
     )
   }
+  private def sameSubTree(paths: Array[Path]) : Boolean = {
+    val subTree = paths.head.head
+    !paths.exists( path => path.head != subTree)
+  }
 }
+
+case class RequestHandlingException(errorCode: Int, msg: String) extends Exception(msg)
