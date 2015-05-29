@@ -6,6 +6,8 @@ import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
+import java.net.InetSocketAddress
+import java.net.InetAddress
 
 import responses._
 import parsing._
@@ -14,6 +16,7 @@ import parsing.Types.OmiTypes._
 import database._
 
 import xml._
+import scala.collection.JavaConverters._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
@@ -40,6 +43,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
+  val settings = Settings(context.system)
 }
 
 /**
@@ -50,7 +54,16 @@ trait OmiService extends HttpService {
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
 
+  def settings :OmiConfigExtension 
   implicit val dbobject: DB
+
+  private val ips = settings.externalAgentIps.asScala.map{
+    case s: String => inetAddrToInt(InetAddress.getByName(s))
+  }.toArray 
+  private val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+    case (s: String, bits: Object ) => 
+    (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
+  }.toMap 
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -128,6 +141,7 @@ trait OmiService extends HttpService {
             val requests = omi.right.get
             respondWithMediaType(`text/xml`) {
 
+              clientIP { ip =>
               var returnStatus = 200
 
               //FIXME: Currently sending multiple omi:omiEnvelope
@@ -142,10 +156,20 @@ trait OmiService extends HttpService {
                     pollResponseGen.runRequest(poll)
 
                 case write: WriteRequest =>
-                  log.debug(write.toString)
-                  returnStatus = 501
-                  ErrorResponse.notImplemented
-
+                  val remote = ip.toOption.get
+                  if(!ips.contains( inetAddrToInt(remote) ) ||
+                    !subnets.exists{ case (subnet : Int, bits : Int) =>
+                    isInSubnet(subnet, bits, inetAddrToInt(remote))
+                  }
+                  ){
+                    log.warning(s"Unauthorized $remote tryed to connect as external agent.")
+                    returnStatus = 401
+                    ErrorResponse.notImplemented
+                  }else {
+                    log.debug(write.toString)
+                    returnStatus = 501
+                    ErrorResponse.notImplemented
+                  }
                 case subscription: SubscriptionRequest =>
                   log.debug(subscription.toString)
 
@@ -169,6 +193,7 @@ trait OmiService extends HttpService {
 
               complete(returnStatus, result)
 
+              }
             }
           } else {
             val errors = omi.left.get
@@ -184,4 +209,17 @@ trait OmiService extends HttpService {
 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
+
+  def inetAddrToInt(addr: InetAddress) : Int = {
+    val b : Array[Byte] = addr.getAddress()
+    val ip : Int = ((b(0) & 0xFF) << 24) |
+      ((b(1) & 0xFF) << 16) |
+      ((b(2) & 0xFF) << 8)  |
+      ((b(3) & 0xFF) << 0);
+    ip
+  }
+  def isInSubnet(subnet: Int, bits: Int, ip: Int) : Boolean = {
+    val mask = -1 << (32 - bits)  
+    (subnet & mask) == (ip & mask) 
+  }
 }
