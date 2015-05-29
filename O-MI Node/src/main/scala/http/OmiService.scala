@@ -43,7 +43,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
-  val settings = Settings(context.system)
+  def settings = Settings(context.system)
 }
 
 /**
@@ -54,7 +54,7 @@ trait OmiService extends HttpService {
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
 
-  def settings :OmiConfigExtension 
+  def settings : OmiConfigExtension 
   implicit val dbobject: DB
 
   private val ips = settings.externalAgentIps.asScala.map{
@@ -141,7 +141,6 @@ trait OmiService extends HttpService {
             val requests = omi.right.get
             respondWithMediaType(`text/xml`) {
 
-              clientIP { ip =>
               var returnStatus = 200
 
               //FIXME: Currently sending multiple omi:omiEnvelope
@@ -156,19 +155,23 @@ trait OmiService extends HttpService {
                     pollResponseGen.runRequest(poll)
 
                 case write: WriteRequest =>
-                  val remote = ip.toOption.get
-                  if(!ips.contains( inetAddrToInt(remote) ) ||
-                    !subnets.exists{ case (subnet : Int, bits : Int) =>
-                    isInSubnet(subnet, bits, inetAddrToInt(remote))
-                  }
-                  ){
-                    log.warning(s"Unauthorized $remote tryed to connect as external agent.")
-                    returnStatus = 401
-                    ErrorResponse.notImplemented
-                  }else {
-                    log.debug(write.toString)
-                    returnStatus = 501
-                    ErrorResponse.notImplemented
+                  clientIP { ip =>
+                    val remote = ip.toOption.get
+                    log.warning(s"$remote tryed to use write request.")
+                    if(!ips.contains( inetAddrToInt(remote) ) ||
+                      !subnets.exists{ case (subnet : Int, bits : Int) =>
+                      isInSubnet(subnet, bits, inetAddrToInt(remote))
+                    }
+                    ){
+                      log.warning(s"Unauthorized $remote tryed to use write request.")
+                      returnStatus = 401
+                      ErrorResponse.notImplemented
+                    }else {
+                      log.warning(s"$remote tryed to use write request, not iplemented.")
+                      log.debug(write.toString)
+                      returnStatus = 501
+                    }
+                    complete(returnStatus, ErrorResponse.notImplemented.mkString("\n"))
                   }
                 case subscription: SubscriptionRequest =>
                   log.debug(subscription.toString)
@@ -193,7 +196,6 @@ trait OmiService extends HttpService {
 
               complete(returnStatus, result)
 
-              }
             }
           } else {
             val errors = omi.left.get
