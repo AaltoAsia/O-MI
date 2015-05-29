@@ -26,8 +26,8 @@ import scala.collection.JavaConversions.asJavaIterable
 class ExternalAgentListener extends Actor with ActorLogging {
   
   private val settings = Settings(context.system)
-  private val ips = settings.externalAgentIps.unwrapped().asScala.map{
-    case (s: String, o : Object) => inetAddrToInt(InetAddress.getByName(s))
+  private val ips = settings.externalAgentIps.asScala.map{
+    case s: String => inetAddrToInt(InetAddress.getByName(s))
   }.toArray 
   private val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
