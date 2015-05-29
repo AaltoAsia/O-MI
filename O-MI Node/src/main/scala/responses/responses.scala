@@ -9,16 +9,17 @@ import xml.Node
 import scala.language.existentials
 
 object `package` {
-  
+ /*Ä 
   import OmiGenerator._
   import DBConversions._
 
   def successResponse = {
     omiEnvelope(
       1,
+      "response",
       omiResponse(
         omiResult(
-          omiReturn(200) 
+          omiReturn("200") 
         )
       ) 
     )
@@ -27,9 +28,10 @@ object `package` {
   def readResponse(sensors: Seq[DBSensor])  = {
     omiEnvelope(
       1,
+      "response",
       omiResponse(
         omiResult(
-          omiReturn(200) 
+          omiReturn("200") 
         ),
         None,
         Some("odf"),
@@ -41,9 +43,10 @@ object `package` {
   def pollResponse( requestId: String, sensors: Seq[DBSensor])  = {
     omiEnvelope(
       1,
+      "response",
       omiResponse(
         omiResult(
-          omiReturn(200) 
+          omiReturn("200") 
         ),
         Some(requestId),
         Some("odf"),
@@ -55,9 +58,10 @@ object `package` {
   def subscriptionResponse( requestId: String, sensors: Seq[DBSensor])  = {
     omiEnvelope(
       1,
+      "response",
       omiResponse(
         omiResult(
-          omiReturn(200) 
+          omiReturn("200") 
         ),
         Some(requestId),
         Some("odf"),
@@ -69,14 +73,15 @@ object `package` {
   def errorResponse(code: Int, description: String )  = {
     omiEnvelope(
       1,
+      "response",
       omiResponse(
         omiResult(
           omiReturn(
-            code,
+            code.toString,
             Some(description)
           )
         )
       ) 
     )
-  }
+  }*/
 }

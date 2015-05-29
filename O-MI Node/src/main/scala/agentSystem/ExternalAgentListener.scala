@@ -5,23 +5,34 @@ import akka.io.{ IO, Tcp  }
 import akka.util.ByteString
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
+import java.net.InetAddress
 
-
+import scala.collection.mutable.Map
+import scala.collection.immutable
+import scala.collection.JavaConverters._
+import http.Settings
 import parsing.OdfParser
 import parsing.OmiParser
 import database.SQLiteConnection
-
-
 import parsing.Types._
 import parsing.Types.Path._
 import parsing.Types.OdfTypes._
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
 /** AgentListener handles connections from agents.
   */
 class ExternalAgentListener extends Actor with ActorLogging {
-   
+  
+  private val settings = Settings(context.system)
+  private val ips = settings.externalAgentIps.unwrapped().asScala.map{
+    case (s: String, o : Object) => inetAddrToInt(InetAddress.getByName(s))
+  }.toArray 
+  private val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+    case (s: String, bits: Object ) => 
+    (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
+  }.toMap 
   import Tcp._
   //Orginally a hack for getting different names for actors.
   private var agentCounter : Int = 0 
@@ -42,16 +53,35 @@ class ExternalAgentListener extends Actor with ActorLogging {
    
     case Connected(remote, local) =>
       val connection = sender()
-      log.info(s"Agent connected from $remote to $local")
-
-      val handler = context.actorOf(
-        Props(classOf[ExternalAgentHandler], remote),
-        "agent-handler-"+agentCounter
-      )
-      agentCounter += 1
-      connection ! Register(handler)
+      if(!ips.contains( inetAddrToInt(remote.getAddress()) ) ||
+        !subnets.exists{ case (subnet : Int, bits : Int) =>
+         isInSubnet(subnet, bits, inetAddrToInt(remote.getAddress()))
+        }
+      ){
+        log.warning(s"Unauthorized $remote tryed to connect as external agent.")
+      } else {
+        log.info(s"Agent connected from $remote to $local")
+        val handler = context.actorOf(
+          Props(classOf[ExternalAgentHandler], remote),
+          "agent-handler-"+agentCounter
+        )
+        agentCounter += 1
+        connection ! Register(handler)
+      }
   }
 
+  def inetAddrToInt(addr: InetAddress) : Int = {
+    val b : Array[Byte] = addr.getAddress()
+    val ip : Int = ((b(0) & 0xFF) << 24) |
+      ((b(1) & 0xFF) << 16) |
+      ((b(2) & 0xFF) << 8)  |
+      ((b(3) & 0xFF) << 0);
+    ip
+  }
+  def isInSubnet(subnet: Int, bits: Int, ip: Int) : Boolean = {
+    val mask = -1 << (32 - bits)  
+    (subnet & mask) == (ip & mask) 
+  }
 }
 
 /** A handler for data received from a agent.

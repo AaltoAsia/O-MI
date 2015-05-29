@@ -11,13 +11,13 @@ object OmiGenerator {
   
   import DBConversions._
   
-  def omiEnvelope[R <: OmiEnvelopeOption ](ttl: Double, request: R , version: String = "1.0") = {
-    OmiEnvelope( DataRecord[OmiEnvelopeOption]( request), version, ttl)
+  def omiEnvelope[R <: OmiEnvelopeOption : CanWriteXML](ttl: Double, elemName: String, request: R , version: String = "1.0") = {
+    OmiEnvelope( DataRecord[R]( Some("omi"), Some(elemName), request), version, ttl)
   }
   
-  def omiResponse( results: RequestResultType) : ResponseListType = {
+  def omiResponse( results: RequestResultType*) : ResponseListType = {
     ResponseListType(
-      results
+      results:_*
     )
   }
   
