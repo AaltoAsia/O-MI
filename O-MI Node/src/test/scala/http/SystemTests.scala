@@ -28,7 +28,7 @@ class OmiServiceSpec extends Specification
 
     implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
     implicit val dbobject = dbConnection
-    val settings = Settings(system) 
+    //def settings = Settings(system) 
     val subscriptionHandler = akka.actor.ActorRef.noSender
     
     "System tests for features of OMI Node service".title

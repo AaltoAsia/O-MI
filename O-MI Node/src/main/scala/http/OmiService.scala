@@ -43,7 +43,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
-  def settings = Settings(context.system)
+ // def settings = Settings(context.system)
 }
 
 /**
@@ -54,9 +54,9 @@ trait OmiService extends HttpService {
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
 
-  def settings : OmiConfigExtension 
+  //def settings : OmiConfigExtension 
   implicit val dbobject: DB
-
+  /*
   private val ips = settings.externalAgentIps.asScala.map{
     case s: String => inetAddrToInt(InetAddress.getByName(s))
   }.toArray 
@@ -64,7 +64,7 @@ trait OmiService extends HttpService {
     case (s: String, bits: Object ) => 
     (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
   }.toMap 
-
+  */
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
     respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
@@ -155,8 +155,10 @@ trait OmiService extends HttpService {
                     pollResponseGen.runRequest(poll)
 
                 case write: WriteRequest =>
-                  clientIP { ip =>
-                    val remote = ip.toOption.get
+                  //ClientIp not cathcing localhost?
+                  //Should be re implemented after responseGen refactor
+                  /*clientIP { ip =>
+                  val remote = ip.toOption.get
                     log.warning(s"$remote tryed to use write request.")
                     if(!ips.contains( inetAddrToInt(remote) ) ||
                       !subnets.exists{ case (subnet : Int, bits : Int) =>
@@ -166,13 +168,14 @@ trait OmiService extends HttpService {
                       log.warning(s"Unauthorized $remote tryed to use write request.")
                       returnStatus = 401
                       ErrorResponse.notImplemented
-                    }else {
-                      log.warning(s"$remote tryed to use write request, not iplemented.")
+                    }else {*/
+                    //  log.warning(s"$remote tryed to use write request, not iplemented.")
                       log.debug(write.toString)
-                      returnStatus = 501
-                    }
-                    complete(returnStatus, ErrorResponse.notImplemented.mkString("\n"))
-                  }
+                      returnStatus = 501 
+                      ErrorResponse.notImplemented
+                   // }
+                   // complete(returnStatus, ErrorResponse.notImplemented.mkString("\n"))
+                  //}
                 case subscription: SubscriptionRequest =>
                   log.debug(subscription.toString)
 
