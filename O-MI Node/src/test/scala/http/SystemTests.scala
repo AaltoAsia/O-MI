@@ -12,12 +12,16 @@ import org.specs2.matcher.XmlMatchers
 import spray.testkit.Specs2RouteTest
 import spray.httpx.marshalling.BasicMarshallers._
 import spray.http._
+import spray.http.HttpHeaders._
 import HttpMethods._
 import StatusCodes._
 import MediaTypes._
 import StatusCodes._
 
 import database._
+
+import scala.collection.JavaConverters._
+import java.net.InetAddress
 
 class OmiServiceSpec extends Specification
                         with XmlMatchers
@@ -28,9 +32,16 @@ class OmiServiceSpec extends Specification
 
     implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
     implicit val dbobject = dbConnection
-    //def settings = Settings(system) 
+    val settings = Settings(system) 
     val subscriptionHandler = akka.actor.ActorRef.noSender
-    
+    val ips = settings.externalAgentIps.asScala.map{
+      case s: String => inetAddrToInt(InetAddress.getByName(s))
+    }.toArray 
+    val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+      case (s: String, bits: Object ) =>  
+      (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
+    }.toMap
+
     "System tests for features of OMI Node service".title
 
     step {
@@ -151,12 +162,12 @@ class OmiServiceSpec extends Specification
 
       "handle a single read request and the response" should {
         "return error with invalid request" in {
-          Post("/", invalidReadTestRequestFridge) ~> myRoute~> check {
+          Post("/", invalidReadTestRequestFridge).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute~> check {
             status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
           }
         }
 
-        Post("/", readTestRequestFridge) ~> myRoute ~> check {
+        Post("/", readTestRequestFridge).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
           // XXX: This test is hacky as it is a nested "should"
           val response = responseAs[NodeSeq].head

@@ -22,7 +22,7 @@ class AgentListenerTest extends Specification {
   Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
 
   val local = new InetSocketAddress("localhost", 1234)
-  val remote = new InetSocketAddress("remote", 4321)
+  val remote = new InetSocketAddress("127.0.0.1", 4321)
   lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("\n")
 
   step {

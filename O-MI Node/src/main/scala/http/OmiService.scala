@@ -43,7 +43,15 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
-  def settings = Settings(context.system)
+  val settings = Settings(context.system)
+
+  val ips = settings.externalAgentIps.asScala.map{
+    case s: String => inetAddrToInt(InetAddress.getByName(s))
+  }.toArray 
+  val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+    case (s: String, bits: Object ) => 
+    (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
+  }.toMap
 }
 
 /**
@@ -54,16 +62,11 @@ trait OmiService extends HttpService {
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
 
-  def settings : OmiConfigExtension 
+  val settings : OmiConfigExtension 
   implicit val dbobject: DB
 
-  private val ips = settings.externalAgentIps.asScala.map{
-    case s: String => inetAddrToInt(InetAddress.getByName(s))
-  }.toArray 
-  private val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
-    case (s: String, bits: Object ) => 
-    (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
-  }.toMap 
+  val ips : Array[Int]
+  val subnets : Map[Int, Int] 
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -132,8 +135,8 @@ trait OmiService extends HttpService {
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = 
-  clientIP { ip =>
   post { // Handle POST requests from the client
+  clientIP { ip =>
   path("") {
     corsHeaders {
       entity(as[NodeSeq]) { xml =>
