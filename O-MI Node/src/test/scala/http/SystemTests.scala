@@ -34,12 +34,12 @@ class OmiServiceSpec extends Specification
     implicit val dbobject = dbConnection
     import Boot.settings
     val subscriptionHandler = akka.actor.ActorRef.noSender
-    val ips = settings.externalAgentIps.asScala.map{
-      case s: String => inetAddrToInt(InetAddress.getByName(s))
+    val whiteIPs = settings.externalAgentIps.asScala.map{
+      case s: String => inetAddrToBytes(InetAddress.getByName(s))
     }.toArray 
-    val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+    val whiteMasks = settings.externalAgentSubnets.unwrapped().asScala.map{ 
       case (s: String, bits: Object ) =>  
-      (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
+      (inetAddrToBytes(InetAddress.getByName(s)), bits.toString.toInt )
     }.toMap
 
     "System tests for features of OMI Node service".title

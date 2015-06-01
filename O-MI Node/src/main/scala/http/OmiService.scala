@@ -45,13 +45,13 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
 
   import Boot.settings
-  val ips = settings.externalAgentIps.asScala.map{
-    case s: String => inetAddrToInt(InetAddress.getByName(s))
+  val whiteIPs = settings.externalAgentIps.asScala.map{
+    case s: String => inetAddrToBytes(InetAddress.getByName(s))
   }.toArray 
-  val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+  val whiteMasks = settings.externalAgentSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
-    (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
-  }.toMap
+    (inetAddrToBytes(InetAddress.getByName(s)), bits.toString.toInt )
+  }.toMap 
 }
 
 /**
@@ -64,8 +64,8 @@ trait OmiService extends HttpService {
 
   implicit val dbobject: DB
 
-  val ips : Array[Int]
-  val subnets : Map[Int, Int] 
+  val whiteIPs : Array[Array[Byte]]
+  val whiteMasks : Map[Array[Byte], Int] 
 
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
@@ -160,11 +160,10 @@ trait OmiService extends HttpService {
 
             case write: WriteRequest =>
             lazy val remote = ip.toOption.get
-            lazy val inSubnet = subnets.exists{ 
-              case (subnet : Int, bits : Int) =>
-              isInSubnet(subnet, bits, inetAddrToInt(remote))
-            }
-            lazy val validIP = ips.contains( inetAddrToInt(remote)) 
+            lazy val inSubnet = whiteMasks.exists{ case (subnet : Array[Byte], bits : Int) =>
+             isInSubnet(subnet, bits, inetAddrToBytes(remote))
+            } 
+            lazy val validIP = whiteIPs.contains( inetAddrToBytes(remote) ) 
             if(ip.toOption.nonEmpty && (validIP || inSubnet)){
               log.warning(s"Tried to use write request, not implemented.")
               log.debug(write.toString)
@@ -217,16 +216,40 @@ trait OmiService extends HttpService {
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
 
-  def inetAddrToInt(addr: InetAddress) : Int = {
-    val b : Array[Byte] = addr.getAddress()
-    val ip : Int = ((b(0) & 0xFF) << 24) |
-      ((b(1) & 0xFF) << 16) |
-      ((b(2) & 0xFF) << 8)  |
-      ((b(3) & 0xFF) << 0);
-    ip
+  def inetAddrToBytes(addr: InetAddress) : Array[Byte] = {
+    addr.getAddress()
   }
-  def isInSubnet(subnet: Int, bits: Int, ip: Int) : Boolean = {
-    val mask = -1 << (32 - bits)  
-    (subnet & mask) == (ip & mask) 
+  def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
+    if( subnet.length == ip.length){
+      ip.length match{
+        case 4 =>{
+          val mask = -1 << (32 - bits)  
+          (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
+        }
+        case 16 =>{
+          val mask = if( bits > 56 )
+            Array[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
+          else 
+            Array[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
+
+          subnet(0) == ip(0) && 
+          subnet(1) == ip(1) &&
+          subnet(2) == ip(2) && 
+          subnet(3) == ip(3) &&
+          subnet(4) == ip(4) && 
+          subnet(5) == ip(5) &&
+          (subnet(6) & mask(0) )== (ip(6) & mask(0)) && 
+          (subnet(7) & mask(1) )== (ip(7) & mask(1))
+        }
+      }
+    }
+    false
+  }
+  def bytesToInt(bytes: Array[Byte]) : Int = {
+    val ip : Int = ((bytes(0) & 0xFF) << 24) |
+      ((bytes(1) & 0xFF) << 16) |
+      ((bytes(2) & 0xFF) << 8)  |
+      ((bytes(3) & 0xFF) << 0);
+    ip
   }
 }

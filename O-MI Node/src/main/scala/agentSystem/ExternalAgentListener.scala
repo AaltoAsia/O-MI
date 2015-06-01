@@ -26,13 +26,20 @@ import scala.collection.JavaConversions.asJavaIterable
 class ExternalAgentListener extends Actor with ActorLogging {
   
   import http.Boot.settings
-  private val ips = settings.externalAgentIps.asScala.map{
-    case s: String => inetAddrToInt(InetAddress.getByName(s))
+  val whiteIPs = settings.externalAgentIps.asScala.map{
+    case s: String => 
+    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
+    log.debug("IPv" + ip.length + " : " + ip.mkString(".")) 
+    ip
   }.toArray 
-  private val subnets = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+  log.debug("Totally " + whiteIPs.length + "IPs")
+  val whiteMasks = settings.externalAgentSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
-    (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
+    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
+    log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) 
+    (ip, bits.toString.toInt )
   }.toMap 
+  log.debug("Totally " + whiteMasks.keys.size + "masks")
   import Tcp._
   //Orginally a hack for getting different names for actors.
   private var agentCounter : Int = 0 
@@ -53,9 +60,9 @@ class ExternalAgentListener extends Actor with ActorLogging {
    
     case Connected(remote, local) =>
       val connection = sender()
-      if(ips.contains( inetAddrToInt(remote.getAddress()) ) ||
-        subnets.exists{ case (subnet : Int, bits : Int) =>
-         isInSubnet(subnet, bits, inetAddrToInt(remote.getAddress()))
+      if(whiteIPs.contains( inetAddrToBytes(remote.getAddress()) ) ||
+        whiteMasks.exists{ case (subnet : Array[Byte], bits : Int) =>
+         isInSubnet(subnet, bits, inetAddrToBytes(remote.getAddress()))
         }
       ){
         log.info(s"Agent connected from $remote to $local")
@@ -66,21 +73,47 @@ class ExternalAgentListener extends Actor with ActorLogging {
         agentCounter += 1
         connection ! Register(handler)
       } else {
-        log.warning(s"Unauthorized $remote tryed to connect as external agent.")
+        log.warning(s"Unauthorized " + inetAddrToBytes(remote.getAddress).mkString(":") + " tried to connect as external agent.")
       }
   }
 
-  def inetAddrToInt(addr: InetAddress) : Int = {
-    val b : Array[Byte] = addr.getAddress()
-    val ip : Int = ((b(0) & 0xFF) << 24) |
-      ((b(1) & 0xFF) << 16) |
-      ((b(2) & 0xFF) << 8)  |
-      ((b(3) & 0xFF) << 0);
-    ip
+  def inetAddrToBytes(addr: InetAddress) : Array[Byte] = {
+    addr.getAddress()
   }
-  def isInSubnet(subnet: Int, bits: Int, ip: Int) : Boolean = {
-    val mask = -1 << (32 - bits)  
-    (subnet & mask) == (ip & mask) 
+  def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
+    if( subnet.length == ip.length){
+      log.debug("Whitelist check for IPv" + ip.length + " address: " + ip.mkString(":") )
+      ip.length match{
+        case 4 =>{
+          val mask = -1 << (32 - bits)  
+          (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
+        }
+        case 16 =>{
+          val mask = if( bits > 56 )
+            Array[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
+          else 
+            Array[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
+
+          subnet(0) == ip(0) && 
+          subnet(1) == ip(1) &&
+          subnet(2) == ip(2) && 
+          subnet(3) == ip(3) &&
+          subnet(4) == ip(4) && 
+          subnet(5) == ip(5) &&
+          (subnet(6) & mask(0) )== (ip(6) & mask(0)) && 
+          (subnet(7) & mask(1) )== (ip(7) & mask(1))
+        }
+      }
+    }
+    log.debug("Tried to compare IPv4 with IPv6, address: " + ip.mkString(":") )
+    false
+  }
+  def bytesToInt(bytes: Array[Byte]) : Int = {
+    val ip : Int = ((bytes(0) & 0xFF) << 24) |
+      ((bytes(1) & 0xFF) << 16) |
+      ((bytes(2) & 0xFF) << 8)  |
+      ((bytes(3) & 0xFF) << 0);
+    ip
   }
 }
 
