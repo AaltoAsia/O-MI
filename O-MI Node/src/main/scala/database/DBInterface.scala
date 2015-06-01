@@ -13,6 +13,7 @@ import scala.collection.mutable.Buffer
 import java.sql.Timestamp
 //import slick.jdbc.StaticQuery
 import slick.jdbc.meta.MTable
+//import slick.dbio.DBIO
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -21,33 +22,28 @@ import parsing.Types.OdfTypes._
 
 package object database {
 
-  private var histLength = 10
+  
+
   private var setEventHooks: List[Seq[Path] => Unit] = List()
 
-  implicit val pathColumnType = MappedColumnType.base[Path, String](
-    { _.toString }, // Path to String
-    { Path(_) }     // String to Path
-    )
-  
+  /**
+   * Set hooks are run when new data is saved to database.
+   * @param f Function that takes the updated paths as parameter.
+   */
   def attachSetHook(f: Seq[Path] => Unit) =
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
+  private var histLength = 10
   /**
-   * sets the historylength to desired length
+   * Sets the historylength to desired length
    * default is 10
-   *
    * @param newLength new length to be used
    */
   def setHistoryLength(newLength: Int) {
     histLength = newLength
   }
   def historyLength = histLength
-
-  /** compatibility method for [[DB.set]] */
-  def set(implicit dbo: DB) = dbo.set _
-
-  def startBuffering(path: Path)(implicit dbo: DB):Boolean = dbo.startBuffering(path)
 
 }
 
@@ -113,18 +109,12 @@ class TestDB(val name:String = "") extends DB
 /**
  * base Database trait used in object SQLite and class testDB 
  */
-trait DB {
+trait DB extends OmiNodeTables {
   import database._
   protected val db: Database
 
   implicit val dbo = this
 
-  //tables for latest values and hierarchy
-  protected val latestValues = TableQuery[DBData]//table for sensor data
-  protected val objects = TableQuery[DBNode]//table for storing hierarchy
-  protected val subs = TableQuery[DBSubscription]//table for storing subscription information
-  protected val buffered = TableQuery[BufferedPath]//table for aa currently buffered paths
-  protected val meta = TableQuery[DBMetaData]//table for metadata information
 
 
   protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
@@ -362,14 +352,17 @@ trait DB {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path) =
-    {
+  private def removeExcess(path: Path) = {
       var pathQuery = latestValues.filter(_.path === path)
-      var qry = runSync(pathQuery.sortBy(_.timestamp).result)
-      var count = qry.length
-      if (count > historyLength) {
-        val oldtime = qry.drop(count - historyLength).head._3
-        runSync(pathQuery.filter(_.timestamp < oldtime).delete)
+
+      pathQuery.sortBy(_.timestamp).result flatMap { qry =>
+        var count = qry.length
+
+        if (count > historyLength) {
+          val oldtime = qry.drop(count - historyLength).head._3
+          pathQuery.filter(_.timestamp < oldtime).delete
+        } else
+          DBIO.successful(())
       }
     }
 
@@ -382,15 +375,14 @@ trait DB {
    * @param path path as Path object
    * 
    */
-  def startBuffering(path: Path):Boolean = {
+  protected def startBuffering(path: Path) = {
     val pathQuery = buffered.filter(_.path === path)
-    var len = runSync(pathQuery.result).length
-    if (len == 0) {
-      runSync(buffered += (path, 1))
-      true
-    } else {
-      runSync(pathQuery.map(_.count).update(len + 1))
-      false
+
+    pathQuery.result flatMap { 
+      case Seq() =>
+        buffered += ((path, 1))
+      case Seq(existingEntry) =>
+        pathQuery.map(_.count) update (existingEntry.count + 1)
     }
   }
 
@@ -403,11 +395,19 @@ trait DB {
    * @param path path as Path object
    */
   def stopBuffering(path: Path):Boolean = {
+    val pathQuery = buffered.filter(_.path === path)
+
+    pathQuery.result flatMap { existingEntry =>
+      if (existingEntry.count > 1)
+        pathQuery.map(_.count) update (existingEntry.count - 1)
+      else
+        pathQuery.delete
+    }
       val pathQuery = buffered.filter(_.path === path)
       val str = runSync(pathQuery.result)
       var len = str.length
       if (len > 0) {
-        if (str.head._2 > 1) {
+        if (str.head.count > 1) {
           runSync(pathQuery.map(_.count).update(len - 1))
           false
         } else {
@@ -657,8 +657,7 @@ trait DB {
    */
   def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] =
     {
-      var res = Array[DBSub]()
-      var all = runSync(hasCallBack match {
+      val all = runSync(hasCallBack match {
         case Some(true) =>
           subs.filter(!_.callback.isEmpty).result
         case Some(false) =>
@@ -666,16 +665,10 @@ trait DB {
         case None =>
           subs.result
       })
-          res = Array.ofDim[DBSub](all.length)
-          var index = 0
-          all foreach {
-            elem =>
-              res(index) = new DBSub(Array(), elem._4, elem._5, elem._6, Some(elem._3))
-              res(index).paths = elem._2.split(";").map(Path(_))
-              res(index).id = elem._1
-              index += 1
+      all map { elem =>
+          val paths = elem._2.split(";").map(Path(_)).toVector
+          DBSub(elem._1, paths, elem._4, elem._5, elem._6, Some(elem._3))
       }
-      res
     }
 
 
@@ -700,17 +693,12 @@ trait DB {
    */
   def getSub(id: Int): Option[DBSub] =
     {
-      var res: Option[DBSub] = None
       val query = runSync(subs.filter(_.ID === id).result)
-        if (query.length > 0) {
+      query.headOption map { head =>
           //creates DBSub object based on saved information
-          var head = query.head
-          var sub = new DBSub(Array(), head._4, head._5, head._6, Some(head._3))
-          sub.paths = head._2.split(";").map(Path(_))
-          sub.id = head._1
-          res = Some(sub)
+          val paths = head._2.split(";").map(Path(_)).toVector
+          DBSub(head._1, paths, head._4, head._5, head._6, Some(head._3))
         }
-      res
     }
 
 
@@ -726,9 +714,15 @@ trait DB {
    */
   def saveSub(sub: DBSub): Int = {
         val id = getNextId()
-        sub.id = id
+        if (sub.callback.isEmpty) {
+          sub.paths.foreach {
+            runSync(startBuffering(_))
+          }
+        }
+        val insertSub =
+          subs += (id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
         runSync(DBIO.seq(
-          subs += (sub.id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
+          insertSub
         ))
 
         //returns the id for reference

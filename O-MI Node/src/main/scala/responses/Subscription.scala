@@ -122,7 +122,7 @@ object OMISubscription {
               }
               val timeStamp = Some(new Timestamp(date.getTime()))
               requestIdInt = dbConnection.saveSub(
-                new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
+                new DBSub(paths.toVector, ttlInt, interval, callback, timeStamp))
 
               if (callback.isEmpty && ttlInt > 0) {
                 subQueue.enqueue((requestIdInt, (ttlInt * 1000).toLong + timeStamp.get.getTime))
@@ -156,7 +156,7 @@ object OMISubscription {
    */
 
   def createFromPaths(
-        paths: Array[Path],
+        paths: Vector[Path],
         index: Int,
         starttime: Timestamp,
         interval: Double,
@@ -195,7 +195,7 @@ object OMISubscription {
                          <id>
                            { previous(index) }
                          </id>
-                         { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                         { createFromPaths(slices.toVector, index + 1, starttime, interval, hascallback) }
                        </Object>
               slices = Buffer[Path](path)
             }
@@ -214,7 +214,7 @@ object OMISubscription {
                        <id>
                          { slices.last.toSeq(index) }
                        </id>
-                       { createFromPaths(slices.toArray, index + 1, starttime, interval, hascallback) }
+                       { createFromPaths(slices.toVector, index + 1, starttime, interval, hascallback) }
                      </Object>
           }
         }

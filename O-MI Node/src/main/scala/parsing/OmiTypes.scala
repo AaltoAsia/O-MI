@@ -66,7 +66,7 @@ case class SubscriptionRequest(
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
-) extends OmiRequest
+) extends OmiRequest with SubLike
 
 case class WriteRequest(
   ttl: Double,
