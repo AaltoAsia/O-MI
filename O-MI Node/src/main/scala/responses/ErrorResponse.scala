@@ -29,7 +29,11 @@ object ErrorResponse {
     omiResult(
       returnCode(400, parseErrors.mkString(", "))
     )
-
+  val unauthorized =
+    omiResult(
+      returnCode(401, "Unauthorized.")
+    )
+ 
 
   val notImplemented =
     omiResult(

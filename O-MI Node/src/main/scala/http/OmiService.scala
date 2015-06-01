@@ -160,20 +160,23 @@ trait OmiService extends HttpService {
             pollResponseGen.runRequest(poll)
 
             case write: WriteRequest =>
-            log.debug(write.toString)
             lazy val remote = ip.toOption.get
-            lazy val inSubnet = subnets.exists{ case (subnet : Int, bits : Int) =>
-            isInSubnet(subnet, bits, inetAddrToInt(remote))
-          }
-          lazy val validIP = ips.contains( inetAddrToInt(remote)) 
-          if(ip.toOption.nonEmpty && (validIP || inSubnet)){
-            log.warning(s"Tried to use write request, not implemented.")
-            returnStatus = 501
-          } else {
-            log.warning(s"Unauthorized $remote tryed to use write request.")
-            returnStatus = 401
-          }
-          ErrorResponse.notImplemented
+            lazy val inSubnet = subnets.exists{ 
+              case (subnet : Int, bits : Int) =>
+              isInSubnet(subnet, bits, inetAddrToInt(remote))
+            }
+            lazy val validIP = ips.contains( inetAddrToInt(remote)) 
+            if(ip.toOption.nonEmpty && (validIP || inSubnet)){
+              log.warning(s"Tried to use write request, not implemented.")
+              log.debug(write.toString)
+              returnStatus = 501
+              ErrorResponse.notImplemented
+            } else {
+              log.warning(s"Unauthorized $remote tryed to use write request.")
+              log.warning(write.toString)
+              returnStatus = 401
+              ErrorResponse.unauthorized
+            }
 
           case subscription: SubscriptionRequest =>
           log.debug(subscription.toString)
