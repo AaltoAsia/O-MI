@@ -20,7 +20,7 @@ class AgentListenerTest extends Specification {
   sequential
   implicit val dbConnection = new TestDB("agent-listener")
   Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
-
+  import Boot.system
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("127.0.0.1", 4321)
   lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("\n")

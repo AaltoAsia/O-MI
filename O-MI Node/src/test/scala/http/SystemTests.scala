@@ -32,7 +32,7 @@ class OmiServiceSpec extends Specification
 
     implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
     implicit val dbobject = dbConnection
-    val settings = Settings(system) 
+    import Boot.settings
     val subscriptionHandler = akka.actor.ActorRef.noSender
     val ips = settings.externalAgentIps.asScala.map{
       case s: String => inetAddrToInt(InetAddress.getByName(s))

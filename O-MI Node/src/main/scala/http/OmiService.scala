@@ -43,8 +43,8 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
-  val settings = Settings(context.system)
 
+  import Boot.settings
   val ips = settings.externalAgentIps.asScala.map{
     case s: String => inetAddrToInt(InetAddress.getByName(s))
   }.toArray 
@@ -62,7 +62,6 @@ trait OmiService extends HttpService {
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
 
-  val settings : OmiConfigExtension 
   implicit val dbobject: DB
 
   val ips : Array[Int]
