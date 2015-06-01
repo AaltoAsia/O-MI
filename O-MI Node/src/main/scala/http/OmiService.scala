@@ -43,7 +43,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
- // def settings = Settings(context.system)
+  def settings = Settings(context.system)
 }
 
 /**
@@ -54,9 +54,9 @@ trait OmiService extends HttpService {
   def log: LoggingAdapter
   val subscriptionHandler: ActorRef
 
-  //def settings : OmiConfigExtension 
+  def settings : OmiConfigExtension 
   implicit val dbobject: DB
-  /*
+
   private val ips = settings.externalAgentIps.asScala.map{
     case s: String => inetAddrToInt(InetAddress.getByName(s))
   }.toArray 
@@ -64,7 +64,7 @@ trait OmiService extends HttpService {
     case (s: String, bits: Object ) => 
     (inetAddrToInt(InetAddress.getByName(s)), bits.toString.toInt )
   }.toMap 
-  */
+
   //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
     respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
@@ -131,86 +131,83 @@ trait OmiService extends HttpService {
   lazy val pollResponseGen = new PollResponseGen
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
-  val getXMLResponse = post { // Handle POST requests from the client
-    path("") {
-      corsHeaders {
-        entity(as[NodeSeq]) { xml =>
-          val omi = OmiParser.parse(xml.toString)
+  val getXMLResponse = 
+  clientIP { ip =>
+  post { // Handle POST requests from the client
+  path("") {
+    corsHeaders {
+      entity(as[NodeSeq]) { xml =>
+      val omi = OmiParser.parse(xml.toString)
 
-          if (omi.isRight) {
-            val requests = omi.right.get
-            respondWithMediaType(`text/xml`) {
+      if (omi.isRight) {
+        val requests = omi.right.get
+        respondWithMediaType(`text/xml`) {
 
-              var returnStatus = 200
+          var returnStatus = 200
 
-              //FIXME: Currently sending multiple omi:omiEnvelope
-              val result = requests.map {
+          //FIXME: Currently sending multiple omi:omiEnvelope
+          val result = requests.map {
 
-                case read: ReadRequest =>
-                  log.debug(read.toString)
-                  readResponseGen.runRequest(read)
+            case read: ReadRequest =>
+            log.debug(read.toString)
+            readResponseGen.runRequest(read)
 
-                  case poll: PollRequest =>
-                    // Should give out poll result
-                    pollResponseGen.runRequest(poll)
+            case poll: PollRequest =>
+            // Should give out poll result
+            pollResponseGen.runRequest(poll)
 
-                case write: WriteRequest =>
-                  //ClientIp not cathcing localhost?
-                  //Should be re implemented after responseGen refactor
-                  /*clientIP { ip =>
-                  val remote = ip.toOption.get
-                    log.warning(s"$remote tryed to use write request.")
-                    if(!ips.contains( inetAddrToInt(remote) ) ||
-                      !subnets.exists{ case (subnet : Int, bits : Int) =>
-                      isInSubnet(subnet, bits, inetAddrToInt(remote))
-                    }
-                    ){
-                      log.warning(s"Unauthorized $remote tryed to use write request.")
-                      returnStatus = 401
-                      ErrorResponse.notImplemented
-                    }else {*/
-                    //  log.warning(s"$remote tryed to use write request, not iplemented.")
-                      log.debug(write.toString)
-                      returnStatus = 501 
-                      ErrorResponse.notImplemented
-                   // }
-                   // complete(returnStatus, ErrorResponse.notImplemented.mkString("\n"))
-                  //}
-                case subscription: SubscriptionRequest =>
-                  log.debug(subscription.toString)
-
-                  val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
-
-                  if (subscription.callback.isDefined && subscription.callback.get.toString.length > 3 && id >= 0) // XXX: hack check for valid url :D
-                    subscriptionHandler ! NewSubscription(id)
-
-                  response
-
-                case cancel: CancelRequest =>
-                  log.debug(cancel.toString)
-
-                  cancelResponseGen.runRequest(cancel)
-
-                case _ =>
-                  log.warning("Unknown request")
-                  returnStatus = 400
-
-              }.mkString("\n")
-
-              complete(returnStatus, result)
-
-            }
-          } else {
-            val errors = omi.left.get
-            //Errors found
-            log.warning("Parse Errors: {}", errors.mkString(", "))
-            complete(400,
-              ErrorResponse.parseErrorResponse(errors))
+            case write: WriteRequest =>
+            log.debug(write.toString)
+            lazy val remote = ip.toOption.get
+            lazy val inSubnet = subnets.exists{ case (subnet : Int, bits : Int) =>
+            isInSubnet(subnet, bits, inetAddrToInt(remote))
           }
-        }
+          lazy val validIP = ips.contains( inetAddrToInt(remote)) 
+          if(ip.toOption.nonEmpty && (validIP || inSubnet)){
+            log.warning(s"Tried to use write request, not implemented.")
+            returnStatus = 501
+          } else {
+            log.warning(s"Unauthorized $remote tryed to use write request.")
+            returnStatus = 401
+          }
+          ErrorResponse.notImplemented
+
+          case subscription: SubscriptionRequest =>
+          log.debug(subscription.toString)
+
+          val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
+
+          if (subscription.callback.isDefined && subscription.callback.get.toString.length > 3 && id >= 0) // XXX: hack check for valid url :D
+          subscriptionHandler ! NewSubscription(id)
+
+          response
+
+          case cancel: CancelRequest =>
+          log.debug(cancel.toString)
+
+          cancelResponseGen.runRequest(cancel)
+
+          case _ =>
+          log.warning("Unknown request")
+          returnStatus = 400
+
+        }.mkString("\n")
+
+        complete(returnStatus, result)
+
+      }
+    } else {
+      val errors = omi.left.get
+      //Errors found
+      log.warning("Parse Errors: {}", errors.mkString(", "))
+    complete(400,
+      ErrorResponse.parseErrorResponse(errors))
+  }
+}
       }
     }
   }
+}
 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse

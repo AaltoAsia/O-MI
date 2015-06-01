@@ -53,13 +53,11 @@ class ExternalAgentListener extends Actor with ActorLogging {
    
     case Connected(remote, local) =>
       val connection = sender()
-      if(!ips.contains( inetAddrToInt(remote.getAddress()) ) ||
-        !subnets.exists{ case (subnet : Int, bits : Int) =>
+      if(ips.contains( inetAddrToInt(remote.getAddress()) ) ||
+        subnets.exists{ case (subnet : Int, bits : Int) =>
          isInSubnet(subnet, bits, inetAddrToInt(remote.getAddress()))
         }
       ){
-        log.warning(s"Unauthorized $remote tryed to connect as external agent.")
-      } else {
         log.info(s"Agent connected from $remote to $local")
         val handler = context.actorOf(
           Props(classOf[ExternalAgentHandler], remote),
@@ -67,6 +65,8 @@ class ExternalAgentListener extends Actor with ActorLogging {
         )
         agentCounter += 1
         connection ! Register(handler)
+      } else {
+        log.warning(s"Unauthorized $remote tryed to connect as external agent.")
       }
   }
 
