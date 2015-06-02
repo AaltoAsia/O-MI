@@ -34,7 +34,7 @@ object PermissionCheck {
   }
   def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
     if( subnet.length == ip.length){
-      println("Whitelist check for IPv" + ip.length + " address: " + ip.map{b => b.toHexString}.mkString(":") + " against " + subnet.map{b => b.toHexString}.mkString(":"))
+      log.debug("Whitelist check for IPv" + ip.length + " address: " + ip.map{b => b.toHexString}.mkString(":") + " against " + subnet.map{b => b.toHexString}.mkString(":"))
       ip.length match{
         case 4 =>{
           val mask = -1 << (32 - bits)  
@@ -61,7 +61,7 @@ object PermissionCheck {
         }
       }
     }
-    println("Tried to compare IPv4 with IPv6, address: " + subnet.mkString(":") + " ip: " + ip.mkString(":") )
+    log.debug("Tried to compare IPv4 with IPv6, address: " + subnet.mkString(":") + " ip: " + ip.mkString(":") )
     false
   }
   def bytesToInt(bytes: Array[Byte]) : Int = {

@@ -44,15 +44,6 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 
   implicit val dbobject = new SQLiteConnection
 
-
-  import Boot.settings
-  val whiteIPs = settings.externalAgentIps.asScala.map{
-    case s: String => inetAddrToBytes(InetAddress.getByName(s))
-  }.toArray 
-  val whiteMasks = settings.externalAgentSubnets.unwrapped().asScala.map{ 
-    case (s: String, bits: Object ) => 
-    (inetAddrToBytes(InetAddress.getByName(s)), bits.toString.toInt )
-  }.toMap 
 }
 
 /**
@@ -65,10 +56,7 @@ trait OmiService extends HttpService {
 
   implicit val dbobject: DB
 
-  val whiteIPs : Array[Array[Byte]]
-  val whiteMasks : Map[Array[Byte], Int] 
-
-  //Handles CORS allow-origin seems to be enough
+    //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
     respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
 
@@ -213,40 +201,4 @@ trait OmiService extends HttpService {
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
 
-  def inetAddrToBytes(addr: InetAddress) : Array[Byte] = {
-    addr.getAddress()
-  }
-  def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
-    if( subnet.length == ip.length){
-      ip.length match{
-        case 4 =>{
-          val mask = -1 << (32 - bits)  
-          (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
-        }
-        case 16 =>{
-          val mask = if( bits > 56 )
-            Array[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
-          else 
-            Array[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
-
-          subnet(0) == ip(0) && 
-          subnet(1) == ip(1) &&
-          subnet(2) == ip(2) && 
-          subnet(3) == ip(3) &&
-          subnet(4) == ip(4) && 
-          subnet(5) == ip(5) &&
-          (subnet(6) & mask(0) )== (ip(6) & mask(0)) && 
-          (subnet(7) & mask(1) )== (ip(7) & mask(1))
-        }
-      }
-    }
-    false
-  }
-  def bytesToInt(bytes: Array[Byte]) : Int = {
-    val ip : Int = ((bytes(0) & 0xFF) << 24) |
-      ((bytes(1) & 0xFF) << 16) |
-      ((bytes(2) & 0xFF) << 8)  |
-      ((bytes(3) & 0xFF) << 0);
-    ip
-  }
 }

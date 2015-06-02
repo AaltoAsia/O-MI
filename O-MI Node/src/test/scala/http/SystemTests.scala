@@ -19,6 +19,7 @@ import MediaTypes._
 import StatusCodes._
 
 import database._
+import http.PermissionCheck._
 
 import scala.collection.JavaConverters._
 import java.net.InetAddress
@@ -32,15 +33,7 @@ class OmiServiceSpec extends Specification
 
     implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
     implicit val dbobject = dbConnection
-    import Boot.settings
     val subscriptionHandler = akka.actor.ActorRef.noSender
-    val whiteIPs = settings.externalAgentIps.asScala.map{
-      case s: String => inetAddrToBytes(InetAddress.getByName(s))
-    }.toArray 
-    val whiteMasks = settings.externalAgentSubnets.unwrapped().asScala.map{ 
-      case (s: String, bits: Object ) =>  
-      (inetAddrToBytes(InetAddress.getByName(s)), bits.toString.toInt )
-    }.toMap
 
     "System tests for features of OMI Node service".title
 
