@@ -59,10 +59,6 @@ trait Starter {
     // Create input pusher actor
     initInputPusher()
 
-    // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
-    responses.OMISubscription.fillSubQueue()(dbConnection)
-    // Clean old pollable subs, TODO: join with SubscriptionHandler logic
-    responses.OMISubscription.checkSubs()(dbConnection)
   }
 
 

@@ -11,7 +11,6 @@ import responses._
 import database._
 import parsing.Types.Path
 import parsing.Types.OmiTypes.{ SubLike, SubDataRequest }
-import OMISubscription.SubscriptionResponseGen
 import CallbackHandlers._
 import parsing.Types.OmiTypes._
 import parsing.Types.OdfTypes._

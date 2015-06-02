@@ -96,7 +96,7 @@ trait OmiService extends HttpService {
       path(Rest) { pathStr =>
         corsHeaders {
           val path = Path(pathStr)
-          Read.generateODFREST(path) match {
+          requestHandler.generateODFREST(path) match {
             case Some(Left(value)) =>
               respondWithMediaType(`text/plain`) {
                 complete(value)
@@ -115,7 +115,6 @@ trait OmiService extends HttpService {
       }
     }
 
-  import OMISubscription._
   // XXX: lazy maybe fixes bug
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
@@ -125,27 +124,28 @@ trait OmiService extends HttpService {
         corsHeaders {
            entity(as[NodeSeq]) { xml =>
             val omi = OmiParser.parse(xml.toString)
-
-            if (omi.isRight) {
-              val request = omi.right.get.head
-              respondWithMediaType(`text/xml`) {
-                val (response,returnCode) = request match {
-                  case write : WriteRequest => 
-                    if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
-                      requestHandler.handleRequest(request)
-                    else
-                      (requestHandler.unauthorized, 401)
-                  case req : OmiRequest => 
-                      requestHandler.handleRequest(request)
-                }
-                complete(returnCode, response)
+            var returnStatus = 200
+            respondWithMediaType(`text/xml`) {
+              val responseXML = if (omi.isRight) {
+                val request = omi.right.get.head
+                  val (response,returnCode) = request match {
+                    case write : WriteRequest => 
+                      if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
+                        requestHandler.handleRequest(request)
+                      else
+                        (requestHandler.unauthorized, 401)
+                    case req : OmiRequest => 
+                        requestHandler.handleRequest(request)
+                  }
+                  returnStatus = returnCode
+                  response
+              } else {
+                val errors = omi.left.get
+                //Errors found
+                log.warning("Parse Errors: {}", errors.mkString(", "))
+                requestHandler.parseError(errors.toSeq:_*)
               }
-            } else {
-              val errors = omi.left.get
-              //Errors found
-              log.warning("Parse Errors: {}", errors.mkString(", "))
-              complete(400,
-              ErrorResponse.parseErrorResponse(errors))
+              complete(returnStatus, responseXML)
             }
           }
         }
