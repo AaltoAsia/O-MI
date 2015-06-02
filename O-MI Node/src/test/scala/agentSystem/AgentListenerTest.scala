@@ -28,7 +28,7 @@ class AgentListenerTest extends Specification {
   step {
     dbConnection.clearDB()
   }
-
+  println("External Listener Test Started")
   "ExternalAgentListener" should {
     sequential
     "reply with Register message when it receives Connected message" in new Actors {

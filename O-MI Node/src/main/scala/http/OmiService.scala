@@ -11,6 +11,7 @@ import java.net.InetAddress
 
 import responses._
 import parsing._
+import PermissionCheck._
 import parsing.Types._
 import parsing.Types.OmiTypes._
 import database._
@@ -160,11 +161,7 @@ trait OmiService extends HttpService {
 
             case write: WriteRequest =>
             lazy val remote = ip.toOption.get
-            lazy val inSubnet = whiteMasks.exists{ case (subnet : Array[Byte], bits : Int) =>
-             isInSubnet(subnet, bits, inetAddrToBytes(remote))
-            } 
-            lazy val validIP = whiteIPs.contains( inetAddrToBytes(remote) ) 
-            if(ip.toOption.nonEmpty && (validIP || inSubnet)){
+            if(ip.toOption.nonEmpty && hasPermission(remote) ){
               log.warning(s"Tried to use write request, not implemented.")
               log.debug(write.toString)
               returnStatus = 501
