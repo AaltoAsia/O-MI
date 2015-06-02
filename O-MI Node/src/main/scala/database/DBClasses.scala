@@ -9,6 +9,7 @@ import java.sql.Timestamp
 
 import database._
 
+// TODO: are these useful?
 trait IdProvider {
   def id: Int
 }
@@ -18,35 +19,6 @@ trait hasPath {
 }
 
 
-
-/*
- * Abstract base class for sensors' data structure
- *
-trait DBItem {
- /**
-  * path to where node is. Last part is key for this.
-  def path: Path
-}
-
-/**
- * case class DBSensor for the actual sensor data
- * @param pathto path to sensor
- * @param value  actual value from sensor as String
- * @param time time stamp indicating when sensor data was read using java.sql.Timestamp
- *
-case class DBSensor(val path: Path, var value: String, var time: Timestamp) extends DBItem
- */
-
-/**
- * case class DBObject for object hierarchy
- * returned from get when path doesn't end in actual sensor
- * used to store hierarchy and to retrieve object's children for given path
- *
- * @param path path to object
- */
-case class DBObject(val path: Path, val childs: Array[DBItem] = Array.empty) extends DBItem {
-  
-}
 
 // TODO: doc
 
@@ -162,7 +134,7 @@ trait OmiNodeTables {
 
     def * = (hierarchId, metadata) <> (DBMetaData.mapped, DBMetaData.unapply)
   }
-  protected val metadata = TableQuery[DBMetaDatasTable]//table for metadata information
+  protected val metadatas = TableQuery[DBMetaDatasTable]//table for metadata information
 
 
 
@@ -227,4 +199,29 @@ trait OmiNodeTables {
     def hierarchyId = column[Int]("hierarchyId")
     def * = (subId, hierarchyId) <> (DBSubscriptionItem.mapped, DBSubscriptionItem.unapply)
   }
+
+  protected val subItems = TableQuery[DBSubscribedItemsTable]
+
+  protected val allTables =
+    Seq( hierarchy
+       , latestValues
+       , metadatas
+       , subs
+       , subItems
+       )
+
+  protected val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)
+
+  /**
+   * Empties all the data from the database
+   * 
+   */
+  def clearDB() = runWait(
+    DBIO.seq(
+      (allTables map (_.delete)): *_ 
+    )
+  )
+
+  def dropDB() = runWait( allSchemas.drop )
+    
 }

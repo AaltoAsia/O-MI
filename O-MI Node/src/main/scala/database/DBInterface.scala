@@ -45,20 +45,19 @@ package object database {
   }
   def historyLength = histLength
 
+  val dbConfigName = "h2-conf"
 }
 
 
 /**
- * Changed to using single connection because of sqlite.
- * Might work also with many Database.forConfig calls but it's not tested.
+ * Old way of using single connection
  */
 object singleConnection extends DB {
-  val db = Database.forConfig("h2-conf")
-  //val db = Database.forURL("jdbc:h2:file:./sensorDB.h2", driver="org.h2.Driver")
+  val db = Database.forConfig(dbConfigName)
   initialize()
 
   def destroy() = {
-    println("[WARN] Destroying sqlite connection, to drop the database: remove db file!")
+    println("[WARN] Destroying db connection, to drop the database: remove db file!")
     db.close()
   }
 }
@@ -68,12 +67,15 @@ object singleConnection extends DB {
  * To be used during actual runtime.
  */
 class SQLiteConnection extends DB {
-  override val db = singleConnection.db
+  //override val db = singleConnection.db
+  val db = Database.forConfig(dbConfigName)
 
   def destroy() = {
+     dropDB()
      db.close()
 
-     val confUrl = slick.util.GlobalConfig.driverConfig("sqlite-conf").getString("url")
+     // Try to remove the db file
+     val confUrl = slick.util.GlobalConfig.driverConfig(dbConfigName).getString("url")
      // XXX: trusting string operations
      val dbPath = confUrl.split(":").last
 
@@ -86,19 +88,23 @@ class SQLiteConnection extends DB {
 
 
 /**
- * Database class to be used during tests instead of object SQLite to prevent
+ * Database class to be used during tests instead of production db to prevent
  * problems caused by overlapping test data.
+ * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
 class TestDB(val name:String = "") extends DB
 {
-  println("TestDB: " + name)
+  println("Creating TestDB: " + name)
   val db = Database.forURL(s"jdbc:h2:mem:$name;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver",
     keepAliveConnection=true)
-  //val db = Database.forConfig("h2-conf")
   initialize()
+
+  /**
+  * Should be called after tests.
+  */
   def destroy() = {
-    println("remove " + name)
+    println("Removing TestDB: " + name)
     db.close()
   }
 }
@@ -107,36 +113,54 @@ class TestDB(val name:String = "") extends DB
 
 
 /**
- * base Database trait used in object SQLite and class testDB 
+ * Database trait used by db classes.
+ * Contains a public high level read-write interface for the database tables.
  */
-trait DB extends OmiNodeTables {
+trait DB extends DBReadWrite with DBBase {
+  def asReadOnly: DBReadOnly = this
+  def asReadWrite: DBReadWrite = this
+}
+
+/**
+ * Base trait for databases. Has basic private interface.
+ */
+trait DBBase{
   import database._
   protected val db: Database
 
-  implicit val dbo = this
 
-
-
-  protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
+  def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
     io => Await.result(db.run(io), Duration.Inf)
 
-  protected def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
+  def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
     io => Await.ready(db.run(io), Duration.Inf)
 
+}
 
+
+/**
+ * Read only restricted interface methods for db tables
+ */
+trait DBReadOnly extends DBBase with OmiNodeTables {
+  
+}
+
+/**
+ * Read-write interface methods for db tables.
+ */
+trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   /**
   * Initializing method, creates the file and tables.
   * This method blocks everything else in this object.
+  *
+  * Tries to guess if tables are not yet created by checking existing tables
+  * This gives false-positive only when there is other tables present. In that case
+  * manually clean the database.
   */
   def initialize() = this.synchronized {
-    val setup = DBIO.seq(
-      latestValues.schema.create,
-      objects.schema.create,
-      subs.schema.create,
-      buffered.schema.create,
-      meta.schema.create
-    )
-    
+
+    val setup = allSchemas.create    
+
     val existingTables = MTable.getTables
 
     runSync(existingTables).headOption match {
@@ -151,9 +175,7 @@ trait DB extends OmiNodeTables {
 
 
  /**
-  * Metohod to completely remove database. Removes the actual database file.
-  * Should not be called on object SQLite
-  * Should be called after tests when using a database created from the testDB class
+  * Metohod to completely remove database. Tries to remove the actual database file.
   */
   def destroy(): Unit
 
@@ -541,17 +563,6 @@ trait DB extends OmiNodeTables {
   }
 
 
-  /**
-   * Empties all the data from the database
-   * 
-   */
-  def clearDB() = {
-    runWait(DBIO.seq(
-      latestValues.delete,
-      objects.delete,
-      subs.delete,
-      buffered.delete))
-  }
 
 
   /**
