@@ -264,18 +264,8 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
   }
 
   def handleRead(read: ReadRequest) : (NodeSeq, Int) ={
-    println("Handling read...")
-    val infoItems = getInfoItems(read.odf.objects)
-    println("Handling infoItems: " + infoItems)
-    val emptyObjects = getObjects(read.odf.objects).filter{obj => obj.infoItems.isEmpty && obj.objects.isEmpty } 
-    println("Handling empty Objects: " + emptyObjects)
-    val paths = emptyObjects.map{ obj => obj.path } ++ infoItems.map{info => info.path}
-    println("Handling paths: " + paths)
-    val dbItems = paths.map{ path => dbConnection.get(path) }
-    println("Handling DBItems: " + dbItems)
-    println("Handling DBSensors: " )
-    val sensors = getDBSensorRecursively( dbItems.collect{case Some(item: DBItem) => item }.toArray )
-    println("Got DBSensors: " )
+    //TODO: Doesn't get subtrees of empty objects. Fx after DB refactory, too many queries for DB
+    val sensors = getSensors(read)
     println(sensors.map{ c => c.path}.mkString("\n"))
     (
       xmlFromResults(
@@ -303,20 +293,6 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
         ),
         returnCode
       )
-  }
-  //RENAME
-  def getDBSensorRecursively(dbItems: Array[DBItem] ) : Array[DBSensor] = {
-    val sensors : Array[DBSensor] = dbItems.flatMap{
-      case sensor: DBSensor =>
-        println("InfoItem:\n" + sensor.path)
-        Seq(sensor)
-      case obj: DBObject => 
-        obj.childs = dbConnection.getChilds(obj.path)
-        println("Childs:\n" + obj.childs.filter{ c => c.path.nonEmpty }.map{ c => c.path }.mkString("\n"))
-        getDBSensorRecursively(obj.childs)
-    }.toArray
-    println("ALL: " + sensors.map{s => s.path}.mkString("\n") )
-    sensors
   }
 
   def unauthorized = xmlFromResults(

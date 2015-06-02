@@ -81,10 +81,10 @@ object DBConversions {
   }
   def sensorsToObjects( objects: Array[DBSensor] )(implicit dbConnection: DB) : ObjectsType ={
     if(objects.isEmpty)
-      throw RequestHandlingException( 404, "No such items found. ")
+      throw RequestHandlingException( 404, "No such items found.")
     
-    if( sameSubTree( objects.map{ sobj => sobj.path }))
-      throw RequestHandlingException( 500,"Paths doens't start with same node")
+    //if( sameSubTree( objects.map{ sobj => sobj.path }))
+    //  throw RequestHandlingException( 500,"Paths doens't start with Objects")
 
     val subobjs = objects.map{
       sobj : DBSensor =>//Get sensors without 'Objects' as first in path 
