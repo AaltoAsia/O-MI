@@ -7,14 +7,14 @@ object PermissionCheck {
 
   import Boot.settings
   import Boot.system.log
-  val whiteIPs = settings.externalAgentIps.asScala.map{
+  val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("IPv" + ip.length + " : " + ip.mkString(".")) 
     ip
   }.toArray 
   log.debug("Totally " + whiteIPs.length + "IPs")
-  val whiteMasks = settings.externalAgentSubnets.unwrapped().asScala.map{ 
+  val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) 

@@ -129,7 +129,7 @@ trait OmiService extends HttpService {
               val responseXML = if (omi.isRight) {
                 val request = omi.right.get.head
                   val (response,returnCode) = request match {
-                    case write : WriteRequest => 
+                    case write : PermissiveRequest => 
                       if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
                         requestHandler.handleRequest(request)
                       else

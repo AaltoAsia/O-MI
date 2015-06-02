@@ -21,6 +21,7 @@ object OmiTypes{
     def callback: Option[String]
     def hasCallback = callback.isDefined
   }
+  sealed trait PermissiveRequest
   sealed trait OdfRequest {
     def odf : OdfObjects
   }
@@ -75,14 +76,14 @@ case class WriteRequest(
   ttl: Double,
   odf: OdfObjects,
   callback: Option[ String ] = None
-) extends OmiRequest with OdfRequest
+) extends OmiRequest with OdfRequest with PermissiveRequest
 
 case class ResponseRequest(
   results: Iterable[OmiResult]  
-) extends OmiRequest {
+) extends OmiRequest with PermissiveRequest{
       def callback = None
       def ttl = 0
-   }
+   } 
 
 case class CancelRequest(
   ttl: Double,

@@ -16,8 +16,8 @@ class OmiConfigExtension(config: Config) extends Extension {
   val cliPort: Int = config.getInt("omi-service.agent-cli-port")
   val interface: String = config.getString("omi-service.interface")
   val internalAgents = config.getObject("agent-system.internal-agents") 
-  val externalAgentIps = config.getStringList("agent-system.external-agent-ips") 
-  val externalAgentSubnets = config.getObject("agent-system.external-agent-subnets") 
+  val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
+  val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") 
 }
 
 
