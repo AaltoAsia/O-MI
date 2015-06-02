@@ -6,14 +6,18 @@ import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
+import java.net.InetSocketAddress
+import java.net.InetAddress
 
 import responses._
 import parsing._
+import PermissionCheck._
 import parsing.Types._
 import parsing.Types.OmiTypes._
 import database._
 
 import xml._
+import scala.collection.JavaConverters._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
@@ -52,7 +56,7 @@ trait OmiService extends HttpService {
 
   implicit val dbobject: DB
 
-  //Handles CORS allow-origin seems to be enough
+    //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
     respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
 
@@ -116,27 +120,33 @@ trait OmiService extends HttpService {
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
-    path("") {
-      corsHeaders {
-        entity(as[NodeSeq]) { xml =>
-          val omi = OmiParser.parse(xml.toString)
+    clientIP { ip =>
+      path("") {
+        corsHeaders {
+           entity(as[NodeSeq]) { xml =>
+            val omi = OmiParser.parse(xml.toString)
 
-          if (omi.isRight) {
-            val requests = omi.right.get
-            respondWithMediaType(`text/xml`) {
-
-              var returnStatus = 200
-              //FIXME: Currently sending multiple omi:omiEnvelope
-              val (response,returnCode) = requestHandler.handleRequest(requests.head)
-              complete(returnCode, response)
-
-            }
-          } else {
-            val errors = omi.left.get
-            //Errors found
-            log.warning("Parse Errors: {}", errors.mkString(", "))
-            complete(400,
+            if (omi.isRight) {
+              val request = omi.right.get.head
+              respondWithMediaType(`text/xml`) {
+                val (response,returnCode) = request match {
+                  case write : WriteRequest => 
+                    if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
+                      requestHandler.handleRequest(request)
+                    else
+                      (requestHandler.unauthorized, 401)
+                  case req : OmiRequest => 
+                      requestHandler.handleRequest(request)
+                }
+                complete(returnCode, response)
+              }
+            } else {
+              val errors = omi.left.get
+              //Errors found
+              log.warning("Parse Errors: {}", errors.mkString(", "))
+              complete(400,
               ErrorResponse.parseErrorResponse(errors))
+            }
           }
         }
       }
@@ -145,4 +155,5 @@ trait OmiService extends HttpService {
 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
+
 }
