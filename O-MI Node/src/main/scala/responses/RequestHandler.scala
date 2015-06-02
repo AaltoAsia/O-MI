@@ -240,21 +240,23 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
             // NOTE: ttl will timeout from OmiService
             Await.result(removeFuture, Duration.Inf) match {
               case true => 
-                  Result.successResult
+                  Result.success
               case false => 
                   returnCode = 404
-                  Result.simpleResult("404", Some( "Subscription with requestId not found"))
+                  Result.notFound
               case _ =>
                   returnCode = 501
-                  Result.simpleResult("501", Some( "Internal server error"))
+                  Result.internalError()
             }
           case Failure(n: NumberFormatException) =>
             returnCode = 400
             Result.simpleResult("400", Some("Invalid requestId"))
+          case Failure(e : RequestHandlingException) => 
+            returnCode = e.errorCode
+            Result.internalError(e.msg)
           case Failure(e) =>
             returnCode = 501
-            Result.simpleResult("501", Some( "Internal server error: " + e.getMessage()))
-
+            Result.internalError("Internal server error, when trying to cancel subscription: " + e.toString)
         }.toSeq:_*
       ),
       returnCode
@@ -294,7 +296,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
           Await.result(subFuture, Duration.Inf) match {
             case -1 => 
               returnCode = 501
-              Result.simpleResult("501", Some( "Internal server error when trying to create subscription."))
+              Result.internalError("Internal server error when trying to create subscription")
             case id: Int =>
               Result.subscriptionResult(id.toString) 
           }
@@ -317,9 +319,13 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     sensors
   }
 
-  def notImplemented = xmlFromResults(
+  def unauthorized = xmlFromResults(
         1.0,
-        Result.simpleResult("501", Some( "Not implemented." ) ) 
+        Result.unauthorized
+      )
+  def notimplemented = xmlFromResults(
+        1.0,
+        Result.notImplemented 
       )
 
   def internalError(e: Throwable) =

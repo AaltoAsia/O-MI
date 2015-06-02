@@ -18,7 +18,11 @@ object Result{
     Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance"
   )
 
-  def successResult : RequestResultType = simpleResult( "200", None)
+  def internalError(msg: String = "Internal error") : RequestResultType = simpleResult( "500", Some(msg) )
+  def notImplemented : RequestResultType = simpleResult( "501", Some("Not implemented") )
+  def unauthorized : RequestResultType = simpleResult( "401", Some("Unauthorized") )
+  def notFound: RequestResultType = simpleResult( "404", Some("Such item/s not found.") )
+  def success : RequestResultType = simpleResult( "200", None)
 
   def readResult(sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =  odfResult( "200", None, None, sensors)
 
