@@ -22,8 +22,6 @@ import parsing.Types.OdfTypes._
 
 package object database {
 
-  
-
   private var setEventHooks: List[Seq[Path] => Unit] = List()
 
   /**
@@ -49,6 +47,7 @@ package object database {
 }
 
 
+
 /**
  * Old way of using single connection
  */
@@ -61,6 +60,8 @@ object singleConnection extends DB {
     db.close()
   }
 }
+
+
 
 /**
  * Database class for sqlite. Actually uses config parameters through forConfig in singleConnection.
@@ -121,6 +122,9 @@ trait DB extends DBReadWrite with DBBase {
   def asReadWrite: DBReadWrite = this
 }
 
+
+
+
 /**
  * Base trait for databases. Has basic private interface.
  */
@@ -138,17 +142,27 @@ trait DBBase{
 }
 
 
+
+
 /**
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OmiNodeTables {
-  
+  private def findParent[S](childPath: Path): DBIO[DBNode, S, Effect.Read] =
+    if (childPath.length == 0)
+      hierarchyNodes filter (_.path === childPath)
+    else
+      hierarchyNodes filter (_.path === Path(childPath.init))
 }
+
+
+
 
 /**
  * Read-write interface methods for db tables.
  */
 trait DBReadWrite extends DBReadOnly with OmiNodeTables {
+
   /**
   * Initializing method, creates the file and tables.
   * This method blocks everything else in this object.
@@ -174,10 +188,50 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
 
- /**
+
+  /**
   * Metohod to completely remove database. Tries to remove the actual database file.
   */
   def destroy(): Unit
+
+
+  /**
+   * Adds missing objects(if any) to hierarchy based on given path
+   * @param path path whose hierarchy is to be stored to database
+   */
+  private def addObjects(path: Path) {
+    /** Increase right and left values after value */
+    def increaseAfter(value: Int) = {
+      val rightVals = hierarchyNodes map (_.right) filter (_ > value) 
+      val leftVals  = hierarchyNodes map (_.left) filter (_ > value)
+      DBIO.seq(
+        rightVals map (lastRight => lastRight.update(lastRight + 2)),
+        leftVals map  (lastLeft => lastLeft.update(lastLeft + 2))
+      )
+    }
+
+    val parentsAndPath = path.getParentsAndSelf
+
+    // FIXME
+    val missingPaths = hierarchyNodes filterNot (_.path inSet parentsAndPath)
+
+    val addingAction = for {
+      fullpath <- missingPaths
+      parent <- findParent(fullpath)
+
+      insertRight = parent.rightBoundary
+      left        = insertRight + 1
+      right       = left + 1
+
+      _ <- increaseAfter(insertRight)
+
+      _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0)
+
+      } yield ()
+
+    // NOTE: transaction level probably could be reduced to increaseAfter + DBNode insert
+    addingAction.transactionally
+  }
 
 
   /**
@@ -188,14 +242,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return boolean whether added data was new
    */
-  def set(data: DBSensor) = {
-      var count = 0
-      var buffering = false
+  def set(data: DBSensor): Boolean = ???
+  /*{
       //search database for sensor's path
       val pathQuery = latestValues.filter(_.path === data.path)
-      buffering = runSync(buffered.filter(_.path === data.path).result).length > 0
+      val buffering = runSync(buffered.filter(_.path === data.path).result).length > 0
+
       //appends a row to the latestvalues table
-      count = runSync(pathQuery.result).length
+      val count = runSync(pathQuery.result).length
       runSync(DBIO.seq(latestValues += (data.path, data.value, data.time)))
       // Call hooks
       val argument = Seq(data.path)
@@ -213,7 +267,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         //existing path and less than history length of data or buffering.
         false
       }
-  }
+  }*/
 
 
   /**
@@ -222,7 +276,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param data metadata to be stored as string e.g a XML block as string
    * 
    */
-  def setMetaData(path:Path,data:String) = {
+  def setMetaData(path:Path,data:String): Unit = ???
+  /*{
     val qry = meta.filter(_.path === path).map(_.data)
     val count = runSync(qry.result).length
     if(count == 0)
@@ -234,6 +289,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       runSync(qry.update(data))
     }
   }
+  */
 
 
   /**
@@ -242,23 +298,23 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    * @return metadata as Option[String], none if no data is found
    */
-  def getMetaData(path:Path):Option[String]=
-  {
+  def getMetaData(path:Path):Option[String]= ???
+  /*{
     val qry = meta.filter(_.path === path).map(_.data)
     runSync(qry.result).headOption
-  }
-  def RemoveMetaData(path:Path)=
-  {
+  }*/
+  def RemoveMetaData(path:Path): Unit= ???
+  /*{
     val qry = meta.filter(_.path === path)
     runSync(qry.delete)
-  }
+  }*/
 
 
   /**
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(Path, OdfValue)]): Unit = {
+  def setMany(data: List[(Path, OdfValue)]): Unit = ??? /*{
     var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
 
     // Reformat data and add missing timestamps
@@ -292,7 +348,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           removeExcess(path)
         }
     }
-  }
+  }*/
 
 
   /**
@@ -302,7 +358,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
    * @return boolean whether something was removed
    */
-  def remove(path: Path): Boolean = {
+  def remove(path: Path): Boolean = ??? /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
     var deleted = false
@@ -330,7 +386,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
     }
     return deleted
-  }
+  }*/
 
 
   /**
@@ -345,8 +401,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return Array of DBSensors
    */
-  def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] =
-    {
+  def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
+    /*{
       var result = Buffer[DBSensor]()
       var subQuery = subs.filter(_.ID === id)
       var info: (Timestamp, Double) = (null, 0.0) //to gather only needed info from the query
@@ -363,7 +419,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)
       }
       result.toArray
-    }
+    }*/
 
   def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
 
@@ -374,7 +430,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path) = {
+  private def removeExcess(path: Path) = ??? /*{
       var pathQuery = latestValues.filter(_.path === path)
 
       pathQuery.sortBy(_.timestamp).result flatMap { qry =>
@@ -386,7 +442,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         } else
           DBIO.successful(())
       }
-    }
+    }*/
 
 
   /**
@@ -397,7 +453,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path as Path object
    * 
    */
-  protected def startBuffering(path: Path) = {
+  protected def startBuffering(path: Path) = ??? /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { 
@@ -406,7 +462,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       case Seq(existingEntry) =>
         pathQuery.map(_.count) update (existingEntry.count + 1)
     }
-  }
+  }*/
 
 
   /**
@@ -416,7 +472,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    * @param path path as Path object
    */
-  def stopBuffering(path: Path):Boolean = {
+  def stopBuffering(path: Path):Boolean = ??? /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { existingEntry =>
@@ -440,7 +496,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       } else {
         false
       }
-  }
+  }*/
 
 
   /**
@@ -455,8 +511,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[DBItem] =
-  {
+  def get(path: Path): Option[DBItem] = ???
+  /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
     //if path is found from latest values it must be Sensor otherwise check if it is an object
@@ -487,25 +543,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
       return None
     }
-  }
-
-
-  /**
-   * Adds missing objects(if any) to hierarchy based on given path
-   * @param path path whose hierarchy is to be stored to database
-   *
-   */
-  private def addObjects(path: Path) {
-    val parentsAndPath: Seq[Path] = path.tail.scanLeft(Path(path.head))(Path(_) / _)
-    var parent = Path("")
-      for (fullpath <- parentsAndPath) {
-        if (!hasObject(fullpath)) {
-          runSync(objects += (fullpath, parent, fullpath.last))
-        }
-        parent = fullpath
-      }
-    
-  }
+  }*/
 
 
   /**
@@ -530,7 +568,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       start: Option[Timestamp],
       end: Option[Timestamp],
       fromStart: Option[Int],
-      fromEnd: Option[Int]): Array[DBSensor] = {
+      fromEnd: Option[Int]): Array[DBSensor] = ??? /*{
     var result = Array[DBSensor]()
     var query = latestValues.filter(_.path === path)
     if (start != None) {
@@ -560,7 +598,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
       result
     
-  }
+  }*/
 
 
 
@@ -571,8 +609,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return Array[DBItem] of DBObjects containing childs
    *  of given object. Empty if no childs found or invalid path.
    */
-  def getChilds(path: Path): Array[DBItem] =
-    {
+  def getChilds(path: Path): Array[DBItem] = ???
+    /*{
       var childs = Array[DBItem]()
       val objectQuery = for {
         c <- objects if c.parentPath === path
@@ -587,6 +625,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
       childs
     }
+    */
 
 
   /**
@@ -595,9 +634,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether path was found or not
    */
   private def hasObject(path: Path): Boolean =
-    {
-      runSync(objects.filter(_.path === path).result).length > 0
-    }
+    runSync(hierarchy.filter(_.path === path).exists.result)
+    
 
 
   /**
@@ -608,7 +646,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return returns boolean whether subscription with given id has expired
    */
-  def isExpired(id: Int): Boolean =
+  def isExpired(id: Int): Boolean = ??? /*
     {
       //gets time when subscibe was added,
       // adds ttl amount of seconds to it,
@@ -627,7 +665,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         {
           true
         }
-    }
+    }*/
 
 
   /**
@@ -635,7 +673,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param id id number that was generated during saving
    *
    */
-  def removeSub(id: Int): Boolean = {
+  def removeSub(id: Int): Boolean = ??? /*{
     
       var qry = subs.filter(_.ID === id)
       var toBeDeleted = runSync(qry.result)
@@ -652,7 +690,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
     
     false
-  }
+  }*/
 
 
   /**
@@ -666,7 +704,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return DBSub objects for the query as Array
    */
-  def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] =
+  def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] = ??? 
+  /*
     {
       val all = runSync(hasCallBack match {
         case Some(true) =>
@@ -681,6 +720,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBSub(elem._1, paths, elem._4, elem._5, elem._6, Some(elem._3))
       }
     }
+    */
 
 
   /**
@@ -690,9 +730,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = {
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = ??? 
+  /*{
     runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
-  }
+  }*/
 
 
   /**
@@ -702,7 +743,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return returns Some(BDSub) if found element with given id None otherwise
    */
-  def getSub(id: Int): Option[DBSub] =
+  def getSub(id: Int): Option[DBSub] = ???
+  /*
     {
       val query = runSync(subs.filter(_.ID === id).result)
       query.headOption map { head =>
@@ -711,6 +753,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBSub(head._1, paths, head._4, head._5, head._6, Some(head._3))
         }
     }
+    */
 
 
   /**
@@ -723,7 +766,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: DBSub): Int = {
+  def saveSub(sub: DBSub): Int = ??? 
+  /*{
         val id = getNextId()
         if (sub.callback.isEmpty) {
           sub.paths.foreach {
@@ -739,22 +783,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         //returns the id for reference
         id
     }
+    */
 
 
-  /**
-   * Private helper method to find next free id number
-   * @return the next free id number
-   */
-  private def getNextId(): Int = {
-    var res = runSync(subs.result)
-    res = res.sortBy(_._1)
-    var len = res.length
-    if (len > 0) {
-      //find the element with greatest id value and add 1 to it
-      res.last._1 + 1
-    } else {
-      0
-    }
-  }
 }
 

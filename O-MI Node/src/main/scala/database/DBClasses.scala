@@ -72,11 +72,11 @@ trait OmiNodeTables {
       DBNode.unapply
     )
   }
-  protected val hierarchy = TableQuery[DBNodesTable] //table for storing hierarchy
+  protected val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
 
   trait HierarchyFKey {
     def hierarchyId = column[Int]("hierarchyId")
-    def hierarchy = foreignKey("hierarchy_fk", hierarchyId, hierarchy)(
+    def hierarchy = foreignKey("hierarchy_fk", hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
   }
 
@@ -97,7 +97,7 @@ trait OmiNodeTables {
   /**
    * (Boilerplate) Table for storing latest sensor data to database
    */
-  class DBVaulesTable(tag: Tag)
+  class DBValuesTable(tag: Tag)
     extends Table[DBValue](tag, "Values") with HierarchyFKey {
     def hierarchyId = column[Int]("hierarchyId")
     def timestamp = column[Timestamp]("time")
@@ -194,7 +194,7 @@ trait OmiNodeTables {
    * Storing paths of subscriptions
    */
   class DBSubscribedItemsTable(tag: Tag)
-    extends Table[](tag, "Buffered") with SubFKey with HierarchyFKey {
+    extends Table[DBSubscriptionItem](tag, "SubItems") with SubFKey with HierarchyFKey {
     def subId = column[Int]("subId")
     def hierarchyId = column[Int]("hierarchyId")
     def * = (subId, hierarchyId) <> (DBSubscriptionItem.mapped, DBSubscriptionItem.unapply)
@@ -218,7 +218,7 @@ trait OmiNodeTables {
    */
   def clearDB() = runWait(
     DBIO.seq(
-      (allTables map (_.delete)): *_ 
+      (allTables map (_.delete)): _* 
     )
   )
 

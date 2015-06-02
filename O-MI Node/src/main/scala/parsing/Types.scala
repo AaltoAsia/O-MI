@@ -36,6 +36,13 @@ import java.sql.Timestamp
     def /(otherPathStr: String): Path = {
       this / Path(otherPathStr)
     }
+
+    /**
+     * Get list of ancestors from this path, e.g "/a/b/c/d" => "/a", "/a/b", "/a/b/c", "a/b/c/d"
+     * Order is from oldest descending.
+     */
+    def getParentsAndSelf: Seq[Path] = this.inits.toList.reverse.tail
+
     override def equals(that: Any): Boolean = that match{
       case thatPath: Path => thatPath.toSeq.equals(this.toSeq)
       case _ => false
@@ -54,6 +61,7 @@ import java.sql.Timestamp
     def apply(pathStr: String): Path = new Path(pathStr)
     def apply(pathSeq: Seq[String]): Path = new Path(pathSeq)
     val empty = new Path(Seq.empty)
+
 
     import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 
