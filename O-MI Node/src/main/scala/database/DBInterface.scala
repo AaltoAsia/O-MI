@@ -503,7 +503,21 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[DBItem] = ???
+  def get(path: Path): Option[ Either[ DBNode,DBValue ] ]= {
+    val sensorQ = for(
+      (hie, value) <- hierarchyNodes.filter(_.path === path) join latestValues on (_.id === _.hierarchyId )
+    ) yield(value)
+    val value = runSync(sensorQ.sortBy( _.timestamp ).result ).headOption
+    if(value.nonEmpty) {
+      return Some( Right(value.get) )
+    } else {
+      val node = runSync(hierarchyNodes.filter(_.path === path).result).headOption
+      if(node.nonEmpty)
+        return Some( Left(node.get))
+      else
+        return None
+    }
+  }
   /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
