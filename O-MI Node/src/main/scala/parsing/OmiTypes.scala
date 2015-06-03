@@ -37,10 +37,7 @@ object OmiTypes{
   }
 
 
-  case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-    val ttl = sub.ttl - (System.currentTimeMillis() - sub.startTime.getTime)*1000
-    val callback = sub.callback
-  }
+  case class SubDataRequest(sub: database.DBSub) extends OmiRequest
 
 
 case class ReadRequest(

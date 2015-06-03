@@ -1,19 +1,13 @@
 package database
+import scala.language.postfixOps
+
 import slick.driver.H2Driver.api._
+import slick.jdbc.meta.MTable
+import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
-//import slick.jdbc.StaticQuery.interpolation
-import slick.lifted.ProvenShape
 import java.io.File
-import scala.collection.mutable.Map
-import scala.collection.mutable.Buffer
-import java.sql.Timestamp
-//import slick.jdbc.StaticQuery
-import slick.jdbc.meta.MTable
-//import slick.dbio.DBIO
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -44,7 +38,9 @@ package object database {
   def historyLength = histLength
 
   val dbConfigName = "h2-conf"
+
 }
+import database._
 
 
 
@@ -125,34 +121,18 @@ trait DB extends DBReadWrite with DBBase {
 
 
 
-/**
- * Base trait for databases. Has basic private interface.
- */
-trait DBBase{
-  import database._
-  protected val db: Database
-
-
-  def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
-    io => Await.result(db.run(io), Duration.Inf)
-
-  def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
-    io => Await.ready(db.run(io), Duration.Inf)
-
-}
-
-
 
 
 /**
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OmiNodeTables {
-  private def findParent[S](childPath: Path): DBIO[DBNode, S, Effect.Read] =
+  protected def findParent(childPath: Path): DBIOAction[DBNode,NoStream,Effect.Read] = (
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
       hierarchyNodes filter (_.path === Path(childPath.init))
+    ).result.head
 }
 
 
@@ -200,37 +180,49 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path whose hierarchy is to be stored to database
    */
   private def addObjects(path: Path) {
-    /** Increase right and left values after value */
-    def increaseAfter(value: Int) = {
-      val rightVals = hierarchyNodes map (_.right) filter (_ > value) 
-      val leftVals  = hierarchyNodes map (_.left) filter (_ > value)
+
+    /** Query: Increase right and left values after value */
+    def increaseAfterQ(value: Int) = {
+
+      // Slick doesn't allow this query
+      //val rightValsQ = hierarchyNodes map (_.rightBoundary) filter (_ > value) 
+      //val leftValsQ  = hierarchyNodes map (_.leftBoundary) filter (_ > value)
+      //val rightUpdateQ = rightValsQ.map(_ + 2).update(rightValsQ)
+      //val leftUpdateQ  =  leftValsQ.map(_ + 2).update(leftValsQ)
+
       DBIO.seq(
-        rightVals map (lastRight => lastRight.update(lastRight + 2)),
-        leftVals map  (lastLeft => lastLeft.update(lastLeft + 2))
+        sqlu"UPDATE HierarchyNodes SET rightBoundary = rightBoundary + 2 WHERE rightBoundary > ${value}",
+        sqlu"UPDATE HierarchyNodes SET leftBoundary = leftBoundary + 2 WHERE leftBoundary > ${value}"
       )
     }
 
+    def addNode(fullpath: Path): DBIOAction[Unit, NoStream, Effect.Write] =
+        for {
+          parent <- findParent(fullpath)
+
+          insertRight = parent.rightBoundary
+          left        = insertRight + 1
+          right       = left + 1
+
+          _ <- increaseAfterQ(insertRight)
+
+          _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0)
+
+        } yield ()
+
     val parentsAndPath = path.getParentsAndSelf
 
-    // FIXME
-    val missingPaths = hierarchyNodes filterNot (_.path inSet parentsAndPath)
+    val foundPathsQ   = hierarchyNodes filter (_.path inSet parentsAndPath) map (_.path) result
+    // difference between all and found
+    val missingPathsQ: DBIOAction[Seq[Path],NoStream,Effect.Read]  = foundPathsQ map (parentsAndPath diff _)
 
-    val addingAction = for {
-      fullpath <- missingPaths
-      parent <- findParent(fullpath)
-
-      insertRight = parent.rightBoundary
-      left        = insertRight + 1
-      right       = left + 1
-
-      _ <- increaseAfter(insertRight)
-
-      _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0)
-
-      } yield ()
+    // Combine DBIOActions as a single action
+    val addingActions = missingPathsQ flatMap {missingPaths =>
+      missingPaths map addNode
+    }
 
     // NOTE: transaction level probably could be reduced to increaseAfter + DBNode insert
-    addingAction.transactionally
+    DBIO.seq(addingActions).transactionally
   }
 
 
@@ -634,7 +626,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether path was found or not
    */
   private def hasObject(path: Path): Boolean =
-    runSync(hierarchy.filter(_.path === path).exists.result)
+    runSync(hierarchyNodes.filter(_.path === path).exists.result)
     
 
 

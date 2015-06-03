@@ -1,13 +1,26 @@
 package database
+
 import slick.driver.H2Driver.api._
-import slick.jdbc.StaticQuery.interpolation
-import slick.lifted.ProvenShape
+import java.sql.Timestamp
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import parsing.Types._
 import parsing.Types.OmiTypes.SubLike
 import parsing.Types.Path._
-import java.sql.Timestamp
-
 import database._
+
+@deprecated("Old interface", "DB Interface refactor")
+sealed abstract class DBItem(val path: Path)
+
+@deprecated("Old interface", "DB Interface refactor")
+case class DBSensor(pathto: Path, var value: String, var time: Timestamp) extends DBItem(pathto)
+
+@deprecated("Old interface", "DB Interface refactor")
+case class DBObject(pathto: Path) extends DBItem(pathto) {
+    var childs = Array[DBItem]()
+}
 
 // TODO: are these useful?
 trait IdProvider {
@@ -20,9 +33,50 @@ trait hasPath {
 
 
 
-// TODO: doc
 
-trait OmiNodeTables {
+/**
+ * Base trait for databases. Has basic private interface.
+ */
+trait DBBase{
+  protected val db: Database
+
+
+  def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
+    io => Await.result(db.run(io), Duration.Inf)
+
+  def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
+    io => Await.ready(db.run(io), Duration.Inf)
+
+}
+
+
+
+/**
+ * Public datatypes
+ */
+
+/**
+ * Implementation of the http://en.wikipedia.org/wiki/Nested_set_model
+ * with depth.
+ * @param id 
+ * @param path
+ * @param leftBoundary Nested set model: left value
+ * @param rightBoundary Nested set model: right value
+ * @param depth Extended nested set model: depth of this node in the tree
+ * @param description for the corresponding odf node (Object or InfoItem)
+ * @param pollRefCount Count of references to this node from active poll subscriptions
+ */
+case class DBNode(
+  id: Option[Int],
+  path: Path,
+  leftBoundary: Int,
+  rightBoundary: Int,
+  depth: Int,
+  description: String,
+  pollRefCount: Int
+)
+
+trait OmiNodeTables extends DBBase {
 
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
@@ -32,31 +86,10 @@ trait OmiNodeTables {
 
 
   /**
-   * Implementation of the http://en.wikipedia.org/wiki/Nested_set_model
-   * with depth.
-   * @param id 
-   * @param path
-   * @param leftBoundary Nested set model: left value
-   * @param rightBoundary Nested set model: right value
-   * @param depth Extended nested set model: depth of this node in the tree
-   * @param description for the corresponding odf node (Object or InfoItem)
-   * @param pollRefCount Count of references to this node from active poll subscriptions
-   */
-  case class DBNode(
-    id: Option[Int],
-    path: Path,
-    leftBoundary: Int,
-    rightBoundary: Int,
-    depth: Int,
-    description: String,
-    pollRefCount: Int
-  )
-
-  /**
    * (Boilerplate) Table to store object hierarchy.
    */
   class DBNodesTable(tag: Tag)
-    extends Table[DBNode](tag, "Objects") {
+    extends Table[DBNode](tag, "HierarchyNodes") {
     /** This is the PrimaryKey */
     def id            = column[Int]("hierarchyId", O.PrimaryKey, O.AutoInc)
     def path          = column[Path]("path")
@@ -68,13 +101,13 @@ trait OmiNodeTables {
 
     // Every table needs a * projection with the same type as the table's type parameter
     def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount) <> (
-      DBNode.mapped,
+      DBNode.tupled,
       DBNode.unapply
     )
   }
   protected val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
 
-  trait HierarchyFKey {
+  trait HierarchyFKey[A] extends Table[A] {
     def hierarchyId = column[Int]("hierarchyId")
     def hierarchy = foreignKey("hierarchy_fk", hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
@@ -98,7 +131,7 @@ trait OmiNodeTables {
    * (Boilerplate) Table for storing latest sensor data to database
    */
   class DBValuesTable(tag: Tag)
-    extends Table[DBValue](tag, "Values") with HierarchyFKey {
+    extends Table[DBValue](tag, "Values") with HierarchyFKey[DBValue] {
     def hierarchyId = column[Int]("hierarchyId")
     def timestamp = column[Timestamp]("time")
     def value = column[String]("value")
@@ -107,7 +140,7 @@ trait OmiNodeTables {
     /** Primary Key: (hierarchyId, timestamp) */
     def pk = primaryKey("pk_DBData", (hierarchyId, timestamp))
 
-    def * = (hierarchyId, timestamp, value, valueType) <> (DBValue.mapped, DBValue.unapply)
+    def * = (hierarchyId, timestamp, value, valueType) <> (DBValue.tupled, DBValue.unapply)
   }
 
   protected val latestValues = TableQuery[DBValuesTable] //table for sensor data
@@ -127,12 +160,12 @@ trait OmiNodeTables {
    * (Boilerplate) Table for storing metadata for sensors as string e.g XML block as string
    */
   class DBMetaDatasTable(tag: Tag)
-    extends Table[DBMetaData](tag, "Metadata") with HierarchyFKey {
+    extends Table[DBMetaData](tag, "Metadata") with HierarchyFKey[DBMetaData] {
     /** This is the PrimaryKey */
     def hierarchyId = column[Int]("hierarchyId", O.PrimaryKey)
     def metadata    = column[String]("metadata")
 
-    def * = (hierarchId, metadata) <> (DBMetaData.mapped, DBMetaData.unapply)
+    def * = (hierarchyId, metadata) <> (DBMetaData.tupled, DBMetaData.unapply)
   }
   protected val metadatas = TableQuery[DBMetaDatasTable]//table for metadata information
 
@@ -171,15 +204,16 @@ trait OmiNodeTables {
     def ttl       = column[Double]("ttl")
     def callback  = column[Option[String]]("callback")
     def lastValue = column[String]("lastValue")
-    def * = (id.?, interval, startTime, ttl, callback, lastValue) <> (DBSub.tuppled, DBSub.unapply)
+    def * = (id.?, interval, startTime, ttl, callback, lastValue) <> (DBSub.tupled, DBSub.unapply)
   }
 
   protected val subs = TableQuery[DBSubsTable]
 
-  trait SubFKey {
+  trait SubFKey[A] extends Table[A] {
     def subId = column[Int]("subId")
-    def sub   = foreignKey("sub_fk", hierarchyId, hierarchy)(
-      _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
+    def sub   = foreignKey("sub_fk", subId, subs)(
+      _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade
+    )
   }
 
 
@@ -194,16 +228,18 @@ trait OmiNodeTables {
    * Storing paths of subscriptions
    */
   class DBSubscribedItemsTable(tag: Tag)
-    extends Table[DBSubscriptionItem](tag, "SubItems") with SubFKey with HierarchyFKey {
+      extends Table[DBSubscriptionItem](tag, "SubItems")
+      with SubFKey[DBSubscriptionItem]
+      with HierarchyFKey[DBSubscriptionItem] {
     def subId = column[Int]("subId")
     def hierarchyId = column[Int]("hierarchyId")
-    def * = (subId, hierarchyId) <> (DBSubscriptionItem.mapped, DBSubscriptionItem.unapply)
+    def * = (subId, hierarchyId) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
   }
 
   protected val subItems = TableQuery[DBSubscribedItemsTable]
 
   protected val allTables =
-    Seq( hierarchy
+    Seq( hierarchyNodes
        , latestValues
        , metadatas
        , subs

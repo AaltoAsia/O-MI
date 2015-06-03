@@ -41,7 +41,7 @@ import java.sql.Timestamp
      * Get list of ancestors from this path, e.g "/a/b/c/d" => "/a", "/a/b", "/a/b/c", "a/b/c/d"
      * Order is from oldest descending.
      */
-    def getParentsAndSelf: Seq[Path] = this.inits.toList.reverse.tail
+    def getParentsAndSelf: Seq[Path] = this.inits.map(Path(_)).toList.reverse.tail
 
     override def equals(that: Any): Boolean = that match{
       case thatPath: Path => thatPath.toSeq.equals(this.toSeq)
