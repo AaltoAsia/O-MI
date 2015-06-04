@@ -198,7 +198,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
 
 
-    private def addNode(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] =
+    protected def addNode(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] =
         for {
           parent <- findParent(fullpath)
 
