@@ -10,9 +10,8 @@ import parsing.Types.Path._
 import parsing.Types.OmiTypes._
 import database._
 import parsing.OdfParser._
-import java.util.Date;
-import java.util.Calendar;
-import java.text.SimpleDateFormat;
+import java.util.{Date,Calendar}
+import java.text.SimpleDateFormat
 import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._

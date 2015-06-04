@@ -216,7 +216,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     *
     */
   private[agentSystem] def getClassnamesWithConfigPath : Array[(String,String)]= {
-    settings.agents.unwrapped().asScala.map{ case (s: String, o: Object) => (s, o.toString)}.toArray 
+    settings.internalAgents.unwrapped().asScala.map{ case (s: String, o: Object) => (s, o.toString)}.toArray 
   }
   /** Supervison strategy for supervising AgentActors.
     *

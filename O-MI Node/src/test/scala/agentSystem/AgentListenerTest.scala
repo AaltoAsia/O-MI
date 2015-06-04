@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 import akka.io.Tcp._
 import scala.io.Source
 import database._
-import testHelpers.Actors
+import testHelpers.{BeforeAll, Actors}
 import parsing._
 import parsing.Types._
 import parsing.Types.Path._
@@ -17,18 +17,20 @@ import parsing.Types.Path._
 import http.Boot
 
 class AgentListenerTest extends Specification {
-  sequential
+//  sequential
+  
   implicit val dbConnection = new TestDB("agent-listener")
   Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
-
+  import Boot.system
   val local = new InetSocketAddress("localhost", 1234)
-  val remote = new InetSocketAddress("remote", 4321)
+  val remote = new InetSocketAddress("127.0.0.1", 4321)
   lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("\n")
 
-  step {
+  def beforeAll() ={
     dbConnection.clearDB()
   }
-
+  
+//  println("External Listener Test Started")
   "ExternalAgentListener" should {
     sequential
     "reply with Register message when it receives Connected message" in new Actors {
@@ -99,7 +101,7 @@ class AgentListenerTest extends Specification {
       val testPath = Path("Objects/AgentTest/SmartHouse/Moisture")
       
       dbConnection.remove(testPath)
-      dbConnection.get(testPath) === None
+      dbConnection.get(testPath) must beNone
       
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //dbConnection.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
@@ -112,7 +114,7 @@ class AgentListenerTest extends Specification {
       val probe = TestProbe()
       
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) must beNone
       
       EventFilter.debug(message = "Got data \n" + testOdf.replaceAll("AgentTest", "AgentTest123")) intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("AgentTest", "AgentTest123"))), probe.ref)
@@ -140,7 +142,7 @@ class AgentListenerTest extends Specification {
       val probe = TestProbe()
       
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) must beNone
       
       EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
