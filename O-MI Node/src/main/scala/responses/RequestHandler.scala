@@ -133,7 +133,7 @@ case write : WriteRequest =>
   handleCancel(cancel)
 
   case subdata : SubDataRequest =>
-  lazy val sensors = dbConnection.getSubData(subdata.sub.id)
+  lazy val sensors = dbConnection.getSubData(subdata.sub.id.get)
   (
     xmlFromResults(
       1.0,
