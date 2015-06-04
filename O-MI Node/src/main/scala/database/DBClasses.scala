@@ -7,6 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 import parsing.Types._
+import parsing.Types.OdfTypes.OdfValue
 import parsing.Types.OmiTypes.SubLike
 import parsing.Types.Path._
 import database._
@@ -31,8 +32,25 @@ trait hasPath {
   def path: Path
 }
 
+trait DBNode {
+  def path: Path
+  def id: Int
+  def compine( another: DBNode) : DBNode
+}
 
+class DBObj extends DBNode{
+  val childs = Array[DBNode]()
+  def compine( another: DBNode) : DBNode = ???
+  def path: Path = ???
+  def id: Int = ???
+}
 
+class DBInfoItem extends DBNode{
+  val values = Array[OdfValue]()
+  def compine( another: DBNode) : DBNode = ???
+  def path: Path = ???
+  def id: Int = ???
+}
 
 /**
  * Base trait for databases. Has basic private interface.
