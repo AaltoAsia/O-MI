@@ -133,6 +133,231 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     else
       hierarchyNodes filter (_.path === Path(childPath.init))
     ).result.head
+
+
+  /**
+   * Used to get metadata from database for given path
+   * @param path path to sensor whose metadata is requested
+   * 
+   * @return metadata as Option[String], none if no data is found
+   */
+  def getMetaData(path:Path):Option[String]= ???
+  /*{
+    val qry = metadatas.filter(_.path === path).map(_.data)
+    runSync(qry.result).headOption
+  }*/
+
+
+
+  /**
+   * Returns array of DBSensors for given subscription id.
+   * Array consists of all sensor values after beginning of the subscription
+   * for all the sensors in the subscription
+   * returns empty array if no data or subscription is found
+   *
+   * @param id subscription id that is assigned during saving the subscription
+   * @param testTime optional timestamp value to indicate end time of subscription,
+   * should only be needed during testing. Other than testing None should be used
+   *
+   * @return Array of DBSensors
+   */
+  def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
+    /*{
+      var result = Buffer[DBSensor]()
+      var subQuery = subs.filter(_.ID === id)
+      var info: (Timestamp, Double) = (null, 0.0) //to gather only needed info from the query
+      var paths = Array[String]()
+
+      var str = runSync(subQuery.result)
+      if (str.length > 0) {
+        var sub = str.head
+        info = (sub._3, sub._5)
+        paths = sub._2.split(";")
+      }
+      paths.foreach {
+        p =>
+          result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)
+      }
+      result.toArray
+    }*/
+
+  def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
+
+  /**
+   * Used to get data from database based on given path.
+   * returns Some(DBSensor) if path leads to sensor and if
+   * path leads to object returns Some(DBObject). DBObject has
+   * variable childs of type Array[DBItem] which stores object's childs.
+   * object.childs(0).path to get first child's path
+   * if nothing is found for given path returns None
+   *
+   * @param path path to search data from
+   *
+   * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
+   */
+  def get(path: Path): Option[ Either[ DBNode,DBValue ] ] = {
+    val valueResult = runSync(
+      getValuesQ(path).sortBy( _.timestamp.desc ).result
+    )
+
+    valueResult.headOption match {
+      case Some(value) =>
+        Some( Right(value) )
+      case None =>
+        val node = runSync( getHierarchyNodeI(path) )
+        node.headOption map {value =>
+          Left(node.get)
+        }
+    }
+  }
+  trait Hole
+
+  //Helper for getting values with path
+  protected def getValuesQ(path: Path) = getWithHieracrhyQ[DBValue, DBValuesTable](path, latestValues)
+
+  protected def getWithHieracrhyQ[I, T <: HierarchyFKey[I]](path: Path, table: TableQuery[T]): Query[T,I,Seq] =
+    for{
+      (hie, value) <- hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
+    } yield(value)
+
+  protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] = 
+    hierarchyNodes.filter(_.path === path).result.map(_.headOption)
+
+  protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
+    hierarchyNodes.filter(_.id === id).result.map(_.headOption)
+
+  /**
+   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
+   * search is targeted between these two times. If only start is given,all values from start time onwards are
+   * targeted. Similiarly if only end is given, values before end time are targeted.
+   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
+   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
+   * the end.
+   * All parameters except path are optional, given only path returns all values in the database for that path
+   *
+   * @param path path as Path object
+   * @param start optional start Timestamp
+   * @param end optional end Timestamp
+   * @param fromStart number of values to be returned from start
+   * @param fromEnd number of values to be returned from end
+   *
+   * @return Array of DBSensors
+   */
+  def getNBetween(
+      path: Path,
+      start: Option[Timestamp],
+      end: Option[Timestamp],
+      fromStart: Option[Int],
+      fromEnd: Option[Int]): Array[DBValue] ={
+      val timeFrame = ( end, start ) match {
+        case (None, Some(startTime)) => 
+          getValuesQ(path).filter{ value =>
+            value.timestamp >= startTime
+          }
+        case (Some(endTime), None) => 
+          getValuesQ(path).filter{ value =>
+            value.timestamp <= endTime
+          }
+        case (Some(endTime), Some(startTime)) => 
+          getValuesQ(path).filter{ value =>
+            value.timestamp >= startTime &&
+            value.timestamp <= endTime
+          }
+        case (None, None) =>
+          getValuesQ(path)
+      }
+      val query = if( fromStart.nonEmpty ){
+        timeFrame.sortBy( _.timestamp.desc ).take(fromStart.get)
+      }else if( fromEnd.nonEmpty ){
+        timeFrame.sortBy( _.timestamp.asc ).take( fromEnd.get )
+      }else {
+        timeFrame.sortBy( _.timestamp.desc )
+      }
+      runSync(query.result).toArray
+    }
+
+    
+  /**
+   * Used to get childs of an object with given path
+   * @param path path to object whose childs are needed
+   * @return Array[DBItem] of DBObjects containing childs
+   *  of given object. Empty if no childs found or invalid path.
+   */
+  def getChilds(path: Path): Array[DBItem] = ???
+    /*{
+      var childs = Array[DBItem]()
+      val objectQuery = for {
+        c <- objects if c.parentPath === path
+      } yield (c.path)
+      var str = runSync(objectQuery.result)
+      childs = Array.ofDim[DBItem](str.length)
+      var index = 0
+      str foreach {
+        case (cpath: Path) =>
+          childs(Math.min(index, childs.length - 1)) = DBObject(cpath)
+          index += 1
+      }
+      childs
+    }
+    */
+
+
+
+
+
+  /**
+   * Checks whether given path exists on the database
+   * @param path path to be checked
+   * @return boolean whether path was found or not
+   */
+  protected def hasObject(path: Path): Boolean =
+    runSync(hierarchyNodes.filter(_.path === path).exists.result)
+
+
+
+
+  /**
+   * getAllSubs is used to search the database for subscription information
+   * Can also filter subscriptions based on whether it has a callback address
+   * @param hasCallBack optional boolean value to filter results based on having callback address
+   * 
+   * None -> all subscriptions
+   * Some(True) -> only with callback
+   * Some(False) -> only without callback
+   *
+   * @return DBSub objects for the query as Array
+   */
+  def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] = ??? 
+  /*
+    {
+      val all = runSync(hasCallBack match {
+        case Some(true) =>
+          subs.filter(!_.callback.isEmpty).result
+        case Some(false) =>
+          subs.filter(_.callback.isEmpty).result
+        case None =>
+          subs.result
+      })
+      all map { elem =>
+          val paths = elem._2.split(";").map(Path(_)).toVector
+          DBSub(elem._1, paths, elem._4, elem._5, elem._6, Some(elem._3))
+      }
+    }
+    */
+
+
+
+  /**
+   * Returns DBSub object wrapped in Option for given id.
+   * Returns None if no subscription data matches the id
+   * @param id number that was generated during saving
+   *
+   * @return returns Some(BDSub) if found element with given id None otherwise
+   */
+  def getSub(id: Int): Option[DBSub] = runSync(getSubQ(id))
+
+  protected def getSubQ(id: Int): DBIOAction[Option[DBSub],NoStream,Effect.Read] =
+    subs.filter(_.id === id).result.map(_.headOption)
 }
 
 
@@ -238,7 +463,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return boolean whether added data was new
    */
-  def set(data: DBSensor): Boolean = ???
+  def set(path: Path, timestam: Timestamp, value: String, valueType: String = ""): Boolean = ???
   /*{
       //search database for sensor's path
       val pathQuery = latestValues.filter(_.path === data.path)
@@ -273,6 +498,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    */
   def setMetaData(path:Path,data:String): Unit = ???
+  def setMetaData(hierarchyId:Int,data:String): Unit = ???
   /*{
     val qry = meta.filter(_.path === path).map(_.data)
     val count = runSync(qry.result).length
@@ -288,17 +514,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   */
 
 
-  /**
-   * Used to get metadata from database for given path
-   * @param path path to sensor whose metadata is requested
-   * 
-   * @return metadata as Option[String], none if no data is found
-   */
-  def getMetaData(path:Path):Option[String]= ???
-  /*{
-    val qry = meta.filter(_.path === path).map(_.data)
-    runSync(qry.result).headOption
-  }*/
   def RemoveMetaData(path:Path): Unit= ???
   /*{
     val qry = meta.filter(_.path === path)
@@ -310,7 +525,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(Path, OdfValue)]): Unit = ??? /*{
+  def setMany(data: List[(Path, OdfValue)]): Boolean = ??? /*{
     var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
 
     // Reformat data and add missing timestamps
@@ -386,40 +601,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
   /**
-   * Returns array of DBSensors for given subscription id.
-   * Array consists of all sensor values after beginning of the subscription
-   * for all the sensors in the subscription
-   * returns empty array if no data or subscription is found
-   *
-   * @param id subscription id that is assigned during saving the subscription
-   * @param testTime optional timestamp value to indicate end time of subscription,
-   * should only be needed during testing. Other than testing None should be used
-   *
-   * @return Array of DBSensors
-   */
-  def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
-    /*{
-      var result = Buffer[DBSensor]()
-      var subQuery = subs.filter(_.ID === id)
-      var info: (Timestamp, Double) = (null, 0.0) //to gather only needed info from the query
-      var paths = Array[String]()
-
-      var str = runSync(subQuery.result)
-      if (str.length > 0) {
-        var sub = str.head
-        info = (sub._3, sub._5)
-        paths = sub._2.split(";")
-      }
-      paths.foreach {
-        p =>
-          result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)
-      }
-      result.toArray
-    }*/
-
-  def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
-
-  /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
    * historyLength
@@ -449,7 +630,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path as Path object
    * 
    */
-  protected def startBuffering(path: Path) = ??? /*{
+  protected def startBuffering(path: Path): Unit = ??? /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { 
@@ -468,7 +649,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    * @param path path as Path object
    */
-  def stopBuffering(path: Path):Boolean = ??? /*{
+  protected def stopBuffering(path: Path): Boolean = ??? /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { existingEntry =>
@@ -495,184 +676,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }*/
 
 
-  /**
-   * Used to get data from database based on given path.
-   * returns Some(DBSensor) if path leads to sensor and if
-   * path leads to object returns Some(DBObject). DBObject has
-   * variable childs of type Array[DBItem] which stores object's childs.
-   * object.childs(0).path to get first child's path
-   * if nothing is found for given path returns None
-   *
-   * @param path path to search data from
-   *
-   * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
-   */
-  def get(path: Path): Option[ Either[ DBNode,DBValue ] ]= {
-    val value = runSync(getValues(path).sortBy( _.timestamp ).result ).headOption
-    if(value.nonEmpty) {
-      return Some( Right(value.get) )
-    } else {
-      val node = runSync(hierarchyNodes.filter(_.path === path).result).headOption
-      if(node.nonEmpty)
-        return Some( Left(node.get))
-      else
-        return None
-    }
-  }
-  //Helper for getting values with path
-  private def getValues(path: Path) = for(
-      (hie, value) <- hierarchyNodes.filter(_.path === path) join latestValues on (_.id === _.hierarchyId )
-    ) yield(value)
-  /*{
-    //search database for given path
-    val pathQuery = latestValues.filter(_.path === path)
-    //if path is found from latest values it must be Sensor otherwise check if it is an object
-    val qry = runSync(pathQuery.sortBy(_.timestamp).result)
-    if (qry.length > 0) {
-      //path is sensor
-      //case class matching
-      qry.last match {
-        case (path: Path, value: String, time: java.sql.Timestamp) =>
-          return Some(DBSensor(path, value, time))
-      }
-    } else {
-      //LatestValues  only contains sensor values, so if empty either path doesn't exist or is object
-      val hierarchyQuery = objects.filter(_.path === path)
-      val hierQry = runSync(hierarchyQuery.result) 
-      //query is empty if no object is found in path
-      if(hierQry.nonEmpty){
-        var childs = getChilds(path)
-        //therefore childs is only empty if given path doesn't exist
-        //path is an object
-        //create object and give it reference to its childs
-        var obj = DBObject(path)
-
-        if (!childs.isEmpty) 
-          obj.childs = childs
-        
-        return Some(obj)
-      }
-      return None
-    }
-  }*/
-
-
-  /**
-   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
-   * search is targeted between these two times. If only start is given,all values from start time onwards are
-   * targeted. Similiarly if only end is given, values before end time are targeted.
-   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
-   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
-   * the end.
-   * All parameters except path are optional, given only path returns all values in the database for that path
-   *
-   * @param path path as Path object
-   * @param start optional start Timestamp
-   * @param end optional end Timestamp
-   * @param fromStart number of values to be returned from start
-   * @param fromEnd number of values to be returned from end
-   *
-   * @return Array of DBSensors
-   */
-  def getNBetween(
-      path: Path,
-      start: Option[Timestamp],
-      end: Option[Timestamp],
-      fromStart: Option[Int],
-      fromEnd: Option[Int]): Array[DBValue] ={
-      val timeFrame = ( end, start ) match {
-        case (None, Some(startTime)) => 
-        getValues(path).filter{ value =>
-            value.timestamp >= startTime
-          }
-        case (Some(endTime), None) => 
-          getValues(path).filter{ value =>
-            value.timestamp <= endTime
-          }
-        case (Some(endTime), Some(startTime)) => 
-          getValues(path).filter{ value =>
-            value.timestamp >= startTime &&
-            value.timestamp <= endTime
-          }
-        case (None, None) =>
-          getValues(path)
-      }
-      val query = if( fromStart.nonEmpty ){
-        timeFrame.sortBy( _.timestamp.desc ).take(fromStart.get)
-      }else if( fromEnd.nonEmpty ){
-        timeFrame.sortBy( _.timestamp.asc ).take( fromEnd.get )
-      }else {
-        timeFrame.sortBy( _.timestamp.desc )
-      }
-      runSync(query.result).toArray
-    }
-    /*{
-    var result = Array[DBSensor]()
-    var query = latestValues.filter(_.path === path)
-    if (start != None) {
-      query = query.filter(_.timestamp >= start.get)
-    }
-    if (end != None) {
-      query = query.filter(_.timestamp <= end.get)
-    }
-    query = query.sortBy(_.timestamp)
-      var str = runSync(query.result)
-      if (fromStart != None && fromEnd != None) {
-        //does not compute
-        //can't have query from two different parts in one go
-      } else if (fromStart != None) {
-        var amount = Math.max(0, Math.min(str.length, fromStart.get))
-        str = str.take(amount)
-      } else if (fromEnd != None) {
-        var amount = Math.max(0, Math.min(str.length, fromEnd.get))
-        str = str.drop(str.length - amount)
-      }
-      result = Array.ofDim[DBSensor](str.length)
-      var index = 0
-      str foreach {
-        case (dbpath: Path, dbvalue: String, dbtime: java.sql.Timestamp) =>
-          result(index) = new DBSensor(dbpath, dbvalue, dbtime)
-          index += 1
-      }
-      result
-    
-  }*/
 
 
 
-
-  /**
-   * Used to get childs of an object with given path
-   * @param path path to object whose childs are needed
-   * @return Array[DBItem] of DBObjects containing childs
-   *  of given object. Empty if no childs found or invalid path.
-   */
-  def getChilds(path: Path): Array[DBItem] = ???
-    /*{
-      var childs = Array[DBItem]()
-      val objectQuery = for {
-        c <- objects if c.parentPath === path
-      } yield (c.path)
-      var str = runSync(objectQuery.result)
-      childs = Array.ofDim[DBItem](str.length)
-      var index = 0
-      str foreach {
-        case (cpath: Path) =>
-          childs(Math.min(index, childs.length - 1)) = DBObject(cpath)
-          index += 1
-      }
-      childs
-    }
-    */
-
-
-  /**
-   * Checks whether given path exists on the database
-   * @param path path to be checked
-   * @return boolean whether path was found or not
-   */
-  private def hasObject(path: Path): Boolean =
-    runSync(hierarchyNodes.filter(_.path === path).exists.result)
     
 
 
@@ -684,7 +690,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return returns boolean whether subscription with given id has expired
    */
-  def isExpired(id: Int): Boolean = ??? /*
+  // TODO: Is this needed at all?
+  // def isExpired(id: Int): Boolean = ???
+  /*
     {
       //gets time when subscibe was added,
       // adds ttl amount of seconds to it,
@@ -704,6 +712,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           true
         }
     }*/
+
 
 
   /**
@@ -729,36 +738,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     
     false
   }*/
+  def removeSub(sub: DBSub): Boolean = removeSub(sub.id.get)
 
 
-  /**
-   * getAllSubs is used to search the database for subscription information
-   * Can also filter subscriptions based on whether it has a callback address
-   * @param hasCallBack optional boolean value to filter results based on having callback address
-   * 
-   * None -> all subscriptions
-   * Some(True) -> only with callback
-   * Some(False) -> only without callback
-   *
-   * @return DBSub objects for the query as Array
-   */
-  def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] = ??? 
-  /*
-    {
-      val all = runSync(hasCallBack match {
-        case Some(true) =>
-          subs.filter(!_.callback.isEmpty).result
-        case Some(false) =>
-          subs.filter(_.callback.isEmpty).result
-        case None =>
-          subs.result
-      })
-      all map { elem =>
-          val paths = elem._2.split(";").map(Path(_)).toVector
-          DBSub(elem._1, paths, elem._4, elem._5, elem._6, Some(elem._3))
-      }
-    }
-    */
 
 
   /**
@@ -772,26 +754,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   /*{
     runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
   }*/
-
-
-  /**
-   * Returns DBSub object wrapped in Option for given id.
-   * Returns None if no subscription data matches the id
-   * @param id number that was generated during saving
-   *
-   * @return returns Some(BDSub) if found element with given id None otherwise
-   */
-  def getSub(id: Int): Option[DBSub] = ???
-  /*
-    {
-      val query = runSync(subs.filter(_.ID === id).result)
-      query.headOption map { head =>
-          //creates DBSub object based on saved information
-          val paths = head._2.split(";").map(Path(_)).toVector
-          DBSub(head._1, paths, head._4, head._5, head._6, Some(head._3))
-        }
-    }
-    */
 
 
   /**

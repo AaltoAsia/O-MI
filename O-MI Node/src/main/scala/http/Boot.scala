@@ -53,8 +53,10 @@ trait Starter {
 
     // Save settings as sensors values
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
-    dbConnection.set(new DBSensor(
-      Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, currentTime))
+    dbConnection.set(
+      Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+      currentTime, settings.numLatestValues.toString
+    )
 
     // Create input pusher actor
     initInputPusher()
