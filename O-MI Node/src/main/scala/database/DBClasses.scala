@@ -55,26 +55,26 @@ trait DBBase{
  * Public datatypes
  */
 
+
+
 /**
- * Implementation of the http://en.wikipedia.org/wiki/Nested_set_model
- * with depth.
- * @param id 
- * @param path
- * @param leftBoundary Nested set model: left value
- * @param rightBoundary Nested set model: right value
- * @param depth Extended nested set model: depth of this node in the tree
- * @param description for the corresponding odf node (Object or InfoItem)
- * @param pollRefCount Count of references to this node from active poll subscriptions
+ * DBSub class to represent subscription information
+ * @param paths Array of paths representing all the sensors the subscription needs
+ * @param ttl time to live. in seconds. subscription expires after ttl seconds
+ * @param interval to store the interval value to DB
+ * @param callback optional callback address. use None if no address is needed
  */
-case class DBNode(
-  id: Option[Int],
-  path: Path,
-  leftBoundary: Int,
-  rightBoundary: Int,
-  depth: Int,
-  description: String,
-  pollRefCount: Int
-)
+case class DBSub(
+  val id: Option[Int] = None,
+  val interval: Double,
+  val startTime: Timestamp,
+  val ttl: Double,
+  val callback: Option[String],
+  val lastValue: String // for event polling subs
+) extends SubLike with IdProvider
+
+
+
 
 trait OmiNodeTables extends DBBase {
 
@@ -83,6 +83,28 @@ trait OmiNodeTables extends DBBase {
     { Path(_) }     // String to Path
     )
 
+
+
+  /**
+   * Implementation of the http://en.wikipedia.org/wiki/Nested_set_model
+   * with depth.
+   * @param id 
+   * @param path
+   * @param leftBoundary Nested set model: left value
+   * @param rightBoundary Nested set model: right value
+   * @param depth Extended nested set model: depth of this node in the tree
+   * @param description for the corresponding odf node (Object or InfoItem)
+   * @param pollRefCount Count of references to this node from active poll subscriptions
+   */
+  case class DBNode(
+    id: Option[Int],
+    path: Path,
+    leftBoundary: Int,
+    rightBoundary: Int,
+    depth: Int,
+    description: String,
+    pollRefCount: Int
+  )
 
 
   /**
@@ -171,24 +193,6 @@ trait OmiNodeTables extends DBBase {
 
 
 
-
-
-
-  /**
-   * DBSub class to represent subscription information
-   * @param paths Array of paths representing all the sensors the subscription needs
-   * @param ttl time to live. in seconds. subscription expires after ttl seconds
-   * @param interval to store the interval value to DB
-   * @param callback optional callback address. use None if no address is needed
-   */
-  case class DBSub(
-    val id: Option[Int] = None,
-    val interval: Double,
-    val startTime: Timestamp,
-    val ttl: Double,
-    val callback: Option[String],
-    val lastValue: String // for event polling subs
-  ) extends SubLike with IdProvider
 
   // val paths: Vector[Path],
 
