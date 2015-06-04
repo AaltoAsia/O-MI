@@ -1,10 +1,11 @@
-<omi:omiEnvelope ttl="0.0" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	<omi:response>
-		<omi:result>
-			<omi:return returnCode="200"></omi:return>
-		</omi:result>
-		<omi:result>
-			<omi:return description="Subscription with requestId not found" returnCode="404"></omi:return>
-		</omi:result>
-	</omi:response>
+<?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+   <omi:response>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+      <omi:result>
+         <omi:return description="Such item/s not found." returnCode="404" />
+      </omi:result>
+   </omi:response>
 </omi:omiEnvelope>

@@ -14,7 +14,7 @@ object OmiGenerator {
   import DBConversions._
   
   def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") = {
-      OmiEnvelope( DataRecord[R](Some("omi"), Some(requestName), request), version, ttl)
+      OmiEnvelope( DataRecord[R](Some("omi.xsd"), Some(requestName), request), version, ttl)
   }
   
   def omiResponse( results: RequestResultType*) : ResponseListType = {
