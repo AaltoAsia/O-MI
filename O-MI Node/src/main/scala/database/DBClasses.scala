@@ -71,7 +71,7 @@ case class DBSub(
   val ttl: Double,
   val callback: Option[String],
   val lastValue: String // for event polling subs
-) extends SubLike with IdProvider
+) extends SubLike
 
 
 
@@ -154,7 +154,8 @@ trait OmiNodeTables extends DBBase {
    */
   class DBValuesTable(tag: Tag)
     extends Table[DBValue](tag, "Values") with HierarchyFKey[DBValue] {
-    def hierarchyId = column[Int]("hierarchyId")
+    // from extension:
+    //def hierarchyId = column[Int]("hierarchyId")
     def timestamp = column[Timestamp]("time")
     def value = column[String]("value")
     def valueType = column[String]("valueType")
@@ -184,7 +185,7 @@ trait OmiNodeTables extends DBBase {
   class DBMetaDatasTable(tag: Tag)
     extends Table[DBMetaData](tag, "Metadata") with HierarchyFKey[DBMetaData] {
     /** This is the PrimaryKey */
-    def hierarchyId = column[Int]("hierarchyId", O.PrimaryKey)
+    override def hierarchyId = column[Int]("hierarchyId", O.PrimaryKey)
     def metadata    = column[String]("metadata")
 
     def * = (hierarchyId, metadata) <> (DBMetaData.tupled, DBMetaData.unapply)
@@ -235,8 +236,10 @@ trait OmiNodeTables extends DBBase {
       extends Table[DBSubscriptionItem](tag, "SubItems")
       with SubFKey[DBSubscriptionItem]
       with HierarchyFKey[DBSubscriptionItem] {
-    def subId = column[Int]("subId")
-    def hierarchyId = column[Int]("hierarchyId")
+    // from extension:
+    //def subId = column[Int]("subId")
+    //def hierarchyId = column[Int]("hierarchyId")
+    def pk = primaryKey("pk_subItems", (subId, hierarchyId))
     def * = (subId, hierarchyId) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
   }
 

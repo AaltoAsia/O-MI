@@ -37,7 +37,10 @@ object OmiTypes{
   }
 
 
-  case class SubDataRequest(sub: database.DBSub) extends OmiRequest
+  case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
+    def ttl = sub.ttl
+    def callback = sub.callback
+  }
 
 
 case class ReadRequest(
