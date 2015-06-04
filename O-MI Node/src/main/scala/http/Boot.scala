@@ -59,10 +59,6 @@ trait Starter {
     // Create input pusher actor
     initInputPusher()
 
-    // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
-    responses.OMISubscription.fillSubQueue()(dbConnection)
-    // Clean old pollable subs, TODO: join with SubscriptionHandler logic
-    responses.OMISubscription.checkSubs()(dbConnection)
   }
 
 
@@ -75,7 +71,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(): ActorRef = {
+  def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
     val subHandler = system.actorOf(Props(classOf[SubscriptionHandler]), "subscription-handler")
 
     // create and start sensor data listener
@@ -85,7 +81,7 @@ trait Starter {
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
+    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection) )), "omi-service")
 
 
 

@@ -11,12 +11,16 @@ import responses._
 import database._
 import parsing.Types.Path
 import parsing.Types.OmiTypes.{ SubLike, SubDataRequest }
-import OMISubscription.SubscriptionResponseGen
 import CallbackHandlers._
+import parsing.Types.OmiTypes._
+import parsing.Types.OdfTypes._
+import parsing.xmlGen
+import parsing.xmlGen.scalaxb
 
 import scala.collection.mutable.PriorityQueue
 
 import java.sql.Timestamp
+import java.util.Date
 import System.currentTimeMillis
 import scala.math.Ordering
 import scala.util.{ Success, Failure }
@@ -29,7 +33,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 // MESSAGES
 case object HandleIntervals
-case class NewSubscription(id: Int)
+case object CheckTTL
+case class RegisterRequestHandler(reqHandler: RequestHandler)
+case class NewSubscription(subscription: SubscriptionRequest)
 case class RemoveSubscription(id: Int)
 
 /**
@@ -39,11 +45,12 @@ class SubscriptionHandler extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
   import context.system
 
+  private def date = new Date()
   implicit val timeout = Timeout(5.seconds)
 
   implicit val dbConnection: DB = new SQLiteConnection
 
-  val subscriptionResponseGen = new SubscriptionResponseGen
+  private var requestHandler = new RequestHandler(self)
 
   sealed trait SavedSub {
     val sub: DBSub
@@ -91,30 +98,31 @@ class SubscriptionHandler extends Actor with ActorLogging {
   private def loadSub(id: Int, dbsub: DBSub): Unit = {
     log.debug(s"Adding sub: $id")
 
-    require(dbsub.callback.isDefined, "SubscriptionHandlerActor is not for buffered messages")
+    if (dbsub.hasCallback){
+      if (dbsub.isIntervalBased) {
+        intervalSubs += TimedSub(
+          dbsub,
+          id,
+          new Timestamp(currentTimeMillis()))
 
-    if (dbsub.isIntervalBased) {
-      intervalSubs += TimedSub(
-        dbsub,
-        id,
-        new Timestamp(currentTimeMillis()))
+        handleIntervals()
+        log.debug(s"Added sub as TimedSub: $id")
 
-      handleIntervals()
-      log.debug(s"Added sub as TimedSub: $id")
+      } else if (dbsub.isEventBased) {
 
-    } else if (dbsub.isEventBased) {
+        for (path <- dbsub.paths)
+          dbConnection.get(path).foreach{
+            case sensor: DBSensor =>
+              eventSubs += path.toString -> EventSub(dbsub, id, sensor.value)
+            case x =>
+              log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
+          }
 
-      for (path <- dbsub.paths)
-        dbConnection.get(path).foreach{
-          case sensor: DBSensor =>
-            eventSubs += path.toString -> EventSub(dbsub, id, sensor.value)
-          case x =>
-            log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
-        }
-
-      log.debug(s"Added sub as EventSub: $id")
+        log.debug(s"Added sub as EventSub: $id")
+      }
+    }else{
+      ttlQueue.enqueue((dbsub.id, (dbsub.ttl.toInt * 1000).toLong + dbsub.startTime.getTime))
     }
-
   }
 
   /**
@@ -139,7 +147,10 @@ class SubscriptionHandler extends Actor with ActorLogging {
       }
     } else {
       //remove from intervalSubs
-      intervalSubs = intervalSubs.filterNot(sub.id == _.id)
+      if(sub.hasCallback)
+        intervalSubs = intervalSubs.filterNot(sub.id == _.id)
+      else
+        ttlQueue = ttlQueue.filterNot( sub.id == _._1)
     }
     dbConnection.removeSub(sub.id)
   }
@@ -148,9 +159,13 @@ class SubscriptionHandler extends Actor with ActorLogging {
 
     case HandleIntervals => handleIntervals()
 
-    case NewSubscription(requestId) => loadSub(requestId)
+    case CheckTTL => checkTTL()
+
+    case NewSubscription(subscription) => sender() ! setSubscription(subscription)
 
     case RemoveSubscription(requestId) => sender() ! removeSub(requestId)
+  
+    case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
 
   def checkEventSubs(paths: Seq[Path]): Unit = {
@@ -179,7 +194,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
               val addr = subscription.callback 
               if (addr == None) return
 
-              subscriptionResponseGen.runRequest(SubDataRequest(subscription))
+              requestHandler.handleRequest(SubDataRequest(subscription))
 
             }
           }
@@ -230,7 +245,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
 
 
         log.debug(s"generateOmi for id:$id")
-        subscriptionResponseGen.runRequest(SubDataRequest(sub))
+        requestHandler.handleRequest(SubDataRequest(sub))
         val interval = sub.interval
         val callbackAddr = sub.callback.get
         log.info(s"Sending in progress; Subscription id:$id addr:$callbackAddr interval:$interval")
@@ -269,4 +284,113 @@ class SubscriptionHandler extends Actor with ActorLogging {
     }
   }
 
+
+  /**
+   * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
+   */
+  type SubTuple = (Int, Long)
+
+  /**
+   * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
+   */
+  val subOrder: Ordering[SubTuple] = Ordering.by(_._2)
+
+  /**
+   * PriorityQueue with subOrder ordering. value with earliest timeout is first.
+   * This val is lazy and is computed when needed for the first time
+   *
+   * This queue contains only subs that have no callback address defined and have ttl > 0.
+   */
+  private var ttlQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
+  var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
+  
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Int = {
+    var requestIdInt: Int = -1
+    val paths = getPaths(subscription)
+
+    if (paths.nonEmpty) {
+      lazy val ttlInt = subscription.ttl.toInt
+      lazy val interval = subscription.interval.toInt
+      lazy val callback = subscription.callback match {
+        case Some(uri) => Some(uri.toString)
+        case None => None 
+      }
+      lazy val timeStamp = Some(new Timestamp(date.getTime()))
+      requestIdInt = dbConnection.saveSub( new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
+      Future{
+      if (callback.isEmpty && ttlInt > 0) {
+        ttlQueue.enqueue((requestIdInt, (ttlInt * 1000).toLong + timeStamp.get.getTime))
+        self ! CheckTTL
+      }else {
+        val dbsub = dbConnection.getSub(requestIdInt).get
+        if (dbsub.isIntervalBased) {
+          intervalSubs += TimedSub(
+            dbsub,
+            requestIdInt,
+            new Timestamp(currentTimeMillis()))
+
+          self ! HandleIntervals
+          log.debug(s"Added sub as TimedSub: $requestIdInt")
+
+        } else if (dbsub.isEventBased) {
+
+          for (path <- dbsub.paths)
+            dbConnection.get(path).foreach{
+              case sensor: DBSensor =>
+                eventSubs += path.toString -> EventSub(dbsub, requestIdInt, sensor.value)
+              case x =>
+                log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
+            }
+
+          log.debug(s"Added sub as EventSub: $requestIdInt")
+        }
+      }
+      }
+    }
+    requestIdInt
+  }
+
+  def getSensors(request: OdfRequest): Array[DBSensor] = {
+    getPaths(request).map{path => dbConnection.get(path) }.collect{ case Some(sensor:DBSensor) => sensor }.toArray
+  }
+
+  def getPaths(request: OdfRequest) = getInfoItems( request.odf.objects ).map( info => info.path )
+
+  
+  def getInfoItems( objects: Iterable[OdfObject] ) : Iterable[OdfInfoItem] = {
+    objects.flatten{
+        obj => 
+        obj.infoItems ++ getInfoItems(obj.objects)
+    }
+  }
+  /**
+   * This method is called by scheduler and when new sub is added to subQueue.
+   *
+   * This method removes all subscriptions that have expired from the priority queue and
+   * schedules new checkSub method call.
+   */
+  def checkTTL()(implicit dbConnection: DB): Unit = {
+    
+    val currentTime = date.getTime
+    
+    //exists returns false if Option is None
+    while (ttlQueue.headOption.exists(_._2 <= currentTime)) {
+      dbConnection.removeSub(ttlQueue.dequeue()._1)
+    }
+    
+    //foreach does nothing if Option is None
+    ttlQueue.headOption.foreach { n =>
+      val nextRun = ((n._2) - currentTime)
+      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, HandleIntervals)
+      if (scheduledTimes.forall(_._1.isCancelled)) {
+        scheduledTimes = Some((cancellable, currentTime + nextRun))
+      } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {
+        scheduledTimes.foreach(_._1.cancel())
+        scheduledTimes=Some((cancellable,currentTime+nextRun))
+      }
+      else if (scheduledTimes.exists(n =>((n._2 > currentTime) && (n._2 < (currentTime + nextRun))))) {
+        cancellable.cancel()
+      }
+    }
+  }
 }

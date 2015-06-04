@@ -6,21 +6,25 @@ import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
+import java.net.InetSocketAddress
+import java.net.InetAddress
 
 import responses._
 import parsing._
+import PermissionCheck._
 import parsing.Types._
 import parsing.Types.OmiTypes._
 import database._
 
 import xml._
+import scala.collection.JavaConverters._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
  * Actor that handles incoming http messages
- * @param subHandler ActorRef that is used in subscription handling
+ * @param requestHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {
 
   /**
    * the HttpService trait defines only one abstract member, which
@@ -29,7 +33,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
   def actorRefFactory = context
 
   //Used for O-MI subscriptions
-  val subscriptionHandler = subHandler
+  val requestHandler = reqHandler
 
   /**
    * this actor only runs our route, but you could add
@@ -48,11 +52,11 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 trait OmiService extends HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
-  val subscriptionHandler: ActorRef
+  val requestHandler: RequestHandler
 
   implicit val dbobject: DB
 
-  //Handles CORS allow-origin seems to be enough
+    //Handles CORS allow-origin seems to be enough
   private def corsHeaders =
     respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*"))
 
@@ -92,7 +96,7 @@ trait OmiService extends HttpService {
       path(Rest) { pathStr =>
         corsHeaders {
           val path = Path(pathStr)
-          Read.generateODFREST(path) match {
+          requestHandler.generateODFREST(path) match {
             case Some(Left(value)) =>
               respondWithMediaType(`text/plain`) {
                 complete(value)
@@ -111,71 +115,38 @@ trait OmiService extends HttpService {
       }
     }
 
-  import OMISubscription._
   // XXX: lazy maybe fixes bug
-  lazy val cancelResponseGen = new OMICancelGen(subscriptionHandler)
-  lazy val readResponseGen = new ReadResponseGen
-  lazy val pollResponseGen = new PollResponseGen
 
   /* Receives HTTP-POST directed to root (localhost:8080) */
   val getXMLResponse = post { // Handle POST requests from the client
-    path("") {
-      corsHeaders {
-        entity(as[NodeSeq]) { xml =>
-          val omi = OmiParser.parse(xml.toString)
-
-          if (omi.isRight) {
-            val requests = omi.right.get
+    clientIP { ip =>
+      path("") {
+        corsHeaders {
+           entity(as[NodeSeq]) { xml =>
+            val omi = OmiParser.parse(xml.toString)
+            var returnStatus = 200
             respondWithMediaType(`text/xml`) {
-
-              var returnStatus = 200
-
-              //FIXME: Currently sending multiple omi:omiEnvelope
-              val result = requests.map {
-
-                case read: ReadRequest =>
-                  log.debug(read.toString)
-                  readResponseGen.runRequest(read)
-
-                  case poll: PollRequest =>
-                    // Should give out poll result
-                    pollResponseGen.runRequest(poll)
-
-                case write: WriteRequest =>
-                  log.debug(write.toString)
-                  returnStatus = 501
-                  ErrorResponse.notImplemented
-
-                case subscription: SubscriptionRequest =>
-                  log.debug(subscription.toString)
-
-                  val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
-
-                  if (subscription.callback.isDefined && subscription.callback.get.toString.length > 3 && id >= 0) // XXX: hack check for valid url :D
-                    subscriptionHandler ! NewSubscription(id)
-
+              val responseXML = if (omi.isRight) {
+                val request = omi.right.get.head
+                  val (response,returnCode) = request match {
+                    case write : PermissiveRequest => 
+                      if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
+                        requestHandler.handleRequest(request)
+                      else
+                        (requestHandler.unauthorized, 401)
+                    case req : OmiRequest => 
+                        requestHandler.handleRequest(request)
+                  }
+                  returnStatus = returnCode
                   response
-
-                case cancel: CancelRequest =>
-                  log.debug(cancel.toString)
-
-                  cancelResponseGen.runRequest(cancel)
-
-                case _ =>
-                  log.warning("Unknown request")
-                  returnStatus = 400
-
-              }.mkString("\n")
-
-              complete(returnStatus, result)
-
+              } else {
+                val errors = omi.left.get
+                //Errors found
+                log.warning("Parse Errors: {}", errors.mkString(", "))
+                requestHandler.parseError(errors.toSeq:_*)
+              }
+              complete(returnStatus, responseXML)
             }
-          } else {
-            val errors = omi.left.get
-            //Errors found
-            log.warning("Parse Errors: {}", errors.mkString(", "))
-            complete(400,
-              ErrorResponse.parseErrorResponse(errors))
           }
         }
       }
@@ -184,4 +155,5 @@ trait OmiService extends HttpService {
 
   // Combine all handlers
   val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
+
 }
