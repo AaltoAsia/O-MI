@@ -21,6 +21,10 @@ object OmiTypes{
     def callback: Option[String]
     def hasCallback = callback.isDefined
   }
+  sealed trait PermissiveRequest
+  sealed trait OdfRequest {
+    def odf : OdfObjects
+  }
 
   /**
    * Trait for subscription like classes. Offers a common interface for subscription types.
@@ -51,7 +55,7 @@ case class ReadRequest(
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
-) extends OmiRequest
+) extends OmiRequest with OdfRequest
 
 case class PollRequest(
   ttl: Double,
@@ -66,20 +70,21 @@ case class SubscriptionRequest(
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
-) extends OmiRequest with SubLike
+) extends OmiRequest with SubLike with OdfRequest
+
 
 case class WriteRequest(
   ttl: Double,
   odf: OdfObjects,
   callback: Option[ String ] = None
-) extends OmiRequest
+) extends OmiRequest with OdfRequest with PermissiveRequest
 
 case class ResponseRequest(
   results: Iterable[OmiResult]  
-) extends OmiRequest {
+) extends OmiRequest with PermissiveRequest{
       def callback = None
       def ttl = 0
-   }
+   } 
 
 case class CancelRequest(
   ttl: Double,
@@ -94,7 +99,7 @@ case class OmiResult(
   description: Option[String] = None,
   requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int]),
   odf: Option[OdfTypes.OdfObjects] = None
-)
+) 
 
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   def getRequests( omi: OmiParseResult ) : Iterable[OmiRequest] = 

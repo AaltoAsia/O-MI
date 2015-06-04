@@ -62,7 +62,8 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     }
 
     def writesChildNodes(__obj: OmiEnvelope, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      (Some(__obj.omienvelopeoption) map {x => scalaxb.toXML[scalaxb.DataRecord[OmiEnvelopeOption]](x, x.namespace, x.key, __scope, false)} get)
+      (Some(__obj.omienvelopeoption) map {x => 
+        scalaxb.toXML[scalaxb.DataRecord[OmiEnvelopeOption]](x, x.namespace, x.key, __scope, false)} get)
 
   }
 

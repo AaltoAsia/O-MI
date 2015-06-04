@@ -504,10 +504,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
    */
   def get(path: Path): Option[ Either[ DBNode,DBValue ] ]= {
-    val sensorQ = for(
-      (hie, value) <- hierarchyNodes.filter(_.path === path) join latestValues on (_.id === _.hierarchyId )
-    ) yield(value)
-    val value = runSync(sensorQ.sortBy( _.timestamp ).result ).headOption
+    val value = runSync(getValues(path).sortBy( _.timestamp ).result ).headOption
     if(value.nonEmpty) {
       return Some( Right(value.get) )
     } else {
@@ -518,6 +515,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         return None
     }
   }
+  //Helper for getting values with path
+  private def getValues(path: Path) = for(
+      (hie, value) <- hierarchyNodes.filter(_.path === path) join latestValues on (_.id === _.hierarchyId )
+    ) yield(value)
   /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
@@ -574,7 +575,34 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       start: Option[Timestamp],
       end: Option[Timestamp],
       fromStart: Option[Int],
-      fromEnd: Option[Int]): Array[DBSensor] = ??? /*{
+      fromEnd: Option[Int]): Array[DBValue] ={
+      val timeFrame = ( end, start ) match {
+        case (None, Some(startTime)) => 
+        getValues(path).filter{ value =>
+            value.timestamp >= startTime
+          }
+        case (Some(endTime), None) => 
+          getValues(path).filter{ value =>
+            value.timestamp <= endTime
+          }
+        case (Some(endTime), Some(startTime)) => 
+          getValues(path).filter{ value =>
+            value.timestamp >= startTime &&
+            value.timestamp <= endTime
+          }
+        case (None, None) =>
+          getValues(path)
+      }
+      val query = if( fromStart.nonEmpty ){
+        timeFrame.sortBy( _.timestamp.desc ).take(fromStart.get)
+      }else if( fromEnd.nonEmpty ){
+        timeFrame.sortBy( _.timestamp.asc ).take( fromEnd.get )
+      }else {
+        timeFrame.sortBy( _.timestamp.desc )
+      }
+      runSync(query.result).toArray
+    }
+    /*{
     var result = Array[DBSensor]()
     var query = latestValues.filter(_.path === path)
     if (start != None) {

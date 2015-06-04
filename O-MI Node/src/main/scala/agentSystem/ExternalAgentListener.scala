@@ -5,23 +5,27 @@ import akka.io.{ IO, Tcp  }
 import akka.util.ByteString
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
+import java.net.InetAddress
 
-
+import scala.collection.mutable.Map
+import scala.collection.immutable
+import scala.collection.JavaConverters._
+import http.Settings
+import http.PermissionCheck._
 import parsing.OdfParser
 import parsing.OmiParser
 import database.SQLiteConnection
-
-
 import parsing.Types._
 import parsing.Types.Path._
 import parsing.Types.OdfTypes._
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
 /** AgentListener handles connections from agents.
   */
 class ExternalAgentListener extends Actor with ActorLogging {
-   
+  
   import Tcp._
   //Orginally a hack for getting different names for actors.
   private var agentCounter : Int = 0 
@@ -42,16 +46,18 @@ class ExternalAgentListener extends Actor with ActorLogging {
    
     case Connected(remote, local) =>
       val connection = sender()
-      log.info(s"Agent connected from $remote to $local")
-
-      val handler = context.actorOf(
-        Props(classOf[ExternalAgentHandler], remote),
-        "agent-handler-"+agentCounter
-      )
-      agentCounter += 1
-      connection ! Register(handler)
+      if( hasPermission( remote.getAddress() )){
+        log.info(s"Agent connected from $remote to $local")
+        val handler = context.actorOf(
+          Props(classOf[ExternalAgentHandler], remote),
+          "agent-handler-"+agentCounter
+        )
+        agentCounter += 1
+        connection ! Register(handler)
+      } else {
+        log.warning(s"Unauthorized " + remote+  " tried to connect as external agent.")
+      }
   }
-
 }
 
 /** A handler for data received from a agent.

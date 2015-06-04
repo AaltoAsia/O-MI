@@ -25,7 +25,8 @@ def FormatSubData(
     path:Path,
     starttime:Timestamp,
     interval:Double,
-    endTime:Option[Timestamp])(implicit database: DB):Array[DBSensor] = {
+    endTime:Option[Timestamp])(implicit database: DB):Array[DBSensor] = ???
+  /*{
   var rawdata = database.getNBetween(path, Some(starttime), None, None,None)
   var deltaTime =
     endTime match{
@@ -102,5 +103,5 @@ def FormatSubData(
   }
   //remove null values from the beginning if there were no subdata in the database before start time.
   formatedData.dropWhile(_ == null)
-}
+}*/
 }
