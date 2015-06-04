@@ -142,6 +142,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
  * Read-write interface methods for db tables.
  */
 trait DBReadWrite extends DBReadOnly with OmiNodeTables {
+  type ReadWrite = Effect with Effect.Write with Effect.Read
 
   /**
   * Initializing method, creates the file and tables.
@@ -184,7 +185,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
 
-      // Slick doesn't allow this query
+      // NOTE: Slick 3.0.0 doesn't allow this query with its types, use sql instead
       //val rightValsQ = hierarchyNodes map (_.rightBoundary) filter (_ > value) 
       //val leftValsQ  = hierarchyNodes map (_.leftBoundary) filter (_ > value)
       //val rightUpdateQ = rightValsQ.map(_ + 2).update(rightValsQ)
@@ -196,7 +197,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       )
     }
 
-    def addNode(fullpath: Path): DBIOAction[Unit, NoStream, Effect.Write] =
+
+    def addNode(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] =
         for {
           parent <- findParent(fullpath)
 
@@ -217,12 +219,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val missingPathsQ: DBIOAction[Seq[Path],NoStream,Effect.Read]  = foundPathsQ map (parentsAndPath diff _)
 
     // Combine DBIOActions as a single action
-    val addingActions = missingPathsQ flatMap {missingPaths =>
-      missingPaths map addNode
+    val addingAction = missingPathsQ flatMap {(missingPaths: Seq[Path]) =>
+      DBIO.seq(
+        missingPaths map addNode : _*
+      )
     }
 
     // NOTE: transaction level probably could be reduced to increaseAfter + DBNode insert
-    DBIO.seq(addingActions).transactionally
+    addingAction.transactionally
   }
 
 
