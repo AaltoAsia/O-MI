@@ -3,7 +3,7 @@ package http
 import akka.actor.{ActorSystem, Props, ActorRef}
 import akka.io.{IO, Tcp}
 import spray.can.Http
-//import spray.servlet.WebBoot
+import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
@@ -128,7 +128,8 @@ object Boot extends Starter {
 /**
  * Starting point of the servlet program.
  */
-class ServletBoot extends Starter {// with WebBoot {
+class ServletBoot extends Starter with WebBoot {
   init()
   val serviceActor = start()
+  // bindHttp is not called
 }

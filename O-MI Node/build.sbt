@@ -17,18 +17,19 @@ autoAPIMappings := true
 
 // SPRAY
 libraryDependencies ++= {
-val akkaV = "2.3.6"
-val sprayV = "1.3.2"
-Seq(
-  "io.spray"            %%  "spray-can"     % sprayV,
-  "io.spray"            %%  "spray-routing" % sprayV,
-  "io.spray"            %%  "spray-testkit" % sprayV  % "test",
-"io.spray"			  %%  "spray-client"  % sprayV,
-  "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
-  "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
-  "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
-"org.json4s" 		  %%  "json4s-native" % "3.2.11"
-)
+  val akkaV = "2.3.6"
+  val sprayV = "1.3.2"
+  Seq(
+    "io.spray"            %%  "spray-can"     % sprayV,
+    "io.spray"            %%  "spray-routing" % sprayV,
+    "io.spray"            %%  "spray-testkit" % sprayV  % "test",
+    "io.spray"			      %%  "spray-client"  % sprayV,
+    "io.spray"			      %%  "spray-servlet" % sprayV,
+    "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
+    "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
+    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
+    "org.json4s" 		      %%  "json4s-native" % "3.2.11"
+    )
 }
 
 libraryDependencies += "com.beachape.filemanagement" %% "schwatcher" % "0.1.8"
@@ -122,5 +123,7 @@ release <<= (resourceDirectory in Compile, releaseDir, baseDirectory, artifact, 
 
 ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
 
-
+// Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
+tomcat() 
+// jetty()
 
