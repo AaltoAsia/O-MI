@@ -81,7 +81,6 @@ class ReadTest extends Specification with BeforeAfterAll {
 /*
  * Removed the Option get calls and head calls for sequences.
  * Tests have duplication but that is to allow easier debugging incase tests fail.
- * There are still some type casting that could decrease coding style p.
  */
   "Read response" should {
     sequential
@@ -92,7 +91,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(simpletestfile)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.map(y => y.asInstanceOf[ReadRequest]))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))//.asInstanceOf[ReadRequest]))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
@@ -108,7 +107,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(intervaltestfile)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.map(y => y.asInstanceOf[ReadRequest]))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       
       resultOption must beSome.which(_._2 === 200)
@@ -123,7 +122,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(plainxml)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.map(y => y.asInstanceOf[ReadRequest]))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       
       resultOption must beSome.which(_._2 === 200)
@@ -138,7 +137,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
       val parserlist = OmiParser.parse(erroneousxml)
       parserlist.isRight === true
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.map(y => y.asInstanceOf[ReadRequest]))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       //returnCode should not be 200
       resultOption must beSome.which(_._2 !== 200)
@@ -153,7 +152,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(metarequestxml)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.map(y => y.asInstanceOf[ReadRequest]))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       
       resultOption must beSome.which(_._2 === 200)

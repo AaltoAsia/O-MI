@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat
 import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._
-import testHelpers.{BeforeAfterAll, SubscriptionHandlerTestActor}
+import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor }
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -94,14 +94,16 @@ class CancelTest extends Specification with BeforeAfterAll {
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/SimpleXMLCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
 
-      parserlist.isRight === true
+      //      parserlist.isRight === true
+      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))
+      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)
+      //      val resultXML = requestHandler.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])._1
 
-      val resultXML = requestHandler.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])._1
+      resultOption must beSome.which(_ must beEqualToIgnoringSpace(correctxmlreturn))
 
-      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-
-      OmiParser.parse(resultXML.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
-//      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
+      resultOption must beSome.which(x =>
+        OmiParser.parse(x.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
+      //      OmiParser.parse(resultXML.toString()).right.get.head should beAnInstanceOf[ResponseRequest]
     }
 
     "Give correct XML when a cancel with multiple ids are requested" in {
@@ -109,44 +111,52 @@ class CancelTest extends Specification with BeforeAfterAll {
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultipleCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
 
-      parserlist.isRight === true
-      val resultXML = requestHandler.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])._1
+      //      parserlist.isRight === true
+      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))
+      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)
 
-      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
+      resultOption must beSome.which(_ must beEqualToIgnoringSpace(correctxmlreturn))
+      resultOption must beSome.which(x =>
+        OmiParser.parse(x.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
 
     "Give correct XML when cancels with multiple paths is requested (multiple ids)" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MultiplePathsRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MultiplePathsReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      parserlist.isRight === true
-      val resultXML = requestHandler.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])._1
+      //      parserlist.isRight === true
+      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))
+      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)
 
-      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
+      resultOption must beSome.which(_ must beEqualToIgnoringSpace(correctxmlreturn))
+      resultOption must beSome.which(x =>
+        OmiParser.parse(x.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
 
     "Give error XML when cancel is requested with non-existing id" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/ErrorCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/ErrorCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      parserlist.isRight === true
-      val resultXML = requestHandler.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])._1
+      //      parserlist.isRight === true
+      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))
+      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)
 
-      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
+      resultOption must beSome.which(_ must beEqualToIgnoringSpace(correctxmlreturn))
+      resultOption must beSome.which(x =>
+        OmiParser.parse(x.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
 
     "Give correct XML when valid and invalid ids are mixed in cancel request" in {
       lazy val simpletestfile = Source.fromFile("src/test/resources/responses/cancel/MixedCancelRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/cancel/MixedCancelReturn.xml")
       val parserlist = OmiParser.parse(simpletestfile)
-      parserlist.isRight === true
-      val resultXML = requestHandler.runGeneration(parserlist.right.get.head.asInstanceOf[CancelRequest])._1
+      //      parserlist.isRight === true
+      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))
+      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)
 
-      resultXML must beEqualToIgnoringSpace(correctxmlreturn)
-      OmiParser.parse(resultXML.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
+      resultOption must beSome.which(_ must beEqualToIgnoringSpace(correctxmlreturn))
+      resultOption must beSome.which(x =>
+        OmiParser.parse(x.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
   }
 }
