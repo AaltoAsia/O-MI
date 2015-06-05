@@ -240,15 +240,17 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @param end optional end Timestamp
    * @param fromStart number of values to be returned from start
    * @param fromEnd number of values to be returned from end
-   *
-   * @return Array of DBSensors
+   * @return query for the requeste values
    */
-  def getNBetween(
+  protected def getNBetweenQ(
       path: Path,
       start: Option[Timestamp],
       end: Option[Timestamp],
       fromStart: Option[Int],
-      fromEnd: Option[Int]): Array[DBValue] ={
+      fromEnd: Option[Int]
+    ): Query[DBValuesTable,DBValue,Seq] = {
+      assert( ! (fromStart.isDefined && fromEnd.isDefined),
+        "Both newest and oldest at the same time not supported!")
       val timeFrame = ( end, start ) match {
         case (None, Some(startTime)) => 
           getValuesQ(path).filter{ value =>
@@ -266,16 +268,43 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
         case (None, None) =>
           getValuesQ(path)
       }
-      val query = if( fromStart.nonEmpty ){
-        timeFrame.sortBy( _.timestamp.desc ).take(fromStart.get)
-      }else if( fromEnd.nonEmpty ){
-        timeFrame.sortBy( _.timestamp.asc ).take( fromEnd.get )
-      }else {
-        timeFrame.sortBy( _.timestamp.desc )
-      }
-      runSync(query.result).toArray
+      val query = 
+        if( fromStart.nonEmpty ) {
+          timeFrame.sortBy( _.timestamp.desc ).take(fromStart.get)
+        } else if ( fromEnd.nonEmpty ) {
+          timeFrame.sortBy( _.timestamp.asc ).take( fromEnd.get ) // XXX: Will have unconsistent ordering
+        } else {
+          timeFrame.sortBy( _.timestamp.desc )
+        }
+      query
     }
 
+  /**
+   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
+   * search is targeted between these two times. If only start is given,all values from start time onwards are
+   * targeted. Similiarly if only end is given, values before end time are targeted.
+   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
+   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
+   * the end.
+   * All parameters except the first are optional, given only the first returns all requested data
+   *
+   * @param requests path as Path object
+   * @param start optional start Timestamp
+   * @param end optional end Timestamp
+   * @param fromStart number of values to be returned from start
+   * @param fromEnd number of values to be returned from end
+   *
+   * @return Array of DBSensors
+   */
+  def getNBetween(
+      requests: Iterable[OdfElement],
+      start: Option[Timestamp],
+      end: Option[Timestamp],
+      fromStart: Option[Int],
+      fromEnd: Option[Int]
+    ): OdfObjects = {
+      ???
+  }
     
   /**
    * Used to get childs of an object with given path
