@@ -129,6 +129,7 @@ object Boot extends Starter {
  * Starting point of the servlet program.
  */
 class ServletBoot extends Starter with WebBoot {
+  override implicit val system = Boot.system
   init()
   val serviceActor = start()
   // bindHttp is not called
