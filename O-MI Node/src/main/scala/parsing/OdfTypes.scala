@@ -35,7 +35,7 @@ object OdfTypes{
     objects:              Iterable[OdfObject],
     desctription:         Option[OdfDesctription] = None,
     typeValue:            Option[String] = None
-  ) extends OdfElement
+  ) extends OdfElement with HasPath
 
   def OdfObjectAsObjectType(obj: OdfObject) : ObjectType = {
     ObjectType(
@@ -60,7 +60,7 @@ object OdfTypes{
     values:               Iterable[OdfValue],
     desctription:         Option[OdfDesctription] = None,
     metaData:             Option[OdfMetaData] = None
-  ) extends OdfElement
+  ) extends OdfElement with HasPath
 
   def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {
     InfoItemType(
@@ -123,5 +123,23 @@ object OdfTypes{
     objects.objects.flatMap{
       obj => getLeafs(obj)
     }
+  }
+  trait HasPath {
+    def path: Path
+  }
+  
+  def fromPath( last: HasPath) : OdfObjects = {
+    var path = last.path.dropRight(1)
+    var obj = last match{
+      case info: OdfInfoItem =>
+        OdfObject( path, asJavaIterable(Seq(info)), asJavaIterable(Seq.empty) )  
+      case obj: OdfObject =>
+        OdfObject( path, asJavaIterable(Seq.empty), asJavaIterable(Seq(obj)))  
+    }
+    while( path.length > 1){
+      path = path.dropRight(1)
+      obj = OdfObject(  path, asJavaIterable(Seq.empty ), asJavaIterable( Seq( obj ) ) )
+    }
+    OdfObjects( asJavaIterable( Seq( obj ) ) )
   }
 }
