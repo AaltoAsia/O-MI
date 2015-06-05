@@ -110,4 +110,18 @@ object OdfTypes{
       case _ => asJavaIterable(Seq.empty[ParseError])
     }
 
+  def getLeafs(objects: OdfObjects ) : Iterable[OdfElement] = {
+    def getLeafs(obj: OdfObject ) : Iterable[OdfElement] = {
+      if(obj.infoItems.isEmpty && obj.objects.isEmpty)
+        scala.collection.Iterable(obj)
+      else 
+        obj.infoItems ++ obj.objects.flatMap{          
+          subobj =>
+            getLeafs(subobj)
+        } 
+    }
+    objects.objects.flatMap{
+      obj => getLeafs(obj)
+    }
+  }
 }
