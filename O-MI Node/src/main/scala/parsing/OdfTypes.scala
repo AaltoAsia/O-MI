@@ -1,6 +1,8 @@
 package parsing
 package Types
 
+import xmlGen._
+import xml.XML
 import java.sql.Timestamp
 import java.lang.Iterable
 import scala.collection.JavaConversions.asJavaIterable
@@ -17,6 +19,16 @@ object OdfTypes{
     version:              Option[String] = None
   ) extends OdfElement
 
+  def OdfObjectsAsObjectsType( objects: OdfObjects ) : ObjectsType ={
+    ObjectsType(
+      Object = objects.objects.map{
+        obj: OdfObject => 
+        OdfObjectAsObjectType( obj )
+      }.toSeq,
+      objects.version
+    )
+  }
+  
   case class OdfObject(
     path:                 Path,
     infoItems:            Iterable[OdfInfoItem],
@@ -25,6 +37,24 @@ object OdfTypes{
     typeValue:            Option[String] = None
   ) extends OdfElement
 
+  def OdfObjectAsObjectType(obj: OdfObject) : ObjectType = {
+    ObjectType(
+      Seq( QlmID(
+          obj.path.last,
+          attributes = Map.empty
+      )),
+      InfoItem = obj.infoItems.map{ 
+        info: OdfInfoItem =>
+          OdfInfoItemAsInfoItemType( info )
+        }.toSeq,
+      Object = obj.objects.map{ 
+        subobj: OdfObject =>
+        OdfObjectAsObjectType( subobj )
+      }.toSeq,
+      attributes = Map.empty
+    )
+  }
+
   case class OdfInfoItem(
     path:                 Types.Path,
     values:               Iterable[OdfValue],
@@ -32,6 +62,27 @@ object OdfTypes{
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement
 
+  def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {
+    InfoItemType(
+      name = info.path.last,
+      value = info.values.map{ 
+        value : OdfValue =>
+        ValueType(
+          value.value,
+          value.typeValue,
+          unixTime = Some(value.timestamp.get.getTime/1000),
+          attributes = Map.empty
+        )
+      },
+      MetaData = 
+        if(info.metaData.nonEmpty)
+          Some( scalaxb.fromXML[MetaData]( XML.loadString( info.metaData.get.data ) ) )
+        else 
+          None
+      ,
+      attributes = Map.empty
+    )
+  }
   case class OdfMetaData(
     data:                 String
   ) extends OdfElement

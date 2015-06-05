@@ -4,13 +4,14 @@ import database._
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb
 import parsing.Types.Path
+import parsing.Types.OdfTypes
+import parsing.Types.OdfTypes._
 import xml.XML
 import xml.Node
 import scala.language.existentials
 
 object Result{
   import OmiGenerator._
-  import DBConversions._
   private val scope = scalaxb.toScope(
     None -> "odf",
     Some("omi") -> "omi.xsd",
@@ -24,13 +25,13 @@ object Result{
   def notFound: RequestResultType = simpleResult( "404", Some("Such item/s not found.") )
   def success : RequestResultType = simpleResult( "200", None)
 
-  def readResult(sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =  odfResult( "200", None, None, sensors)
+  def readResult( objects: OdfObjects) : RequestResultType =  odfResult( "200", None, None, objects)
 
-  def pollResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
-    odfResult( "200", None, Some(requestId), sensors)
+  def pollResult( requestId: String, objects: OdfObjects) : RequestResultType =
+    odfResult( "200", None, Some(requestId), objects)
 
-  def subDataResult( requestId: String, sensors: Array[DBSensor])(implicit dbConnection: DB) : RequestResultType =
-    odfResult( "200", None, Some(requestId), sensors)  
+  def subDataResult( requestId: String, objects: OdfObjects) : RequestResultType =
+    odfResult( "200", None, Some(requestId), objects)  
     
   def subscriptionResult( requestId: String): RequestResultType ={
     omiResult(
@@ -42,7 +43,7 @@ object Result{
     )
   }
 
-  def odfResult( returnCode: String, returnDescription: Option[String], requestId: Option[String], sensors: Array[DBSensor])(implicit dbConnection: DB): RequestResultType  = {
+  def odfResult( returnCode: String, returnDescription: Option[String], requestId: Option[String], objects: OdfObjects): RequestResultType  = {
     omiResult(
       omiReturn(
         returnCode,
@@ -50,7 +51,7 @@ object Result{
       ),
       requestId,
       Some("odf"),
-      Some( odfMsg( scalaxb.toXML[ObjectsType]( sensorsToObjects( sensors ), Some("odf"), Some("Objects"), scope ) ) )
+      Some( odfMsg( scalaxb.toXML[ObjectsType]( OdfTypes.OdfObjectsAsObjectsType(objects) , Some("odf.xsd"), Some("Objects"), scope ) ) ) 
     )
   }
 

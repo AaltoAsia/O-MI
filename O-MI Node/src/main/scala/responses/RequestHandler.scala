@@ -49,7 +49,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     }
   }
 
-  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
+  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = ???/*{
 
     val timeout = if (request.ttl > 0) request.ttl.seconds else Duration.Inf
 
@@ -69,30 +69,30 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
       ),
     500
   )
-case Failure(e: RequestHandlingException) => 
-actionOnInternalError(e)
-(
-  xmlFromResults(
-    1.0,
-    Result.simpleResult(e.errorCode.toString, Some( e.getMessage()))
-  ),
-501
-        )
-      case Failure(e) => 
+      case Failure(e: RequestHandlingException) => 
       actionOnInternalError(e)
       (
         xmlFromResults(
           1.0,
+          Result.simpleResult(e.errorCode.toString, Some( e.getMessage()))
+        ),
+      501
+      )
+      case Failure(e) => 
+      actionOnInternalError(e)
+      (
+      xmlFromResults(
+          1.0,
           Result.simpleResult("501", Some( "Internal server error: " + e.getMessage()))
       ),
-    501
-  )
+       501
+      )
     }
   }
-
+*/
   def actionOnInternalError: Throwable => Unit = { _ => /*noop*/ }
 
-  def xmlFromRequest(request: OmiRequest) : (NodeSeq, Int) = request match {
+  def xmlFromRequest(request: OmiRequest) : (NodeSeq, Int) = ???/*request match {
     case read : ReadRequest =>
     handleRead(read)
 
@@ -152,7 +152,7 @@ case write : WriteRequest =>
 )
 
   } 
-
+*/
   private val scope =scalaxb.toScope(
     None -> "odf.xsd",
     Some("omi") -> "omi.xsd",
@@ -226,7 +226,7 @@ def xmlMsg( envelope: xmlGen.OmiEnvelope) = {
   )
   }
 
-  def handleCancel( cancel: CancelRequest ) : (NodeSeq, Int) = {
+  def handleCancel( cancel: CancelRequest ) : (NodeSeq, Int) = ???/*{
     implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
     val jobs = cancel.requestId.map { id =>
@@ -264,21 +264,21 @@ def xmlMsg( envelope: xmlGen.OmiEnvelope) = {
   ),
 returnCode
     )
-}
+}*/
 
-def handleRead(read: ReadRequest) : (NodeSeq, Int) ={
-  //TODO: Doesn't get subtrees of empty objects. Fx after DB refactory, too many queries for DB
-  val sensors = getSensors(read)
-  println(sensors.map{ c => c.path}.mkString("\n"))
-  (
-    xmlFromResults(
-      1.0,
-      Result.readResult(sensors)
-    ),
-  200
-)
-  }
-  def handleSubscription( subscription: SubscriptionRequest ) : ( NodeSeq, Int) = {
+  def handleRead(read: ReadRequest) : (NodeSeq, Int) = ??? /*{
+      //TODO: Doesn't get subtrees of empty objects. Fx after DB refactory, too many queries for DB
+      val odf = get(read
+      (
+        xmlFromResults(
+          1.0,
+          Result.readResult(objects)
+        ),
+      200
+    )
+  }*/
+
+  def handleSubscription( subscription: SubscriptionRequest ) : ( NodeSeq, Int) = ???/*{
     implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
     var returnCode = 200
@@ -296,7 +296,7 @@ def handleRead(read: ReadRequest) : (NodeSeq, Int) ={
       ),
     returnCode
   )
-  }
+  }*/
 
   def unauthorized = xmlFromResults(
     1.0,
