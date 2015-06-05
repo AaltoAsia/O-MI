@@ -15,24 +15,10 @@ import java.text.SimpleDateFormat
 import scala.xml.Utility.trim
 import scala.xml.XML
 import akka.actor._
-import testHelpers.BeforeAfterAll
+import testHelpers.{BeforeAfterAll, SubscriptionHandlerTestActor}
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import responses.RemoveSubscription
-
-class SubscriptionHandlerTestActor extends Actor {
-  def receive = {
-    case RemoveSubscription(x) => {
-      if (x <= 10) {
-        sender() ! true
-      } else {
-        sender() ! false
-      }
-    }
-    case _ => sender() ! false
-  }
-}
 
 class TestSubHandler(testdb: DB) extends SubscriptionHandler {
   override implicit val dbConnection = testdb

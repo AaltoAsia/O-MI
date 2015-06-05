@@ -5,6 +5,8 @@ import akka.testkit.TestKit
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.Scope
+import akka.actor._
+import responses.RemoveSubscription
 
 trait BeforeAll extends Specification {
   override def map(fs: =>Fragments) ={
@@ -33,3 +35,16 @@ abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.pa
   """))) with After with Scope{
     def after = system.shutdown()
   }
+
+class SubscriptionHandlerTestActor extends Actor {
+  def receive = {
+    case RemoveSubscription(x) => {
+      if (x <= 10) {
+        sender() ! true
+      } else {
+        sender() ! false
+      }
+    }
+    case _ => sender() ! false
+  }
+}
