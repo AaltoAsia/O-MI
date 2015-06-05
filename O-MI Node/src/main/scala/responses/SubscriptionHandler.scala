@@ -83,7 +83,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
   // load subscriptions at startup
   override def preStart() = {
     val subs = dbConnection.getAllSubs(Some(true))
-    for (sub <- subs) loadSub(sub.id, sub)
+    for (sub <- subs) loadSub(sub.id.get, sub)
 
   }
 
@@ -95,7 +95,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
         log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
-  private def loadSub(id: Int, dbsub: DBSub): Unit = {
+  private def loadSub(id: Int, dbsub: DBSub): Unit = ???/*{
     log.debug(s"Adding sub: $id")
 
     if (dbsub.hasCallback){
@@ -121,9 +121,9 @@ class SubscriptionHandler extends Actor with ActorLogging {
         log.debug(s"Added sub as EventSub: $id")
       }
     }else{
-      ttlQueue.enqueue((dbsub.id, (dbsub.ttl.toInt * 1000).toLong + dbsub.startTime.getTime))
+      ttlQueue.enqueue((dbsub.id.get, (dbsub.ttl.toInt * 1000).toLong + dbsub.startTime.getTime))
     }
-  }
+  }*/
 
   /**
    * @param id The id of subscription to remove
@@ -140,7 +140,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
    * @param sub The subscription to remove
    * @return true on success
    */
-  private def removeSub(sub: DBSub): Boolean = {
+  private def removeSub(sub: DBSub): Boolean = ???/*{
     if (sub.isEventBased) {
       sub.paths.foreach { path =>
         eventSubs -= path.toString
@@ -152,9 +152,9 @@ class SubscriptionHandler extends Actor with ActorLogging {
       else
         ttlQueue = ttlQueue.filterNot( sub.id == _._1)
     }
-    dbConnection.removeSub(sub.id)
+    dbConnection.removeSub(sub.id.get)
   }
-
+*/
   override def receive = {
 
     case HandleIntervals => handleIntervals()
@@ -168,7 +168,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
     case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
 
-  def checkEventSubs(paths: Seq[Path]): Unit = {
+  def checkEventSubs(paths: Seq[Path]): Unit = ???/*{
 
     for (path <- paths) {
       var newestValue: Option[String] = None
@@ -203,7 +203,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
         case None => // noop
       }
     }
-  }
+  }*/
 
   private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
     val removeTime = sub.startTime.getTime + sub.ttlToMillis
@@ -304,7 +304,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
   private var ttlQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
   var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
   
-  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Int = {
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Int = ???/*{
     var requestIdInt: Int = -1
     val paths = getPaths(subscription)
 
@@ -348,7 +348,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
       }
     }
     requestIdInt
-  }
+  }*/
 
   def getSensors(request: OdfRequest): Array[DBSensor] = {
     getPaths(request).map{path => dbConnection.get(path) }.collect{ case Some(sensor:DBSensor) => sensor }.toArray

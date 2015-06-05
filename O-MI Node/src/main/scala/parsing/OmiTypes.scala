@@ -42,8 +42,8 @@ object OmiTypes{
 
 
   case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-    val ttl = sub.ttl - (System.currentTimeMillis() - sub.startTime.getTime)*1000
-    val callback = sub.callback
+    def ttl = sub.ttl
+    def callback = sub.callback
   }
 
 
@@ -70,7 +70,8 @@ case class SubscriptionRequest(
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
-) extends OmiRequest with OdfRequest
+) extends OmiRequest with SubLike with OdfRequest
+
 
 case class WriteRequest(
   ttl: Double,
