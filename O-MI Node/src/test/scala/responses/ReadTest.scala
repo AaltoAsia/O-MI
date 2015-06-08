@@ -56,7 +56,7 @@ class ReadTest extends Specification with BeforeAfterAll {
 
     for ((path, value) <- testData) {
       dbConnection.remove(path)
-      dbConnection.set(new DBSensor(path, value, testtime))
+      dbConnection.set(path, testtime, value)
     }
 
     var count = 0
@@ -64,13 +64,13 @@ class ReadTest extends Specification with BeforeAfterAll {
     //for begin and end testing
     dbConnection.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
     for (value <- intervaltestdata) {
-      dbConnection.set(new DBSensor(Path("Objects/ReadTest/SmartOven/Temperature"), value, new java.sql.Timestamp(date.getTime + count)))
+      dbConnection.set(Path("Objects/ReadTest/SmartOven/Temperature"), new java.sql.Timestamp(date.getTime + count), value)
       count = count + 1000
     }
 
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
     dbConnection.remove(Path("Objects/Metatest/Temperature"))
-    dbConnection.set(new DBSensor(Path("Objects/Metatest/Temperature"), "asd", testtime))
+    dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
     dbConnection.setMetaData(Path("Objects/Metatest/Temperature"),
       """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
 

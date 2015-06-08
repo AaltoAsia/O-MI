@@ -86,7 +86,7 @@ class OmiServiceSpec extends Specification
       }
     }
     "respond successfully to GET to some value" in {
-      dbConnection.set(new DBSensor(Path("Objects/SystemTests/TestValue"), "123", new java.sql.Timestamp(1000)))
+      dbConnection.set(Path("Objects/SystemTests/TestValue"), new java.sql.Timestamp(1000), "123")
 
       Get("/Objects/SystemTests/TestValue/value") ~> myRoute ~> check {
         mediaType === `text/plain`
@@ -121,11 +121,11 @@ class OmiServiceSpec extends Specification
     sequential
     val powerConsumptionValue = "180"
     val dataTime = new java.sql.Timestamp(1000)
-    val fridgeData = DBSensor(Path("Objects/SmartFridge22334411/PowerConsumption"),
+    val fridgeData = (Path("Objects/SmartFridge22334411/PowerConsumption"),
       powerConsumptionValue,
       dataTime)
     log.debug("set data")
-    dbConnection.set(fridgeData)
+    dbConnection.set(fridgeData._1, fridgeData._3,fridgeData._2)
 
     val readTestRequestFridge: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later

@@ -11,19 +11,19 @@ import scala.concurrent._
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration.Duration
-import testHelpers.Actors
+import testHelpers.{Actors, BeforeAll}
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
-class SubscriptionHandlerActorTest extends Specification {
+class SubscriptionHandlerActorTest extends Specification with BeforeAll{
   sequential
   
   implicit val dbConnection = new SQLiteConnection // TestDB("subscriptionHandler-test")
 
-  step {
+  def beforeAll={
     dbConnection.clearDB()
-    dbConnection.set(new DBSensor(Path("SubscriptionHandlerTest/testData"), "test", new java.sql.Timestamp(1000)))
+    dbConnection.set(Path("SubscriptionHandlerTest/testData"), new java.sql.Timestamp(1000),  "test")
   }
 
   "SubscriptionHandlerActor" should {
