@@ -322,7 +322,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
         case None => None 
       }
       lazy val timeStamp = new Timestamp(date.getTime())
-      val dbsub = dbConnection.saveSub( NewDBSub(interval, timeStamp, ttlInt, callback))
+      val dbsub = dbConnection.saveSub( NewDBSub(interval, timeStamp, ttlInt, callback), getLeafs(subscription.odf).map{ _.path }.toSeq)
       requestIdInt = dbsub.id 
       Future{
       if (callback.isEmpty && ttlInt > 0) {
