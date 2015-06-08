@@ -9,6 +9,7 @@ import akka.actor.ActorLogging
 
 import responses._
 import database._
+import database._
 import parsing.Types.Path
 import parsing.Types.OmiTypes.{ SubLike, SubDataRequest }
 import CallbackHandlers._
@@ -72,7 +73,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
   def getIntervalSubs = intervalSubs
 
   //var eventSubs: Map[Path, EventSub] = HashMap()
-  private var eventSubs: Map[String, EventSub] = HashMap()
+  private var eventSubs: Map[String, Seq[EventSub]] = HashMap()
   def getEventSubs = eventSubs
 
   // Attach to db events
@@ -93,7 +94,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
         log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
-  private def loadSub(id: Int, dbsub: Sub): Unit = {
+  private def loadSub(id: Int, dbsub: DBSub): Unit = {
     log.debug(s"Adding sub: $id")
 
     if (dbsub.hasCallback){
@@ -108,9 +109,14 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
       } else if (dbsub.isEventBased) {
 
-        dbConnection.getSubscribtedItems(dbsub.id.get).foreach{
+        dbConnection.getSubscribtedItems(dbsub.id).foreach{
           case item: SubscriptionItem =>
-            eventSubs += path.toString -> EventSub(dbsub, id, item.lastValue)
+            eventSubs.get(item.path.toString) match {
+              case Some( ses : Seq[EventSub] ) => 
+                eventSubs = eventSubs.updated( item.path.toString, ses ++ Seq( EventSub(dbsub, id, item.lastValue)))
+              case None => 
+                eventSubs += item.path.toString -> Seq( EventSub(dbsub, id, item.lastValue))
+            }
           case x =>
             log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
         }
@@ -118,7 +124,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
         log.debug(s"Added sub as EventSub: $id")
       }
     }else{
-      ttlQueue.enqueue((dbsub.id.get, (dbsub.ttl.toInt * 1000).toLong + dbsub.startTime.getTime))
+      ttlQueue.enqueue((dbsub.id, (dbsub.ttl.toInt * 1000).toLong + dbsub.startTime.getTime))
     }
   }
 
@@ -137,10 +143,11 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    * @param sub The subscription to remove
    * @return true on success
    */
-  private def removeSub(sub: DBSub): Boolean = ???/*{
+  private def removeSub(sub: DBSub): Boolean = {
     if (sub.isEventBased) {
-      sub.paths.foreach { path =>
-        eventSubs -= path.toString
+      eventSubs.foreach{ 
+        case (path: String, ses: Seq[EventSub])  =>
+        eventSubs = eventSubs.updated(path, ses.filter( _.id != sub.id ))    
       }
     } else {
       //remove from intervalSubs
@@ -149,9 +156,9 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
       else
         ttlQueue = ttlQueue.filterNot( sub.id == _._1)
     }
-    dbConnection.removeSub(sub.id.get)
+    dbConnection.removeSub(sub.id)
   }
-*/
+
   override def receive = {
 
     case HandleIntervals => handleIntervals()
@@ -165,42 +172,44 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
 
-  def checkEventSubs(paths: Seq[Path]): Unit = ???/*{
+  def checkEventSubs(paths: Seq[Path]): Unit = {
 
     for (path <- paths) {
       var newestValue: Option[String] = None
 
       eventSubs.get(path.toString) match {
 
-        case Some(EventSub(subscription, id, lastValue)) => {
+        case Some(ses : Seq[EventSub]) => {
+          ses.foreach{
+            case EventSub(subscription, id, lastValue) => 
+              if (hasTTLEnded(subscription, currentTimeMillis())) {
+                removeSub(subscription)
+              } else {
+                if (newestValue.isEmpty)
+                  newestValue = dbConnection.get(path).map{
+                    case OdfInfoItem(_, v, _, _) => v.headOption.getOrElse("")
+                    case _ => ""// noop, already logged at loadSub
+                  }
+                
+                if (lastValue != newestValue.getOrElse("")){
 
-          if (hasTTLEnded(subscription, currentTimeMillis())) {
-            removeSub(subscription)
-          } else {
-            if (newestValue.isEmpty)
-              newestValue = dbConnection.get(path).map{
-                case DBSensor(_, v, _) => v
-                case _ => ""// noop, already logged at loadSub
+                  //def failed(reason: String) =
+                  //  log.warning(s"Callback failed; subscription id:$id  reason: $reason")
+
+                  val addr = subscription.callback 
+                  if (addr == None) return
+
+                  requestHandler.handleRequest(SubDataRequest(subscription))
+
+                }
               }
-            
-            if (lastValue != newestValue.getOrElse("")){
-
-              //def failed(reason: String) =
-              //  log.warning(s"Callback failed; subscription id:$id  reason: $reason")
-
-              val addr = subscription.callback 
-              if (addr == None) return
-
-              requestHandler.handleRequest(SubDataRequest(subscription))
-
-            }
           }
         }
 
         case None => // noop
       }
     }
-  }*/
+  }
 
   private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
     val removeTime = sub.startTime.getTime + sub.ttlToMillis
@@ -247,7 +256,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
         val callbackAddr = sub.callback.get
         log.info(s"Sending in progress; Subscription id:$id addr:$callbackAddr interval:$interval")
 
-
+//XXX: WHAT WAS THIS FOR?
           /*
           def failed(reason: String) =
             log.warning(
@@ -301,7 +310,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
   private var ttlQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
   var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
   
-  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Int = ???/*{
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Int = {
     var requestIdInt: Int = -1
     val paths = getPaths(subscription)
 
@@ -312,14 +321,14 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
         case Some(uri) => Some(uri.toString)
         case None => None 
       }
-      lazy val timeStamp = Some(new Timestamp(date.getTime()))
-      requestIdInt = dbConnection.saveSub( new DBSub(paths.toArray, ttlInt, interval, callback, timeStamp))
+      lazy val timeStamp = new Timestamp(date.getTime())
+      val dbsub = dbConnection.saveSub( NewDBSub(interval, timeStamp, ttlInt, callback))
+      requestIdInt = dbsub.id 
       Future{
       if (callback.isEmpty && ttlInt > 0) {
-        ttlQueue.enqueue((requestIdInt, (ttlInt * 1000).toLong + timeStamp.get.getTime))
+        ttlQueue.enqueue((requestIdInt, (ttlInt * 1000).toLong + timeStamp.getTime))
         self ! CheckTTL
       }else {
-        val dbsub = dbConnection.getSub(requestIdInt).get
         if (dbsub.isIntervalBased) {
           intervalSubs += TimedSub(
             dbsub,
@@ -330,14 +339,17 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
           log.debug(s"Added sub as TimedSub: $requestIdInt")
 
         } else if (dbsub.isEventBased) {
-
-          for (path <- dbsub.paths)
-            dbConnection.get(path).foreach{
-              case sensor: DBSensor =>
-                eventSubs += path.toString -> EventSub(dbsub, requestIdInt, sensor.value)
-              case x =>
-                log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
-            }
+          dbConnection.getSubscribtedItems(dbsub.id).foreach{
+            case item: SubscriptionItem =>
+              eventSubs.get(item.path.toString) match {
+                case Some( ses : Seq[EventSub] ) => 
+                  eventSubs = eventSubs.updated( item.path.toString, ses ++ Seq( EventSub(dbsub, dbsub.id, item.lastValue)))
+                case None => 
+                  eventSubs += item.path.toString -> Seq( EventSub(dbsub, dbsub.id, item.lastValue))
+              }
+            case x =>
+              log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
+          }
 
           log.debug(s"Added sub as EventSub: $requestIdInt")
         }
@@ -345,7 +357,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
       }
     }
     requestIdInt
-  }*/
+  }
 
   def getSensors(request: OdfRequest): Array[DBSensor] = {
     getPaths(request).map{path => dbConnection.get(path) }.collect{ case Some(sensor:DBSensor) => sensor }.toArray
@@ -378,7 +390,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     //foreach does nothing if Option is None
     ttlQueue.headOption.foreach { n =>
       val nextRun = ((n._2) - currentTime)
-      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, HandleIntervals)
+      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
       if (scheduledTimes.forall(_._1.isCancelled)) {
         scheduledTimes = Some((cancellable, currentTime + nextRun))
       } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {

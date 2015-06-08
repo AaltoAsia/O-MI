@@ -31,27 +31,6 @@ trait IdProvider {
 trait hasPath {
   def path: Path
 }
-
-trait DBNode {
-  def path: Path
-  def id: Int
-  def compine( another: DBNode) : DBNode
-}
-
-class DBObj extends DBNode{
-  val childs = Array[DBNode]()
-  def compine( another: DBNode) : DBNode = ???
-  def path: Path = ???
-  def id: Int = ???
-}
-
-class DBInfoItem extends DBNode{
-  val values = Array[OdfValue]()
-  def compine( another: DBNode) : DBNode = ???
-  def path: Path = ???
-  def id: Int = ???
-}
-
 /**
  * Base trait for databases. Has basic private interface.
  */
@@ -75,6 +54,11 @@ trait DBBase{
 
 
 sealed trait DBSubInternal
+case class SubscriptionItem(
+  val path: Path,
+  val hierarchyId: Int,
+  val lastValue: String // for event polling subs
+)
 
 /**
  * DBSub class to represent subscription information
