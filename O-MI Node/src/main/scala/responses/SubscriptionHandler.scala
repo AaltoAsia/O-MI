@@ -41,14 +41,12 @@ case class RemoveSubscription(id: Int)
 /**
  * Handles interval counting and event checking for subscriptions
  */
-class SubscriptionHandler extends Actor with ActorLogging {
+class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
   import context.system
 
   private def date = new Date()
   implicit val timeout = Timeout(5.seconds)
-
-  implicit val dbConnection: DB = new SQLiteConnection
 
   private var requestHandler = new RequestHandler(self)
 
@@ -95,7 +93,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
         log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
-  private def loadSub(id: Int, dbsub: DBSub): Unit = ???/*{
+  private def loadSub(id: Int, dbsub: Sub): Unit = {
     log.debug(s"Adding sub: $id")
 
     if (dbsub.hasCallback){
@@ -110,20 +108,19 @@ class SubscriptionHandler extends Actor with ActorLogging {
 
       } else if (dbsub.isEventBased) {
 
-        for (path <- dbsub.paths)
-          dbConnection.get(path).foreach{
-            case sensor: DBSensor =>
-              eventSubs += path.toString -> EventSub(dbsub, id, sensor.value)
-            case x =>
-              log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
-          }
+        dbConnection.getSubscribtedItems(dbsub.id.get).foreach{
+          case item: SubscriptionItem =>
+            eventSubs += path.toString -> EventSub(dbsub, id, item.lastValue)
+          case x =>
+            log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
+        }
 
         log.debug(s"Added sub as EventSub: $id")
       }
     }else{
       ttlQueue.enqueue((dbsub.id.get, (dbsub.ttl.toInt * 1000).toLong + dbsub.startTime.getTime))
     }
-  }*/
+  }
 
   /**
    * @param id The id of subscription to remove
