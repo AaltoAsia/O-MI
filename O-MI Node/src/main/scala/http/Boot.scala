@@ -74,7 +74,7 @@ trait Starter {
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
   def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
-    val subHandler = system.actorOf(Props(classOf[SubscriptionHandler]), "subscription-handler")
+    val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!

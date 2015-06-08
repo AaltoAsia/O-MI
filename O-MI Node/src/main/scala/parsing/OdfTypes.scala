@@ -110,8 +110,8 @@ object OdfTypes{
       case _ => asJavaIterable(Seq.empty[ParseError])
     }
 
-  def getLeafs(objects: OdfObjects ) : Iterable[OdfElement] = {
-    def getLeafs(obj: OdfObject ) : Iterable[OdfElement] = {
+  def getLeafs(objects: OdfObjects ) : Iterable[HasPath] = {
+    def getLeafs(obj: OdfObject ) : Iterable[HasPath] = {
       if(obj.infoItems.isEmpty && obj.objects.isEmpty)
         scala.collection.Iterable(obj)
       else 

@@ -336,6 +336,15 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     }
     */
 
+  def getSubscribtedPaths( id: Int) : Array[Path] = {
+    val pathsQ = for{
+      (subI, hie) <- subItems.filter( _.subId === id ) join hierarchyNodes on ( _.hierarchyId === _.id )
+    }yield( hie.path )
+    runSync( pathsQ.result ).toArray
+  }
+  def getSubscribtedItems( id: Int) : Array[DBSubscriptionItem] = {
+    runSync( subItems.filter( _.subId === id ).result ).toArray
+  }
 
 
   /**

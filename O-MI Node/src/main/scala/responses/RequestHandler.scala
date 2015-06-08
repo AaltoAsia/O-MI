@@ -270,7 +270,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     dbConnection.get(path) match {
       case Some(sensor: DBSensor) =>
         if (wasValue == 1){
-          return Some(Left(sensor.value))
+          Some(Left(sensor.value))
         }else if (wasValue == 2){
           val metaDataO = dbConnection.getMetaData(path)
           metaDataO match {
