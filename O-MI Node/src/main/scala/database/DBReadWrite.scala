@@ -369,7 +369,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
   /**
-   * Removes subscription information from database for given ID
+   * Removes subscription information from database for given ID.
+   * Removes also related subscription items.
    * @param id id number that was generated during saving
    *
    */
@@ -391,7 +392,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     
     false
   }*/
-  def removeSub(sub: DBSub): Boolean = removeSub(sub.id.get)
+  def removeSub(sub: DBSub): Boolean = removeSub(sub.id)
 
 
 
@@ -419,7 +420,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: DBSub): Int = ??? 
+  def saveSub(sub: NewDBSub): DBSub = ??? 
   /*{
         val id = getNextId()
         if (sub.callback.isEmpty) {

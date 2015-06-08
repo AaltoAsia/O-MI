@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 import parsing.Types._
-import parsing.Types.OdfTypes.OdfValue
+import parsing.Types.OdfTypes._
 import parsing.Types.OmiTypes.SubLike
 import parsing.Types.Path._
 import database._
@@ -74,24 +74,28 @@ trait DBBase{
  */
 
 
+sealed trait DBSubInternal
 
 /**
  * DBSub class to represent subscription information
- * @param paths Array of paths representing all the sensors the subscription needs
  * @param ttl time to live. in seconds. subscription expires after ttl seconds
  * @param interval to store the interval value to DB
  * @param callback optional callback address. use None if no address is needed
  */
 case class DBSub(
-  val id: Option[Int] = None,
+  val id: Int,
   val interval: Double,
   val startTime: Timestamp,
   val ttl: Double,
-  val callback: Option[String],
-  val lastValue: String // for event polling subs
-) extends SubLike
+  val callback: Option[String]
+) extends SubLike with DBSubInternal
 
-
+case class NewDBSub(
+  val interval: Double,
+  val startTime: Timestamp,
+  val ttl: Double,
+  val callback: Option[String]
+) extends SubLike with DBSubInternal
 
 
 trait OmiNodeTables extends DBBase {
@@ -166,7 +170,7 @@ trait OmiNodeTables extends DBBase {
     value: String,
     valueType: String
   ) {
-    def toOdfValue = OdfValue(value, valueType, Some(timestamp))
+    def toOdf = OdfValue(value, valueType, Some(timestamp))
   }
 
   /**
@@ -197,7 +201,9 @@ trait OmiNodeTables extends DBBase {
   case class DBMetaData(
     val hierarchyId: Int,
     val metadata: String
-  )
+  ) {
+    def toOdf = OdfMetaData(metadata)
+  }
 
   /**
    * (Boilerplate) Table for storing metadata for sensors as string e.g XML block as string
@@ -215,21 +221,41 @@ trait OmiNodeTables extends DBBase {
 
 
 
-  // val paths: Vector[Path],
+
+
 
   /**
    * (Boilerplate) Table for O-MI subscription information
    */
   class DBSubsTable(tag: Tag)
-    extends Table[DBSub](tag, "Subscriptions") {
+    extends Table[DBSubInternal](tag, "Subscriptions") {
     /** This is the PrimaryKey */
     def id        = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def interval  = column[Double]("interval")
     def startTime = column[Timestamp]("start")
     def ttl       = column[Double]("ttl")
     def callback  = column[Option[String]]("callback")
-    def lastValue = column[String]("lastValue")
-    def * = (id.?, interval, startTime, ttl, callback, lastValue) <> (DBSub.tupled, DBSub.unapply)
+
+    private def dbsubTupled:
+      ((Option[Int], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
+        case (None, interval_, startTime_, ttl_, callback_) =>
+          NewDBSub(interval_, startTime_, ttl_, callback_)
+        case (Some(id_), interval_, startTime_, ttl_, callback_) =>
+          DBSub(id_, interval_, startTime_, ttl_, callback_)
+      }
+    private def dbsubUnapply: 
+      DBSubInternal => Option[(Option[Int], Double, Timestamp, Double, Option[String])] = {
+        case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
+          Some((Some(id_), interval_, startTime_, ttl_, callback_))
+        case NewDBSub(interval_, startTime_, ttl_, callback_) =>
+          Some((None, interval_, startTime_, ttl_, callback_))
+        case _ => None
+      }
+
+    def * =
+      (id.?, interval, startTime, ttl, callback).shaped <> (
+      dbsubTupled, dbsubUnapply
+    )
   }
 
   protected val subs = TableQuery[DBSubsTable]

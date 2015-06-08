@@ -83,7 +83,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
   // load subscriptions at startup
   override def preStart() = {
     val subs = dbConnection.getAllSubs(Some(true))
-    for (sub <- subs) loadSub(sub.id.get, sub)
+    for (sub <- subs) loadSub(sub.id, sub)
 
   }
 
