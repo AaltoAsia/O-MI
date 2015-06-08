@@ -33,7 +33,7 @@ object OdfTypes{
     path:                 Path,
     infoItems:            Iterable[OdfInfoItem],
     objects:              Iterable[OdfObject],
-    description:          Option[OdfDesctription] = None,
+    description:          Option[OdfDescription] = None,
     typeValue:            Option[String] = None
   ) extends OdfElement with HasPath
 
@@ -58,7 +58,7 @@ object OdfTypes{
   case class OdfInfoItem(
     path:                 Types.Path,
     values:               Iterable[OdfValue],
-    description:          Option[OdfDesctription] = None,
+    description:          Option[OdfDescription] = None,
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement with HasPath
 
@@ -93,9 +93,9 @@ object OdfTypes{
     timestamp:            Option[Timestamp] = None
   ) extends OdfElement
 
-  case class OdfDesctription(
+  case class OdfDescription(
     value:                String,
-    lang:                 Option[String]
+    lang:                 Option[String] = None
   ) extends OdfElement
   
   type  OdfParseResult = Either[Iterable[ParseError], OdfObjects]

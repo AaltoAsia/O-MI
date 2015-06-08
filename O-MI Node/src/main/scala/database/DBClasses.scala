@@ -5,6 +5,7 @@ import java.sql.Timestamp
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -110,7 +111,11 @@ trait OmiNodeTables extends DBBase {
     depth: Int,
     description: String,
     pollRefCount: Int
-  )
+  ) {
+    // TODO: possibility to insert infoitems into OdfObject
+    def toOdfObject = OdfObject(path, Iterable(), Iterable(), Some(OdfDescription(description)), None)
+    def toOdfInfoItem(values: Iterable[OdfValue]) = OdfInfoItem(path, values, Some(OdfDescription(description)), None)
+  }
 
 
   /**

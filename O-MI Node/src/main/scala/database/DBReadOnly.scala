@@ -89,18 +89,18 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    *
    * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[ Either[ DBNode,DBValue ] ] = {
+  def get(path: Path): Option[ HasPath ] = {
     val valueResult = runSync(
       getValuesQ(path).sortBy( _.timestamp.desc ).result
     )
+    val node = runSync( getHierarchyNodeI(path) )
 
     valueResult.headOption match {
       case Some(value) =>
-        Some( Right(value) )
+        Some( node.toOdfInfoItem(value.toOdf) )
 
       case None =>
-        val node = runSync( getHierarchyNodeI(path) )
-        node map (Left(_))
+        Some( node.toOdfObject )
     }
   }
 
@@ -201,7 +201,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
-    requests: Iterable[OdfElement],
+    requests: Iterable[HasPath],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
