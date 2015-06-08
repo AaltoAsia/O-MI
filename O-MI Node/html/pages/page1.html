@@ -19,7 +19,7 @@
 				 value="Get Objects" />
 			</div>
 		</div>
-	  	<script>$("#url-field").val("http://" + window.location.host + "/");</script>
+	  	<script>$("#url-field").val("http://" + window.location.href.replace("html/form.html", "");</script>
 		<h3 class="fs-subtitle">You can Check All or Uncheck All checkboxes of the received objects</h3>
 		<div>
 			<input type="button" name="all" id="checkall" class="action-button" value="Check All" />
