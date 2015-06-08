@@ -30,14 +30,13 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * 
    * @return metadata as Option[String], none if no data is found
    */
-  def getMetaData(path: Path): Option[OdfMetaData] = runSync(
-    getMetaDataI(path) map {
-      option => option map (_.toOdf)
-    }
-  ) // TODO: clean codestyle
+  def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
 
-  protected def getMetaDataI(path: Path): DBIOAction[Option[DBMetaData], NoStream, Effect.Read] = {
-    getWithHieracrhyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result.map(_.headOption)
+  protected def getMetaDataI(path: Path): DBIOAction[Option[OdfMetaData], NoStream, Effect.Read] = {
+    val queryResult = getWithHieracrhyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
+    queryResult map (
+      _.headOption map (_.toOdf)
+    )
   }
 
 
@@ -98,11 +97,10 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     valueResult.headOption match {
       case Some(value) =>
         Some( Right(value) )
+
       case None =>
         val node = runSync( getHierarchyNodeI(path) )
-        node.headOption map {value =>
-          Left(node.get)
-        }
+        node map (Left(_))
     }
   }
 
@@ -114,10 +112,19 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   //Helper for getting values with path
   protected def getValuesQ(path: Path) = getWithHieracrhyQ[DBValue, DBValuesTable](path, latestValues)
 
-  protected def getWithHieracrhyQ[I, T <: HierarchyFKey[I]](path: Path, table: TableQuery[T]): Query[T,I,Seq] =
-    for{
-      (hie, value) <- hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
+  protected def getWithHieracrhyQ[I, T <: HierarchyFKey[I]](
+    path: Path,
+    table: TableQuery[T]
+  ): Query[T,I,Seq] = // NOTE: Does the Query table need (DBNodesTable, T) ?
+    for {
+      (hie, value) <- joinWithHierarchyQ[I, T](path, table)
     } yield(value)
+
+  protected def joinWithHierarchyQ[I, T <: HierarchyFKey[I]](
+    path: Path,
+    table: TableQuery[T]
+  ): Query[(DBNodesTable, T),(DBNode, I),Seq] =
+    hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
 
   protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] = 
     hierarchyNodes.filter(_.path === path).result.map(_.headOption)
@@ -214,16 +221,19 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
         )
         ???
 
-      case OdfInfoItem(path, values, _, _) =>
+      case OdfInfoItem(path, values, _, metadata) =>
         val futureSeq = db.run(
           getNBetweenInfoItemQ(path, begin, end, newest, oldest).result
         )
         futureSeq map (_ map (_.toOdf))
 
+        /*
+        val metaDataRequested = metadata.isDefined
+        if (metaDataRequested)
         val futureOption = db.run(
           getMetaDataI(path)
         )
-        futureOption map (_.toSeq)
+        futureOption map (_.toSeq)*/
         ???
 
       case odf: OdfElement =>
