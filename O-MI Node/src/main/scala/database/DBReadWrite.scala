@@ -420,7 +420,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: NewDBSub, dbItems: Seq[Paths]): DBSub = ??? 
+  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub = ??? 
   /*{
         val id = getNextId()
         if (sub.callback.isEmpty) {

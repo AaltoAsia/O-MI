@@ -35,19 +35,19 @@ trait hasPath {
 trait DBNode {
   def path: Path
   def id: Int
-  def compine( another: DBNode) : DBNode
+  def combine( another: DBNode) : DBNode
 }
 
 class DBObj extends DBNode{
   val childs = Array[DBNode]()
-  def compine( another: DBNode) : DBNode = ???
+  def combine( another: DBNode) : DBNode = ???
   def path: Path = ???
   def id: Int = ???
 }
 
 class DBInfoItem extends DBNode{
   val values = Array[OdfValue]()
-  def compine( another: DBNode) : DBNode = ???
+  def combine( another: DBNode) : DBNode = ???
   def path: Path = ???
   def id: Int = ???
 }
