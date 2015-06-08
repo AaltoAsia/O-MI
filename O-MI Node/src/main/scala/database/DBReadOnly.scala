@@ -10,6 +10,8 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import parsing.Types._
 import parsing.Types.OdfTypes._
 
+import java.lang.RuntimeException
+
 /**
  * Read only restricted interface methods for db tables
  */
@@ -29,7 +31,9 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @return metadata as Option[String], none if no data is found
    */
   def getMetaData(path: Path): Option[OdfMetaData] = runSync(
-    getMetaDataI(path) map (_ map (OdfMetaData(_.metadata)))
+    getMetaDataI(path) map {
+      option => option map (_.toOdf)
+    }
   ) // TODO: clean codestyle
 
   protected def getMetaDataI(path: Path): DBIOAction[Option[DBMetaData], NoStream, Effect.Read] = {
@@ -214,7 +218,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
         val futureSeq = db.run(
           getNBetweenInfoItemQ(path, begin, end, newest, oldest).result
         )
-        futureSeq map (_ map (_.toOdfValue))
+        futureSeq map (_ map (_.toOdf))
 
         val futureOption = db.run(
           getMetaDataI(path)
@@ -325,5 +329,10 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   def getSub(id: Int): Option[DBSub] = runSync(getSubQ(id))
 
   protected def getSubQ(id: Int): DBIOAction[Option[DBSub],NoStream,Effect.Read] =
-    subs.filter(_.id === id).result.map(_.headOption)
+    subs.filter(_.id === id).result.map{
+      _.headOption map {
+        case sub: DBSub => sub
+        case _ => throw new RuntimeException("got wrong or unknown sub class???")
+      }
+    }
 }

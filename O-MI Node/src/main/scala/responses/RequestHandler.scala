@@ -108,7 +108,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
       handleCancel(cancel)
     }
     case subdata : SubDataRequest =>{
-      val objects : OdfObjects = dbConnection.getSubData(subdata.sub.id.get)
+      val objects : OdfObjects = dbConnection.getSubData(subdata.sub.id)
       ( xmlFromResults( 1.0, Result.pollResult(subdata.sub.id.toString,objects) ), 200 )
     }
     case _ =>{
@@ -269,59 +269,61 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
 
     dbConnection.get(path) match {
       case Some(sensor: DBSensor) =>
-      if (wasValue == 1){
-        return Some(Left(sensor.value))
-      }else if (wasValue == 2){
-        val metaData = dbConnection.getMetaData(path)
-        if(metaData.isEmpty)
-          return Some(Left("No metadata found."))
-        else
-          return Some(Right(XML.loadString(metaData.get)))
-
-      }else{
-        return Some(Right(
-          <InfoItem name={ sensor.path.last }>
-            <value dateTime={ sensor.time.toString.replace(' ', 'T') }>
-              { sensor.value }
-            </value>
-            {
-              val metaData = dbConnection.getMetaData(path)
-              if(metaData.nonEmpty)
-                <MetaData/>
-            }
-          </InfoItem>))
-      }
-      case Some(sensormap: DBObject) =>
-      var resultChildren = Buffer[xml.Node]()
-
-      for (item <- sensormap.childs) {
-        dbConnection.get(item.path) match {
-          case Some(sensor: DBSensor) => {
-            resultChildren += <InfoItem name={ sensor.path.last }/>
+        if (wasValue == 1){
+          return Some(Left(sensor.value))
+        }else if (wasValue == 2){
+          val metaDataO = dbConnection.getMetaData(path)
+          metaDataO match {
+            case None =>
+              Some(Left("No metadata found."))
+            case Some(metaData) =>
+              Some(Right(XML.loadString(metaData.data)))
           }
 
-          case Some(subobject: DBObject) => {
-            resultChildren += <Object><id>{ subobject.path.last }</id></Object>
-          }
-
-          case None => return None
+        }else{
+          return Some(Right(
+            <InfoItem name={ sensor.path.last }>
+              <value dateTime={ sensor.time.toString.replace(' ', 'T') }>
+                { sensor.value }
+              </value>
+              {
+                val metaData = dbConnection.getMetaData(path)
+                if(metaData.nonEmpty)
+                  <MetaData/>
+              }
+            </InfoItem>))
         }
-      }
+      case Some(sensormap: DBObject) =>
+        var resultChildren = Buffer[xml.Node]()
 
-      resultChildren = resultChildren.sortBy(_.mkString) //InfoItems are meant to come first
+        for (item <- sensormap.childs) {
+          dbConnection.get(item.path) match {
+            case Some(sensor: DBSensor) => {
+              resultChildren += <InfoItem name={ sensor.path.last }/>
+            }
 
-      val mapId = sensormap.path.lastOption.getOrElse("")
-      val xmlReturn =
-      if (mapId == "Objects") {
-        <Objects>{ resultChildren }</Objects>
-      } else {
-        resultChildren.prepend(<id>{ mapId }</id>)
-        <Object>{ resultChildren }</Object>
-      }
+            case Some(subobject: DBObject) => {
+              resultChildren += <Object><id>{ subobject.path.last }</id></Object>
+            }
 
-      return Some(Right(xmlReturn))
+            case None => return None
+          }
+        }
 
-      case None => return None
+        resultChildren = resultChildren.sortBy(_.mkString) //InfoItems are meant to come first
+
+        val mapId = sensormap.path.lastOption.getOrElse("")
+        val xmlReturn =
+        if (mapId == "Objects") {
+          <Objects>{ resultChildren }</Objects>
+        } else {
+          resultChildren.prepend(<id>{ mapId }</id>)
+          <Object>{ resultChildren }</Object>
+        }
+
+        Some(Right(xmlReturn))
+
+      case None => None
     }
   }
   case class RequestHandlingException(errorCode: Int, msg: String) extends Exception(msg)
