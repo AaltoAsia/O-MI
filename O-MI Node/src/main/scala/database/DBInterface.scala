@@ -6,6 +6,8 @@ import slick.jdbc.meta.MTable
 import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import java.io.File
 
@@ -141,11 +143,11 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * 
    * @return metadata as Option[String], none if no data is found
    */
-  def getMetaData(path:Path):Option[String]= ???
-  /*{
-    val qry = metadatas.filter(_.path === path).map(_.data)
-    runSync(qry.result).headOption
-  }*/
+  def getMetaData(path: Path): Option[String] = runSync(getMetaDataI(path) map (_ map (_.metadata))) // TODO: clean codestyle
+
+  protected def getMetaDataI(path: Path): DBIOAction[Option[DBMetaData], NoStream, Effect.Read] = {
+    getWithHieracrhyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result.map(_.headOption)
+  }
 
 
 
@@ -212,7 +214,11 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
         }
     }
   }
-  trait Hole
+
+  def getQ(single: OdfElement): OdfElement = ???
+
+  // Used for compiler type trickery by causing type errors
+  trait Hole // TODO: RemoveMe!
 
   //Helper for getting values with path
   protected def getValuesQ(path: Path) = getWithHieracrhyQ[DBValue, DBValuesTable](path, latestValues)
@@ -228,6 +234,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
+
   /**
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
    * search is targeted between these two times. If only start is given,all values from start time onwards are
@@ -242,44 +249,42 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @param end optional end Timestamp
    * @param fromStart number of values to be returned from start
    * @param fromEnd number of values to be returned from end
-   * @return query for the requeste values
+   * @return query for the requested values
    */
-  protected def getNBetweenQ(
-      path: Path,
-      start: Option[Timestamp],
-      end: Option[Timestamp],
-      fromStart: Option[Int],
-      fromEnd: Option[Int]
-    ): Query[DBValuesTable,DBValue,Seq] = {
-      assert( ! (fromStart.isDefined && fromEnd.isDefined),
-        "Both newest and oldest at the same time not supported!")
-      val timeFrame = ( end, start ) match {
-        case (None, Some(startTime)) => 
-          getValuesQ(path).filter{ value =>
-            value.timestamp >= startTime
-          }
-        case (Some(endTime), None) => 
-          getValuesQ(path).filter{ value =>
-            value.timestamp <= endTime
-          }
-        case (Some(endTime), Some(startTime)) => 
-          getValuesQ(path).filter{ value =>
-            value.timestamp >= startTime &&
-            value.timestamp <= endTime
-          }
-        case (None, None) =>
-          getValuesQ(path)
-      }
-      val query = 
-        if( fromStart.nonEmpty ) {
-          timeFrame.sortBy( _.timestamp.desc ).take(fromStart.get)
-        } else if ( fromEnd.nonEmpty ) {
-          timeFrame.sortBy( _.timestamp.asc ).take( fromEnd.get ) // XXX: Will have unconsistent ordering
-        } else {
-          timeFrame.sortBy( _.timestamp.desc )
+  protected def getNBetweenInfoItemQ(
+    path: Path,
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]
+  ): Query[DBValuesTable,DBValue,Seq] = {
+    val timeFrame = ( end, begin ) match {
+      case (None, Some(startTime)) => 
+        getValuesQ(path).filter{ value =>
+          value.timestamp >= startTime
         }
-      query
+      case (Some(endTime), None) => 
+        getValuesQ(path).filter{ value =>
+          value.timestamp <= endTime
+        }
+      case (Some(endTime), Some(startTime)) => 
+        getValuesQ(path).filter{ value =>
+          value.timestamp >= startTime &&
+          value.timestamp <= endTime
+        }
+      case (None, None) =>
+        getValuesQ(path)
     }
+    val query = 
+      if( newest.nonEmpty ) {
+        timeFrame.sortBy( _.timestamp.desc ).take(newest.get)
+      } else if ( oldest.nonEmpty ) {
+        timeFrame.sortBy( _.timestamp.asc ).take( oldest.get ) // XXX: Will have unconsistent ordering
+      } else {
+        timeFrame.sortBy( _.timestamp.desc )
+      }
+    query
+  }
 
   /**
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
@@ -290,22 +295,67 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * the end.
    * All parameters except the first are optional, given only the first returns all requested data
    *
-   * @param requests path as Path object
+   * @param requests SINGLE requests in a list (leafs in request O-DF); InfoItems, Objects and MetaDatas
    * @param start optional start Timestamp
    * @param end optional end Timestamp
    * @param fromStart number of values to be returned from start
    * @param fromEnd number of values to be returned from end
-   *
-   * @return Array of DBSensors
+   * @return Combined results in a O-DF tree
    */
   def getNBetween(
-      requests: Iterable[OdfElement],
-      start: Option[Timestamp],
-      end: Option[Timestamp],
-      fromStart: Option[Int],
-      fromEnd: Option[Int]
-    ): OdfObjects = {
-      ???
+    requests: Iterable[OdfElement],
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]
+  ): OdfObjects = {
+    require( ! (newest.isDefined && oldest.isDefined),
+      "Both newest and oldest at the same time not supported!")
+    //val futureResults: Iterable[Future[Seq[OdfElement]]] = requests map {
+    val futureResults = requests map {
+
+      case obj @ OdfObject(path,items,objects,_,_) =>
+        require(items.isEmpty && objects.isEmpty,
+          "getNBetween requires leaf OdfElements from the request")
+
+        db.run(
+          getNBetweenSubTreeQ(path, begin, end, newest, oldest).result
+        )
+        ???
+
+      case OdfInfoItem(path, values, _, _) =>
+        val futureSeq = db.run(
+          getNBetweenInfoItemQ(path, begin, end, newest, oldest).result
+        )
+        futureSeq map (_ map (_.toOdfValue))
+
+        val futureOption = db.run(
+          getMetaDataI(path)
+        )
+        futureOption map (_.toSeq)
+        ???
+
+      case odf: OdfElement =>
+        assert(false, s"Non-supported query parameter: $odf")
+        ???
+        //case OdfObjects(_, _) => 
+        //case OdfDesctription(_, _) => 
+        //case OdfValue(_, _, _) => 
+    }
+
+    ???
+  }
+
+  def getSubTreeQ(path: Path): Query[Hole,Hole,Seq] = ???
+
+  protected def getNBetweenSubTreeQ(
+    path: Path,
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]
+  ): Query[Hole,DBValue,Seq] = {
+    ???
   }
     
   /**

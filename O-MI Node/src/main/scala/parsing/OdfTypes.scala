@@ -33,7 +33,7 @@ object OdfTypes{
     path:                 Path,
     infoItems:            Iterable[OdfInfoItem],
     objects:              Iterable[OdfObject],
-    desctription:         Option[OdfDesctription] = None,
+    description:          Option[OdfDesctription] = None,
     typeValue:            Option[String] = None
   ) extends OdfElement
 
@@ -58,7 +58,7 @@ object OdfTypes{
   case class OdfInfoItem(
     path:                 Types.Path,
     values:               Iterable[OdfValue],
-    desctription:         Option[OdfDesctription] = None,
+    description:          Option[OdfDesctription] = None,
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement
 
