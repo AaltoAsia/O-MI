@@ -150,21 +150,29 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param data metadata to be stored as string e.g a XML block as string
    * 
    */
-  def setMetaData(path:Path,data:String): Unit = ???
-  def setMetaData(hierarchyId:Int,data:String): Unit = ???
-  /*{
-    val qry = meta.filter(_.path === path).map(_.data)
-    val count = runSync(qry.result).length
-    if(count == 0)
-    {
-      runSync(meta += (path,data))
+  def setMetaData(path: Path, data: String): Unit = {
+    val idQry = hierarchyNodes filter (_.path === path) map (_.id) result
+
+    val updateAction = idQry flatMap {
+      _.headOption match {
+        case Some(id) => 
+          setMetaDataI(id, data)
+        case None =>
+          throw new RuntimeException("Tried to set metadata on unknown object.")
+      }
     }
-    else
-    {
-      runSync(qry.update(data))
-    }
+    runSync(updateAction)
   }
-  */
+  def setMetaDataI(hierarchyId: Int, data: String): DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = {
+    val qry = metadatas filter (_.hierarchyId === hierarchyId) map (_.metadata)
+    val qryres = qry.result map (_.headOption)
+    qryres flatMap[Int, NoStream, Effect.Write] {
+      case None => 
+        metadatas += DBMetaData(hierarchyId, data)
+      case Some(_) =>
+        qry.update(data)
+    } transactionally
+  }
 
 
   def RemoveMetaData(path:Path): Unit= ???
@@ -420,7 +428,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: NewDBSub, dbItems: Seq[Paths]): DBSub = ??? 
+  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub = ??? 
   /*{
         val id = getNextId()
         if (sub.callback.isEmpty) {
