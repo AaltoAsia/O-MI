@@ -28,8 +28,8 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * 
    * @return metadata as Option[String], none if no data is found
    */
-  def getMetaData(path: Path): Option[String] = runSync(
-    getMetaDataI(path) map (_ map (_.metadata))
+  def getMetaData(path: Path): Option[OdfMetaData] = runSync(
+    getMetaDataI(path) map (_ map (OdfMetaData(_.metadata)))
   ) // TODO: clean codestyle
 
   protected def getMetaDataI(path: Path): DBIOAction[Option[DBMetaData], NoStream, Effect.Read] = {
