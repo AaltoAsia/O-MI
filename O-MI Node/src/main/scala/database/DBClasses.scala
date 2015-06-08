@@ -165,7 +165,9 @@ trait OmiNodeTables extends DBBase {
     timestamp: Timestamp,
     value: String,
     valueType: String
-  )
+  ) {
+    def toOdfValue = OdfValue(value, valueType, Some(timestamp))
+  }
 
   /**
    * (Boilerplate) Table for storing latest sensor data to database

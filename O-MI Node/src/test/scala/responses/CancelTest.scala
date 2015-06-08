@@ -70,7 +70,7 @@ class CancelTest extends Specification with BeforeAfterAll {
 
     for ((path, value) <- testData) {
       dbConnection.remove(path)
-      dbConnection.set(new DBSensor(path, value, testtime))
+      dbConnection.set(path, testtime, value)
     }
 
     // IDs [0-5]
