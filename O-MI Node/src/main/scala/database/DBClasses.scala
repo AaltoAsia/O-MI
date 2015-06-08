@@ -32,6 +32,7 @@ trait IdProvider {
 trait hasPath {
   def path: Path
 }
+
 /**
  * Base trait for databases. Has basic private interface.
  */

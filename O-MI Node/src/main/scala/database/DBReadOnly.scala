@@ -309,7 +309,16 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    *
    * @return DBSub objects for the query as Array
    */
-  def getAllSubs(hasCallBack: Option[Boolean]): Array[DBSub] = ??? 
+  def getAllSubs(hasCallBack: Option[Boolean]): Seq[DBSub] = {
+    val all = runSync(hasCallBack match{
+      case Some(true)   => subs.filter(!_.callback.isEmpty).result
+      case Some(false)  => subs.filter(_.callback.isEmpty).result
+      case None         => subs.result
+    })
+    all.collect({case x: DBSub =>x})
+//    all.map(elem => elem.asInstanceOf[DBSub]).toArray
+
+  }
   /*
     {
       val all = runSync(hasCallBack match {
