@@ -187,7 +187,10 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
               } else {
                 if (newestValue.isEmpty)
                   newestValue = dbConnection.get(path).map{
-                    case OdfInfoItem(_, v, _, _) => v.headOption.getOrElse("")
+                    case OdfInfoItem(_, v, _, _) => iterableAsScalaIterable(v).headOption.map{
+                      case value : OdfValue =>
+                        value.value
+                    }.getOrElse("")
                     case _ => ""// noop, already logged at loadSub
                   }
                 
