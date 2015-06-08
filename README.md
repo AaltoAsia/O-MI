@@ -5,7 +5,9 @@ O-MI Node Server
 [![Coverage Status](https://coveralls.io/repos/TK009/Code-Gardeners/badge.png?branch=development)](https://coveralls.io/r/TK009/Code-Gardeners?branch=development)
 [![Codacy Badge](https://www.codacy.com/project/badge/a4c681fb3fef4d21bb561a1b160c6d07)](https://www.codacy.com/app/tkinnunen/Code-Gardeners)
 
-Software project course repository. Implementation of Internet of Things standards Open Messaging Interface and Open Data Format. 
+Implementation of Internet of Things standards Open Messaging Interface and Open Data Format. 
+[API Documentation](http://pesutykki.mooo.com/dump/Code-Gardeners-api/#package)
+[Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
 
 Dependencies
 ------------
