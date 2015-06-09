@@ -5,7 +5,8 @@ import java.sql.Timestamp
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.collection.JavaConversions.iterableAsScalaIterable
+//import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -111,11 +112,17 @@ trait OmiNodeTables extends DBBase {
     rightBoundary: Int,
     depth: Int,
     description: String,
-    pollRefCount: Int
+    pollRefCount: Int,
+    isInfoItem: Boolean 
   ) {
-    // TODO: possibility to insert infoitems into OdfObject
-    def toOdfObject = OdfObject(path, Iterable(), Iterable(), Some(OdfDescription(description)), None)
-    def toOdfInfoItem(values: Iterable[OdfValue]) = OdfInfoItem(path, values, Some(OdfDescription(description)), None)
+    def toOdfObject =
+      OdfObject(path, Iterable(), Iterable(), Some(OdfDescription(description)), None)
+
+    def toOdfObject(infoitems: Iterable[OdfInfoItem], objects: Iterable[OdfObject]) =
+      OdfObject(path, infoitems, objects, Some(OdfDescription(description)), None)
+
+    def toOdfInfoItem(values: Iterable[OdfValue]) =
+      OdfInfoItem(path, values, Some(OdfDescription(description)), None)
   }
 
 
@@ -132,9 +139,10 @@ trait OmiNodeTables extends DBBase {
     def depth         = column[Int]("depth")
     def description   = column[String]("description")
     def pollRefCount  = column[Int]("pollRefCount")
+    def isInfoItem    = column[Boolean]("isInfoItem")
 
     // Every table needs a * projection with the same type as the table's type parameter
-    def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount) <> (
+    def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
       DBNode.tupled,
       DBNode.unapply
     )

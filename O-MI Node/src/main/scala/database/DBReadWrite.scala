@@ -86,7 +86,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
           _ <- increaseAfterQ(insertRight)
 
-          _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0)
+          _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, false)
 
         } yield ()
 
