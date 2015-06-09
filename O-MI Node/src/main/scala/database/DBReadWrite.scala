@@ -139,33 +139,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
   }
 
-    
-  /*{
-      //search database for sensor's path
-      val pathQuery = latestValues.filter(_.path === data.path)
-      val buffering = runSync(buffered.filter(_.path === data.path).result).length > 0
-
-      //appends a row to the latestvalues table
-      val count = runSync(pathQuery.result).length
-      runSync(DBIO.seq(latestValues += (data.path, data.value, data.time)))
-      // Call hooks
-      val argument = Seq(data.path)
-      getSetHooks foreach { _(argument) }
-
-      if (count > historyLength && !buffering) {
-        //if table has more than historyLength and not buffering, remove excess data
-        removeExcess(data.path)
-        false
-      } else if (count == 0) {
-        //add missing objects for the hierarchy since this is a new path
-        addObjects(data.path)
-        true
-      } else {
-        //existing path and less than history length of data or buffering.
-        false
-      }
-  }*/
-
 
   /**
    * Used to store metadata for a sensor to database
@@ -291,7 +264,28 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path) = ??? /*{
+  private def removeExcess(path: Path) = {
+    val pathQuery = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+    val historyLen = database.historyLength
+    val qlen = runSync(pathQuery.length.result)
+    //sanity check, should not be called if there are less than historyLenght values in database
+    if(qlen>historyLen){
+      pathQuery.sortBy(_.timestamp).take(qlen-historyLen).delete
+    }
+    
+//    pathQuery.sortBy(_.timestamp).result flatMap{ qry =>
+//      var count = qry.length
+//      if(count > historyLen){
+//        val oldtime = qry.drop(count - historyLen).head.timestamp
+//        pathQuery.filter(_.timestamp < oldtime).delete
+//
+//      }else DBIO.successful(())
+//      
+//    }
+
+  }
+  
+  /*{
       var pathQuery = latestValues.filter(_.path === path)
 
       pathQuery.sortBy(_.timestamp).result flatMap { qry =>
