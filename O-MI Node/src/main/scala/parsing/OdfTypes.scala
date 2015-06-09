@@ -17,7 +17,39 @@ object OdfTypes{
   case class OdfObjects(
     objects:              Iterable[OdfObject] = asJavaIterable(Seq.empty[OdfObject]),
     version:              Option[String] = None
-  ) extends OdfElement
+  ) extends OdfElement {
+    def combine( another: OdfObjects ): OdfObjects ={
+      val uniques : Seq[OdfObject]  = ( 
+        objects.filterNot( 
+          obj => another.objects.toSeq.exists( 
+            aobj => aobj.path  == obj.path 
+          ) 
+      ).toSeq ++ 
+      another.objects.filterNot(
+        aobj => objects.toSeq.exists(
+          obj => aobj.path  == obj.path
+        )
+      ).toSeq
+      )
+      val sames = (objects.toSeq ++ another.objects.toSeq).filterNot(
+        obj => uniques.exists(
+          uobj => uobj.path == obj.path
+        )
+      ).groupBy(_.path)
+      OdfObjects(
+        sames.map{ case (path:Path, sobj: Seq[OdfObject]) =>
+          assert(sobj.length == 2)
+          sobj.head.combine(sobj.last)
+        }.toSeq ++ uniques,
+        (version, another.version) match{
+          case (Some(a), Some(b)) => Some(a)
+          case (None, Some(b)) => Some(b)
+          case (Some(a), None) => Some(a)
+          case (None, None) => None
+        }
+      )
+    }
+  }
 
   def OdfObjectsAsObjectsType( objects: OdfObjects ) : ObjectsType ={
     ObjectsType(
@@ -35,7 +67,68 @@ object OdfTypes{
     objects:              Iterable[OdfObject],
     description:          Option[OdfDescription] = None,
     typeValue:            Option[String] = None
-  ) extends OdfElement with HasPath
+  ) extends OdfElement with HasPath {
+    def combine( another: OdfObject ) : OdfObject = {
+      assert( path == another.path )
+      val uniqueInfos = ( 
+        infoItems.filterNot( 
+          obj => another.infoItems.toSeq.exists( 
+            aobj => aobj.path  == obj.path 
+          ) 
+      ).toSeq ++ 
+      another.infoItems.filterNot(
+        aobj => infoItems.toSeq.exists(
+          obj => aobj.path  == obj.path
+        )
+      ).toSeq
+      )
+      val sameInfos = (infoItems.toSeq ++ another.infoItems.toSeq).filterNot(
+        obj => uniqueInfos.exists(
+          uobj => uobj.path == obj.path
+        )
+      ).groupBy(_.path)
+      val uniqueObjs = ( 
+        objects.filterNot( 
+          obj => another.objects.toSeq.exists( 
+            aobj => aobj.path  == obj.path 
+          ) 
+      ).toSeq ++ 
+      another.objects.filterNot(
+        aobj => objects.toSeq.exists(
+          obj => aobj.path  == obj.path
+        )
+      ).toSeq
+      )
+      val sameObjs = (objects.toSeq ++ another.objects.toSeq).filterNot(
+        obj => uniqueObjs.exists(
+          uobj => uobj.path == obj.path
+        )
+      ).groupBy(_.path)
+      OdfObject(
+        path, 
+        sameInfos.map{ case (path:Path, sobj: Seq[OdfInfoItem]) =>
+          assert(sobj.length == 2)
+          sobj.head.combine(sobj.last)
+        }.toSeq ++ uniqueInfos,
+        sameObjs.map{ case (path:Path, sobj: Seq[OdfObject]) =>
+          assert(sobj.length == 2)
+          sobj.head.combine(sobj.last)
+        }.toSeq ++ uniqueObjs,
+        (description, another.description) match{
+          case (Some(a), Some(b)) => Some(a)
+          case (None, Some(b)) => Some(b)
+          case (Some(a), None) => Some(a)
+          case (None, None) => None
+        },
+        (typeValue, another.typeValue) match{
+          case (Some(a), Some(b)) => Some(a)
+          case (None, Some(b)) => Some(b)
+          case (Some(a), None) => Some(a)
+          case (None, None) => None
+        }
+      )
+    }
+  }
 
   def OdfObjectAsObjectType(obj: OdfObject) : ObjectType = {
     ObjectType(
@@ -60,7 +153,27 @@ object OdfTypes{
     values:               Iterable[OdfValue],
     description:          Option[OdfDescription] = None,
     metaData:             Option[OdfMetaData] = None
-  ) extends OdfElement with HasPath
+  ) extends OdfElement with HasPath {
+    def combine(another: OdfInfoItem) : OdfInfoItem ={
+      assert(path == another.path)
+      OdfInfoItem(
+        path,
+        (values ++ another.values).toSeq.distinct,
+        (description, another.description) match{
+          case (Some(a), Some(b)) => Some(a)
+          case (None, Some(b)) => Some(b)
+          case (Some(a), None) => Some(a)
+          case (None, None) => None
+        },
+        (metaData, another.metaData) match{
+          case (Some(a), Some(b)) => Some(a)
+          case (None, Some(b)) => Some(b)
+          case (Some(a), None) => Some(a)
+          case (None, None) => None
+        }
+      )
+    }
+  }
 
   def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {
     InfoItemType(
