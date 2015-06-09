@@ -27,7 +27,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   /**
    * Used to get metadata from database for given path
    * @param path path to sensor whose metadata is requested
-   * 
+   *
    * @return metadata as Option[String], none if no data is found
    */
   def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
@@ -79,28 +79,31 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
   /**
    * Used to get data from database based on given path.
-   * returns Some(DBSensor) if path leads to sensor and if
-   * path leads to object returns Some(DBObject). DBObject has
-   * variable childs of type Array[DBItem] which stores object's childs.
-   * object.childs(0).path to get first child's path
+   * returns Some(OdfInfoItem) if path leads to sensor and if
+   * path leads to object returns Some(OdfObject).
+   * OdfObject has childs as infoitems and objects.
    * if nothing is found for given path returns None
    *
    * @param path path to search data from
    *
-   * @return either Some(DBSensor),Some(DBObject) or None based on where the path leads to
+   * @return either Some(OdfInfoItem),Some(OdfObject) or None based on where the path leads to
    */
   def get(path: Path): Option[ HasPath ] = {
-    val valueResult = runSync(
-      getValuesQ(path).sortBy( _.timestamp.desc ).result
+    val valueNodePair = runSync(
+      for {
+        value <- getValueI(path)
+        node <- getHierarchyNodeI(path)
+      } yield (value, node)
     )
-    val node = runSync( getHierarchyNodeI(path) )
 
-    valueResult.headOption match {
-      case Some(value) =>
-        Some( node.toOdfInfoItem(value.toOdf) )
+    valueNodePair match {
+      case (Some(value), Some(node)) =>
+        Some( node.toOdfInfoItem(Seq(value.toOdf)) )
 
-      case None =>
+      case (None, Some(node)) =>
         Some( node.toOdfObject )
+      
+      case _ => None
     }
   }
 
@@ -110,7 +113,14 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   trait Hole // TODO: RemoveMe!
 
   //Helper for getting values with path
-  protected def getValuesQ(path: Path) = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+  protected def getValuesQ(path: Path) =
+    getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+
+  protected def getValueI(path: Path) =
+    getValuesQ(path).sortBy(
+      _.timestamp.desc
+    ).result.map(_.headOption)
+
 
   protected def getWithHierarchyQ[I, T <: HierarchyFKey[I]](
     path: Path,
@@ -126,7 +136,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   ): Query[(DBNodesTable, T),(DBNode, I),Seq] =
     hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
 
-  protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] = 
+  protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
     hierarchyNodes.filter(_.path === path).result.map(_.headOption)
 
   protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
@@ -155,31 +165,41 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     end: Option[Timestamp],
     newest: Option[Int],
     oldest: Option[Int]
+  ): Query[DBValuesTable,DBValue,Seq] =
+    nBetweenLogicQ(getValuesQ(path), begin, end, newest, oldest)
+
+
+  protected def nBetweenLogicQ(
+    values: Query[DBValuesTable,DBValue,Seq],
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]
   ): Query[DBValuesTable,DBValue,Seq] = {
     val timeFrame = ( end, begin ) match {
-      case (None, Some(startTime)) => 
-        getValuesQ(path).filter{ value =>
+      case (None, Some(startTime)) =>
+        values.filter{ value =>
           value.timestamp >= startTime
         }
-      case (Some(endTime), None) => 
-        getValuesQ(path).filter{ value =>
+      case (Some(endTime), None) =>
+        values.filter{ value =>
           value.timestamp <= endTime
         }
-      case (Some(endTime), Some(startTime)) => 
-        getValuesQ(path).filter{ value =>
+      case (Some(endTime), Some(startTime)) =>
+        values.filter{ value =>
           value.timestamp >= startTime &&
           value.timestamp <= endTime
         }
       case (None, None) =>
-        getValuesQ(path)
+        values
     }
-    val query = 
+    val query =
       if( newest.nonEmpty ) {
-        timeFrame.sortBy( _.timestamp.desc ).take(newest.get)
+        timeFrame sortBy ( _.timestamp.desc ) take (newest.get)
       } else if ( oldest.nonEmpty ) {
-        timeFrame.sortBy( _.timestamp.asc ).take( oldest.get ) // XXX: Will have unconsistent ordering
+        timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) sortBy (_.timestamp.desc)
       } else {
-        timeFrame.sortBy( _.timestamp.desc )
+        timeFrame sortBy ( _.timestamp.desc )
       }
     query
   }
@@ -216,8 +236,12 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
         require(items.isEmpty && objects.isEmpty,
           "getNBetween requires leaf OdfElements from the request")
 
+        val subTreeDataQ = getSubTreeQ(path)
+        //for ((node, value) <- subTreeDataQ) {
+          //nBetweenLogicQ(values, begin, end, newest, oldest).result
+        //}
         db.run(
-          getNBetweenSubTreeQ(path, begin, end, newest, oldest).result
+          ???
         )
         ???
 
@@ -239,26 +263,37 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       case odf: OdfElement =>
         assert(false, s"Non-supported query parameter: $odf")
         ???
-        //case OdfObjects(_, _) => 
-        //case OdfDesctription(_, _) => 
-        //case OdfValue(_, _, _) => 
+        //case OdfObjects(_, _) =>
+        //case OdfDesctription(_, _) =>
+        //case OdfValue(_, _, _) =>
     }
 
     ???
   }
 
-  def getSubTreeQ(path: Path): Query[Hole,Hole,Seq] = ???
+  protected def getSubTreeQ( path: Path
+  ): DBIOAction[Seq[(DBNode, DBValue)], NoStream, Effect.Read] = {
 
-  protected def getNBetweenSubTreeQ(
-    path: Path,
-    begin: Option[Timestamp],
-    end: Option[Timestamp],
-    newest: Option[Int],
-    oldest: Option[Int]
-  ): Query[Hole,DBValue,Seq] = {
-    ???
+    val subTreeRoot = getHierarchyNodeI(path)
+
+    subTreeRoot flatMap {
+      case Some(root) =>
+
+        val nodesQ = hierarchyNodes filter { node =>
+          node.path === path &&
+          node.leftBoundary >= root.leftBoundary &&
+          node.rightBoundary <= root.rightBoundary
+        }
+
+        val nodesWithValuesQ =
+          nodesQ join latestValues on (_.id === _.hierarchyId)
+
+        nodesWithValuesQ sortBy (_._1.leftBoundary.asc) result
+
+      case None => DBIO.successful(Seq()) // TODO: What if not found?
+    }
   }
-    
+
   /**
    * Used to get childs of an object with given path
    * @param path path to object whose childs are needed
@@ -305,7 +340,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * getAllSubs is used to search the database for subscription information
    * Can also filter subscriptions based on whether it has a callback address
    * @param hasCallBack optional boolean value to filter results based on having callback address
-   * 
+   *
    * None -> all subscriptions
    * Some(True) -> only with callback
    * Some(False) -> only without callback
