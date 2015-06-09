@@ -138,6 +138,9 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
     hierarchyNodes.filter(_.path === path).result.map(_.headOption)
 
+  protected def getHierarchyNodesI(paths: Seq[Path]): DBIOAction[Seq[DBNode], NoStream, Effect.Read] =
+  hierarchyNodes.filter(node => node.path.inSet( paths) ).result
+    
   protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 

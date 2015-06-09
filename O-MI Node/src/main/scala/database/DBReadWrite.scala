@@ -382,7 +382,41 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param id id number that was generated during saving
    *
    */
-  def removeSub(id: Int): Boolean = ??? /*{
+  def removeSub(id: Int): Boolean ={
+    val hIds = subItems.filter( _.hierarchyId === id )
+    val sub =subs.filter( _.id === id ) 
+    if(runSync(sub.result).length == 0){
+      false
+    } else {
+      runSync(hierarchyNodes.filter(
+        node => 
+        node.id.inSet( runSync(hIds.map( _.hierarchyId ).result) )
+      ).result.flatMap{
+        nodeSe => 
+          DBIO.seq(
+            nodeSe.map{
+              node => 
+                hierarchyNodes.update( 
+                  DBNode(
+                    node.id,
+                    node.path,
+                    node.leftBoundary,
+                    node.rightBoundary,
+                    node.depth,
+                    node.description,
+                    node.pollRefCount - 1,
+                    node.isInfoItem
+                  )
+                )
+            }:_*
+          ) 
+      })
+      runSync(hIds.delete)
+      runSync(sub.delete)
+      true 
+    }
+  }
+  /*{
     
       var qry = subs.filter(_.ID === id)
       var toBeDeleted = runSync(qry.result)
@@ -428,24 +462,52 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub = ??? 
-  /*{
-        val id = getNextId()
-        if (sub.callback.isEmpty) {
-          sub.paths.foreach {
-            runSync(startBuffering(_))
-          }
-        }
-        val insertSub =
-          subs += (id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
-        runSync(DBIO.seq(
-          insertSub
-        ))
-
-        //returns the id for reference
-        id
+  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
+    val subInsert: DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = (subs += sub)
+    val id = runSync(subInsert)
+    val hNodes = getHierarchyNodesI(dbItems) 
+    val itemInsert = hNodes.flatMap{ hNs =>  
+      val sItems = hNs.map { hNode =>
+        val lv = runSync( latestValues.filter(_.hierarchyId === hNode.id).sortBy(_.timestamp).result.headOption ).map{ _.value }
+        DBSubscriptionItem( id, hNode.id.get, lv ) 
+      }
+      subItems ++= sItems 
     }
-    */
+    runSync(itemInsert)
+    if(!sub.hasCallback){
+      runSync(
+        hierarchyNodes.filter( 
+          node => node.path.inSet( dbItems ) 
+        ).result.flatMap{
+          nodeSe => 
+          DBIO.seq(
+            nodeSe.map{
+              node => 
+              hierarchyNodes.update( 
+                DBNode(
+                  node.id,
+                  node.path,
+                  node.leftBoundary,
+                  node.rightBoundary,
+                  node.depth,
+                  node.description,
+                  node.pollRefCount + 1,
+                  node.isInfoItem
+                )
+              )
+            }:_*
+          )
+        }
+      )
+    }
+    DBSub(
+      id,
+      sub.interval,
+      sub.startTime,
+      sub.ttl,
+      sub.callback
+    )
+  }
 
 
 }
