@@ -110,7 +110,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleCancel(cancel)
     }
     case subdata : SubDataRequest =>{
-      val objects : OdfObjects = dbConnection.getSubData(subdata.sub.id.get)
+      val objects : OdfObjects = dbConnection.getSubData(subdata.sub.id)
       ( xmlFromResults( 1.0, Result.pollResult(subdata.sub.id.toString,objects) ), 200 )
     }
     case _ =>{
@@ -179,7 +179,6 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       ),
       returnCode
     )
-//>>>>>>> db-refactor
   }
 
   def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
@@ -268,16 +267,19 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
     dbConnection.get(path) match {
       case Some(sensor: DBSensor) =>
-        if (wasValue == 1) {
-          return Some(Left(sensor.value))
-        } else if (wasValue == 2) {
-          val metaData = dbConnection.getMetaData(path)
-          if (metaData.isEmpty)
-            return Some(Left("No metadata found."))
-          else
-            return Some(Right(XML.loadString(metaData.get)))
 
-        } else {
+        if (wasValue == 1){
+          Some(Left(sensor.value))
+        }else if (wasValue == 2){
+          val metaDataO = dbConnection.getMetaData(path)
+          metaDataO match {
+            case None =>
+              Some(Left("No metadata found."))
+            case Some(metaData) =>
+              Some(Right(XML.loadString(metaData.data)))
+          }
+
+        }else{
           return Some(Right(
             <InfoItem name={ sensor.path.last }>
               <value dateTime={ sensor.time.toString.replace(' ', 'T') }>
@@ -285,7 +287,9 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               </value>
               {
                 val metaData = dbConnection.getMetaData(path)
-                if (metaData.nonEmpty)
+
+                if(metaData.nonEmpty)
+
                   <MetaData/>
               }
             </InfoItem>))
@@ -311,16 +315,18 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
         val mapId = sensormap.path.lastOption.getOrElse("")
         val xmlReturn =
-          if (mapId == "Objects") {
-            <Objects>{ resultChildren }</Objects>
-          } else {
-            resultChildren.prepend(<id>{ mapId }</id>)
-            <Object>{ resultChildren }</Object>
-          }
 
-        return Some(Right(xmlReturn))
+        if (mapId == "Objects") {
+          <Objects>{ resultChildren }</Objects>
+        } else {
+          resultChildren.prepend(<id>{ mapId }</id>)
+          <Object>{ resultChildren }</Object>
+        }
 
-      case None => return None
+        Some(Right(xmlReturn))
+
+
+      case None => None
     }
   }
   case class RequestHandlingException(errorCode: Int, msg: String) extends Exception(msg)

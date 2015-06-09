@@ -5,9 +5,11 @@ import java.sql.Timestamp
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+//import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 import parsing.Types._
-import parsing.Types.OdfTypes.OdfValue
+import parsing.Types.OdfTypes._
 import parsing.Types.OmiTypes.SubLike
 import parsing.Types.Path._
 import database._
@@ -32,26 +34,6 @@ trait hasPath {
   def path: Path
 }
 
-trait DBNode {
-  def path: Path
-  def id: Int
-  def compine( another: DBNode) : DBNode
-}
-
-class DBObj extends DBNode{
-  val childs = Array[DBNode]()
-  def compine( another: DBNode) : DBNode = ???
-  def path: Path = ???
-  def id: Int = ???
-}
-
-class DBInfoItem extends DBNode{
-  val values = Array[OdfValue]()
-  def compine( another: DBNode) : DBNode = ???
-  def path: Path = ???
-  def id: Int = ???
-}
-
 /**
  * Base trait for databases. Has basic private interface.
  */
@@ -74,24 +56,33 @@ trait DBBase{
  */
 
 
+sealed trait DBSubInternal
+case class SubscriptionItem(
+  val path: Path,
+  val hierarchyId: Int,
+  val lastValue: String // for event polling subs
+)
 
 /**
  * DBSub class to represent subscription information
- * @param paths Array of paths representing all the sensors the subscription needs
  * @param ttl time to live. in seconds. subscription expires after ttl seconds
  * @param interval to store the interval value to DB
  * @param callback optional callback address. use None if no address is needed
  */
 case class DBSub(
-  val id: Option[Int] = None,
+  val id: Int,
   val interval: Double,
   val startTime: Timestamp,
   val ttl: Double,
-  val callback: Option[String],
-  val lastValue: String // for event polling subs
-) extends SubLike
+  val callback: Option[String]
+) extends SubLike with DBSubInternal
 
-
+case class NewDBSub(
+  val interval: Double,
+  val startTime: Timestamp,
+  val ttl: Double,
+  val callback: Option[String]
+) extends SubLike with DBSubInternal
 
 
 trait OmiNodeTables extends DBBase {
@@ -121,8 +112,18 @@ trait OmiNodeTables extends DBBase {
     rightBoundary: Int,
     depth: Int,
     description: String,
-    pollRefCount: Int
-  )
+    pollRefCount: Int,
+    isInfoItem: Boolean 
+  ) {
+    def toOdfObject =
+      OdfObject(path, Iterable(), Iterable(), Some(OdfDescription(description)), None)
+
+    def toOdfObject(infoitems: Iterable[OdfInfoItem], objects: Iterable[OdfObject]) =
+      OdfObject(path, infoitems, objects, Some(OdfDescription(description)), None)
+
+    def toOdfInfoItem(values: Iterable[OdfValue]) =
+      OdfInfoItem(path, values, Some(OdfDescription(description)), None)
+  }
 
 
   /**
@@ -138,9 +139,10 @@ trait OmiNodeTables extends DBBase {
     def depth         = column[Int]("depth")
     def description   = column[String]("description")
     def pollRefCount  = column[Int]("pollRefCount")
+    def isInfoItem    = column[Boolean]("isInfoItem")
 
     // Every table needs a * projection with the same type as the table's type parameter
-    def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount) <> (
+    def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
       DBNode.tupled,
       DBNode.unapply
     )
@@ -166,7 +168,7 @@ trait OmiNodeTables extends DBBase {
     value: String,
     valueType: String
   ) {
-    def toOdfValue = OdfValue(value, valueType, Some(timestamp))
+    def toOdf = OdfValue(value, valueType, Some(timestamp))
   }
 
   /**
@@ -195,9 +197,11 @@ trait OmiNodeTables extends DBBase {
 
 
   case class DBMetaData(
-    hierarchyId: Int,
-    metadata: String
-  )
+    val hierarchyId: Int,
+    val metadata: String
+  ) {
+    def toOdf = OdfMetaData(metadata)
+  }
 
   /**
    * (Boilerplate) Table for storing metadata for sensors as string e.g XML block as string
@@ -215,21 +219,41 @@ trait OmiNodeTables extends DBBase {
 
 
 
-  // val paths: Vector[Path],
+
+
 
   /**
    * (Boilerplate) Table for O-MI subscription information
    */
   class DBSubsTable(tag: Tag)
-    extends Table[DBSub](tag, "Subscriptions") {
+    extends Table[DBSubInternal](tag, "Subscriptions") {
     /** This is the PrimaryKey */
     def id        = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def interval  = column[Double]("interval")
     def startTime = column[Timestamp]("start")
     def ttl       = column[Double]("ttl")
     def callback  = column[Option[String]]("callback")
-    def lastValue = column[String]("lastValue")
-    def * = (id.?, interval, startTime, ttl, callback, lastValue) <> (DBSub.tupled, DBSub.unapply)
+
+    private def dbsubTupled:
+      ((Option[Int], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
+        case (None, interval_, startTime_, ttl_, callback_) =>
+          NewDBSub(interval_, startTime_, ttl_, callback_)
+        case (Some(id_), interval_, startTime_, ttl_, callback_) =>
+          DBSub(id_, interval_, startTime_, ttl_, callback_)
+      }
+    private def dbsubUnapply: 
+      DBSubInternal => Option[(Option[Int], Double, Timestamp, Double, Option[String])] = {
+        case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
+          Some((Some(id_), interval_, startTime_, ttl_, callback_))
+        case NewDBSub(interval_, startTime_, ttl_, callback_) =>
+          Some((None, interval_, startTime_, ttl_, callback_))
+        case _ => None
+      }
+
+    def * =
+      (id.?, interval, startTime, ttl, callback).shaped <> (
+      dbsubTupled, dbsubUnapply
+    )
   }
 
   protected val subs = TableQuery[DBSubsTable]
@@ -246,8 +270,9 @@ trait OmiNodeTables extends DBBase {
 
 
   case class DBSubscriptionItem(
-    subId: Int,
-    hierarchyId: Int
+    val subId: Int,
+    val hierarchyId: Int,
+    val lastValue: String // for event polling subs
   )
   /**
    * Storing paths of subscriptions
@@ -259,8 +284,9 @@ trait OmiNodeTables extends DBBase {
     // from extension:
     //def subId = column[Int]("subId")
     //def hierarchyId = column[Int]("hierarchyId")
+    def lastValue = column[String]("lastValue")
     def pk = primaryKey("pk_subItems", (subId, hierarchyId))
-    def * = (subId, hierarchyId) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
+    def * = (subId, hierarchyId, lastValue) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
   }
 
   protected val subItems = TableQuery[DBSubscribedItemsTable]

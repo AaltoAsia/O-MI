@@ -116,4 +116,3 @@ trait DB extends DBReadWrite with DBBase {
   def asReadOnly: DBReadOnly = this
   def asReadWrite: DBReadWrite = this
 }
-
