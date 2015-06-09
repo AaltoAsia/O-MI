@@ -121,18 +121,18 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       _.timestamp.desc
     ).result.map(_.headOption)
 
-  protected def getWithHieracrhyQ[I, T <: HierarchyFKey[I]](
+  protected def getWithHieracrhyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
     path: Path,
-    table: TableQuery[T]
-  ): Query[T,I,Seq] = // NOTE: Does the Query table need (DBNodesTable, T) ?
+    table: TableQuery[TableT]
+  ): Query[TableT,ItemT,Seq] = // NOTE: Does the Query table need (DBNodesTable, TableT) ?
     for {
-      (hie, value) <- joinWithHierarchyQ[I, T](path, table)
+      (hie, value) <- joinWithHierarchyQ[ItemT, TableT](path, table)
     } yield(value)
 
-  protected def joinWithHierarchyQ[I, T <: HierarchyFKey[I]](
+  protected def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
     path: Path,
-    table: TableQuery[T]
-  ): Query[(DBNodesTable, T),(DBNode, I),Seq] =
+    table: TableQuery[TableT]
+  ): Query[(DBNodesTable, TableT),(DBNode, ItemT),Seq] =
     hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
 
   protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
@@ -204,7 +204,8 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   }
 
   /**
-   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
+   * Used to get result values with given constrains in parallel if possible.
+   * first the two optional timestamps, if both are given
    * search is targeted between these two times. If only start is given,all values from start time onwards are
    * targeted. Similiarly if only end is given, values before end time are targeted.
    *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
