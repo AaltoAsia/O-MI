@@ -171,12 +171,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
 
-  def RemoveMetaData(path:Path): Unit= ???
+  def RemoveMetaData(path:Path): Unit={
   // TODO: Is this needed at all?
-  /*{
-    val qry = meta.filter(_.path === path)
-    runSync(qry.delete)
-  }*/
+    val node = runSync( hierarchyNodes.filter( _.path === path ).result.headOption )
+    if( node.nonEmpty ){
+      val qry = metadatas.filter( _.hierarchyId === node.get.id )
+      runSync(qry.delete)
+    }
+  }
 
 
   /**
