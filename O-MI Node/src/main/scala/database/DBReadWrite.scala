@@ -117,23 +117,31 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @return boolean whether added data was new
    */
   def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Boolean = {
+//    println("11111111111111111111111111111111111111111111")
     val hasObjects = hasObject(path)
+//    println("22222222222222222222222222222222222222222222")
     val buffering:Boolean = runSync( hierarchyNodes.filter(x=> x.path === path && x.pollRefCount > 0).exists.result)
+//    println("33333333333333333333333333333333333333333333")
     val count = runSync(getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result)
+//    println("44444444444444444444444444444444444444444444")
 
 ////    Call hooks
 //    val argument = Seq(data.path)
 //    getSetHooks foreach { _(argument) }
     runSync(DBIO.seq(latestValues += DBValue(1,timestamp,value,valueType)))
+//    println("55555555555555555555555555555555555555555555")
     if(count > database.historyLength && !buffering){
+//      println("666666666666666666666666666666666666666666")
       //if table has more than historyLength and not buffering, remove excess data
       removeExcess(path)
       false
     } else if(!hasObjects){
+//      println("7777777777777777777777777777777777777777777")
       //add missing objects for the hierarchy since this is a new path
       addObjects(path)
       true
     }else{
+//      println("8888888888888888888888888888888888888888888")
       //existing path and less than history length of data or buffering
       false
     }
@@ -283,6 +291,18 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //      
 //    }
 
+  }
+  
+  /**
+   * Used to remove data before given timestamp
+   * @param path path to sensor as Path object
+   * @param timestamp that tells how old data will be removed, exclusive.
+   */
+  private def removeBefore(path:Path, timestamp: Timestamp) ={
+    //check for other subs?, check historylen?
+    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
+//    val historyLen = database.historyLength
+    pathQuery.filter(_.timestamp < timestamp).delete
   }
   
   /*{

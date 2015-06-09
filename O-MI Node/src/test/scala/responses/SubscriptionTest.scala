@@ -1,4 +1,4 @@
-package responses
+/*package responses
 
 import org.specs2.mutable._
 import org.specs2.matcher.XmlMatchers._
@@ -311,15 +311,19 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     "Event based subscription should return new values only when the value changes" in {
       val testTime = new Date().getTime - 10000
       val testSub = dbConnection1.saveSub(new DBSub(Array(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest")), 60.0, -1, None, Some(new java.sql.Timestamp(testTime))))
-      (0 to 10).zip(Array(1, 1, 1, 2, 3, 3, 4, 5, 5, 6, 7)).foreach(n =>
+      (0 to 10).zip(Array(1, 1, 1, 2, 3, 4, 3, 5, 5, 6, 7)).foreach(n =>
         dbConnection1.set(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), new java.sql.Timestamp(testTime + n._1 * 900), n._2.toString()))
       val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub)))._1
-      test.\\("value").length === 7
+      test.\\("value").length === 8
       val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub)))._1
       test2.\\("value").length === 0
       dbConnection1.set(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), new java.sql.Timestamp(new Date().getTime), "testvalue")
       val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub)))._1
       test3.\\("value").length === 1
+      //does not return same value twice
+      dbConnection1.set(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"), new java.sql.Timestamp(new Date().getTime), "testvalue")
+      val test4 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub)))._1
+      test3.\\("value").length === 0
 
       dbConnection1.remove(Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest"))
       dbConnection1.removeSub(testSub)
@@ -338,7 +342,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   }
 
 }
-
+*/
 
 
 
