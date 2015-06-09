@@ -172,6 +172,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
   def RemoveMetaData(path:Path): Unit= ???
+  // TODO: Is this needed at all?
   /*{
     val qry = meta.filter(_.path === path)
     runSync(qry.delete)
@@ -226,6 +227,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
    * @return boolean whether something was removed
    */
+  // TODO: Is this needed at all?
   def remove(path: Path): Boolean = ??? /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
@@ -308,7 +310,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path as Path object
    * 
    */
-  protected def startBuffering(path: Path): Unit = ??? /*{
+  // TODO: Is this needed at all?
+  //protected def startBuffering(path: Path): Unit = ???
+  /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { 
@@ -327,7 +331,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    * @param path path as Path object
    */
-  protected def stopBuffering(path: Path): Boolean = ??? /*{
+  // TODO: Is this needed at all?
+  //protected def stopBuffering(path: Path): Boolean = ??? 
+  /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { existingEntry =>
@@ -413,6 +419,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBIO.seq(
             nodeSe.map{
               node => 
+                val refCount = node.pollRefCount - 1 
+                //XXX: heavy opperation, but future doesn't hlep, new sub can be created middle of it
+                if( refCount == 0) 
+                    removeExcess(node.path)
+                  
                 hierarchyNodes.update( 
                   DBNode(
                     node.id,
@@ -421,7 +432,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                     node.rightBoundary,
                     node.depth,
                     node.description,
-                    node.pollRefCount - 1,
+                    refCount,
                     node.isInfoItem
                   )
                 )
@@ -463,10 +474,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = ??? 
-  /*{
-    runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
-  }*/
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) ={
+    runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
+  }
 
 
   /**

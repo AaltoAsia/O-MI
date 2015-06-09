@@ -54,6 +54,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @return Array of DBSensors
    */
   def getSubData(id: Int, testTime: Option[Timestamp]): OdfObjects = ???
+  def getPollData(id: Int, testTime: Option[Timestamp]): OdfObjects = ???
   //OLD: def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
     /*{
       var result = Buffer[DBSensor]()
@@ -76,6 +77,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
   //ODL: def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
   def getSubData(id: Int): OdfObjects = getSubData(id, None)
+  def getPollData(id: Int): OdfObjects = getPollData(id, None)
 
   /**
    * Used to get data from database based on given path.
