@@ -33,7 +33,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
 
   protected def getMetaDataI(path: Path): DBIOAction[Option[OdfMetaData], NoStream, Effect.Read] = {
-    val queryResult = getWithHieracrhyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
+    val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
     queryResult map (
       _.headOption map (_.toOdf)
     )
@@ -114,14 +114,14 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
   //Helper for getting values with path
   protected def getValuesQ(path: Path) =
-    getWithHieracrhyQ[DBValue, DBValuesTable](path, latestValues)
+    getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
 
   protected def getValueI(path: Path) =
     getValuesQ(path).sortBy(
       _.timestamp.desc
     ).result.map(_.headOption)
 
-  protected def getWithHieracrhyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
+  protected def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
     path: Path,
     table: TableQuery[TableT]
   ): Query[TableT,ItemT,Seq] = // NOTE: Does the Query table need (DBNodesTable, TableT) ?
@@ -300,7 +300,10 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @return Array[DBItem] of DBObjects containing childs
    *  of given object. Empty if no childs found or invalid path.
    */
-  def getChilds(path: Path): Array[DBItem] = ???
+  def getChilds(path: Path): Array[DBItem] = {
+    
+    ???
+  }
     /*{
       var childs = Array[DBItem]()
       val objectQuery = for {
@@ -342,7 +345,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * Some(True) -> only with callback
    * Some(False) -> only without callback
    *
-   * @return DBSub objects for the query as Array
+   * @return DBSub objects for the query as Seq
    */
   def getAllSubs(hasCallBack: Option[Boolean]): Seq[DBSub] = {
     val all = runSync(hasCallBack match{
@@ -351,25 +354,9 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       case None         => subs.result
     })
     all.collect({case x: DBSub =>x})
-//    all.map(elem => elem.asInstanceOf[DBSub]).toArray
 
   }
-  /*
-    {
-      val all = runSync(hasCallBack match {
-        case Some(true) =>
-          subs.filter(!_.callback.isEmpty).result
-        case Some(false) =>
-          subs.filter(_.callback.isEmpty).result
-        case None =>
-          subs.result
-      })
-      all map { elem =>
-          val paths = elem._2.split(";").map(Path(_)).toVector
-          DBSub(elem._1, paths, elem._4, elem._5, elem._6, Some(elem._3))
-      }
-    }
-    */
+
 
   def getSubscribtedPaths( id: Int) : Array[Path] = {
     val pathsQ = for{

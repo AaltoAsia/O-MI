@@ -116,32 +116,28 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return boolean whether added data was new
    */
-  def set(path: Path, timestam: Timestamp, value: String, valueType: String = ""): Boolean = ???
-  /*{
-      //search database for sensor's path
-      val pathQuery = latestValues.filter(_.path === data.path)
-      val buffering = runSync(buffered.filter(_.path === data.path).result).length > 0
+  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Boolean = {
+    val hasObjects = hasObject(path)
+    val buffering:Boolean = runSync( hierarchyNodes.filter(x=> x.path === path && x.pollRefCount > 0).exists.result)
+    val count = runSync(getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result)
 
-      //appends a row to the latestvalues table
-      val count = runSync(pathQuery.result).length
-      runSync(DBIO.seq(latestValues += (data.path, data.value, data.time)))
-      // Call hooks
-      val argument = Seq(data.path)
-      getSetHooks foreach { _(argument) }
-
-      if (count > historyLength && !buffering) {
-        //if table has more than historyLength and not buffering, remove excess data
-        removeExcess(data.path)
-        false
-      } else if (count == 0) {
-        //add missing objects for the hierarchy since this is a new path
-        addObjects(data.path)
-        true
-      } else {
-        //existing path and less than history length of data or buffering.
-        false
-      }
-  }*/
+////    Call hooks
+//    val argument = Seq(data.path)
+//    getSetHooks foreach { _(argument) }
+    runSync(DBIO.seq(latestValues += DBValue(1,timestamp,value,valueType)))
+    if(count > database.historyLength && !buffering){
+      //if table has more than historyLength and not buffering, remove excess data
+      removeExcess(path)
+      false
+    } else if(!hasObjects){
+      //add missing objects for the hierarchy since this is a new path
+      addObjects(path)
+      true
+    }else{
+      //existing path and less than history length of data or buffering
+      false
+    }
+  }
 
 
   /**
@@ -268,7 +264,28 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path) = ??? /*{
+  private def removeExcess(path: Path) = {
+    val pathQuery = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+    val historyLen = database.historyLength
+    val qlen = runSync(pathQuery.length.result)
+    //sanity check, should not be called if there are less than historyLenght values in database
+    if(qlen>historyLen){
+      pathQuery.sortBy(_.timestamp).take(qlen-historyLen).delete
+    }
+    
+//    pathQuery.sortBy(_.timestamp).result flatMap{ qry =>
+//      var count = qry.length
+//      if(count > historyLen){
+//        val oldtime = qry.drop(count - historyLen).head.timestamp
+//        pathQuery.filter(_.timestamp < oldtime).delete
+//
+//      }else DBIO.successful(())
+//      
+//    }
+
+  }
+  
+  /*{
       var pathQuery = latestValues.filter(_.path === path)
 
       pathQuery.sortBy(_.timestamp).result flatMap { qry =>
