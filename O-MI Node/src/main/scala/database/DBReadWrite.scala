@@ -61,7 +61,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    */
-  protected def addObjects(path: Path, lastIsInfoItem: Boolean) {
+  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIO[Unit] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -139,7 +139,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       false
     } else if(!hasObjects){
       //add missing objects for the hierarchy since this is a new path
-      addObjects(path, true)
+      addObjectsI(path, true)
       true
     }else{
       //existing path and less than history length of data or buffering
@@ -529,7 +529,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         dbioSum[(DBNode,OdfValue)](
           hNodes.map{
             hNode =>
-               getSubTreeQ(hNode.path).map{ subTree => subTree.filter( _._1.isInfoItem ).map{ node => ( node._1, node._2.toOdf) } }
+               getSubTreeI(hNode.path).map{ subTree => subTree.filter( _._1.isInfoItem ).map{ node => ( node._1, node._2.toOdf) } }
           }
         )
     }
