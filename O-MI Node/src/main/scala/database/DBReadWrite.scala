@@ -121,9 +121,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val buffering:Boolean = runSync( hierarchyNodes.filter(x=> x.path === path && x.pollRefCount > 0).exists.result)
     val count = runSync(getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result)
 
-////    Call hooks
-//    val argument = Seq(data.path)
-//    getSetHooks foreach { _(argument) }
+//    Call hooks
+    database.getSetHooks foreach { _(Seq(path)) }
+    
     runSync(DBIO.seq(latestValues += DBValue(1,timestamp,value,valueType)))
     if(count > database.historyLength && !buffering){
       //if table has more than historyLength and not buffering, remove excess data
@@ -277,6 +277,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       pathQuery.sortBy(_.timestamp).take(qlen-historyLen).delete
     }
     
+  
 //    pathQuery.sortBy(_.timestamp).result flatMap{ qry =>
 //      var count = qry.length
 //      if(count > historyLen){
@@ -287,6 +288,17 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //      
 //    }
 
+  }
+  /**
+   * Used to remove data before given timestamp
+   * @param path path to sensor as Path object
+   * @param timestamp that tells how old data will be removed, exclusive.
+   */
+   private def removeBefore(path:Path, timestamp: Timestamp) ={
+    //check for other subs?, check historylen?
+    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
+//    val historyLen = database.historyLength
+    pathQuery.filter(_.timestamp < timestamp).delete
   }
   
   /*{
