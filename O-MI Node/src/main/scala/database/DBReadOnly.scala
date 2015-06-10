@@ -65,7 +65,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       (items, vals) <- subItemNodesQ join data on (_.id === _.hierarchyId )
     ) yield ( items.path, vals )
     val odfVals = runSync(pathVals.result).groupBy( _._1 ).map{//grouped by path and then move to odf
-      (path: Path, dbvals: Seq[(Path, DBValue)]) =>
+      case (path: Path, dbvals: Seq[(Path, DBValue)]) =>
         val sortedValues = dbvals.map(_._2).sortBy(_.timestamp.getTime)
         (
           path,
