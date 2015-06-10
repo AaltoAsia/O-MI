@@ -32,7 +32,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   */
   def initialize() = this.synchronized {
 
-    val setup = allSchemas.create    
+    val setup = DBIO.seq(
+      allSchemas.create,
+      hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
+    )    
 
     val existingTables = MTable.getTables
 
@@ -58,7 +61,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    */
-  protected def addObjects(path: Path) {
+  protected def addObjects(path: Path, lastIsInfoItem: Boolean) {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -76,19 +79,23 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
 
 
-    def addNode(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] =
-        for {
-          parent <- findParent(fullpath)
+    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] = {
 
-          insertRight = parent.rightBoundary
-          left        = insertRight + 1
-          right       = left + 1
+      findParent(fullpath) flatMap { parentO =>
+        val parent = parentO getOrElse {
+          throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
+        }
 
-          _ <- increaseAfterQ(insertRight)
+        val insertRight = parent.rightBoundary
+        val left        = insertRight + 1
+        val right       = left + 1
 
-          _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, false)
-
-        } yield ()
+        DBIO.seq(
+          increaseAfterQ(insertRight),
+          hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)
+        )
+      }
+    }
 
     val parentsAndPath = path.getParentsAndSelf
 
@@ -99,7 +106,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     // Combine DBIOActions as a single action
     val addingAction = missingPathsQ flatMap {(missingPaths: Seq[Path]) =>
       DBIO.seq(
-        missingPaths map addNode : _*
+        (missingPaths.init map addNode(false)) :+
+        (missingPaths.lastOption map addNode(lastIsInfoItem) getOrElse (DBIO.successful(Unit))) : _*
       )
     }
 
@@ -131,7 +139,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       false
     } else if(!hasObjects){
       //add missing objects for the hierarchy since this is a new path
-      addObjects(path)
+      addObjects(path, true)
       true
     }else{
       //existing path and less than history length of data or buffering

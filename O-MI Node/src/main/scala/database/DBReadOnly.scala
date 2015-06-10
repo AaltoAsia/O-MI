@@ -1,10 +1,13 @@
 package database
 
+import scala.language.postfixOps
+
 import slick.driver.H2Driver.api._
 import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import parsing.Types._
@@ -16,12 +19,12 @@ import java.lang.RuntimeException
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OmiNodeTables {
-  protected def findParent(childPath: Path): DBIOAction[DBNode,NoStream,Effect.Read] = (
+  protected def findParent(childPath: Path): DBIOAction[Option[DBNode],NoStream,Effect.Read] = (
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
       hierarchyNodes filter (_.path === Path(childPath.init))
-    ).result.head
+    ).result.headOption
 
 
   /**
@@ -123,6 +126,13 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       _.timestamp.desc
     ).result.map(_.headOption)
 
+
+  protected def getWithExprI[ItemT, TableT <: HierarchyFKey[ItemT]](
+    expr: Rep[ItemT] => Rep[Boolean],
+    table: TableQuery[TableT]
+  ): DBIOAction[Option[ItemT], NoStream, Effect.Read] =
+    table.filter(expr).result.map(_.headOption)
+
   protected def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
     path: Path,
     table: TableQuery[TableT]
@@ -173,6 +183,11 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     nBetweenLogicQ(getValuesQ(path), begin, end, newest, oldest)
 
 
+  /**
+   * Makes a Query which filters, limits and sorts as limited by the parameters.
+   * See [[getNBetween]].
+   * @param getter Gets DBValue from some ValueType for filtering and sorting
+   */
   protected def nBetweenLogicQ(
     values: Query[DBValuesTable,DBValue,Seq],
     begin: Option[Timestamp],
@@ -180,23 +195,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     newest: Option[Int],
     oldest: Option[Int]
   ): Query[DBValuesTable,DBValue,Seq] = {
-    val timeFrame = ( end, begin ) match {
-      case (None, Some(startTime)) =>
-        values.filter{ value =>
-          value.timestamp >= startTime
-        }
-      case (Some(endTime), None) =>
-        values.filter{ value =>
-          value.timestamp <= endTime
-        }
-      case (Some(endTime), Some(startTime)) =>
-        values.filter{ value =>
-          value.timestamp >= startTime &&
-          value.timestamp <= endTime
-        }
-      case (None, None) =>
-        values
-    }
+    val timeFrame = values filter betweenLogic(begin, end)
     val query =
       if( newest.nonEmpty ) {
         timeFrame sortBy ( _.timestamp.desc ) take (newest.get)
@@ -207,6 +206,33 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       }
     query
   }
+
+  protected def betweenLogic(
+    begin: Option[Timestamp],
+    end: Option[Timestamp]
+  ): DBValuesTable => Rep[Boolean] =
+    ( end, begin ) match {
+      case (None, Some(startTime)) =>
+        { value =>
+          value.timestamp >= startTime
+        }
+      case (Some(endTime), None) =>
+        { value =>
+          value.timestamp <= endTime
+        }
+      case (Some(endTime), Some(startTime)) =>
+        { value =>
+          value.timestamp >= startTime &&
+          value.timestamp <= endTime
+        }
+      case (None, None) =>
+        { value =>
+          true: Rep[Boolean]
+        }
+    }
+
+
+
 
   /**
    * Used to get result values with given constrains in parallel if possible.
@@ -241,16 +267,32 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
         require(items.isEmpty && objects.isEmpty,
           "getNBetween requires leaf OdfElements from the request")
 
-        val subTreeDataQ = getSubTreeQ(path)
-        //for ((node, value) <- subTreeDataQ) {
-          //nBetweenLogicQ(values, begin, end, newest, oldest).result
-        //}
-        db.run(
-          ???
-        )
-        ???
+        val actions = getHierarchyNodeI(path) flatMap {rootNodeO =>
+          rootNodeO match {
+            case Some(rootNode) =>
+              val subTreeDataQ = getSubTreeQ(rootNode)
 
-      case OdfInfoItem(path, values, _, metadata) =>
+              // NOTE: We can only apply "between" logic here because of the subtree query
+              // basicly we fetch too much data if "newest" or "oldest" is set
+              val timeFrameFilter = betweenLogic(begin, end)
+              val subTreeDataI = (
+                subTreeDataQ filter {
+                  case (node, value) => timeFrameFilter(value)
+                }
+              ).result
+
+              // Odf conversion, TODO: move to own method
+              subTreeDataI map {data => odfConversion(rootNode, data)}
+
+            
+            case None => Seq()
+          }
+          ???
+        }
+
+        db.run( actions )
+
+      case OdfInfoItem(path, rvalues, _, metadata) =>
         val futureSeq = db.run(
           getNBetweenInfoItemQ(path, begin, end, newest, oldest).result
         )
@@ -276,7 +318,56 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     ???
   }
 
-  protected def getSubTreeQ( path: Path
+  /**
+   * Conversion for a (sub)tree of hierarchy with value data
+   * @param root Root of the subtree
+   * @param treeData Hierarchy and value data joined and sorted by leftBoundary.
+   */
+  protected def odfConversion(root: DBNode, treeData: Seq[(DBNode, DBValue)]): OdfObject = ??? /*{
+    // Convert: Map DBNode -> Seq[DBValue]
+    val nodeMap = treeData groupBy (_._1) mapValues (_ map (_._2)) 
+
+    def genOdfRoot(root: DBNode, treeData: Map[DBNode, Seq[DBValue]]): Iterable[OdfObject] = {
+      treeData.headOption match {
+        case Some((headNode, )) =>
+          treeData span { case (node, _) => node.depth == head.depth }
+            .toIterable map {
+            case (node, Seq()) if !node.isInfoItem =>
+              val innerRoot = node
+              val innerRootOdfs = innerGenOdf(innerRoot, ???)
+
+              innerRoot.toOdfObject(Iterable(), innerRootOdfs)
+
+              // TODO: How to do the objects
+            case (node, values) if node.isInfoItem =>
+              node.toOdfInfoItem(values)
+          }
+
+      }
+    }
+
+    // FIXME: when to compute lazy values to Seq etc
+    genOdfRoot(root, nodeMap)
+
+  }*/
+
+  protected def getSubTreeQ(
+    root: DBNode
+  ): Query[(DBNodesTable, DBValuesTable), (DBNode, DBValue), Seq] = {
+    val nodesQ = hierarchyNodes filter { node =>
+      node.leftBoundary >= root.leftBoundary &&
+      node.rightBoundary <= root.rightBoundary
+    }
+
+    val nodesWithValuesQ =
+      nodesQ join latestValues on (_.id === _.hierarchyId)
+
+    nodesWithValuesQ sortBy (_._1.leftBoundary.asc)
+  }
+
+
+  protected def getSubTreeI(
+    path: Path
   ): DBIOAction[Seq[(DBNode, DBValue)], NoStream, Effect.Read] = {
 
     val subTreeRoot = getHierarchyNodeI(path)
@@ -284,16 +375,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     subTreeRoot flatMap {
       case Some(root) =>
 
-        val nodesQ = hierarchyNodes filter { node =>
-          node.path === path &&
-          node.leftBoundary >= root.leftBoundary &&
-          node.rightBoundary <= root.rightBoundary
-        }
-
-        val nodesWithValuesQ =
-          nodesQ join latestValues on (_.id === _.hierarchyId)
-
-        nodesWithValuesQ sortBy (_._1.leftBoundary.asc) result
+        getSubTreeQ(root).result
 
       case None => DBIO.successful(Seq()) // TODO: What if not found?
     }
