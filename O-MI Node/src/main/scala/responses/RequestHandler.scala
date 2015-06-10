@@ -7,6 +7,7 @@ import parsing.Types.Path
 import parsing.xmlGen
 import parsing.xmlGen.scalaxb
 import database._
+import agentSystem.InputPusher
 import CallbackHandlers.sendCallback
 
 import scala.util.{Try, Success, Failure}
@@ -99,7 +100,8 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
       handleSubscription(subscription)
     }
     case write : WriteRequest =>{
-      ( notImplemented, 505 )
+      InputPusher.handleObjects(write.odf.objects)
+      ( success, 200 )
     }
     case response : ResponseRequest =>{
       ( notImplemented, 505 )
@@ -223,6 +225,10 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     )
   }
 
+  def success = xmlFromResults(
+    1.0,
+    Result.success
+  )
   def unauthorized = xmlFromResults(
     1.0,
     Result.unauthorized
