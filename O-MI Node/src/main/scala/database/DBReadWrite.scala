@@ -409,12 +409,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
   def removeSub(id: Int): Boolean ={
     val hIds = subItems.filter( _.hierarchyId === id )
-    val sub =subs.filter( _.id === id ) 
+    val sub = subs.filter( _.id === id ) 
+    //XXX: Is return value needed?
     if(runSync(sub.result).length == 0){
       false
     } else {
-      runSync(hierarchyNodes.filter(
+      val updates = hierarchyNodes.filter(
         node => 
+        //XXX:
         node.id.inSet( runSync(hIds.map( _.hierarchyId ).result) )
       ).result.flatMap{
         nodeSe => 
@@ -440,9 +442,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                 )
             }:_*
           ) 
-      })
-      runSync(hIds.delete)
-      runSync(sub.delete)
+      }
+      runSync(DBIO.seq(updates,hIds.delete,sub.delete))
       true 
     }
   }
@@ -493,17 +494,29 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
   def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
     val subInsert: DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = (subs += sub)
+      //XXX: runSync
     val id = runSync(subInsert)
     val hNodes = getHierarchyNodesI(dbItems) 
     val itemInsert = hNodes.flatMap{ hNs =>  
+      val infos = hNs.flatMap{
+         hNode =>
+          if( hNode.isInfoItem ){
+            Seq(hNode)
+          }else{
+            getSubTreeI(hNode.path)
+          }
+      }
       val sItems = hNs.map { hNode =>
-        val lv = runSync( latestValues.filter(_.hierarchyId === hNode.id).sortBy(_.timestamp).result.headOption ).map{ _.value }
-        DBSubscriptionItem( id, hNode.id.get, lv ) 
+          //XXX: runSync
+          val lv = runSync( latestValues.filter(_.hierarchyId === hNode.id).sortBy(_.timestamp).result.headOption ).map{ _.value }
+          DBSubscriptionItem( id, hNode.id.get, lv ) 
       }
       subItems ++= sItems 
     }
+    //XXX: runSync
     runSync(itemInsert)
     if(!sub.hasCallback){
+      //XXX: runSync
       runSync(
         hierarchyNodes.filter( 
           node => node.path.inSet( dbItems ) 
