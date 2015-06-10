@@ -121,9 +121,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val buffering:Boolean = runSync( hierarchyNodes.filter(x=> x.path === path && x.pollRefCount > 0).exists.result)
     val count = runSync(getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result)
 
-////    Call hooks
-//    val argument = Seq(data.path)
-//    getSetHooks foreach { _(argument) }
+//    Call hooks
+    database.getSetHooks foreach { _(Seq(path)) }
+    
     runSync(DBIO.seq(latestValues += DBValue(1,timestamp,value,valueType)))
     if(count > database.historyLength && !buffering){
       //if table has more than historyLength and not buffering, remove excess data
