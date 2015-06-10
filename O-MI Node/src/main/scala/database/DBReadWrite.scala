@@ -129,9 +129,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val buffering:Boolean = runSync( hierarchyNodes.filter(x=> x.path === path && x.pollRefCount > 0).exists.result)
     val count = runSync(getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result)
 
-////    Call hooks
-//    val argument = Seq(data.path)
-//    getSetHooks foreach { _(argument) }
+//    Call hooks
+    database.getSetHooks foreach { _(Seq(path)) }
+    
     runSync(DBIO.seq(latestValues += DBValue(1,timestamp,value,valueType)))
     if(count > database.historyLength && !buffering){
       //if table has more than historyLength and not buffering, remove excess data
@@ -167,6 +167,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
     runSync(updateAction)
   }
+
   def setMetaDataI(hierarchyId: Int, data: String): DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = {
     val qry = metadatas filter (_.hierarchyId === hierarchyId) map (_.metadata)
     val qryres = qry.result map (_.headOption)
@@ -284,6 +285,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     if(qlen>historyLen){
       pathQuery.sortBy(_.timestamp).take(qlen-historyLen).delete
     }
+  }
     
   
 //    pathQuery.sortBy(_.timestamp).result flatMap{ qry =>
@@ -295,8 +297,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //      }else DBIO.successful(())
 //      
 //    }
-
-  }
   /**
    * Used to remove data before given timestamp
    * @param path path to sensor as Path object
@@ -429,12 +429,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
   def removeSub(id: Int): Boolean ={
     val hIds = subItems.filter( _.hierarchyId === id )
-    val sub =subs.filter( _.id === id ) 
+    val sub = subs.filter( _.id === id ) 
+    //XXX: Is return value needed?
     if(runSync(sub.result).length == 0){
       false
     } else {
-      runSync(hierarchyNodes.filter(
+      val updates = hierarchyNodes.filter(
         node => 
+        //XXX:
         node.id.inSet( runSync(hIds.map( _.hierarchyId ).result) )
       ).result.flatMap{
         nodeSe => 
@@ -460,9 +462,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                 )
             }:_*
           ) 
-      })
-      runSync(hIds.delete)
-      runSync(sub.delete)
+      }
+      runSync(DBIO.seq(updates,hIds.delete,sub.delete))
       true 
     }
   }
@@ -500,6 +501,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
   }
 
+  private def dbioSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
+    seqIO =>
+      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {
+        listA <- a
+        listB <- b
+      } yield (listA++listB)
+      seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
+  }
 
   /**
    * Saves subscription information to database
@@ -513,17 +522,27 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
   def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
     val subInsert: DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = (subs += sub)
+    //XXX: runSync
     val id = runSync(subInsert)
-    val hNodes = getHierarchyNodesI(dbItems) 
-    val itemInsert = hNodes.flatMap{ hNs =>  
-      val sItems = hNs.map { hNode =>
-        val lv = runSync( latestValues.filter(_.hierarchyId === hNode.id).sortBy(_.timestamp).result.headOption ).map{ _.value }
-        DBSubscriptionItem( id, hNode.id.get, lv ) 
+    val hNodesI = getHierarchyNodesI(dbItems) 
+    val itemsI = hNodesI.flatMap{ hNodes =>  
+        dbioSum[(DBNode,OdfValue)](
+          hNodes.map{
+            hNode =>
+               getSubTreeQ(hNode.path).map{ subTree => subTree.filter( _._1.isInfoItem ).map{ node => ( node._1, node._2.toOdf) } }
+          }
+        )
+    }
+    val itemInsert = itemsI.flatMap{ infos => 
+      val sItems = infos.map { case (hNode, value ) =>
+          DBSubscriptionItem( id, hNode.id.get, Some(value.value) ) 
       }
       subItems ++= sItems 
     }
+    //XXX: runSync
     runSync(itemInsert)
     if(!sub.hasCallback){
+      //XXX: runSync
       runSync(
         hierarchyNodes.filter( 
           node => node.path.inSet( dbItems ) 
@@ -560,4 +579,3 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
 }
-

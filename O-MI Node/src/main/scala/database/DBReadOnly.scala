@@ -56,8 +56,31 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    *
    * @return Array of DBSensors
    */
-  def getSubData(id: Int, testTime: Option[Timestamp]): OdfObjects = ???
-  def getPollData(id: Int, testTime: Option[Timestamp]): OdfObjects = ???
+  def getSubData(id: Int, testTime: Option[Timestamp]): OdfObjects ={
+    val hIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
+    val subItemNodesQ = hierarchyNodes.filter( 
+      _.id.inSet( runSync( hIds.result  ) ) 
+    ).sortBy( _.leftBoundary.asc )
+    val data = latestValues.filter(
+      _.hierarchyId.inSet( runSync( hIds.result ) ) 
+    )
+    val pathVals = for(
+      (items, vals) <- subItemNodesQ join data on (_.id === _.hierarchyId )
+    ) yield ( items.path, vals )
+    val odfVals = runSync(pathVals.result).groupBy( _._1 ).map{//grouped by path and then move to odf
+      case (path: Path, dbvals: Seq[(Path, DBValue)]) =>
+        val sortedValues = dbvals.map(_._2).sortBy(_.timestamp.getTime)
+        (
+          path,
+          sortedValues.headOption.map{_.toOdf}
+        )
+    }
+    val subItemNodes = runSync(subItemNodesQ.result)
+    //genOdf(subItemNodes, odfVals)
+    ???
+
+  }
+    def getPollData(id: Int, testTime: Option[Timestamp]): OdfObjects = ???
   //OLD: def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
     /*{
       var result = Buffer[DBSensor]()
@@ -153,6 +176,9 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getHierarchyNodesI(paths: Seq[Path]): DBIOAction[Seq[DBNode], NoStream, Effect.Read] =
   hierarchyNodes.filter(node => node.path.inSet( paths) ).result
     
+    protected def getHierarchyNodesQ(paths: Seq[Path]) : Query[DBReadOnly.this.DBNodesTable,DBReadOnly.this.DBNodesTable#TableElementType,Seq]=
+  hierarchyNodes.filter(node => node.path.inSet( paths) )
+
   protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
