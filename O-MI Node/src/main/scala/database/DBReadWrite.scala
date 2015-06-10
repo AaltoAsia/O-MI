@@ -277,17 +277,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       pathQuery.sortBy(_.timestamp).take(qlen-historyLen).delete
     }
     
-  /**
-   * Used to remove data before given timestamp
-   * @param path path to sensor as Path object
-   * @param timestamp that tells how old data will be removed, exclusive.
-   */
-  private def removeBefore(path:Path, timestamp: Timestamp) ={
-    //check for other subs?, check historylen?
-    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
-//    val historyLen = database.historyLength
-    pathQuery.filter(_.timestamp < timestamp).delete
-  }
+  
 //    pathQuery.sortBy(_.timestamp).result flatMap{ qry =>
 //      var count = qry.length
 //      if(count > historyLen){
@@ -298,6 +288,17 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //      
 //    }
 
+  }
+  /**
+   * Used to remove data before given timestamp
+   * @param path path to sensor as Path object
+   * @param timestamp that tells how old data will be removed, exclusive.
+   */
+   private def removeBefore(path:Path, timestamp: Timestamp) ={
+    //check for other subs?, check historylen?
+    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
+//    val historyLen = database.historyLength
+    pathQuery.filter(_.timestamp < timestamp).delete
   }
   
   /*{
