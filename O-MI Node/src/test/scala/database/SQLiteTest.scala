@@ -12,14 +12,14 @@ object SQLiteTest extends Specification {
   "dbConnection" should {
     sequential
     println("asdasdasdasda1")
-    implicit val db = new SQLiteConnection//new TestDB("dbtest")
+    implicit val db = new TestDB("dbtest")
     println("asdasdasdasda2")
-    var data1 = (Path("path/to/sensor1/temp"), new java.sql.Timestamp(1000), "21.5C")
-    var data2 = (Path("path/to/sensor1/hum"), new java.sql.Timestamp(2000), "40%")
-    var data3 = (Path("path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")
-    var data4 = (Path("path/to/sensor2/hum"), new java.sql.Timestamp(4000), "60%")
-    var data5 = (Path("path/to/sensor1/temp"), new java.sql.Timestamp(5000), "21.6C")
-    var data6 = (Path("path/to/sensor1/temp"), new java.sql.Timestamp(6000), "21.7C")
+    var data1 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(1000), "21.5C")
+    var data2 = (Path("/Objects/path/to/sensor1/hum"), new java.sql.Timestamp(2000), "40%")
+    var data3 = (Path("/Ojubjects/path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")
+    var data4 = (Path("/Objects/path/to/sensor2/hum"), new java.sql.Timestamp(4000), "60%")
+    var data5 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(5000), "21.6C")
+    var data6 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(6000), "21.7C")
     println("asdasdasdasda")
     "set test" in {
       println("asdasdasdasda3")
@@ -31,7 +31,7 @@ object SQLiteTest extends Specification {
     db.set(data4._1,data4._2,data4._3) shouldEqual true
     db.set(data5._1,data5._2,data5._3) shouldEqual false
     db.set(data6._1,data6._2,data6._3) shouldEqual false
-//    db.get(Path("path/to/sensor1/hum")) must beSome.like({ case OdfInfoItem(_, value, _,_) => value === "40%" })
+//    db.get(Path("/Objects/path/to/sensor1/hum")) must beSome.like({ case OdfInfoItem(_, value, _,_) => value === "40%" })
   }
   }}
 /*
@@ -46,9 +46,9 @@ object SQLiteTest extends Specification {
 //    
 //    
 //    //uncomment other tests too from parsing/responses when fixing this
-//    var id1 = db.saveSub(new DBSub(Array(Path("path/to/sensor1"), Path("path/to/sensor2")), 0, 1, None, None,""))
-//    var id2 = db.saveSub(new DBSub(Array(Path("path/to/sensor1"), Path("path/to/sensor2")), 0, 2, Some("callbackaddress"), None))
-//    var id3 = db.saveSub(new DBSub(Array(Path("path/to/sensor1"), Path("path/to/sensor2"), Path("path/to/sensor3"), Path("path/to/another/sensor2")), 100, 2, None, None))
+//    var id1 = db.saveSub(new DBSub(Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")), 0, 1, None, None,""))
+//    var id2 = db.saveSub(new DBSub(Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")), 0, 2, Some("callbackaddress"), None))
+//    var id3 = db.saveSub(new DBSub(Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3"), Path("/Objects/path/to/another/sensor2")), 100, 2, None, None))
 //
 //    "return true when adding new data" in {
 //      db.set(data1._1,data1._2,data1._3) shouldEqual true
@@ -59,50 +59,50 @@ object SQLiteTest extends Specification {
 //
 //    "return false when trying to add data with older timestamp" in {
 //      //adding many values for one path for testing
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(8000), "21.1C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(9000), "21.2C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(10000), "21.2C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(11000), "21.3C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(12000), "21.3C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(13000), "21.4C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(14000), "21.4C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(8000), "21.1C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(9000), "21.2C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(10000), "21.2C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(11000), "21.3C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(12000), "21.3C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(13000), "21.4C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(14000), "21.4C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
 //      db.set(data6._1, data6._2, data6._3)
 //      db.set(data5._1, data5._2, data5._3) shouldEqual false
 //    }
 //
 //    "return correct value for given valid path" in {
 //
-//      db.get(Path("path/to/sensor1/hum")) must beSome.like({ case DBSensor(_, value, _) => value === "40%" })
+//      db.get(Path("/Objects/path/to/sensor1/hum")) must beSome.like({ case DBSensor(_, value, _) => value === "40%" })
 //    }
 //
 //    "return correct value for given valid updated path" in {
-//      db.get(Path("path/to/sensor3/temp")) must beSome.like({ case DBSensor(_, value, _) => value === "21.6C" })
+//      db.get(Path("/Objects/path/to/sensor3/temp")) must beSome.like({ case DBSensor(_, value, _) => value === "21.6C" })
 //    }
 //
 //    "return correct childs for given valid path" in {
-//      db.get(Path("path/to/sensor1")) must beSome.like({
+//      db.get(Path("/Objects/path/to/sensor1")) must beSome.like({
 //        case ob: DBObject => {
 //          ob.childs must have size (2)
 //
 //          val paths: Seq[Path] = ob.childs.map(n => n.path)
-//          paths must contain(Path("path/to/sensor1/temp"), Path("path/to/sensor1/hum"))
+//          paths must contain(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor1/hum"))
 //        }
 //      })
 //    }
 //
 //    "return None for given invalid path" in {
-//      db.get(Path("path/to/nosuchsensor")) shouldEqual None
+//      db.get(Path("/Objects/path/to/nosuchsensor")) shouldEqual None
 //    }
 //
 //    "return correct values for given valid path and timestamps" in {
-//      val sensors1 = db.getNBetween(Path("path/to/sensor1/temp"), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None)
+//      val sensors1 = db.getNBetween(Path("/Objects/path/to/sensor1/temp"), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None)
 //      val values1: Seq[String] = sensors1.map { x => x.value }
-//      val sensors2 = db.getNBetween(Path("path/to/sensor1/temp"), Some(new Timestamp(1500)), Some(new Timestamp(6001)), None, None)
+//      val sensors2 = db.getNBetween(Path("/Objects/path/to/sensor1/temp"), Some(new Timestamp(1500)), Some(new Timestamp(6001)), None, None)
 //      val values2: Seq[String] = sensors2.map { x => x.value }
 //
 //      values1 must have size (2)
@@ -113,9 +113,9 @@ object SQLiteTest extends Specification {
 //    }
 //
 //    "return correct values for N latest values" in {
-//      val sensors1 = db.getNBetween(Path("path/to/sensor3/temp"), None, None, None, Some(12))
+//      val sensors1 = db.getNBetween(Path("/Objects/path/to/sensor3/temp"), None, None, None, Some(12))
 //      val values1: Seq[String] = sensors1.map { x => x.value }
-//      val sensors2 = db.getNBetween(Path("path/to/sensor3/temp"), None, None, None, Some(3))
+//      val sensors2 = db.getNBetween(Path("/Objects/path/to/sensor3/temp"), None, None, None, Some(3))
 //      val values2: Seq[String] = sensors2.map { x => x.value }
 //
 //      values1 must have size (10)
@@ -126,9 +126,9 @@ object SQLiteTest extends Specification {
 //    }
 //
 //    "return correct values for N oldest values" in {
-//      val sensors1 = db.getNBetween(Path("path/to/sensor3/temp"), None, None, Some(12), None)
+//      val sensors1 = db.getNBetween(Path("/Objects/path/to/sensor3/temp"), None, None, Some(12), None)
 //      val values1: Seq[String] = sensors1.map { x => x.value }
-//      val sensors2 = db.getNBetween(Path("path/to/sensor3/temp"), None, None, Some(2), None)
+//      val sensors2 = db.getNBetween(Path("/Objects/path/to/sensor3/temp"), None, None, Some(2), None)
 //      val values2: Seq[String] = sensors2.map { x => x.value }
 //
 //      values1 must have size (10)
@@ -139,37 +139,37 @@ object SQLiteTest extends Specification {
 //    }
 //
 //    "return true when removing valid path" in {
-//      db.remove(Path("path/to/sensor3/temp"))
-//      db.remove(Path("path/to/sensor1/hum")) shouldEqual true
+//      db.remove(Path("/Objects/path/to/sensor3/temp"))
+//      db.remove(Path("/Objects/path/to/sensor1/hum")) shouldEqual true
 //    }
 //
 //    "be able to buffer data on demand" in {
-//      db.startBuffering(Path("path/to/sensor3/temp"))
-//      db.startBuffering(Path("path/to/sensor3/temp"))
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(8000), "21.1C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(9000), "21.2C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(10000), "21.2C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(11000), "21.3C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(12000), "21.3C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(13000), "21.4C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(14000), "21.4C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(18000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(19000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(20000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(21000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(22000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(23000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(24000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(25000), "21.6C")
-//      db.set(Path("path/to/sensor3/temp"), new java.sql.Timestamp(26000), "21.6C")
+//      db.startBuffering(Path("/Objects/path/to/sensor3/temp"))
+//      db.startBuffering(Path("/Objects/path/to/sensor3/temp"))
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(8000), "21.1C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(9000), "21.2C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(10000), "21.2C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(11000), "21.3C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(12000), "21.3C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(13000), "21.4C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(14000), "21.4C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(18000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(19000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(20000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(21000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(22000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(23000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(24000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(25000), "21.6C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(26000), "21.6C")
 //
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        None,
 //        None,
@@ -178,14 +178,14 @@ object SQLiteTest extends Specification {
 //
 //    "return values between two timestamps" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        Some(new Timestamp(6000)),
 //        Some(new Timestamp(10000)),
 //        None,
 //        None) must have size (5)
 //
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        Some(new Timestamp(6000)),
 //        Some(new Timestamp(10000)),
 //        Some(10),
@@ -194,7 +194,7 @@ object SQLiteTest extends Specification {
 //
 //    "return values from start" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        Some(new Timestamp(20000)),
 //        None,
 //        None,
@@ -203,7 +203,7 @@ object SQLiteTest extends Specification {
 //
 //    "return values before end" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        Some(new Timestamp(10000)),
 //        None,
@@ -212,7 +212,7 @@ object SQLiteTest extends Specification {
 //
 //    "return 10 values before end" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        Some(new Timestamp(26000)),
 //        None,
@@ -221,7 +221,7 @@ object SQLiteTest extends Specification {
 //
 //    "return 10 values after start" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        Some(new Timestamp(6000)),
 //        None,
 //        Some(10),
@@ -230,7 +230,7 @@ object SQLiteTest extends Specification {
 //
 //    "return all values if no options given" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        None,
 //        None,
@@ -239,7 +239,7 @@ object SQLiteTest extends Specification {
 //
 //    "return all values if both fromStart and fromEnd is given" in {
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        None,
 //        Some(10),
@@ -248,7 +248,7 @@ object SQLiteTest extends Specification {
 //
 //    "return empty array if Path doesnt exist" in {
 //      db.getNBetween(
-//        Path("path/to/sensor/doesntexist"),
+//        Path("/Objects/path/to/sensor/doesntexist"),
 //        None,
 //        None,
 //        None,
@@ -257,9 +257,9 @@ object SQLiteTest extends Specification {
 //
 //    "should not rever to historyLength if other are still buffering" in {
 //
-//      db.stopBuffering(Path("path/to/sensor3/temp"))
+//      db.stopBuffering(Path("/Objects/path/to/sensor3/temp"))
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        None,
 //        None,
@@ -267,9 +267,9 @@ object SQLiteTest extends Specification {
 //    }
 //
 //    "be able to stop buffering and revert to using historyLenght" in {
-//      db.stopBuffering(Path("path/to/sensor3/temp"))
+//      db.stopBuffering(Path("/Objects/path/to/sensor3/temp"))
 //      db.getNBetween(
-//        Path("path/to/sensor3/temp"),
+//        Path("/Objects/path/to/sensor3/temp"),
 //        None,
 //        None,
 //        None,
@@ -277,22 +277,22 @@ object SQLiteTest extends Specification {
 //    }
 //
 //    "return true when removing valid path" in {
-//      db.remove(Path("path/to/sensor3/temp"))
-//      db.remove(Path("path/to/sensor1/temp")) shouldEqual true
+//      db.remove(Path("/Objects/path/to/sensor3/temp"))
+//      db.remove(Path("/Objects/path/to/sensor1/temp")) shouldEqual true
 //    }
 //
 //    "return false when trying to remove object from the middle" in {
-//      db.remove(Path("path/to/sensor2")) shouldEqual false
+//      db.remove(Path("/Objects/path/to/sensor2")) shouldEqual false
 //    }
 //
 //    "return true when removing valid path" in {
-//      db.remove(Path("path/to/sensor2/temp")) shouldEqual true
-//      db.remove(Path("path/to/sensor2/hum")) shouldEqual true
+//      db.remove(Path("/Objects/path/to/sensor2/temp")) shouldEqual true
+//      db.remove(Path("/Objects/path/to/sensor2/hum")) shouldEqual true
 //    }
 //
 //    "return None when searching non existent object" in {
-//      db.get(Path("path/to/sensor2")) shouldEqual None
-//      db.get(Path("path/to/sensor1")) shouldEqual None
+//      db.get(Path("/Objects/path/to/sensor2")) shouldEqual None
+//      db.get(Path("/Objects/path/to/sensor1")) shouldEqual None
 //    }
 //
 //    "return correct callback adress for subscriptions" in {
@@ -324,26 +324,26 @@ object SQLiteTest extends Specification {
 //
 //    "return right values in getsubdata" in {
 //      val timeNow = new java.util.Date().getTime
-//      val id = db.saveSub(new DBSub(Array(Path("path/to/sensor1/temp"), Path("path/to/sensor2/temp"), Path("path/to/sensor3/temp")), 0, 1, None,
+//      val id = db.saveSub(new DBSub(Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")), 0, 1, None,
 //        Some(new Timestamp(timeNow - 3500))))
 //
-//      db.set(Path("path/to/sensor1/temp"), new Timestamp(timeNow - 3000), "21.0C")
-//      db.set(Path("path/to/sensor1/temp"), new Timestamp(timeNow - 2000), "21.0C")
-//      db.set(Path("path/to/sensor1/temp"), new Timestamp(timeNow - 1000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 3000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 2000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 1000), "21.0C")
 //
-//      db.set(Path("path/to/sensor2/temp"), new Timestamp(timeNow - 3000), "21.0C")
-//      db.set(Path("path/to/sensor2/temp"), new Timestamp(timeNow - 2000), "21.0C")
-//      db.set(Path("path/to/sensor2/temp"), new Timestamp(timeNow - 1000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 3000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 2000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 1000), "21.0C")
 //
-//      db.set(Path("path/to/sensor3/temp"), new Timestamp(timeNow - 3000), "21.0C")
-//      db.set(Path("path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.0C")
-//      db.set(Path("path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 3000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.0C")
+//      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.0C")
 //
 //      val res = db.getSubData(id, Some(new Timestamp(timeNow)))
 //      db.removeSub(id)
-//      db.remove(Path("path/to/sensor1/temp"))
-//      db.remove(Path("path/to/sensor2/temp"))
-//      db.remove(Path("path/to/sensor3/temp"))
+//      db.remove(Path("/Objects/path/to/sensor1/temp"))
+//      db.remove(Path("/Objects/path/to/sensor2/temp"))
+//      db.remove(Path("/Objects/path/to/sensor3/temp"))
 //      res must have size (9)
 //    }
 //
@@ -375,31 +375,31 @@ object SQLiteTest extends Specification {
 //      }
 //    "be able to add many values in one go" in {
 //      db.clearDB()
-//      db.startBuffering(Path("path/to/setmany/test1"))
+//      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
 //      val testdata: List[(Path, OdfValue)] = {
 //        List(
-//          (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1001)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1002)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1003)))),
-//          (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1004)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1005)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1006)))),
-//          (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1007)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1008)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1009)))),
-//          (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1010)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1011)))), (Path("path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1012)))),
-//          (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1013)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1014)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1015)))),
-//          (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1016)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1017)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1018)))),
-//          (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1019)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1020)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1021)))),
-//          (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1022)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1023)))), (Path("path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1024)))))
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1001)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1002)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1003)))),
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1004)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1005)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1006)))),
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1007)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1008)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1009)))),
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1010)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1011)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1012)))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1013)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1014)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1015)))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1016)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1017)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1018)))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1019)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1020)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1021)))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1022)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1023)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1024)))))
 //      }
 //      val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
 //      db.setMany(pathValuePairs)
-//      db.getNBetween(Path("path/to/setmany/test1"), None, None, None, None) must have size (12)
-//      db.getNBetween(Path("path/to/setmany/test2"), None, None, None, None) must have size (10)
-//      db.stopBuffering(Path("path/to/setmany/test1"))
-//      db.remove(Path("path/to/setmany/test1"))
-//      db.remove(Path("path/to/setmany/test2"))
+//      db.getNBetween(Path("/Objects/path/to/setmany/test1"), None, None, None, None) must have size (12)
+//      db.getNBetween(Path("/Objects/path/to/setmany/test2"), None, None, None, None) must have size (10)
+//      db.stopBuffering(Path("/Objects/path/to/setmany/test1"))
+//      db.remove(Path("/Objects/path/to/setmany/test1"))
+//      db.remove(Path("/Objects/path/to/setmany/test2"))
 //    }
 //    "be able to save and load metadata for a path" in {
 //      val metadata = "<meta><infoItem1>value</infoItem1></meta>"
-//      db.setMetaData(Path("path/to/metaDataTest/test"), metadata)
-//      db.getMetaData(Path("path/to/metaDataTest/test/fail")) shouldEqual None
-//      db.getMetaData(Path("path/to/metaDataTest/test")) shouldEqual Some(metadata)
+//      db.setMetaData(Path("/Objects/path/to/metaDataTest/test"), metadata)
+//      db.getMetaData(Path("/Objects/path/to/metaDataTest/test/fail")) shouldEqual None
+//      db.getMetaData(Path("/Objects/path/to/metaDataTest/test")) shouldEqual Some(metadata)
 //    }
 //    //    "close" in {
 //    //      db.destroy()
