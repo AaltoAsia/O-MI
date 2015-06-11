@@ -159,6 +159,62 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
     runSync(updateAction)
   }
+  
+   def setMany(data: List[(Path, OdfValue)]): Boolean = {
+    val idQry = data.map(n=> hierarchyNodes.filter(_.path === n._1).map(m => (m.id, m.pollRefCount =!= 0)).result.headOption)
+    
+//    val test = idQry.foldLeft(DBIO.successful(None))((b,n) =>b.andThen(n) )//DBIO.seq(idQry.head, idQry.last)//dbioSum[Option[(Int,Boolean)]](idQry)
+    ???
+//    data.map{case(path:Path, odfVal:OdfValue) => {
+//      database.getSetHooks foreach {_(Seq(path))}
+//      DBValue()
+//    }}
+////    data.foreach{
+////      case(path:Path, v: OdfValue) =>{
+////        //Call hooks
+////      database.getSetHooks foreach (_(Seq(path)))
+////      lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
+////      
+////      }
+//        
+//      //
+//    }
+//    ???
+  } /*{
+    var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
+
+    // Reformat data and add missing timestamps
+    data.foreach {
+      case (path: Path, v: OdfValue) =>
+
+         // Call hooks
+        val argument = Seq(path)
+        getSetHooks foreach { _(argument) }
+
+        lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
+        add = add :+ (path, v.value, v.timestamp.getOrElse(newTimestamp))
+    }
+
+    // Add to latest values in a transaction
+    runSync((latestValues ++= add).transactionally)
+
+    // Add missing hierarchy and remove excess buffering
+    var onlyPaths = data.map(_._1).distinct
+    onlyPaths foreach{p =>
+        val path = Path(p)
+
+        var pathQuery = objects.filter(_.path === path)
+        val len = runSync(pathQuery.result).length
+        if (len == 0) {
+          addObjects(path)
+        }
+
+        var buffering = runSync(buffered.filter(_.path === path).result).length > 0
+        if (!buffering) {
+          removeExcess(path)
+        }
+    }
+  }*/
 
 
   /**
@@ -216,61 +272,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   )
    */
   
-  def setMany(data: List[(Path, OdfValue)]): Boolean = {
-    val idQry = data.map(n=> hierarchyNodes.filter(_.path === n._1).map(m => (m.id, m.pollRefCount =!= 0)).result.headOption)
-    
-//    val test = idQry.foldLeft(DBIO.successful(None))((b,n) =>b.andThen(n) )//DBIO.seq(idQry.head, idQry.last)//dbioSum[Option[(Int,Boolean)]](idQry)
-    ???
-//    data.map{case(path:Path, odfVal:OdfValue) => {
-//      database.getSetHooks foreach {_(Seq(path))}
-//      DBValue()
-//    }}
-////    data.foreach{
-////      case(path:Path, v: OdfValue) =>{
-////        //Call hooks
-////      database.getSetHooks foreach (_(Seq(path)))
-////      lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
-////      
-////      }
-//        
-//      //
-//    }
-//    ???
-  } /*{
-    var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
-
-    // Reformat data and add missing timestamps
-    data.foreach {
-      case (path: Path, v: OdfValue) =>
-
-         // Call hooks
-        val argument = Seq(path)
-        getSetHooks foreach { _(argument) }
-
-        lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
-        add = add :+ (path, v.value, v.timestamp.getOrElse(newTimestamp))
-    }
-
-    // Add to latest values in a transaction
-    runSync((latestValues ++= add).transactionally)
-
-    // Add missing hierarchy and remove excess buffering
-    var onlyPaths = data.map(_._1).distinct
-    onlyPaths foreach{p =>
-        val path = Path(p)
-
-        var pathQuery = objects.filter(_.path === path)
-        val len = runSync(pathQuery.result).length
-        if (len == 0) {
-          addObjects(path)
-        }
-
-        var buffering = runSync(buffered.filter(_.path === path).result).length > 0
-        if (!buffering) {
-          removeExcess(path)
-        }
-    }
-  }*/
+ 
 
 
   /**
