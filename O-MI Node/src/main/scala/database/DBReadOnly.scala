@@ -43,6 +43,23 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     )
   }
 
+  protected def dbioDBInfoItemsSum: Seq[DBIO[SortedMap[DBNode,Seq[DBValue]]]] => DBIO[SortedMap[DBNode,Seq[DBValue]]] = {
+    seqIO =>
+      def iosumlist(a: DBIO[SortedMap[DBNode,Seq[DBValue]]], b: DBIO[SortedMap[DBNode,Seq[DBValue]]]): DBIO[SortedMap[DBNode,Seq[DBValue]]] = for {
+        listA <- a
+        listB <- b
+      } yield (listA++listB)
+      seqIO.foldRight(DBIO.successful(SortedMap.empty[DBNode,Seq[DBValue]]):DBIO[SortedMap[DBNode,Seq[DBValue]]])(iosumlist _)
+  }
+
+  protected def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
+    seqIO =>
+      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {
+        listA <- a
+        listB <- b
+      } yield (listA++listB)
+      seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
+  }
 
 
   /**
@@ -58,39 +75,105 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    * @return Array of DBSensors
    */
   def getSubData(id: Int, testTime: Option[Timestamp]): OdfObjects ={
-    val hIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
+    val subitemHieIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
     val subItemNodesQ = hierarchyNodes.filter( 
-      _.id.inSet( runSync( hIds.result  ) ) 
-    ).sortBy( _.leftBoundary.asc )
-    val data = latestValues.filter(
-      _.hierarchyId.inSet( runSync( hIds.result ) ) 
+      //XXX:
+      _.id.inSet( runSync( subitemHieIds.result ) ) 
     )
-    val pathVals = for(
-      (items, vals) <- subItemNodesQ join data on (_.id === _.hierarchyId )
-    ) yield ( items.path, vals )
-    val odfVals = runSync(pathVals.result).groupBy( _._1 ).map{//grouped by path and then move to odf
-      case (path: Path, dbvals: Seq[(Path, DBValue)]) =>
-        val sortedValues = dbvals.map(_._2).sortBy(_.timestamp.getTime)
-        (
-          path,
-          sortedValues.headOption.map{_.toOdf}
+    val hierarchy = subItemNodesQ.result.flatMap{ 
+      nodeseq =>{ 
+        dbioDBInfoItemsSum(
+          nodeseq.map{ 
+            node =>{ 
+              getSubTreeI(node.path).map{
+                toDBInfoItems( _ ).filter{ 
+                  case (node, seqVals) => seqVals.nonEmpty 
+                }.map{ 
+                  case (node, seqVals) =>  (node, seqVals.sortBy( _.timestamp.getTime ).take(1) ) 
+                } 
+              }
+            }
+          }
         )
+      }
     }
-    val subItemNodes = runSync(subItemNodesQ.result)
-    //genOdf(subItemNodes, odfVals)
-    ???
 
+   runSync( hierarchy.map{ odfConversion( _ ) } )
   }
-  def getPollData(id: Int, testTime: Option[Timestamp]): OdfObjects ={
-    //genOdf(subItemNodes, odfVals)
-    ???
+  def getPollData(id: Int, newTime: Timestamp): OdfObjects ={
+    val sub  = getSub( id )
+    val subitems = subItems.filter( _.hierarchyId === id )
+    val subitemHieIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
+    val subItemNodesQ = hierarchyNodes.filter( 
+      //XXX:
+      _.id.inSet( runSync( subitemHieIds.result ) ) 
+    )
+    /*
+     *
+     *
+     *  FIXME: TODO: XXX: 
+     *  This is horrible a thing.
+     *
+     *
+     */
+    val hierarchy = subItemNodesQ.result.flatMap{ 
+      nodeseq =>{ 
+        dbioDBInfoItemsSum(
+          nodeseq.map{ 
+            node =>{ 
+              getSubTreeI(node.path).map{
+                toDBInfoItems( _ ).filter{ 
+                  //filter valueless infoitems
+                  case (node, seqVals) => seqVals.nonEmpty 
+                }.map{ 
+                  case (node, seqVals) =>
+                    (
+                      node,
+                      //Get right data for each infoitem
+                      sub match {
+                        case Some(dbsub : DBSub) =>{
+                          val vals = seqVals.sortBy( _.timestamp.getTime )
+                          if( dbsub.isEventBased ){//Event Poll
+                            //GET all vals
+                            val dbvals = getBetween(vals, dbsub.startTime, newTime).dropWhile(
+                              value => 
+                              //XXX:
+                                runSync(//drop unchanged values
+                                  //Should reduce all sub sequences of same values to one value
+                                  subitems.filter( _.hierarchyId === node.id ).result.map{ 
+                                    _.headOption match{ 
+                                      case Some( subitem ) => value == subitem.lastValue 
+                                      case None => false
+                                    }
+                                  }
+                                ) 
+                              )
+                            //UPDATE LASTVALUES
+                            //UPDATE SUB STARTTIME
+                            dbvals
+                          } else {//Normal poll
+                            //GET VALUES FOR EACH INTERVAL
+                            getByIntervalBetween(vals, dbsub.startTime, newTime, dbsub.interval.toLong )
+                          }
+                        }
+                        case None => Seq.empty 
+                      }
+                    ) 
+                } 
+              }
+            }
+          }
+        )
+      }
+    }
 
+    runSync( hierarchy.map{ odfConversion( _ ) } )
   }
 
-  def getBefore( values: Seq[DBValue], time: Timestamp ) = {
-    values.filter( _.timestamp.before(time) )
+  def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
+    values.filter( value => value.timestamp.before( before ) && value.timestamp.after( after ) )
   }
-  def getByIntevalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
+  def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
     var intervalTime =
       endTime.getTime - (endTime.getTime - beginTime.getTime)%interval // last interval before poll
     var timeframe  = values.sortBy(
@@ -132,7 +215,6 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
   //ODL: def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
   def getSubData(id: Int): OdfObjects = getSubData(id, None)
-  def getPollData(id: Int): OdfObjects = getPollData(id, None)
 
   /**
    * Used to get data from database based on given path.
