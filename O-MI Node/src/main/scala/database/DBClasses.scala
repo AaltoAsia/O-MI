@@ -272,7 +272,7 @@ trait OmiNodeTables extends DBBase {
   case class DBSubscriptionItem(
     val subId: Int,
     val hierarchyId: Int,
-    val lastValue: String // for event polling subs
+    val lastValue: Option[String] // for event polling subs
   )
   /**
    * Storing paths of subscriptions
@@ -284,7 +284,7 @@ trait OmiNodeTables extends DBBase {
     // from extension:
     //def subId = column[Int]("subId")
     //def hierarchyId = column[Int]("hierarchyId")
-    def lastValue = column[String]("lastValue")
+    def lastValue = column[Option[String]]("lastValue")
     def pk = primaryKey("pk_subItems", (subId, hierarchyId))
     def * = (subId, hierarchyId, lastValue) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
   }

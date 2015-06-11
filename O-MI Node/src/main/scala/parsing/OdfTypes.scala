@@ -4,7 +4,7 @@ package Types
 import xmlGen._
 import xml.XML
 import java.sql.Timestamp
-import java.lang.Iterable
+import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.seqAsJavaList
@@ -15,7 +15,7 @@ object OdfTypes{
   sealed trait OdfElement
 
   case class OdfObjects(
-    objects:              Iterable[OdfObject] = asJavaIterable(Seq.empty[OdfObject]),
+    objects:              JavaIterable[OdfObject] = Iterable(),
     version:              Option[String] = None
   ) extends OdfElement {
     def combine( another: OdfObjects ): OdfObjects ={
@@ -63,8 +63,8 @@ object OdfTypes{
   
   case class OdfObject(
     path:                 Path,
-    infoItems:            Iterable[OdfInfoItem],
-    objects:              Iterable[OdfObject],
+    infoItems:            JavaIterable[OdfInfoItem],
+    objects:              JavaIterable[OdfObject],
     description:          Option[OdfDescription] = None,
     typeValue:            Option[String] = None
   ) extends OdfElement with HasPath {
@@ -150,7 +150,7 @@ object OdfTypes{
 
   case class OdfInfoItem(
     path:                 Types.Path,
-    values:               Iterable[OdfValue],
+    values:               JavaIterable[OdfValue],
     description:          Option[OdfDescription] = None,
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement with HasPath {
@@ -211,22 +211,22 @@ object OdfTypes{
     lang:                 Option[String] = None
   ) extends OdfElement
   
-  type  OdfParseResult = Either[Iterable[ParseError], OdfObjects]
-  def getObjects( odf: OdfParseResult ) : Iterable[OdfObject] = 
+  type  OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]
+  def getObjects( odf: OdfParseResult ) : JavaIterable[OdfObject] = 
     odf match{
       case Right(objs: OdfObjects) => objs.objects
-      case _ => asJavaIterable(Seq.empty[OdfObject])
+      case _ => Iterable()
     }
-  def getErrors( odf: OdfParseResult ) : Iterable[ParseError] = 
+  def getErrors( odf: OdfParseResult ) : JavaIterable[ParseError] = 
     odf match {
-      case Left(pes: Iterable[ParseError]) => pes
-      case _ => asJavaIterable(Seq.empty[ParseError])
+      case Left(pes: JavaIterable[ParseError]) => pes
+      case _ => Iterable()
     }
 
-  def getLeafs(objects: OdfObjects ) : Iterable[HasPath] = {
-    def getLeafs(obj: OdfObject ) : Iterable[HasPath] = {
+  def getLeafs(objects: OdfObjects ) : JavaIterable[HasPath] = {
+    def getLeafs(obj: OdfObject ) : JavaIterable[HasPath] = {
       if(obj.infoItems.isEmpty && obj.objects.isEmpty)
-        scala.collection.Iterable(obj)
+        Iterable(obj)
       else 
         obj.infoItems ++ obj.objects.flatMap{          
           subobj =>
@@ -242,17 +242,17 @@ object OdfTypes{
   }
   
   def fromPath( last: HasPath) : OdfObjects = {
-    var path = last.path.dropRight(1)
-    var obj = last match{
+    var parentPath = last.path.dropRight(1)
+    var obj = last match {
       case info: OdfInfoItem =>
-        OdfObject( path, asJavaIterable(Seq(info)), asJavaIterable(Seq.empty) )  
+        OdfObject( parentPath, Iterable(info), Iterable() )  
       case obj: OdfObject =>
-        OdfObject( path, asJavaIterable(Seq.empty), asJavaIterable(Seq(obj)))  
+        OdfObject( parentPath, Iterable(), Iterable(obj) )  
     }
-    while( path.length > 1){
-      path = path.dropRight(1)
-      obj = OdfObject(  path, asJavaIterable(Seq.empty ), asJavaIterable( Seq( obj ) ) )
+    while( parentPath.length > 1){
+      parentPath = parentPath.dropRight(1)
+      obj = OdfObject( parentPath, Iterable(), Iterable(obj) )
     }
-    OdfObjects( asJavaIterable( Seq( obj ) ) )
+    OdfObjects( Iterable(obj) )
   }
 }

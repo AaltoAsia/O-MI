@@ -9,6 +9,7 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.SortedMap
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -32,7 +33,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   */
   def initialize() = this.synchronized {
 
-    val setup = allSchemas.create    
+    val setup = DBIO.seq(
+      allSchemas.create,
+      hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
+    )    
 
     val existingTables = MTable.getTables
 
@@ -58,7 +62,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    */
-  protected def addObjects(path: Path) {
+  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIO[Unit] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -76,19 +80,23 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
 
 
-    def addNode(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] =
-        for {
-          parent <- findParent(fullpath)
+    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] = {
 
-          insertRight = parent.rightBoundary
-          left        = insertRight + 1
-          right       = left + 1
+      findParent(fullpath) flatMap { parentO =>
+        val parent = parentO getOrElse {
+          throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
+        }
 
-          _ <- increaseAfterQ(insertRight)
+        val insertRight = parent.rightBoundary
+        val left        = insertRight + 1
+        val right       = left + 1
 
-          _ <- hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, false)
-
-        } yield ()
+        DBIO.seq(
+          increaseAfterQ(insertRight),
+          hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)
+        )
+      }
+    }
 
     val parentsAndPath = path.getParentsAndSelf
 
@@ -99,7 +107,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     // Combine DBIOActions as a single action
     val addingAction = missingPathsQ flatMap {(missingPaths: Seq[Path]) =>
       DBIO.seq(
-        missingPaths map addNode : _*
+        (missingPaths.init map addNode(false)) :+
+        (missingPaths.lastOption map addNode(lastIsInfoItem) getOrElse (DBIO.successful(Unit))) : _*
       )
     }
 
@@ -114,38 +123,85 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  Does not remove excess rows if path is set ot buffer
    *
    *  @param data sensordata, of type DBSensor to be stored to database.
-   *  @return boolean whether added data was new
    */
-  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Boolean = {
-//    println("11111111111111111111111111111111111111111111")
-    val hasObjects = hasObject(path)
-//    println("22222222222222222222222222222222222222222222")
-    val buffering:Boolean = runSync( hierarchyNodes.filter(x=> x.path === path && x.pollRefCount > 0).exists.result)
-//    println("33333333333333333333333333333333333333333333")
-    val count = runSync(getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result)
-//    println("44444444444444444444444444444444444444444444")
+  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Unit = {
+    
+    val addObjectsAction = addObjectsI(path, true)
+    
+    val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount === 0)) result
+    
+    val updateAction = addObjectsAction.flatMap {  x=>
+      idQry.headOption flatMap { qResult =>
 
-////    Call hooks
-//    val argument = Seq(data.path)
-//    getSetHooks foreach { _(argument) }
-    runSync(DBIO.seq(latestValues += DBValue(1,timestamp,value,valueType)))
-//    println("55555555555555555555555555555555555555555555")
-    if(count > database.historyLength && !buffering){
-//      println("666666666666666666666666666666666666666666")
-      //if table has more than historyLength and not buffering, remove excess data
-      removeExcess(path)
-      false
-    } else if(!hasObjects){
-//      println("7777777777777777777777777777777777777777777")
-      //add missing objects for the hierarchy since this is a new path
-      addObjects(path)
-      true
-    }else{
-//      println("8888888888888888888888888888888888888888888")
-      //existing path and less than history length of data or buffering
-      false
+      qResult match{
+        case None =>{
+          DBIO.successful(Unit)
+          }
+        
+        case Some(existingPath) => {
+          val addAction = (latestValues += DBValue(existingPath._1,timestamp,value,valueType))
+          
+          addAction.flatMap { x => {
+            if(existingPath._2)
+              removeExcessI(path)
+            else
+              DBIO.successful(0)
+            
+          }
+          }
+        }
+      }
     }
   }
+    runSync(updateAction)
+    //Call hooks
+    database.getSetHooks foreach { _(Seq(path))}
+  }
+
+  /**
+   * Used to set many values efficiently to the database.
+   * @param data list item to be added consisting of Path and OdfValue tuples.
+   */
+   def setMany(data: List[(Path, OdfValue)]): Unit = {
+     
+    val pathsData = data.groupBy(_._1).mapValues(v =>v.map(_._2))
+
+    val addObjectsAction = DBIO.sequence(pathsData.keys.map(addObjectsI(_,true)))
+    
+    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>
+      (hNode.path, (hNode.id, hNode.pollRefCount === 0)) 
+      } result
+    
+    val updateAction = addObjectsAction flatMap {unit =>
+      idQry flatMap { qResult => 
+        
+        val idMap = qResult.toMap
+        val pathsToIds = pathsData.map(n => (idMap(n._1)._1,n._2))
+        val dbValues = pathsToIds.flatMap{
+          
+          case (key,value) =>value.map(odfVal =>{
+            DBValue(
+                key, 
+                //create new timestamp if option is None
+                odfVal.timestamp.fold(new Timestamp(new java.util.Date().getTime))( ts => ts), 
+                odfVal.value, 
+                odfVal.typeValue
+                )  
+          })
+        }
+        val addDataAction = latestValues ++= dbValues
+        addDataAction.flatMap { x => 
+          val remSeq = idMap.filter(n=> n._2._2).keys
+          DBIO.sequence(remSeq.map(removeExcessI(_)))
+          }
+        }
+      }
+
+    runSync(updateAction.transactionally)
+    //Call hooks
+    database.getSetHooks foreach {_(pathsData.keys.toSeq)}
+
+  } 
 
 
   /**
@@ -167,6 +223,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
     runSync(updateAction)
   }
+
   def setMetaDataI(hierarchyId: Int, data: String): DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = {
     val qry = metadatas filter (_.hierarchyId === hierarchyId) map (_.metadata)
     val qryres = qry.result map (_.headOption)
@@ -179,52 +236,30 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
 
-  def RemoveMetaData(path:Path): Unit= ???
-  /*{
-    val qry = meta.filter(_.path === path)
-    runSync(qry.delete)
-  }*/
+  def RemoveMetaData(path:Path): Unit={
+  // TODO: Is this needed at all?
+    val node = runSync( hierarchyNodes.filter( _.path === path ).result.headOption )
+    if( node.nonEmpty ){
+      val qry = metadatas.filter( _.hierarchyId === node.get.id )
+      runSync(qry.delete)
+    }
+  }
 
 
   /**
    * Used to set many values efficiently to the database.
    * @param data list of tuples consisting of path and TimedValue.
    */
-  def setMany(data: List[(Path, OdfValue)]): Boolean = ??? /*{
-    var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
-
-    // Reformat data and add missing timestamps
-    data.foreach {
-      case (path: Path, v: OdfValue) =>
-
-         // Call hooks
-        val argument = Seq(path)
-        getSetHooks foreach { _(argument) }
-
-        lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
-        add = add :+ (path, v.value, v.timestamp.getOrElse(newTimestamp))
-    }
-
-    // Add to latest values in a transaction
-    runSync((latestValues ++= add).transactionally)
-
-    // Add missing hierarchy and remove excess buffering
-    var onlyPaths = data.map(_._1).distinct
-    onlyPaths foreach{p =>
-        val path = Path(p)
-
-        var pathQuery = objects.filter(_.path === path)
-        val len = runSync(pathQuery.result).length
-        if (len == 0) {
-          addObjects(path)
-        }
-
-        var buffering = runSync(buffered.filter(_.path === path).result).length > 0
-        if (!buffering) {
-          removeExcess(path)
-        }
-    }
-  }*/
+  /*
+   * case class DBValue(
+    hierarchyId: Int,
+    timestamp: Timestamp,
+    value: String,
+    valueType: String
+  )
+   */
+  
+ 
 
 
   /**
@@ -234,6 +269,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
    * @return boolean whether something was removed
    */
+  // TODO: Is this needed at all?
   def remove(path: Path): Boolean = ??? /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
@@ -272,52 +308,57 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(path: Path) = {
+  private def removeExcessI(path: Path) = {
     val pathQuery = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
     val historyLen = database.historyLength
-    val qlen = runSync(pathQuery.length.result)
-    //sanity check, should not be called if there are less than historyLenght values in database
-    if(qlen>historyLen){
-      pathQuery.sortBy(_.timestamp).take(qlen-historyLen).delete
-    }
+    val qLenI = pathQuery.length.result
     
-//    pathQuery.sortBy(_.timestamp).result flatMap{ qry =>
-//      var count = qry.length
-//      if(count > historyLen){
-//        val oldtime = qry.drop(count - historyLen).head.timestamp
-//        pathQuery.filter(_.timestamp < oldtime).delete
-//
-//      }else DBIO.successful(())
-//      
-//    }
+    qLenI.flatMap { qLen => 
+    if(qLen>historyLen){
+      pathQuery.sortBy(_.timestamp).take(qLen-historyLen).delete
+    } else{
+      DBIO.successful(0)
+    }
+    }
 
   }
-  
+  /**
+   * Used to clear excess data from database for given path
+   * for example after stopping buffering we want to revert to using
+   * historyLength
+   * @param path path to sensor as Path object
+   *
+   */
+  private def removeExcessQ(path: Path) = {
+    val pathQuery = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+    val historyLen = database.historyLength
+    val qLenI = pathQuery.length.result
+    
+    val removeAction = qLenI.flatMap { qLen => 
+    if(qLen>historyLen){
+      pathQuery.sortBy(_.timestamp).take(qLen-historyLen).delete
+    } else{
+      DBIO.successful(0)
+    }
+    }
+    runSync(removeAction)
+
+  }
+
   /**
    * Used to remove data before given timestamp
    * @param path path to sensor as Path object
    * @param timestamp that tells how old data will be removed, exclusive.
    */
-  private def removeBefore(path:Path, timestamp: Timestamp) ={
+   private def removeBefore(path:Path, timestamp: Timestamp) ={
     //check for other subs?, check historylen?
     val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
 //    val historyLen = database.historyLength
     pathQuery.filter(_.timestamp < timestamp).delete
   }
+
   
-  /*{
-      var pathQuery = latestValues.filter(_.path === path)
 
-      pathQuery.sortBy(_.timestamp).result flatMap { qry =>
-        var count = qry.length
-
-        if (count > historyLength) {
-          val oldtime = qry.drop(count - historyLength).head._3
-          pathQuery.filter(_.timestamp < oldtime).delete
-        } else
-          DBIO.successful(())
-      }
-    }*/
 
 
   /**
@@ -328,7 +369,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path as Path object
    * 
    */
-  protected def startBuffering(path: Path): Unit = ??? /*{
+  // TODO: Is this needed at all?
+  //protected def startBuffering(path: Path): Unit = ???
+  /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { 
@@ -347,7 +390,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    * @param path path as Path object
    */
-  protected def stopBuffering(path: Path): Boolean = ??? /*{
+  // TODO: Is this needed at all?
+  //protected def stopBuffering(path: Path): Boolean = ??? 
+  /*{
     val pathQuery = buffered.filter(_.path === path)
 
     pathQuery.result flatMap { existingEntry =>
@@ -419,7 +464,47 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param id id number that was generated during saving
    *
    */
-  def removeSub(id: Int): Boolean = ??? /*{
+  def removeSub(id: Int): Boolean ={
+    val hIds = subItems.filter( _.hierarchyId === id )
+    val sub = subs.filter( _.id === id ) 
+    //XXX: Is return value needed?
+    if(runSync(sub.result).length == 0){
+      false
+    } else {
+      val updates = hierarchyNodes.filter(
+        node => 
+        //XXX:
+        node.id.inSet( runSync( hIds.map( _.hierarchyId ).result) )
+      ).result.flatMap{
+        nodeSe => 
+          DBIO.seq(
+            nodeSe.map{
+              node => 
+                val refCount = node.pollRefCount - 1 
+                //XXX: heavy operation, but future doesn't help, new sub can be created middle of it
+                if( refCount == 0) 
+                    removeExcessQ(node.path)
+                  
+                hierarchyNodes.update( 
+                  DBNode(
+                    node.id,
+                    node.path,
+                    node.leftBoundary,
+                    node.rightBoundary,
+                    node.depth,
+                    node.description,
+                    refCount,
+                    node.isInfoItem
+                  )
+                )
+            }:_*
+          ) 
+      }
+      runSync(DBIO.seq(updates,hIds.delete,sub.delete))
+      true 
+    }
+  }
+  /*{
     
       var qry = subs.filter(_.ID === id)
       var toBeDeleted = runSync(qry.result)
@@ -449,10 +534,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) = ??? 
-  /*{
-    runWait(subs.filter(_.ID === id).map(p => (p.start,p.TTL)).update((newTime,newTTL)))
-  }*/
+  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) ={
+    runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
+  }
 
 
   /**
@@ -465,25 +549,71 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub = ??? 
-  /*{
-        val id = getNextId()
-        if (sub.callback.isEmpty) {
-          sub.paths.foreach {
-            runSync(startBuffering(_))
+  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
+    val subInsert: DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = (subs += sub)
+    //XXX: runSync
+    val id = runSync(subInsert)
+    val hNodesI = getHierarchyNodesI(dbItems) 
+    val itemsI = hNodesI.flatMap{
+      hNodes =>{  
+        dbioDBInfoItemsSum(
+          hNodes.map{
+             hNode =>{
+              getSubTreeI( hNode.path ).map{
+                toDBInfoItems( _ ).filter{ 
+                  case (node, seqVals) => seqVals.nonEmpty 
+                }.map{ 
+                  case (node, seqVals) =>  (node, seqVals.sortBy( _.timestamp.getTime ).take(1) ) 
+                } 
+              }
+            }
           }
-        }
-        val insertSub =
-          subs += (id, sub.paths.mkString(";"), sub.startTime, sub.ttl, sub.interval, sub.callback)
-        runSync(DBIO.seq(
-          insertSub
-        ))
-
-        //returns the id for reference
-        id
+        )
+      }
     }
-    */
+    val itemInsert = itemsI.flatMap{ infos => 
+      val sItems = infos.map { case (hNode, values ) =>
+          DBSubscriptionItem( id, hNode.id.get, values.headOption.map{ case value: DBValue => value.value } ) 
+      }
+      subItems ++= sItems 
+    }
+    //XXX: runSync
+    runSync(itemInsert)
+    if(!sub.hasCallback){
+      //XXX: runSync
+      runSync(
+        hierarchyNodes.filter( 
+          node => node.path.inSet( dbItems ) 
+        ).result.flatMap{
+          nodeSe => 
+          DBIO.seq(
+            nodeSe.map{
+              node => 
+              hierarchyNodes.update( 
+                DBNode(
+                  node.id,
+                  node.path,
+                  node.leftBoundary,
+                  node.rightBoundary,
+                  node.depth,
+                  node.description,
+                  node.pollRefCount + 1,
+                  node.isInfoItem
+                )
+              )
+            }:_*
+          )
+        }
+      )
+    }
+    DBSub(
+      id,
+      sub.interval,
+      sub.startTime,
+      sub.ttl,
+      sub.callback
+    )
+  }
 
 
 }
-
