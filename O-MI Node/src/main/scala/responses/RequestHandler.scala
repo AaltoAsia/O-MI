@@ -109,9 +109,20 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     case cancel : CancelRequest =>{
       handleCancel(cancel)
     }
-    case subdata : SubDataRequest =>{
-      val objects : OdfObjects = dbConnection.getSubData(subdata.sub.id)
-      ( xmlFromResults( 1.0, Result.pollResult(subdata.sub.id.toString,objects) ), 200 )
+    case subdata : SubDataRequest => {
+      val objectsO : Option[OdfObjects] = dbConnection.getSubData(subdata.sub.id)
+
+      objectsO match {
+        case Some(objects) =>
+          ( xmlFromResults(
+          1.0, Result.pollResult(subdata.sub.id.toString,objects)
+          ), 200)
+
+        case None =>
+          ( xmlFromResults(
+          1.0, Result.notFound
+          ), 404)
+      }
     }
     case _ =>{
       ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Unknown request." ) ) ), 500)
@@ -149,17 +160,27 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
   }
 
   def handlePoll( poll : PollRequest ) : (NodeSeq, Int ) ={
-    (
+    val results =
+      poll.requestIds.map{ id => 
+
+        val objectsO : Option[OdfObjects] = dbConnection.getSubData(id)
+
+        objectsO match {
+          case Some(objects) =>
+            Result.pollResult( id.toString, objects ) 
+          case None =>
+            Result.notFound
+        }
+      }
+    val returnTuple = (
       xmlFromResults(
         1.0,
-        poll.requestIds.map{
-          id => 
-          val objects : OdfObjects = dbConnection.getSubData(id)
-          Result.pollResult( id.toString, objects ) 
-        }.toSeq : _*
+        results.toSeq : _*
       ),
       200
     )
+
+    returnTuple
   } 
 
   def handleSubscription( subscription: SubscriptionRequest ) : ( NodeSeq, Int) ={
