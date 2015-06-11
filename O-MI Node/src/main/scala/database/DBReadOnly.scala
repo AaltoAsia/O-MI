@@ -77,7 +77,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    *
    * @return Array of DBSensors
    */
-  def getSubData(id: Int, testTime: Option[Timestamp]): OdfObjects ={
+  def getSubData(id: Int, testTime: Option[Timestamp]): Option[OdfObjects] ={
     val subitemHieIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
     val subItemNodesQ = hierarchyNodes.filter( 
       //XXX:
@@ -103,7 +103,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
    runSync( hierarchy.map{ odfConversion( _ ) } )
   }
-  def getPollData(id: Int, newTime: Timestamp): OdfObjects ={
+  def getPollData(id: Int, newTime: Timestamp): Option[OdfObjects] ={
     val sub  = getSub( id )
     val subitems = subItems.filter( _.hierarchyId === id )
     val subitemHieIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
@@ -217,7 +217,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     }*/
 
   //ODL: def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
-  def getSubData(id: Int): OdfObjects = getSubData(id, None)
+  def getSubData(id: Int): Option[OdfObjects] = getSubData(id, None)
 
   /**
    * Used to get data from database based on given path.
@@ -543,10 +543,13 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       fromPath(odfInfoItem)
   }
 
-  protected def odfConversion(treeData: DBInfoItems): OdfObjects = {
+  protected def odfConversion(treeData: DBInfoItems): Option[OdfObjects] = {
     val odfObjectsTrees = treeData map odfConversion
 
-    odfObjectsTrees reduce (_ combine _)
+    // safe version of reduce
+    odfObjectsTrees.headOption map { head =>
+        odfObjectsTrees.fold(head)(_ combine _)
+    }
   }
 
   protected def getSubTreeQ(
