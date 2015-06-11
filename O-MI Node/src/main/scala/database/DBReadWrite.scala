@@ -127,7 +127,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     
     val addObjectsAction = addObjectsI(path, true)
     val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount =!= 0)) result
-    val count = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result
     val updateAction = addObjectsAction.flatMap {  x=>
       idQry.headOption flatMap { qResult =>
       
@@ -142,20 +141,20 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           }
         
         case Some(existingPath) => {
-          count.flatMap { valCount => {
+//          count.flatMap { valCount => {
             
           val addAction = (latestValues += DBValue(existingPath._1,timestamp,value,valueType))
           
           addAction.flatMap { x => {
-            if(valCount > database.historyLength && !existingPath._2)
+            if(!existingPath._2)
               removeExcessI(path)
             else
               DBIO.successful(0)
             
           }
           }
-        }
-        }
+//        }
+//        }
         }
       }
 
@@ -165,40 +164,45 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     //Call hooks
       database.getSetHooks foreach { _(Seq(path))}
   }
-  /*
-   * protected def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
-    path: Path,
-    table: TableQuery[TableT]
-  ): Query[(DBNodesTable, TableT),(DBNode, ItemT),Seq] =
-    hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
+
+  /**
+   * Used to set many values efficiently to the database.
+   * @param data list item to be added consisting of Path and OdfValue tuples.
    */
    def setMany(data: List[(Path, OdfValue)]): Unit = {
      
     val pathsData = data.groupBy(_._1).mapValues(v =>v.map(_._2))
 
     val addObjectsAction = DBIO.sequence(pathsData.keys.map(addObjectsI(_,true)))
-    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>(hNode.path, hNode.id) } result
+    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>(hNode.path, (hNode.id, hNode.pollRefCount === 0)) } result
     
     val updateAction = addObjectsAction flatMap {unit =>
       idQry flatMap { qResult => 
         
         val idMap = qResult.toMap
-        val pathsToIds = pathsData.map(n => (idMap(n._1),n._2))
+        val pathsToIds = pathsData.map(n => (idMap(n._1)._1,n._2))
         val dbValues = pathsToIds.flatMap{
           
           case (key,value) =>value.map(odfVal =>{
-            DBValue(key, odfVal.timestamp.fold(new Timestamp(new java.util.Date().getTime))( ts => ts), odfVal.value, odfVal.typeValue)  
+            DBValue(
+                key, 
+                //create new timestamp if option is None
+                odfVal.timestamp.fold(new Timestamp(new java.util.Date().getTime))( ts => ts), 
+                odfVal.value, 
+                odfVal.typeValue
+                )  
           })
         }
         val addDataAction = latestValues ++= dbValues
         addDataAction.flatMap { x => 
-          DBIO.sequence(pathsData.keys.map(removeExcessI(_)))
+          val remSeq = idMap.filter(n=> n._2._2).keys
+          DBIO.sequence(remSeq.map(removeExcessI(_)))
           }
         }
       }
 
     runSync(updateAction.transactionally)
-        //Call hooks
+    //Call hooks
     database.getSetHooks foreach {_(pathsData.keys.toSeq)}
 
   } 
