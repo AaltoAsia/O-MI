@@ -9,6 +9,7 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.SortedMap
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -496,7 +497,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       val updates = hierarchyNodes.filter(
         node => 
         //XXX:
-        node.id.inSet( runSync(hIds.map( _.hierarchyId ).result) )
+        node.id.inSet( runSync( hIds.map( _.hierarchyId ).result) )
       ).result.flatMap{
         nodeSe => 
           DBIO.seq(
@@ -560,7 +561,16 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
   }
 
-  private def dbioSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
+  private def dbioDBInfoItemsSum: Seq[DBIO[SortedMap[DBNode,Seq[DBValue]]]] => DBIO[SortedMap[DBNode,Seq[DBValue]]] = {
+    seqIO =>
+      def iosumlist(a: DBIO[SortedMap[DBNode,Seq[DBValue]]], b: DBIO[SortedMap[DBNode,Seq[DBValue]]]): DBIO[SortedMap[DBNode,Seq[DBValue]]] = for {
+        listA <- a
+        listB <- b
+      } yield (listA++listB)
+      seqIO.foldRight(DBIO.successful(SortedMap.empty[DBNode,Seq[DBValue]]):DBIO[SortedMap[DBNode,Seq[DBValue]]])(iosumlist _)
+  }
+
+  private def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
     seqIO =>
       def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {
         listA <- a
@@ -584,17 +594,26 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     //XXX: runSync
     val id = runSync(subInsert)
     val hNodesI = getHierarchyNodesI(dbItems) 
-    val itemsI = hNodesI.flatMap{ hNodes =>  
-        dbioSum[(DBNode,OdfValue)](
+    val itemsI = hNodesI.flatMap{
+      hNodes =>{  
+        dbioDBInfoItemsSum(
           hNodes.map{
-            hNode =>
-               getSubTreeI(hNode.path).map{ subTree => subTree.filter( _._1.isInfoItem ).map{ node => ( node._1, node._2.toOdf) } }
+             hNode =>{
+              getSubTreeI( hNode.path ).map{
+                toDBInfoItems( _ ).filter{ 
+                  case (node, seqVals) => seqVals.nonEmpty 
+                }.map{ 
+                  case (node, seqVals) =>  (node, seqVals.sortBy( _.timestamp.getTime ).take(1) ) 
+                } 
+              }
+            }
           }
         )
+      }
     }
     val itemInsert = itemsI.flatMap{ infos => 
-      val sItems = infos.map { case (hNode, value ) =>
-          DBSubscriptionItem( id, hNode.id.get, Some(value.value) ) 
+      val sItems = infos.map { case (hNode, values ) =>
+          DBSubscriptionItem( id, hNode.id.get, values.headOption.map{ case value: DBValue => value.value } ) 
       }
       subItems ++= sItems 
     }
