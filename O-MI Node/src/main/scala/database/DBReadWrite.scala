@@ -550,23 +550,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
   }
 
-  private def dbioDBInfoItemsSum: Seq[DBIO[SortedMap[DBNode,Seq[DBValue]]]] => DBIO[SortedMap[DBNode,Seq[DBValue]]] = {
-    seqIO =>
-      def iosumlist(a: DBIO[SortedMap[DBNode,Seq[DBValue]]], b: DBIO[SortedMap[DBNode,Seq[DBValue]]]): DBIO[SortedMap[DBNode,Seq[DBValue]]] = for {
-        listA <- a
-        listB <- b
-      } yield (listA++listB)
-      seqIO.foldRight(DBIO.successful(SortedMap.empty[DBNode,Seq[DBValue]]):DBIO[SortedMap[DBNode,Seq[DBValue]]])(iosumlist _)
-  }
-
-  private def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
-    seqIO =>
-      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {
-        listA <- a
-        listB <- b
-      } yield (listA++listB)
-      seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
-  }
 
   /**
    * Saves subscription information to database
