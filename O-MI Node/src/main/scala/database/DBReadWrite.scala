@@ -127,35 +127,28 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Unit = {
     
     val addObjectsAction = addObjectsI(path, true)
-    val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount =!= 0)) result
+    
+    val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount === 0)) result
+    
     val updateAction = addObjectsAction.flatMap {  x=>
       idQry.headOption flatMap { qResult =>
-      
-      
-      
+
       qResult match{
-        
         case None =>{
           DBIO.successful(Unit)
-//          addObjectsI(path, true)
-
           }
         
         case Some(existingPath) => {
-//          count.flatMap { valCount => {
-            
           val addAction = (latestValues += DBValue(existingPath._1,timestamp,value,valueType))
           
           addAction.flatMap { x => {
-            if(!existingPath._2)
+            if(existingPath._2)
               removeExcessI(path)
             else
               DBIO.successful(0)
             
           }
           }
-//        }
-//        }
         }
       }
 
