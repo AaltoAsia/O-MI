@@ -145,7 +145,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
                                   //Should reduce all sub sequences of same values to one value
                                   subitems.filter( _.hierarchyId === node.id ).result.map{ 
                                     _.headOption match{ 
-                                      case Some( subitem ) => value == subitem.lastValue 
+                                      case Some( subitem ) => value.value == subitem.lastValue 
                                       case None => false
                                     }
                                   }
@@ -448,6 +448,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
               val timeframedTreeDataI =
                 subTreeDataI map { _ filter {
                   case (node, Some(value)) => betweenLogic(begin, end)(value)
+                  case (node ,None) => true
                 }}
 
               val dbInfoItemsI = timeframedTreeDataI map {toDBInfoItems(_)}
