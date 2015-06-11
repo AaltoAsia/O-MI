@@ -215,7 +215,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     valueType: String
   )
    */
-  def setMany(data: List[(Path, OdfValue)]): Boolean ={
+  
+  def setMany(data: List[(Path, OdfValue)]): Boolean = {
+    val idQry = data.map(n=> hierarchyNodes.filter(_.path === n._1).map(m => (m.id, m.pollRefCount =!= 0)).result.headOption)
+    
+//    val test = idQry.foldLeft(DBIO.successful(None))((b,n) =>b.andThen(n) )//DBIO.seq(idQry.head, idQry.last)//dbioSum[Option[(Int,Boolean)]](idQry)
     ???
 //    data.map{case(path:Path, odfVal:OdfValue) => {
 //      database.getSetHooks foreach {_(Seq(path))}

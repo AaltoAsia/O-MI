@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.SortedMap
 
 import parsing.Types._
 import parsing.Types.OdfTypes._
@@ -336,7 +337,8 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
               ).result
 
               // Odf conversion, TODO: move to own method
-              subTreeDataI map {data => odfConversion(rootNode, data)}
+              subTreeDataI map {data => odfConversion(rootNode, toDBInfoItems(data))}
+              ???
 
             
             case None => Seq()
@@ -372,38 +374,38 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     ???
   }
 
+  type DBValueTuple= (DBNode, DBValue)
+  type DBInfoItem  = (DBNode, Seq[DBValue])
+  type DBInfoItems = SortedMap[DBNode, Seq[DBValue]]
+
+  protected implicit val DBNodeOrdering = Ordering.by[DBNode, Int](_.leftBoundary)
+
+  def toDBInfoItems: Seq[DBValueTuple] => DBInfoItems = input =>
+    SortedMap(input groupBy (_._1) mapValues (_ map (_._2)) toArray : _*) 
+    
+
   /**
-   * Conversion for a (sub)tree of hierarchy with value data
+   * Conversion for a (sub)tree of hierarchy with value data.
    * @param root Root of the subtree
-   * @param treeData Hierarchy and value data joined and sorted by leftBoundary.
+   * @param treeData Hierarchy and value data joined, so contains InfoItem DBNodes and its values.
    */
-  protected def odfConversion(root: DBNode, treeData: Seq[(DBNode, DBValue)]): OdfObject = ??? /*{
+  protected def odfConversion(root: DBNode, treeData: Seq[DBValueTuple]): OdfObject = {
     // Convert: Map DBNode -> Seq[DBValue]
-    val nodeMap = treeData groupBy (_._1) mapValues (_ map (_._2)) 
+    val nodeMap = toDBInfoItems(treeData)
+    odfConversion(root, treeData)
+  }
 
-    def genOdfRoot(root: DBNode, treeData: Map[DBNode, Seq[DBValue]]): Iterable[OdfObject] = {
-      treeData.headOption match {
-        case Some((headNode, )) =>
-          treeData span { case (node, _) => node.depth == head.depth }
-            .toIterable map {
-            case (node, Seq()) if !node.isInfoItem =>
-              val innerRoot = node
-              val innerRootOdfs = innerGenOdf(innerRoot, ???)
-
-              innerRoot.toOdfObject(Iterable(), innerRootOdfs)
-
-              // TODO: How to do the objects
-            case (node, values) if node.isInfoItem =>
-              node.toOdfInfoItem(values)
-          }
-
-      }
+  protected def odfConversion(root: DBNode, treeData: DBInfoItems): OdfObjects = {
+    val infoItems = treeData map {
+      case (node: DBNode, values: Seq[DBValue]) =>
+        node.toOdfInfoItem(values map (_.toOdf) toIterable)
     }
 
-    // FIXME: when to compute lazy values to Seq etc
-    genOdfRoot(root, nodeMap)
+    val odfObjectsTrees = infoItems map (fromPath(_))
 
-  }*/
+    odfObjectsTrees reduce (_ combine _)
+    
+  }
 
   protected def getSubTreeQ(
     root: DBNode
