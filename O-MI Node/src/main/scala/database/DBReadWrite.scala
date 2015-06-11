@@ -162,7 +162,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
     runSync(updateAction)
     //Call hooks
-      database.getSetHooks foreach { _(Seq(path))}
+    database.getSetHooks foreach { _(Seq(path))}
   }
 
   /**
@@ -174,7 +174,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val pathsData = data.groupBy(_._1).mapValues(v =>v.map(_._2))
 
     val addObjectsAction = DBIO.sequence(pathsData.keys.map(addObjectsI(_,true)))
-    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>(hNode.path, (hNode.id, hNode.pollRefCount === 0)) } result
+    
+    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>
+      (hNode.path, (hNode.id, hNode.pollRefCount === 0)) 
+      } result
     
     val updateAction = addObjectsAction flatMap {unit =>
       idQry flatMap { qResult => 
