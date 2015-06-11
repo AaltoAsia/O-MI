@@ -84,7 +84,35 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     ???
 
   }
-    def getPollData(id: Int, testTime: Option[Timestamp]): OdfObjects = ???
+  def getPollData(id: Int, testTime: Option[Timestamp]): OdfObjects ={
+    //genOdf(subItemNodes, odfVals)
+    ???
+
+  }
+
+  def getBefore( values: Seq[DBValue], time: Timestamp ) = {
+    values.filter( _.timestamp.before(time) )
+  }
+  def getByIntevalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
+    var intervalTime =
+      endTime.getTime - (endTime.getTime - beginTime.getTime)%interval // last interval before poll
+    var timeframe  = values.sortBy(
+        value =>
+        value.timestamp.getTime
+      ) //ascending
+    
+    var intervalValues : Seq[DBValue] = Seq.empty
+    var index = 1
+
+    while( index > -1 && intervalTime >= beginTime.getTime ){
+      index = timeframe.lastIndexWhere( value => value.timestamp.getTime <= intervalTime )
+      if( index > -1) {
+        intervalValues = intervalValues :+ timeframe( index )
+        intervalTime -= interval
+      }
+    }    
+    intervalValues.reverse
+  }
   //OLD: def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
     /*{
       var result = Buffer[DBSensor]()
