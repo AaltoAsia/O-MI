@@ -64,113 +64,96 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
   }
 
+  protected def withSubData(subId: Int)(handleInfoItems: DBInfoItem => DBInfoItem): Option[OdfObjects] = {
+    val subItemNodesI = hierarchyNodes.filter(
+      //XXX:
+      _.id.inSet( runSync( getSubItemHierarchyIdsI(subId) ) )
+    ).result
+
+    val hierarchy = subItemNodesI.flatMap{
+      subItemNodes => {
+        val subTreeData =
+          subItemNodes map { node =>
+            getSubTreeI(node.path) map {
+              toDBInfoItems( _ ) map handleInfoItems
+            }
+          }
+        dbioDBInfoItemsSum(subTreeData)
+      }
+    }
+   runSync( hierarchy map odfConversion )
+  }
 
   /**
-   * Returns array of DBSensors for given subscription id.
-   * Array consists of all sensor values after beginning of the subscription
+   * Get data for Interval subscription with callback.
+   * Result consists of all sensor values after beginning of the subscription
    * for all the sensors in the subscription
    * returns empty array if no data or subscription is found
    *
-   * @param id subscription id that is assigned during saving the subscription
-   * @param testTime optional timestamp value to indicate end time of subscription,
-   * should only be needed during testing. Other than testing None should be used
+   * @param subId subscription id that is assigned during saving the subscription
    *
-   * @return Array of DBSensors
+   * @return objects
    */
-  def getSubData(id: Int, testTime: Option[Timestamp]): Option[OdfObjects] ={
-    val subitemHieIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
-    val subItemNodesQ = hierarchyNodes.filter(
-      //XXX:
-      _.id.inSet( runSync( subitemHieIds.result ) )
-    )
-    val hierarchy = subItemNodesQ.result.flatMap{
-      nodeseq =>{
-        dbioDBInfoItemsSum(
-          nodeseq.map{
-            node =>{
-              getSubTreeI(node.path).map{
-                toDBInfoItems( _ ).filter{
-                  case (node, seqVals) => seqVals.nonEmpty
-                }.map{
-                  case (node, seqVals) =>  (node, seqVals.sortBy( _.timestamp.getTime ).take(1) )
-                }
-              }
-            }
-          }
-        )
-      }
-    }
-
-   runSync( hierarchy.map{ odfConversion( _ ) } )
+  def getSubData(subId: Int): Option[OdfObjects] = withSubData(subId){
+    case (node, seqVals) =>
+      val sortedValues = seqVals.sortBy( _.timestamp.getTime )
+      ( node, sortedValues.take(1) )
   }
-  def getPollData(id: Int, newTime: Timestamp): Option[OdfObjects] ={
-    val sub  = getSub( id )
-    val subitems = subItems.filter( _.hierarchyId === id )
-    val subitemHieIds = subItems.filter( _.hierarchyId === id ).map( _.hierarchyId )
-    val subItemNodesQ = hierarchyNodes.filter(
-      //XXX:
-      _.id.inSet( runSync( subitemHieIds.result ) )
-    )
-    /*
-     *
-     *
-     *  FIXME: TODO: XXX:
-     *  This is horrible a thing.
-     *
-     *
-     */
-    val hierarchy = subItemNodesQ.result.flatMap{
-      nodeseq =>{
-        dbioDBInfoItemsSum(
-          nodeseq.map{
-            node =>{
-              getSubTreeI(node.path).map{
-                toDBInfoItems( _ ).filter{
-                  //filter valueless infoitems
-                  case (node, seqVals) => seqVals.nonEmpty
-                }.map{
-                  case (node, seqVals) =>
-                    (
-                      node,
-                      //Get right data for each infoitem
-                      sub match {
-                        case Some(dbsub : DBSub) =>{
-                          val vals = seqVals.sortBy( _.timestamp.getTime )
-                          if( dbsub.isEventBased ){//Event Poll
-                            //GET all vals
-                            val dbvals = getBetween(vals, dbsub.startTime, newTime).dropWhile(
-                              value =>
-                              //XXX:
-                                runSync(//drop unchanged values
-                                  //Should reduce all sub sequences of same values to one value
-                                  subitems.filter( _.hierarchyId === node.id ).result.map{
-                                    _.headOption match{
-                                      case Some( subitem ) => value.value == subitem.lastValue
-                                      case None => false
-                                    }
-                                  }
-                                )
-                              )
-                            //UPDATE LASTVALUES
-                            //UPDATE SUB STARTTIME
-                            dbvals
-                          } else {//Normal poll
-                            //GET VALUES FOR EACH INTERVAL
-                            getByIntervalBetween(vals, dbsub.startTime, newTime, dbsub.interval.toLong )
-                          }
-                        }
-                        case None => Seq.empty
-                      }
-                    )
-                }
-              }
+
+  protected def getSubItemHierarchyIdsI(subId: Int) =
+    subItems filter (
+      _.hierarchyId === subId
+    ) map ( _.hierarchyId ) result
+
+  /**
+   * Get poll data for subscription without callback.
+   * @param subId Subscription id
+   * @param newTime Timestamp for the poll time, might be the new start time for the subscription
+   */
+  def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] ={
+    val sub  = getSub( subId )
+    val subitemsQ = subItems.filter( _.hierarchyId === subId )
+
+    def handleEventPoll(node: DBNode, dbsub: DBSub, sortedValues: Seq[DBValue]) = {
+      //GET all vals
+      val dbvals = getBetween(
+          sortedValues, dbsub.startTime, newTime
+        ).dropWhile{ value =>
+        //XXX:
+        runSync(//drop unchanged values
+          //Should reduce all sub sequences of same values to one value
+          subitemsQ.filter( _.hierarchyId === node.id ).result.map{
+            _.headOption match{
+              case Some( subitem ) => value.value == subitem.lastValue
+              case None => false
             }
           }
-        )
-      }
+          )
+        }
+      ??? //UPDATE LASTVALUES
+      ??? //UPDATE SUB STARTTIME
+      dbvals
     }
+    
+    withSubData(subId){
+      case (node, seqVals) =>
+        val newVals =
+          //Get right data for each infoitem
+          sub match {
+            case Some(dbsub : DBSub) =>
+              val sortedValues = seqVals.sortBy( _.timestamp.getTime )
 
-    runSync( hierarchy.map{ odfConversion( _ ) } )
+              if( dbsub.isEventBased ){
+                handleEventPoll(node, dbsub, sortedValues)
+
+              } else { //Normal poll
+                //Get values for each interval
+                getByIntervalBetween(sortedValues, dbsub.startTime, newTime, dbsub.interval.toLong )
+              }
+            case None => Seq.empty
+          }
+        ( node, newVals )
+    }
   }
 
   def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
@@ -196,28 +179,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     }   
     intervalValues.reverse
   }
-  //OLD: def getSubData(id: Int, testTime: Option[Timestamp]): Array[DBSensor] = ???
-    /*{
-      var result = Buffer[DBSensor]()
-      var subQuery = subs.filter(_.ID === id)
-      var info: (Timestamp, Double) = (null, 0.0) //to gather only needed info from the query
-      var paths = Array[String]()
 
-      var str = runSync(subQuery.result)
-      if (str.length > 0) {
-        var sub = str.head
-        info = (sub._3, sub._5)
-        paths = sub._2.split(";")
-      }
-      paths.foreach {
-        p =>
-          result ++= DataFormater.FormatSubData(Path(p), info._1, info._2, testTime)
-      }
-      result.toArray
-    }*/
-
-  //ODL: def getSubData(id: Int): Array[DBSensor] = getSubData(id, None)
-  def getSubData(id: Int): Option[OdfObjects] = getSubData(id, None)
 
   /**
    * Used to get data from database based on given path.
