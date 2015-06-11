@@ -150,8 +150,9 @@ trait OmiNodeTables extends DBBase {
   protected val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
 
   trait HierarchyFKey[A] extends Table[A] {
+    val hierarchyfkName: String
     def hierarchyId = column[Int]("hierarchyId")
-    def hierarchy = foreignKey("hierarchy_fk", hierarchyId, hierarchyNodes)(
+    def hierarchy = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
   }
 
@@ -176,6 +177,7 @@ trait OmiNodeTables extends DBBase {
    */
   class DBValuesTable(tag: Tag)
     extends Table[DBValue](tag, "Values") with HierarchyFKey[DBValue] {
+    val hierarchyfkName = "valuesHierarchy_fk"
     // from extension:
     //def hierarchyId = column[Int]("hierarchyId")
     def timestamp = column[Timestamp]("time")
@@ -208,6 +210,7 @@ trait OmiNodeTables extends DBBase {
    */
   class DBMetaDatasTable(tag: Tag)
     extends Table[DBMetaData](tag, "Metadata") with HierarchyFKey[DBMetaData] {
+    val hierarchyfkName = "metadataHierarchy_fk"
     /** This is the PrimaryKey */
     override def hierarchyId = column[Int]("hierarchyId", O.PrimaryKey)
     def metadata    = column[String]("metadata")
@@ -259,8 +262,9 @@ trait OmiNodeTables extends DBBase {
   protected val subs = TableQuery[DBSubsTable]
 
   trait SubFKey[A] extends Table[A] {
+    val subfkName: String
     def subId = column[Int]("subId")
-    def sub   = foreignKey("sub_fk", subId, subs)(
+    def sub   = foreignKey(subfkName, subId, subs)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade
     )
   }
@@ -281,6 +285,8 @@ trait OmiNodeTables extends DBBase {
       extends Table[DBSubscriptionItem](tag, "SubItems")
       with SubFKey[DBSubscriptionItem]
       with HierarchyFKey[DBSubscriptionItem] {
+    val hierarchyfkName = "subitemsHierarchy_fk"
+    val subfkName = "subitemsSub_fk"
     // from extension:
     //def subId = column[Int]("subId")
     //def hierarchyId = column[Int]("hierarchyId")
