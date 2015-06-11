@@ -124,17 +124,20 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @param data sensordata, of type DBSensor to be stored to database.
    */
   def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Unit = {
+    
+    val addObjectsAction = addObjectsI(path, true)
     val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount =!= 0)) result
     val count = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).length.result
-    val updateAction = idQry.headOption flatMap { qResult =>
+    val updateAction = addObjectsAction.flatMap {  x=>
+      idQry.headOption flatMap { qResult =>
       
-      //Call hooks
-      database.getSetHooks foreach { _(Seq(path))}
+      
       
       qResult match{
         
         case None =>{
-          addObjectsI(path, true)
+          DBIO.successful(Unit)
+//          addObjectsI(path, true)
 
           }
         
@@ -157,64 +160,48 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
 
     }
-    runSync(updateAction)
   }
-  
-   def setMany(data: List[(Path, OdfValue)]): Boolean = {
-    val idQry = data.map(n=> hierarchyNodes.filter(_.path === n._1).map(m => (m.id, m.pollRefCount =!= 0)).result.headOption)
+    runSync(updateAction)
+    //Call hooks
+      database.getSetHooks foreach { _(Seq(path))}
+  }
+  /*
+   * protected def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
+    path: Path,
+    table: TableQuery[TableT]
+  ): Query[(DBNodesTable, TableT),(DBNode, ItemT),Seq] =
+    hierarchyNodes.filter(_.path === path) join table on (_.id === _.hierarchyId )
+   */
+   def setMany(data: List[(Path, OdfValue)]): Unit = {
+     
+    val pathsData = data.groupBy(_._1).mapValues(v =>v.map(_._2))
+
+    val addObjectsAction = DBIO.sequence(pathsData.keys.map(addObjectsI(_,true)))
+    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>(hNode.path, hNode.id) } result
     
-//    val test = idQry.foldLeft(DBIO.successful(None))((b,n) =>b.andThen(n) )//DBIO.seq(idQry.head, idQry.last)//dbioSum[Option[(Int,Boolean)]](idQry)
-    ???
-//    data.map{case(path:Path, odfVal:OdfValue) => {
-//      database.getSetHooks foreach {_(Seq(path))}
-//      DBValue()
-//    }}
-////    data.foreach{
-////      case(path:Path, v: OdfValue) =>{
-////        //Call hooks
-////      database.getSetHooks foreach (_(Seq(path)))
-////      lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
-////      
-////      }
-//        
-//      //
-//    }
-//    ???
-  } /*{
-    var add = Seq[(Path,String,Timestamp)]()  // accumulator: dbobjects to add
-
-    // Reformat data and add missing timestamps
-    data.foreach {
-      case (path: Path, v: OdfValue) =>
-
-         // Call hooks
-        val argument = Seq(path)
-        getSetHooks foreach { _(argument) }
-
-        lazy val newTimestamp = new Timestamp(new java.util.Date().getTime)
-        add = add :+ (path, v.value, v.timestamp.getOrElse(newTimestamp))
-    }
-
-    // Add to latest values in a transaction
-    runSync((latestValues ++= add).transactionally)
-
-    // Add missing hierarchy and remove excess buffering
-    var onlyPaths = data.map(_._1).distinct
-    onlyPaths foreach{p =>
-        val path = Path(p)
-
-        var pathQuery = objects.filter(_.path === path)
-        val len = runSync(pathQuery.result).length
-        if (len == 0) {
-          addObjects(path)
+    val updateAction = addObjectsAction flatMap {unit =>
+      idQry flatMap { qResult => 
+        
+        val idMap = qResult.toMap
+        val pathsToIds = pathsData.map(n => (idMap(n._1),n._2))
+        val dbValues = pathsToIds.flatMap{
+          
+          case (key,value) =>value.map(odfVal =>{
+            DBValue(key, odfVal.timestamp.fold(new Timestamp(new java.util.Date().getTime))( ts => ts), odfVal.value, odfVal.typeValue)  
+          })
         }
-
-        var buffering = runSync(buffered.filter(_.path === path).result).length > 0
-        if (!buffering) {
-          removeExcess(path)
+        val addDataAction = latestValues ++= dbValues
+        addDataAction.flatMap { x => 
+          DBIO.sequence(pathsData.keys.map(removeExcessI(_)))
+          }
         }
-    }
-  }*/
+      }
+
+    runSync(updateAction.transactionally)
+        //Call hooks
+    database.getSetHooks foreach {_(pathsData.keys.toSeq)}
+
+  } 
 
 
   /**
