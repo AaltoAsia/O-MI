@@ -134,26 +134,27 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    *  @param data sensordata, of type DBSensor to be stored to database.
    */
-  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Unit = {
+  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Int = {
     
     val addObjectsAction = addObjectsI(path, true)
     
     val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount === 0)) result
     
     val updateAction = addObjectsAction.flatMap {  x=>
+      
       idQry.headOption flatMap { qResult =>
 
       qResult match{
         case None =>{
-          DBIO.successful(Unit)
+          DBIO.successful(0)
           }
         
-        case Some(existingPath) => {
-          val addAction = (latestValues += DBValue(existingPath._1,timestamp,value,valueType))
+        case Some((id, buffering)) => {
+          val addAction = (latestValues += DBValue(id,timestamp,value,valueType))
           
           addAction.flatMap { x => {
-            if(existingPath._2)
-              removeExcessI(path)
+            if(buffering)
+              removeExcessI(id)
             else
               DBIO.successful(0)
             
@@ -163,9 +164,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
     }
   }
-    runSync(updateAction)
+    val run = runSync(updateAction.transactionally)
     //Call hooks
     database.getSetHooks foreach { _(Seq(path))}
+    run
   }
 
   /**
@@ -201,7 +203,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         }
         val addDataAction = latestValues ++= dbValues
         addDataAction.flatMap { x => 
-          val remSeq = idMap.filter(n=> n._2._2).keys
+          val remSeq = idMap.filter(n=> n._2._2).map(n=> n._2._1)
           DBIO.sequence(remSeq.map(removeExcessI(_)))
           }
         }
@@ -318,8 +320,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcessI(path: Path) = {
-    val pathQuery = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+  private def removeExcessI(pathId: Int) = {
+    val pathQuery = latestValues.filter(_.hierarchyId === pathId)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
     val historyLen = database.historyLength
     val qLenI = pathQuery.length.result
     
@@ -339,8 +341,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcessQ(path: Path) = {
-    val pathQuery = getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+  private def removeExcessQ(pathId: Int) = {
+    val pathQuery = latestValues.filter(_.hierarchyId === pathId)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
     val historyLen = database.historyLength
     val qLenI = pathQuery.length.result
     
@@ -493,7 +495,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                 val refCount = node.pollRefCount - 1 
                 //XXX: heavy operation, but future doesn't help, new sub can be created middle of it
                 if( refCount == 0) 
-                    removeExcessQ(node.path)
+                    removeExcessQ(node.id.get)
                   
                 hierarchyNodes.update( 
                   DBNode(
