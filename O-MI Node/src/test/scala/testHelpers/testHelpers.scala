@@ -15,6 +15,7 @@ trait BeforeAll extends Specification {
 
   protected def beforeAll()
 }
+
 trait AfterAll extends Specification {
   override def map(fs: =>Fragments) ={
     fs ^ Step(afterAll)
@@ -22,6 +23,7 @@ trait AfterAll extends Specification {
     
   protected def afterAll()
 }
+
 trait BeforeAfterAll extends Specification {
   override def map(fs: => Fragments)={
     Step(beforeAll) ^ fs ^ Step(afterAll)

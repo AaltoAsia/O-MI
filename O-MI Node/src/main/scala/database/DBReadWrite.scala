@@ -131,6 +131,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount === 0)) result
     
     val updateAction = addObjectsAction.flatMap {  x=>
+      
       idQry.headOption flatMap { qResult =>
 
       qResult match{
@@ -138,11 +139,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBIO.successful(Unit)
           }
         
-        case Some(existingPath) => {
-          val addAction = (latestValues += DBValue(existingPath._1,timestamp,value,valueType))
+        case Some((id, buffering)) => {
+          val addAction = (latestValues += DBValue(id,timestamp,value,valueType))
           
           addAction.flatMap { x => {
-            if(existingPath._2)
+            if(buffering)
               removeExcessI(path)
             else
               DBIO.successful(0)
@@ -153,7 +154,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
     }
   }
-    runSync(updateAction)
+    runSync(updateAction.transactionally)
     //Call hooks
     database.getSetHooks foreach { _(Seq(path))}
   }
