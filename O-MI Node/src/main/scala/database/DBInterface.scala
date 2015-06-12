@@ -65,6 +65,7 @@ object singleConnection extends DB {
 class SQLiteConnection extends DB {
   //override val db = singleConnection.db
   val db = Database.forConfig(dbConfigName)
+  initialize()
 
   def destroy() = {
      dropDB()

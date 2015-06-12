@@ -39,13 +39,18 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     )    
 
     val existingTables = MTable.getTables
-
-    runSync(existingTables).headOption match {
-      case Some(table) =>
+    val existed = runSync(existingTables)
+    if( existed.length > 0 ){
         //noop
-        println("Not creating tables, found table: " + table.name.name)
-      case None =>
+        println(
+          "Found tables:\n" +
+          existed.map{_.name.name}.mkString("\n") +
+          "Not creating tables."
+        )
+    } else {
         // run transactionally so there are all or no tables
+
+        println("Creating  tables: " + allSchemas.toString)
         runSync(setup.transactionally)
     }
   }
@@ -62,7 +67,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    */
-  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIO[Unit] = {
+  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIO[Seq[Unit]] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -106,9 +111,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     // Combine DBIOActions as a single action
     val addingAction = missingPathsQ flatMap {(missingPaths: Seq[Path]) =>
-      DBIO.seq(
-        (missingPaths.init map addNode(false)) :+
-        (missingPaths.lastOption map addNode(lastIsInfoItem) getOrElse (DBIO.successful(Unit))) : _*
+
+      // these will not break when empty
+      val init = missingPaths.dropRight(1)
+      val last = missingPaths.takeRight(1)
+
+      DBIO.sequence(
+        (init map addNode(false) ) ++
+        (last map addNode(lastIsInfoItem))
       )
     }
 
