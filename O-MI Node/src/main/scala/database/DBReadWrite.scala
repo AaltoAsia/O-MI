@@ -111,9 +111,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     // Combine DBIOActions as a single action
     val addingAction = missingPathsQ flatMap {(missingPaths: Seq[Path]) =>
-      DBIO.seq(
-        (missingPaths.init map addNode(false)) :+
-        (missingPaths.lastOption map addNode(lastIsInfoItem) getOrElse (DBIO.successful(Unit))) : _*
+
+      // these will not break when empty
+      val init = missingPaths.dropRight(1)
+      val last = missingPath.takeRight(1)
+
+      DBIO.sequence(
+        (init map addNode(false) ) :+
+        (last map addNode(lastIsInfoItem) getOrElse (DBIO.successful(Unit)))
       )
     }
 
