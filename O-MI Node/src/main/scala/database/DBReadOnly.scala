@@ -23,7 +23,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
 
-  protected def findParent(childPath: Path): DBIOAction[Option[DBNode],NoStream,Effect.Read] = (
+  protected def findParent(childPath: Path): DBIOro[Option[DBNode]] = (
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
@@ -39,13 +39,13 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    */
   def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
 
-  protected def getMetaDataI(path: Path): DBIOAction[Option[OdfMetaData], NoStream, Effect.Read] = {
+  protected def getMetaDataI(path: Path): DBIOro[Option[OdfMetaData]] = {
     val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
     queryResult map (
       _.headOption map (_.toOdf)
     )
   }
-  protected def getMetaDataI(id: Int): DBIOAction[Option[OdfMetaData], NoStream, Effect.Read] =
+  protected def getMetaDataI(id: Int): DBIO[Option[OdfMetaData]] =
     (metadatas filter (_.hierarchyId === id)).result map (
       _.headOption map (_.toOdf)
     )
@@ -254,7 +254,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getWithExprI[ItemT, TableT <: HierarchyFKey[ItemT]](
     expr: Rep[ItemT] => Rep[Boolean],
     table: TableQuery[TableT]
-  ): DBIOAction[Option[ItemT], NoStream, Effect.Read] =
+  ): DBIOro[Option[ItemT]] =
     table.filter(expr).result.map(_.headOption)
 
   protected def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
@@ -274,16 +274,16 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getHierarchyNodeQ(path: Path) : Query[DBNodesTable, DBNode, Seq] =
     hierarchyNodes.filter(_.path === path)
 
-  protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
+  protected def getHierarchyNodeI(path: Path): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.path === path).result.map(_.headOption)
 
-  protected def getHierarchyNodesI(paths: Seq[Path]): DBIOAction[Seq[DBNode], NoStream, Effect.Read] =
+  protected def getHierarchyNodesI(paths: Seq[Path]): DBIOro[Seq[DBNode]] =
   hierarchyNodes.filter(node => node.path.inSet( paths) ).result
    
     protected def getHierarchyNodesQ(paths: Seq[Path]) :Query[DBNodesTable,DBNode,Seq]=
   hierarchyNodes.filter(node => node.path.inSet( paths) )
 
-  protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
+  protected def getHierarchyNodeI(id: Int): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
 
@@ -590,7 +590,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getSubTreeI(
     path: Path,
     depth: Option[Int] = None
-  ): DBIOAction[Seq[(DBNode, Option[DBValue])], NoStream, Effect.Read] = {
+  ): DBIOro[Seq[(DBNode, Option[DBValue])]] = {
 
     val subTreeRoot = getHierarchyNodeI(path)
 
@@ -658,7 +658,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    */
   def getSub(id: Int): Option[DBSub] = runSync(getSubI(id))
 
-  protected def getSubI(id: Int): DBIOAction[Option[DBSub],NoStream,Effect.Read] =
+  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =
     subs.filter(_.id === id).result.map{
       _.headOption map {
         case sub: DBSub => sub
