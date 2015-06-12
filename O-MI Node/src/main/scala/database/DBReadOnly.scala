@@ -19,11 +19,10 @@ import java.lang.RuntimeException
 /**
  * Read only restricted interface methods for db tables
  */
-trait DBReadOnly extends DBBase with OmiNodeTables {
+trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
 
-  type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
 
-  protected def findParent(childPath: Path): DBIOAction[Option[DBNode],NoStream,Effect.Read] = (
+  protected def findParentI(childPath: Path): DBIOro[Option[DBNode]] = (
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
@@ -39,30 +38,17 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    */
   def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
 
-  protected def getMetaDataI(path: Path): DBIOAction[Option[OdfMetaData], NoStream, Effect.Read] = {
+  protected def getMetaDataI(path: Path): DBIOro[Option[OdfMetaData]] = {
     val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
     queryResult map (
       _.headOption map (_.toOdf)
     )
   }
+  protected def getMetaDataI(id: Int): DBIO[Option[OdfMetaData]] =
+    (metadatas filter (_.hierarchyId === id)).result map (
+      _.headOption map (_.toOdf)
+    )
 
-  protected def dbioDBInfoItemsSum: Seq[DBIO[SortedMap[DBNode,Seq[DBValue]]]] => DBIO[SortedMap[DBNode,Seq[DBValue]]] = {
-    seqIO =>
-      def iosumlist(a: DBIO[SortedMap[DBNode,Seq[DBValue]]], b: DBIO[SortedMap[DBNode,Seq[DBValue]]]): DBIO[SortedMap[DBNode,Seq[DBValue]]] = for {
-        listA <- a
-        listB <- b
-      } yield (listA++listB)
-      seqIO.foldRight(DBIO.successful(SortedMap.empty[DBNode,Seq[DBValue]]):DBIO[SortedMap[DBNode,Seq[DBValue]]])(iosumlist _)
-  }
-
-  protected def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
-    seqIO =>
-      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {
-        listA <- a
-        listB <- b
-      } yield (listA++listB)
-      seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
-  }
 
   protected def withSubData(subId: Int)(handleInfoItems: DBInfoItem => DBInfoItem): Option[OdfObjects] = {
     val subItemNodesI = hierarchyNodes.filter(
@@ -225,62 +211,6 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
   def getQ(single: OdfElement): OdfElement = ???
 
-  // Used for compiler type trickery by causing type errors
-  trait Hole // TODO: RemoveMe!
-
-  //Helper for getting values with path
-  protected def getValuesQ(path: Path) =
-    getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
-
-  protected def getValuesQ(id: Int) =
-    latestValues filter (_.hierarchyId === id)
-
-  protected def getValueI(path: Path) =
-    getValuesQ(path).sortBy(
-      _.timestamp.desc
-    ).result.map(_.headOption)
-
-  protected def getDBInfoItemI(path: Path): DBIOro[Option[DBInfoItem]] = {
-
-    val tupleDataI = joinWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).result
-
-    tupleDataI map toDBInfoItem
-  }
-
-  protected def getWithExprI[ItemT, TableT <: HierarchyFKey[ItemT]](
-    expr: Rep[ItemT] => Rep[Boolean],
-    table: TableQuery[TableT]
-  ): DBIOAction[Option[ItemT], NoStream, Effect.Read] =
-    table.filter(expr).result.map(_.headOption)
-
-  protected def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
-    path: Path,
-    table: TableQuery[TableT]
-  ): Query[TableT,ItemT,Seq] = // NOTE: Does the Query table need (DBNodesTable, TableT) ?
-    for {
-      (hie, value) <- getHierarchyNodeQ(path) join table on (_.id === _.hierarchyId )
-    } yield(value)
-
-  protected def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
-    path: Path,
-    table: TableQuery[TableT]
-  ): Query[(DBNodesTable, Rep[Option[TableT]]),(DBNode, Option[ItemT]),Seq] =
-    hierarchyNodes.filter(_.path === path) joinLeft table on (_.id === _.hierarchyId )
-
-  protected def getHierarchyNodeQ(path: Path) : Query[DBNodesTable, DBNode, Seq] =
-    hierarchyNodes.filter(_.path === path)
-
-  protected def getHierarchyNodeI(path: Path): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
-    hierarchyNodes.filter(_.path === path).result.map(_.headOption)
-
-  protected def getHierarchyNodesI(paths: Seq[Path]): DBIOAction[Seq[DBNode], NoStream, Effect.Read] =
-  hierarchyNodes.filter(node => node.path.inSet( paths) ).result
-   
-    protected def getHierarchyNodesQ(paths: Seq[Path]) :Query[DBNodesTable,DBNode,Seq]=
-  hierarchyNodes.filter(node => node.path.inSet( paths) )
-
-  protected def getHierarchyNodeI(id: Int): DBIOAction[Option[DBNode], NoStream, Effect.Read] =
-    hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
 
   /**
@@ -401,11 +331,18 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     end: Option[Timestamp],
     newest: Option[Int],
     oldest: Option[Int]
-  ): OdfObjects = {
+  ): Option[OdfObjects] = {
+
     require( ! (newest.isDefined && oldest.isDefined),
       "Both newest and oldest at the same time not supported!")
-    //val futureResults: Iterable[Future[Seq[OdfElement]]] = requests map {
-    val futureResults = requests map {
+
+    val requestsSeq = requests.toSeq
+
+    require( requestsSeq.size >= 1,
+      "getNBetween should be called with at least one request thing")
+
+    
+    val allResults = requestsSeq.par map {
 
       case obj @ OdfObject(path,items,objects,_,_) =>
         require(items.isEmpty && objects.isEmpty,
@@ -413,7 +350,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
 
         val actions = getHierarchyNodeI(path) flatMap {rootNodeO =>
           rootNodeO match {
-            case Some(rootNode) =>
+            case Some(rootNode) => //for {
               val subTreeDataI = getSubTreeQ(rootNode).result
 
               // NOTE: We can only apply "between" logic here because of the subtree query
@@ -422,114 +359,77 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
               val timeframedTreeDataI =
                 subTreeDataI map { _ filter {
                   case (node, Some(value)) => betweenLogic(begin, end)(value)
-                  case (node ,None) => true
+                  case (node, None) => true
                 }}
 
-              val dbInfoItemsI = timeframedTreeDataI map {toDBInfoItems(_)}
+              val dbInfoItemsI: DBIO[DBInfoItems] = timeframedTreeDataI map {toDBInfoItems(_)}
 
               // Odf conversion
-              dbInfoItemsI map {items => odfConversion(items)}
+              val results: DBIO[Option[OdfObjects]] = dbInfoItemsI map {items => odfConversion(items)}
+
+              results
+
 
             case None =>  // Requested object was not found, TODO: think about error handling
-              DBIO.successful(Seq())
+              DBIO.successful(None)
           }
         }
 
-        db.run( actions )
+        runSync( actions )
 
-      case OdfInfoItem(path, rvalues, _, metadata) =>
+      case OdfInfoItem(path, rvalues, _, metadataQuery) =>
+
         val odfInfoItemI = getHierarchyNodeI(path) flatMap {nodeO =>
-          nodeO match {
-            case Some(node @ DBNode(Some(nodeId),_,_,_,_,_,_,_)) =>
-              val dataI = getNBetweenDBInfoItemQ(nodeId, begin, end, newest, oldest).result
 
-              dataI flatMap {data =>
-                odfConversion((node, data))// match {
-                  //case Some(dbInfoItem) => // info item has values
-                  //}
-                ???
+          nodeO match {
+            case Some(node @ DBNode(Some(nodeId),_,_,_,_,_,_,true)) => for {
+
+              valueData <- getNBetweenDBInfoItemQ(nodeId, begin, end, newest, oldest).result
+
+              odfInfoItem = hasPathConversion((node, valueData)) match {
+                case x: OdfInfoItem => x
+                case _ => throw new RuntimeException("type fail")
+              }
+              
+              metaData <- metadataQuery match {
+                case Some(_) => getMetaDataI(nodeId)  // fetch metadata
+                case None    => DBIO.successful(None)
               }
 
-            case _ => DBIO.successful(Seq())  // Requested object was not found, TODO: think about error handling
+              metaInfoItem = OdfInfoItem(path, Iterable(), None, metaData) 
+
+              result = fromPath(odfInfoItem combine metaInfoItem)
+
+            } yield Some(result)
+
+            case n =>
+              println(s"Requested '$path' as InfoItem, found '$n'")
+              DBIO.successful(None)  // Requested object was not found or not infoitem, TODO: think about error handling
           }
         }
 
-        db.run(odfInfoItemI)
+        runSync(odfInfoItemI)
 
-        /*
-        val metaDataRequested = metadata.isDefined
-        if (metaDataRequested)
-        val futureOption = db.run(
-          getMetaDataI(path)
-        )
-        futureOption map (_.toSeq)*/
-        ???
 
       case odf: OdfElement =>
-        assert(false, s"Non-supported query parameter: $odf")
-        ???
+        throw new RuntimeException(s"Non-supported query parameter: $odf")
         //case OdfObjects(_, _) =>
         //case OdfDesctription(_, _) =>
         //case OdfValue(_, _, _) =>
     }
 
-    ???
-  }
-
-  type DBValueTuple= (DBNode, Option[DBValue])
-  type DBInfoItem  = (DBNode, Seq[DBValue])
-  type DBInfoItems = SortedMap[DBNode, Seq[DBValue]]
-
-  protected implicit val DBNodeOrdering = Ordering.by[DBNode, Int](_.leftBoundary)
-
-  def toDBInfoItems(input: Seq[DBValueTuple]): DBInfoItems =
-    SortedMap(input groupBy (_._1) mapValues {values =>
-      val empty = List[DBValue]()
-
-      values.foldLeft(empty){
-        case (others, (_, Some(dbValue))) => dbValue :: others
-        case (others, (_, None)) => others
-      }
-
-      } toArray : _*
-    )
-
-  def toDBInfoItem(tupleData: Seq[DBValueTuple]): Option[DBInfoItem] = {
-      val items = toDBInfoItems(tupleData)
-      assert(items.size <= 1, "Asked one infoitem, should contain max one infoitem")
-      items.headOption
-    }  
-
-  /**
-   * Conversion for a (sub)tree of hierarchy with value data.
-   * @param treeData Hierarchy and value data joined, so contains InfoItem DBNodes and its values.
-   */
-  protected def odfConversion(treeData: Seq[DBValueTuple]): OdfObjects = {
-    // Convert: Map DBNode -> Seq[DBValue]
-    val nodeMap = toDBInfoItems(treeData)
-    odfConversion(treeData)
-  }
-
-  protected def hasPathConversion: DBInfoItem => HasPath = {
-    case (node, values) if node.isInfoItem  =>
-      val odfValues      = values map (_.toOdf) toIterable
-      val odfInfoItem    = node.toOdfInfoItem(odfValues)
-      odfInfoItem
-    case (node, values) if !node.isInfoItem =>
-      node.toOdfObject
-  }
-
-  protected def odfConversion: DBInfoItem => OdfObjects =
-    fromPath _ compose hasPathConversion
-
-  protected def odfConversion(treeData: DBInfoItems): Option[OdfObjects] = {
-    val odfObjectsTrees = treeData map odfConversion
-
-    // safe version of reduce
-    odfObjectsTrees.headOption map { head =>
-        odfObjectsTrees.fold(head)(_ combine _)
+    // Combine some Options
+    allResults.fold(None){
+      case (Some(results), Some(otherResults)) => Some(results combine otherResults)
+      case (None, Some(results)) => Some(results)
+      case (Some(results), None) => Some(results)
+      case (None, None) => None
     }
+
+
   }
+
+
 
   /**
    * @param root Root of the tree
@@ -539,6 +439,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
     root: DBNode,
     depth: Option[Int] = None
   ): Query[(DBNodesTable, Rep[Option[DBValuesTable]]), (DBNode, Option[DBValue]), Seq] = {
+
     val depthConstraint: DBNodesTable => Rep[Boolean] = node =>
       depth match {
         case Some(depthLimit) =>
@@ -562,7 +463,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
   protected def getSubTreeI(
     path: Path,
     depth: Option[Int] = None
-  ): DBIOAction[Seq[(DBNode, Option[DBValue])], NoStream, Effect.Read] = {
+  ): DBIOro[Seq[(DBNode, Option[DBValue])]] = {
 
     val subTreeRoot = getHierarchyNodeI(path)
 
@@ -574,17 +475,6 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
       case None => DBIO.successful(Seq()) // TODO: What if not found?
     }
   }
-
-
-
-  /**
-   * Checks whether given path exists on the database
-   * @param path path to be checked
-   * @return boolean whether path was found or not
-   */
-  protected def hasObject(path: Path): Boolean =
-    runSync(hierarchyNodes.filter(_.path === path).exists.result)
-
 
 
 
@@ -630,7 +520,7 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    */
   def getSub(id: Int): Option[DBSub] = runSync(getSubI(id))
 
-  protected def getSubI(id: Int): DBIOAction[Option[DBSub],NoStream,Effect.Read] =
+  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =
     subs.filter(_.id === id).result.map{
       _.headOption map {
         case sub: DBSub => sub

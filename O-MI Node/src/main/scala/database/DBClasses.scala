@@ -115,16 +115,20 @@ trait OmiNodeTables extends DBBase {
     pollRefCount: Int,
     isInfoItem: Boolean 
   ) {
-    def toOdfObject =
-      OdfObject(path, Iterable(), Iterable(), Some(OdfDescription(description)), None)
+    def descriptionOdfOption =
+      if (description.nonEmpty) Some(OdfDescription(description))
+      else None
+
+    def toOdfObject = OdfObject(path, Iterable(), Iterable(), descriptionOdfOption, None)
 
     def toOdfObject(infoitems: Iterable[OdfInfoItem], objects: Iterable[OdfObject]) =
-      OdfObject(path, infoitems, objects, Some(OdfDescription(description)), None)
+      OdfObject(path, infoitems, objects, descriptionOdfOption, None)
 
     def toOdfInfoItem(values: Iterable[OdfValue]) =
-      OdfInfoItem(path, values, Some(OdfDescription(description)), None)
+      OdfInfoItem(path, values, descriptionOdfOption, None)
   }
 
+  implicit val DBNodeOrdering = Ordering.by[DBNode, Int](_.leftBoundary)
 
   /**
    * (Boilerplate) Table to store object hierarchy.
