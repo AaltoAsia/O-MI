@@ -51,12 +51,56 @@ trait OdfConversions extends OmiNodeTables {
   }
 
   protected def hasPathConversion: DBInfoItem => HasPath = {
-    case (node, values) if node.isInfoItem  =>
+    case (infoItemNode, values) if infoItemNode.isInfoItem  =>
       val odfValues      = values map (_.toOdf) toIterable
-      val odfInfoItem    = node.toOdfInfoItem(odfValues)
+      val odfInfoItem    = infoItemNode.toOdfInfoItem(odfValues)
       odfInfoItem
-    case (node, values) if !node.isInfoItem =>
-      node.toOdfObject
+    case (objectNode, values) if !objectNode.isInfoItem =>
+      objectNode.toOdfObject
+  }
+
+  /**
+   * For url discovery get path.
+   * Version for which Object children are supported for one level of the hierarchy.
+   * @param items input data for single object (objects and infoitems for the first level of children)
+   * @return Single object or infoItem extracted from items
+   */
+  protected def singleObjectConversion(items: DBInfoItems): Option[HasPath] = {
+    //require(items.size > 0, "singleObjectConversion requires data!")
+    if (items.size == 0) return None
+
+    val nodes = items.keys
+
+    // search element with the lowest depth and take only the node
+    val theObject = items minBy (_._1.depth)
+
+    theObject match {
+      case (objectNode, _) if !objectNode.isInfoItem =>
+        val allChildren =
+          nodes filter (item =>
+              item.leftBoundary > objectNode.leftBoundary &&
+              item.leftBoundary < objectNode.rightBoundary
+              )
+
+        val (infoItemChildren, objectChildren) = allChildren partition (_.isInfoItem)
+
+        val odfInfoItemChildren = infoItemChildren map (_.toOdfInfoItem)
+        val odfObjectChildren   = objectChildren   map (_.toOdfObject)
+
+
+        require(allChildren.nonEmpty, s"should have children, has $items")
+
+        if (objectNode.depth == 1){
+          val odfObjects = OdfObjects(odfObjectChildren)
+          Some(odfObjects)
+        } else {
+          val odfObject = objectNode.toOdfObject(odfInfoItemChildren, odfObjectChildren)
+          Some(odfObject)
+        }
+
+      case infoItem @ (infoItemNode, _) if infoItemNode.isInfoItem  =>
+        Some(hasPathConversion(infoItem))
+    }
   }
 
   protected def odfConversion: DBInfoItem => OdfObjects =
