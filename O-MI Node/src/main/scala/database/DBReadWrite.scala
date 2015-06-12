@@ -327,7 +327,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     
     qLenI.flatMap { qLen => 
     if(qLen>historyLen){
-      pathQuery.sortBy(_.timestamp).take(qLen-historyLen).delete
+      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).result.flatMap { x =>  
+        pathQuery.filter(_.hierarchyId.inSet(x.map(_.hierarchyId))).delete}
+//      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
     } else{
       DBIO.successful(0)
     }
@@ -348,7 +350,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     
     val removeAction = qLenI.flatMap { qLen => 
     if(qLen>historyLen){
-      pathQuery.sortBy(_.timestamp).take(qLen-historyLen).delete
+      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).result.flatMap { x =>  
+        pathQuery.filter(_.hierarchyId.inSet(x.map(_.hierarchyId))).delete}
+//      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
     } else{
       DBIO.successful(0)
     }
