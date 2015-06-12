@@ -74,8 +74,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       //val leftUpdateQ  =  leftValsQ.map(_ + 2).update(leftValsQ)
 
       DBIO.seq(
-        sqlu"UPDATE HierarchyNodes SET rightBoundary = rightBoundary + 2 WHERE rightBoundary > ${value}",
-        sqlu"UPDATE HierarchyNodes SET leftBoundary = leftBoundary + 2 WHERE leftBoundary > ${value}"
+        sqlu"UPDATE HIERARCHYNODES SET RIGHTBOUNDARY = RIGHTBOUNDARY + 2 WHERE RIGHTBOUNDARY > ${value}",
+        sqlu"UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY + 2 WHERE LEFTBOUNDARY > ${value}"
       )
     }
 

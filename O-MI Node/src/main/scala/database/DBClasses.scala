@@ -130,16 +130,16 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table to store object hierarchy.
    */
   class DBNodesTable(tag: Tag)
-    extends Table[DBNode](tag, "HierarchyNodes") {
+    extends Table[DBNode](tag, "HIERARCHYNODES") {
     /** This is the PrimaryKey */
-    def id            = column[Int]("hierarchyId", O.PrimaryKey, O.AutoInc)
-    def path          = column[Path]("path")
-    def leftBoundary  = column[Int]("leftBoundary")
-    def rightBoundary = column[Int]("rightBoundary")
-    def depth         = column[Int]("depth")
-    def description   = column[String]("description")
-    def pollRefCount  = column[Int]("pollRefCount")
-    def isInfoItem    = column[Boolean]("isInfoItem")
+    def id            = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
+    def path          = column[Path]("PATH")
+    def leftBoundary  = column[Int]("LEFTBOUNDARY")
+    def rightBoundary = column[Int]("RIGHTBOUNDARY")
+    def depth         = column[Int]("DEPTH")
+    def description   = column[String]("DESCRIPTION")
+    def pollRefCount  = column[Int]("POLLREFCOUNT")
+    def isInfoItem    = column[Boolean]("ISINFOITEM")
 
     // Every table needs a * projection with the same type as the table's type parameter
     def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
@@ -151,7 +151,7 @@ trait OmiNodeTables extends DBBase {
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
-    def hierarchyId = column[Int]("hierarchyId")
+    def hierarchyId = column[Int]("HIERARCHYID")
     def hierarchy = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
   }
@@ -176,16 +176,16 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table for storing latest sensor data to database
    */
   class DBValuesTable(tag: Tag)
-    extends Table[DBValue](tag, "Values") with HierarchyFKey[DBValue] {
-    val hierarchyfkName = "valuesHierarchy_fk"
+    extends Table[DBValue](tag, "VALUES") with HierarchyFKey[DBValue] {
+    val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
-    //def hierarchyId = column[Int]("hierarchyId")
-    def timestamp = column[Timestamp]("time")
-    def value = column[String]("value")
-    def valueType = column[String]("valueType")
+    //def hierarchyId = column[Int]("HIERARCHYID")
+    def timestamp = column[Timestamp]("TIME")
+    def value = column[String]("VALUE")
+    def valueType = column[String]("VALUETYPE")
 
     /** Primary Key: (hierarchyId, timestamp) */
-    def pk = primaryKey("pk_DBData", (hierarchyId, timestamp))
+    def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))
 
     def * = (hierarchyId, timestamp, value, valueType) <> (DBValue.tupled, DBValue.unapply)
   }
@@ -209,11 +209,11 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table for storing metadata for sensors as string e.g XML block as string
    */
   class DBMetaDatasTable(tag: Tag)
-    extends Table[DBMetaData](tag, "Metadata") with HierarchyFKey[DBMetaData] {
-    val hierarchyfkName = "metadataHierarchy_fk"
+    extends Table[DBMetaData](tag, "METADATA") with HierarchyFKey[DBMetaData] {
+    val hierarchyfkName = "METADATAHIERARCHY_FK"
     /** This is the PrimaryKey */
-    override def hierarchyId = column[Int]("hierarchyId", O.PrimaryKey)
-    def metadata    = column[String]("metadata")
+    override def hierarchyId = column[Int]("HIERARCHYID", O.PrimaryKey)
+    def metadata    = column[String]("METADATA")
 
     def * = (hierarchyId, metadata) <> (DBMetaData.tupled, DBMetaData.unapply)
   }
@@ -229,13 +229,13 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table for O-MI subscription information
    */
   class DBSubsTable(tag: Tag)
-    extends Table[DBSubInternal](tag, "Subscriptions") {
+    extends Table[DBSubInternal](tag, "SUBSCRIPTIONS") {
     /** This is the PrimaryKey */
-    def id        = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def interval  = column[Double]("interval")
-    def startTime = column[Timestamp]("start")
-    def ttl       = column[Double]("ttl")
-    def callback  = column[Option[String]]("callback")
+    def id        = column[Int]("ID", O.PrimaryKey, O.AutoInc)
+    def interval  = column[Double]("INTERVAL")
+    def startTime = column[Timestamp]("START")
+    def ttl       = column[Double]("TTL")
+    def callback  = column[Option[String]]("CALLBACK")
 
     private def dbsubTupled:
       ((Option[Int], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
@@ -263,7 +263,7 @@ trait OmiNodeTables extends DBBase {
 
   trait SubFKey[A] extends Table[A] {
     val subfkName: String
-    def subId = column[Int]("subId")
+    def subId = column[Int]("SUBID")
     def sub   = foreignKey(subfkName, subId, subs)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade
     )
@@ -282,16 +282,16 @@ trait OmiNodeTables extends DBBase {
    * Storing paths of subscriptions
    */
   class DBSubscribedItemsTable(tag: Tag)
-      extends Table[DBSubscriptionItem](tag, "SubItems")
+      extends Table[DBSubscriptionItem](tag, "SUBITEMS")
       with SubFKey[DBSubscriptionItem]
       with HierarchyFKey[DBSubscriptionItem] {
-    val hierarchyfkName = "subitemsHierarchy_fk"
-    val subfkName = "subitemsSub_fk"
+    val hierarchyfkName = "SUBITEMSHIERARCHY_FK"
+    val subfkName = "SUBITEMSSUB_FK"
     // from extension:
-    //def subId = column[Int]("subId")
-    //def hierarchyId = column[Int]("hierarchyId")
-    def lastValue = column[Option[String]]("lastValue")
-    def pk = primaryKey("pk_subItems", (subId, hierarchyId))
+    //def subId = column[Int]("SUBID")
+    //def hierarchyId = column[Int]("HIERARCHYID")
+    def lastValue = column[Option[String]]("LASTVALUE")
+    def pk = primaryKey("PK_SUBITEMS", (subId, hierarchyId))
     def * = (subId, hierarchyId, lastValue) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
   }
 
