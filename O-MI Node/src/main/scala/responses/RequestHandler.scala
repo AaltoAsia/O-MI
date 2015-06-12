@@ -160,10 +160,11 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
   }
 
   def handlePoll( poll : PollRequest ) : (NodeSeq, Int ) ={
+    val time = date.getTime
     val results =
       poll.requestIds.map{ id => 
 
-        val objectsO : Option[OdfObjects] = dbConnection.getSubData(id)
+        val objectsO : Option[OdfObjects] = dbConnection.getPollData(id,new Timestamp(time))
 
         objectsO match {
           case Some(objects) =>
@@ -246,6 +247,10 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     )
   }
 
+  def notFound = xmlFromResults(
+    1.0,
+    Result.notFound
+  )
   def success = xmlFromResults(
     1.0,
     Result.success
