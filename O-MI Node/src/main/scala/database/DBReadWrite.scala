@@ -21,7 +21,8 @@ import parsing.Types.OdfTypes._
  * Read-write interface methods for db tables.
  */
 trait DBReadWrite extends DBReadOnly with OmiNodeTables {
-  type ReadWrite = Effect with Effect.Write with Effect.Read
+  type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
+  type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
 
   /**
   * Initializing method, creates the file and tables.
@@ -67,7 +68,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
    */
-  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIO[Seq[Unit]] = {
+  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[Unit]] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -85,7 +86,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     }
 
 
-    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOAction[Unit, NoStream, ReadWrite] = {
+    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOrw[Unit] = {
 
       findParent(fullpath) flatMap { parentO =>
         val parent = parentO getOrElse {
@@ -105,12 +106,12 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val parentsAndPath = path.getParentsAndSelf
 
-    val foundPathsQ   = hierarchyNodes filter (_.path inSet parentsAndPath) map (_.path) result
+    val foundPathsI   = hierarchyNodes filter (_.path inSet parentsAndPath) map (_.path) result
     // difference between all and found
-    val missingPathsQ: DBIOAction[Seq[Path],NoStream,Effect.Read]  = foundPathsQ map (parentsAndPath diff _)
+    val missingPathsI: DBIOro[Seq[Path]]  = foundPathsI map (parentsAndPath diff _)
 
     // Combine DBIOActions as a single action
-    val addingAction = missingPathsQ flatMap {(missingPaths: Seq[Path]) =>
+    val addingAction = missingPathsI flatMap {(missingPaths: Seq[Path]) =>
 
       // these will not break when empty
       val init = missingPaths.dropRight(1)
@@ -236,7 +237,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runSync(updateAction)
   }
 
-  def setMetaDataI(hierarchyId: Int, data: String): DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = {
+  def setMetaDataI(hierarchyId: Int, data: String): DBIOrw[Int] = {
     val qry = metadatas filter (_.hierarchyId === hierarchyId) map (_.metadata)
     val qryres = qry.result map (_.headOption)
     qryres flatMap[Int, NoStream, Effect.Write] {
@@ -341,7 +342,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcessQ(pathId: Int) = {
+  private def removeExcess(pathId: Int) = {
     val pathQuery = latestValues.filter(_.hierarchyId === pathId)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
     val historyLen = database.historyLength
     val qLenI = pathQuery.length.result
@@ -373,102 +374,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
 
-  /**
-   * put the path to buffering table if it is not there yet, otherwise
-   * increases the count on that item, to prevent removing buffered data
-   * if one subscription ends and other is still buffering.
-   *
-   * @param path path as Path object
-   * 
-   */
-  // TODO: Is this needed at all?
-  //protected def startBuffering(path: Path): Unit = ???
-  /*{
-    val pathQuery = buffered.filter(_.path === path)
-
-    pathQuery.result flatMap { 
-      case Seq() =>
-        buffered += ((path, 1))
-      case Seq(existingEntry) =>
-        pathQuery.map(_.count) update (existingEntry.count + 1)
-    }
-  }*/
-
-
-  /**
-   * removes the path from buffering table or dimishes the count by one
-   * also clear all buffered data if count is only 1
-   * leaves only historyLength amount of data if count is only 1
-   * 
-   * @param path path as Path object
-   */
-  // TODO: Is this needed at all?
-  //protected def stopBuffering(path: Path): Boolean = ??? 
-  /*{
-    val pathQuery = buffered.filter(_.path === path)
-
-    pathQuery.result flatMap { existingEntry =>
-      if (existingEntry.count > 1)
-        pathQuery.map(_.count) update (existingEntry.count - 1)
-      else
-        pathQuery.delete
-    }
-      val pathQuery = buffered.filter(_.path === path)
-      val str = runSync(pathQuery.result)
-      var len = str.length
-      if (len > 0) {
-        if (str.head.count > 1) {
-          runSync(pathQuery.map(_.count).update(len - 1))
-          false
-        } else {
-          runSync(pathQuery.delete)
-          removeExcess(path)
-          true
-        }
-      } else {
-        false
-      }
-  }*/
-
-
-
-
-
-    
-
-
-  /**
-   * Check whether subscription with given ID has expired. i.e if subscription has been in database for
-   * longer than its ttl value in seconds.
-   *
-   * @param id number that was generated during saving
-   *
-   * @return returns boolean whether subscription with given id has expired
-   */
-  // TODO: Is this needed at all?
-  // def isExpired(id: Int): Boolean = ???
-  /*
-    {
-      //gets time when subscibe was added,
-      // adds ttl amount of seconds to it,
-      //and compares to current time
-        val sub = runSync(subs.filter(_.ID === id).result).headOption
-        if(sub != None)
-        {
-        if (sub.get._4 > 0) {
-          val endtime = new Timestamp(sub.get._3.getTime + (sub.get._4 * 1000).toLong)
-          new java.sql.Timestamp(new java.util.Date().getTime).after(endtime)
-        } else {
-          true
-        }
-        }
-        else
-        {
-          true
-        }
-    }*/
-
-
 
   /**
    * Removes subscription information from database for given ID.
@@ -495,7 +400,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                 val refCount = node.pollRefCount - 1 
                 //XXX: heavy operation, but future doesn't help, new sub can be created middle of it
                 if( refCount == 0) 
-                    removeExcessQ(node.id.get)
+                    removeExcess(node.id.get)
                   
                 hierarchyNodes.update( 
                   DBNode(
@@ -562,7 +467,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return id number that is used for querying the elements
    */
   def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
-    val subInsert: DBIOAction[Int, NoStream, Effect.Write with Effect.Read with Effect.Transactional] = (subs += sub)
+    val subInsert: DBIOrw[Int] = (subs += sub)
     //XXX: runSync
     val id = runSync(subInsert)
     val hNodesI = getHierarchyNodesI(dbItems) 
