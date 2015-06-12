@@ -39,13 +39,18 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     )    
 
     val existingTables = MTable.getTables
-
-    runSync(existingTables).headOption match {
-      case Some(table) =>
+    val existed = runSync(existingTables)
+    if( existed.length > 0 ){
         //noop
-        println("Not creating tables, found table: " + table.name.name)
-      case None =>
+        println(
+          "Found tables:\n" +
+          existed.map{_.name.name}.mkString("\n") +
+          "Not creating tables."
+        )
+    } else {
         // run transactionally so there are all or no tables
+
+        println("Creating  tables: " + allSchemas.toString)
         runSync(setup.transactionally)
     }
   }
