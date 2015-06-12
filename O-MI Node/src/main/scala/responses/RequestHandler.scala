@@ -298,10 +298,15 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     val (path, wasValue) = restNormalizePath(orgPath)
 
     dbConnection.get(path) match {
-      case Some(sensor: DBSensor) =>
+      case Some(infoitem: OdfInfoItem) =>
 
         if (wasValue == 1){
-          Some(Left(sensor.value))
+          Some( Left(
+            infoitem.values.headOption match{
+              case Some(value: OdfValue) => value.value
+              case None => "NO VALUE FOUND"
+            }
+          ) )
         }else if (wasValue == 2){
           val metaDataO = dbConnection.getMetaData(path)
           metaDataO match {
@@ -312,49 +317,16 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           }
 
         }else{
-          return Some(Right(
-            <InfoItem name={ sensor.path.last }>
-              <value dateTime={ sensor.time.toString.replace(' ', 'T') }>
-                { sensor.value }
-              </value>
-              {
-                val metaData = dbConnection.getMetaData(path)
-
-                if(metaData.nonEmpty)
-
-                  <MetaData/>
-              }
-            </InfoItem>))
+          return Some( Right(
+            scalaxb.toXML[xmlGen.InfoItemType]( OdfInfoItemAsInfoItemType( infoitem ), Some("odf"), Some("InfoItem"), scope ).headOption.getOrElse(
+              <error>Could not create from OdfInfoItem </error>
+            )
+          ) )
         }
-      case Some(sensormap: DBObject) =>
-        var resultChildren = Buffer[xml.Node]()
-
-        for (item <- sensormap.childs) {
-          dbConnection.get(item.path) match {
-            case Some(sensor: DBSensor) => {
-              resultChildren += <InfoItem name={ sensor.path.last }/>
-            }
-
-            case Some(subobject: DBObject) => {
-              resultChildren += <Object><id>{ subobject.path.last }</id></Object>
-            }
-
-            case None => return None
-          }
-        }
-
-        resultChildren = resultChildren.sortBy(_.mkString) //InfoItems are meant to come first
-
-        val mapId = sensormap.path.lastOption.getOrElse("")
-        val xmlReturn =
-
-        if (mapId == "Objects") {
-          <Objects>{ resultChildren }</Objects>
-        } else {
-          resultChildren.prepend(<id>{ mapId }</id>)
-          <Object>{ resultChildren }</Object>
-        }
-
+      case Some(odfObj: OdfObject) =>
+           val xmlReturn = scalaxb.toXML[xmlGen.ObjectType]( OdfObjectAsObjectType( odfObj ), Some("odf"), Some("Object"), scope ).headOption.getOrElse(
+          <error>Could not create from OdfInfoItem </error>
+        )
         Some(Right(xmlReturn))
 
 
