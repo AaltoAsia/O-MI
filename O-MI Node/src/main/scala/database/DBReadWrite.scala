@@ -88,7 +88,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOrw[Unit] = {
 
-      findParent(fullpath) flatMap { parentO =>
+      findParentI(fullpath) flatMap { parentO =>
         val parent = parentO getOrElse {
           throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
         }

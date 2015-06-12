@@ -128,6 +128,7 @@ trait OmiNodeTables extends DBBase {
       OdfInfoItem(path, values, descriptionOdfOption, None)
   }
 
+  implicit val DBNodeOrdering = Ordering.by[DBNode, Int](_.leftBoundary)
 
   /**
    * (Boilerplate) Table to store object hierarchy.
