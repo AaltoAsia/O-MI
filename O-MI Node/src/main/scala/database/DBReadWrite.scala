@@ -156,7 +156,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           }
         }
       }
-
     }
   }
     runSync(updateAction)
@@ -362,20 +361,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //    val historyLen = database.historyLength
     pathQuery.filter(_.timestamp < timestamp).delete
   }
+
   
-  /*{
-      var pathQuery = latestValues.filter(_.path === path)
 
-      pathQuery.sortBy(_.timestamp).result flatMap { qry =>
-        var count = qry.length
-
-        if (count > historyLength) {
-          val oldtime = qry.drop(count - historyLength).head._3
-          pathQuery.filter(_.timestamp < oldtime).delete
-        } else
-          DBIO.successful(())
-      }
-    }*/
 
 
   /**

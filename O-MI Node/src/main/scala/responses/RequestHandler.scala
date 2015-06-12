@@ -10,9 +10,9 @@ import database._
 import agentSystem.InputPusher
 import CallbackHandlers.sendCallback
 
-import scala.util.{Try, Success, Failure}
+import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Await, ExecutionContext, TimeoutException}
+import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingAdapter
@@ -26,14 +26,15 @@ import java.util.Date
 import xml._
 import scala.collection.mutable.Buffer
 
-class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
+class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
   private def date = new Date()
 
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    if (request.callback.nonEmpty){
+    if (request.callback.nonEmpty) {
       // TODO: Can't cancel this callback
+
       Future{ runGeneration(request) } map { case (xml : NodeSeq, code: Int) =>
       sendCallback(request.callback.get.toString, xml)
     }
@@ -44,7 +45,6 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
         ),
         200
       )
-
     } else {
       runGeneration(request)
     }
@@ -52,17 +52,19 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
 
   def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
     val timeout = if (request.ttl > 0) request.ttl.seconds else Duration.Inf
+
     val responseFuture = Future{xmlFromRequest(request)}
+
     Try {
       Await.result(responseFuture, timeout)
     } match {
-      case Success((xml: NodeSeq, code : Int)) => (xml, code)
+      case Success((xml: NodeSeq, code: Int)) => (xml, code)
 
-      case Failure(e: TimeoutException) => 
-      (
-        xmlFromResults(
-          1.0,
-          Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))
+      case Failure(e: TimeoutException) =>
+        (
+          xmlFromResults(
+            1.0,
+            Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))
         ),
         500
       )
@@ -203,8 +205,8 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     )
   }
 
-  def handleCancel( cancel: CancelRequest ) : (NodeSeq, Int) = {
-    implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
+  def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
+    implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
     val jobs = cancel.requestId.map { id =>
       Try {
@@ -264,33 +266,30 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
     Result.notImplemented 
   )
   def parseError(err: ParseError*) =
-  xmlFromResults(
-    1.0,
-    Result.simpleResult("400", Some( err.map{e => e.msg}.mkString("\n")))
-  )
+    xmlFromResults(
+      1.0,
+      Result.simpleResult("400", Some(err.map { e => e.msg }.mkString("\n"))))
   def internalError(e: Throwable) =
-  xmlFromResults(
-    1.0,
-    Result.simpleResult("501", Some( "Internal server error: " + e.getMessage()))
-  )
+    xmlFromResults(
+      1.0,
+      Result.simpleResult("501", Some("Internal server error: " + e.getMessage())))
   def timeOutError = xmlFromResults(
     1.0,
-    Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))
-  )
-/**
-  * Generates ODF containing only children of the specified path's (with path as root)
-  * or if path ends with "value" it returns only that value.
-  *
-  * @param orgPath The path as String, elements split by a slash "/"
-  * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
-  */
+    Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?")))
+  /**
+   * Generates ODF containing only children of the specified path's (with path as root)
+   * or if path ends with "value" it returns only that value.
+   *
+   * @param orgPath The path as String, elements split by a slash "/"
+   * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
+   */
   def generateODFREST(orgPath: Path)(implicit dbConnection: DB): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
     def restNormalizePath(path: Path): (Path, Int) = path.lastOption match {
-      case Some("value") => (path.init, 1) 
-      case Some("MetaData") => (path.init, 2) 
-      case _             => (path, 0)
+      case Some("value") => (path.init, 1)
+      case Some("MetaData") => (path.init, 2)
+      case _ => (path, 0)
     }
 
     // safeguard
@@ -298,9 +297,9 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
 
     val (path, wasValue) = restNormalizePath(orgPath)
 
-
     dbConnection.get(path) match {
       case Some(sensor: DBSensor) =>
+
         if (wasValue == 1){
           Some(Left(sensor.value))
         }else if (wasValue == 2){
@@ -320,7 +319,9 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
               </value>
               {
                 val metaData = dbConnection.getMetaData(path)
+
                 if(metaData.nonEmpty)
+
                   <MetaData/>
               }
             </InfoItem>))
@@ -346,6 +347,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
 
         val mapId = sensormap.path.lastOption.getOrElse("")
         val xmlReturn =
+
         if (mapId == "Objects") {
           <Objects>{ resultChildren }</Objects>
         } else {
@@ -354,6 +356,7 @@ class RequestHandler(val  subscriptionHandler: ActorRef)(implicit val dbConnecti
         }
 
         Some(Right(xmlReturn))
+
 
       case None => None
     }

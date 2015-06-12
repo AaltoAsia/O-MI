@@ -45,7 +45,8 @@ libraryDependencies ++= Seq(
 "com.h2database" % "h2" % "1.4.187"
 )
 
-cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 
+//remove database files
+cleanFiles <++= baseDirectory {_ * "*.db" get}
 
 oneJarSettings
 
