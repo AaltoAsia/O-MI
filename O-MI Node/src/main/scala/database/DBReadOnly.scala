@@ -112,30 +112,35 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
    */
   def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] ={
     val sub  = getSub( subId )
-    val subitemsQ = subItems.filter( _.hierarchyId === subId )
+    val subitems = runSync( 
+      subItems.filter( _.subId === subId ).result 
+    ).groupBy( _.hierarchyId ).map{ case (hId, valueSeq) => (hId, valueSeq.take(1))} 
+    var updateActions : DBIO[Unit] = DBIO.successful[Unit](():Unit)
 
-    def handleEventPoll(node: DBNode, dbsub: DBSub, sortedValues: Seq[DBValue]) = {
+    def handleEventPoll(node: DBNode, dbsub: DBSub, sortedValues: Seq[DBValue]): Seq[DBValue] = {
       //GET all vals
       val dbvals = getBetween(
           sortedValues, dbsub.startTime, newTime
-        ).dropWhile{ value =>
-        //XXX:
-        runSync(//drop unchanged values
-          //Should reduce all sub sequences of same values to one value
-          subitemsQ.filter( _.hierarchyId === node.id ).result.map{
-            _.headOption match{
-              case Some( subitem ) => value.value == subitem.lastValue
-              case None => false
-            }
+        ).dropWhile{ value =>//drops values from start that are same than before
+          subitems(value.hierarchyId).headOption match {
+            case Some( headVal) => 
+              value.value == headVal.lastValue
+            case None => false
           }
-          )
-        }
-      ??? //UPDATE LASTVALUES
-      ??? //UPDATE SUB STARTTIME
+        }.foldLeft(Seq.empty[DBValue])(//Reduce are subsequences with same value  to one element
+          (a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b
+        ).sortBy( _.timestamp.getTime )
+
+      updateActions = DBIO.seq(
+        updateActions,
+        subItems.update(//Update SubItems lastValues
+          DBSubscriptionItem( dbsub.id, node.id.get, dbvals.lastOption.map{ dbval => dbval.value } ) 
+        )
+      )
       dbvals
     }
     
-    withSubData(subId){
+    val odfOption = withSubData(subId){
       case (node, seqVals) =>
         val newVals =
           //Get right data for each infoitem
@@ -143,17 +148,32 @@ trait DBReadOnly extends DBBase with OmiNodeTables {
             case Some(dbsub : DBSub) =>
               val sortedValues = seqVals.sortBy( _.timestamp.getTime )
 
-              if( dbsub.isEventBased ){
+              val dbvals =if( dbsub.isEventBased ){
                 handleEventPoll(node, dbsub, sortedValues)
 
               } else { //Normal poll
                 //Get values for each interval
                 getByIntervalBetween(sortedValues, dbsub.startTime, newTime, dbsub.interval.toLong )
               }
+              updateActions = DBIO.seq(
+                updateActions,
+                subs.update(//Sub update
+                  DBSub(
+                    dbsub.id,
+                    dbsub.interval,
+                    newTime,
+                    dbsub.ttl - newTime.getTime,//Should be cheched for > 0 and remove?
+                    dbsub.callback
+                  )
+                )
+              )
+              dbvals
             case None => Seq.empty
           }
         ( node, newVals )
     }
+    runSync(updateActions)
+    odfOption
   }
 
   def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
