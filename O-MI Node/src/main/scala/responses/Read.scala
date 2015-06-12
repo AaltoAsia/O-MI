@@ -314,7 +314,7 @@ class ReadResponseGen(implicit val dbConnection: DB) extends ResponseGen[ReadReq
       if( metaData.isEmpty )
         intervaldata
       else
-        intervaldata ++ XML.loadString(metaData.get)
+        intervaldata //++ XML.loadString(metaData.get)
 
 
       }
