@@ -17,7 +17,8 @@ object OdfTypes{
   case class OdfObjects(
     objects:              JavaIterable[OdfObject] = Iterable(),
     version:              Option[String] = None
-  ) extends OdfElement {
+  ) extends OdfElement with HasPath {
+    val path = Path("Objects")
     def combine( another: OdfObjects ): OdfObjects ={
       val uniques : Seq[OdfObject]  = ( 
         objects.filterNot( 

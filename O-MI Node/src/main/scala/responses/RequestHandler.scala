@@ -151,14 +151,22 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
 
   def handleRead(read: ReadRequest) : (NodeSeq, Int) = {
-      val objects: OdfObjects = dbConnection.getNBetween(getLeafs(read.odf), read.begin, read.end, read.newest, read.oldest )
-      (
-        xmlFromResults(
-          1.0,
-          Result.readResult(objects)
-        ),
-        200
-      )
+      val objectsO : Option[OdfObjects] = dbConnection.getNBetween(getLeafs(read.odf), read.begin, read.end, read.newest, read.oldest )
+
+      objectsO match {
+        case Some(objects) =>
+          (
+            xmlFromResults(
+              1.0,
+              Result.readResult(objects)
+            ),
+            200
+          )
+        case None =>
+          ( xmlFromResults(
+          1.0, Result.notFound
+          ), 404)
+      }
   }
 
   def handlePoll( poll : PollRequest ) : (NodeSeq, Int ) ={
