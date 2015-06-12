@@ -86,10 +86,10 @@ case class NewDBSub(
     var id3 = db.saveSub(NewDBSub(2, newTs, 100, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3"), Path("/Objects/path/to/another/sensor2")))
 
     "return true when adding new data" in {
-      db.set(data1._1, data1._2, data1._3) shouldEqual true
-      db.set(data2._1, data2._2, data2._3) shouldEqual true
-      db.set(data3._1, data3._2, data3._3) shouldEqual true
-      db.set(data4._1, data4._2, data4._3) shouldEqual true
+      db.set(data1._1, data1._2, data1._3) must beAnInstanceOf[Int]
+      db.set(data2._1, data2._2, data2._3) must beAnInstanceOf[Int]
+      db.set(data3._1, data3._2, data3._3) must beAnInstanceOf[Int]
+      db.set(data4._1, data4._2, data4._3) must beAnInstanceOf[Int]
     }
 
     "return false when trying to add data with older timestamp" in {
@@ -441,7 +441,7 @@ case class NewDBSub(
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.0C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.0C")
 
-      val res = db.getSubData(id.id, Some(new Timestamp(timeNow)))
+      val res = db.getSubData(id.id)//), Some(new Timestamp(timeNow)))
       db.removeSub(id)
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
