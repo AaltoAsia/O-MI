@@ -223,7 +223,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               case true => Result.success
               case false =>{ 
                 returnCode = 404
-                Result.notFound
+                Result.simpleResult("404", Some("TTL ended or no such subcription found."))
               }
               case _ =>{
                 returnCode = 501
