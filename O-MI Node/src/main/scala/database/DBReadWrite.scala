@@ -386,7 +386,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   def removeSub(id: Int): Boolean ={
-    val hIds = subItems.filter( _.hierarchyId === id )
+    val hIds = subItems.filter( _.subId === id )
     val sub = subs.filter( _.id === id ) 
     //XXX: Is return value needed?
     if(runSync(sub.result).length == 0){
@@ -510,7 +510,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBIO.seq(
             nodeSe.map{
               node => 
-              hierarchyNodes.update( 
+              hierarchyNodes.filter(_.id === node.id).update( 
                 DBNode(
                   node.id,
                   node.path,
