@@ -55,8 +55,10 @@ trait OdfConversions extends OmiNodeTables {
       val odfValues      = values map (_.toOdf) toIterable
       val odfInfoItem    = infoItemNode.toOdfInfoItem(odfValues)
       odfInfoItem
-    case (objectNode, values) if !objectNode.isInfoItem =>
+    case (objectNode, values) if !objectNode.isInfoItem && objectNode.depth > 1 =>
       objectNode.toOdfObject
+    case (objectNode, values) if !objectNode.isInfoItem && objectNode.depth == 1 =>
+      objectNode.toOdfObjects
   }
 
   /**

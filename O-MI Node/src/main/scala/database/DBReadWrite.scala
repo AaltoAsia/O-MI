@@ -44,14 +44,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     if( existed.length > 0 ){
         //noop
         println(
-          "Found tables:\n" +
-          existed.map{_.name.name}.mkString("\n") +
-          "Not creating tables."
+          "Found tables: " +
+          existed.map{_.name.name}.mkString(", ") +
+          "\n Not creating new tables."
         )
     } else {
         // run transactionally so there are all or no tables
 
-        println("Creating  tables: " + allSchemas.toString)
+        println("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
         runSync(setup.transactionally)
     }
   }
@@ -387,7 +387,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   def removeSub(id: Int): Boolean ={
-    val hIds = subItems.filter( _.hierarchyId === id )
+    val hIds = subItems.filter( _.subId === id )
     val sub = subs.filter( _.id === id ) 
     //XXX: Is return value needed?
     if(runSync(sub.result).length == 0){
@@ -426,24 +426,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       true 
     }
   }
-  /*{
-    
-      var qry = subs.filter(_.ID === id)
-      var toBeDeleted = runSync(qry.result)
-      if (toBeDeleted.length > 0) {
-        if (toBeDeleted.head._6 == None) {
-          toBeDeleted.head._2.split(";").foreach { p =>
-            stopBuffering(Path(p))
-          }
-        }
-        db.run(qry.delete)
-        return true
-      } else {
-        return false
-      }
-    
-    false
-  }*/
   def removeSub(sub: DBSub): Boolean = removeSub(sub.id)
 
 
@@ -511,7 +493,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBIO.seq(
             nodeSe.map{
               node => 
-              hierarchyNodes.update( 
+              hierarchyNodes.filter(_.id === node.id).update( 
                 DBNode(
                   node.id,
                   node.path,

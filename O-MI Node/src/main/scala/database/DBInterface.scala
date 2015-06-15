@@ -74,7 +74,7 @@ class SQLiteConnection extends DB {
      // Try to remove the db file
      val confUrl = slick.util.GlobalConfig.driverConfig(dbConfigName).getString("url")
      // XXX: trusting string operations
-     val dbPath = confUrl.split(":").last
+     val dbPath = confUrl.split(":").lastOption.getOrElse("")
 
      val fileExt = dbPath.split(".").lastOption.getOrElse("")
      if (fileExt == "sqlite3" || fileExt == "db")

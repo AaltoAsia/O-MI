@@ -89,7 +89,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
   }
 
-  def actionOnInternalError: Throwable => Unit = { _ => /*noop*/ }
+  def actionOnInternalError: Throwable => Unit = { error =>
+    println("[ERROR] Internal Server error:")
+    error.printStackTrace()
+  }
 
   def xmlFromRequest(request: OmiRequest) : (NodeSeq, Int) = request match {
     case read : ReadRequest =>{

@@ -40,7 +40,7 @@ object OdfTypes{
       OdfObjects(
         sames.map{ case (path:Path, sobj: Seq[OdfObject]) =>
           assert(sobj.length == 2)
-          sobj.head.combine(sobj.last)
+          sobj.head.combine(sobj.last) // assert checks
         }.toSeq ++ uniques,
         (version, another.version) match{
           case (Some(a), Some(b)) => Some(a)
@@ -69,6 +69,9 @@ object OdfTypes{
     description:          Option[OdfDescription] = None,
     typeValue:            Option[String] = None
   ) extends OdfElement with HasPath {
+    require(path.length > 1,
+      s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path(${path})")
+
     def combine( another: OdfObject ) : OdfObject = {
       assert( path == another.path )
       val uniqueInfos = ( 
@@ -109,11 +112,11 @@ object OdfTypes{
         path, 
         sameInfos.map{ case (path:Path, sobj: Seq[OdfInfoItem]) =>
           assert(sobj.length == 2)
-          sobj.head.combine(sobj.last)
+          sobj.head.combine(sobj.last) // assert checks
         }.toSeq ++ uniqueInfos,
         sameObjs.map{ case (path:Path, sobj: Seq[OdfObject]) =>
           assert(sobj.length == 2)
-          sobj.head.combine(sobj.last)
+          sobj.head.combine(sobj.last) // assert checks
         }.toSeq ++ uniqueObjs,
         (description, another.description) match{
           case (Some(a), Some(b)) => Some(a)
@@ -132,9 +135,10 @@ object OdfTypes{
   }
 
   def OdfObjectAsObjectType(obj: OdfObject) : ObjectType = {
+    require(obj.path.length > 1, s"OdfObject should have longer than one segment path: ${obj.path}")
     ObjectType(
       Seq( QlmID(
-          obj.path.last,
+          obj.path.last, // require checks (also in OdfObject)
           attributes = Map.empty
       )),
       InfoItem = obj.infoItems.map{ 
@@ -177,8 +181,9 @@ object OdfTypes{
   }
 
   def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {
+    require(info.path.length > 1, s"OdfObject should have longer than one segment path: ${info.path}")
     InfoItemType(
-      name = info.path.last,
+      name = info.path.last, // require checks
       value = info.values.map{ 
         value : OdfValue =>
         ValueType(
@@ -234,26 +239,39 @@ object OdfTypes{
             getLeafs(subobj)
         } 
     }
-    objects.objects.flatMap{
-      obj => getLeafs(obj)
-    }
+    if (objects.objects.nonEmpty)
+      objects.objects.flatMap{
+        obj => getLeafs(obj)
+      }
+    else Iterable(objects)
   }
-  trait HasPath {
+  sealed trait HasPath {
     def path: Path
   }
   
+  /**
+   * Generates odf tree containing the ancestors of given object.
+   */
+  @annotation.tailrec
   def fromPath( last: HasPath) : OdfObjects = {
-    var parentPath = last.path.dropRight(1)
-    var obj = last match {
+
+    val parentPath = last.path.dropRight(1)
+
+    last match {
       case info: OdfInfoItem =>
-        OdfObject( parentPath, Iterable(info), Iterable() )  
+        val parent = OdfObject( parentPath, Iterable(info), Iterable() )  
+        fromPath(parent)
+
       case obj: OdfObject =>
-        OdfObject( parentPath, Iterable(), Iterable(obj) )  
+        if (parentPath.length == 1)
+          OdfObjects( Iterable(obj) )
+        else {
+          val parent = OdfObject( parentPath, Iterable(), Iterable(obj) )  
+          fromPath(parent)
+        }
+
+      case objs: OdfObjects =>
+        objs
     }
-    while( parentPath.length > 1){
-      parentPath = parentPath.dropRight(1)
-      obj = OdfObject( parentPath, Iterable(), Iterable(obj) )
-    }
-    OdfObjects( Iterable(obj) )
   }
 }

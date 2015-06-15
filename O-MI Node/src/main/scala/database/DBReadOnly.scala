@@ -252,13 +252,14 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     oldest: Option[Int]
   ): Query[DBValuesTable,DBValue,Seq] = {
     val timeFrame = values filter betweenLogicR(begin, end)
-    val query =
-      if( newest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.desc ) take (newest.get)
-      } else if ( oldest.nonEmpty ) {
+
+    // NOTE: duplicate code: takeLogic
+    val query = 
+      if ( oldest.nonEmpty ) {
         timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) sortBy (_.timestamp.desc)
       } else {
-        timeFrame sortBy ( _.timestamp.desc )
+        // newest defaults to 1 so we will get only latest value without any parameters
+        timeFrame sortBy ( _.timestamp.desc ) take (newest.getOrElse(1))
       }
     query
   }
@@ -306,6 +307,18 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         { value => true }
     }
 
+    // NOTE: duplicate code: nBetweenLogicQ
+    protected def takeLogic(
+      newest: Option[Int],
+      oldest: Option[Int]
+    ): Seq[DBValue] => Seq[DBValue] = {
+      if ( oldest.nonEmpty ) {
+        _ sortBy ( _.timestamp.getTime ) take (oldest.get) reverse
+      } else {
+        // newest defaults to 1 so we will get only latest value without any parameters
+        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.getOrElse(1))
+      }
+    }
 
 
   /**
@@ -341,41 +354,47 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     require( requestsSeq.size >= 1,
       "getNBetween should be called with at least one request thing")
 
+    def processObjectI(path: Path): DBIO[Option[OdfObjects]] = {
+        getHierarchyNodeI(path) flatMap {
+          case Some(rootNode) => for {
+            subTreeData <- getSubTreeQ(rootNode).result
+
+            // NOTE: We can only apply "between" logic here because of the subtree query
+            // basicly we fetch too much data if "newest" or "oldest" is set
+           
+            timeframedTreeData =
+              subTreeData filter {
+                case (node, Some(value)) => betweenLogic(begin, end)(value)
+                case (node, None) => true
+              }
+
+            dbInfoItems: DBInfoItems =
+              toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest)
+
+            results = odfConversion(dbInfoItems)
+
+            } yield results
+
+          case None =>  // Requested object was not found, TODO: think about error handling
+            DBIO.successful(None)
+        }
+
+    }
     
     val allResults = requestsSeq.par map {
 
+      case obj @ OdfObjects(objects,_) =>
+        require(objects.isEmpty,
+          s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
+
+        runSync( processObjectI(obj.path) )
+
+
       case obj @ OdfObject(path,items,objects,_,_) =>
         require(items.isEmpty && objects.isEmpty,
-          "getNBetween requires leaf OdfElements from the request")
+          s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-        val actions = getHierarchyNodeI(path) flatMap {rootNodeO =>
-          rootNodeO match {
-            case Some(rootNode) => //for {
-              val subTreeDataI = getSubTreeQ(rootNode).result
-
-              // NOTE: We can only apply "between" logic here because of the subtree query
-              // basicly we fetch too much data if "newest" or "oldest" is set
-             
-              val timeframedTreeDataI =
-                subTreeDataI map { _ filter {
-                  case (node, Some(value)) => betweenLogic(begin, end)(value)
-                  case (node, None) => true
-                }}
-
-              val dbInfoItemsI: DBIO[DBInfoItems] = timeframedTreeDataI map {toDBInfoItems(_)}
-
-              // Odf conversion
-              val results: DBIO[Option[OdfObjects]] = dbInfoItemsI map {items => odfConversion(items)}
-
-              results
-
-
-            case None =>  // Requested object was not found, TODO: think about error handling
-              DBIO.successful(None)
-          }
-        }
-
-        runSync( actions )
+        runSync( processObjectI(path) )
 
       case OdfInfoItem(path, rvalues, _, metadataQuery) =>
 
@@ -411,8 +430,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         runSync(odfInfoItemI)
 
 
-      case odf: OdfElement =>
-        throw new RuntimeException(s"Non-supported query parameter: $odf")
+      //case odf: OdfElement =>
+      //  throw new RuntimeException(s"Non-supported query parameter: $odf")
         //case OdfObjects(_, _) =>
         //case OdfDesctription(_, _) =>
         //case OdfValue(_, _, _) =>

@@ -255,9 +255,10 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
 
         log.debug(s"generateOmi for id:$id")
-        requestHandler.handleRequest(SubDataRequest(sub))
+        val xmlMsg = requestHandler.handleSubData(SubDataRequest(sub))._1//Returns tuple, second is return status
         val interval = sub.interval
         val callbackAddr = sub.callback.get
+        sendCallback(callbackAddr, xmlMsg)
         log.info(s"Sending in progress; Subscription id:$id addr:$callbackAddr interval:$interval")
 
 //XXX: WHAT WAS THIS FOR?
