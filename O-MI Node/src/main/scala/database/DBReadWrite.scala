@@ -168,6 +168,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val run = runSync(updateAction.transactionally)
     //Call hooks
     database.getSetHooks foreach { _(Seq(path))}
+    println(s"RUN with $path:  $run")
     run
   }
 

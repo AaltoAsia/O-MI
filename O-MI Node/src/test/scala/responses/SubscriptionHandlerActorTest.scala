@@ -15,15 +15,24 @@
 //import scala.collection.JavaConversions.asJavaIterable
 //import scala.collection.JavaConversions.seqAsJavaList
 //import scala.collection.JavaConversions.iterableAsScalaIterable
+//import java.sql.Timestamp
+//
 //
 //class SubscriptionHandlerActorTest extends Specification with BeforeAll{
 //  sequential
+//  def newTimestamp(time: Long = -1L): Timestamp = {
+//    if(time == -1){
+//      new Timestamp(new java.util.Date().getTime)
+//    } else {
+//      new java.sql.Timestamp(time)
+//    }
+//  }
 //  
 //  implicit val dbConnection = new SQLiteConnection // TestDB("subscriptionHandler-test")
 //
 //  def beforeAll={
 //    dbConnection.clearDB()
-//    dbConnection.set(Path("SubscriptionHandlerTest/testData"), new java.sql.Timestamp(1000),  "test")
+//    dbConnection.set(Path("Objects/SubscriptionHandlerTest/testData"), new java.sql.Timestamp(1000),  "test")
 //  }
 //
 //  "SubscriptionHandlerActor" should {
@@ -58,17 +67,17 @@
 //
 //    val testId1 = Promise[Int]
 //    val testId2 = Promise[Int]
-//    val testId3 = dbConnection.saveSub(new DBSub(Array(testPath), 2, -1, Some("test"), None))
+//    val testId3 = dbConnection.saveSub(NewDBSub(-1,newTimestamp(), 2, None), Array(testPath))
 //    "remove eventsub from memory if ttl has expired" in new Actors {
 //
 //      val subscriptionHandler = TestActorRef[SubscriptionHandler]
 //      val subscriptionActor = subscriptionHandler.underlyingActor
 //      val probe = TestProbe()
-//      subscriptionActor.getEventSubs.exists(_._2.id == testId3) == true
+//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3) === true//_._2.id == testId3) == true
 //      Thread.sleep(2000)
-//      subscriptionActor.getEventSubs.exists(_._2.id == testId3) == true
+//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3) === true
 //      subscriptionActor.checkEventSubs(Array(testPath))
-//      subscriptionActor.getEventSubs.exists(_._2.id == testId3) == false
+//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3) === false
 //      dbConnection.removeSub(testId3)
 //
 //    }
@@ -76,18 +85,20 @@
 //
 //      val subscriptionHandler = TestActorRef[SubscriptionHandler]
 //      val subscriptionActor = subscriptionHandler.underlyingActor
-//      val probe = TestProbe()
+//      val probe = TestProbe(){
+//        def returnId
+//      }
 //      val duration = scala.concurrent.duration.Duration(1000, "ms")
 //      //      testId.future
 //
-//      subscriptionHandler.tell(NewSubscription(testSub1), probe.ref)
-//      //      subscriptionActor.eventSubs.isEmpty === true
-//
-//      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 0
+//      testId1.success(subscriptionHandler.tell(NewSubscription(testSub1), probe .ref))
+////      subscriptionActor.eventSubs.isEmpty === true
+//      val futureId: Int = Await.result(testId1.future, duration)
+//      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === futureId
 //      //subscriptionActor.getIntervalSubs.exists(_.id == 0) === true
-//      subscriptionHandler.tell(RemoveSubscription(0), probe.ref)
+//      subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
 //      probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
-//      subscriptionActor.getIntervalSubs.exists(_.id == 0) === false
+//      subscriptionActor.getIntervalSubs.exists(_.id == futureId) === false
 //    }
 //
 //    "load given event subs into memory when sent load message" in new Actors {
@@ -95,11 +106,16 @@
 //      val subscriptionActor = subscriptionHandler.underlyingActor
 //      val probe = TestProbe()
 //      val duration = scala.concurrent.duration.Duration(1000, "ms")
-//      subscriptionActor.getEventSubs.exists(_._2.id == 0) === false
+//      
+//      val firstQuery = subscriptionActor.getEventSubs(testPath.toString())//.exists(_.id == 0) === false
 //
-//      subscriptionHandler.tell(NewSubscription(testSub1), probe.ref)
-//
-//      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 0
+//      testId2.success(subscriptionHandler.tell(NewSubscription(testSub1), probe.ref))      
+//      val futureId = Await.result(testId2.future,duration)
+//      
+//      firstQuery.exists(_.id == futureId) === false
+//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == 0) === true
+//      
+////      probe.expectMsgType[Int](Duration.apply(2400, "ms")) === 0
 //
 //    }
 //
@@ -123,11 +139,14 @@
 //      val subscriptionHandler = TestActorRef[SubscriptionHandler]
 //      val subscriptionActor = subscriptionHandler.underlyingActor
 //      val probe = TestProbe()
+//      val duration = scala.concurrent.duration.Duration(1000, "ms")
+//      
+//      val futureId: Int = Await.result(testId2.future, duration)
 //
-//      //subscriptionActor.getEventSubs.exists(_._2.id == 0) === true
-//      subscriptionHandler.tell(RemoveSubscription(0), probe.ref)
+//      subscriptionActor.getEventSubs.exists(_._2.id == futureId) === true
+//      subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
 //      probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
-//      subscriptionActor.getEventSubs.exists(_._2.id == 0) === false
+//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == futureId) === false
 //    }
 //  }
 //}

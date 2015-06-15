@@ -27,58 +27,30 @@ object SQLiteTest extends Specification with AfterAll {
     Iterable(OdfInfoItem(x, Iterable()))
 
   }
-  def OdfObjectsToValues(x: OdfObjects): Seq[String] = {
+  def OdfObjectsToValues(x: OdfObjects): Option[Seq[String]] = {
     val temp1: Seq[OdfObject] = x.objects
-    val temp2: Seq[OdfInfoItem] = temp1.head.infoItems
-    val temp3: Seq[OdfValue] = temp2.head.values
-    temp3.map(x => x.value)
+    val temp2: Option[Seq[OdfInfoItem]] = temp1.headOption.map(_.infoItems)
+    val temp3: Option[Seq[OdfValue]] = temp2.flatMap(_.headOption.map(_.values))
+    temp3.map(x => x.map(_.value))
   }
-  def OdfObjectsToPaths(x: OdfObjects): Seq[Path] ={
+  def OdfObjectsToPaths(x: OdfObjects): Seq[Path] = {
     val temp1: Seq[OdfObject] = x.objects
-    temp1.map(n=> n.path)
+    temp1.map(n => n.path)
   }
   val testSub1 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
   val testSub2 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
     sequential
-    println("asdasdasdasda1")
+    //    println("asdasdasdasda1")
     //    implicit val db = new SQLiteConnection//new TestDB("dbtest")
-    println("asdasdasdasda2")
+    //    println("asdasdasdasda2")
     var data1 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(1000), "21.5C")
     var data2 = (Path("/Objects/path/to/sensor1/hum"), new java.sql.Timestamp(2000), "40%")
-    var data3 = (Path("/Ojubjects/path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")
+    var data3 = (Path("/Objects/path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")
     var data4 = (Path("/Objects/path/to/sensor2/hum"), new java.sql.Timestamp(4000), "60%")
     var data5 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(5000), "21.6C")
     var data6 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(6000), "21.7C")
-    //    println("asdasdasdasda")
-    //    "set test" in {
-    //      println("asdasdasdasda3")
-    //    db.set(data1._1,data1._2,data1._3) shouldEqual true
-    //    println("asdasdasdasda4")
-    //    db.set(data2._1,data2._2,data2._3) shouldEqual true
-    //    println("asdasdasdasda5")
-    //    db.set(data3._1,data3._2,data3._3) shouldEqual true
-    //    db.set(data4._1,data4._2,data4._3) shouldEqual true
-    //    db.set(data5._1,data5._2,data5._3) shouldEqual false
-    //    db.set(data6._1,data6._2,data6._3) shouldEqual false
-    //    db.get(Path("/Objects/path/to/sensor1/hum")) must beSome.like({ case OdfInfoItem(_, value, _,_) => value === "40%" })
-
-    /*
- * case class DBSub(
-  val id: Int,
-  val interval: Double,
-  val startTime: Timestamp,
-  val ttl: Double,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal
-
-case class NewDBSub(
-  val interval: Double,
-  val startTime: Timestamp,
-  val ttl: Double,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal*/
 
     //uncomment other tests too from parsing/responses when fixing this
     var id1 = db.saveSub(NewDBSub(1, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
@@ -86,10 +58,12 @@ case class NewDBSub(
     var id3 = db.saveSub(NewDBSub(2, newTs, 100, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3"), Path("/Objects/path/to/another/sensor2")))
 
     "return true when adding new data" in {
-      db.set(data1._1, data1._2, data1._3) must beAnInstanceOf[Int]
-      db.set(data2._1, data2._2, data2._3) must beAnInstanceOf[Int]
-      db.set(data3._1, data3._2, data3._3) must beAnInstanceOf[Int]
-      db.set(data4._1, data4._2, data4._3) must beAnInstanceOf[Int]
+      db.set(data1._1, data1._2, data1._3) 
+      db.set(data2._1, data2._2, data2._3) === 0
+      db.set(data3._1, data3._2, data3._3) === 0 
+      db.set(data4._1, data4._2, data4._3) === 0 
+//      db.set(data5._1, data5._2, data5._3) ===0 // shouldEqual false
+//      db.set(data6._1, data6._2, data6._3) ===0
     }
 
     "return false when trying to add data with older timestamp" in {
@@ -106,71 +80,40 @@ case class NewDBSub(
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
-      db.set(data6._1, data6._2, data6._3)
-      db.set(data5._1, data5._2, data5._3) shouldEqual false
+      db.set(data6._1, data6._2, data6._3) === 0 
+      db.set(data5._1, data5._2, data5._3) === 0 
     }
 
     "return correct value for given valid path" in {
-      /*
- * case class OdfInfoItem(
-    path:                 Types.Path,
-    values:               JavaIterable[OdfValue],
-    description:          Option[OdfDescription] = None,
-    metaData:             Option[OdfMetaData] = None
-  ) extends OdfElement with HasPath {
- */
-      db.get(Path("/Objects/path/to/sensor1/hum")) must beSome.like({ case OdfInfoItem(_, value, _, _) => iterableAsScalaIterable(value).headOption.map(_.value) must beSome(===("40%")) })
+      db.get(Path("/Objects/path/to/sensor1/hum")) must beSome.like { case OdfInfoItem(_, value, _, _) => iterableAsScalaIterable(value).headOption.map(_.value) must beSome(===("40%")) }
     }
 
     "return correct value for given valid updated path" in {
-      db.get(Path("/Objects/path/to/sensor3/temp")) must beSome.like({ case OdfInfoItem(_, value, _, _) => iterableAsScalaIterable(value).headOption.map(_.value) must beSome(===("21.6C")) })
+      db.get(Path("/Objects/path/to/sensor3/temp")) must beSome.like { case OdfInfoItem(_, value, _, _) => iterableAsScalaIterable(value).headOption.map(_.value) must beSome(===("21.6C")) }
     }
 
     "return correct childs for given valid path" in {
-      db.get(Path("/Objects/path/to/sensor1")) must beSome.like({
-        case ob: DBObject => {
-          ob.childs must have size (2)
-
-          val paths: Seq[Path] = ob.childs.map(n => n.path)
+      db.get(Path("/Objects/path/to/sensor1")) must beSome.like {
+        case ob: OdfObject => {
+          val infoitems: Seq[OdfInfoItem] = ob.infoItems
+          infoitems must have size (2)
+          val paths = infoitems.map(n => n.path)
           paths must contain(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor1/hum"))
         }
-      })
+      }
     }
 
     "return None for given invalid path" in {
       db.get(Path("/Objects/path/to/nosuchsensor")) shouldEqual None
     }
-    /*
- *  def getNBetween(
-    requests: Iterable[HasPath],
-    begin: Option[Timestamp],
-    end: Option[Timestamp],
-    newest: Option[Int],
-    oldest: Option[Int]
-  ): OdfObjects = {
-  
-  */ /*
-  case class OdfInfoItem(
-    path:                 Types.Path,
-    values:               JavaIterable[OdfValue],
-    description:          Option[OdfDescription] = None,
-    metaData:             Option[OdfMetaData] = None
-  ) extends OdfElement with HasPath {
- */
-    implicit def javaIterableToSeq[T](x: java.lang.Iterable[T]): Seq[T] = {
-      iterableAsScalaIterable(x).toSeq
-    }
-    implicit def seqAsjavaIterable[T](x: Seq[T]): java.lang.Iterable[T] = {
-      asJavaIterable(x.toIterable)
-    }
 
     "return correct values for given valid path and timestamps" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor1/temp")), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None) //.getNBetween(Iterable(OdfInfoItem(Path("/Objects/path/to/sensor1/temp")), ), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None)
-      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x)}
+      val values1: Option[Seq[String]] = sensors1.flatMap { x => OdfObjectsToValues(x) }
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor1/temp")), Some(new Timestamp(1500)), Some(new Timestamp(6001)), None, None)
-      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x)}
+      val values2: Option[Seq[String]] = sensors2.flatMap { x => OdfObjectsToValues(x) }
 
-      values1 must beSome.which(_ must have size(2))// must have size (2)
+      values1 must beSome.which(_ must have size (2)) // must have size (2)
       values1 must beSome.which(_ must contain("21.5C", "21.6C"))
 
       values2 must beSome.which(_ must have size (2))
@@ -179,22 +122,22 @@ case class NewDBSub(
 
     "return correct values for N latest values" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(12))
-      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x)}
+      val values1: Option[Seq[String]] = sensors1.flatMap { x => OdfObjectsToValues(x) }
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(3))
-      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x)}
+      val values2: Option[Seq[String]] = sensors2.flatMap { x => OdfObjectsToValues(x) }
 
       values1 must beSome.which(_ must have size (10))
       values1 must beSome.which(_ must contain("21.1C", "21.6C"))
-      
+
       values2 must beSome.which(_ must have size (3))
       values2 must beSome.which(_ must contain("21.5C", "21.6C"))
     }
 
     "return correct values for N oldest values" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(12), None)
-      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x)}
+      val values1: Option[Seq[String]] = sensors1.flatMap { x => OdfObjectsToValues(x) }
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(2), None)
-      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x)}
+      val values2: Option[Seq[String]] = sensors2.flatMap { x => OdfObjectsToValues(x) }
 
       values1 must beSome.which(_ must have size (10))
       values1 must beSome.which(_ must contain("21.1C", "21.6C"))
@@ -214,9 +157,8 @@ case class NewDBSub(
   val ttl: Double,
   val callback: Option[String]
 ) extends SubLike with DBSubInternal*/
-    
+
     "be able to buffer data on demand" in {
-      
 
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
@@ -246,19 +188,19 @@ case class NewDBSub(
         None,
         None,
         None)
-      val temp2 = temp1.map(OdfObjectsToValues(_))
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
 
     }
 
-    "return values between two timestamps" in {   
+    "return values between two timestamps" in {
       val temp1 = db.getNBetween(
         pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         Some(new Timestamp(6000)),
         Some(new Timestamp(10000)),
         None,
         None)
-      val temp2 = temp1.map(OdfObjectsToValues(_))
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (5))
 
       val temp3 = db.getNBetween(
@@ -267,7 +209,7 @@ case class NewDBSub(
         Some(new Timestamp(10000)),
         Some(10),
         None)
-      val temp4 =temp3.map(OdfObjectsToValues(_))
+      val temp4 = temp3.flatMap(OdfObjectsToValues(_))
       temp4 must beSome.which(_ must have size (5))
     }
 
@@ -277,8 +219,8 @@ case class NewDBSub(
         Some(new Timestamp(20000)),
         None,
         None,
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (7))
     }
 
@@ -288,8 +230,8 @@ case class NewDBSub(
         None,
         Some(new Timestamp(10000)),
         None,
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (5))
     }
 
@@ -300,7 +242,7 @@ case class NewDBSub(
         Some(new Timestamp(26000)),
         None,
         Some(10))
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (10))
     }
 
@@ -310,8 +252,8 @@ case class NewDBSub(
         Some(new Timestamp(6000)),
         None,
         Some(10),
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (10))
     }
 
@@ -321,8 +263,8 @@ case class NewDBSub(
         None,
         None,
         None,
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
     }
 
@@ -332,8 +274,8 @@ case class NewDBSub(
         None,
         None,
         Some(10),
-        Some(5)) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        Some(5))
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
     }
 
@@ -343,8 +285,8 @@ case class NewDBSub(
         None,
         None,
         None,
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beNone
     }
 
@@ -356,8 +298,8 @@ case class NewDBSub(
         None,
         None,
         None,
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
     }
 
@@ -368,8 +310,8 @@ case class NewDBSub(
         None,
         None,
         None,
-        None) 
-        val temp2 = temp1.map(OdfObjectsToValues(_))
+        None)
+      val temp2 = temp1.flatMap(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (10))
     }
 
@@ -398,11 +340,11 @@ case class NewDBSub(
       db.getSub(id3.id).get.callback shouldEqual None
     }
 
-//    "return correct boolean whether subscription is expired" in {
-//      db.isExpired(id1) shouldEqual true
-//      db.isExpired(id2) shouldEqual true
-//      db.isExpired(id3) shouldEqual false
-//    }
+    //    "return correct boolean whether subscription is expired" in {
+    //      db.isExpired(id1) shouldEqual true
+    //      db.isExpired(id2) shouldEqual true
+    //      db.isExpired(id3) shouldEqual false
+    //    }
 
     "return correct paths as array" in {
       db.getSubData(id1.id) must beSome.which(OdfObjectsToPaths(_) must have size (2))
@@ -418,7 +360,7 @@ case class NewDBSub(
       db.getSub(id2.id) must beNone
       db.getSub(id3.id) must beNone
     }
-/*
+    /*
     case class NewDBSub(
   val interval: Double,
   val startTime: Timestamp,
@@ -427,7 +369,7 @@ case class NewDBSub(
 ) extends SubLike with DBSubInternal*/
     "return right values in getsubdata" in {
       val timeNow = new java.util.Date().getTime
-      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 0,None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
+      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 0, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
       db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 3000), "21.0C")
       db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 2000), "21.0C")
@@ -441,7 +383,7 @@ case class NewDBSub(
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.0C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.0C")
 
-      val res = db.getSubData(id.id)//), Some(new Timestamp(timeNow)))
+      val res = db.getSubData(id.id) //), Some(new Timestamp(timeNow)))
       db.removeSub(id)
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
@@ -479,7 +421,7 @@ case class NewDBSub(
       db.clearDB()
       val testSub3 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/setmany/test1")))
 
-//      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
+      //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
       val testdata: List[(Path, OdfValue)] = {
         List(
           (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1001)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1002)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1003)))),
@@ -493,11 +435,11 @@ case class NewDBSub(
       }
       val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
       db.setMany(pathValuePairs)
-      val temp1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test1")), None, None, None, None) 
-      val values1 = temp1.map(OdfObjectsToValues(_)) 
+      val temp1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test1")), None, None, None, None)
+      val values1 = temp1.flatMap(OdfObjectsToValues(_))
       values1 must beSome.which(_ must have size (12))
-      val temp2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test2")), None, None, None, None) 
-      val values2 =  temp1.map(OdfObjectsToValues(_))
+      val temp2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test2")), None, None, None, None)
+      val values2 = temp1.flatMap(OdfObjectsToValues(_))
       values2 must beSome.which(_ must have size (10))
       db.removeSub(testSub3.id)
       db.remove(Path("/Objects/path/to/setmany/test1"))
