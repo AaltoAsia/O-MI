@@ -202,7 +202,8 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
                   val addr = subscription.callback 
                   if (addr == None) return
 
-                  requestHandler.handleRequest(SubDataRequest(subscription))
+                  val xmlMsg = requestHandler.handleSubData(SubDataRequest(subscription))._1//Returns tuple, second is return status
+                  sendCallback(addr.get.toString, xmlMsg)
 
                 }
               }
