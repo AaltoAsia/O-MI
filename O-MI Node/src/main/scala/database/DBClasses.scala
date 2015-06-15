@@ -119,12 +119,13 @@ trait OmiNodeTables extends DBBase {
       if (description.nonEmpty) Some(OdfDescription(description))
       else None
 
-    def toOdfObject = OdfObject(path, Iterable(), Iterable(), descriptionOdfOption, None)
 
-    def toOdfObject(infoitems: Iterable[OdfInfoItem], objects: Iterable[OdfObject]) =
+    def toOdfObject: OdfObject = toOdfObject()
+    def toOdfObject(infoitems: Iterable[OdfInfoItem] = Iterable(), objects: Iterable[OdfObject] = Iterable()) =
       OdfObject(path, infoitems, objects, descriptionOdfOption, None)
 
-    def toOdfInfoItem(values: Iterable[OdfValue]) =
+    def toOdfInfoItem: OdfInfoItem = toOdfInfoItem()
+    def toOdfInfoItem(values: Iterable[OdfValue] = Iterable()) =
       OdfInfoItem(path, values, descriptionOdfOption, None)
   }
 

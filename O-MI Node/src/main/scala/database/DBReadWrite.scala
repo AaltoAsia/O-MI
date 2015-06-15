@@ -80,7 +80,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       //val leftUpdateQ  =  leftValsQ.map(_ + 2).update(leftValsQ)
 
       DBIO.seq(
-        sqlu"UPDATE HIERARCHYNODES SET RIGHTBOUNDARY = RIGHTBOUNDARY + 2 WHERE RIGHTBOUNDARY > ${value}",
+        sqlu"UPDATE HIERARCHYNODES SET RIGHTBOUNDARY = RIGHTBOUNDARY + 2 WHERE RIGHTBOUNDARY >= ${value}",
         sqlu"UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY + 2 WHERE LEFTBOUNDARY > ${value}"
       )
     }
@@ -93,14 +93,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
         }
 
-        val insertRight = parent.rightBoundary
-        val left        = insertRight + 1
+        val parentRight = parent.rightBoundary
+        val left        = parentRight
         val right       = left + 1
 
         DBIO.seq(
-          increaseAfterQ(insertRight),
+          increaseAfterQ(parentRight),
           hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)
-        )
+        ).transactionally
       }
     }
 

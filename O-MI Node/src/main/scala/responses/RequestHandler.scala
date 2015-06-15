@@ -333,10 +333,15 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         }
       case Some(odfObj: OdfObject) =>
            val xmlReturn = scalaxb.toXML[xmlGen.ObjectType]( OdfObjectAsObjectType( odfObj ), Some("odf"), Some("Object"), scope ).headOption.getOrElse(
-          <error>Could not create from OdfInfoItem </error>
+          <error>Could not create from OdfObject </error>
         )
         Some(Right(xmlReturn))
 
+      case Some(odfObj: OdfObjects) =>
+           val xmlReturn = scalaxb.toXML[xmlGen.ObjectsType]( OdfObjectsAsObjectsType( odfObj ), Some("odf"), Some("Objects"), scope ).headOption.getOrElse(
+          <error>Could not create from OdfObjects </error>
+        )
+        Some(Right(xmlReturn))
 
       case None => None
     }

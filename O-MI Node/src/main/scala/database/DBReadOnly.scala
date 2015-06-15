@@ -22,13 +22,14 @@ import java.lang.RuntimeException
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
 
 
-  protected def findParentI(childPath: Path): DBIOro[Option[DBNode]] = (
+  protected def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
+
+  protected def findParentQ(childPath: Path) = (
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
       hierarchyNodes filter (_.path === Path(childPath.init))
-    ).result.headOption
-
+  )
 
   /**
    * Used to get metadata from database for given path
@@ -198,19 +199,18 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return either Some(OdfInfoItem),Some(OdfObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[ HasPath ] = {
+  def get(path: Path): Option[ HasPath ] = runSync(getQ(path))
 
-    val subTreeDataI = getSubTreeI(path, depth=Some(1))
+  //def getQ(single: OdfElement): OdfElement = ???
+  def getQ(path: Path): DBIOro[Option[HasPath]] = for {
 
-    val dbInfoItemI  = subTreeDataI map toDBInfoItem
+    subTreeData <- getSubTreeI(path, depth=Some(1))
 
-    val resultI = dbInfoItemI map (_ map hasPathConversion)
+    dbInfoItems  = toDBInfoItems(subTreeData)
 
-    runSync(resultI)
-  }
+    result = singleObjectConversion(dbInfoItems)
 
-  def getQ(single: OdfElement): OdfElement = ???
-
+  } yield result
 
 
   /**
