@@ -157,7 +157,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
             if(buffering)
               removeExcessI(id)
             else
-              DBIO.successful(0)
+              DBIO.successful(1)
             
           }
           }
