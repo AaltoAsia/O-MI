@@ -44,14 +44,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     if( existed.length > 0 ){
         //noop
         println(
-          "Found tables:\n" +
-          existed.map{_.name.name}.mkString("\n") +
-          "Not creating tables."
+          "Found tables: " +
+          existed.map{_.name.name}.mkString(", ") +
+          "\n Not creating new tables."
         )
     } else {
         // run transactionally so there are all or no tables
 
-        println("Creating  tables: " + allSchemas.toString)
+        println("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
         runSync(setup.transactionally)
     }
   }
