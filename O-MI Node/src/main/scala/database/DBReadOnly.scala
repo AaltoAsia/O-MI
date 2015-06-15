@@ -257,9 +257,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     val query = 
       if ( oldest.nonEmpty ) {
         timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) sortBy (_.timestamp.desc)
+      } else if ( newest.nonEmpty ) {
+        timeFrame sortBy ( _.timestamp.desc ) take (newest.get) sortBy (_.timestamp.desc)
+      } else if ( begin.isEmpty && end.isEmpty ){
+        timeFrame sortBy ( _.timestamp.asc ) take 1
       } else {
-        // newest defaults to 1 so we will get only latest value without any parameters
-        timeFrame sortBy ( _.timestamp.desc ) take (newest.getOrElse(1))
+        timeFrame
       }
     query
   }
@@ -310,13 +313,17 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // NOTE: duplicate code: nBetweenLogicQ
     protected def takeLogic(
       newest: Option[Int],
-      oldest: Option[Int]
+      oldest: Option[Int],
+      timeFrameEmpty: Boolean
     ): Seq[DBValue] => Seq[DBValue] = {
       if ( oldest.nonEmpty ) {
         _ sortBy ( _.timestamp.getTime ) take (oldest.get) reverse
+      } else if ( newest.nonEmpty ) {
+        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get)
+      } else if ( timeFrameEmpty ) {
+        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take 1
       } else {
-        // newest defaults to 1 so we will get only latest value without any parameters
-        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.getOrElse(1))
+        identity
       }
     }
 
@@ -369,7 +376,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               }
 
             dbInfoItems: DBInfoItems =
-              toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest)
+              toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
 
             results = odfConversion(dbInfoItems)
 
