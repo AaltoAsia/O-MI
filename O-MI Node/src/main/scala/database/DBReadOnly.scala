@@ -430,8 +430,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         runSync(odfInfoItemI)
 
 
-      case odf: OdfElement =>
-        throw new RuntimeException(s"Non-supported query parameter: $odf")
+      //case odf: OdfElement =>
+      //  throw new RuntimeException(s"Non-supported query parameter: $odf")
         //case OdfObjects(_, _) =>
         //case OdfDesctription(_, _) =>
         //case OdfValue(_, _, _) =>

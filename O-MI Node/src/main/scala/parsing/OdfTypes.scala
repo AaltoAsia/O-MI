@@ -245,22 +245,33 @@ object OdfTypes{
       }
     else Iterable(objects)
   }
-  trait HasPath {
+  sealed trait HasPath {
     def path: Path
   }
   
+  /**
+   * Generates odf tree containing the ancestors of given object.
+   */
+  @annotation.tailrec
   def fromPath( last: HasPath) : OdfObjects = {
-    var parentPath = last.path.dropRight(1)
-    var obj = last match {
+
+    val parentPath = last.path.dropRight(1)
+
+    last match {
       case info: OdfInfoItem =>
-        OdfObject( parentPath, Iterable(info), Iterable() )  
+        val parent = OdfObject( parentPath, Iterable(info), Iterable() )  
+        fromPath(parent)
+
       case obj: OdfObject =>
-        OdfObject( parentPath, Iterable(), Iterable(obj) )  
+        if (parentPath.length == 1)
+          OdfObjects( Iterable(obj) )
+        else {
+          val parent = OdfObject( parentPath, Iterable(), Iterable(obj) )  
+          fromPath(parent)
+        }
+
+      case objs: OdfObjects =>
+        objs
     }
-    while( parentPath.length > 1){
-      parentPath = parentPath.dropRight(1)
-      obj = OdfObject( parentPath, Iterable(), Iterable(obj) )
-    }
-    OdfObjects( Iterable(obj) )
   }
 }
