@@ -407,7 +407,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                 if( refCount == 0) 
                     removeExcess(node.id.get)
                   
-                hierarchyNodes.update( 
+                hierarchyNodes.filter(_.id === node.id).update( 
                   DBNode(
                     node.id,
                     node.path,
@@ -454,7 +454,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return id number that is used for querying the elements
    */
   def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
-    val subInsert: DBIOrw[Int] = (subs += sub)
+    val subInsert: DBIOrw[Int] = (subsWithInsertId += sub)
     //XXX: runSync
     val id = runSync(subInsert)
     val hNodesI = getHierarchyNodesI(dbItems) 

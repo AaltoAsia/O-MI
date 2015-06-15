@@ -268,6 +268,7 @@ trait OmiNodeTables extends DBBase {
   }
 
   protected val subs = TableQuery[DBSubsTable]
+  protected val subsWithInsertId = subs returning subs.map(_.id)
 
   trait SubFKey[A] extends Table[A] {
     val subfkName: String
