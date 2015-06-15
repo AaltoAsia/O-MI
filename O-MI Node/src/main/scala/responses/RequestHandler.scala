@@ -112,19 +112,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleCancel(cancel)
     }
     case subdata : SubDataRequest => {
-      val objectsO : Option[OdfObjects] = dbConnection.getSubData(subdata.sub.id)
-
-      objectsO match {
-        case Some(objects) =>
-          ( xmlFromResults(
-          1.0, Result.pollResult(subdata.sub.id.toString,objects)
-          ), 200)
-
-        case None =>
-          ( xmlFromResults(
-          1.0, Result.notFound
-          ), 404)
-      }
+      ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Subdata reuqeust shouldn't be send to RequestHandler.." ) ) ), 500)
     }
     case _ =>{
       ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Unknown request." ) ) ), 500)
@@ -255,6 +243,23 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       ),
       returnCode
     )
+  }
+
+  def handleSubData( subdata : SubDataRequest ) = {
+      val objectsO : Option[OdfObjects] = dbConnection.getSubData(subdata.sub.id)
+
+      objectsO match {
+        case Some(objects) =>
+          ( xmlFromResults(
+          1.0, Result.pollResult(subdata.sub.id.toString,objects)
+          ), 200)
+
+        case None =>
+          ( xmlFromResults(
+          1.0, Result.notFound
+          ), 404)
+      }
+  
   }
 
   def notFound = xmlFromResults(
