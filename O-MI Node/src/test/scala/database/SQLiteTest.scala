@@ -166,41 +166,41 @@ case class NewDBSub(
 
     "return correct values for given valid path and timestamps" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor1/temp")), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None) //.getNBetween(Iterable(OdfInfoItem(Path("/Objects/path/to/sensor1/temp")), ), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None)
-      val values1 = OdfObjectsToValues(sensors1)
+      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x)}
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor1/temp")), Some(new Timestamp(1500)), Some(new Timestamp(6001)), None, None)
-      val values2: Seq[String] = OdfObjectsToValues(sensors2)
+      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x)}
 
-      values1 must have size (2)
-      values1 must contain("21.5C", "21.6C")
+      values1 must beSome.which(_ must have size(2))// must have size (2)
+      values1 must beSome.which(_ must contain("21.5C", "21.6C"))
 
-      values2 must have size (2)
-      values2 must contain("21.7C", "21.6C")
+      values2 must beSome.which(_ must have size (2))
+      values2 must beSome.which(_ must contain("21.7C", "21.6C"))
     }
 
     "return correct values for N latest values" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(12))
-      val values1: Seq[String] = OdfObjectsToValues(sensors1)
+      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x)}
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(3))
-      val values2: Seq[String] = OdfObjectsToValues(sensors2)
+      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x)}
 
-      values1 must have size (10)
-      values1 must contain("21.1C", "21.6C")
-
-      values2 must have size (3)
-      values2 must contain("21.5C", "21.6C")
+      values1 must beSome.which(_ must have size (10))
+      values1 must beSome.which(_ must contain("21.1C", "21.6C"))
+      
+      values2 must beSome.which(_ must have size (3))
+      values2 must beSome.which(_ must contain("21.5C", "21.6C"))
     }
 
     "return correct values for N oldest values" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(12), None)
-      val values1: Seq[String] = OdfObjectsToValues(sensors1)
+      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x)}
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(2), None)
-      val values2: Seq[String] = OdfObjectsToValues(sensors2)
+      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x)}
 
-      values1 must have size (10)
-      values1 must contain("21.1C", "21.6C")
+      values1 must beSome.which(_ must have size (10))
+      values1 must beSome.which(_ must contain("21.1C", "21.6C"))
 
-      values2 must have size (2)
-      values2 must contain("21.1C", "21.2C")
+      values2 must beSome.which(_ must have size (2))
+      values2 must beSome.which(_ must contain("21.1C", "21.2C"))
     }
 
     "return true when removing valid path" in {
@@ -246,8 +246,8 @@ case class NewDBSub(
         None,
         None,
         None)
-      val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (21)
+      val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (21))
 
     }
 
@@ -258,8 +258,8 @@ case class NewDBSub(
         Some(new Timestamp(10000)),
         None,
         None)
-      val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (5)
+      val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (5))
 
       val temp3 = db.getNBetween(
         pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
@@ -267,8 +267,8 @@ case class NewDBSub(
         Some(new Timestamp(10000)),
         Some(10),
         None)
-      val temp4 = OdfObjectsToValues(temp3)
-      temp4 must have size (5)
+      val temp4 =temp3.map(OdfObjectsToValues(_))
+      temp4 must beSome.which(_ must have size (5))
     }
 
     "return values from start" in {
@@ -278,8 +278,8 @@ case class NewDBSub(
         None,
         None,
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (7)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (7))
     }
 
     "return values before end" in {
@@ -289,8 +289,8 @@ case class NewDBSub(
         Some(new Timestamp(10000)),
         None,
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (5)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (5))
     }
 
     "return 10 values before end" in {
@@ -300,8 +300,8 @@ case class NewDBSub(
         Some(new Timestamp(26000)),
         None,
         Some(10))
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (10)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (10))
     }
 
     "return 10 values after start" in {
@@ -311,8 +311,8 @@ case class NewDBSub(
         None,
         Some(10),
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (10)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (10))
     }
 
     "return all values if no options given" in {
@@ -322,8 +322,8 @@ case class NewDBSub(
         None,
         None,
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (21)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (21))
     }
 
     "return all values if both fromStart and fromEnd is given" in {
@@ -333,8 +333,8 @@ case class NewDBSub(
         None,
         Some(10),
         Some(5)) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (21)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (21))
     }
 
     "return empty array if Path doesnt exist" in {
@@ -344,8 +344,8 @@ case class NewDBSub(
         None,
         None,
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must be empty
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beNone
     }
 
     "should not rever to historyLength if other are still buffering" in {
@@ -357,8 +357,8 @@ case class NewDBSub(
         None,
         None,
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (21)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (21))
     }
 
     "be able to stop buffering and revert to using historyLenght" in {
@@ -369,8 +369,8 @@ case class NewDBSub(
         None,
         None,
         None) 
-        val temp2 = OdfObjectsToValues(temp1)
-      temp2 must have size (10)
+        val temp2 = temp1.map(OdfObjectsToValues(_))
+      temp2 must beSome.which(_ must have size (10))
     }
 
     "return true when removing valid path" in {
@@ -494,9 +494,11 @@ case class NewDBSub(
       val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
       db.setMany(pathValuePairs)
       val temp1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test1")), None, None, None, None) 
-      OdfObjectsToValues(temp1) must have size (12)
+      val values1 = temp1.map(OdfObjectsToValues(_)) 
+      values1 must beSome.which(_ must have size (12))
       val temp2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test2")), None, None, None, None) 
-      OdfObjectsToValues(temp2) must have size (10)
+      val values2 =  temp1.map(OdfObjectsToValues(_))
+      values2 must beSome.which(_ must have size (10))
       db.removeSub(testSub3.id)
       db.remove(Path("/Objects/path/to/setmany/test1"))
       db.remove(Path("/Objects/path/to/setmany/test2"))
