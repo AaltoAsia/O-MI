@@ -51,7 +51,7 @@
 				</xs:annotation>
 				<xs:complexType>
 					<xs:sequence>
-						<xs:element ref="InfoItem" maxOccurs="unbounded"/>
+						<xs:element ref="InfoItem" maxOccurs="unbounded" minOccurs="0"/>
 					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
