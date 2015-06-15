@@ -89,7 +89,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
   protected def getSubItemHierarchyIdsI(subId: Int) =
     subItems filter (
-      _.hierarchyId === subId
+      _.subId === subId
     ) map ( _.hierarchyId ) result
 
   /**
@@ -100,8 +100,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] ={
     val sub  = getSub( subId )
 
-    if(sub.isEmpty)
+    if(sub.isEmpty){
       return None 
+    }
     
     val subitems = runSync( 
       subItems.filter( _.subId === subId ).result 
