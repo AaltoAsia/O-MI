@@ -144,12 +144,14 @@ object OmiParser extends Parser[OmiParseResult] {
     format.get match {
       case "odf" =>
         val odf = (data \ "Objects")
-        if (odf.nonEmpty)
-          parseOdf(odf.head)
-        else
-          return Left(Iterable(ParseError("No Objects child found in msg.")))
+        odf.headOption match {
+          case Some(head) =>
+            parseOdf(head)
+          case None =>
+            Left(Iterable(ParseError("No Objects child found in msg.")))
+        }
       case _ =>
-        return Left(Iterable(ParseError("Unknown msgformat attribute")))
+        Left(Iterable(ParseError("Unknown msgformat attribute")))
     }
   }
   private def parseOdf(node: Node): OdfParseResult = OdfParser.parse(node)

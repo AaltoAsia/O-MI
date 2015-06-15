@@ -425,24 +425,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       true 
     }
   }
-  /*{
-    
-      var qry = subs.filter(_.ID === id)
-      var toBeDeleted = runSync(qry.result)
-      if (toBeDeleted.length > 0) {
-        if (toBeDeleted.head._6 == None) {
-          toBeDeleted.head._2.split(";").foreach { p =>
-            stopBuffering(Path(p))
-          }
-        }
-        db.run(qry.delete)
-        return true
-      } else {
-        return false
-      }
-    
-    false
-  }*/
   def removeSub(sub: DBSub): Boolean = removeSub(sub.id)
 
 
