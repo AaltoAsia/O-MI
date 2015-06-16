@@ -207,9 +207,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         addDataAction.flatMap { x => 
           val remSeq = idMap.filter(n=> n._2._2).map(n=> n._2._1)
           DBIO.sequence(remSeq.map(removeExcessI(_)))
-          }
         }
       }
+    }
 
     runSync(updateAction.transactionally)
     //Call hooks
@@ -225,17 +225,18 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * 
    */
   def setMetaData(path: Path, data: String): Unit = {
-    val idQry = hierarchyNodes filter (_.path === path) map (_.id) result
 
-    val updateAction = idQry flatMap {
-      _.headOption match {
-        case Some(id) => 
+    val updateAction = for {
+      nodeO <- getHierarchyNodeI(path)
+      
+      result <- nodeO match {
+        case Some(DBNode(Some(id),_,_,_,_,_,_,_)) => 
           setMetaDataI(id, data)
-        case None =>
+        case _ =>
           throw new RuntimeException("Tried to set metadata on unknown object.")
       }
-    }
-    runSync(updateAction)
+    } yield result
+    runSync(updateAction.transactionally)
   }
 
   def setMetaDataI(hierarchyId: Int, data: String): DBIOrw[Int] = {
@@ -258,20 +259,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       runSync(qry.delete)
     }
   }
-
-
-  /**
-   * Used to set many values efficiently to the database.
-   * @param data list of tuples consisting of path and TimedValue.
-   */
-  /*
-   * case class DBValue(
-    hierarchyId: Int,
-    timestamp: Timestamp,
-    value: String,
-    valueType: String
-  )
-   */
   
  
 
@@ -331,7 +318,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     if(qLen>historyLen){
       qry.flatMap { sortedVals =>
         val oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
-        pathQuery.filter(_.timestamp < oldTime).delete
+        latestValues.filter(value => value.hierarchyId === pathId && value.timestamp < oldTime).delete
         }
     } else 
         DBIO.successful(0)
@@ -467,7 +454,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
     } yield subId
 
-    val subIdResult = runSync(subInsertI)
+    val subIdResult = runSync(subInsertI.transactionally)
 
     DBSub(
       subIdResult,
