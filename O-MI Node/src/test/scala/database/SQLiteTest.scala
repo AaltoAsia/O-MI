@@ -87,22 +87,6 @@ object SQLiteTest extends Specification with AfterAll {
     "return correct value for given valid path" in {
       db.get(Path("/Objects/path/to/sensor1/hum")) must beSome.like { case OdfInfoItem(_, value, _, _) => iterableAsScalaIterable(value).headOption.map(_.value) must beSome(===("40%")) }
     }
-    "testtesttesttesttest" in {
-
-      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),  Some(new Timestamp(900)), Some(new Timestamp(20500)), None, Some(12))
-      val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x) }
-      val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(3))
-      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
-
-      values1 must beSome.which(_ must have size (10))
-      values1 must beSome.which(_ must contain("21.1C", "21.6C"))
-
-      values2 must beSome.which(_ must have size (3))
-      values2 must beSome.which(_ must contain("21.5C", "21.6C"))
-//         println("\n\n\n__________________________________")
-//      println(test)
-//      1===1 
-    }
 
     "return correct value for given valid updated path" in {
       db.get(Path("/Objects/path/to/sensor3/temp")) must beSome.like { case OdfInfoItem(_, value, _, _) => iterableAsScalaIterable(value).headOption.map(_.value) must beSome(===("21.6C")) }
@@ -139,14 +123,8 @@ object SQLiteTest extends Specification with AfterAll {
 
     "return correct values for N latest values" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(12))
-      println("DEBUGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
-      println(sensors1)
-      println("ASDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
       val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x) }
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(3))
-      println("DEBUGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
-      println(sensors2)
-      println("ASDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
       val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
 
       values1 must beSome.which(_ must have size (10))
@@ -173,13 +151,7 @@ object SQLiteTest extends Specification with AfterAll {
       db.remove(Path("/Objects/path/to/sensor3/temp"))
       db.remove(Path("/Objects/path/to/sensor1/hum")) shouldEqual true
     }
-    /*
- * case class NewDBSub(
-  val interval: Double,
-  val startTime: Timestamp,
-  val ttl: Double,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal*/
+    
 
     "be able to buffer data on demand" in {
 

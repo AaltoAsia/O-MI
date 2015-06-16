@@ -119,7 +119,7 @@ class OmiServiceSpec extends Specification
 
   "Read requests: OmiService" should {
     sequential
-    val powerConsumptionValue = "180"
+    val powerConsumptionValue = "180"  
     val dataTime = new java.sql.Timestamp(1000)
     val fridgeData = (Path("Objects/SmartFridge22334411/PowerConsumption"),
       powerConsumptionValue,
