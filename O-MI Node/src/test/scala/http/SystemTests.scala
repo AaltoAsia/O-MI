@@ -18,6 +18,10 @@ import HttpMethods._
 import StatusCodes._
 import MediaTypes._
 
+import akka.testkit.TestActorRef
+import akka.actor._
+import responses.SubscriptionHandler
+
 import database._
 import http.PermissionCheck._
 
@@ -34,19 +38,20 @@ class OmiServiceSpec extends Specification
   def actorRefFactory = system
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
-  implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
+  implicit val dbConnection = new TestDB("system-test") // new SQLiteConnection
   implicit val dbobject = dbConnection
-  val subscriptionHandler = akka.actor.ActorRef.noSender
+  val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))
   val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
 
   "System tests for features of OMI Node service".title
 
   def beforeAll() = {
+    Boot.init(dbConnection)
     // clear if some other tests have left data
-    dbConnection.clearDB()
+    //    dbConnection.clearDB()
 
     // Initialize the OmiService
-    Boot.main()
+    //    Boot.main(Array())
   }
 
   def afterAll() = {
@@ -119,13 +124,13 @@ class OmiServiceSpec extends Specification
 
   "Read requests: OmiService" should {
     sequential
-    val powerConsumptionValue = "180"  
+    val powerConsumptionValue = "180"
     val dataTime = new java.sql.Timestamp(1000)
     val fridgeData = (Path("Objects/SmartFridge22334411/PowerConsumption"),
       powerConsumptionValue,
       dataTime)
     log.debug("set data")
-    dbConnection.set(fridgeData._1, fridgeData._3,fridgeData._2)
+    dbConnection.set(fridgeData._1, fridgeData._3, fridgeData._2)
 
     val readTestRequestFridge: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later
@@ -161,6 +166,8 @@ class OmiServiceSpec extends Specification
       "return error with invalid request" in {
         Post("/", invalidReadTestRequestFridge).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           val response = responseAs[NodeSeq]
+          println(response)
+          println("\n\n\n\n\n______________________________________")
           status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
         }
       }
@@ -192,6 +199,61 @@ class OmiServiceSpec extends Specification
         "infoitem has the right value" in {
           infoitem must have length (1)
           infoitem must \("value") \> powerConsumptionValue // "180"
+        }
+      }
+    }
+    val subscriptionTestCorrect: NodeSeq =
+      <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="3">
+        <omi:read msgformat="odf" interval="2">
+          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+            <Objects>
+              <Object>
+                <id>SmartFridge22334411</id>
+                <InfoItem name="PowerConsumption"/>
+              </Object>
+            </Objects>
+          </omi:msg>
+        </omi:read>
+      </omi:omiEnvelope>
+
+    "handle a subscription request without callback address and the response" should {
+      var requestId: Option[Int] = None
+      "return a message with subscriptionID" in {
+        Post("/", subscriptionTestCorrect).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          rstatus === OK
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          response must \("response") \ ("result") \ ("requestId")
+
+          requestId = Some((response \\ "id").text.toInt)
+          requestId must beSome
+
+        }
+
+      }
+      val pollmessage: NodeSeq =
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+          <omi:read>
+            <omi:requestId>requestId.get</omi:requestId>
+          </omi:read>
+        </omi:omiEnvelope>
+
+      "return correct message when polled with the correct requestID" in {
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+          println("\n\n\n\n")
+          println(response)
+          println("\n\n\n\n")
+          mtype === `text/xml`
+          rstatus === OK
+
         }
       }
     }
