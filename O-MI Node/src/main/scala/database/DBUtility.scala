@@ -79,7 +79,7 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
   protected def getHierarchyNodesI(paths: Seq[Path]): DBIOro[Seq[DBNode]] =
   hierarchyNodes.filter(node => node.path.inSet( paths) ).result
    
-    protected def getHierarchyNodesQ(paths: Seq[Path]) :Query[DBNodesTable,DBNode,Seq]=
+  protected def getHierarchyNodesQ(paths: Seq[Path]) :Query[DBNodesTable,DBNode,Seq]=
   hierarchyNodes.filter(node => node.path.inSet( paths) )
 
   protected def getHierarchyNodeI(id: Int): DBIOro[Option[DBNode]] =
