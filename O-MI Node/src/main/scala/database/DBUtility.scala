@@ -16,14 +16,8 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
 
-  protected def dbioDBInfoItemsSum: Seq[DBIO[SortedMap[DBNode,Seq[DBValue]]]] => DBIO[SortedMap[DBNode,Seq[DBValue]]] = {
-    seqIO =>
-      def iosumlist(a: DBIO[SortedMap[DBNode,Seq[DBValue]]], b: DBIO[SortedMap[DBNode,Seq[DBValue]]]): DBIO[SortedMap[DBNode,Seq[DBValue]]] = for {
-        listA <- a
-        listB <- b
-      } yield (listA++listB)
-      seqIO.foldRight(DBIO.successful(SortedMap.empty[DBNode,Seq[DBValue]]):DBIO[SortedMap[DBNode,Seq[DBValue]]])(iosumlist _)
-  }
+  protected def dbioDBInfoItemsSum(actions: Seq[DBIO[DBInfoItems]]): DBIO[DBInfoItems] =
+    DBIO.fold(actions, SortedMap.empty[DBNode,Seq[DBValue]])(_ ++ _)
 
   protected def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
     seqIO =>

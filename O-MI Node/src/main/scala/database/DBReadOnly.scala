@@ -558,4 +558,22 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         case _ => throw new RuntimeException("got wrong or unknown sub class???")
       }
     }
+
+  def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 
+    dbioDBInfoItemsSum(
+      hNodes map { hNode =>
+        for {
+          subTreeData <- getSubTreeI( hNode.path )
+
+          infoItems: DBInfoItems = toDBInfoItems( subTreeData )
+
+          result: DBInfoItems = infoItems collect {
+            case (node, seqVals) if seqVals.nonEmpty =>
+              ( node
+              , seqVals sortBy ( _.timestamp.getTime ) take 1
+              ) 
+          } 
+        } yield result
+      } 
+    )
 }

@@ -328,13 +328,12 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val qLenI = pathQuery.length.result
     
     qLenI.flatMap { qLen => 
-    if(qLen>historyLen){
-      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).result.flatMap { x =>  
-        pathQuery.filter(_.hierarchyId.inSet(x.map(_.hierarchyId))).delete}
-//      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
-    } else{
-      DBIO.successful(0)
-    }
+      if(qLen>historyLen){
+        pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
+  //      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
+      } else{
+        DBIO.successful(0)
+      }
     }
 
   }
@@ -345,23 +344,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(pathId: Int) = {
-    val pathQuery = latestValues.filter(_.hierarchyId === pathId)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
-    val historyLen = database.historyLength
-    val qLenI = pathQuery.length.result
-    
-    val removeAction = qLenI.flatMap { qLen => 
-    if(qLen>historyLen){
-      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).result.flatMap { x =>  
-        pathQuery.filter(_.hierarchyId.inSet(x.map(_.hierarchyId))).delete}
-//      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
-    } else{
-      DBIO.successful(0)
-    }
-    }
-    runSync(removeAction)
-
-  }
+  private def removeExcess(pathId: Int) =
+    runSync(removeExcessI(pathId))
 
   /**
    * Used to remove data before given timestamp
@@ -442,6 +426,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
   }
 
+  
 
   /**
    * Saves subscription information to database
@@ -453,71 +438,41 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    * @return id number that is used for querying the elements
    */
-  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub ={
-    val subInsert: DBIOrw[Int] = (subsWithInsertId += sub)
-    //XXX: runSync
-    val id = runSync(subInsert)
-    val hNodesI = getHierarchyNodesI(dbItems) 
-    val itemsI = hNodesI.flatMap{
-      hNodes =>{  
-        dbioDBInfoItemsSum(
-          hNodes.map{
-             hNode =>{
-              getSubTreeI( hNode.path ).map{
-                toDBInfoItems( _ ).filter{ 
-                  case (node, seqVals) => seqVals.nonEmpty 
-                }.map{ 
-                  case (node, seqVals) =>  (node, seqVals.sortBy( _.timestamp.getTime ).take(1) ) 
-                } 
-              }
-            }
+  def saveSub(sub: NewDBSub, dbItems: Seq[Path]): DBSub = {
+    val subInsertI = for {
+      subId <- subsWithInsertId += sub
+      subItemNodes <- getHierarchyNodesI(dbItems) 
+
+      newSubItems: DBInfoItems <- getInfoItemsI(subItemNodes)
+
+      insertItems = newSubItems.map {
+        case (hNode, values ) =>
+          DBSubscriptionItem( subId, hNode.id.get, values.headOption.map{ case value: DBValue => value.value } ) 
+        }
+      _ <- subItems ++= insertItems 
+
+      _ <- if (!sub.hasCallback) {
+        DBIO.sequence(
+          subItemNodes map { node => 
+            val updatedNode = node.copy(
+              pollRefCount = node.pollRefCount + 1
+            )
+            hierarchyNodes filter (_.id === node.id) update updatedNode
           }
         )
+      } else {
+        DBIO.successful(Seq())
       }
-    }
-    val itemInsert = itemsI.flatMap{ infos => 
-      val sItems = infos.map { case (hNode, values ) =>
-          DBSubscriptionItem( id, hNode.id.get, values.headOption.map{ case value: DBValue => value.value } ) 
-      }
-      subItems ++= sItems 
-    }
-    //XXX: runSync
-    runSync(itemInsert)
-    if(!sub.hasCallback){
-      //XXX: runSync
-      runSync(
-        hierarchyNodes.filter( 
-          node => node.path.inSet( dbItems ) 
-        ).result.flatMap{
-          nodeSe => 
-          DBIO.seq(
-            nodeSe.map{
-              node => 
-              hierarchyNodes.filter(_.id === node.id).update( 
-                DBNode(
-                  node.id,
-                  node.path,
-                  node.leftBoundary,
-                  node.rightBoundary,
-                  node.depth,
-                  node.description,
-                  node.pollRefCount + 1,
-                  node.isInfoItem
-                )
-              )
-            }:_*
-          )
-        }
-      )
-    }
+    } yield subId
+
+    val subIdResult = runSync(subInsertI)
+
     DBSub(
-      id,
+      subIdResult,
       sub.interval,
       sub.startTime,
       sub.ttl,
       sub.callback
     )
   }
-
-
 }
