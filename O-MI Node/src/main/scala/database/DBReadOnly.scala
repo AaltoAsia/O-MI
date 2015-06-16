@@ -261,11 +261,11 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // NOTE: duplicate code: takeLogic
     val query = 
       if ( oldest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) sortBy (_.timestamp.desc)
+        timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) //sortBy (_.timestamp.asc)
       } else if ( newest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.desc ) take (newest.get) sortBy (_.timestamp.desc)
+        timeFrame sortBy ( _.timestamp.desc ) take (newest.get) sortBy (_.timestamp.asc)
       } else if ( begin.isEmpty && end.isEmpty ){
-        timeFrame sortBy ( _.timestamp.asc ) take 1
+        timeFrame sortBy ( _.timestamp.desc ) take 1
       } else {
         timeFrame
       }
@@ -322,9 +322,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       timeFrameEmpty: Boolean
     ): Seq[DBValue] => Seq[DBValue] = {
       if ( oldest.nonEmpty ) {
-        _ sortBy ( _.timestamp.getTime ) take (oldest.get) reverse
+        _ sortBy ( _.timestamp.getTime ) take (oldest.get)
       } else if ( newest.nonEmpty ) {
-        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get)
+        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get) reverse
       } else if ( timeFrameEmpty ) {
         _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take 1
       } else {
@@ -540,7 +540,6 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   def getSubscribtedItems( id: Int) : Array[DBSubscriptionItem] = {
     runSync( subItems.filter( _.subId === id ).result ).toArray
   }
-
 
   /**
    * Returns DBSub object wrapped in Option for given id.
