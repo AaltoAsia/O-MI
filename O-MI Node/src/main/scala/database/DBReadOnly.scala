@@ -550,15 +550,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   def getSub(id: Int): Option[DBSub] = runSync(getSubI(id))
 
-  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =
-    subs.filter(_.id === id).result.map{
-      _.headOption map {
-        case sub: DBSub => sub
-        case _ => throw new RuntimeException("got wrong or unknown sub class???")
-      }
-    }
 
-  def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 
+  protected def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 
     dbioDBInfoItemsSum(
       hNodes map { hNode =>
         for {
