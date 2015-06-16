@@ -19,15 +19,15 @@ import java.util.Objects
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
 
-  override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+  protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
 
   /**
-   * Public method for parsing the xml string into seq of ParseResults.
+   * Public method for parsing the xml string into OdfParseResults.
    *
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
-   *  @return Iterable of ParseResults
+   *  @return OdfParseResults
    */
   def parse(xml_msg: String): OdfParseResult = {
     val root = Try(
@@ -41,6 +41,12 @@ object OdfParser extends Parser[OdfParseResult] {
 
     parse(root)
   }
+  /**
+   * Public method for parsing the xml structure into OdfParseResults.
+   *
+   *  @param root xml.Node to be parsed. Should be in O-DF format.
+   *  @return OdfParseResults
+   */
   def parse(root: xml.Node): OdfParseResult = { 
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
@@ -85,6 +91,7 @@ object OdfParser extends Parser[OdfParseResult] {
         }
       ) 
   }
+
   private def timeSolver(value: ValueType ) = value.dateTime match {
     case None => value.unixTime match {
       case None => None

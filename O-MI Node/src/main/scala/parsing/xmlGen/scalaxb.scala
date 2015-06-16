@@ -12,6 +12,10 @@ import scala.language.postfixOps
 import scala.language.existentials
 import scala.language.implicitConversions
 
+/** Scalaxb library.
+  *
+  **/
+
 object `package` {
   import annotation.implicitNotFound
 
