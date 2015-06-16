@@ -1,6 +1,6 @@
 package agents
-import parsing.Types._
-import parsing.Types.OdfTypes._
+import types._
+import types.OdfTypes._
 import agentSystem._
 import xml._
 import io._
