@@ -99,6 +99,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] ={
     val sub  = getSub( subId )
+
+    if(sub.isEmpty)
+      return None 
+    
     val subitems = runSync( 
       subItems.filter( _.subId === subId ).result 
     ).groupBy( _.hierarchyId ).map{ case (hId, valueSeq) => (hId, valueSeq.take(1))} 
