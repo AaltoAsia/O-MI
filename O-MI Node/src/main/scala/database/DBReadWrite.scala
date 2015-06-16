@@ -323,21 +323,20 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   private def removeExcessI(pathId: Int) = {
-    val pathQuery = latestValues.filter(_.hierarchyId === pathId)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+    val pathQuery = latestValues.filter(_.hierarchyId === pathId).sortBy(_.timestamp.asc)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
     val historyLen = database.historyLength
+    val qry = pathQuery.result
     val qLenI = pathQuery.length.result
-    
     qLenI.flatMap { qLen => 
     if(qLen>historyLen){
-      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).result.flatMap { x =>  
-        pathQuery.filter(_.hierarchyId.inSet(x.map(_.hierarchyId))).delete}
-//      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
-    } else{
-      DBIO.successful(0)
+      qry.flatMap { sortedVals =>
+        val oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
+        pathQuery.filter(_.timestamp < oldTime).delete
+        }
+    } else 
+        DBIO.successful(0)
     }
     }
-
-  }
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
@@ -346,21 +345,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   private def removeExcess(pathId: Int) = {
-    val pathQuery = latestValues.filter(_.hierarchyId === pathId)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
-    val historyLen = database.historyLength
-    val qLenI = pathQuery.length.result
-    
-    val removeAction = qLenI.flatMap { qLen => 
-    if(qLen>historyLen){
-      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).result.flatMap { x =>  
-        pathQuery.filter(_.hierarchyId.inSet(x.map(_.hierarchyId))).delete}
-//      pathQuery.sortBy(_.timestamp.asc).take(qLen-historyLen).delete
-    } else{
-      DBIO.successful(0)
-    }
-    }
-    runSync(removeAction)
-
+    runSync(removeExcessI(pathId))
   }
 
   /**
