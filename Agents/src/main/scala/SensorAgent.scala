@@ -1,8 +1,8 @@
 package agents
 
 import agentSystem._
-import parsing.Types._
-import parsing.Types.OdfTypes._
+import types._
+import types.OdfTypes._
 import database._
 
 import scala.io.Source
@@ -32,8 +32,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 
-import parsing.Types._
-import parsing.Types.Path._
+import types.Path._
 
 // Scala XML
 import scala.xml

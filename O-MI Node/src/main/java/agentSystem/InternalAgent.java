@@ -2,7 +2,7 @@ package agentSystem;
 
 import agentSystem.ThreadInitialisationException;
 import agentSystem.ThreadException;
-import parsing.Types.OdfTypes.OdfObject;
+import types.OdfTypes.OdfObject;
 import akka.actor.ActorRef;
 import akka.event.LoggingAdapter;
 

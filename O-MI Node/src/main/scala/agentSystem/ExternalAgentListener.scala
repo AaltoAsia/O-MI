@@ -15,9 +15,10 @@ import http.PermissionCheck._
 import parsing.OdfParser
 import parsing.OmiParser
 import database.SQLiteConnection
-import parsing.Types._
-import parsing.Types.Path._
-import parsing.Types.OdfTypes._
+
+import types._
+import types.Path._
+import types.OdfTypes._
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable

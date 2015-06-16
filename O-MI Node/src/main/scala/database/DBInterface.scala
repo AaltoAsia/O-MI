@@ -9,7 +9,7 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import java.io.File
 
-import parsing.Types.Path
+import types.Path
 
 
 

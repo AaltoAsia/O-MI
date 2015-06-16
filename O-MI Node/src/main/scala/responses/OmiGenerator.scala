@@ -1,9 +1,10 @@
 package responses
 
 import database._
-import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.scalaxb
 import parsing.xmlGen.scalaxb._
-import parsing.Types.Path
+import types.Path
 import parsing.xmlGen.scalaxb.DataRecord._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import xml.XML

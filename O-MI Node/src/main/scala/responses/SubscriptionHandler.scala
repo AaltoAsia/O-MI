@@ -7,14 +7,11 @@ import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.ActorLogging
 
-import responses._
 import database._
-import database._
-import parsing.Types.Path
-import parsing.Types.OmiTypes.{ SubLike, SubDataRequest }
+import types.Path
 import CallbackHandlers._
-import parsing.Types.OmiTypes._
-import parsing.Types.OdfTypes._
+import types.OmiTypes._
+import types.OdfTypes._
 import parsing.xmlGen
 import parsing.xmlGen.scalaxb
 

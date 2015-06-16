@@ -6,9 +6,9 @@ import scala.io.Source
 import responses._
 //import responses.Common._
 import parsing._
-import parsing.Types._
-import parsing.Types.Path._
-import parsing.Types.OmiTypes._
+import types._
+import types.Path._
+import types.OmiTypes._
 import database._
 import parsing.OdfParser._
 import java.util.Date;

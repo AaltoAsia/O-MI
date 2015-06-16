@@ -8,10 +8,10 @@ import scala.concurrent.duration.Duration
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
-import parsing.Types._
-import parsing.Types.OdfTypes._
-import parsing.Types.OmiTypes.SubLike
-import parsing.Types.Path._
+import types._
+import types.OdfTypes._
+import types.OmiTypes.SubLike
+import types.Path._
 import database._
 
 @deprecated("Old interface", "DB Interface refactor")

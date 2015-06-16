@@ -5,11 +5,11 @@ import agentSystem.HandleObjects;
 import agentSystem.HandleInfoItems;
 import agentSystem.HandlePathValuePairs;
 import agentSystem.HandlePathMetaDataPairs;
-import parsing.Types.OdfTypes.OdfObject;
-import parsing.Types.OdfTypes.OdfObjects;
-import parsing.Types.OdfTypes.OdfInfoItem;
-import parsing.Types.OdfTypes.OdfValue;
-import parsing.Types.Path;
+import types.OdfTypes.OdfObject;
+import types.OdfTypes.OdfObjects;
+import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfValue;
+import types.Path;
 import akka.actor.ActorRef;
 import scala.Tuple2;
 

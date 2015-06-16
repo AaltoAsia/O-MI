@@ -3,13 +3,13 @@ package database
 import org.specs2.mutable._
 import database._
 import java.sql.Timestamp
-import parsing.Types.OdfTypes._
+import types.OdfTypes._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 //import scala.collection.JavaConversions.i
 import testHelpers.AfterAll
 
-import parsing.Types._
+import types._
 
 object SQLiteTest extends Specification with AfterAll {
 

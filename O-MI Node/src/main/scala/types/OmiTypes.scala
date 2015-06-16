@@ -1,5 +1,4 @@
-package parsing
-package Types
+package types
 
 import OdfTypes._
 

@@ -8,8 +8,8 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.SortedMap
 
-import parsing.Types._
-import parsing.Types.OdfTypes._
+import types._
+import types.OdfTypes._
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 

@@ -1,11 +1,11 @@
 package responses
 
 import database._
-import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.scalaxb
-import parsing.Types.Path
-import parsing.Types.OdfTypes
-import parsing.Types.OdfTypes._
+import types.Path
+import types.OdfTypes
+import types.OdfTypes._
 import xml.XML
 import xml.Node
 import scala.language.existentials
