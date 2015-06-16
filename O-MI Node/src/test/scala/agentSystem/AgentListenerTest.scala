@@ -11,8 +11,8 @@ import scala.io.Source
 import database._
 import testHelpers.{BeforeAll, Actors}
 import parsing._
-import parsing.Types._
-import parsing.Types.Path._
+import types._
+import types.Path._
 
 import http.Boot
 

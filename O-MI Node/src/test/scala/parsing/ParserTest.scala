@@ -3,10 +3,10 @@ package parsing
 import org.specs2._
 import scala.io.Source
 import parsing._
-import parsing.Types._
-import parsing.Types.OmiTypes._
-import parsing.Types.OdfTypes._
-import parsing.Types.Path._
+import types._
+import types.OmiTypes._
+import types.OdfTypes._
+import types.Path._
 import java.sql.Timestamp
 import scala.xml.Utility.trim
 //import java.lang.Iterable

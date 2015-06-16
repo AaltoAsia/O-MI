@@ -2,8 +2,8 @@ package http
 
 import responses.RequestHandler
 import parsing._
-import parsing.Types._
-import parsing.Types.Path._
+import types._
+import types.Path._
 
 import xml._
 

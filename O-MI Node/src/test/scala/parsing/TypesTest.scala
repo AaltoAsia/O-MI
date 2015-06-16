@@ -2,10 +2,10 @@ package parsing
 
 import org.specs2._
 import parsing._
-import parsing.Types._
-import parsing.Types.Path._
-import parsing.Types.OmiTypes._
-import parsing.Types.OdfTypes._
+import types._
+import types.Path._
+import types.OmiTypes._
+import types.OdfTypes._
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList, iterableAsScalaIterable}
 
 /* Test class for testing ODF Types */
