@@ -301,15 +301,14 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   ): DBValue => Boolean =
     ( end, begin ) match {
       case (None, Some(startTime)) =>
-        { _.timestamp.getTime >= startTime.getTime }
+      { _.timestamp.getTime >= startTime.getTime}
 
       case (Some(endTime), None) =>
         { _.timestamp.getTime <= endTime.getTime }
 
       case (Some(endTime), Some(startTime)) =>
         { value =>
-          value.timestamp.getTime >= startTime.getTime &&
-          value.timestamp.getTime <= endTime.getTime
+        value.timestamp.getTime >= startTime.getTime && value.timestamp.getTime <= endTime.getTime 
         }
       case (None, None) =>
         { value => true }
@@ -369,7 +368,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     def processObjectI(path: Path): DBIO[Option[OdfObjects]] = {
         getHierarchyNodeI(path) flatMap {
           case Some(rootNode) => for {
-            subTreeData <- getSubTreeQ(rootNode).result
+            subTreeData <- getSubTreeI(rootNode.path)
 
             // NOTE: We can only apply "between" logic here because of the subtree query
             // basicly we fetch too much data if "newest" or "oldest" is set
@@ -415,12 +414,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           nodeO match {
             case Some(node @ DBNode(Some(nodeId),_,_,_,_,_,_,true)) => for {
 
-              valueData <- getNBetweenDBInfoItemQ(nodeId, begin, end, newest, oldest).result
 
-              odfInfoItem = hasPathConversion((node, valueData)) match {
-                case x: OdfInfoItem => x
-                case _ => throw new RuntimeException("type fail")
-              }
+              odfInfoItem <-  processObjectI( path )
               
               metaData <- metadataQuery match {
                 case Some(_) => getMetaDataI(nodeId)  // fetch metadata
@@ -428,10 +423,11 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               }
 
               metaInfoItem = OdfInfoItem(path, Iterable(), None, metaData) 
+              result = odfInfoItem.map{
+                infoItem => fromPath(infoItem) combine fromPath(metaInfoItem)
+              }
 
-              result = fromPath(odfInfoItem combine metaInfoItem)
-
-            } yield Some(result)
+            } yield result
 
             case n =>
               println(s"Requested '$path' as InfoItem, found '$n'")
