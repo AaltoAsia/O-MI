@@ -122,9 +122,9 @@ object SQLiteTest extends Specification with AfterAll {
     }
 
     "return correct values for N latest values" in {
-      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(12))
+      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(12), None)
       val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x) }
-      val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(3))
+      val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(3), None)
       val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
 
       values1 must beSome.which(_ must have size (10))
@@ -135,9 +135,9 @@ object SQLiteTest extends Specification with AfterAll {
     }
 
     "return correct values for N oldest values" in {
-      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(12), None)
+      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(12))
       val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x) }
-      val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(2), None)
+      val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(2))
       val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
 
       values1 must beSome.which(_ must have size (10))
