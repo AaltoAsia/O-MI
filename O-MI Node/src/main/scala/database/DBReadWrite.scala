@@ -318,7 +318,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     if(qLen>historyLen){
       qry.flatMap { sortedVals =>
         val oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
-        latestValues.filter(_.timestamp < oldTime).delete
+        latestValues.filter(value => value.hierarchyId === pathId && value.timestamp < oldTime).delete
         }
     } else 
         DBIO.successful(0)
