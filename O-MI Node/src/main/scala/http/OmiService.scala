@@ -12,8 +12,8 @@ import java.net.InetAddress
 import responses._
 import parsing._
 import PermissionCheck._
-import parsing.Types._
-import parsing.Types.OmiTypes._
+import types._
+import types.OmiTypes._
 import database._
 
 import xml._

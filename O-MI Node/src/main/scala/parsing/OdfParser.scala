@@ -1,8 +1,10 @@
 package parsing
 
-import Types._
-import Types.OdfTypes._
+import types._
+import types.OmiTypes._
+import types.OdfTypes._
 import xmlGen._
+import xmlGen.xmlTypes._
 import scala.collection.mutable.Map
 import scala.util.Try
 import scala.xml.XML
@@ -44,7 +46,7 @@ object OdfParser extends Parser[OdfParseResult] {
     if (schema_err.nonEmpty)
       return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
 
-    val objects = xmlGen.scalaxb.fromXML[xmlGen.ObjectsType](root)
+    val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
     Right(
       OdfObjects( 
         if(objects.Object.isEmpty) asJavaIterable(Iterable.empty[OdfObject])

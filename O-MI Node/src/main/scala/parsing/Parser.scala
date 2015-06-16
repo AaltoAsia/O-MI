@@ -1,5 +1,8 @@
 package parsing
-import parsing.Types._
+
+import types._
+import types.OmiTypes._
+import types.OdfTypes._
 import scala.xml._
 import scala.util.Try
 import java.io.StringReader

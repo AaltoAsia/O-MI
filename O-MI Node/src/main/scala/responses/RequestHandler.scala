@@ -1,10 +1,10 @@
 package responses
 
-import parsing.Types._
-import parsing.Types.OmiTypes._
-import parsing.Types.OdfTypes._
-import parsing.Types.Path
-import parsing.xmlGen
+import types._
+import types.OmiTypes._
+import types.OdfTypes._
+import types.Path
+import parsing.xmlGen.xmlTypes
 import parsing.xmlGen.scalaxb
 import database._
 import agentSystem.InputPusher
@@ -128,16 +128,16 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     Some("xs") -> "http://www.w3.org/2001/XMLSchema",
     Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance"
   )
-  def wrapResultsToResponseAndEnvelope(ttl: Double, results: xmlGen.RequestResultType* ) = {
+  def wrapResultsToResponseAndEnvelope(ttl: Double, results: xmlTypes.RequestResultType* ) = {
     OmiGenerator.omiEnvelope( ttl, "response", OmiGenerator.omiResponse( results:_* ) )
   }
 
-  def xmlFromResults(ttl: Double, results: xmlGen.RequestResultType* ) = {
+  def xmlFromResults(ttl: Double, results: xmlTypes.RequestResultType* ) = {
     xmlMsg( wrapResultsToResponseAndEnvelope(ttl,results:_*) )
   }
 
-  def xmlMsg( envelope: xmlGen.OmiEnvelope) = {
-    scalaxb.toXML[xmlGen.OmiEnvelope]( envelope, Some("omi"), Some("omiEnvelope"), scope )
+  def xmlMsg( envelope: xmlTypes.OmiEnvelope) = {
+    scalaxb.toXML[xmlTypes.OmiEnvelope]( envelope, Some("omi"), Some("omiEnvelope"), scope )
   }
 
 
@@ -334,19 +334,19 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
         }else{
           return Some( Right(
-            scalaxb.toXML[xmlGen.InfoItemType]( OdfInfoItemAsInfoItemType( infoitem ), Some("odf"), Some("InfoItem"), scope ).headOption.getOrElse(
+            scalaxb.toXML[xmlTypes.InfoItemType]( OdfInfoItemAsInfoItemType( infoitem ), Some("odf"), Some("InfoItem"), scope ).headOption.getOrElse(
               <error>Could not create from OdfInfoItem </error>
             )
           ) )
         }
       case Some(odfObj: OdfObject) =>
-           val xmlReturn = scalaxb.toXML[xmlGen.ObjectType]( OdfObjectAsObjectType( odfObj ), Some("odf"), Some("Object"), scope ).headOption.getOrElse(
+           val xmlReturn = scalaxb.toXML[xmlTypes.ObjectType]( OdfObjectAsObjectType( odfObj ), Some("odf"), Some("Object"), scope ).headOption.getOrElse(
           <error>Could not create from OdfObject </error>
         )
         Some(Right(xmlReturn))
 
       case Some(odfObj: OdfObjects) =>
-           val xmlReturn = scalaxb.toXML[xmlGen.ObjectsType]( OdfObjectsAsObjectsType( odfObj ), Some("odf"), Some("Objects"), scope ).headOption.getOrElse(
+           val xmlReturn = scalaxb.toXML[xmlTypes.ObjectsType]( OdfObjectsAsObjectsType( odfObj ), Some("odf"), Some("Objects"), scope ).headOption.getOrElse(
           <error>Could not create from OdfObjects </error>
         )
         Some(Right(xmlReturn))

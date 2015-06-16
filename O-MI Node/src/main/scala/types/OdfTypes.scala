@@ -1,7 +1,7 @@
-package parsing
-package Types
+package types
 
-import xmlGen._
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
 import xml.XML
 import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
@@ -154,7 +154,7 @@ object OdfTypes{
   }
 
   case class OdfInfoItem(
-    path:                 Types.Path,
+    path:                 Path,
     values:               JavaIterable[OdfValue],
     description:          Option[OdfDescription] = None,
     metaData:             Option[OdfMetaData] = None

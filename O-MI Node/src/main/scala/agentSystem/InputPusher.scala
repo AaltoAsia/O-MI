@@ -1,9 +1,9 @@
 package agentSystem
 
 import database._
-import parsing.Types._
-import parsing.Types.Path._
-import parsing.Types.OdfTypes._
+import types._
+import types.Path._
+import types.OdfTypes._
 import java.util.Date
 import akka.actor._
 import java.lang.Iterable

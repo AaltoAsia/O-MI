@@ -2,6 +2,7 @@
 
 package parsing
 package xmlGen
+package xmlTypes
 
 
 case class ObjectsType(Object: Seq[ObjectType] = Nil,

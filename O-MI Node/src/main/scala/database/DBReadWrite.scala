@@ -11,8 +11,8 @@ import scala.concurrent.Future
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.SortedMap
 
-import parsing.Types._
-import parsing.Types.OdfTypes._
+import types._
+import types.OdfTypes._
 
 
 
