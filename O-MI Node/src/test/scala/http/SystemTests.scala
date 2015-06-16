@@ -46,7 +46,7 @@ class OmiServiceSpec extends Specification
     dbConnection.clearDB()
 
     // Initialize the OmiService
-    Boot.init(dbConnection)
+    Boot.main()
   }
 
   def afterAll() = {
