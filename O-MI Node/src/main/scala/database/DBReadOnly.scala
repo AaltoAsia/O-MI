@@ -125,7 +125,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
       updateActions = DBIO.seq(
         updateActions,
-        subItems.update(//Update SubItems lastValues
+        subItems.filter{_.hierarchyId === node.id }.update(//Update SubItems lastValues
           DBSubscriptionItem( dbsub.id, node.id.get, dbvals.lastOption.map{ dbval => dbval.value } ) 
         )
       )
@@ -147,23 +147,23 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
                 //Get values for each interval
                 getByIntervalBetween(sortedValues, dbsub.startTime, newTime, dbsub.interval.toLong )
               }
-              updateActions = DBIO.seq(
-                updateActions,
-                subs.update(//Sub update
-                  DBSub(
-                    dbsub.id,
-                    dbsub.interval,
-                    newTime,
-                    dbsub.ttl - newTime.getTime,//Should be cheched for > 0 and remove?
-                    dbsub.callback
-                  )
-                )
-              )
               dbvals
             case None => Seq.empty
           }
         ( node, newVals )
     }
+    updateActions = DBIO.seq(
+      updateActions,
+      subs.filter{_.id === sub.get.id }update(//Sub update
+        DBSub(
+          sub.get.id,
+          sub.get.interval,
+          newTime,
+          sub.get.ttl + sub.get.startTime.getTime - newTime.getTime,//Should be cheched for > 0 and remove?
+          sub.get.callback
+        )
+      )
+    )
     runSync(updateActions)
     odfOption
   }
