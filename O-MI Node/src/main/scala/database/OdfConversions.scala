@@ -44,10 +44,10 @@ trait OdfConversions extends OmiNodeTables {
    * Conversion for a (sub)tree of hierarchy with value data.
    * @param treeData Hierarchy and value data joined, so contains InfoItem DBNodes and its values.
    */
-  protected def odfConversion(treeData: Seq[DBValueTuple]): OdfObjects = {
+  protected def odfConversion(treeData: Seq[DBValueTuple]): Option[OdfObjects] = {
     // Convert: Map DBNode -> Seq[DBValue]
     val nodeMap = toDBInfoItems(treeData)
-    odfConversion(treeData)
+    odfConversion(nodeMap)
   }
 
   protected def hasPathConversion: DBInfoItem => HasPath = {
