@@ -327,7 +327,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       } else if ( timeFrameEmpty ) {
         _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take 1
       } else {
-        identity
+        _.sortBy( _.timestamp.getTime )
       }
     }
 
