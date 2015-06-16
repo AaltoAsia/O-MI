@@ -360,44 +360,50 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   def removeSub(id: Int): Boolean ={
-    val hIds = subItems.filter( _.subId === id )
-    val sub = subs.filter( _.id === id ) 
-    //XXX: Is return value needed?
-    if(runSync(sub.result).length == 0){
-      false
-    } else {
-      val updates = hierarchyNodes.filter(
-        node => 
-        //XXX:
-        node.id.inSet( runSync( hIds.map( _.hierarchyId ).result) )
-      ).result.flatMap{
-        nodeSe => 
-          DBIO.seq(
-            nodeSe.map{
-              node => 
-                val refCount = node.pollRefCount - 1 
-                //XXX: heavy operation, but future doesn't help, new sub can be created middle of it
-                if( refCount == 0) 
-                    removeExcess(node.id.get)
-                  
-                hierarchyNodes.filter(_.id === node.id).update( 
-                  DBNode(
-                    node.id,
-                    node.path,
-                    node.leftBoundary,
-                    node.rightBoundary,
-                    node.depth,
-                    node.description,
-                    refCount,
-                    node.isInfoItem
-                  )
-                )
-            }:_*
-          ) 
+    val result = for {
+      subO <- getSubI(id)
+
+      subQ      = subs filter (_.id === id)
+      subItemsQ = subItems filter( _.subId === id )
+
+      isSuccess <- subO match {
+        case None =>
+          DBIO.successful(false)
+
+        case Some(sub) => for {
+          subItemNodeIds <- subItemsQ.map( _.hierarchyId ).result
+
+          subItemNodes <- hierarchyNodes filter (
+            _.id inSet subItemNodeIds
+          ) result
+
+          _ <- if (!sub.hasCallback) { 
+            val subItemRefCountUpdates = subItemNodes map {
+              case node @ DBNode(Some(nodeId),_,_,_,_,_,_,_) =>
+                val newRefCount = node.pollRefCount - 1 
+
+                if ( newRefCount == 0 ) 
+                    removeExcessI(nodeId)
+                else {
+                  val updatedNode = node.copy( pollRefCount = newRefCount )
+
+                  getHierarchyNodeQ(nodeId) update updatedNode
+                }
+            }
+            DBIO.sequence(subItemRefCountUpdates)
+          } else {
+            DBIO.successful(Unit)
+          }
+
+          _ <- subItemsQ.delete
+
+          _ <- subQ.delete
+
+        } yield true
       }
-      runSync(DBIO.seq(updates,hIds.delete,sub.delete))
-      true 
-    }
+    } yield isSuccess
+
+    runSync(result.transactionally)
   }
   def removeSub(sub: DBSub): Boolean = removeSub(sub.id)
 
@@ -432,13 +438,18 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       subId <- subsWithInsertId += sub
       subItemNodes <- getHierarchyNodesI(dbItems) 
 
-      newSubItems: DBInfoItems <- getInfoItemsI(subItemNodes)
+      subInfoItems: DBInfoItems <- getInfoItemsI(subItemNodes)
 
-      insertItems = newSubItems.map {
-        case (hNode, values ) =>
-          DBSubscriptionItem( subId, hNode.id.get, values.headOption.map{ case value: DBValue => value.value } ) 
+      newSubItems = subInfoItems map {
+        case (hNode, values) =>
+          val lastValue: Option[String] = for {
+            dbValue <- values.headOption
+            if (!sub.hasCallback && sub.isEventBased)
+          } yield dbValue.value
+
+          DBSubscriptionItem( subId, hNode.id.get, lastValue) 
         }
-      _ <- subItems ++= insertItems 
+      _ <- subItems ++= newSubItems 
 
       _ <- if (!sub.hasCallback) {
         DBIO.sequence(

@@ -149,6 +149,8 @@ trait OmiNodeTables extends DBBase {
     def pollRefCount  = column[Int]("POLLREFCOUNT")
     def isInfoItem    = column[Boolean]("ISINFOITEM")
 
+    def pathIndex = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
+
     // Every table needs a * projection with the same type as the table's type parameter
     def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
       DBNode.tupled,

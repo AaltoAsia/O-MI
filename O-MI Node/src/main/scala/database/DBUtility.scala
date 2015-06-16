@@ -73,6 +73,9 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
   protected def getHierarchyNodeQ(path: Path) : Query[DBNodesTable, DBNode, Seq] =
     hierarchyNodes.filter(_.path === path)
 
+  protected def getHierarchyNodeQ(id: Int) : Query[DBNodesTable, DBNode, Seq] =
+    hierarchyNodes.filter(_.id === id)
+
   protected def getHierarchyNodeI(path: Path): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.path === path).result.map(_.headOption)
 
@@ -84,4 +87,14 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
 
   protected def getHierarchyNodeI(id: Int): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
+
+
+  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =
+    subs.filter(_.id === id).result map {
+      _.headOption map {
+        case sub: DBSub => sub
+        case _ => throw new RuntimeException("got wrong or unknown sub class???")
+      }
+    }
+
 }

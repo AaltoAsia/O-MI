@@ -261,11 +261,11 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // NOTE: duplicate code: takeLogic
     val query = 
       if ( oldest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) sortBy (_.timestamp.desc)
+        timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) //sortBy (_.timestamp.asc)
       } else if ( newest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.desc ) take (newest.get) sortBy (_.timestamp.desc)
+        timeFrame sortBy ( _.timestamp.desc ) take (newest.get) sortBy (_.timestamp.asc)
       } else if ( begin.isEmpty && end.isEmpty ){
-        timeFrame sortBy ( _.timestamp.asc ) take 1
+        timeFrame sortBy ( _.timestamp.desc ) take 1
       } else {
         timeFrame
       }
@@ -322,9 +322,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       timeFrameEmpty: Boolean
     ): Seq[DBValue] => Seq[DBValue] = {
       if ( oldest.nonEmpty ) {
-        _ sortBy ( _.timestamp.getTime ) take (oldest.get) reverse
+        _ sortBy ( _.timestamp.getTime ) take (oldest.get)
       } else if ( newest.nonEmpty ) {
-        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get)
+        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get) reverse
       } else if ( timeFrameEmpty ) {
         _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take 1
       } else {
@@ -541,7 +541,6 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     runSync( subItems.filter( _.subId === id ).result ).toArray
   }
 
-
   /**
    * Returns DBSub object wrapped in Option for given id.
    * Returns None if no subscription data matches the id
@@ -551,15 +550,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   def getSub(id: Int): Option[DBSub] = runSync(getSubI(id))
 
-  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =
-    subs.filter(_.id === id).result.map{
-      _.headOption map {
-        case sub: DBSub => sub
-        case _ => throw new RuntimeException("got wrong or unknown sub class???")
-      }
-    }
 
-  def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 
+  protected def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 
     dbioDBInfoItemsSum(
       hNodes map { hNode =>
         for {
