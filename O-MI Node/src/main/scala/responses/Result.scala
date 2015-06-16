@@ -9,9 +9,12 @@ import types.OdfTypes._
 import xml.XML
 import xml.Node
 import scala.language.existentials
+import OmiGenerator._
 
+/** Object containing helper mehtods for generating RequestResultTypes. Used to generate results  for requests.
+  *
+  **/
 object Result{
-  import OmiGenerator._
   private val scope = scalaxb.toScope(
     None -> "odf",
     Some("omi") -> "omi.xsd",
@@ -25,14 +28,37 @@ object Result{
   def notFound: RequestResultType = simpleResult( "404", Some("Such item/s not found.") )
   def success : RequestResultType = simpleResult( "200", None)
 
+
+  /** Result for normal O-MI Read request.
+    *
+    * @param objects objects contains O-DF data read from database
+    * @return Result containing the O-DF data. 
+    **/
   def readResult( objects: OdfObjects) : RequestResultType =  odfResult( "200", None, None, objects)
 
+  /** Result for poll request, O-MI Read request with requestId.
+    *
+    * @param requestId  requestId of subscription
+    * @param objects objects contains O-DF data read from database
+    * @return Result containing the requestId and the O-DF data. 
+    **/
   def pollResult( requestId: String, objects: OdfObjects) : RequestResultType =
     odfResult( "200", None, Some(requestId), objects)
 
+  /** Result for interval Subscription to use when automatily sending responses to callback address.
+    *
+    * @param requestId  requestId of subscription
+    * @param objects objects contains O-DF data read from database
+    * @return Result containing the requestId and the O-DF data. 
+    **/
   def subDataResult( requestId: String, objects: OdfObjects) : RequestResultType =
     odfResult( "200", None, Some(requestId), objects)  
     
+  /** Result for subscripton request, O-MI Read request with interval.
+    *
+    * @param requestId  requestId of created subscription
+    * @return Result containing the requestId 
+    **/
   def subscriptionResult( requestId: String): RequestResultType ={
     omiResult(
       omiReturn(
@@ -43,6 +69,9 @@ object Result{
     )
   }
 
+  /** Result containing O-DF data.
+    *
+    **/
   def odfResult( returnCode: String, returnDescription: Option[String], requestId: Option[String], objects: OdfObjects): RequestResultType  = {
     omiResult(
       omiReturn(
@@ -55,6 +84,9 @@ object Result{
     )
   }
 
+  /** Simple result containing only status code and optional description.
+    *
+    **/
   def simpleResult(code: String, description: Option[String] ) : RequestResultType = {
     omiResult(
       omiReturn(

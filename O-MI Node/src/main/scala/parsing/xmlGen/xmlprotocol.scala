@@ -11,6 +11,9 @@ val document = scalaxb.toXML[.Foo](obj, "foo", .defaultScope)
 **/
 import scala.language.postfixOps
 
+/** Scalaxb generated XMLProtocol for parsing and generating O-MI messages.
+  *
+  **/
 object `package` extends XMLProtocol { }
 
 trait XMLProtocol extends scalaxb.XMLStandardTypes {

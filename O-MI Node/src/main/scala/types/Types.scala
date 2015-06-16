@@ -1,3 +1,7 @@
+
+/** Package containing internal types used between different modules.
+  *
+  **/
 package types
 
 import java.sql.Timestamp

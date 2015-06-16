@@ -3,17 +3,28 @@ package http
 import scala.collection.JavaConverters._
 import java.net.InetAddress
 
+/** Helper object for checking, is connected ip permited to do input actions, a ExternalAgent or using Write request.
+  *
+  **/
 object PermissionCheck {
 
   import Boot.settings
   import Boot.system.log
+  /** Contains white listed ips
+    *
+    **/
   val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("IPv" + ip.length + " : " + ip.mkString(".")) 
     ip
   }.toArray 
+
   log.debug("Totally " + whiteIPs.length + "IPs")
+
+  /** Contains masks of white listed subnets.
+    *
+    **/
   val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
@@ -22,6 +33,11 @@ object PermissionCheck {
   }.toMap 
   log.debug("Totally " + whiteMasks.keys.size + "masks")
 
+  /** Main method for checkking connections permission
+    *
+    * @param addr addr is InetAddress of connector.
+    * @return Boolean, true if connection is permited to do input.
+    **/
   def hasPermission(addr: InetAddress) : Boolean = {
     whiteIPs.contains( inetAddrToBytes( addr ) ) ||
     whiteMasks.exists{
@@ -29,10 +45,22 @@ object PermissionCheck {
       isInSubnet(subnet, bits, inetAddrToBytes( addr ))
     }
   }
-  def inetAddrToBytes(addr: InetAddress) : Array[Byte] = {
+  
+  /** Helper method for converting InetAddress to Array of Bytes.
+    *
+    * @param addr addr is InetAddress of connector.
+    * @return Array of bytes.
+    **/
+  private def inetAddrToBytes(addr: InetAddress) : Array[Byte] = {
     addr.getAddress()
   }
-  def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
+  
+  /** Helper method for checkking if connection is in allowed subnets.
+    *
+    * @param addr addr is InetAddress of connector.
+    * @return Boolean, true if connection is in allowed suybnet.
+    **/
+  private def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
     if( subnet.length == ip.length){
       log.debug("Whitelist check for IPv" + ip.length + " address: " + ip.map{b => b.toHexString}.mkString(":") + " against " + subnet.map{b => b.toHexString}.mkString(":"))
       ip.length match{
@@ -64,7 +92,13 @@ object PermissionCheck {
     log.debug("Tried to compare IPv4 with IPv6, address: " + subnet.mkString(":") + " ip: " + ip.mkString(":") )
     false
   }
-  def bytesToInt(bytes: Array[Byte]) : Int = {
+
+  /** Helper method for converting byte array to Int
+    *
+    * @param bytes bytes to be converted.
+    * @return Int, bytes presented as Int.
+    **/
+  private def bytesToInt(bytes: Array[Byte]) : Int = {
     val ip : Int = ((bytes(0) & 0xFF) << 24) |
       ((bytes(1) & 0xFF) << 16) |
       ((bytes(2) & 0xFF) << 8)  |

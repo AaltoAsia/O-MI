@@ -10,6 +10,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 
 
+/** Object containing internal types used to represent O-DF formatted data
+  *
+  **/
 object OdfTypes{
 
   sealed trait OdfElement
