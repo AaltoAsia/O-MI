@@ -429,6 +429,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
       subInfoItems: DBInfoItems <- getInfoItemsI(subItemNodes)
 
+
+      _ = require( subItemNodes.length >= dbItems.length, "Invalid path, no such item found")
+
       newSubItems = subInfoItems map {
         case (hNode, values) =>
           val lastValue: Option[String] = for {
