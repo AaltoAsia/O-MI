@@ -209,7 +209,7 @@ class OmiServiceSpec extends Specification
     }
     val subscriptionTestCorrect: NodeSeq =
       <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="2">
-        <omi:read msgformat="odf" interval="4">
+        <omi:read msgformat="odf" interval="1">
           <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
             <Objects>
               <Object>
@@ -265,13 +265,31 @@ class OmiServiceSpec extends Specification
           rstatus === OK
           response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
+          response must not \\("value") 
+
+        }
+      }
+      
+      "return correct message when polled with the correct requestID" in {
+        Thread.sleep(1100)
+        requestId1 must beSome
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          rstatus === OK
+          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \\("value") \> "180"
 
         }
       }
       "return correct message when subscription ttl has ended" in {
         requestId1 must beSome
-        Thread.sleep(2500)
+        Thread.sleep(1500)
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           val response = responseAs[NodeSeq].head
           val mtype = mediaType

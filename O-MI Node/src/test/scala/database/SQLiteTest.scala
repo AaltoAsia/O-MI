@@ -154,72 +154,72 @@ object SQLiteTest extends Specification with AfterAll {
     
 
     "be able to buffer data on demand" in {
-      db.remove(Path("/Objects/path/to/sensor3/temp"))
+//      db.remove(Path("/Objects/path/to/sensor3/temp"))
 println("111111111111111111111111111111111111111")
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(6000), "21.0C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
       println("2")
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(7000), "21.1C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
             println("3")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(8000), "21.1C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(8000), "21.1C")
             println("4")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(9000), "21.2C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(9000), "21.2C")
          println("5")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(10000), "21.2C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(10000), "21.2C")
             println("6")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(11000), "21.3C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(11000), "21.3C")
          println("7")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(12000), "21.3C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(12000), "21.3C")
             println("8")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(13000), "21.4C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(13000), "21.4C")
          println("9")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(14000), "21.4C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(14000), "21.4C")
             println("10")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(15000), "21.5C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
             println("11")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(16000), "21.5C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
             println("12")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(17000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
             println("13")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(18000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(18000), "21.6C")
             println("14")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(19000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(19000), "21.6C")
             println("15")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(20000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(20000), "21.6C")
             println("16")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(21000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(21000), "21.6C")
             println("17")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(22000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(22000), "21.6C")
             println("18")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(23000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(23000), "21.6C")
             println("19")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(24000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(24000), "21.6C")
             println("20")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(25000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(25000), "21.6C")
             println("21")
 
-      db.set(Path("/Objects/path/to/sensor4/temp"), new java.sql.Timestamp(26000), "21.6C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(26000), "21.6C")
       println("22")
 
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         None,
         None,
@@ -231,7 +231,7 @@ println("111111111111111111111111111111111111111")
 
     "return values between two timestamps" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         Some(new Timestamp(6000)),
         Some(new Timestamp(10000)),
         None,
@@ -240,7 +240,7 @@ println("111111111111111111111111111111111111111")
       temp2 must beSome.which(_ must have size (5))
 
       val temp3 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         Some(new Timestamp(6000)),
         Some(new Timestamp(10000)),
         Some(10),
@@ -251,7 +251,7 @@ println("111111111111111111111111111111111111111")
 
     "return values from start" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         Some(new Timestamp(20000)),
         None,
         None,
@@ -262,7 +262,7 @@ println("111111111111111111111111111111111111111")
 
     "return values before end" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         Some(new Timestamp(10000)),
         None,
@@ -273,7 +273,7 @@ println("111111111111111111111111111111111111111")
 
     "return 10 values before end" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         Some(new Timestamp(26000)),
         None,
@@ -284,7 +284,7 @@ println("111111111111111111111111111111111111111")
 
     "return 10 values after start" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         Some(new Timestamp(6000)),
         None,
         Some(10),
@@ -295,7 +295,7 @@ println("111111111111111111111111111111111111111")
 
     "return all values if no options given" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         None,
         None,
@@ -306,7 +306,7 @@ println("111111111111111111111111111111111111111")
 
     "return all values if both fromStart and fromEnd is given" in {
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         None,
         Some(10),
@@ -330,7 +330,7 @@ println("111111111111111111111111111111111111111")
 
       db.removeSub(testSub1)
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         None,
         None,
@@ -342,7 +342,7 @@ println("111111111111111111111111111111111111111")
     "be able to stop buffering and revert to using historyLenght" in {
       db.removeSub(testSub2)
       val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor4/temp")),
+        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
         None,
         None,

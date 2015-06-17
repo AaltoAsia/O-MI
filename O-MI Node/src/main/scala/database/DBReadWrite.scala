@@ -267,7 +267,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   @deprecated("For testing only.", "Since implemented.")
   def remove(path: Path): Boolean = {
     val hNode = runSync( hierarchyNodes.filter( _.path === path).result ).headOption
-    require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
+    if(hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
     
     val removedLeft = hNode.get.leftBoundary
     val removedRight = hNode.get.rightBoundary

@@ -169,7 +169,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return xml.NodeSeq containing response
     **/
   def xmlMsg( envelope: xmlTypes.OmiEnvelope) = {
-    scalaxb.toXML[xmlTypes.OmiEnvelope]( envelope, Some("omi"), Some("omiEnvelope"), scope )
+    scalaxb.toXML[xmlTypes.OmiEnvelope]( envelope, Some("omi.xsd"), Some("omiEnvelope"), scope )
   }
 
 
@@ -203,7 +203,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           case Some(objects) =>
             Result.pollResult( id.toString, objects ) 
           case None =>
-            Result.notFound
+            Result.notFoundSub
         }
       }
     val returnTuple = (
