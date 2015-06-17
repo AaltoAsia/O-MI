@@ -271,7 +271,31 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether something was removed
    */
   // TODO: Is this needed at all?
-  def remove(path: Path): Boolean = ??? /*{
+  def remove(path: Path): Boolean = {
+    val hNode = runSync( hierarchyNodes.filter( _.path === path).result ).headOption
+    require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
+    
+    val removedLeft = hNode.get.leftBoundary
+    val removedRight = hNode.get.rightBoundary
+    val subTreeQ = getSubTreeQ(hNode.get)
+    val subTree = runSync( subTreeQ.result )
+    val removedIds =  subTree.map{ _._1.id.get } 
+    val removeActions = DBIO.seq(
+      latestValues.filter{ _.hierarchyId.inSet( removedIds ) }.delete,
+      subItems.filter{ _.hierarchyId.inSet( removedIds  ) }.delete,
+      metadatas.filter{ _.hierarchyId.inSet( removedIds ) }.delete,
+      hierarchyNodes.filter{ _.id.inSet( removedIds ) }.delete
+    )
+    val removedDistance = removedRight - removedLeft + 1 // one added to fix distance to rigth most boundary before removed left ( 14-11=3, 15-3=12 is not same as removed 11 ) 
+    val updateActions = DBIO.seq(
+        sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${ removedDistance }
+        WHERE RIGHTBOUNDARY > ${removedLeft}""",
+        sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${ removedDistance } 
+        WHERE LEFTBOUNDARY > ${removedLeft}"""
+    )
+    runSync( DBIO.seq(removeActions, updateActions) )
+    true
+  } /*{
     //search database for given path
     val pathQuery = latestValues.filter(_.path === path)
     var deleted = false
