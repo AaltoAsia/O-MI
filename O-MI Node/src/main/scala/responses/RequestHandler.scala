@@ -38,21 +38,25 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param request request is O-MI request to be handled
     **/
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    if (request.callback.nonEmpty) {
-      // TODO: Can't cancel this callback
+    request match {
+      case sub : SubscriptionRequest => runGeneration(sub)
+      case _ if (request.callback.nonEmpty) => {
+        // TODO: Can't cancel this callback
 
-      Future{ runGeneration(request) } map { case (xml : NodeSeq, code: Int) =>
-      sendCallback(request.callback.get.toString, xml)
-    }
-    (
-      xmlFromResults(
-        1.0,
-        Result.simpleResult("200", Some("OK, callback job started"))
-        ),
-        200
-      )
-    } else {
-      runGeneration(request)
+        Future{ runGeneration(request) } map { case (xml : NodeSeq, code: Int) =>
+          sendCallback(request.callback.get.toString, xml)
+        }
+        (
+          xmlFromResults(
+            1.0,
+            Result.simpleResult("200", Some("OK, callback job started"))
+          ),
+          200
+        )
+      }
+      case _ =>{
+        runGeneration(request)
+      } 
     }
   }
 
