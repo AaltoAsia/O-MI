@@ -60,7 +60,7 @@ trait Starter {
     )
 
     // Create input pusher actor
-    initInputPusher()
+    initInputPusher(dbConnection)
 
   }
 

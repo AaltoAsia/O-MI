@@ -26,30 +26,44 @@ import java.util.Date
 import xml._
 import scala.collection.mutable.Buffer
 
+/** Class for handling all request.
+  *
+  **/
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
   private def date = new Date()
-
+  /** Main interface for hanling O-MI request
+    *
+    * @param request request is O-MI request to be handled
+    **/
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    if (request.callback.nonEmpty) {
-      // TODO: Can't cancel this callback
+    request match {
+      case sub : SubscriptionRequest => runGeneration(sub)
+      case _ if (request.callback.nonEmpty) => {
+        // TODO: Can't cancel this callback
 
-      Future{ runGeneration(request) } map { case (xml : NodeSeq, code: Int) =>
-      sendCallback(request.callback.get.toString, xml)
-    }
-    (
-      xmlFromResults(
-        1.0,
-        Result.simpleResult("200", Some("OK, callback job started"))
-        ),
-        200
-      )
-    } else {
-      runGeneration(request)
+        Future{ runGeneration(request) } map { case (xml : NodeSeq, code: Int) =>
+          sendCallback(request.callback.get.toString, xml)
+        }
+        (
+          xmlFromResults(
+            1.0,
+            Result.simpleResult("200", Some("OK, callback job started"))
+          ),
+          200
+        )
+      }
+      case _ =>{
+        runGeneration(request)
+      } 
     }
   }
 
+  /** Method for runnig response generation. Handles tiemout etc. upper level failures.
+    *
+    * @param request request is O-MI request to be handled
+    **/
   def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
     val timeout = if (request.ttl > 0) request.ttl.seconds else Duration.Inf
 
@@ -89,19 +103,30 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
   }
 
+  /** Method to be called for handling internal server error, logging and stacktrace.
+    *
+    * @param request request is O-MI request to be handled
+    **/
   def actionOnInternalError: Throwable => Unit = { error =>
     println("[ERROR] Internal Server error:")
     error.printStackTrace()
   }
-
+  
+  /** Generates xml from request, match request and call specific method for generation.
+    *
+    * @param request request is O-MI request to be handled
+    * @return Tuple containing xml message and HTTP status code
+    **/
   def xmlFromRequest(request: OmiRequest) : (NodeSeq, Int) = request match {
     case read : ReadRequest =>{
       handleRead(read)
     }
     case poll : PollRequest =>{
+      //When sender wants to poll data of some subscription
       handlePoll(poll)
     }
     case subscription : SubscriptionRequest =>{
+      //When subscription is created
       handleSubscription(subscription)
     }
     case write : WriteRequest =>{
@@ -115,6 +140,8 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleCancel(cancel)
     }
     case subdata : SubDataRequest => {
+      //SHOULD NOT BE CALLED THERE 
+      //Used whan O-MI Node need to send data on interval
       ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Subdata reuqeust shouldn't be send to RequestHandler.." ) ) ), 500)
     }
     case _ =>{
@@ -136,6 +163,11 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     xmlMsg( wrapResultsToResponseAndEnvelope(ttl,results:_*) )
   }
 
+  /** Generates xml from xmlTypes
+    *
+    * @param envelope xmlType for OmiEnvelope containing response
+    * @return xml.NodeSeq containing response
+    **/
   def xmlMsg( envelope: xmlTypes.OmiEnvelope) = {
     scalaxb.toXML[xmlTypes.OmiEnvelope]( envelope, Some("omi"), Some("omiEnvelope"), scope )
   }

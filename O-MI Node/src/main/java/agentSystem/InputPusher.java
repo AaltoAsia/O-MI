@@ -1,10 +1,10 @@
 package agentSystem;
 
-import agentSystem.HandleOdf;
-import agentSystem.HandleObjects;
-import agentSystem.HandleInfoItems;
-import agentSystem.HandlePathValuePairs;
-import agentSystem.HandlePathMetaDataPairs;
+import agentSystem.InputPusherCmds.HandleOdf;
+import agentSystem.InputPusherCmds.HandleObjects;
+import agentSystem.InputPusherCmds.HandleInfoItems;
+import agentSystem.InputPusherCmds.HandlePathValuePairs;
+import agentSystem.InputPusherCmds.HandlePathMetaDataPairs;
 import types.OdfTypes.OdfObject;
 import types.OdfTypes.OdfObjects;
 import types.OdfTypes.OdfInfoItem;

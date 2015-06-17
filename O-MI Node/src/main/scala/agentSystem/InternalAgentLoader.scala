@@ -16,16 +16,13 @@ import scala.concurrent._
 import java.util.Date
 import java.sql.Timestamp
 
+import InternalAgentCLICmds._
 /** Helper Object for creating AgentLoader.
   *
   */
 object InternalAgentLoader{
   def props(): Props = Props(new InternalAgentLoader())
 }
-
-  case class ReStartCmd(agent: String)
-  case class StartCmd(agent: String)
-  case class StopCmd(agent: String)
 
   case class ThreadException( agent: InternalAgent, exception: Exception)
   case class ThreadInitialisationException( agent: InternalAgent, exception: Exception)

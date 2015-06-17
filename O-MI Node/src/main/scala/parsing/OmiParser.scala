@@ -19,14 +19,13 @@ import scala.collection.JavaConversions.seqAsJavaList
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
-  override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
+   protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
   /**
-   * Parse the given XML string into sequence of ParseMsg classes
+   * Public method for parsing the xml string into OmiParseResults.
    *
-   * @param xml_msg O-MI formatted message that is to be parsed
-   * @return sequence of ParseMsg classes, different message types are defined in
-   *         the TypeClasses.scala file
+   *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
+   *  @return OmiParseResults
    */
   def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/

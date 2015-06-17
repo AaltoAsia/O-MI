@@ -23,10 +23,10 @@ import javax.xml.validation.Validator
 abstract trait Parser[Result] {
 
   def parse(xml_msg: String) : Result
-  def schemaPath : javax.xml.transform.Source
+  protected def schemaPath : javax.xml.transform.Source
   
   /**
-   * function for checking does given string confort O-DF schema
+   * function for checking does given string confort a schema
    * @param xml String to check
    * @return ParseErrors found while checking, if empty, successful
    */
@@ -47,16 +47,6 @@ abstract trait Parser[Result] {
         return Seq(ParseError("Unknown exception: " + e.getMessage))
     }
     return Seq.empty;
-  }
-  /** 
-    * Temp function for fixing tests
-    */
-  def stripNamespaces(node : Node) : Node = { 
-    node match {
-      case e : Elem =>  
-      e.copy(scope = TopScope, child = e.child map (stripNamespaces))
-      case _ => node;
-    }   
   }
 
 }

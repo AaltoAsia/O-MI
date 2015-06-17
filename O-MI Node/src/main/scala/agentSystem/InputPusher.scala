@@ -10,11 +10,15 @@ import java.lang.Iterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
+object InputPusherCmds {
   case class HandleOdf( objects : OdfObjects)
   case class HandleObjects(objs: Iterable[OdfObject])
   case class HandleInfoItems(items: Iterable[OdfInfoItem])
   case class HandlePathValuePairs(pairs: Iterable[(Path,OdfValue)])
   case class HandlePathMetaDataPairs(pairs: Iterable[(Path,String)])
+}
+
+import InputPusherCmds._
 /** Creates an object for pushing data from internal agents to db.
   *
   */

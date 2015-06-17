@@ -10,6 +10,9 @@ import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import xml.XML
 import xml.NodeSeq
 
+/** Object containing helper mehtods for generating scalaxb generated O-MI types. Used to generate response messages when received a request.
+  *
+  **/
 object OmiGenerator {
   
   def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") = {

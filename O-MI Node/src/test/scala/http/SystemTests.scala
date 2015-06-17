@@ -18,6 +18,10 @@ import HttpMethods._
 import StatusCodes._
 import MediaTypes._
 
+import akka.testkit.TestActorRef
+import akka.actor._
+import responses.SubscriptionHandler
+
 import database._
 import http.PermissionCheck._
 
@@ -34,19 +38,21 @@ class OmiServiceSpec extends Specification
   def actorRefFactory = system
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
-  implicit val dbConnection = new SQLiteConnection // TestDB("system-test")
+  implicit val dbConnection = new TestDB("system-test") // new SQLiteConnection
   implicit val dbobject = dbConnection
-  val subscriptionHandler = akka.actor.ActorRef.noSender
+  val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))
   val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
+  val printer = new scala.xml.PrettyPrinter(80, 2)
 
   "System tests for features of OMI Node service".title
 
   def beforeAll() = {
+    Boot.init(dbConnection)
     // clear if some other tests have left data
-    dbConnection.clearDB()
+    //    dbConnection.clearDB()
 
     // Initialize the OmiService
-    Boot.main()
+    //    Boot.main(Array())
   }
 
   def afterAll() = {
@@ -125,7 +131,7 @@ class OmiServiceSpec extends Specification
       powerConsumptionValue,
       dataTime)
     log.debug("set data")
-    dbConnection.set(fridgeData._1, fridgeData._3,fridgeData._2)
+    dbConnection.set(fridgeData._1, fridgeData._3, fridgeData._2)
 
     val readTestRequestFridge: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later
@@ -147,24 +153,31 @@ class OmiServiceSpec extends Specification
       <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
         <omi:read msgformat="odf">
           <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-            <sss>
+            <WWWWWWWWWWWWWWWWWWWWWWWWWW>
               <Object>
                 <id>SmartFridge22334411</id>
                 <InfoItem name="PowerConsumption"/>
               </Object>
-            </sss>
+            </WWWWWWWWWWWWWWWWWWWWWWWWWW>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
 
-    "handle a single read request and the response" should {
-      "return error with invalid request" in {
+    "handle a single read request with following messages:" should {
+      s"invalid request:\n $invalidReadTestRequestFridge" in {
         Post("/", invalidReadTestRequestFridge).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
-          val response = responseAs[NodeSeq]
-          status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
+          val response = responseAs[NodeSeq].head
+          //          println(response)
+          //          println("\n\n\n\n\n______________________________________")
+          //          status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
+          s"response:\n${printer.format(response)}" in{
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
+        }
+
         }
       }
-
+      
+      s"correct request:\n $readTestRequestFridge" in {
       Post("/", readTestRequestFridge).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
         // XXX: This test is hacky as it is a nested "should"
@@ -172,27 +185,214 @@ class OmiServiceSpec extends Specification
         val mtype = mediaType
         val rstatus = status
 
-        "be xml that has a success return code (200)" in {
+        s"response:\n${printer.format(response)}" in {
           mtype === `text/xml`
           rstatus === OK
           response must \("response") \ ("result", "msgformat" -> "odf")
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
-        }
+
 
         val msg = response \ "response" \ "result" \ "msg"
         val infoitem = msg \ "Objects" \ "Object" \ "InfoItem"
 
-        "have the right InfoItem" in {
+
 
           response must \("response") \ ("result") \ ("msg")
 
           msg must \("Objects") \ ("Object") \ ("InfoItem", "name" -> "PowerConsumption")
-        }
 
-        "infoitem has the right value" in {
           infoitem must have length (1)
           infoitem must \("value") \> powerConsumptionValue // "180"
         }
+      }
+      }
+    }
+    val subscriptionTestCorrect: NodeSeq =
+      <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="2">
+        <omi:read msgformat="odf" interval="4">
+          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+            <Objects>
+              <Object>
+                <id>SmartFridge22334411</id>
+                <InfoItem name="PowerConsumption"/>
+              </Object>
+            </Objects>
+          </omi:msg>
+        </omi:read>
+      </omi:omiEnvelope>
+
+    "handle a subscription requests with following messages" should {
+      sequential
+      var requestId1: Option[Int] = None
+      s"correct request: \n $subscriptionTestCorrect " in {
+        Post("/", subscriptionTestCorrect).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+          s"response:\n${printer.format(response)}" in{ 
+          mtype === `text/xml`
+          rstatus === OK
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          response must \("response") \ ("result") \ ("requestId")
+
+          requestId1 = Some((response \\ "requestId").text.toInt)
+          //          println(requestId.get)
+          //          println("\n\n\n\n\n")
+          requestId1 must beSome
+
+          }
+
+        }
+
+      }
+      def pollmessage: NodeSeq =
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+          <omi:read>
+            <omi:requestId>{ requestId1.get }</omi:requestId>
+          </omi:read>
+        </omi:omiEnvelope>
+
+      "return correct message when polled with the correct requestID" in {
+        requestId1 must beSome
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          rstatus === OK
+          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
+          response must \\("value") \> "180"
+
+        }
+      }
+      "return correct message when subscription ttl has ended" in {
+        requestId1 must beSome
+        Thread.sleep(2500)
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          //          rstatus === BadRequest //TODO: UNCOMMENT 
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "A subscription with this id has expired or doesn't exist")
+          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+        }
+      }
+
+      val subscriptionTestCorrectEvent: NodeSeq =
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
+          <omi:read msgformat="odf" interval="-1">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>SmartFridge22334411</id>
+                  <InfoItem name="PowerConsumption"/>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>
+
+      s"event subscription request:\n $subscriptionTestCorrect" in {
+        Post("/", subscriptionTestCorrect).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+          s"response:\n${printer.format(response)}" in {
+          mtype === `text/xml`
+          rstatus === OK
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          response must \("response") \ ("result") \ ("requestId")
+
+          requestId1 = Some((response \\ "requestId").text.toInt)
+          //          println(requestId.get)
+          //          println("\n\n\n\n\n")
+          requestId1 must beSome
+          }
+        }
+
+      }
+      //lazy val needed here to get the correct requestId
+      //////      lazy val pollmessage2: NodeSeq =
+      //////        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+      ////          <omi:read>
+      //            <omi:requestId>{ requestId1.get }</omi:requestId>
+      //          </omi:read>
+      ////        </omi:omiEnvelope>
+      "return response with no new values when there have been no updates" in {
+        requestId1 must beSome
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          rstatus === OK
+          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
+          response must not \\ ("value")
+        }
+      }
+      "return response with new values after db update" in {
+        //simulate an value update in the database
+        dbConnection.set(fridgeData._1, new java.sql.Timestamp(4000), "200")
+
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          rstatus === OK
+          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("InfoItem") \ ("value") \> "200"
+        }
+      }
+      "return empty message when new values have been already polled" in {
+        Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+
+          val response = responseAs[NodeSeq].head
+          val mtype = mediaType
+          val rstatus = status
+
+          mtype === `text/xml`
+          rstatus === OK
+          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
+          response must not \\ ("value")
+        }
+      }
+
+    }
+  }
+  "Write request: OmiService" should {
+    val writeRequest =
+      <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+        <omi:write msgformat="odf">
+          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+            <Objects>
+              <Object>
+                <id>SmartFridge22334411</id>
+                <InfoItem name="PowerConsumption"/>
+              </Object>
+            </Objects>
+          </omi:msg>
+        </omi:write>
+      </omi:omiEnvelope>
+
+    "handle single write request and the response" should {
+      "return correct message when adding new InfoItem" in {
+        1===1
       }
     }
   }

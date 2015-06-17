@@ -6,6 +6,14 @@ import akka.util.ByteString
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
 
+object InternalAgentCLICmds
+{
+  case class ReStartCmd(agent: String)
+  case class StartCmd(agent: String)
+  case class StopCmd(agent: String)
+}
+
+import InternalAgentCLICmds._
 class InternalAgentCLI(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {

@@ -8,6 +8,9 @@ import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 
+/** Object containing internal types used to represent O-MI request.
+  *
+  **/
 object OmiTypes{
 
 
@@ -39,13 +42,17 @@ object OmiTypes{
     def isImmortal = ttl == -1.0
   }
 
-
+/** Request for getting data for current interval.
+  *
+  **/
   case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
     def ttl = sub.ttl
     def callback = sub.callback
   }
 
-
+/** One-time-read request
+  *
+  **/
 case class ReadRequest(
   ttl: Double,
   odf: OdfObjects ,
@@ -56,12 +63,18 @@ case class ReadRequest(
   callback: Option[ String ] = None
 ) extends OmiRequest with OdfRequest
 
+/** Poll request
+  *
+  **/
 case class PollRequest(
   ttl: Double,
   callback: Option[ String ] = None,
   requestIds: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest
 
+/** Subscription request for startting subscription
+  *
+  **/
 case class SubscriptionRequest(
   ttl: Double,
   interval: Double,
@@ -71,13 +84,19 @@ case class SubscriptionRequest(
   callback: Option[ String ] = None
 ) extends OmiRequest with SubLike with OdfRequest
 
-
+/** Write request
+  *
+  **/
 case class WriteRequest(
   ttl: Double,
   odf: OdfObjects,
   callback: Option[ String ] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest
 
+
+/** Response request, contains result for other requests
+  *
+  **/
 case class ResponseRequest(
   results: Iterable[OmiResult]  
 ) extends OmiRequest with PermissiveRequest{
@@ -85,6 +104,9 @@ case class ResponseRequest(
       def ttl = 0
    } 
 
+/** Cancel request, for cancelling subscription.
+  *
+  **/
 case class CancelRequest(
   ttl: Double,
   requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
@@ -92,6 +114,9 @@ case class CancelRequest(
       def callback = None
     }
 
+/** Result of a O-MI request
+  *
+  **/
 case class OmiResult(
   value: String,
   returnCode: String,
