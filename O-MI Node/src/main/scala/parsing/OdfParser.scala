@@ -67,7 +67,8 @@ object OdfParser extends Parser[OdfParseResult] {
       OdfObject(
         npath, 
         obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
-        obj.Object.map{ child => parseObject( child, npath ) }.toIterable
+        obj.Object.map{ child => parseObject( child, npath ) }.toIterable,
+        obj.description.map{ des => OdfDescription( des.value, des.lang ) }
       ) 
   }
   
@@ -83,7 +84,7 @@ object OdfParser extends Parser[OdfParseResult] {
             timeSolver(value)
           )
         },
-        None,
+        item.description.map{ des => OdfDescription( des.value, des.lang ) },
         if(item.MetaData.isEmpty){
           None
         } else {
