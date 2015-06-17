@@ -257,15 +257,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   
  
 
-
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
    *
    *
-   * @param path path to to-be-deleted sensor. If path doesn't end in sensor, does nothing.
+   * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
    */
-  // TODO: Is this needed at all?
+  @deprecated("For testing only.", "Since implemented.")
   def remove(path: Path): Boolean = {
     val hNode = runSync( hierarchyNodes.filter( _.path === path).result ).headOption
     require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
@@ -290,36 +289,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     )
     runSync( DBIO.seq(removeActions, updateActions) )
     true
-  } /*{
-    //search database for given path
-    val pathQuery = latestValues.filter(_.path === path)
-    var deleted = false
-    //if found rows with given path remove else path doesn't exist and can't be removed
-    if (runSync(pathQuery.result).length > 0) {
-      runSync(pathQuery.delete)
-      deleted = true;
-    }
-    if (deleted) {
-      //also delete objects from hierarchy that are not used anymore.
-      // start from sensors path and proceed upward in hierarchy until object that is shared by other sensor is found,
-      //ultimately the root. path/to/sensor/temp -> path/to/sensor -> ..... -> "" (root)
-      var testPath = path
-      while (!testPath.isEmpty) {
-        if (getChilds(testPath).length == 0) {
-          //only leaf nodes have 0 childs. 
-          var pathQueryObjects = objects.filter(_.path === testPath)
-          runSync(pathQueryObjects.delete)
-          testPath = testPath.dropRight(1)
-        } else {
-          //if object still has childs after we deleted one it is shared by other sensor, stop removing objects
-          //exit while loop
-          testPath = Path("")
-        }
-      }
-    }
-    return deleted
-  }*/
-
+  } 
 
   /**
    * Used to clear excess data from database for given path
@@ -458,6 +428,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       subItemNodes <- getHierarchyNodesI(dbItems) 
 
       subInfoItems: DBInfoItems <- getInfoItemsI(subItemNodes)
+
+
+      _ = require( subItemNodes.length >= dbItems.length, "Invalid path, no such item found")
 
       newSubItems = subInfoItems map {
         case (hNode, values) =>
