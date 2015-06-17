@@ -136,36 +136,31 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @param data sensordata, of type DBSensor to be stored to database.
    */
   def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Int = {
-    
-    val addObjectsAction = addObjectsI(path, true)
-    
-    val idQry = hierarchyNodes filter (_.path === path) map (n => (n.id, n.pollRefCount === 0)) result
-    
-    val updateAction = addObjectsAction.flatMap {  x=>
-      
-      idQry.headOption flatMap { qResult =>
+    val updateAction = for {
 
-      qResult match{
-        case None =>{
+      _ <- addObjectsI(path, true)
+    
+      nodeIdSeq <- getHierarchyNodeQ(path).map (
+        node => (node.id, node.pollRefCount === 0)
+      ).result
+    
+      updateResult <- nodeIdSeq.headOption match {
+        case None =>
           DBIO.successful(0)
-          }
         
-        case Some((id, buffering)) => {
-          val addAction = (latestValues += DBValue(id,timestamp,value,valueType))
-          
-          addAction.flatMap { x => {
-            if(buffering)
-              removeExcessI(id)
-            else
-              DBIO.successful(1)
-            
-          }
-          }
-        }
+        case Some((id, buffering)) => for {
+          _ <- (latestValues += DBValue(id,timestamp,value,valueType))
+
+          result <- if(buffering)
+                 removeExcessI(id)
+               else
+                 DBIO.successful(1)
+        } yield result
       }
-    }
-  }
+    } yield updateResult
+
     val run = runSync(updateAction.transactionally)
+
     //Call hooks
     database.getSetHooks foreach { _(Seq(path))}
     println(s"RUN with $path:  $run")
@@ -309,7 +304,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcessI(pathId: Int) = {
+  private def removeExcessI(pathId: Int): DBIO[Int] = {
     val pathQuery = latestValues.filter(_.hierarchyId === pathId).sortBy(_.timestamp.asc)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
     val historyLen = database.historyLength
     val qry = pathQuery.result
@@ -417,7 +412,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id:Int,newTime:Timestamp,newTTL:Double) ={
+  def setSubStartTime(id: Int, newTime: Timestamp, newTTL: Double) ={
     runWait(subs.filter(_.id === id).map(p => (p.startTime,p.ttl)).update((newTime,newTTL)))
   }
 
@@ -444,7 +439,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         case (hNode, values) =>
           val lastValue: Option[String] = for {
             dbValue <- values.headOption
-            if (!sub.hasCallback && sub.isEventBased)
+            if (sub.isEventBased)
           } yield dbValue.value
 
           DBSubscriptionItem( subId, hNode.id.get, lastValue) 

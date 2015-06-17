@@ -14,25 +14,6 @@ import types.OmiTypes.SubLike
 import types.Path._
 import database._
 
-@deprecated("Old interface", "DB Interface refactor")
-sealed abstract class DBItem(val path: Path)
-
-@deprecated("Old interface", "DB Interface refactor")
-case class DBSensor(pathto: Path, var value: String, var time: Timestamp) extends DBItem(pathto)
-
-@deprecated("Old interface", "DB Interface refactor")
-case class DBObject(pathto: Path) extends DBItem(pathto) {
-    var childs = Array[DBItem]()
-}
-
-// TODO: are these useful?
-trait IdProvider {
-  def id: Int
-}
-
-trait hasPath {
-  def path: Path
-}
 
 /**
  * Base trait for databases. Has basic private interface.
@@ -51,18 +32,19 @@ trait DBBase{
 
 
 
+
 /**
  * Public datatypes
  */
 
 
-sealed trait DBSubInternal
 case class SubscriptionItem(
+  val subId: Int,
   val path: Path,
-  val hierarchyId: Int,
-  val lastValue: String // for event polling subs
+  val lastValue: Option[String] // for event polling subs
 )
 
+sealed trait DBSubInternal
 /**
  * DBSub class to represent subscription information
  * @param ttl time to live. in seconds. subscription expires after ttl seconds
@@ -85,12 +67,17 @@ case class NewDBSub(
 ) extends SubLike with DBSubInternal
 
 
+
+
+
+
 trait OmiNodeTables extends DBBase {
 
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) }     // String to Path
     )
+
 
 
 

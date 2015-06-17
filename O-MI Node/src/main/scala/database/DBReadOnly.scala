@@ -531,14 +531,17 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   }
 
 
-  def getSubscribtedPaths( id: Int) : Array[Path] = {
+  def getSubscribtedPaths( subId: Int ): Seq[Path] = {
     val pathsQ = for{
-      (subI, hie) <- subItems.filter( _.subId === id ) join hierarchyNodes on ( _.hierarchyId === _.id )
+      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
     }yield( hie.path )
-    runSync( pathsQ.result ).toArray
+    runSync( pathsQ.result )
   }
-  def getSubscribtedItems( id: Int) : Array[DBSubscriptionItem] = {
-    runSync( subItems.filter( _.subId === id ).result ).toArray
+  def getSubscribtedItems( subId: Int ): Seq[SubscriptionItem] = {
+    val pathsQ = for{
+      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
+    } yield (subI.subId, hie.path, subI.lastValue)
+    runSync( pathsQ.result ) map SubscriptionItem.tupled
   }
 
   /**

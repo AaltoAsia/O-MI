@@ -108,7 +108,7 @@ trait OmiService extends HttpService {
             case None =>
               log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
               respondWithMediaType(`text/xml`) {
-                complete(404, <error>No object found</error>)
+                complete((404, <error>No object found</error>))
               }
           }
         }
@@ -145,7 +145,7 @@ trait OmiService extends HttpService {
                 log.warning("Parse Errors: {}", errors.mkString(", "))
                 requestHandler.parseError(errors.toSeq:_*)
               }
-              complete(returnStatus, responseXML)
+              complete((returnStatus, responseXML))
             }
           }
         }
