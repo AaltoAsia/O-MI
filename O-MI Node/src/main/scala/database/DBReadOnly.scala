@@ -98,10 +98,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param newTime Timestamp for the poll time, might be the new start time for the subscription
    */
   def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] ={
-    val sub  = getSub( subId )
-
-    if(sub.isEmpty){
-      return None 
+    val sub  = getSub( subId ) match {
+      case None => 
+        return None 
+      case Some(s) => s
     }
     
     val subitems = runSync( 
@@ -134,33 +134,32 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     
     val odfOption = withSubData(subId){
       case (node, seqVals) =>
-        val newVals =
+        val newVals = {
           //Get right data for each infoitem
-          sub match {
-            case Some(dbsub : DBSub) =>
-              val sortedValues = seqVals.sortBy( _.timestamp.getTime )
-
-              val dbvals =if( dbsub.isEventBased ){
-                handleEventPoll(node, dbsub, sortedValues)
-
-              } else { //Normal poll
-                //Get values for each interval
-                getByIntervalBetween(sortedValues, dbsub.startTime, newTime, dbsub.interval.toLong )
-              }
-              dbvals
-            case None => Seq.empty
+          val sortedValues = seqVals.sortBy( _.timestamp.getTime )
+          if( sub.isEventBased ){
+            handleEventPoll(node, sub, sortedValues)
+          } else { //Normal poll
+          //Get values for each interval
+            getByIntervalBetween(sortedValues, sub.startTime, newTime, sub.interval.toLong )
           }
+        }
         ( node, newVals )
     }
     updateActions = DBIO.seq(
       updateActions,
-      subs.filter{_.id === sub.get.id }update(//Sub update
+      subs.filter{_.id === sub.id }update(//Sub update
         DBSub(
-          sub.get.id,
-          sub.get.interval,
-          newTime,
-          sub.get.ttl + sub.get.startTime.getTime - newTime.getTime,//Should be cheched for > 0 and remove?
-          sub.get.callback
+          sub.id,
+          sub.interval,
+          new Timestamp(
+            (
+              sub.startTime.getTime  + 
+              ( (( newTime.getTime - sub.startTime.getTime)/1000 )/ sub.interval).toInt * sub.interval * 1000
+            ).toLong
+          ),
+          sub.ttl - ( (( newTime.getTime - sub.startTime.getTime)/1000.0)/ sub.interval).toInt * sub.interval,//Intervals between 
+          sub.callback
         )
       )
     )
@@ -527,14 +526,17 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   }
 
 
-  def getSubscribtedPaths( id: Int) : Array[Path] = {
+  def getSubscribtedPaths( subId: Int ): Seq[Path] = {
     val pathsQ = for{
-      (subI, hie) <- subItems.filter( _.subId === id ) join hierarchyNodes on ( _.hierarchyId === _.id )
+      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
     }yield( hie.path )
-    runSync( pathsQ.result ).toArray
+    runSync( pathsQ.result )
   }
-  def getSubscribtedItems( id: Int) : Array[DBSubscriptionItem] = {
-    runSync( subItems.filter( _.subId === id ).result ).toArray
+  def getSubscribtedItems( subId: Int ): Seq[SubscriptionItem] = {
+    val pathsQ = for{
+      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
+    } yield (subI.subId, hie.path, subI.lastValue)
+    runSync( pathsQ.result ) map SubscriptionItem.tupled
   }
 
   /**
