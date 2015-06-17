@@ -26,6 +26,7 @@ object Result{
   def notImplemented : RequestResultType = simpleResult( "501", Some("Not implemented") )
   def unauthorized : RequestResultType = simpleResult( "401", Some("Unauthorized") )
   def notFound: RequestResultType = simpleResult( "404", Some("Such item/s not found.") )
+  def notFoundSub: RequestResultType = simpleResult( "404", Some("A subscription with this id has expired or doesn't exist"))
   def success : RequestResultType = simpleResult( "200", None)
   def invalidRequest(msg: String = ""): RequestResultType = simpleResult( "400", Some("Bad request: " + msg) )
 

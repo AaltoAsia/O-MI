@@ -144,7 +144,8 @@ object OdfTypes{
           obj.path.last, // require checks (also in OdfObject)
           attributes = Map.empty
       )),
-      InfoItem = obj.infoItems.map{ 
+      obj.description.map{OdfDescriptionAsDescription },
+      obj.infoItems.map{ 
         info: OdfInfoItem =>
           OdfInfoItemAsInfoItemType( info )
         }.toSeq,
@@ -186,6 +187,8 @@ object OdfTypes{
   def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {
     require(info.path.length > 1, s"OdfObject should have longer than one segment path: ${info.path}")
     InfoItemType(
+      description = info.description.map{ OdfDescriptionAsDescription },
+      MetaData = info.metaData.map{ metadata => scalaxb.fromXML[MetaData]( XML.loadString( metadata.data ) ) },
       name = info.path.last, // require checks
       value = info.values.map{ 
         value : OdfValue =>
@@ -196,12 +199,6 @@ object OdfTypes{
           attributes = Map.empty
         )
       },
-      MetaData = 
-        if(info.metaData.nonEmpty)
-          Some( scalaxb.fromXML[MetaData]( XML.loadString( info.metaData.get.data ) ) )
-        else 
-          None
-      ,
       attributes = Map.empty
     )
   }
@@ -219,7 +216,12 @@ object OdfTypes{
     value:                String,
     lang:                 Option[String] = None
   ) extends OdfElement
-  
+ 
+  def OdfDescriptionAsDescription(
+    des : OdfDescription 
+  ) = {
+    Description( des.value, des.lang, Map.empty)
+  }
   type  OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]
   def getObjects( odf: OdfParseResult ) : JavaIterable[OdfObject] = 
     odf match{
