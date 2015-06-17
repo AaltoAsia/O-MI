@@ -115,37 +115,41 @@ trait OmiService extends HttpService {
       }
     }
 
-  // XXX: lazy maybe fixes bug
-
-  /* Receives HTTP-POST directed to root (localhost:8080) */
-  val getXMLResponse = post { // Handle POST requests from the client
+  /* Receives HTTP-POST directed to root */
+  val postXMLRequest = post { // Handle POST requests from the client
     clientIP { ip =>
       path("") {
         corsHeaders {
-           entity(as[NodeSeq]) { xml =>
-            val omi = OmiParser.parse(xml.toString)
-            var returnStatus = 200
+          entity(as[NodeSeq]) { xml =>
+            val eitherOmi = OmiParser.parse(xml.toString)
+
             respondWithMediaType(`text/xml`) {
-              val responseXML = if (omi.isRight) {
-                val request = omi.right.get.head
-                  val (response,returnCode) = request match {
-                    case write : PermissiveRequest => 
+              eitherOmi match {
+                case Right(requests) =>
+                  val request = requests.head
+
+                  val (response, returnCode) = request match {
+
+                    case pRequest : PermissiveRequest => 
                       if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
-                        requestHandler.handleRequest(request)
+                        requestHandler.handleRequest(pRequest)
                       else
                         (requestHandler.unauthorized, 401)
+
                     case req : OmiRequest => 
                         requestHandler.handleRequest(request)
                   }
-                  returnStatus = returnCode
-                  response
-              } else {
-                val errors = omi.left.get
-                //Errors found
-                log.warning("Parse Errors: {}", errors.mkString(", "))
-                requestHandler.parseError(errors.toSeq:_*)
+
+                  complete((returnCode, response))
+
+                case Left(errors) =>  // Errors found
+
+                  log.warning("Parse Errors: {}", errors.mkString(", "))
+
+                  val errorResponse = requestHandler.parseError(errors.toSeq:_*)
+
+                  complete((400, errorResponse))
               }
-              complete((returnStatus, responseXML))
             }
           }
         }
@@ -154,6 +158,6 @@ trait OmiService extends HttpService {
   }
 
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ postXMLRequest
 
 }
