@@ -27,6 +27,7 @@ object Result{
   def unauthorized : RequestResultType = simpleResult( "401", Some("Unauthorized") )
   def notFound: RequestResultType = simpleResult( "404", Some("Such item/s not found.") )
   def success : RequestResultType = simpleResult( "200", None)
+  def invalidRequest(msg: String = ""): RequestResultType = simpleResult( "400", Some("Bad request: " + msg) )
 
 
   /** Result for normal O-MI Read request.

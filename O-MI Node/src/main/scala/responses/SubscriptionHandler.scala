@@ -21,7 +21,7 @@ import java.sql.Timestamp
 import java.util.Date
 import System.currentTimeMillis
 import scala.math.Ordering
-import scala.util.{ Success, Failure }
+import scala.util.{Try, Success, Failure }
 import scala.collection.mutable.{ Map, HashMap }
 
 import xml._
@@ -322,7 +322,10 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
   private var ttlQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
   var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
   
-  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Int = {
+  /**
+   * @return Either Failure(exception) or the request (subscription) id as Success(Int)
+   */
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Try[Int] = Try {
     require(subscription.ttl > 0.0, "Zero time-to-live not supported")
 
     val paths = getPaths(subscription)

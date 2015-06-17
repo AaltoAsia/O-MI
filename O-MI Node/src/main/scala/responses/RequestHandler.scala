@@ -13,6 +13,7 @@ import CallbackHandlers.sendCallback
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
+import java.lang.IllegalArgumentException
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingAdapter
@@ -25,26 +26,31 @@ import java.sql.Timestamp
 import java.util.Date
 import xml._
 import scala.collection.mutable.Buffer
-
 /** Class for handling all request.
   *
   **/
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
+
   private def date = new Date()
+
+
   /** Main interface for hanling O-MI request
     *
     * @param request request is O-MI request to be handled
     **/
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
     request match {
-      case sub : SubscriptionRequest => runGeneration(sub)
+      case sub : SubscriptionRequest =>
+        runGeneration(sub)
+
       case _ if (request.callback.nonEmpty) => {
         // TODO: Can't cancel this callback
 
-        Future{ runGeneration(request) } map { case (xml : NodeSeq, code: Int) =>
-          sendCallback(request.callback.get.toString, xml)
+        Future{ runGeneration(request) } map {
+          case (xml : NodeSeq, code: Int) =>
+            sendCallback(request.callback.get.toString, xml)
         }
         (
           xmlFromResults(
@@ -79,27 +85,30 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           xmlFromResults(
             1.0,
             Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))
-        ),
-        500
-      )
+          ),
+          500
+        )
+      case Failure(e: IllegalArgumentException) => 
+        (invalidRequest(e.getMessage), 400)
+
       case Failure(e: RequestHandlingException) => 
-      actionOnInternalError(e)
-      (
-        xmlFromResults(
-          1.0,
-          Result.simpleResult(e.errorCode.toString, Some( e.getMessage()))
-        ),
-        501
-      )
+        actionOnInternalError(e)
+        (
+          xmlFromResults(
+            1.0,
+            Result.simpleResult(e.errorCode.toString, Some( e.getMessage()))
+          ),
+          501
+        )
       case Failure(e) => 
-      actionOnInternalError(e)
-      (
-        xmlFromResults(
-          1.0,
-          Result.simpleResult("501", Some( "Internal server error: " + e.getMessage()))
-        ),
-        501
-      )
+        actionOnInternalError(e)
+        (
+          xmlFromResults(
+            1.0,
+            Result.simpleResult("501", Some( "Internal server error: " + e.getMessage()))
+          ),
+          501
+        )
     }
   }
 
@@ -220,17 +229,20 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def handleSubscription( subscription: SubscriptionRequest ) : ( NodeSeq, Int) ={
     implicit val timeout= Timeout( 10.seconds ) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
-    var returnCode = 200
+    val (response, returnCode) =
+        Await.result(subFuture, Duration.Inf) match {
+          case Failure(e: IllegalArgumentException) => 
+            (Result.invalidRequest(e.getMessage), 400)
+          case Failure(e: Throwable) =>
+            (Result.internalError(s"Internal server error when trying to create subscription: ${e.getMessage}"),
+              500)
+          case Success(id: Int) =>
+            (Result.subscriptionResult(id.toString), 200)
+        }
     (
       xmlFromResults(
         1.0,
-        Await.result(subFuture, Duration.Inf) match {
-          case -1 => 
-            returnCode = 501
-            Result.internalError("Internal server error when trying to create subscription")
-          case id: Int =>
-            Result.subscriptionResult(id.toString) 
-        }
+        response
       ),
       returnCode
     )
@@ -313,10 +325,17 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     1.0,
     Result.notImplemented 
   )
+  def invalidRequest(msg: String = "") = xmlFromResults(
+    1.0,
+    Result.invalidRequest(msg)
+  )
   def parseError(err: ParseError*) =
     xmlFromResults(
       1.0,
-      Result.simpleResult("400", Some(err.map { e => e.msg }.mkString("\n"))))
+      Result.simpleResult("400",
+        Some(err.map { e => e.msg }.mkString("\n"))
+      )
+    )
   def internalError(e: Throwable) =
     xmlFromResults(
       1.0,
