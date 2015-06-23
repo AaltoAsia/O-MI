@@ -223,7 +223,7 @@ class OmiServiceSpec extends Specification
 
     "handle a subscription requests with following messages" should {
       sequential
-      var requestId1: Option[Int] = None
+      var requestID1: Option[Int] = None
       s"correct request: \n $subscriptionTestCorrect " in {
         Post("/", subscriptionTestCorrect).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           val response = responseAs[NodeSeq].head
@@ -236,10 +236,10 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
           response must \("response") \ ("result") \ ("requestID")
 
-          requestId1 = Some((response \\ "requestID").text.toInt)
-          //          println(requestId.get)
+          requestID1 = Some((response \\ "requestID").text.toInt)
+          //          println(requestID.get)
           //          println("\n\n\n\n\n")
-          requestId1 must beSome
+          requestID1 must beSome
 
           }
 
@@ -249,12 +249,12 @@ class OmiServiceSpec extends Specification
       def pollmessage: NodeSeq =
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
           <omi:read>
-            <omi:requestID>{ requestId1.get }</omi:requestID>
+            <omi:requestID>{ requestID1.get }</omi:requestID>
           </omi:read>
         </omi:omiEnvelope>
 
       "return correct message when polled with the correct requestID" in {
-        requestId1 must beSome
+        requestID1 must beSome
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
           val response = responseAs[NodeSeq].head
@@ -263,7 +263,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\("value") 
 
@@ -272,7 +272,7 @@ class OmiServiceSpec extends Specification
       
       "return correct message when polled with the correct requestID" in {
         Thread.sleep(1100)
-        requestId1 must beSome
+        requestID1 must beSome
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
           val response = responseAs[NodeSeq].head
@@ -281,14 +281,14 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \\("value") \> "180"
 
         }
       }
       "return correct message when subscription ttl has ended" in {
-        requestId1 must beSome
+        requestID1 must beSome
         Thread.sleep(1500)
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           val response = responseAs[NodeSeq].head
@@ -299,7 +299,7 @@ class OmiServiceSpec extends Specification
           //          rstatus === BadRequest //TODO: UNCOMMENT 
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "A subscription with this id has expired or doesn't exist")
-          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
         }
       }
 
@@ -329,23 +329,23 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
           response must \("response") \ ("result") \ ("requestID")
 
-          requestId1 = Some((response \\ "requestID").text.toInt)
-          //          println(requestId.get)
+          requestID1 = Some((response \\ "requestID").text.toInt)
+          //          println(requestID.get)
           //          println("\n\n\n\n\n")
-          requestId1 must beSome
+          requestID1 must beSome
           }
         }
 
       }
-      //lazy val needed here to get the correct requestId
+      //lazy val needed here to get the correct requestID
       //////      lazy val pollmessage2: NodeSeq =
       //////        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
       ////          <omi:read>
-      //            <omi:requestId>{ requestId1.get }</omi:requestId>
+      //            <omi:requestID>{ requestID1.get }</omi:requestID>
       //          </omi:read>
       ////        </omi:omiEnvelope>
       "return response with no new values when there have been no updates" in {
-        requestId1 must beSome
+        requestID1 must beSome
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
           val response = responseAs[NodeSeq].head
@@ -354,7 +354,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }
@@ -371,7 +371,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("InfoItem") \ ("value") \> "200"
         }
@@ -385,7 +385,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }

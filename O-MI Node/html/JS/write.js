@@ -44,7 +44,7 @@ function writeXML(items, omi){
 	if(omi.operation === 'read'){
 		writeObjects(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
 	} else if (omi.operation === 'cancel'){
-		writeRequestId(writer, omi.requestIDs);
+		writerequestID(writer, omi.requestIDs);
 	} else if(omi.operation === 'write'){
 		writeObjects(writer, items);
 	} 
@@ -188,7 +188,7 @@ function writeObject(object, writer){
  * @param {XMLWriter} writer The current xml writer
  * @param {Array} requestIDs The array of requestID's to be written
  */
-function writeRequestId(writer, requestIDs) {
+function writerequestID(writer, requestIDs) {
 	for(var i = 0; i < requestIDs.length; i++){
 		writer.writeStartElement('omi:requestID');
 		writer.writeString(requestIDs[i]);
@@ -243,7 +243,7 @@ function writeSubscribe(requestID, items, ttl, interval, begin, end, newest, old
 		}
 	}
 
-	writeRequestId(writer, requestID);
+	writerequestID(writer, requestID);
 	writeMsg(writer)
 	writer.writeStartElement('Objects');
 
@@ -280,7 +280,7 @@ function writePoll(writer, ttl, requestIDs) {
 	writer.writeStartDocument();
 	writeOmiInfo(writer, ttl);
 	writer.writeStartElement('omi:read');
-	writeRequestId(writer, requestIDs);
+	writerequestID(writer, requestIDs);
 	writer.writeEndDocument();
 	
 	return writer.flush();

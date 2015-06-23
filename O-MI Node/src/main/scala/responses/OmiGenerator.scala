@@ -25,10 +25,10 @@ object OmiGenerator {
     )
   }
   
-  def omiResult(returnType: ReturnType, requestId: Option[String] = None, msgformat: Option[String] = None, msg: Option[NodeSeq] = None) : RequestResultType = {
+  def omiResult(returnType: ReturnType, requestID: Option[String] = None, msgformat: Option[String] = None, msg: Option[NodeSeq] = None) : RequestResultType = {
     RequestResultType(
         returnType,
-        requestId match{
+        requestID match{
           case Some(id) => Some(IdType(id))
           case None => None
         },

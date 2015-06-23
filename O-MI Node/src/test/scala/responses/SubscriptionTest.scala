@@ -134,11 +134,11 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       parserlist.isRight === true
       val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
-      val requestId = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
-      //      dbConnection.getSub(requestId.get) must beSome
-      val subxml = requestId.map(id => requestHandler.handleRequest((PollRequest(10, None, asJavaIterable(Seq(id))))))
+      val requestID = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
+      //      dbConnection.getSub(requestID.get) must beSome
+      val subxml = requestID.map(id => requestHandler.handleRequest((PollRequest(10, None, asJavaIterable(Seq(id))))))
 
-      val correctxml = requestId map (x => {
+      val correctxml = requestID map (x => {
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
           <omi:response>
             <omi:result msgformat="odf">
@@ -173,10 +173,10 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       parserlistcallback.isRight === true
       val requestOption = parserlistcallback.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
-      val requestId = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
+      val requestID = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
       //XXX: Stupid hack, for interval      
       Thread.sleep(1000)
-      val subxml = requestId.map(id => requestHandler.handleRequest((PollRequest(10, None, asJavaIterable(Seq(id))))))
+      val subxml = requestID.map(id => requestHandler.handleRequest((PollRequest(10, None, asJavaIterable(Seq(id))))))
 
       //      val (requestIDcallback, xmlreturncallback) = requestHandler.handleRequest(parserlistcallback.right.get.head.asInstanceOf[SubscriptionRequest])
 
@@ -217,7 +217,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       parserlist.isRight === true
       val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
-      val requestId = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
+      val requestID = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
       //      val (requestID, xmlreturn) = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])
 
       val correctxml =
@@ -229,7 +229,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
           </omi:response>
         </omi:omiEnvelope>
 
-      requestId must beNone//Some(===(-1)) // === -1
+      requestID must beNone//Some(===(-1)) // === -1
       requestReturn must beSome.which(_._1.headOption must beSome.which(_ must beEqualToIgnoringSpace(correctxml)))
       //xmlreturn.head must beEqualToIgnoringSpace(correctxml)
       //      (requestID, trim(xmlreturn.head)) === (-1, trim(correctxml))

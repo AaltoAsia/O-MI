@@ -38,49 +38,49 @@ object Result{
     **/
   def readResult( objects: OdfObjects) : RequestResultType =  odfResult( "200", None, None, objects)
 
-  /** Result for poll request, O-MI Read request with requestId.
+  /** Result for poll request, O-MI Read request with requestID.
     *
-    * @param requestId  requestId of subscription
+    * @param requestID  requestID of subscription
     * @param objects objects contains O-DF data read from database
-    * @return Result containing the requestId and the O-DF data. 
+    * @return Result containing the requestID and the O-DF data. 
     **/
-  def pollResult( requestId: String, objects: OdfObjects) : RequestResultType =
-    odfResult( "200", None, Some(requestId), objects)
+  def pollResult( requestID: String, objects: OdfObjects) : RequestResultType =
+    odfResult( "200", None, Some(requestID), objects)
 
   /** Result for interval Subscription to use when automatily sending responses to callback address.
     *
-    * @param requestId  requestId of subscription
+    * @param requestID  requestID of subscription
     * @param objects objects contains O-DF data read from database
-    * @return Result containing the requestId and the O-DF data. 
+    * @return Result containing the requestID and the O-DF data. 
     **/
-  def subDataResult( requestId: String, objects: OdfObjects) : RequestResultType =
-    odfResult( "200", None, Some(requestId), objects)  
+  def subDataResult( requestID: String, objects: OdfObjects) : RequestResultType =
+    odfResult( "200", None, Some(requestID), objects)  
     
   /** Result for subscripton request, O-MI Read request with interval.
     *
-    * @param requestId  requestId of created subscription
-    * @return Result containing the requestId 
+    * @param requestID  requestID of created subscription
+    * @return Result containing the requestID 
     **/
-  def subscriptionResult( requestId: String): RequestResultType ={
+  def subscriptionResult( requestID: String): RequestResultType ={
     omiResult(
       omiReturn(
         "200",
         Some("Successfully started subcription")
       ),
-      Some(requestId)
+      Some(requestID)
     )
   }
 
   /** Result containing O-DF data.
     *
     **/
-  def odfResult( returnCode: String, returnDescription: Option[String], requestId: Option[String], objects: OdfObjects): RequestResultType  = {
+  def odfResult( returnCode: String, returnDescription: Option[String], requestID: Option[String], objects: OdfObjects): RequestResultType  = {
     omiResult(
       omiReturn(
         returnCode,
         returnDescription
       ),
-      requestId,
+      requestID,
       Some("odf"),
       Some( odfMsg( scalaxb.toXML[ObjectsType]( OdfTypes.OdfObjectsAsObjectsType(objects) , Some("odf.xsd"), Some("Objects"), scope ) ) ) 
     )

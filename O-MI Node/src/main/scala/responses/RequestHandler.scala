@@ -204,7 +204,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def handlePoll( poll : PollRequest ) : (NodeSeq, Int ) ={
     val time = date.getTime
     val results =
-      poll.requestIds.map{ id => 
+      poll.requestIDs.map{ id => 
 
         val objectsO : Option[OdfObjects] = dbConnection.getPollData(id,new Timestamp(time))
 
@@ -251,7 +251,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
-    val jobs = cancel.requestId.map { id =>
+    val jobs = cancel.requestID.map { id =>
       Try {
         val parsedId = id.toInt
         subscriptionHandler ? RemoveSubscription(parsedId)
@@ -276,7 +276,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             }
             case Failure(n: NumberFormatException) =>{
               returnCode = 400
-              Result.simpleResult(returnCode.toString, Some("Invalid requestId"))
+              Result.simpleResult(returnCode.toString, Some("Invalid requestID"))
             }
             case Failure(e : RequestHandlingException) =>{ 
               returnCode = e.errorCode

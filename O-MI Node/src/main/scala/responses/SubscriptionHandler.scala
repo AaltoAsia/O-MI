@@ -173,7 +173,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
 
-    case RemoveSubscription(requestId) => sender() ! removeSub(requestId)
+    case RemoveSubscription(requestID) => sender() ! removeSub(requestID)
   
     case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
@@ -340,11 +340,11 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     val newSub = NewDBSub(interval, timeStamp, ttl, callback)
     val dbsub = dbConnection.saveSub( newSub, paths )
 
-    val requestId = dbsub.id 
+    val requestID = dbsub.id 
     Future{
       loadSub(dbsub)
     }
-    requestId
+    requestID
   }
 
   def getPaths(request: OdfRequest) = getLeafs(request.odf).map{ _.path }.toSeq
