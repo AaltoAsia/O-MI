@@ -53,18 +53,17 @@ object OdfTypes{
         }
       )
     }
-  }
 
-  def OdfObjectsAsObjectsType( objects: OdfObjects ) : ObjectsType ={
-    ObjectsType(
-      Object = objects.objects.map{
-        obj: OdfObject => 
-        OdfObjectAsObjectType( obj )
-      }.toSeq,
-      objects.version
-    )
-  }
-  
+    implicit def asObjectsType : ObjectsType ={
+      ObjectsType(
+        Object = objects.map{
+          obj: OdfObject => 
+          obj.asObjectType
+        }.toSeq,
+        version
+      )
+    }
+  }    
   case class OdfObject(
     path:                 Path,
     infoItems:            JavaIterable[OdfInfoItem],
@@ -135,26 +134,25 @@ object OdfTypes{
         }
       )
     }
-  }
-
-  def OdfObjectAsObjectType(obj: OdfObject) : ObjectType = {
-    require(obj.path.length > 1, s"OdfObject should have longer than one segment path: ${obj.path}")
-    ObjectType(
-      Seq( QlmID(
-          obj.path.last, // require checks (also in OdfObject)
-          attributes = Map.empty
-      )),
-      obj.description.map{OdfDescriptionAsDescription },
-      obj.infoItems.map{ 
-        info: OdfInfoItem =>
-          OdfInfoItemAsInfoItemType( info )
+    implicit def asObjectType : ObjectType = {
+      require(path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
+      ObjectType(
+        Seq( QlmID(
+            path.last, // require checks (also in OdfObject)
+            attributes = Map.empty
+        )),
+        description.map{OdfDescriptionAsDescription },
+        infoItems.map{ 
+          info: OdfInfoItem =>
+            info.asInfoItemType
+          }.toSeq,
+        Object = objects.map{ 
+          subobj: OdfObject =>
+          subobj.asObjectType
         }.toSeq,
-      Object = obj.objects.map{ 
-        subobj: OdfObject =>
-        OdfObjectAsObjectType( subobj )
-      }.toSeq,
-      attributes = Map.empty
-    )
+        attributes = Map.empty
+      )
+    }
   }
 
   case class OdfInfoItem(
@@ -182,25 +180,20 @@ object OdfTypes{
         }
       )
     }
-  }
 
-  def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {
-    require(info.path.length > 1, s"OdfObject should have longer than one segment path: ${info.path}")
-    InfoItemType(
-      description = info.description.map{ OdfDescriptionAsDescription },
-      MetaData = info.metaData.map{ metadata => scalaxb.fromXML[MetaData]( XML.loadString( metadata.data ) ) },
-      name = info.path.last, // require checks
-      value = info.values.map{ 
-        value : OdfValue =>
-        ValueType(
-          value.value,
-          value.typeValue,
-          unixTime = Some(value.timestamp.get.getTime/1000),
-          attributes = Map.empty
-        )
-      }.toSeq,
-      attributes = Map.empty
-    )
+    def asInfoItemType: InfoItemType = {
+      require(this.path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
+      InfoItemType(
+        description = description.map{ OdfDescriptionAsDescription },
+        MetaData = metaData.map{ metadata => scalaxb.fromXML[MetaData]( XML.loadString( metadata.data ) ) },
+        name = path.last, // require checks
+        value = values.map{ 
+          value : OdfValue =>
+          value.asValueType
+        }.toSeq,
+        attributes = Map.empty
+      )
+    }
   }
   case class OdfMetaData(
     data:                 String
@@ -208,9 +201,18 @@ object OdfTypes{
 
   case class OdfValue(
     value:                String,
-    typeValue:            String = "",
+    typeValue:            String ="xs:string",
     timestamp:            Option[Timestamp] = None
-  ) extends OdfElement
+  ) extends OdfElement {
+    implicit def asValueType : ValueType = {
+      ValueType(
+        value,
+        typeValue,
+        unixTime = Some(timestamp.get.getTime/1000),
+        attributes = Map.empty
+      )
+    }
+  }
 
   case class OdfDescription(
     value:                String,

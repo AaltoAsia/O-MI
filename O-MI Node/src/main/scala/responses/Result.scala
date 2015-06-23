@@ -82,7 +82,7 @@ object Result{
       ),
       requestID,
       Some("odf"),
-      Some( odfMsg( scalaxb.toXML[ObjectsType]( OdfTypes.OdfObjectsAsObjectsType(objects) , Some("odf.xsd"), Some("Objects"), scope ) ) ) 
+      Some( odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , Some("odf.xsd"), Some("Objects"), scope ) ) ) 
     )
   }
 
