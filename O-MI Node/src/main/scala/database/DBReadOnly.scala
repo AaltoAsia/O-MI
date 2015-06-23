@@ -113,7 +113,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       //GET all vals
       val dbvals = getBetween(
           sortedValues, dbsub.startTime, newTime
-        ).dropWhile{ value =>//drops values from start that are same than before
+        ).dropWhile{ value =>//drops values from start that are same as before
           subitems(value.hierarchyId).headOption match {
             case Some( headVal) => 
               value.value == headVal.lastValue
@@ -168,7 +168,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   }
 
   def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
-    values.filter( value => value.timestamp.before( before ) && value.timestamp.after( after ) )
+    values.filter( value => (value.timestamp.equals(before) || value.timestamp.before( before )) && (value.timestamp.equals( after ) || value.timestamp.after( after )) )
   }
   def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
     var intervalTime =

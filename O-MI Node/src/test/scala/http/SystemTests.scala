@@ -234,9 +234,9 @@ class OmiServiceSpec extends Specification
           rstatus === OK
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
-          response must \("response") \ ("result") \ ("requestId")
+          response must \("response") \ ("result") \ ("requestID")
 
-          requestId1 = Some((response \\ "requestId").text.toInt)
+          requestId1 = Some((response \\ "requestID").text.toInt)
           //          println(requestId.get)
           //          println("\n\n\n\n\n")
           requestId1 must beSome
@@ -249,7 +249,7 @@ class OmiServiceSpec extends Specification
       def pollmessage: NodeSeq =
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
           <omi:read>
-            <omi:requestId>{ requestId1.get }</omi:requestId>
+            <omi:requestID>{ requestId1.get }</omi:requestID>
           </omi:read>
         </omi:omiEnvelope>
 
@@ -263,7 +263,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\("value") 
 
@@ -281,7 +281,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \\("value") \> "180"
 
@@ -299,7 +299,7 @@ class OmiServiceSpec extends Specification
           //          rstatus === BadRequest //TODO: UNCOMMENT 
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "A subscription with this id has expired or doesn't exist")
-          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
         }
       }
 
@@ -327,9 +327,9 @@ class OmiServiceSpec extends Specification
           rstatus === OK
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
-          response must \("response") \ ("result") \ ("requestId")
+          response must \("response") \ ("result") \ ("requestID")
 
-          requestId1 = Some((response \\ "requestId").text.toInt)
+          requestId1 = Some((response \\ "requestID").text.toInt)
           //          println(requestId.get)
           //          println("\n\n\n\n\n")
           requestId1 must beSome
@@ -354,7 +354,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }
@@ -371,7 +371,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("InfoItem") \ ("value") \> "200"
         }
@@ -385,7 +385,7 @@ class OmiServiceSpec extends Specification
 
           mtype === `text/xml`
           rstatus === OK
-          response must \("response") \ ("result") \ ("requestId") \> requestId1.get.toString()
+          response must \("response") \ ("result") \ ("requestID") \> requestId1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }

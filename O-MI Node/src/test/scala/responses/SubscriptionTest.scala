@@ -221,15 +221,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       //      val (requestID, xmlreturn) = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])
 
       val correctxml =
-        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0">
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return returnCode="400" description="No InfoItems found in the paths"></omi:return>
+              <omi:return returnCode="400" description="Bad request: requirement failed: Invalid path, no such item found"></omi:return>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
 
-      requestId must beSome(===(-1)) // === -1
+      requestId must beNone//Some(===(-1)) // === -1
       requestReturn must beSome.which(_._1.headOption must beSome.which(_ must beEqualToIgnoringSpace(correctxml)))
       //xmlreturn.head must beEqualToIgnoringSpace(correctxml)
       //      (requestID, trim(xmlreturn.head)) === (-1, trim(correctxml))
@@ -239,11 +239,11 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val xmlreturn = requestHandler.handleRequest((PollRequest(10, None, Seq(1234))))
 
       val correctxml =
-        <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
               <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist">
-              </omi:return><omi:requestID>1234</omi:requestID>
+              </omi:return>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -330,14 +330,14 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val testTime = new Date().getTime - 10000
 
       (0 to 10).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime - 4999 + n * 1000), n.toString()))
+        dbConnection.set(testPath, new java.sql.Timestamp(testTime - 5000 + n * 1000), n.toString()))
 
       val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
       val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test.\\("value").length === 6
       val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "testvalue")
+      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
       val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
 
@@ -358,11 +358,11 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       test.\\("value").length === 8
       val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "testvalue")
+      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
       val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
       //does not return same value twice
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "testvalue")
+      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
       val test4 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test4.\\("value").length === 0
 
