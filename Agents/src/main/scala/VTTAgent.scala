@@ -47,10 +47,10 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
 
-/** Agent for the SmartHouse
+/** Agent for the VTT
   * 
   */
-class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
+class VTTAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   
   private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
@@ -63,19 +63,19 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   
   override def init() : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
-      InternalAgent.log.warning("ConfigPath was empty or didn't exist, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("ConfigPath was empty or didn't exist, VTTAgent shutting down.")
       shutdown
       return
     }
     val lines = scala.io.Source.fromFile(configPath).getLines().toArray
     if(lines.isEmpty){
-      InternalAgent.log.warning("Config file was empty, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("Config file was empty, VTTAgent shutting down.")
       shutdown
       return
     }
     val file =  new File(lines.head)
     if(!file.exists() || !file.canRead){
-      InternalAgent.log.warning("File "+ lines.head + " doesn't exist or can't be read, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("File "+ lines.head + " doesn't exist or can't be read, VTTAgent shutting down.")
       shutdown
       return
     }
@@ -84,8 +84,8 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     val tmp_odf = OdfParser.parse( xml)
     val errors = getErrors(tmp_odf)
     if(errors.nonEmpty) {
-      InternalAgent.log.warning("Odf has errors, SmartHouseAgent shutting down.")
-      InternalAgent.log.warning("SmartHouse: "+errors.mkString("\n"))
+      InternalAgent.log.warning("Odf has errors, VTTAgent shutting down.")
+      InternalAgent.log.warning("VTT: "+errors.mkString("\n"))
       shutdown
       return
     }
@@ -95,13 +95,13 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       }.map{ info => (info, info.values.headOption.get.value.toString) }
     )
     if(odfInfoItems.isEmpty){
-      InternalAgent.log.warning("Odf was empty, SmartHouseAgent shutting down.")
+      InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
       shutdown
       return
     }
     InputPusher.handlePathMetaDataPairs( 
-      odfInfoItems.get.filter{ case ((info: OdfInfoItem, firstValue : String)) => info.metaData.nonEmpty }.map{
-        case ((info: OdfInfoItem, firstValue : String))  => (info.path, info.metaData.get.data)
+      odfInfoItems.get.filter{ case ((info: OdfInfoItem, firstValue:String ))  => info.metaData.nonEmpty }.map{
+        case ((info: OdfInfoItem, firstValue:String )) => (info.path, info.metaData.get.data)
       }
     )
   }
@@ -109,7 +109,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   def loopOnce(): Unit = {
     val date = new java.util.Date()
     odfInfoItems = Some( 
-      odfInfoItems.get.map{ case ((info: OdfInfoItem, firstValue : String)) =>
+      odfInfoItems.get.map{ case ((info: OdfInfoItem, firstValue:String )) =>
         val newVal = info.values.headOption match {
           case Some(value)  => value.value.toDouble  + firstValue.toDouble/ 10 *Random.nextGaussian
           case None => Random.nextInt
@@ -120,12 +120,12 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
         )
       } 
     )
-    InternalAgent.log.info("SmartHouseAgent pushed data to DB.")
+    InternalAgent.log.info("VTTAgent pushed data to DB.")
     InputPusher.handleInfoItems(odfInfoItems.get.map{ case (info, _) => info})
     Thread.sleep(10000)
   }
 
   def finish(): Unit = {
-	    println("SmartHouseAgent has died.")
+	    println("VTTAgent has died.")
   }
 }
