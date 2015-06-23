@@ -45,13 +45,13 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
   private def parseRead(read: xmlTypes.ReadRequest, ttl: Double): OmiParseResult = {
-    if (read.msg.isEmpty) {
+    if (read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
           read.requestID.map { id => id.value.toInt })))
-    } else {
+    } else if( read.msg.nonEmpty ){
       val odf = parseMsg(read.msg, read.msgformat)
       val errors = OdfTypes.getErrors(odf)
 
@@ -78,6 +78,12 @@ object OmiParser extends Parser[OmiParseResult] {
             read.oldest,
             uriToStringOption(read.callback))))
       }
+    } else {
+      Left(
+        Iterable(
+          ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+        )
+      )
     }
   }
 
