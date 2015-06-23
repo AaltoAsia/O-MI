@@ -198,7 +198,7 @@ object OdfTypes{
           unixTime = Some(value.timestamp.get.getTime/1000),
           attributes = Map.empty
         )
-      },
+      }.toSeq,
       attributes = Map.empty
     )
   }

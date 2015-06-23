@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
     <omi:cancel>
-	<omi:requestId>123</omi:requestId>
-	<omi:requestId>456</omi:requestId>
+	<omi:requestID>123</omi:requestID>
+	<omi:requestID>456</omi:requestID>
     </omi:cancel>
 </omi:omiEnvelope>
