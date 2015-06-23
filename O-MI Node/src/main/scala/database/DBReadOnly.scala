@@ -113,7 +113,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       //GET all vals
       val dbvals = getBetween(
           sortedValues, dbsub.startTime, newTime
-        ).sortBy( _.timestamp.getTime ).dropWhile{ value =>//drops values from start that are same than before
+        ).sortBy( _.timestamp.getTime ).dropWhile{ value =>//drops values from start that are same as before
           subitems(value.hierarchyId).headOption match {
             case Some( headVal) => 
               headVal.lastValue.exists{  lastValue => lastValue == value }
@@ -125,7 +125,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
       updateActions = DBIO.seq(
         updateActions,
-        subItems.filter{_.hierarchyId === node.id }.update(//Update SubItems lastValues
+        subItems.filter{_.hierarchyId === node.id.get }.update(//Update SubItems lastValues
           DBSubscriptionItem( dbsub.id, node.id.get, dbvals.lastOption.map{ dbval => dbval.value } ) 
         )
       )
