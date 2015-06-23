@@ -355,6 +355,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
         
       val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
       val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      println(test.\\("value"))
       test.\\("value").length === 8
       val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
@@ -362,9 +363,12 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
       //does not return same value twice
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
       val test4 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test4.\\("value").length === 0
+      
+      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
+      val test5 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      test5.\\("value").length === 0
 
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)

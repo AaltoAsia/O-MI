@@ -116,7 +116,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         ).sortBy( _.timestamp.getTime ).dropWhile{ value =>//drops values from start that are same as before
           subitems(value.hierarchyId).headOption match {
             case Some( headVal) => 
-              headVal.lastValue.exists{  lastValue => lastValue == value }
+              headVal.lastValue.exists{ _ == value.value }
             case None => false
           }
         }.foldLeft(Seq.empty[DBValue])(//Reduce are subsequences with same value  to one element
