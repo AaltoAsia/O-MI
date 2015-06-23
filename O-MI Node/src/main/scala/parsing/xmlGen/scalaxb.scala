@@ -3,6 +3,7 @@ package parsing
 package xmlGen
 package scalaxb
 
+
 import xmlTypes._
 import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}
 import javax.xml.datatype.{XMLGregorianCalendar}

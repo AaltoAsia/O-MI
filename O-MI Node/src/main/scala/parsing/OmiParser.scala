@@ -50,7 +50,7 @@ object OmiParser extends Parser[OmiParseResult] {
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
-          read.requestId.map { id => id.value.toInt })))
+          read.requestID.map { id => id.value.toInt })))
     } else {
       val odf = parseMsg(read.msg, read.msgformat)
       val errors = OdfTypes.getErrors(odf)
@@ -99,7 +99,7 @@ object OmiParser extends Parser[OmiParseResult] {
     Right(Iterable(
       CancelRequest(
         ttl,
-        cancel.requestId.map { id => id.value.toInt }.toIterable
+        cancel.requestID.map { id => id.value.toInt }.toIterable
       )
     ))
   }
@@ -113,8 +113,8 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              if (result.requestId.nonEmpty) {
-                asJavaIterable(Iterable(result.requestId.get.value.toInt))
+              if (result.requestID.nonEmpty) {
+                asJavaIterable(Iterable(result.requestID.get.value.toInt))
               } else {
                 asJavaIterable(Iterable.empty[Int])
               },
