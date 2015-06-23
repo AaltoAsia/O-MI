@@ -31,7 +31,7 @@ function writeXML(items, omi){
 	setWriterSettings(writer);
 	
 	if(omi.operation === 'poll'){
-		return writePoll(writer, omi.ttl, omi.requestIds);
+		return writePoll(writer, omi.ttl, omi.requestIDs);
 	}
 	
 	writer.writeStartDocument();
@@ -44,7 +44,7 @@ function writeXML(items, omi){
 	if(omi.operation === 'read'){
 		writeObjects(writer, items, omi.interval, omi.begin, omi.end, omi.newest, omi.oldest, omi.callback);
 	} else if (omi.operation === 'cancel'){
-		writeRequestId(writer, omi.requestIds);
+		writeRequestId(writer, omi.requestIDs);
 	} else if(omi.operation === 'write'){
 		writeObjects(writer, items);
 	} 
@@ -186,19 +186,19 @@ function writeObject(object, writer){
 /**
  * Writes request ID to the XML
  * @param {XMLWriter} writer The current xml writer
- * @param {Array} requestIds The array of requestId's to be written
+ * @param {Array} requestIDs The array of requestID's to be written
  */
-function writeRequestId(writer, requestIds) {
-	for(var i = 0; i < requestIds.length; i++){
-		writer.writeStartElement('omi:requestId');
-		writer.writeString(requestIds[i]);
+function writeRequestId(writer, requestIDs) {
+	for(var i = 0; i < requestIDs.length; i++){
+		writer.writeStartElement('omi:requestID');
+		writer.writeString(requestIDs[i]);
 		writer.writeEndElement();
 	}
 }
 
 /**
  * Writes and returns a O-MI subscription (read) request
- * @param requestId
+ * @param requestID
  * @param items
  * @param ttl
  * @param interval
@@ -209,7 +209,7 @@ function writeRequestId(writer, requestIds) {
  * @param callback
  * @returns {string} The generated request XML
  */
-function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, oldest, callback){
+function writeSubscribe(requestID, items, ttl, interval, begin, end, newest, oldest, callback){
 	//Using the same format as in demo
 	var writer = new XMLWriter('UTF-8');
 	
@@ -243,7 +243,7 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 		}
 	}
 
-	writeRequestId(writer, requestId);
+	writeRequestId(writer, requestID);
 	writeMsg(writer)
 	writer.writeStartElement('Objects');
 
@@ -270,17 +270,17 @@ function writeSubscribe(requestId, items, ttl, interval, begin, end, newest, old
 }
 
 /**
- * Writes a O-MI poll request (read request using requestId from cancel/subscription)
+ * Writes a O-MI poll request (read request using requestID from cancel/subscription)
  * @param {XMLWriter} writer The current xml writer
  * @param {Number} ttl Time-to-live
- * @param {Array} requestIds The array of requestId's to be written
+ * @param {Array} requestIDs The array of requestID's to be written
  * @returns {string} The generated request XML
  */
-function writePoll(writer, ttl, requestIds) {
+function writePoll(writer, ttl, requestIDs) {
 	writer.writeStartDocument();
 	writeOmiInfo(writer, ttl);
 	writer.writeStartElement('omi:read');
-	writeRequestId(writer, requestIds);
+	writeRequestId(writer, requestIDs);
 	writer.writeEndDocument();
 	
 	return writer.flush();

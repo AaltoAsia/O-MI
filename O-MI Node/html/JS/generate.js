@@ -15,10 +15,10 @@ function generateRequest(){
 	var newest = $("#newest").val();
 	var oldest = $("#oldest").val();
 	var callback = $("#callback").val();
-	var requestIds = [];
+	var requestIDs = [];
 	
-	$(".requestId").each(function(){
-		requestIds.push($(this).val());
+	$(".requestID").each(function(){
+		requestIDs.push($(this).val());
 	});
 	
 	if(!omi){
@@ -27,7 +27,7 @@ function generateRequest(){
 	if(omi.operation && omi.operation != operation){
 		omi.saveOptions();
 	}
-	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestIds);
+	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestIDs);
 	
 	var request = omi.getRequest(checkedObjects());
 	$("#editRequest").html(request);
