@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Objects>
+<Objects xmlns="odf.xsd">
     <Object>
         <id>vtt</id>
         <Object>
@@ -3359,7 +3359,7 @@
                 <value>909</value>
             </InfoItem>
             <InfoItem name="light">
-                <value>237c6</value>
+                <value>1</value>
             </InfoItem>
             <InfoItem name="humidity">
                 <value>45.5</value>

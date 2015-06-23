@@ -1,8 +1,8 @@
 <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
     <Object>
 	<id>SmartHouse</id>
-	<InfoItem name="FrontDoor"><value>Closed</value></InfoItem>
-	<InfoItem name="BackDoor"><value>Closed</value></InfoItem>
+	<InfoItem name="FrontDoor"><value>1</value></InfoItem>
+	<InfoItem name="BackDoor"><value>1</value></InfoItem>
 	<Object>
 	    <id>Kitchen</id>
 	    <InfoItem name="Temperature">
@@ -86,7 +86,7 @@
 			<value type="xs:string">TheCompany</value>
 		    </InfoItem>
 		</MetaData>
-		<value>Off</value>
+		<value>0</value>
 	    </InfoItem>
 	    <InfoItem name="Consumption">
 		<MetaData>
@@ -122,7 +122,7 @@
 			    <value type="xs:string">TheCompany</value>
 			</InfoItem>
 		    </MetaData>
-		    <value>Off</value>
+		    <value>0</value>
 		</InfoItem>
 		<InfoItem name="TemperatureFlow">
 		    <MetaData>
@@ -291,7 +291,7 @@
 			    <value type="xs:string">TheCompany</value>
 			</InfoItem>
 		    </MetaData>
-		    <value>Off</value>
+		    <value>0</value>
 		</InfoItem>
 		<InfoItem name="Consumption">
 		    <MetaData>
@@ -371,7 +371,7 @@
 			    <value type="xs:string">TheCompany</value>
 			</InfoItem>
 		    </MetaData>
-		    <value>Off</value>
+		    <value>0</value>
 		</InfoItem>
 		<InfoItem name="Consumption">
 		    <MetaData>
@@ -475,7 +475,7 @@
 			<value type="xs:string">TheCompany</value>
 		    </InfoItem>
 		</MetaData>
-		<value>Off</value>
+		<value>0</value>
 	    </InfoItem>
 	    <InfoItem name="Consumption">
 		<MetaData>
@@ -511,7 +511,7 @@
 			    <value type="xs:string">TheCompany</value>
 			</InfoItem>
 		    </MetaData>
-		    <value>On</value>
+		    <value>1</value>
 		</InfoItem>
 	    </Object>
 	</Object>
@@ -598,7 +598,7 @@
 			<value type="xs:string">TheCompany</value>
 		    </InfoItem>
 		</MetaData>
-		<value>Off</value>
+		<value>0</value>
 	    </InfoItem>
 	    <InfoItem name="Consumption">
 		<MetaData>
@@ -634,7 +634,7 @@
 			    <value type="xs:string">TheCompany</value>
 			</InfoItem>
 		    </MetaData>
-		    <value>Off</value>
+		    <value>0</value>
 		</InfoItem>
 		<InfoItem name="TemperatureFlow">
 		    <MetaData>
@@ -824,7 +824,7 @@
 			<value type="xs:string">TheCompany</value>
 		    </InfoItem>
 		</MetaData>
-		<value>Off</value>
+		<value>0</value>
 	    </InfoItem>
 	    <InfoItem name="Consumption">
 		<MetaData>
@@ -860,7 +860,7 @@
 			    <value type="xs:string">TheCompany</value>
 			</InfoItem>
 		    </MetaData>
-		    <value>Off</value>
+		    <value>0</value>
 		</InfoItem>
 		<InfoItem name="TemperatureFlow">
 		    <MetaData>

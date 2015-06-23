@@ -92,7 +92,7 @@ class VTTAgent(configPath : String) extends InternalAgent(configPath) {
     odfInfoItems = Some(
       getObjects(tmp_odf).flatten{o =>
         o.infoItems ++ getSensors(o.objects)
-      }.map{ info => (info, info.values.headOption.getOrElse(Random.nextInt).toString) }
+      }.map{ info => (info, info.values.headOption.get.value.toString) }
     )
     if(odfInfoItems.isEmpty){
       InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
