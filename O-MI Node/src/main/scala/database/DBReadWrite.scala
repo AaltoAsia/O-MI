@@ -131,7 +131,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   /**
    * Used to set values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
-   *  Does not remove excess rows if path is set ot buffer
+   *  Does not remove excess rows if path is set or buffer
    *
    *  @param data sensordata, of type DBSensor to be stored to database.
    */
@@ -163,7 +163,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     //Call hooks
     database.getSetHooks foreach { _(Seq(path))}
-    println(s"RUN with $path:  $run")
+//    println(s"RUN with $path:  $run")
     run
   }
 
