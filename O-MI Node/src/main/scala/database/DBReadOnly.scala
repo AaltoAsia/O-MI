@@ -113,10 +113,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       //GET all vals
       val dbvals = getBetween(
           sortedValues, dbsub.startTime, newTime
-        ).dropWhile{ value =>//drops values from start that are same than before
+        ).sortBy( _.timestamp.getTime ).dropWhile{ value =>//drops values from start that are same than before
           subitems(value.hierarchyId).headOption match {
             case Some( headVal) => 
-              value.value == headVal.lastValue
+              headVal.lastValue.exists{  lastValue => lastValue == value }
             case None => false
           }
         }.foldLeft(Seq.empty[DBValue])(//Reduce are subsequences with same value  to one element

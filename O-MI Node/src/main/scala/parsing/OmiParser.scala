@@ -45,13 +45,13 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
   private def parseRead(read: xmlTypes.ReadRequest, ttl: Double): OmiParseResult = {
-    if (read.msg.isEmpty) {
+    if (read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
-          read.requestId.map { id => id.value.toInt })))
-    } else {
+          read.requestID.map { id => id.value.toInt })))
+    } else if( read.msg.nonEmpty ){
       val odf = parseMsg(read.msg, read.msgformat)
       val errors = OdfTypes.getErrors(odf)
 
@@ -78,6 +78,12 @@ object OmiParser extends Parser[OmiParseResult] {
             read.oldest,
             uriToStringOption(read.callback))))
       }
+    } else {
+      Left(
+        Iterable(
+          ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+        )
+      )
     }
   }
 
@@ -99,7 +105,7 @@ object OmiParser extends Parser[OmiParseResult] {
     Right(Iterable(
       CancelRequest(
         ttl,
-        cancel.requestId.map { id => id.value.toInt }.toIterable
+        cancel.requestID.map { id => id.value.toInt }.toIterable
       )
     ))
   }
@@ -113,8 +119,8 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              if (result.requestId.nonEmpty) {
-                asJavaIterable(Iterable(result.requestId.get.value.toInt))
+              if (result.requestID.nonEmpty) {
+                asJavaIterable(Iterable(result.requestID.get.value.toInt))
               } else {
                 asJavaIterable(Iterable.empty[Int])
               },

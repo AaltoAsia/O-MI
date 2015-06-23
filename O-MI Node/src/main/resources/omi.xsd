@@ -41,9 +41,9 @@
 		</xs:annotation>
 		<xs:sequence>
 			<xs:element name="nodeList" type="nodesType" minOccurs="0"/>
-			<xs:element name="requestId" type="idType" minOccurs="0" maxOccurs="unbounded">
+			<xs:element name="requestID" type="idType" minOccurs="0" maxOccurs="unbounded">
 				<xs:annotation>
-					<xs:documentation>"requestId" is only included when "polling" for data that corresponds to an earlier subscription that returned the corresponding Id.</xs:documentation>
+					<xs:documentation>"requestID" is only included when "polling" for data that corresponds to an earlier subscription that returned the corresponding Id.</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 			<xs:element ref="msg" minOccurs="0"/>
@@ -145,7 +145,7 @@
 		<xs:sequence>
 			<xs:element name="return" type="returnType" minOccurs="1"/>
 			<!-- Indicates success/failure of request. -->
-			<xs:element name="requestId" type="idType" minOccurs="0"/>
+			<xs:element name="requestID" type="idType" minOccurs="0"/>
 			<!-- not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or reponse with "value".-->
 			<xs:element ref="msg" minOccurs="0"/>
 			<!-- response value. Completely free-format. Present if successful. -->
@@ -232,7 +232,7 @@
 		</xs:annotation>
 		<xs:sequence>
 			<xs:element name="nodeList" type="nodesType" minOccurs="0"/>
-			<xs:element name="requestId" type="idType" maxOccurs="unbounded"/>
+			<xs:element name="requestID" type="idType" maxOccurs="unbounded"/>
 		</xs:sequence>
 	</xs:complexType>
 </xs:schema>

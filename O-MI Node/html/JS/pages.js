@@ -179,12 +179,12 @@ function loadOptions() {
 				if(save["newest"]) $("#newest").val(save["newest"]);
 				if(save["oldest"]) $("#oldest").val(save["oldest"]);
 				if(save["callback"]) $("#callback").val(save["callback"]);
-				if(save["requestId"]) {
-					for(var i = 0; i < save["requestId"].length; i++){
-						if(i >= $(".requestId").length){
-							createInput($($(".requestId")[i - 1]).parent());
+				if(save["requestID"]) {
+					for(var i = 0; i < save["requestID"].length; i++){
+						if(i >= $(".requestID").length){
+							createInput($($(".requestID")[i - 1]).parent());
 						}
-						$($(".requestId")[i]).val(save["requestId"][i]);
+						$($(".requestID")[i]).val(save["requestID"][i]);
 					}
 				}
 			}, 50);
