@@ -20,7 +20,7 @@ public class CoffeeMaker extends InternalAgent{
 	if(!path.toString().isEmpty()){
 	    Date date = new java.util.Date();
 	    LinkedList<Tuple2<Path,OdfValue>> values = new  LinkedList<Tuple2<Path,OdfValue>>();
-	    Tuple2<Path,OdfValue> tuple = new Tuple2( path, new OdfValue( Integer.toString(rnd.nextInt()), "", Option.apply( new Timestamp( date.getTime() ) ) ) ); 
+	    Tuple2<Path,OdfValue> tuple = new Tuple2( path, new OdfValue( Integer.toString(rnd.nextInt()), "xs:integer", Option.apply( new Timestamp( date.getTime() ) ) ) ); 
 	    values.add(tuple);
 	    InputPusher.handlePathValuePairs(values);
 	    try{

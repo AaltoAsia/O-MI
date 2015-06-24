@@ -173,7 +173,7 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table for storing latest sensor data to database
    */
   class DBValuesTable(tag: Tag)
-    extends Table[DBValue](tag, "VALUES") with HierarchyFKey[DBValue] {
+    extends Table[DBValue](tag, "SENSORVALUES") with HierarchyFKey[DBValue] {
     val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
     //def hierarchyId = column[Int]("HIERARCHYID")
