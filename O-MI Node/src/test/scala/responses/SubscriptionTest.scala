@@ -46,11 +46,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   }
 
   val subscriptionHandlerRef = TestActorRef(Props(new SubscriptionHandler()(dbConnection))) //[SubscriptionHandler]
-  //  val subscriptionHandler = subscriptionHandlerRef.underlyingActor
 
   val requestHandler = new RequestHandler(subscriptionHandlerRef)(dbConnection)
-  //  val subsResponseGen = new OMISubscription.SubscriptionResponseGen
-  //  val pollResponseGen = new OMISubscription.PollResponseGen()
 
   def beforeAll = {
     val calendar = Calendar.getInstance()

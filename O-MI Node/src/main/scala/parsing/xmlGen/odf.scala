@@ -49,7 +49,7 @@ case class QlmID(value: String,
 
 
 case class ValueType(value: String,
-  typeValue: String,
+  typeValue: String = "xs:string",
   dateTime: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   unixTime: Option[Long] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]])
