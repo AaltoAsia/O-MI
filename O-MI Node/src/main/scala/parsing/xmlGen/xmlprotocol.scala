@@ -282,7 +282,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     
     override def writesAttribute(__obj: ValueType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
-      if (__obj.typeValue.toString != "xs:string") attr = scala.xml.Attribute(null, "type", __obj.typeValue.toString, attr)
+      if (__obj.typeValue.nonEmpty) attr = scala.xml.Attribute(null, "type", __obj.typeValue, attr)
       __obj.dateTime foreach { x => attr = scala.xml.Attribute(null, "dateTime", x.toString, attr) }
       __obj.unixTime foreach { x => attr = scala.xml.Attribute(null, "unixTime", x.toString, attr) }
       __obj.attributes.toList map {
