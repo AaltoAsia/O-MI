@@ -33,7 +33,7 @@ object OmiGenerator {
           case None => None
         },
         if(msgformat.nonEmpty && msg.nonEmpty)
-          Some( scalaxb.DataRecord(msg.get) )
+          Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), msg.get) )
         else
           None,
         None,
