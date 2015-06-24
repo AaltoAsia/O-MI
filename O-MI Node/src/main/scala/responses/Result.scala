@@ -16,7 +16,7 @@ import OmiGenerator._
   **/
 object Result{
   private val scope = scalaxb.toScope(
-    None -> "odf",
+    None -> "",
     Some("omi") -> "omi.xsd",
     Some("xs") -> "http://www.w3.org/2001/XMLSchema",
     Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance"
@@ -82,7 +82,7 @@ object Result{
       ),
       requestID,
       Some("odf"),
-      Some( odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , Some("odf.xsd"), Some("Objects"), scope ) ) ) 
+      Some( odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), scope ) ) ) 
     )
   }
 
