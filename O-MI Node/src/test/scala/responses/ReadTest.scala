@@ -104,8 +104,13 @@ class ReadTest extends Specification with BeforeAfterAll {
       println(printer.format(resultOption.get._1.head))
       println("correct:")
       println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
-
+//      val node = resultOption.get._1
+//      node must \ ("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
+      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+      println(resultOption.get._1.toString())
+      println("\n")
+      println(OmiParser.parse(resultOption.get._1.toString()))
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
@@ -124,8 +129,11 @@ class ReadTest extends Specification with BeforeAfterAll {
       println(printer.format(resultOption.get._1.head))
       println("correct:")
       println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
-
+      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      println("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+      println(resultOption.get._1.toString())
+      println("\n")
+      println(OmiParser.parse(resultOption.get._1.toString()))
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
