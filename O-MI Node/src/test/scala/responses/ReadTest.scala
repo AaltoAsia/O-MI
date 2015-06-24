@@ -22,12 +22,17 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import akka.actor._
 import scala.util.Try
 import shapeless.headOption
+import akka.testkit.TestActorRef
 
 class ReadTest extends Specification with BeforeAfterAll {
-  implicit val dbConnection = new TestDB("read-test")
+  sequential
+  
+  
   //  val ReadResponseGen = new ReadResponseGen
   implicit val system = ActorSystem("readtest")
-  val subscriptionHandler: ActorRef = system.actorOf(Props[SubscriptionHandlerTestActor])
+  implicit val dbConnection = new TestDB("read-test")
+  
+  val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))
   val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
 
   def beforeAll = {
@@ -36,7 +41,7 @@ class ReadTest extends Specification with BeforeAfterAll {
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
-    dbConnection.clearDB()
+//    dbConnection.clearDB()
     val testData = Map(
       Path("Objects/ReadTest/Refrigerator123/PowerConsumption") -> "0.123",
       Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",
