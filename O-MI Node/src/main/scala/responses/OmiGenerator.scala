@@ -1,18 +1,22 @@
 package responses
 
 import database._
-import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.scalaxb
 import parsing.xmlGen.scalaxb._
-import parsing.Types.Path
+import types.Path
+import parsing.xmlGen.scalaxb.DataRecord._
+import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import xml.XML
-import xml.Node
+import xml.NodeSeq
 
+/** Object containing helper mehtods for generating scalaxb generated O-MI types. Used to generate response messages when received a request.
+  *
+  **/
 object OmiGenerator {
   
-  import DBConversions._
-  
-  def omiEnvelope[R <: OmiEnvelopeOption : CanWriteXML](ttl: Double, elemName: String, request: R , version: String = "1.0") = {
-    OmiEnvelope( DataRecord[R]( Some("omi"), Some(elemName), request), version, ttl)
+  def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") = {
+      OmiEnvelope( DataRecord[R](Some("omi.xsd"), Some(requestName), request), version, ttl)
   }
   
   def omiResponse( results: RequestResultType*) : ResponseListType = {
@@ -21,10 +25,10 @@ object OmiGenerator {
     )
   }
   
-  def omiResult(returnType: ReturnType, requestId: Option[String] = None, msgformat: Option[String] = None, msg: Option[Node] = None) : RequestResultType = {
+  def omiResult(returnType: ReturnType, requestID: Option[String] = None, msgformat: Option[String] = None, msg: Option[NodeSeq] = None) : RequestResultType = {
     RequestResultType(
         returnType,
-        requestId match{
+        requestID match{
           case Some(id) => Some(IdType(id))
           case None => None
         },
@@ -37,8 +41,7 @@ object OmiGenerator {
         if(msgformat.nonEmpty && msg.nonEmpty)
           msgformat
         else
-          None,
-        targetType = DeviceValue
+          None
       )
   } 
 
@@ -46,7 +49,7 @@ object OmiGenerator {
     ReturnType(value, returnCode, description, attributes = Map.empty)
   }
 
-  def odfMsg( value: Node ) : Node ={
+  def odfMsg( value: NodeSeq )={
     <omi:msg xmlns="odf.xsd">
       {value}
     </omi:msg>

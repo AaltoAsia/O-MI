@@ -1,19 +1,24 @@
 package agentSystem
 
 import database._
-import parsing.Types._
-import parsing.Types.Path._
-import parsing.Types.OdfTypes._
+import types._
+import types.Path._
+import types.OdfTypes._
 import java.util.Date
 import akka.actor._
 import java.lang.Iterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 
+object InputPusherCmds {
+  case class HandleOdf( objects : OdfObjects)
   case class HandleObjects(objs: Iterable[OdfObject])
   case class HandleInfoItems(items: Iterable[OdfInfoItem])
   case class HandlePathValuePairs(pairs: Iterable[(Path,OdfValue)])
   case class HandlePathMetaDataPairs(pairs: Iterable[(Path,String)])
+}
+
+import InputPusherCmds._
 /** Creates an object for pushing data from internal agents to db.
   *
   */
@@ -21,22 +26,22 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
  
 
   override def receive = {
+    case HandleOdf( objects ) => handleOdf( objects )
     case HandleObjects(objs) => handleObjects(objs)
     case HandleInfoItems(items) => handleInfoItems(items)
     case HandlePathValuePairs(pairs) => handlePathValuePairs(pairs)
     case HandlePathMetaDataPairs(pairs) => handlePathMetaDataPairs(pairs)
   }
+  override def handleOdf( objects: OdfObjects) : Unit = {
+    val data = getLeafs(objects)
+    handleInfoItems( data.collect{ case infoitem : OdfInfoItem => infoitem } )
+    log.debug("Successfully saved Odfs to DB")
+  }
   /** Function for handling sequences of OdfObject.
     *
     */
   override def handleObjects( objs: Iterable[OdfObject] ) : Unit = {
-    for(obj <- objs){
-      if(obj.objects.nonEmpty)
-        handleObjects(obj.objects)
-      if(obj.infoItems.nonEmpty)
-        handleInfoItems(obj.infoItems)
-    }
-    log.debug("Successfully saved Objects to DB")
+    handleOdf( OdfObjects( objs ) )
   }
 
   /** Function for handling sequences of OdfInfoItem.
@@ -47,7 +52,7 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
       val infos = infoitems.map{ info => 
         info.values.map{ tv => (info.path, tv) }
       }.flatten[(Path,OdfValue)].toList 
-     dbobject.setMany(infos) 
+      val many = dbobject.setMany(infos) 
     log.debug("Successfully saved InfoItems to DB")
   } 
   

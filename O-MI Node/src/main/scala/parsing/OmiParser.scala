@@ -1,9 +1,10 @@
 package parsing
 
-import Types._
-import Types.OmiTypes._
-import Types.OdfTypes._
+import types._
+import types.OmiTypes._
+import types.OdfTypes._
 import java.sql.Timestamp
+import xmlGen.xmlTypes
 import scala.xml._
 import scala.util.Try
 import scala.collection.mutable.Map
@@ -18,14 +19,13 @@ import scala.collection.JavaConversions.seqAsJavaList
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
-  override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
+   protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
   /**
-   * Parse the given XML string into sequence of ParseMsg classes
+   * Public method for parsing the xml string into OmiParseResults.
    *
-   * @param xml_msg O-MI formatted message that is to be parsed
-   * @return sequence of ParseMsg classes, different message types are defined in
-   *         the TypeClasses.scala file
+   *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
+   *  @return OmiParseResults
    */
   def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
@@ -36,22 +36,22 @@ object OmiParser extends Parser[OmiParseResult] {
     if (schema_err.nonEmpty)
       return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
 
-    val envelope = xmlGen.scalaxb.fromXML[xmlGen.OmiEnvelope](root)
+    val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
     envelope.omienvelopeoption.value match {
-      case read: xmlGen.ReadRequest => parseRead(read, envelope.ttl)
-      case write: xmlGen.WriteRequest => parseWrite(write, envelope.ttl)
-      case cancel: xmlGen.CancelRequest => parseCancel(cancel, envelope.ttl)
-      case response: xmlGen.ResponseListType => parseResponse(response, envelope.ttl)
+      case read: xmlTypes.ReadRequest => parseRead(read, envelope.ttl)
+      case write: xmlTypes.WriteRequest => parseWrite(write, envelope.ttl)
+      case cancel: xmlTypes.CancelRequest => parseCancel(cancel, envelope.ttl)
+      case response: xmlTypes.ResponseListType => parseResponse(response, envelope.ttl)
     }
   }
-  private def parseRead(read: xmlGen.ReadRequest, ttl: Double): OmiParseResult = {
-    if (read.msg.isEmpty) {
+  private def parseRead(read: xmlTypes.ReadRequest, ttl: Double): OmiParseResult = {
+    if (read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
-          read.requestId.map { id => id.value.toInt })))
-    } else {
+          read.requestID.map { id => id.value.toInt })))
+    } else if( read.msg.nonEmpty ){
       val odf = parseMsg(read.msg, read.msgformat)
       val errors = OdfTypes.getErrors(odf)
 
@@ -78,10 +78,16 @@ object OmiParser extends Parser[OmiParseResult] {
             read.oldest,
             uriToStringOption(read.callback))))
       }
+    } else {
+      Left(
+        Iterable(
+          ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+        )
+      )
     }
   }
 
-  private def parseWrite(write: xmlGen.WriteRequest, ttl: Double): OmiParseResult = {
+  private def parseWrite(write: xmlTypes.WriteRequest, ttl: Double): OmiParseResult = {
     val odf = parseMsg(write.msg, write.msgformat)
     val errors = OdfTypes.getErrors(odf)
 
@@ -95,15 +101,15 @@ object OmiParser extends Parser[OmiParseResult] {
           uriToStringOption(write.callback))))
   }
 
-  private def parseCancel(cancel: xmlGen.CancelRequest, ttl: Double): OmiParseResult = {
+  private def parseCancel(cancel: xmlTypes.CancelRequest, ttl: Double): OmiParseResult = {
     Right(Iterable(
       CancelRequest(
         ttl,
-        cancel.requestId.map { id => id.value.toInt }.toIterable
+        cancel.requestID.map { id => id.value.toInt }.toIterable
       )
     ))
   }
-  private def parseResponse(response: xmlGen.ResponseListType, ttl: Double): OmiParseResult = {
+  private def parseResponse(response: xmlTypes.ResponseListType, ttl: Double): OmiParseResult = {
     Right(Iterable(
       ResponseRequest(
         response.result.map {
@@ -113,8 +119,8 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              if (result.requestId.nonEmpty) {
-                asJavaIterable(Iterable(result.requestId.get.value.toInt))
+              if (result.requestID.nonEmpty) {
+                asJavaIterable(Iterable(result.requestID.get.value.toInt))
               } else {
                 asJavaIterable(Iterable.empty[Int])
               },
@@ -144,12 +150,14 @@ object OmiParser extends Parser[OmiParseResult] {
     format.get match {
       case "odf" =>
         val odf = (data \ "Objects")
-        if (odf.nonEmpty)
-          parseOdf(odf.head)
-        else
-          return Left(Iterable(ParseError("No Objects child found in msg.")))
+        odf.headOption match {
+          case Some(head) =>
+            parseOdf(head)
+          case None =>
+            Left(Iterable(ParseError("No Objects child found in msg.")))
+        }
       case _ =>
-        return Left(Iterable(ParseError("Unknown msgformat attribute")))
+        Left(Iterable(ParseError("Unknown msgformat attribute")))
     }
   }
   private def parseOdf(node: Node): OdfParseResult = OdfParser.parse(node)

@@ -2,6 +2,11 @@ import com.github.retronym.SbtOneJar
 
 val scalaBuildVersion = "2.11.4"
 
+//lazy val root = (project in file(".")).
+name := "O-MI-Node"
+
+version := "0.1.0"
+
 scalaVersion := scalaBuildVersion
 
 // build options
@@ -46,7 +51,8 @@ libraryDependencies ++= Seq(
 "com.h2database" % "h2" % "1.4.187"
 )
 
-cleanFiles <+= baseDirectory { base => base / "sensorDB.sqlite3"  } 
+//remove database files
+cleanFiles <++= baseDirectory {_ * "*.db" get}
 
 oneJarSettings
 

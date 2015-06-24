@@ -3,6 +3,8 @@ package parsing
 package xmlGen
 package scalaxb
 
+
+import xmlTypes._
 import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}
 import javax.xml.datatype.{XMLGregorianCalendar}
 import javax.xml.namespace.QName
@@ -10,6 +12,10 @@ import javax.xml.bind.DatatypeConverter
 import scala.language.postfixOps
 import scala.language.existentials
 import scala.language.implicitConversions
+
+/** Scalaxb library.
+  *
+  **/
 
 object `package` {
   import annotation.implicitNotFound

@@ -1,5 +1,4 @@
-package parsing
-package Types
+package types
 
 import OdfTypes._
 
@@ -9,6 +8,9 @@ import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 
+/** Object containing internal types used to represent O-MI request.
+  *
+  **/
 object OmiTypes{
 
 
@@ -20,6 +22,10 @@ object OmiTypes{
     def ttl: Double
     def callback: Option[String]
     def hasCallback = callback.isDefined
+  }
+  sealed trait PermissiveRequest
+  sealed trait OdfRequest {
+    def odf : OdfObjects
   }
 
   /**
@@ -36,13 +42,17 @@ object OmiTypes{
     def isImmortal = ttl == -1.0
   }
 
-
+/** Request for getting data for current interval.
+  *
+  **/
   case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-    val ttl = sub.ttl - (System.currentTimeMillis() - sub.startTime.getTime)*1000
-    val callback = sub.callback
+    def ttl = sub.ttl
+    def callback = sub.callback
   }
 
-
+/** One-time-read request
+  *
+  **/
 case class ReadRequest(
   ttl: Double,
   odf: OdfObjects ,
@@ -51,14 +61,20 @@ case class ReadRequest(
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
-) extends OmiRequest
+) extends OmiRequest with OdfRequest
 
+/** Poll request
+  *
+  **/
 case class PollRequest(
   ttl: Double,
   callback: Option[ String ] = None,
-  requestIds: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
+  requestIDs: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest
 
+/** Subscription request for startting subscription
+  *
+  **/
 case class SubscriptionRequest(
   ttl: Double,
   interval: Double,
@@ -66,35 +82,48 @@ case class SubscriptionRequest(
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
-) extends OmiRequest
+) extends OmiRequest with SubLike with OdfRequest
 
+/** Write request
+  *
+  **/
 case class WriteRequest(
   ttl: Double,
   odf: OdfObjects,
   callback: Option[ String ] = None
-) extends OmiRequest
+) extends OmiRequest with OdfRequest with PermissiveRequest
 
+
+/** Response request, contains result for other requests
+  *
+  **/
 case class ResponseRequest(
   results: Iterable[OmiResult]  
-) extends OmiRequest {
+) extends OmiRequest with PermissiveRequest{
       def callback = None
       def ttl = 0
-   }
+   } 
 
+/** Cancel request, for cancelling subscription.
+  *
+  **/
 case class CancelRequest(
   ttl: Double,
-  requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
+  requestID: Iterable[ Int ] = asJavaIterable(Seq.empty[Int])
 ) extends OmiRequest {
       def callback = None
     }
 
+/** Result of a O-MI request
+  *
+  **/
 case class OmiResult(
   value: String,
   returnCode: String,
   description: Option[String] = None,
-  requestId: Iterable[ Int ] = asJavaIterable(Seq.empty[Int]),
+  requestID: Iterable[ Int ] = asJavaIterable(Seq.empty[Int]),
   odf: Option[OdfTypes.OdfObjects] = None
-)
+) 
 
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   def getRequests( omi: OmiParseResult ) : Iterable[OmiRequest] = 

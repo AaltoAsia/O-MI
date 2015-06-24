@@ -12,8 +12,8 @@ import java.net.InetAddress
 import responses._
 import parsing._
 import PermissionCheck._
-import parsing.Types._
-import parsing.Types.OmiTypes._
+import types._
+import types.OmiTypes._
 import database._
 
 import xml._
@@ -22,9 +22,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
  * Actor that handles incoming http messages
- * @param subHandler ActorRef that is used in subscription handling
+ * @param requestHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {
 
   /**
    * the HttpService trait defines only one abstract member, which
@@ -33,7 +33,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
   def actorRefFactory = context
 
   //Used for O-MI subscriptions
-  val subscriptionHandler = subHandler
+  val requestHandler = reqHandler
 
   /**
    * this actor only runs our route, but you could add
@@ -52,7 +52,7 @@ class OmiServiceActor(subHandler: ActorRef) extends Actor with ActorLogging with
 trait OmiService extends HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
-  val subscriptionHandler: ActorRef
+  val requestHandler: RequestHandler
 
   implicit val dbobject: DB
 
@@ -96,7 +96,7 @@ trait OmiService extends HttpService {
       path(Rest) { pathStr =>
         corsHeaders {
           val path = Path(pathStr)
-          Read.generateODFREST(path) match {
+          requestHandler.generateODFREST(path) match {
             case Some(Left(value)) =>
               respondWithMediaType(`text/plain`) {
                 complete(value)
@@ -108,97 +108,56 @@ trait OmiService extends HttpService {
             case None =>
               log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
               respondWithMediaType(`text/xml`) {
-                complete(404, <error>No object found</error>)
+                complete((404, <error>No object found</error>))
               }
           }
         }
       }
     }
 
-  import OMISubscription._
-  // XXX: lazy maybe fixes bug
-  lazy val cancelResponseGen = new OMICancelGen(subscriptionHandler)
-  lazy val readResponseGen = new ReadResponseGen
-  lazy val pollResponseGen = new PollResponseGen
+  /* Receives HTTP-POST directed to root */
+  val postXMLRequest = post { // Handle POST requests from the client
+    clientIP { ip =>
+      path("") {
+        corsHeaders {
+          entity(as[NodeSeq]) { xml =>
+            val eitherOmi = OmiParser.parse(xml.toString)
 
-  /* Receives HTTP-POST directed to root (localhost:8080) */
-  val getXMLResponse = 
-  post { // Handle POST requests from the client
-  clientIP { ip =>
-  path("") {
-    corsHeaders {
-      entity(as[NodeSeq]) { xml =>
-      val omi = OmiParser.parse(xml.toString)
+            respondWithMediaType(`text/xml`) {
+              eitherOmi match {
+                case Right(requests) =>
+                  val request = requests.head
 
-      if (omi.isRight) {
-        val requests = omi.right.get
-        respondWithMediaType(`text/xml`) {
+                  val (response, returnCode) = request match {
 
-          var returnStatus = 200
+                    case pRequest : PermissiveRequest => 
+                      if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
+                        requestHandler.handleRequest(pRequest)
+                      else
+                        (requestHandler.unauthorized, 401)
 
-          //FIXME: Currently sending multiple omi:omiEnvelope
-          val result = requests.map {
+                    case req : OmiRequest => 
+                        requestHandler.handleRequest(request)
+                  }
 
-            case read: ReadRequest =>
-            log.debug(read.toString)
-            readResponseGen.runRequest(read)
+                  complete((returnCode, response))
 
-            case poll: PollRequest =>
-            // Should give out poll result
-            pollResponseGen.runRequest(poll)
+                case Left(errors) =>  // Errors found
 
-            case write: WriteRequest =>
-            lazy val remote = ip.toOption.get
-            if(ip.toOption.nonEmpty && hasPermission(remote) ){
-              log.warning(s"Tried to use write request, not implemented.")
-              log.debug(write.toString)
-              returnStatus = 501
-              ErrorResponse.notImplemented
-            } else {
-              log.warning(s"Unauthorized $remote tryed to use write request.")
-              log.warning(write.toString)
-              returnStatus = 401
-              ErrorResponse.unauthorized
+                  log.warning("Parse Errors: {}", errors.mkString(", "))
+
+                  val errorResponse = requestHandler.parseError(errors.toSeq:_*)
+
+                  complete((400, errorResponse))
+              }
             }
-
-          case subscription: SubscriptionRequest =>
-          log.debug(subscription.toString)
-
-          val (id, response) = OMISubscription.setSubscription(subscription) //setSubscription return -1 if subscription failed
-
-          if (subscription.callback.isDefined && subscription.callback.get.toString.length > 3 && id >= 0) // XXX: hack check for valid url :D
-          subscriptionHandler ! NewSubscription(id)
-
-          response
-
-          case cancel: CancelRequest =>
-          log.debug(cancel.toString)
-
-          cancelResponseGen.runRequest(cancel)
-
-          case _ =>
-          log.warning("Unknown request")
-          returnStatus = 400
-
-        }.mkString("\n")
-
-        complete(returnStatus, result)
-
-      }
-    } else {
-      val errors = omi.left.get
-      //Errors found
-      log.warning("Parse Errors: {}", errors.mkString(", "))
-    complete(400,
-      ErrorResponse.parseErrorResponse(errors))
-  }
-}
+          }
+        }
       }
     }
   }
-}
 
   // Combine all handlers
-  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ getXMLResponse
+  val myRoute = helloWorld ~ staticHtml ~ getDataDiscovery ~ postXMLRequest
 
 }

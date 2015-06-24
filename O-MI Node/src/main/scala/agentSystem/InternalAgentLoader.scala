@@ -16,16 +16,13 @@ import scala.concurrent._
 import java.util.Date
 import java.sql.Timestamp
 
+import InternalAgentCLICmds._
 /** Helper Object for creating AgentLoader.
   *
   */
 object InternalAgentLoader{
   def props(): Props = Props(new InternalAgentLoader())
 }
-
-  case class ReStartCmd(agent: String)
-  case class StartCmd(agent: String)
-  case class StopCmd(agent: String)
 
   case class ThreadException( agent: InternalAgent, exception: Exception)
   case class ThreadInitialisationException( agent: InternalAgent, exception: Exception)
@@ -135,7 +132,6 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     val classnames = getClassnamesWithConfigPath
     classnames.foreach{
       case (classname: String, configPath: String) => 
-      try {
         if(!agents.exists{
             case (agentname: String, _ ) => classname == agentname
           })
@@ -144,22 +140,26 @@ class InternalAgentLoader  extends Actor with ActorLogging {
         } else { 
           log.warning("Agent allready running: "+ classname)
         }
-      } catch {
-        case e: ClassNotFoundException  => log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
-        case e: Exception => log.warning(s"Classloading failed. $e")
-      }
     }
   }
 
   def loadAndStart(classname: String, configPath: String) ={
-    log.info("Instantitating agent: " + classname )
-    val clazz = classLoader.loadClass(classname)
-
-    val const = clazz.getConstructors()(0)
-    val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
-    val date = new Date()
-    agents += Tuple2( classname, Tuple3( Some(agent), configPath, new Timestamp(date.getTime) ) )
-    agent.start()
+      try {
+        log.info("Instantitating agent: " + classname )
+        val clazz = classLoader.loadClass(classname)
+        val const = clazz.getConstructors()(0)
+        val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
+        val date = new Date()
+        agents += Tuple2( classname, Tuple3( Some(agent), configPath, new Timestamp(date.getTime) ) )
+        agent.start()
+      } catch {
+        case e: NoClassDefFoundError => 
+          log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
+        case e: ClassNotFoundException  =>
+          log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
+        case e: Exception =>
+          log.warning(s"Classloading failed. $e")
+      }    
   }
 
   /** Creates classloader for loading classes from jars in deploy directory.

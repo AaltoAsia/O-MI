@@ -16,7 +16,7 @@ function Omi() {
 	this.newest;
 	this.oldest;
 	this.callback;
-	this.requestIds;
+	this.requestIDs;
 
 	this.request;
 	this.subscribe;
@@ -27,7 +27,7 @@ function Omi() {
 /**
  * Updates the parameters
  */
-Omi.prototype.update = function(operation, ttl, interval, begin, end, newest, oldest, callback, requestIds){
+Omi.prototype.update = function(operation, ttl, interval, begin, end, newest, oldest, callback, requestIDs){
 	this.operation = operation;
 	this.ttl = ttl;
 	this.interval = interval;
@@ -36,7 +36,7 @@ Omi.prototype.update = function(operation, ttl, interval, begin, end, newest, ol
 	this.newest = newest;
 	this.oldest = oldest;
 	this.callback = callback;
-	this.requestIds = requestIds;
+	this.requestIDs = requestIDs;
 	this.request = "";
 	this.subscribe = "";
 }
@@ -58,7 +58,7 @@ Omi.prototype.saveOptions = function(){
 	this.save[this.operation]["newest"] = this.newest;
 	this.save[this.operation]["oldest"] = this.oldest;
 	this.save[this.operation]["callback"] = this.callback;
-	this.save[this.operation]["requestId"] = this.requestIds;
+	this.save[this.operation]["requestID"] = this.requestIDs;
 }
 
 /**
@@ -76,9 +76,9 @@ Omi.prototype.getRequest = function(objects) {
  * Generates and returns the O-MI subscription request
  * @returns {string} The generated request XML
  */
-Omi.prototype.getSub = function(requestId, objects) {
+Omi.prototype.getSub = function(requestID, objects) {
 	if(this.subscribe.length === 0){
-		this.subscribe = writeSubscribe(requestId, objects, this.ttl, this.interval, this.begin, this.end, this.newest, this.oldest, this.callback);
+		this.subscribe = writeSubscribe(requestID, objects, this.ttl, this.interval, this.begin, this.end, this.newest, this.oldest, this.callback);
 	}
 	return this.subscribe;
 };

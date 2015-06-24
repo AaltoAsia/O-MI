@@ -1,8 +1,8 @@
 package agents
 
 import agentSystem._
-import parsing.Types._
-import parsing.Types.OdfTypes._
+import types._
+import types.OdfTypes._
 import parsing.OdfParser
 import parsing.OmiParser
 import database._
@@ -34,8 +34,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{ Success, Failure }
 
-import parsing.Types._
-import parsing.Types.Path._
+import types.Path._
 
 // Scala XML
 import scala.xml
@@ -54,7 +53,7 @@ import scala.collection.JavaConversions.asJavaIterable
 class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
   
-  private var odf : Option[Iterable[OdfInfoItem]] = None   
+  private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
   
   def getSensors(o:Iterable[OdfObject]) : Iterable[OdfInfoItem] = {
     o.flatten{ o =>
@@ -90,32 +89,39 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
       shutdown
       return
     }
-    odf = Some(
+    odfInfoItems = Some(
       getObjects(tmp_odf).flatten{o =>
         o.infoItems ++ getSensors(o.objects)
-      }
+      }.map{ info => (info, info.values.headOption.get.value.toString) }
     )
-    if(odf.isEmpty){
+    if(odfInfoItems.isEmpty){
       InternalAgent.log.warning("Odf was empty, SmartHouseAgent shutting down.")
       shutdown
       return
     }
     InputPusher.handlePathMetaDataPairs( 
-      odf.get.filter{info => info.metaData.nonEmpty }.map{
-        info  => (info.path, info.metaData.get.data)
+      odfInfoItems.get.filter{ case ((info: OdfInfoItem, firstValue : String)) => info.metaData.nonEmpty }.map{
+        case ((info: OdfInfoItem, firstValue : String))  => (info.path, info.metaData.get.data)
       }
     )
   }
   
   def loopOnce(): Unit = {
     val date = new java.util.Date()
-    odf = Some( 
-      odf.get.map{ info => 
-        OdfInfoItem( info.path, Iterable( OdfValue(  Random.nextDouble.toString, "" , Some( new Timestamp( date.getTime) ) )))
+    odfInfoItems = Some( 
+      odfInfoItems.get.map{ case ((info: OdfInfoItem, firstValue : String)) =>
+        val newVal = info.values.headOption match {
+          case Some(value)  => value.value.toDouble  + firstValue.toDouble/ 10 *Random.nextGaussian
+          case None => Random.nextInt
+        }
+        (
+          OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "" , Some( new Timestamp( date.getTime) ) ))),
+          firstValue
+        )
       } 
     )
     InternalAgent.log.info("SmartHouseAgent pushed data to DB.")
-    InputPusher.handleInfoItems(odf.get)
+    InputPusher.handleInfoItems(odfInfoItems.get.map{ case (info, _) => info})
     Thread.sleep(10000)
   }
 

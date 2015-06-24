@@ -170,7 +170,11 @@ function ajaxGet(indent, url, listId, pathArray){
 			displayDiscoveryObjects(data, indent, url, listId, pathArray);
 		},
 		error: function(a, b, c){
-			alert("Error accessing data discovery");
+			//alert("Error accessing data discovery");
+			console.log("Error accessing data discovery ");
+                        console.log(a)
+                        console.log(b)
+                        console.log(c)
 		}
     });
 }

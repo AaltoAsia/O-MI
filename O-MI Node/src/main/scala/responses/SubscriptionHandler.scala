@@ -7,19 +7,21 @@ import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.ActorLogging
 
-import responses._
 import database._
-import parsing.Types.Path
-import parsing.Types.OmiTypes.{ SubLike, SubDataRequest }
-import OMISubscription.SubscriptionResponseGen
+import types.Path
 import CallbackHandlers._
+import types.OmiTypes._
+import types.OdfTypes._
+import parsing.xmlGen
+import parsing.xmlGen.scalaxb
 
 import scala.collection.mutable.PriorityQueue
 
 import java.sql.Timestamp
+import java.util.Date
 import System.currentTimeMillis
 import scala.math.Ordering
-import scala.util.{ Success, Failure }
+import scala.util.{Try, Success, Failure }
 import scala.collection.mutable.{ Map, HashMap }
 
 import xml._
@@ -29,32 +31,37 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 // MESSAGES
 case object HandleIntervals
-case class NewSubscription(id: Int)
+case object CheckTTL
+case class RegisterRequestHandler(reqHandler: RequestHandler)
+case class NewSubscription(subscription: SubscriptionRequest)
 case class RemoveSubscription(id: Int)
 
 /**
  * Handles interval counting and event checking for subscriptions
  */
-class SubscriptionHandler extends Actor with ActorLogging {
+class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorLogging {
   import ExecutionContext.Implicits.global
   import context.system
 
+  private def date = new Date()
   implicit val timeout = Timeout(5.seconds)
 
-  implicit val dbConnection: DB = new SQLiteConnection
-
-  val subscriptionResponseGen = new SubscriptionResponseGen
+  private var requestHandler = new RequestHandler(self)
 
   sealed trait SavedSub {
     val sub: DBSub
     val id: Int
   }
 
-  case class TimedSub(sub: DBSub, id: Int, nextRunTime: Timestamp)
-    extends SavedSub
+  case class TimedSub(sub: DBSub, nextRunTime: Timestamp)
+    extends SavedSub {
+      val id = sub.id
+  }
 
-  case class EventSub(sub: DBSub, id: Int, lastValue: String)
-    extends SavedSub
+  case class EventSub(sub: DBSub, lastValue: String)
+    extends SavedSub {
+      val id = sub.id
+  }
 
   object TimedSubOrdering extends Ordering[TimedSub] {
     def compare(a: TimedSub, b: TimedSub) =
@@ -67,7 +74,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
   def getIntervalSubs = intervalSubs
 
   //var eventSubs: Map[Path, EventSub] = HashMap()
-  private var eventSubs: Map[String, EventSub] = HashMap()
+  private var eventSubs: Map[String, Seq[EventSub]] = HashMap()
   def getEventSubs = eventSubs
 
   // Attach to db events
@@ -76,45 +83,55 @@ class SubscriptionHandler extends Actor with ActorLogging {
   // load subscriptions at startup
   override def preStart() = {
     val subs = dbConnection.getAllSubs(Some(true))
-    for (sub <- subs) loadSub(sub.id, sub)
+    for (sub <- subs) loadSub(sub)
 
   }
 
   private def loadSub(id: Int): Unit = {
     dbConnection.getSub(id) match {
       case Some(dbsub) =>
-        loadSub(id, dbsub)
+        loadSub(dbsub)
       case None =>
         log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
-  private def loadSub(id: Int, dbsub: DBSub): Unit = {
-    log.debug(s"Adding sub: $id")
+  private def loadSub(dbsub: DBSub): Unit = {
+    log.debug(s"Adding sub: $dbsub")
 
-    require(dbsub.callback.isDefined, "SubscriptionHandlerActor is not for buffered messages")
+    if (dbsub.hasCallback){
+      if (dbsub.isIntervalBased) {
+        intervalSubs += TimedSub(
+          dbsub,
+          new Timestamp(currentTimeMillis())
+        )
 
-    if (dbsub.isIntervalBased) {
-      intervalSubs += TimedSub(
-        dbsub,
-        id,
-        new Timestamp(currentTimeMillis()))
+        // FIXME: schedules many times
+        handleIntervals()
 
-      handleIntervals()
-      log.debug(s"Added sub as TimedSub: $id")
+        log.debug(s"Added sub as TimedSub: $dbsub")
 
-    } else if (dbsub.isEventBased) {
+      } else if (dbsub.isEventBased) {
 
-      for (path <- dbsub.paths)
-        dbConnection.get(path).foreach{
-          case sensor: DBSensor =>
-            eventSubs += path.toString -> EventSub(dbsub, id, sensor.value)
-          case x =>
-            log.warning(s"$x not implemented in SubscriptionHandlerActor for Interval=-1")
+        dbConnection.getSubscribtedItems(dbsub.id) foreach {
+          case SubscriptionItem(_, path, Some(lastValue)) =>
+            eventSubs.get(path.toString) match {
+
+              case Some( ses : Seq[EventSub] ) => 
+                eventSubs = eventSubs.updated(
+                  path.toString, EventSub(dbsub, lastValue) :: ses.toList
+                )
+
+              case None => 
+                eventSubs += path.toString -> Seq( EventSub(dbsub, lastValue))
+            }
         }
 
-      log.debug(s"Added sub as EventSub: $id")
+        log.debug(s"Added sub as EventSub: $dbsub")
+      }
+    } else {
+      ttlQueue.enqueue((dbsub.id, (dbsub.ttlToMillis + dbsub.startTime.getTime)))
+      self ! CheckTTL
     }
-
   }
 
   /**
@@ -134,12 +151,16 @@ class SubscriptionHandler extends Actor with ActorLogging {
    */
   private def removeSub(sub: DBSub): Boolean = {
     if (sub.isEventBased) {
-      sub.paths.foreach { path =>
-        eventSubs -= path.toString
+      eventSubs.foreach{ 
+        case (path: String, ses: Seq[EventSub])  =>
+        eventSubs = eventSubs.updated(path, ses.filter( _.sub.id != sub.id ))    
       }
     } else {
       //remove from intervalSubs
-      intervalSubs = intervalSubs.filterNot(sub.id == _.id)
+      if(sub.hasCallback)
+        intervalSubs = intervalSubs.filterNot(sub.id == _.id)
+      else
+        ttlQueue = ttlQueue.filterNot( sub.id == _._1)
     }
     dbConnection.removeSub(sub.id)
   }
@@ -148,40 +169,53 @@ class SubscriptionHandler extends Actor with ActorLogging {
 
     case HandleIntervals => handleIntervals()
 
-    case NewSubscription(requestId) => loadSub(requestId)
+    case CheckTTL => checkTTL()
 
-    case RemoveSubscription(requestId) => sender() ! removeSub(requestId)
+    case NewSubscription(subscription) => sender() ! setSubscription(subscription)
+
+    case RemoveSubscription(requestID) => sender() ! removeSub(requestID)
+  
+    case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
 
+  /**
+   * @param paths Paths of modified InfoItems.
+   */
   def checkEventSubs(paths: Seq[Path]): Unit = {
 
-    for (path <- paths) {
+    for (infoItemPath <- paths; path <- infoItemPath.getParentsAndSelf) {
       var newestValue: Option[String] = None
 
       eventSubs.get(path.toString) match {
 
-        case Some(EventSub(subscription, id, lastValue)) => {
+        case Some(ses : Seq[EventSub]) => {
+          ses.foreach{
+            case EventSub(subscription, lastValue) => 
+              if (hasTTLEnded(subscription, currentTimeMillis())) {
+                removeSub(subscription)
+              } else {
+                if (newestValue.isEmpty)
+                  newestValue = dbConnection.get(path).map{
+                    case OdfInfoItem(_, v, _, _) => iterableAsScalaIterable(v).headOption.map{
+                      case value : OdfValue =>
+                        value.value
+                    }.getOrElse("")
+                    case _ => ""// noop, already logged at loadSub
+                  }
+                
+                if (lastValue != newestValue.getOrElse("")){
 
-          if (hasTTLEnded(subscription, currentTimeMillis())) {
-            removeSub(subscription)
-          } else {
-            if (newestValue.isEmpty)
-              newestValue = dbConnection.get(path).map{
-                case DBSensor(_, v, _) => v
-                case _ => ""// noop, already logged at loadSub
+                  //def failed(reason: String) =
+                  //  log.warning(s"Callback failed; subscription id:$id  reason: $reason")
+
+                  val addr = subscription.callback 
+                  if (addr == None) return
+
+                  val xmlMsg = requestHandler.handleSubData(SubDataRequest(subscription))._1//Returns tuple, second is return status
+                  sendCallback(addr.get.toString, xmlMsg)
+
+                }
               }
-            
-            if (lastValue != newestValue.getOrElse("")){
-
-              //def failed(reason: String) =
-              //  log.warning(s"Callback failed; subscription id:$id  reason: $reason")
-
-              val addr = subscription.callback 
-              if (addr == None) return
-
-              subscriptionResponseGen.runRequest(SubDataRequest(subscription))
-
-            }
           }
         }
 
@@ -211,14 +245,14 @@ class SubscriptionHandler extends Actor with ActorLogging {
 
     while (intervalSubs.headOption.exists(_.nextRunTime.getTime <= checkTime)) {
 
-      val TimedSub(sub, id, time) = intervalSubs.dequeue()
+      val TimedSub(sub, time) = intervalSubs.dequeue()
 
-      log.debug(s"handleIntervals: delay:${checkTime - time.getTime}ms currentTime:$checkTime targetTime:${time.getTime} id:$id")
+      log.debug(s"handleIntervals: delay:${checkTime - time.getTime}ms currentTime:$checkTime targetTime:${time.getTime} id:${sub.id}")
 
       // Check if ttl has ended, comparing to original check time
       if (hasTTLEnded(sub, checkTime)) {
 
-        dbConnection.removeSub(id)
+        dbConnection.removeSub(sub.id)
 
       } else {
         val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt
@@ -226,24 +260,23 @@ class SubscriptionHandler extends Actor with ActorLogging {
         val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * (numOfCalls + 1))
         //val newTime = new Timestamp(time.getTime + sub.intervalToMillis) // OLD VERSION
 
-        intervalSubs += TimedSub(sub, id, newTime)
+        intervalSubs += TimedSub(sub, newTime)
 
 
-        log.debug(s"generateOmi for id:$id")
-        subscriptionResponseGen.runRequest(SubDataRequest(sub))
+        log.debug(s"generateOmi for subId:${sub.id}")
+        val xmlMsg = requestHandler.handleSubData(SubDataRequest(sub))._1//Returns tuple, second is return status
         val interval = sub.interval
-        val callbackAddr = sub.callback.get
-        log.info(s"Sending in progress; Subscription id:$id addr:$callbackAddr interval:$interval")
+        val callbackAddr = sub.callback.get // should always be defined
+        log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
+
+        def failed(reason: String) =
+          log.warning(
+            s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
 
 
-          /*
-          def failed(reason: String) =
-            log.warning(
-              s"Callback failed; subscription id:$id interval:$interval  reason: $reason")
-
-
+        sendCallback(callbackAddr, xmlMsg) onComplete {
             case Success(CallbackSuccess) =>
-              log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:$interval")
+              log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
 
             case Success(fail: CallbackFailure) =>
               failed(fail.toString)
@@ -251,7 +284,7 @@ class SubscriptionHandler extends Actor with ActorLogging {
             case Failure(e) =>
               failed(e.getMessage)
           }
-        }.onFailure {
+        /*Try etc. {}.onFailure {
           case err: Throwable =>
             log.error(s"Error in callback handling of sub $id: ${err.getStackTrace.mkString("\n")}")
         }
@@ -269,4 +302,82 @@ class SubscriptionHandler extends Actor with ActorLogging {
     }
   }
 
+
+  /**
+   * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
+   */
+  type SubTuple = (Int, Long)
+
+  /**
+   * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
+   */
+  val subOrder: Ordering[SubTuple] = Ordering.by(_._2)
+
+  /**
+   * PriorityQueue with subOrder ordering. value with earliest timeout is first.
+   * This val is lazy and is computed when needed for the first time
+   *
+   * This queue contains only subs that have no callback address defined and have ttl > 0.
+   */
+  private var ttlQueue: PriorityQueue[SubTuple] = new PriorityQueue()(subOrder.reverse)
+  var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
+  
+  /**
+   * @return Either Failure(exception) or the request (subscription) id as Success(Int)
+   */
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Try[Int] = Try {
+    require(subscription.ttl > 0.0, "Zero time-to-live not supported")
+
+    val paths = getPaths(subscription)
+
+    require(paths.nonEmpty, "Subscription request should have some items to subscribe.")
+
+    val interval = subscription.interval
+    val ttl      = subscription.ttl
+    val callback = subscription.callback
+    val timeStamp = new Timestamp(date.getTime())
+
+    val newSub = NewDBSub(interval, timeStamp, ttl, callback)
+    val dbsub = dbConnection.saveSub( newSub, paths )
+
+    val requestID = dbsub.id 
+    Future{
+      loadSub(dbsub)
+    }
+    requestID
+  }
+
+  def getPaths(request: OdfRequest) = getLeafs(request.odf).map{ _.path }.toSeq
+
+  
+  /**
+   * This method is called by scheduler and when new sub is added to subQueue.
+   *
+   * This method removes all subscriptions that have expired from the priority queue and
+   * schedules new checkSub method call.
+   */
+  def checkTTL()(implicit dbConnection: DB): Unit = {
+    
+    val currentTime = date.getTime
+    
+    //exists returns false if Option is None
+    while (ttlQueue.headOption.exists(_._2 <= currentTime)) {
+      dbConnection.removeSub(ttlQueue.dequeue()._1)
+    }
+    
+    //foreach does nothing if Option is None
+    ttlQueue.headOption.foreach { n =>
+      val nextRun = ((n._2) - currentTime)
+      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
+      if (scheduledTimes.forall(_._1.isCancelled)) {
+        scheduledTimes = Some((cancellable, currentTime + nextRun))
+      } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {
+        scheduledTimes.foreach(_._1.cancel())
+        scheduledTimes=Some((cancellable,currentTime+nextRun))
+      }
+      else if (scheduledTimes.exists(n =>((n._2 > currentTime) && (n._2 < (currentTime + nextRun))))) {
+        cancellable.cancel()
+      }
+    }
+  }
 }

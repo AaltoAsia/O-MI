@@ -1,5 +1,9 @@
-package parsing
-package Types
+
+/** Package containing internal types used between different modules.
+  *
+  **/
+package types
+
 import java.sql.Timestamp
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
@@ -12,18 +16,18 @@ import java.sql.Timestamp
    * two paths or creating new Paths from user input.
    * Path can be used as a sequence via an implicit conversion or _.toSeq
    */
-  class Path(pathSeq: Seq[String]){
+  class Path(pathSeq: Vector[String]){
     import Path._
     /**
      * Removes extra path elements and holds the Path as Seq[String]
      */
-    val toSeq = {
+    val toSeq: Seq[String] = {
       val normalized = pathSeq.filterNot(_ == "")
-      normalized.toSeq
+      normalized.toVector
     }
 
     def this(pathStr: String) = this{
-      pathStr.split("/")
+      pathStr.split("/").toVector
     }
 
     /**
@@ -36,10 +40,18 @@ import java.sql.Timestamp
     def /(otherPathStr: String): Path = {
       this / Path(otherPathStr)
     }
+
+    /**
+     * Get list of ancestors from this path, e.g "/a/b/c/d" => "/a", "/a/b", "/a/b/c", "a/b/c/d"
+     * Order is from oldest descending.
+     */
+    def getParentsAndSelf: Seq[Path] = this.inits.map(Path(_)).toList.reverse.tail
+
     override def equals(that: Any): Boolean = that match{
-      case thatPath: Path => thatPath.toSeq.equals(this.toSeq)
+      case thatPath:Path => thatPath.toSeq.equals(this.toSeq)
       case _ => false
     }
+    override def hashCode(): Int = this.toSeq.hashCode
 
     /**
      * Creates a path string which represents this path with '/' seperators.
@@ -52,11 +64,12 @@ import java.sql.Timestamp
     */
   object Path {
     def apply(pathStr: String): Path = new Path(pathStr)
-    def apply(pathSeq: Seq[String]): Path = new Path(pathSeq)
-    val empty = new Path(Seq.empty)
+    def apply(pathSeq: Seq[String]): Path = new Path(pathSeq.toVector)
+    val empty = new Path(Vector.empty)
+
 
     import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 
     implicit def PathAsSeq(p: Path): Seq[String] = p.toSeq
-    implicit def SeqAsPath(s: Seq[String]): Path = Path(s)
+    implicit def SeqAsPath(s: Seq[String]): Path = Path(s.toVector)
   }

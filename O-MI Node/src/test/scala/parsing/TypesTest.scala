@@ -2,10 +2,10 @@ package parsing
 
 import org.specs2._
 import parsing._
-import parsing.Types._
-import parsing.Types.Path._
-import parsing.Types.OmiTypes._
-import parsing.Types.OdfTypes._
+import types._
+import types.Path._
+import types.OmiTypes._
+import types.OdfTypes._
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList, iterableAsScalaIterable}
 
 /* Test class for testing ODF Types */
@@ -34,6 +34,7 @@ class TypesTest extends Specification {
       create same instance from string and seq	$e200
       be same as the Seq it was created with 	$e201
       seq as path								$e202
+      have same hashcodes when equal $e203
     Path class instance should
       join with another path correctly			$e300
       join with another path string				$e301
@@ -93,6 +94,12 @@ class TypesTest extends Specification {
     val seq = Seq("test", "test2")
     val path = Path(seq)
     Path.SeqAsPath(seq).toString should be equalTo (path.toString)
+  }
+  def e203 = {
+    val path1 = Path("Objects")
+    val path2 = Path(Seq("Objects"))
+    path1 should be equalTo path2
+    path1.hashCode() should be equalTo path2.hashCode()
   }
   
   def e300 = {

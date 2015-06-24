@@ -11,7 +11,8 @@ import java.util.Date
 import java.net.InetSocketAddress
 import agentSystem._
 import responses._
-import parsing.Types._
+
+import types._
 import database._
 
 import xml._
@@ -53,16 +54,14 @@ trait Starter {
 
     // Save settings as sensors values
     system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
-    dbConnection.set(new DBSensor(
-      Path(settings.settingsOdfPath + "num-latest-values-stored"), settings.numLatestValues.toString, currentTime))
+    dbConnection.set(
+      Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+      currentTime, settings.numLatestValues.toString
+    )
 
     // Create input pusher actor
-    initInputPusher()
+    initInputPusher(dbConnection)
 
-    // Fill subs for polling logic, TODO: join with SubscriptionHandler logic
-    responses.OMISubscription.fillSubQueue()(dbConnection)
-    // Clean old pollable subs, TODO: join with SubscriptionHandler logic
-    responses.OMISubscription.checkSubs()(dbConnection)
   }
 
 
@@ -75,8 +74,8 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(): ActorRef = {
-    val subHandler = system.actorOf(Props(classOf[SubscriptionHandler]), "subscription-handler")
+  def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
+    val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
@@ -85,7 +84,7 @@ trait Starter {
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(subHandler)), "omi-service")
+    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection) )), "omi-service")
 
 
 
