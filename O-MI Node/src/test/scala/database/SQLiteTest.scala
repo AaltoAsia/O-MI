@@ -11,14 +11,14 @@ import testHelpers.AfterAll
 
 import types._
 
-object SQLiteTest extends Specification with AfterAll {
-
-//  implicit def javaIterableToSeq[T](x: java.lang.Iterable[T]): Seq[T] = {
-//    iterableAsScalaIterable(x).toSeq
-//  }
-  implicit def seqAsjavaIterable[T](x: Seq[T]): java.lang.Iterable[T] = {
-    asJavaIterable(x.toIterable)
-  }
+class SQLiteTest extends Specification with AfterAll {
+  sequential
+  //  implicit def javaIterableToSeq[T](x: java.lang.Iterable[T]): Seq[T] = {
+  //    iterableAsScalaIterable(x).toSeq
+  //  }
+  //  implicit def seqAsjavaIterable[T](x: Seq[T]): java.lang.Iterable[T] = {
+  //    asJavaIterable(x.toIterable)
+  //  }
   def newTs = new Timestamp(new java.util.Date().getTime)
   implicit val db = new TestDB("dbtest")
 
@@ -30,21 +30,21 @@ object SQLiteTest extends Specification with AfterAll {
   }
   def OdfObjectsToValues(x: OdfObjects): Seq[String] = {
     val temp1 = getLeafs(x)
-    val temp = temp1.toSeq.collect{case c: OdfInfoItem => c.values}.flatten.map(_.value)
+    val temp = temp1.toSeq.collect { case c: OdfInfoItem => c.values }.flatten.map(_.value)
     temp
-//    val temp2: Option[Seq[OdfInfoItem]] = temp1.headOption.map(_.infoItems)
-//    val temp3: Option[Seq[OdfValue]] = temp2.flatMap(_.headOption.map(_.values))
-//    temp3.map(x => x.map(_.value))
+    //    val temp2: Option[Seq[OdfInfoItem]] = temp1.headOption.map(_.infoItems)
+    //    val temp3: Option[Seq[OdfValue]] = temp2.flatMap(_.headOption.map(_.values))
+    //    temp3.map(x => x.map(_.value))
   }
   def OdfObjectsToPaths(x: OdfObjects): Seq[Path] = {
-    val temp1: Seq[OdfObject] = x.objects.toSeq
+    val temp1: Seq[HasPath] = getLeafs(x).toSeq
     temp1.map(n => n.path)
   }
-  val testSub1 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
-  val testSub2 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
+  lazy val testSub1 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
+  lazy val testSub2 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
-    sequential
+    //    sequential
     var data1 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(1000), "21.5C")
     var data2 = (Path("/Objects/path/to/sensor1/hum"), new java.sql.Timestamp(2000), "40%")
     var data3 = (Path("/Objects/path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")
@@ -53,17 +53,17 @@ object SQLiteTest extends Specification with AfterAll {
     var data6 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(6000), "21.7C")
 
     //uncomment other tests too from parsing/responses when fixing this
-    var id1 = db.saveSub(NewDBSub(1, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
-    var id2 = db.saveSub(NewDBSub(2, newTs, 0, Some("callbackaddress")), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
-    var id3 = db.saveSub(NewDBSub(2, newTs, 100, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3"), Path("/Objects/path/to/another/sensor2")))
+    lazy val id1 = db.saveSub(NewDBSub(1, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
+    lazy val id2 = db.saveSub(NewDBSub(2, newTs, 0, Some("callbackaddress")), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
+    lazy val id3 = db.saveSub(NewDBSub(2, newTs, 100, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3")))//, Path("/Objects/path/to/another/sensor2")))
 
     "return true when adding new data" in {
-      db.set(data1._1, data1._2, data1._3) 
+      db.set(data1._1, data1._2, data1._3)
       db.set(data2._1, data2._2, data2._3) === 0
-      db.set(data3._1, data3._2, data3._3) === 0 
-      db.set(data4._1, data4._2, data4._3) === 0 
-//      db.set(data5._1, data5._2, data5._3) ===0 // shouldEqual false
-//      db.set(data6._1, data6._2, data6._3) ===0
+      db.set(data3._1, data3._2, data3._3) === 0
+      db.set(data4._1, data4._2, data4._3) === 0
+      //      db.set(data5._1, data5._2, data5._3) ===0 // shouldEqual false
+      //      db.set(data6._1, data6._2, data6._3) ===0
     }
 
     "return false when trying to add data with older timestamp" in {
@@ -80,8 +80,8 @@ object SQLiteTest extends Specification with AfterAll {
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
-      db.set(data6._1, data6._2, data6._3) === 0 
-      db.set(data5._1, data5._2, data5._3) === 0 
+      db.set(data6._1, data6._2, data6._3) === 0
+      db.set(data5._1, data5._2, data5._3) === 0
     }
 
     "return correct value for given valid path" in {
@@ -109,7 +109,7 @@ object SQLiteTest extends Specification with AfterAll {
 
     "return correct values for given valid path and timestamps" in {
       val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor1/temp")), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None) //.getNBetween(Iterable(OdfInfoItem(Path("/Objects/path/to/sensor1/temp")), ), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None)
-      
+
       val values1: Option[Seq[String]] = sensors1.map { x => OdfObjectsToValues(x) }
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor1/temp")), Some(new Timestamp(1500)), Some(new Timestamp(6001)), None, None)
       val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
@@ -148,82 +148,37 @@ object SQLiteTest extends Specification with AfterAll {
     }
 
     "return true when removing valid path" in {
-      db.remove(Path("/Objects/path/to/sensor3/temp"))
-      db.remove(Path("/Objects/path/to/sensor1/hum")) shouldEqual true
+      db.remove(Path("/Objects/path/to/sensor3/temp")) shouldEqual true
+//      db.remove(Path("/Objects/path/to/sensor1/hum")) shouldEqual true
     }
-    
 
     "be able to buffer data on demand" in {
-//      db.remove(Path("/Objects/path/to/sensor3/temp"))
-println("111111111111111111111111111111111111111")
+      //      db.remove(Path("/Objects/path/to/sensor3/temp"))
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(6000), "21.0C")
-      println("2")
+      testSub1
+      testSub2
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(7000), "21.1C")
-            println("3")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(8000), "21.1C")
-            println("4")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(9000), "21.2C")
-         println("5")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(10000), "21.2C")
-            println("6")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(11000), "21.3C")
-         println("7")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(12000), "21.3C")
-            println("8")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(13000), "21.4C")
-         println("9")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(14000), "21.4C")
-            println("10")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
-            println("11")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
-            println("12")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
-            println("13")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(18000), "21.6C")
-            println("14")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(19000), "21.6C")
-            println("15")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(20000), "21.6C")
-            println("16")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(21000), "21.6C")
-            println("17")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(22000), "21.6C")
-            println("18")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(23000), "21.6C")
-            println("19")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(24000), "21.6C")
-            println("20")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(25000), "21.6C")
-            println("21")
-
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(26000), "21.6C")
-      println("22")
 
-      val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
-        None,
-        None,
-        None,
-        None)
+      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
 
@@ -293,7 +248,7 @@ println("111111111111111111111111111111111111111")
       temp2 must beSome.which(_ must have size (10))
     }
 
-    "return all values if no options given" in {
+    "return one value if no options given" in {
       val temp1 = db.getNBetween(
         pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
         None,
@@ -301,19 +256,19 @@ println("111111111111111111111111111111111111111")
         None,
         None)
       val temp2 = temp1.map(OdfObjectsToValues(_))
-      temp2 must beSome.which(_ must have size (21))
+      temp2 must beSome.which(_ must have size (1))
     }
 
-    "return all values if both fromStart and fromEnd is given" in {
-      val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
-        None,
-        None,
-        Some(10),
-        Some(5))
-      val temp2 = temp1.map(OdfObjectsToValues(_))
-      temp2 must beSome.which(_ must have size (21))
-    }
+//    "return all values if both fromStart and fromEnd is given" in {
+//      val temp1 = db.getNBetween(
+//        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
+//        None,
+//        None,
+//        Some(10),
+//        Some(5))
+//      val temp2 = temp1.map(OdfObjectsToValues(_))
+//      temp2 must beSome.which(_ must have size (21))
+//    }
 
     "return empty array if Path doesnt exist" in {
       val temp1 = db.getNBetween(
@@ -329,48 +284,41 @@ println("111111111111111111111111111111111111111")
     "should not rever to historyLength if other are still buffering" in {
 
       db.removeSub(testSub1)
-      val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
-        None,
-        None,
-        None,
-        None)
+      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
     }
 
     "be able to stop buffering and revert to using historyLenght" in {
       db.removeSub(testSub2)
-      val temp1 = db.getNBetween(
-        pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")),
-        None,
-        None,
-        None,
-        None)
+      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (10))
     }
 
-    "return true when removing valid path" in {
-      db.remove(Path("/Objects/path/to/sensor3/temp"))
-      db.remove(Path("/Objects/path/to/sensor1/temp")) shouldEqual true
-    }
-
-    "return false when trying to remove object from the middle" in {
-      db.remove(Path("/Objects/path/to/sensor2")) shouldEqual false
-    }
-
-    "return true when removing valid path" in {
-      db.remove(Path("/Objects/path/to/sensor2/temp")) shouldEqual true
-      db.remove(Path("/Objects/path/to/sensor2/hum")) shouldEqual true
-    }
-
-    "return None when searching non existent object" in {
-      db.get(Path("/Objects/path/to/sensor2")) shouldEqual None
-      db.get(Path("/Objects/path/to/sensor1")) shouldEqual None
-    }
+//    "return true when removing valid path" in {
+//      db.remove(Path("/Objects/path/to/sensor3/temp"))
+//      db.remove(Path("/Objects/path/to/sensor1/temp")) shouldEqual true
+//    }
+//
+//    "return false when trying to remove object from the middle" in {
+//      db.remove(Path("/Objects/path/to/sensor2")) shouldEqual false
+//    }
+//
+//    "return true when removing valid path" in {
+//      db.remove(Path("/Objects/path/to/sensor2/temp")) shouldEqual true
+//      db.remove(Path("/Objects/path/to/sensor2/hum")) shouldEqual true
+//    }
+//
+//    "return None when searching non existent object" in {
+//      db.get(Path("/Objects/path/to/sensor2")) shouldEqual None
+//      db.get(Path("/Objects/path/to/sensor1")) shouldEqual None
+//    }
 
     "return correct callback adress for subscriptions" in {
+      id1
+      id2
+      id3
       db.getSub(id1.id).get.callback shouldEqual None
       db.getSub(id2.id).get.callback.get shouldEqual "callbackaddress"
       db.getSub(id3.id).get.callback shouldEqual None
@@ -382,10 +330,10 @@ println("111111111111111111111111111111111111111")
     //      db.isExpired(id3) shouldEqual false
     //    }
 
-    "return correct paths as array" in {
-      db.getSubData(id1.id) must beSome.which(OdfObjectsToPaths(_) must have size (2))
-      db.getSubData(id2.id) must beSome.which(OdfObjectsToPaths(_) must have size (2))
-      db.getSubData(id3.id) must beSome.which(OdfObjectsToPaths(_) must have size (4))
+    "subscribing to Object should subscribe to alla child infoitems" in {
+      db.getSubData(id1.id) must beSome.which(OdfObjectsToPaths(_) must have size (4))
+      db.getSubData(id2.id) must beSome.which(OdfObjectsToPaths(_) must have size (4))
+      db.getSubData(id3.id) must beSome.which(OdfObjectsToPaths(_) must have size (5))
     }
 
     "return None for removed subscriptions" in {
@@ -396,35 +344,36 @@ println("111111111111111111111111111111111111111")
       db.getSub(id2.id) must beNone
       db.getSub(id3.id) must beNone
     }
-    /*
-    case class NewDBSub(
-  val interval: Double,
-  val startTime: Timestamp,
-  val ttl: Double,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal*/
+
     "return right values in getsubdata" in {
       val timeNow = new java.util.Date().getTime
-      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 0, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
+      db.remove(Path("/Objects/path/to/sensor1/temp"))
+      db.remove(Path("/Objects/path/to/sensor2/temp"))
+      db.remove(Path("/Objects/path/to/sensor3/temp"))
+//      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
-      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 3000), "21.0C")
-      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 2000), "21.0C")
-      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 1000), "21.0C")
+      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 3000), "21.1C")
+      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 2000), "21.2C")
+      db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 1000), "21.3C")
 
-      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 3000), "21.0C")
-      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 2000), "21.0C")
-      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 1000), "21.0C")
+      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 3000), "21.4C")
+      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 2000), "21.5C")
+      db.set(Path("/Objects/path/to/sensor2/temp"), new Timestamp(timeNow - 1000), "21.6C")
 
-      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 3000), "21.0C")
-      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.0C")
-      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.0C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 3000), "21.7C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.8C")
+      db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.9C")
+      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
       val res = db.getSubData(id.id) //), Some(new Timestamp(timeNow)))
       db.removeSub(id)
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
       db.remove(Path("/Objects/path/to/sensor3/temp"))
-      res must beSome.which(OdfObjectsToPaths(_) must have size (9))
+//      println(OdfObjectsToPaths(res.get))
+//      println("\\")
+//      println(OdfObjectsToValues(res.get))
+      res must beSome.which(OdfObjectsToValues(_) must have size (9))
     }
 
     "return correct subscriptions with getAllSubs" in
@@ -454,7 +403,8 @@ println("111111111111111111111111111111111111111")
         db.removeSub(id9)
       }
     "be able to add many values in one go" in {
-      db.clearDB()
+//      db.clearDB()
+      db.set(Path("/Objects/path/to/setmany/test1"), new Timestamp(1000), "first")
       val testSub3 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/setmany/test1")))
 
       //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
@@ -471,10 +421,10 @@ println("111111111111111111111111111111111111111")
       }
       val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
       db.setMany(pathValuePairs)
-      val temp1 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test1")), None, None, None, None)
+      val temp1 = db.get(Path("/Objects/path/to/setmany/test1")).map(fromPath(_))
       val values1 = temp1.map(OdfObjectsToValues(_))
-      values1 must beSome.which(_ must have size (12))
-      val temp2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/setmany/test2")), None, None, None, None)
+      values1 must beSome.which(_ must have size (13))
+      val temp2 = db.get(Path("/Objects/path/to/setmany/test2")).map(fromPath(_))
       val values2 = temp1.map(OdfObjectsToValues(_))
       values2 must beSome.which(_ must have size (10))
       db.removeSub(testSub3.id)
@@ -482,10 +432,11 @@ println("111111111111111111111111111111111111111")
       db.remove(Path("/Objects/path/to/setmany/test2"))
     }
     "be able to save and load metadata for a path" in {
+      db.set(Path("/Objects/path/to/metaDataTest/test"), newTs, "test")
       val metadata = "<meta><infoItem1>value</infoItem1></meta>"
       db.setMetaData(Path("/Objects/path/to/metaDataTest/test"), metadata)
       db.getMetaData(Path("/Objects/path/to/metaDataTest/test/fail")) shouldEqual None
-      db.getMetaData(Path("/Objects/path/to/metaDataTest/test")) shouldEqual Some(metadata)
+      db.getMetaData(Path("/Objects/path/to/metaDataTest/test")).map(_.data) shouldEqual Some(metadata)
     }
     //    "close" in {
     //      db.destroy()

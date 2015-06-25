@@ -97,7 +97,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     //  val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[SubscriptionRequest])
   }
   def afterAll = {
-    dbConnection.destroy()
+//    dbConnection.destroy()
   }
 
   "Subscription response" should {

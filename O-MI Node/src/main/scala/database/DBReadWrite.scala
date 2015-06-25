@@ -201,6 +201,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         val addDataAction = latestValues ++= dbValues
         addDataAction.flatMap { x => 
           val remSeq = idMap.filter(n=> n._2._2).map(n=> n._2._1)
+          println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
+          println(remSeq)
+          println(pathsToIds(remSeq.head))
           DBIO.sequence(remSeq.map(removeExcessI(_)))
         }
       }
