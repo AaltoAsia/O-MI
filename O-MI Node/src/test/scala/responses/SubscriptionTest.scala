@@ -49,12 +49,14 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
   val requestHandler = new RequestHandler(subscriptionHandlerRef)(dbConnection)
 
+  val calendar = Calendar.getInstance()
+  // try to fix bug with travis
+  val timeZone = TimeZone.getTimeZone("Etc/GMT+2")
+  calendar.setTimeZone(timeZone)
+  val date = calendar.getTime
+  val testtime = new java.sql.Timestamp(date.getTime)
+
   def beforeAll = {
-    val calendar = Calendar.getInstance()
-    val timeZone = TimeZone.getTimeZone("Etc/GMT+2")
-    calendar.setTimeZone(timeZone)
-    val date = calendar.getTime
-    val testtime = new java.sql.Timestamp(date.getTime)
     //    dbConnection.clearDB()
     val testData = Map(
       Path("Objects/ReadTest/Refrigerator123/PowerConsumption") -> "0.123",
@@ -148,7 +150,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
                     <Object>
                       <id>Refrigerator123</id>
                       <InfoItem name="PowerConsumption">
-                        <value unixTime="1435151496">0.123</value>
+                        <value unixTime={ (testtime.getTime / 1000).toInt.toString }>0.123</value>
                       </InfoItem>
                     </Object>
                   </Object>

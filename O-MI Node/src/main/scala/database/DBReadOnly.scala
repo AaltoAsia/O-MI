@@ -51,25 +51,29 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     )
 
 
-  protected def withSubData(subId: Int)(handleInfoItems: DBInfoItem => DBInfoItem): Option[OdfObjects] = {
-    val subItemNodesI = hierarchyNodes.filter(
-      //XXX:
-      _.id.inSet( runSync( getSubItemHierarchyIdsI(subId) ) )
+  protected def getSubItemDataI(subId: Int)(
+  ): DBIO[DBInfoItems] = for {
+    subsItems <- (subItems filter (_.subId === subId)).result
+    result <- getSubItemDataI(subsItems)
+  } yield result
+
+  protected def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])(
+  ): DBIO[DBInfoItems] = for {
+    subItemNodes <- hierarchyNodes.filter(
+      _.id.inSet( forSubItems map (_.hierarchyId) )
     ).result
 
-    val hierarchy = subItemNodesI.flatMap{
-      subItemNodes => {
-        val subTreeData =
-          subItemNodes map { node =>
-            getSubTreeI(node.path) map {
-              toDBInfoItems( _ ) map handleInfoItems
-            }
-          }
-        dbioDBInfoItemsSum(subTreeData)
-      }
+    subTreeDatas = subItemNodes map { node =>
+      for {
+        rawData <- getSubTreeQ(node).result
+        infoItems = toDBInfoItems( rawData )
+      } yield infoItems
     }
-   runSync( hierarchy map odfConversion )
-  }
+
+    subTreeData <- dbioDBInfoItemsSum(subTreeDatas)
+
+  } yield subTreeData
+
 
   /**
    * Get data for Interval subscription with callback.
@@ -81,99 +85,164 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return objects
    */
-  def getSubData(subId: Int): Option[OdfObjects] = withSubData(subId){
-    case (node, seqVals) =>
-      val sortedValues = seqVals.sortBy( _.timestamp.getTime )
-      ( node, sortedValues.take(1) )
+  def getSubData(subId: Int): Option[OdfObjects] = {
+    val dataI = for {
+      items <- getSubItemDataI(subId)
+
+      // re-uses takeLogic, same behaviour as when no time parameters are given
+      // so takes the newest value
+      filtered = items mapValues takeLogic(None, None, true)
+
+    } yield odfConversion(filtered)
+
+    runSync(dataI)
   }
 
-  protected def getSubItemHierarchyIdsI(subId: Int) =
-    subItems filter (
-      _.subId === subId
-    ) map ( _.hierarchyId ) result
-
   /**
-   * Get poll data for subscription without callback.
+   * Get poll data for subscription without a callback.
+   * This operation by definition returns the requested data that is accumulated since the start of
+   * the subscription or since last poll request.
    * @param subId Subscription id
    * @param newTime Timestamp for the poll time, might be the new start time for the subscription
+   * @return Some results or None if something important was not found
    */
   def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] ={
-    val sub  = getSub( subId ) match {
+
+    // lastValues: map from hierarchyId to its lastValue (for this subscription)
+    def handleEventPoll(dbsub: DBSub, lastValues: Map[Int, Option[String]], sortedValues: Seq[DBValue]): Seq[DBValue] = {
+      //GET all vals
+      val timeframedVals = sortedValues filter betweenLogic(Some(dbsub.startTime), Some(newTime))
+
+      val lastValO = for {
+        head <- timeframedVals.headOption
+        lastVal <- lastValues.get(head.hierarchyId)
+        } yield lastVal
+
+      val sameAsLast = lastValO match {
+        case Some( lastVal) =>
+          (testVal: DBValue) =>
+            lastVal == testVal.value
+        case None =>
+          (_: DBValue) => false
+      }
+
+      val sorted = timeframedVals.sortBy( _.timestamp.getTime )
+      
+      val empty = Seq.empty[DBValue]
+
+      // drops values from start that are same as before
+      val dbvals = (sorted dropWhile sameAsLast).foldLeft(empty)(
+        // Reduce subsequences with the same value to one element
+        (accumulator, b) =>
+          if (accumulator.lastOption.exists(_.value == b.value))
+            accumulator
+          else
+            accumulator :+ b
+      )
+
+      dbvals
+    }
+    
+    
+    // option checking easier at top level because of the "return" 
+    val sub = getSub( subId ) match {
       case None => 
         return None 
       case Some(s) => s
     }
-    
-    val subitems = runSync( 
-      subItems.filter( _.subId === subId ).result 
-    ).groupBy( _.hierarchyId ).map{ case (hId, valueSeq) => (hId, valueSeq.take(1))} 
-    var updateActions : DBIO[Unit] = DBIO.successful[Unit](():Unit)
 
-    def handleEventPoll(node: DBNode, dbsub: DBSub, sortedValues: Seq[DBValue]): Seq[DBValue] = {
-      //GET all vals
-      val dbvals = getBetween(
-          sortedValues, dbsub.startTime, newTime
-        ).sortBy( _.timestamp.getTime ).dropWhile{ value =>//drops values from start that are same as before
-          subitems(value.hierarchyId).headOption match {
-            case Some( headVal) => 
-              headVal.lastValue.exists{ _ == value.value }
-            case None => false
-          }
-        }.foldLeft(Seq.empty[DBValue])(//Reduce are subsequences with same value  to one element
-          (a, b) => if (a.lastOption.exists(n => n.value == b.value)) a else a :+ b
-        ).sortBy( _.timestamp.getTime )
+    val items = for {
+      subsItems <- subItems filter (_.subId === subId) result
 
-      updateActions = DBIO.seq(
-        updateActions,
-        subItems.filter{_.hierarchyId === node.id.get }.update(//Update SubItems lastValues
-          DBSubscriptionItem( dbsub.id, node.id.get, dbvals.lastOption.map{ dbval => dbval.value } ) 
-        )
+      subData <- getSubItemDataI(subsItems)
+
+      // sort time ascending; newest last
+      dataSorted = subData mapValues (
+        _.sortBy( _.timestamp.getTime )
       )
-      dbvals
-    }
-    
-    val odfOption = withSubData(subId){
-      case (node, seqVals) =>
-        val newVals = {
-          //Get right data for each infoitem
-          val sortedValues = seqVals.sortBy( _.timestamp.getTime )
-          if( sub.isEventBased ){
-            handleEventPoll(node, sub, sortedValues)
-          } else { //Normal poll
-          //Get values for each interval
-            getByIntervalBetween(sortedValues, sub.startTime, newTime, sub.interval.toLong )
-          }
+      
+      lastValues = subsItems groupBy ( _.hierarchyId ) map {
+        case (hId, valueSeq) => (hId, valueSeq.headOption flatMap (_.lastValue))
+      }
+
+      // Get right data for each infoitem
+      data = dataSorted mapValues { seqVals =>
+        if ( sub.isEventBased )
+          handleEventPoll(sub, lastValues, seqVals)
+        else  // Normal poll
+          getByIntervalBetween(seqVals, sub.startTime, newTime, sub.interval.toLong )
+      }
+
+      // Update SubItems lastValues
+      lastValUpdates <- if ( sub.isEventBased ){
+        val actions = data map {
+          case (node, vals) =>
+            val lastVal = vals.lastOption.map{ _.value }
+            val subItemQ = subItems.filter{ subItem =>
+              subItem.hierarchyId === node.id &&
+              subItem.subId === sub.id
+            }
+            subItemQ.update(
+              DBSubscriptionItem( sub.id, node.id.get, lastVal ) 
+            )
         }
-        ( node, newVals )
-    }
-    updateActions = DBIO.seq(
-      updateActions,
-      subs.filter{_.id === sub.id }update(//Sub update
-        DBSub(
-          sub.id,
-          sub.interval,
-          new Timestamp(
-            (
-              sub.startTime.getTime  + 
-              ( (( newTime.getTime - sub.startTime.getTime)/1000 )/ sub.interval).toInt * sub.interval * 1000
-            ).toLong
+        DBIO.sequence(actions)
+
+      } else DBIO.successful(()) // noop
+
+
+      // Update subscription, move begin time forward
+
+      elapsedTimeSecs = (newTime.getTime - sub.startTime.getTime) / 1000.0
+
+      // Move begin and ttl to virtually delete the old data that is given now as a response
+      (newBegin, newTTL) = 
+        if (sub.isEventBased) {
+          (newTime, sub.ttl - elapsedTimeSecs)
+
+        } else {
+          // How many intervals are in the past?:
+          val intervalsPast = ( elapsedTimeSecs / sub.interval ).toInt // floor
+
+          (new Timestamp(
+            sub.startTime.getTime + (intervalsPast * sub.interval * 1000).toLong
           ),
-          sub.ttl - ( (( newTime.getTime - sub.startTime.getTime)/1000.0)/ sub.interval).toInt * sub.interval,//Intervals between 
-          sub.callback
-        )
-      )
+            sub.ttl - intervalsPast * sub.interval // Intervals between 
+          )
+        }
+
+      updatedSub = sub.copy(startTime = newBegin, ttl = newTTL)
+
+      subQ = subs.filter(_.id === sub.id)
+      updateSub <- subQ update updatedSub
+
+    } yield data
+
+    odfConversion(
+      runSync(items.transactionally)
     )
-    runSync(updateActions)
-    odfOption
   }
 
+  /*
   def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
-    values.filter( value => (value.timestamp.equals(before) || value.timestamp.before( before )) && (value.timestamp.equals( after ) || value.timestamp.after( after )) )
+    values.filter( value =>
+        ( value.timestamp.equals(before)
+          || value.timestamp.before( before )
+        ) &&
+        ( value.timestamp.equals( after )
+          || value.timestamp.after( after )
+        )
+      )
   }
-  def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
+  */
+
+
+  /** Get values for each interval
+   */
+  protected def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
     var intervalTime =
       endTime.getTime - (endTime.getTime - beginTime.getTime)%interval // last interval before poll
-    var timeframe  = values.sortBy(
+    val timeframe  = values.sortBy(
         value =>
         value.timestamp.getTime
       ) //ascending
@@ -300,7 +369,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   ): DBValue => Boolean =
     ( end, begin ) match {
       case (None, Some(startTime)) =>
-      { _.timestamp.getTime >= startTime.getTime}
+        { _.timestamp.getTime >= startTime.getTime}
 
       case (Some(endTime), None) =>
         { _.timestamp.getTime <= endTime.getTime }

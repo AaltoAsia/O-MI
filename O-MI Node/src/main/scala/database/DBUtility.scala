@@ -96,5 +96,10 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
         case _ => throw new RuntimeException("got wrong or unknown sub class???")
       }
     }
+  protected def getSubItemHierarchyIdsI(subId: Int) =
+    subItems filter (
+      _.subId === subId
+    ) map ( _.hierarchyId ) result
+
 
 }
