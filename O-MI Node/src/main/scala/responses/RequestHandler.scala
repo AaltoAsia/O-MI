@@ -187,10 +187,20 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
       objectsO match {
         case Some(objects) =>
+          val found = Result.readResult(objects)
+          val requestsPaths = getLeafs(read.odf).map{_.path}
+          val foundOdfAsPaths = getLeafs(objects).flatMap{_.path.getParentsAndSelf}.toSet
+          val notFound = requestsPaths.filterNot{ path => foundOdfAsPaths.contains(path) }.toSet.toSeq
+          var results = Seq( found )
+          if( notFound.nonEmpty ) 
+            results ++= Seq( Result.simpleResult("404",
+              Some("Could not find the following elements from the database:\n" + notFound.mkString("\n") )
+            ) )
+
           (
             xmlFromResults(
               1.0,
-              Result.readResult(objects)
+              results: _* 
             ),
             200
           )

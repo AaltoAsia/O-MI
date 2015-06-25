@@ -130,12 +130,9 @@ OdfConversions	src/main/scala/database/OdfConversions.scala	/^trait OdfConversio
 OdfDescription	src/main/scala/types/OdfTypes.scala	/^  case class OdfDescription($/;"	C
 OdfElement	src/main/scala/types/OdfTypes.scala	/^  sealed trait OdfElement$/;"	t
 OdfInfoItem	src/main/scala/types/OdfTypes.scala	/^  case class OdfInfoItem($/;"	C
-OdfInfoItemAsInfoItemType	src/main/scala/types/OdfTypes.scala	/^  def OdfInfoItemAsInfoItemType(info: OdfInfoItem) : InfoItemType = {$/;"	m
 OdfMetaData	src/main/scala/types/OdfTypes.scala	/^  case class OdfMetaData($/;"	C
 OdfObject	src/main/scala/types/OdfTypes.scala	/^  case class OdfObject($/;"	C
-OdfObjectAsObjectType	src/main/scala/types/OdfTypes.scala	/^  def OdfObjectAsObjectType(obj: OdfObject) : ObjectType = {$/;"	m
 OdfObjects	src/main/scala/types/OdfTypes.scala	/^  case class OdfObjects($/;"	C
-OdfObjectsAsObjectsType	src/main/scala/types/OdfTypes.scala	/^  def OdfObjectsAsObjectsType( objects: OdfObjects ) : ObjectsType ={$/;"	m
 OdfObjectsToPaths	src/test/scala/database/SQLiteTest.scala	/^  def OdfObjectsToPaths(x: OdfObjects): Seq[Path] = {$/;"	m
 OdfObjectsToValues	src/test/scala/database/SQLiteTest.scala	/^  def OdfObjectsToValues(x: OdfObjects): Seq[String] = {$/;"	m
 OdfParseResult	src/main/scala/types/OdfTypes.scala	/^  type  OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]$/;"	T
@@ -268,6 +265,7 @@ __ShortXMLFormat	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit lazy v
 __StringXMLFormat	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit lazy val __StringXMLFormat: XMLFormat[String] = new XMLFormat[String] {$/;"	V
 __URIXMLFormat	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit lazy val __URIXMLFormat: XMLFormat[java.net.URI] = new XMLFormat[java.net.URI] {$/;"	V
 actionOnInternalError	src/main/scala/responses/RequestHandler.scala	/^  def actionOnInternalError: Throwable => Unit = { error =>$/;"	m
+actions	src/main/scala/database/DBReadOnly.scala	/^        val actions = data map {$/;"	V
 actor	src/test/scala/agentSystem/AgentListenerTest.scala	/^      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))$/;"	V
 actor	src/test/scala/agentSystem/AgentListenerTest.scala	/^      val actor = system.actorOf(Props[ExternalAgentListener])$/;"	V
 actor	src/test/scala/agentSystem/AgentLoaderTest.scala	/^      val actor = actorRef.underlyingActor$/;"	V
@@ -289,7 +287,7 @@ afterAll	src/test/scala/database/SQLiteTest.scala	/^  def afterAll = db.destroy(
 afterAll	src/test/scala/http/SystemTests.scala	/^  def afterAll() = {$/;"	m
 afterAll	src/test/scala/responses/CancelTest.scala	/^  def afterAll = {$/;"	m
 afterAll	src/test/scala/responses/ReadTest.scala	/^  def afterAll = {$/;"	m
-afterAll	src/test/scala/responses/SubscriptionTest.scala	/^  def afterAll ={$/;"	m
+afterAll	src/test/scala/responses/SubscriptionTest.scala	/^  def afterAll = {$/;"	m
 afterAll	src/test/scala/testHelpers/testHelpers.scala	/^  protected def afterAll()$/;"	m
 agent	src/main/scala/agentSystem/InternalAgentLoader.scala	/^        val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] $/;"	V
 agentCount	src/main/scala/agentSystem/ExternalAgentListener.scala	/^  def agentCount = agentCounter$/;"	m
@@ -332,8 +330,14 @@ args	src/main/scala/agentSystem/InternalAgentCLI.scala	/^      val args = dataSt
 array	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val array = DatatypeConverter.parseBase64Binary(value)$/;"	V
 array	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val array = DatatypeConverter.parseHexBinary(value)$/;"	V
 as	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def as[B] = value.asInstanceOf[B]$/;"	m
+asDescription	src/main/scala/types/OdfTypes.scala	/^    implicit def asDescription = Description( value, lang, Map.empty)$/;"	m
+asInfoItemType	src/main/scala/types/OdfTypes.scala	/^    def asInfoItemType: InfoItemType = {$/;"	m
+asMetaData	src/main/scala/types/OdfTypes.scala	/^    implicit def asMetaData : MetaData = {$/;"	m
+asObjectType	src/main/scala/types/OdfTypes.scala	/^    implicit def asObjectType : ObjectType = {$/;"	m
+asObjectsType	src/main/scala/types/OdfTypes.scala	/^    implicit def asObjectsType : ObjectsType ={$/;"	m
 asReadOnly	src/main/scala/database/DBInterface.scala	/^  def asReadOnly: DBReadOnly = this$/;"	m
 asReadWrite	src/main/scala/database/DBInterface.scala	/^  def asReadWrite: DBReadWrite = this$/;"	m
+asValueType	src/main/scala/types/OdfTypes.scala	/^    implicit def asValueType : ValueType = {$/;"	m
 atEnd	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def atEnd = !seq.isDefinedAt(offset)$/;"	m
 attachSetHook	src/main/scala/database/DBInterface.scala	/^  def attachSetHook(f: Seq[Path] => Unit) =$/;"	m
 attr	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^      var attr: scala.xml.MetaData  = scala.xml.Null$/;"	v
@@ -382,8 +386,8 @@ configPath	src/main/java/agentSystem/InternalAgent.java	/^    protected String c
 connection	src/main/scala/agentSystem/ExternalAgentListener.scala	/^      val connection = sender()$/;"	V
 connection	src/main/scala/agentSystem/InternalAgentLoader.scala	/^      val connection = sender()$/;"	V
 const	src/main/scala/agentSystem/InternalAgentLoader.scala	/^        val const = clazz.getConstructors()(0)$/;"	V
-correctxml	src/test/scala/responses/SubscriptionTest.scala	/^      val correctxml = requestID map (x=> {$/;"	V
-correctxml	src/test/scala/responses/SubscriptionTest.scala	/^      val correctxml = requestReturn map(x =>{$/;"	V
+correctxml	src/test/scala/responses/SubscriptionTest.scala	/^      val correctxml = requestID map (x => {$/;"	V
+correctxml	src/test/scala/responses/SubscriptionTest.scala	/^      val correctxml = requestReturn map (x => {$/;"	V
 correctxml	src/test/scala/responses/SubscriptionTest.scala	/^      val correctxml =$/;"	V
 correctxmlreturn	src/test/scala/responses/CancelTest.scala	/^      lazy val correctxmlreturn = XML.loadFile("src\/test\/resources\/responses\/cancel\/ErrorCancelReturn.xml")$/;"	V
 correctxmlreturn	src/test/scala/responses/CancelTest.scala	/^      lazy val correctxmlreturn = XML.loadFile("src\/test\/resources\/responses\/cancel\/MixedCancelReturn.xml")$/;"	V
@@ -410,6 +414,7 @@ data3	src/test/scala/database/SQLiteTest.scala	/^    var data3 = (Path("\/Object
 data4	src/test/scala/database/SQLiteTest.scala	/^    var data4 = (Path("\/Objects\/path\/to\/sensor2\/hum"), new java.sql.Timestamp(4000), "60%")$/;"	v
 data5	src/test/scala/database/SQLiteTest.scala	/^    var data5 = (Path("\/Objects\/path\/to\/sensor1\/temp"), new java.sql.Timestamp(5000), "21.6C")$/;"	v
 data6	src/test/scala/database/SQLiteTest.scala	/^    var data6 = (Path("\/Objects\/path\/to\/sensor1\/temp"), new java.sql.Timestamp(6000), "21.7C")$/;"	v
+dataI	src/main/scala/database/DBReadOnly.scala	/^    val dataI = for {$/;"	V
 dataLength	src/test/scala/responses/SubscriptionTest.scala	/^      val dataLength = test.\\\\("value").length$/;"	V
 dataRecordFormat	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit def dataRecordFormat[A: XMLFormat]: XMLFormat[DataRecord[A]] = new XMLFormat[DataRecord[A]] {$/;"	m
 dataRecordXMLWriter	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit def dataRecordXMLWriter[A]: CanWriteXML[DataRecord[A]] = new CanWriteXML[DataRecord[A]] {$/;"	m
@@ -451,7 +456,7 @@ dbobject	src/test/scala/http/SystemTests.scala	/^  implicit val dbobject = dbCon
 dbsub	src/main/scala/responses/SubscriptionHandler.scala	/^    val dbsub = dbConnection.saveSub( newSub, paths )$/;"	V
 dbsubTupled	src/main/scala/database/DBClasses.scala	/^    private def dbsubTupled:$/;"	m
 dbsubUnapply	src/main/scala/database/DBClasses.scala	/^    private def dbsubUnapply: $/;"	m
-dbvals	src/main/scala/database/DBReadOnly.scala	/^      val dbvals = getBetween($/;"	V
+dbvals	src/main/scala/database/DBReadOnly.scala	/^      val dbvals = (sorted dropWhile sameAsLast).foldLeft(empty)($/;"	V
 defaultDecider	src/main/scala/agentSystem/InternalAgentLoader.scala	/^    def defaultDecider: Decider = {$/;"	m
 defaultScope	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  val defaultScope = scalaxb.toScope(None -> "odf.xsd",$/;"	V
 defaultStrategy	src/main/scala/agentSystem/InternalAgentLoader.scala	/^  final val defaultStrategy: SupervisorStrategy = {$/;"	V
@@ -463,7 +468,7 @@ descriptionOdfOption	src/main/scala/database/DBClasses.scala	/^    def descripti
 destroy	src/main/scala/database/DBInterface.scala	/^  def destroy() = {$/;"	m
 destroy	src/main/scala/database/DBReadWrite.scala	/^  def destroy(): Unit$/;"	m
 doFromScope	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    def doFromScope(s: NamespaceBinding): List[(Option[String], String)] = {$/;"	m
-document	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^val document = scalaxb.toXML[.Foo](obj, "foo", .defaultScope)$/;"	V
+document	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  val document = scalaxb.toXML[.Foo](obj, "foo", .defaultScope)$/;"	V
 drop	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  override def drop(n: Int): ElemNameSeqReader =$/;"	m
 dropDB	src/main/scala/database/DBClasses.scala	/^  def dropDB() = runWait( allSchemas.drop )$/;"	m
 e1	src/test/scala/parsing/ParserTest.scala	/^  def e1 = {$/;"	m
@@ -515,6 +520,7 @@ elem	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val elem =  scala.xml.Ele
 elemName	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val elemName = ElemName(None, "")$/;"	V
 elemName	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val elemName = ElemName(scalaxb.Helper.nullOrEmpty(x.scope.getURI(x.prefix)), x.label)$/;"	V
 elementNames	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def elementNames(in: Seq[scala.xml.Node]): Seq[ElemName] =$/;"	m
+empty	src/main/scala/database/DBReadOnly.scala	/^      val empty = Seq.empty[DBValue]$/;"	V
 empty	src/main/scala/database/OdfConversions.scala	/^      val empty = List[DBValue]()$/;"	V
 empty	src/main/scala/types/Types.scala	/^    val empty = new Path(Vector.empty)$/;"	V
 envelope	src/main/scala/parsing/OmiParser.scala	/^    val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)$/;"	V
@@ -538,6 +544,8 @@ findParentI	src/main/scala/database/DBReadOnly.scala	/^  protected def findParen
 findParentQ	src/main/scala/database/DBReadOnly.scala	/^  protected def findParentQ(childPath: Path) = ($/;"	m
 finish	src/main/java/agentSystem/InternalAgent.java	/^    abstract public void finish();$/;"	m	class:InternalAgent
 first	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  override def first: ElemName  =$/;"	m
+found	src/main/scala/responses/RequestHandler.scala	/^          val found = Result.readResult(objects)$/;"	V
+foundOdfAsPaths	src/main/scala/responses/RequestHandler.scala	/^          val foundOdfAsPaths = getLeafs(objects).flatMap{_.path.getParentsAndSelf}.toSet$/;"	V
 foundPathsI	src/main/scala/database/DBReadWrite.scala	/^    val foundPathsI   = hierarchyNodes filter (_.path inSet parentsAndPath) map (_.path) result$/;"	V
 fridgeData	src/test/scala/http/SystemTests.scala	/^    val fridgeData = (Path("Objects\/SmartFridge22334411\/PowerConsumption"),$/;"	V
 fromAny	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def fromAny(elem: Elem): DataRecord[Any] = {$/;"	m
@@ -557,7 +565,7 @@ get	src/main/scala/http/OmiConfigExtension.scala	/^  override def get(system: Ac
 getAgents	src/main/scala/agentSystem/InternalAgentLoader.scala	/^  private[agentSystem] def getAgents = agents$/;"	m
 getAllSubs	src/main/scala/database/DBReadOnly.scala	/^  def getAllSubs(hasCallBack: Option[Boolean]): Seq[DBSub] = {$/;"	m
 getBetween	src/main/scala/database/DBReadOnly.scala	/^  def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {$/;"	m
-getByIntervalBetween	src/main/scala/database/DBReadOnly.scala	/^  def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {$/;"	m
+getByIntervalBetween	src/main/scala/database/DBReadOnly.scala	/^  protected def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {$/;"	m
 getClassnamesWithConfigPath	src/main/scala/agentSystem/InternalAgentLoader.scala	/^  private[agentSystem] def getClassnamesWithConfigPath : Array[(String,String)]= {$/;"	m
 getDBInfoItemI	src/main/scala/database/DBUtility.scala	/^  protected def getDBInfoItemI(path: Path): DBIOro[Option[DBInfoItem]] = {$/;"	m
 getDataDiscovery	src/main/scala/http/OmiService.scala	/^  val getDataDiscovery =$/;"	V
@@ -589,9 +597,11 @@ getQ	src/main/scala/database/DBReadOnly.scala	/^  def getQ(path: Path): DBIOro[O
 getRequests	src/main/scala/types/OmiTypes.scala	/^  def getRequests( omi: OmiParseResult ) : Iterable[OmiRequest] = $/;"	m
 getSetHooks	src/main/scala/database/DBInterface.scala	/^  def getSetHooks = setEventHooks$/;"	m
 getSub	src/main/scala/database/DBReadOnly.scala	/^  def getSub(id: Int): Option[DBSub] = runSync(getSubI(id))$/;"	m
-getSubData	src/main/scala/database/DBReadOnly.scala	/^  def getSubData(subId: Int): Option[OdfObjects] = withSubData(subId){$/;"	m
+getSubData	src/main/scala/database/DBReadOnly.scala	/^  def getSubData(subId: Int): Option[OdfObjects] = {$/;"	m
 getSubI	src/main/scala/database/DBUtility.scala	/^  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =$/;"	m
-getSubItemHierarchyIdsI	src/main/scala/database/DBReadOnly.scala	/^  protected def getSubItemHierarchyIdsI(subId: Int) =$/;"	m
+getSubItemDataI	src/main/scala/database/DBReadOnly.scala	/^  protected def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])($/;"	m
+getSubItemDataI	src/main/scala/database/DBReadOnly.scala	/^  protected def getSubItemDataI(subId: Int)($/;"	m
+getSubItemHierarchyIdsI	src/main/scala/database/DBUtility.scala	/^  protected def getSubItemHierarchyIdsI(subId: Int) =$/;"	m
 getSubTreeI	src/main/scala/database/DBReadOnly.scala	/^  protected def getSubTreeI($/;"	m
 getSubTreeQ	src/main/scala/database/DBReadOnly.scala	/^  protected def getSubTreeQ($/;"	m
 getSubscribtedItems	src/main/scala/database/DBReadOnly.scala	/^  def getSubscribtedItems( subId: Int ): Seq[SubscriptionItem] = {$/;"	m
@@ -603,7 +613,7 @@ getWithExprI	src/main/scala/database/DBUtility.scala	/^  protected def getWithEx
 getWithHierarchyQ	src/main/scala/database/DBUtility.scala	/^  protected def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]]($/;"	m
 hNode	src/main/scala/database/DBReadWrite.scala	/^    val hNode = runSync( hierarchyNodes.filter( _.path === path).result ).headOption$/;"	V
 handleCancel	src/main/scala/responses/RequestHandler.scala	/^  def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {$/;"	m
-handleEventPoll	src/main/scala/database/DBReadOnly.scala	/^    def handleEventPoll(node: DBNode, dbsub: DBSub, sortedValues: Seq[DBValue]): Seq[DBValue] = {$/;"	m
+handleEventPoll	src/main/scala/database/DBReadOnly.scala	/^    def handleEventPoll(dbsub: DBSub, lastValues: Map[Int, Option[String]], sortedValues: Seq[DBValue]): Seq[DBValue] = {$/;"	m
 handleInfoItems	src/main/java/agentSystem/InputPusher.java	/^    public abstract void handleInfoItems( Iterable<OdfInfoItem> items);$/;"	m	interface:IInputPusher
 handleInfoItems	src/main/java/agentSystem/InputPusher.java	/^    public static void handleInfoItems( Iterable<OdfInfoItem> items) { $/;"	m	class:InputPusher
 handleInfoItems	src/main/scala/agentSystem/InputPusher.scala	/^  override def handleInfoItems( infoitems: Iterable[OdfInfoItem]) : Unit = {$/;"	m
@@ -634,7 +644,6 @@ hashCode	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    override def hashCode
 hashCode	src/main/scala/types/Types.scala	/^    override def hashCode(): Int = this.toSeq.hashCode$/;"	m
 helloWorld	src/main/scala/http/OmiService.scala	/^  val helloWorld =$/;"	V
 hierarchy	src/main/scala/database/DBClasses.scala	/^    def hierarchy = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)($/;"	m
-hierarchy	src/main/scala/database/DBReadOnly.scala	/^    val hierarchy = subItemNodesI.flatMap{$/;"	V
 hierarchyId	src/main/scala/database/DBClasses.scala	/^    def hierarchyId = column[Int]("HIERARCHYID")$/;"	m
 hierarchyId	src/main/scala/database/DBClasses.scala	/^    override def hierarchyId = column[Int]("HIERARCHYID", O.PrimaryKey)$/;"	m
 hierarchyId	src/main/scala/database/DBClasses.scala	/^    val hierarchyId: Int,$/;"	V
@@ -700,11 +709,12 @@ intervalSubs	src/main/scala/responses/SubscriptionHandler.scala	/^  private var 
 intervalTime	src/main/scala/database/DBReadOnly.scala	/^    var intervalTime =$/;"	v
 intervalToMillis	src/main/scala/types/OmiTypes.scala	/^    def intervalToMillis: Long = (interval * 1000).toLong$/;"	m
 intervalValues	src/main/scala/database/DBReadOnly.scala	/^    var intervalValues : Seq[DBValue] = Seq.empty$/;"	v
+intervalsPast	src/main/scala/database/DBReadOnly.scala	/^          val intervalsPast = ( elapsedTimeSecs \/ sub.interval ).toInt \/\/ floor$/;"	V
 intervaltestdata	src/test/scala/responses/ReadTest.scala	/^    val intervaltestdata = List($/;"	V
 intervaltestdata	src/test/scala/responses/SubscriptionTest.scala	/^    val intervaltestdata = List($/;"	V
 intervaltestfile	src/test/scala/responses/ReadTest.scala	/^      lazy val intervaltestfile = Source.fromFile("src\/test\/resources\/responses\/read\/IntervalXMLTest.xml").getLines.mkString("\\n")$/;"	V
 invalidReadTestRequestFridge	src/test/scala/http/SystemTests.scala	/^    val invalidReadTestRequestFridge: NodeSeq =$/;"	V
-invalidRequest	src/main/scala/responses/RequestHandler.scala	/^  def invalidRequest(msg: String = "") = xmlFromRequest($/;"	m
+invalidRequest	src/main/scala/responses/RequestHandler.scala	/^  def invalidRequest(msg: String = "") = xmlFromResults($/;"	m
 invalidRequest	src/main/scala/responses/Result.scala	/^  def invalidRequest(msg: String = ""): RequestResultType = simpleResult( "400", Some("Bad request: " + msg) )$/;"	m
 iosumlist	src/main/scala/database/DBUtility.scala	/^      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {$/;"	m
 ip	src/main/scala/http/PermissionCheck.scala	/^    val ip : Int = ((bytes(0) & 0xFF) << 24) |$/;"	V
@@ -721,6 +731,7 @@ isIntervalBased	src/main/scala/types/OmiTypes.scala	/^    def isIntervalBased  =
 isMixed	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def isMixed: Boolean = false$/;"	m
 isNil	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def isNil(node: scala.xml.Node) =$/;"	m
 isRunning	src/main/java/agentSystem/InternalAgent.java	/^    public final boolean isRunning(){$/;"	m	class:InternalAgent
+items	src/main/scala/database/DBReadOnly.scala	/^    val items = for {$/;"	V
 items	src/main/scala/database/OdfConversions.scala	/^      val items = toDBInfoItems(tupleData)$/;"	V
 jarEntries	src/main/scala/agentSystem/InternalAgentLoader.scala	/^      val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))$/;"	V
 jarFile	src/main/scala/agentSystem/InternalAgentLoader.scala	/^      val jarFile = new JarFile(jar)$/;"	V
@@ -731,6 +742,8 @@ key	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val key = Some(elem.labe
 key	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val key = Some(elem.label)$/;"	V
 key	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  val key: Option[String]$/;"	V
 last	src/main/scala/database/DBReadWrite.scala	/^      val last = missingPaths.takeRight(1)$/;"	V
+lastVal	src/main/scala/database/DBReadOnly.scala	/^            val lastVal = vals.lastOption.map{ _.value }$/;"	V
+lastValO	src/main/scala/database/DBReadOnly.scala	/^      val lastValO = for {$/;"	V
 lastValue	src/main/scala/database/DBClasses.scala	/^    def lastValue = column[Option[String]]("LASTVALUE")$/;"	m
 lastValue	src/main/scala/database/DBClasses.scala	/^    val lastValue: Option[String] \/\/ for event polling subs$/;"	V
 lastValue	src/main/scala/database/DBClasses.scala	/^  val lastValue: Option[String] \/\/ for event polling subs$/;"	V
@@ -789,7 +802,6 @@ newSub	src/main/scala/responses/SubscriptionHandler.scala	/^    val newSub = New
 newTime	src/main/scala/responses/SubscriptionHandler.scala	/^        val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * (numOfCalls + 1))$/;"	V
 newTimestamp	src/test/scala/responses/SubscriptionTest.scala	/^  def newTimestamp(time: Long = -1L): Timestamp = {$/;"	m
 newTs	src/test/scala/database/SQLiteTest.scala	/^  def newTs = new Timestamp(new java.util.Date().getTime)$/;"	m
-newVals	src/main/scala/database/DBReadOnly.scala	/^        val newVals = {$/;"	V
 newestValue	src/main/scala/responses/SubscriptionHandler.scala	/^      var newestValue: Option[String] = None$/;"	v
 nextRun	src/main/scala/responses/SubscriptionHandler.scala	/^      val nextRun = ((n._2) - currentTime)$/;"	V
 nextRun	src/main/scala/responses/SubscriptionHandler.scala	/^      val nextRun = next.nextRunTime.getTime - currentTimeMillis()$/;"	V
@@ -798,14 +810,17 @@ nilElem	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def nilElem(namespace: O
 nilOption	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def nilOption: Option[ElemName] = if (nil) None else Some(this)$/;"	m
 node	src/main/scala/database/DBReadWrite.scala	/^    val node = runSync( hierarchyNodes.filter( _.path === path ).result.headOption )$/;"	V
 node	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  var node: scala.xml.Node = _$/;"	v
+node	src/test/scala/responses/ReadTest.scala	/^      val node = resultOption.get._1$/;"	V
 nodeList	src/main/scala/parsing/xmlGen/omi.scala	/^  val nodeList: Option[NodesType]$/;"	V
 nodeMap	src/main/scala/database/OdfConversions.scala	/^    val nodeMap = toDBInfoItems(treeData)$/;"	V
 nodes	src/main/scala/database/OdfConversions.scala	/^    val nodes = items.keys$/;"	V
 nodesQ	src/main/scala/database/DBReadOnly.scala	/^    val nodesQ = hierarchyNodes filter { node =>$/;"	V
 nodesWithValuesQ	src/main/scala/database/DBReadOnly.scala	/^    val nodesWithValuesQ =$/;"	V
 normalized	src/main/scala/types/Types.scala	/^      val normalized = pathSeq.filterNot(_ == "")$/;"	V
+notFound	src/main/scala/responses/RequestHandler.scala	/^          val notFound = requestsPaths.filterNot{ path => foundOdfAsPaths.contains(path) }.toSet.toSeq$/;"	V
 notFound	src/main/scala/responses/RequestHandler.scala	/^  def notFound = xmlFromResults($/;"	m
 notFound	src/main/scala/responses/Result.scala	/^  def notFound: RequestResultType = simpleResult( "404", Some("Such item\/s not found.") )$/;"	m
+notFoundSub	src/main/scala/responses/Result.scala	/^  def notFoundSub: RequestResultType = simpleResult( "404", Some("A subscription with this id has expired or doesn't exist"))$/;"	m
 notImplemented	src/main/scala/responses/RequestHandler.scala	/^  def notImplemented = xmlFromResults($/;"	m
 notImplemented	src/main/scala/responses/Result.scala	/^  def notImplemented : RequestResultType = simpleResult( "501", Some("Not implemented") )$/;"	m
 npath	src/main/scala/parsing/OdfParser.scala	/^    val npath = path \/ item.name$/;"	V
@@ -816,7 +831,7 @@ ns	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^                val ns = el
 nullOrEmpty	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def nullOrEmpty(value: String): Option[String] =$/;"	m
 numLatestValues	src/main/scala/http/OmiConfigExtension.scala	/^  val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")$/;"	V
 numOfCalls	src/main/scala/responses/SubscriptionHandler.scala	/^        val numOfCalls = ((checkTime - sub.startTime.getTime) \/ sub.intervalToMillis).toInt$/;"	V
-obj	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^val obj = scalaxb.fromXML[.Foo](node)$/;"	V
+obj	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  val obj = scalaxb.fromXML[.Foo](node)$/;"	V
 object	src/main/scala/database/DBInterface.scala	/^package object database {$/;"	p
 objects	src/main/scala/parsing/OdfParser.scala	/^    val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)$/;"	V
 objectsO	src/main/scala/responses/RequestHandler.scala	/^        val objectsO : Option[OdfObjects] = dbConnection.getPollData(id,new Timestamp(time))$/;"	V
@@ -838,7 +853,6 @@ odfObject	src/main/scala/database/OdfConversions.scala	/^          val odfObject
 odfObjectChildren	src/main/scala/database/OdfConversions.scala	/^        val odfObjectChildren   = objectChildren   map (_.toOdfObject)$/;"	V
 odfObjects	src/main/scala/database/OdfConversions.scala	/^          val odfObjects = OdfObjects(odfObjectChildren)$/;"	V
 odfObjectsTrees	src/main/scala/database/OdfConversions.scala	/^    val odfObjectsTrees = treeData map odfConversion$/;"	V
-odfOption	src/main/scala/database/DBReadOnly.scala	/^    val odfOption = withSubData(subId){$/;"	V
 odfResult	src/main/scala/responses/Result.scala	/^  def odfResult( returnCode: String, returnDescription: Option[String], requestID: Option[String], objects: OdfObjects): RequestResultType  = {$/;"	m
 odfValues	src/main/scala/database/OdfConversions.scala	/^      val odfValues      = values map (_.toOdf) toIterable$/;"	V
 odf_test_file	src/test/scala/parsing/ParserTest.scala	/^  lazy val odf_test_file = Source.fromFile("src\/test\/resources\/parsing\/odf_test.xml").getLines.mkString("\\n")$/;"	V
@@ -896,6 +910,7 @@ parser	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    def parser(node: sc
 parserErrorMsg	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  private def parserErrorMsg(msg: String, next: scala.util.parsing.input.Reader[Elem], stack: List[ElemName]): String =$/;"	m
 parserErrorMsg	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  private def parserErrorMsg(msg: String, node: scala.xml.Node): String =$/;"	m
 parserlist	src/test/scala/responses/CancelTest.scala	/^      val parserlist = OmiParser.parse(simpletestfile)$/;"	V
+parserlist	src/test/scala/responses/ReadTest.scala	/^        val parserlist= OmiParser.parse(partialxml.toString())$/;"	V
 parserlist	src/test/scala/responses/ReadTest.scala	/^      val parserlist = OmiParser.parse(erroneousxml)$/;"	V
 parserlist	src/test/scala/responses/ReadTest.scala	/^      val parserlist = OmiParser.parse(intervaltestfile)$/;"	V
 parserlist	src/test/scala/responses/ReadTest.scala	/^      val parserlist = OmiParser.parse(metarequestxml)$/;"	V
@@ -912,6 +927,7 @@ parsing	src/main/scala/parsing/xmlGen/scalaxb.scala	/^package parsing$/;"	p
 parsing	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^package parsing$/;"	p
 parsing	src/test/scala/parsing/ParserTest.scala	/^package parsing$/;"	p
 parsing	src/test/scala/parsing/TypesTest.scala	/^package parsing$/;"	p
+partialxml	src/test/scala/responses/ReadTest.scala	/^      val partialxml =$/;"	V
 path	src/main/scala/database/DBClasses.scala	/^    def path          = column[Path]("PATH")$/;"	m
 path	src/main/scala/database/DBClasses.scala	/^  val path: Path,$/;"	V
 path	src/main/scala/http/OmiService.scala	/^          val path = Path(pathStr)$/;"	V
@@ -948,6 +964,7 @@ prefix	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val prefix = value.dr
 prefix	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val prefix = if (typeName.contains(':')) Some(typeName.dropRight(typeName.length - typeName.indexOf(':')))$/;"	V
 prefixedName	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def prefixedName(namespace: Option[String], name: String, scope: scala.xml.NamespaceBinding) =$/;"	m
 printer	src/test/scala/http/SystemTests.scala	/^  val printer = new scala.xml.PrettyPrinter(80, 2)$/;"	V
+printer	src/test/scala/responses/ReadTest.scala	/^  val printer = new scala.xml.PrettyPrinter(80, 2)$/;"	V
 probe	src/test/scala/agentSystem/AgentListenerTest.scala	/^      val probe = TestProbe()$/;"	V
 probe	src/test/scala/agentSystem/AgentLoaderTest.scala	/^  val probe = TestProbe()$/;"	V
 probe1	src/test/scala/agentSystem/AgentListenerTest.scala	/^      val probe1 = TestProbe()$/;"	V
@@ -967,8 +984,8 @@ qryres	src/main/scala/database/DBReadWrite.scala	/^    val qryres = qry.result m
 query	src/main/scala/database/DBReadOnly.scala	/^    val query = $/;"	V
 queryResult	src/main/scala/database/DBReadOnly.scala	/^    val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result$/;"	V
 readOdf	src/test/scala/parsing/ParserTest.scala	/^  val readOdf: OdfObjects ={$/;"	V
-readRequestOption	src/test/scala/responses/ReadTest.scala	/^      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))$/;"	V
-readRequestOption	src/test/scala/responses/ReadTest.scala	/^      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))\/\/.asInstanceOf[ReadRequest]))$/;"	V
+readRequestOption	src/test/scala/responses/ReadTest.scala	/^      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y })) \/\/.asInstanceOf[ReadRequest]))$/;"	V
+readRequestOption	src/test/scala/responses/ReadTest.scala	/^      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))$/;"	V
 readResult	src/main/scala/responses/Result.scala	/^  def readResult( objects: OdfObjects) : RequestResultType =  odfResult( "200", None, None, objects)$/;"	m
 readTestRequestFridge	src/test/scala/http/SystemTests.scala	/^    val readTestRequestFridge: NodeSeq =$/;"	V
 reads	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      def reads(seq: scala.xml.NodeSeq, stack: List[ElemName]): Either[String, DataRecord[Option[Any]]] = try {$/;"	m
@@ -1043,9 +1060,11 @@ requestID	src/main/scala/responses/SubscriptionHandler.scala	/^    val requestID
 requestID	src/test/scala/responses/SubscriptionTest.scala	/^      val requestID = Try(requestReturn.map(x => x._1.\\\\("requestID").text.toInt)).toOption.flatten$/;"	V
 requestID1	src/test/scala/http/SystemTests.scala	/^      var requestID1: Option[Int] = None$/;"	v
 requestOption	src/test/scala/responses/CancelTest.scala	/^      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))$/;"	V
-requestOption	src/test/scala/responses/SubscriptionTest.scala	/^      val requestOption = parserlist.right.toOption.flatMap(x=> x.headOption.collect({case y: SubscriptionRequest => y}))$/;"	V
-requestOption	src/test/scala/responses/SubscriptionTest.scala	/^      val requestOption = parserlistcallback.right.toOption.flatMap(x=> x.headOption.collect({case y: SubscriptionRequest => y}))$/;"	V
+requestOption	src/test/scala/responses/SubscriptionTest.scala	/^      val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))$/;"	V
+requestOption	src/test/scala/responses/SubscriptionTest.scala	/^      val requestOption = parserlistcallback.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))$/;"	V
+requestReturn	src/test/scala/responses/SubscriptionTest.scala	/^      val requestReturn = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])._1$/;"	V
 requestReturn	src/test/scala/responses/SubscriptionTest.scala	/^      val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))$/;"	V
+requestsPaths	src/main/scala/responses/RequestHandler.scala	/^          val requestsPaths = getLeafs(read.odf).map{_.path}$/;"	V
 requestsSeq	src/main/scala/database/DBReadOnly.scala	/^    val requestsSeq = requests.toSeq$/;"	V
 res	src/test/scala/database/SQLiteTest.scala	/^      val res = db.getSubData(id.id) \/\/), Some(new Timestamp(timeNow)))$/;"	V
 resolveSoap11Refs	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def resolveSoap11Refs(node: Node): Node = {$/;"	m
@@ -1067,6 +1086,7 @@ result	src/main/scala/database/DBReadWrite.scala	/^    val result = for {$/;"	V
 result	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      var result = 17$/;"	v
 resultOption	src/test/scala/responses/CancelTest.scala	/^      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)$/;"	V
 resultOption	src/test/scala/responses/ReadTest.scala	/^      val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))$/;"	V
+results	src/main/scala/responses/RequestHandler.scala	/^          var results = Seq( found )$/;"	v
 results	src/main/scala/responses/RequestHandler.scala	/^    val results =$/;"	V
 returnCode	src/main/scala/responses/RequestHandler.scala	/^    var returnCode = 200$/;"	v
 returnTuple	src/main/scala/responses/RequestHandler.scala	/^    val returnTuple = ($/;"	V
@@ -1089,6 +1109,7 @@ runGeneration	src/main/scala/responses/RequestHandler.scala	/^  def runGeneratio
 runSync	src/main/scala/database/DBClasses.scala	/^  def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =$/;"	m
 runWait	src/main/scala/database/DBClasses.scala	/^  def runWait: DBIOAction[_, NoStream, Nothing] => Unit =$/;"	m
 running	src/main/java/agentSystem/InternalAgent.java	/^    private Boolean running = true;$/;"	f	class:InternalAgent	file:
+sameAsLast	src/main/scala/database/DBReadOnly.scala	/^      val sameAsLast = lastValO match {$/;"	V
 sameInfos	src/main/scala/types/OdfTypes.scala	/^      val sameInfos = (infoItems.toSeq ++ another.infoItems.toSeq).filterNot($/;"	V
 sameObjs	src/main/scala/types/OdfTypes.scala	/^      val sameObjs = (objects.toSeq ++ another.objects.toSeq).filterNot($/;"	V
 sames	src/main/scala/types/OdfTypes.scala	/^      val sames = (objects.toSeq ++ another.objects.toSeq).filterNot($/;"	V
@@ -1150,8 +1171,7 @@ singleConnection	src/main/scala/database/DBInterface.scala	/^object singleConnec
 singleObjectConversion	src/main/scala/database/OdfConversions.scala	/^  protected def singleObjectConversion(items: DBInfoItems): Option[HasPath] = {$/;"	m
 singleSubs	src/test/scala/responses/CancelTest.scala	/^    val singleSubs = Array($/;"	V
 someXMLWriter	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit def someXMLWriter[A: CanWriteXML]: CanWriteXML[Some[A]] = new CanWriteXML[Some[A]] {$/;"	m
-sortedValues	src/main/scala/database/DBReadOnly.scala	/^          val sortedValues = seqVals.sortBy( _.timestamp.getTime )$/;"	V
-sortedValues	src/main/scala/database/DBReadOnly.scala	/^      val sortedValues = seqVals.sortBy( _.timestamp.getTime )$/;"	V
+sorted	src/main/scala/database/DBReadOnly.scala	/^      val sorted = timeframedVals.sortBy( _.timestamp.getTime )$/;"	V
 splitBySpace	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def splitBySpace = Helper.splitBySpace(text)$/;"	m
 splitBySpace	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def splitBySpace(text: String) = text.split(' ').filter("" !=)$/;"	m
 splitQName	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def splitQName(value: String, scope: scala.xml.NamespaceBinding): (Option[String], String) =$/;"	m
@@ -1163,7 +1183,6 @@ startTime	src/test/scala/database/SQLiteTest.scala	/^  val startTime: Timestamp,
 staticHtml	src/main/scala/http/OmiService.scala	/^  val staticHtml =$/;"	V
 stringToXML	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def stringToXML(obj: String, namespace: Option[String], elementLabel: Option[String],$/;"	m
 sub	src/main/scala/database/DBClasses.scala	/^    def sub   = foreignKey(subfkName, subId, subs)($/;"	m
-sub	src/main/scala/database/DBReadOnly.scala	/^    val sub  = getSub( subId ) match {$/;"	V
 sub	src/main/scala/responses/SubscriptionHandler.scala	/^    val sub: DBSub$/;"	V
 subDataResult	src/main/scala/responses/Result.scala	/^  def subDataResult( requestID: String, objects: OdfObjects) : RequestResultType =$/;"	m
 subFuture	src/main/scala/responses/RequestHandler.scala	/^    val subFuture = subscriptionHandler ? NewSubscription(subscription)$/;"	V
@@ -1174,25 +1193,23 @@ subId	src/main/scala/database/DBClasses.scala	/^    val subId: Int,$/;"	V
 subId	src/main/scala/database/DBClasses.scala	/^  val subId: Int,$/;"	V
 subIdResult	src/main/scala/database/DBReadWrite.scala	/^    val subIdResult = runSync(subInsertI.transactionally)$/;"	V
 subInsertI	src/main/scala/database/DBReadWrite.scala	/^    val subInsertI = for {$/;"	V
-subItemNodesI	src/main/scala/database/DBReadOnly.scala	/^    val subItemNodesI = hierarchyNodes.filter($/;"	V
+subItemQ	src/main/scala/database/DBReadOnly.scala	/^            val subItemQ = subItems.filter{ subItem =>$/;"	V
 subItemRefCountUpdates	src/main/scala/database/DBReadWrite.scala	/^            val subItemRefCountUpdates = subItemNodes map {$/;"	V
 subItems	src/main/scala/database/DBClasses.scala	/^  protected val subItems = TableQuery[DBSubscribedItemsTable]$/;"	V
 subOrder	src/main/scala/responses/SubscriptionHandler.scala	/^  val subOrder: Ordering[SubTuple] = Ordering.by(_._2)$/;"	V
 subTree	src/main/scala/database/DBReadWrite.scala	/^    val subTree = runSync( subTreeQ.result )$/;"	V
-subTreeData	src/main/scala/database/DBReadOnly.scala	/^        val subTreeData =$/;"	V
 subTreeQ	src/main/scala/database/DBReadWrite.scala	/^    val subTreeQ = getSubTreeQ(hNode.get)$/;"	V
 subTreeRoot	src/main/scala/database/DBReadOnly.scala	/^    val subTreeRoot = getHierarchyNodeI(path)$/;"	V
 subfkName	src/main/scala/database/DBClasses.scala	/^    val subfkName = "SUBITEMSSUB_FK"$/;"	V
 subfkName	src/main/scala/database/DBClasses.scala	/^    val subfkName: String$/;"	V
-subitems	src/main/scala/database/DBReadOnly.scala	/^    val subitems = runSync( $/;"	V
 subnetArea	src/main/scala/http/PermissionCheck.scala	/^          val subnetArea = bytesToInt( Array( subnet(4), subnet(5), subnet(6), subnet(7) ) )$/;"	V
 subs	src/main/scala/database/DBClasses.scala	/^  protected val subs = TableQuery[DBSubsTable]$/;"	V
 subs	src/main/scala/responses/SubscriptionHandler.scala	/^    val subs = dbConnection.getAllSubs(Some(true))$/;"	V
 subsWithInsertId	src/main/scala/database/DBClasses.scala	/^  protected val subsWithInsertId = subs returning subs.map(_.id)$/;"	V
 subscriptionHandler	src/test/scala/http/SystemTests.scala	/^  val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))$/;"	V
 subscriptionHandler	src/test/scala/responses/CancelTest.scala	/^  val subscriptionHandler: ActorRef = system.actorOf(Props[SubscriptionHandlerTestActor]) \/\/akka.testkit.TestProbe().ref\/\/akka.actor.ActorRef.noSender$/;"	V
-subscriptionHandler	src/test/scala/responses/ReadTest.scala	/^  val subscriptionHandler: ActorRef = system.actorOf(Props[SubscriptionHandlerTestActor])$/;"	V
-subscriptionHandlerRef	src/test/scala/responses/SubscriptionTest.scala	/^  val subscriptionHandlerRef = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))\/\/[SubscriptionHandler]$/;"	V
+subscriptionHandler	src/test/scala/responses/ReadTest.scala	/^  val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))$/;"	V
+subscriptionHandlerRef	src/test/scala/responses/SubscriptionTest.scala	/^  val subscriptionHandlerRef = TestActorRef(Props(new SubscriptionHandler()(dbConnection))) \/\/[SubscriptionHandler]$/;"	V
 subscriptionResult	src/main/scala/responses/Result.scala	/^  def subscriptionResult( requestID: String): RequestResultType ={$/;"	m
 subscriptionTestCorrect	src/test/scala/http/SystemTests.scala	/^    val subscriptionTestCorrect: NodeSeq =$/;"	V
 subscriptionTestCorrectEvent	src/test/scala/http/SystemTests.scala	/^      val subscriptionTestCorrectEvent: NodeSeq =$/;"	V
@@ -1208,7 +1225,7 @@ takeLogic	src/main/scala/database/DBReadOnly.scala	/^    protected def takeLogic
 targetNamespace	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def targetNamespace: Option[String]$/;"	m
 targetNamespace	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    val targetNamespace: Option[String] = Some("odf.xsd")$/;"	V
 targetNamespace	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    val targetNamespace: Option[String] = Some("omi.xsd")$/;"	V
-targetType	src/main/scala/parsing/xmlGen/omi.scala	/^  val targetType: TargetType $/;"	V
+targetType	src/main/scala/parsing/xmlGen/omi.scala	/^  val targetType: TargetType}$/;"	V
 temp	src/test/scala/database/SQLiteTest.scala	/^    val temp = temp1.toSeq.collect{case c: OdfInfoItem => c.values}.flatten.map(_.value)$/;"	V
 temp	src/test/scala/parsing/ParserTest.scala	/^    val temp = OdfParser.parse("""$/;"	V
 temp	src/test/scala/parsing/ParserTest.scala	/^    val temp = OdfParser.parse("incorrect xml")$/;"	V
@@ -1245,17 +1262,22 @@ test2	src/test/scala/agentSystem/AgentLoaderTest.scala	/^      val test2 = actor
 test2	src/test/scala/responses/SubscriptionTest.scala	/^      val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1$/;"	V
 test3	src/test/scala/responses/SubscriptionTest.scala	/^      val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1$/;"	V
 test4	src/test/scala/responses/SubscriptionTest.scala	/^      val test4 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1$/;"	V
+test5	src/test/scala/responses/SubscriptionTest.scala	/^      val test5 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1$/;"	V
 testData	src/test/scala/responses/CancelTest.scala	/^    val testData = Map($/;"	V
 testData	src/test/scala/responses/ReadTest.scala	/^    val testData = Map($/;"	V
 testData	src/test/scala/responses/SubscriptionTest.scala	/^    val testData = Map($/;"	V
 testHelpers	src/test/scala/testHelpers/testHelpers.scala	/^package testHelpers$/;"	p
 testOdf	src/test/scala/agentSystem/AgentListenerTest.scala	/^  lazy val testOdf = Source.fromFile("src\/test\/resources\/agentSystemInterface\/testOdf.xml").getLines().mkString("\\n")$/;"	V
 testPath	src/test/scala/agentSystem/AgentListenerTest.scala	/^      val testPath = Path("Objects\/AgentTest\/SmartHouse\/Moisture")$/;"	V
-testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(Path("Objects\/SubscriptionTest\/eventTest\/SmartOven\/pollingtest")))$/;"	V
-testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None),Array(Path("Objects\/SubscriptionTest\/eventTest\/SmartOven\/pollingtest")))$/;"	V
-testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(1,newTimestamp(testTime), 60.0, None), Array(Path("Objects\/SubscriptionTest\/intervalTest\/SmartOven\/pollingtest"))) $/;"	V
-testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(3, newTimestamp(testTime), 60.0, None), Array(Path("Objects\/SubscriptionTest\/intervalTest\/SmartOven\/pollingtest")))$/;"	V
-testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])._2$/;"	V
+testPath	src/test/scala/responses/SubscriptionTest.scala	/^      val testPath = Path("Objects\/SubscriptionTest\/eventTest\/SmartOven\/pollingtest1")$/;"	V
+testPath	src/test/scala/responses/SubscriptionTest.scala	/^      val testPath = Path("Objects\/SubscriptionTest\/eventTest\/SmartOven\/pollingtest2")$/;"	V
+testPath	src/test/scala/responses/SubscriptionTest.scala	/^      val testPath = Path("Objects\/SubscriptionTest\/eventTest\/SmartOven\/pollingtest3")$/;"	V
+testPath	src/test/scala/responses/SubscriptionTest.scala	/^      val testPath = Path("Objects\/SubscriptionTest\/intervalTest\/SmartOven\/pollingtest1")$/;"	V
+testPath	src/test/scala/responses/SubscriptionTest.scala	/^      val testPath = Path("Objects\/SubscriptionTest\/intervalTest\/SmartOven\/pollingtest2")$/;"	V
+testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))$/;"	V
+testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(1, newTimestamp(testTime), 60.0, None), Array(testPath))$/;"	V
+testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = dbConnection.saveSub(NewDBSub(3, newTimestamp(testTime), 60.0, None), Array(testPath))$/;"	V
+testSub	src/test/scala/responses/SubscriptionTest.scala	/^      val testSub = requestReturn.\\\\("requestID").text.toInt$/;"	V
 testSub1	src/test/scala/database/SQLiteTest.scala	/^  val testSub1 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("\/Objects\/path\/to\/sensor3\/temp")))$/;"	V
 testSub2	src/test/scala/database/SQLiteTest.scala	/^  val testSub2 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("\/Objects\/path\/to\/sensor3\/temp")))$/;"	V
 testSub3	src/test/scala/database/SQLiteTest.scala	/^      val testSub3 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("\/Objects\/path\/to\/setmany\/test1")))$/;"	V
@@ -1278,7 +1300,8 @@ timeOutError	src/main/scala/responses/RequestHandler.scala	/^  def timeOutError 
 timeSolver	src/main/scala/parsing/OdfParser.scala	/^  private def timeSolver(value: ValueType ) = value.dateTime match {$/;"	m
 timeStamp	src/main/scala/responses/SubscriptionHandler.scala	/^    val timeStamp = new Timestamp(date.getTime())$/;"	V
 timeZone	src/test/scala/responses/SubscriptionTest.scala	/^    val timeZone = TimeZone.getTimeZone("Etc\/GMT+2")$/;"	V
-timeframe	src/main/scala/database/DBReadOnly.scala	/^    var timeframe  = values.sortBy($/;"	v
+timeframe	src/main/scala/database/DBReadOnly.scala	/^    val timeframe  = values.sortBy($/;"	V
+timeframedVals	src/main/scala/database/DBReadOnly.scala	/^      val timeframedVals = sortedValues filter betweenLogic(Some(dbsub.startTime), Some(newTime))$/;"	V
 timeout	src/main/scala/responses/RequestHandler.scala	/^    implicit val timeout = Timeout(10.seconds) \/\/ NOTE: ttl will timeout from elsewhere$/;"	V
 timeout	src/main/scala/responses/RequestHandler.scala	/^    implicit val timeout= Timeout( 10.seconds ) \/\/ NOTE: ttl will timeout from elsewhere$/;"	V
 timeout	src/main/scala/responses/RequestHandler.scala	/^    val timeout = if (request.ttl > 0) request.ttl.seconds else Duration.Inf$/;"	V
@@ -1353,7 +1376,6 @@ uniqueObjs	src/main/scala/types/OdfTypes.scala	/^      val uniqueObjs = ( $/;"	V
 uniques	src/main/scala/types/OdfTypes.scala	/^      val uniques : Seq[OdfObject]  = ( $/;"	V
 updateAction	src/main/scala/database/DBReadWrite.scala	/^    val updateAction = addObjectsAction flatMap {unit =>$/;"	V
 updateAction	src/main/scala/database/DBReadWrite.scala	/^    val updateAction = for {$/;"	V
-updateActions	src/main/scala/database/DBReadOnly.scala	/^    var updateActions : DBIO[Unit] = DBIO.successful[Unit](():Unit)$/;"	v
 updateActions	src/main/scala/database/DBReadWrite.scala	/^    val updateActions = DBIO.seq($/;"	V
 updatedNode	src/main/scala/database/DBReadWrite.scala	/^                  val updatedNode = node.copy( pollRefCount = newRefCount )$/;"	V
 updatedNode	src/main/scala/database/DBReadWrite.scala	/^            val updatedNode = node.copy($/;"	V
@@ -1373,7 +1395,6 @@ vector	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  val vector = _vector$/;"	
 whiteIPs	src/main/scala/http/PermissionCheck.scala	/^  val whiteIPs = settings.inputWhiteListIps.asScala.map{$/;"	V
 whiteMasks	src/main/scala/http/PermissionCheck.scala	/^  val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ $/;"	V
 withInnerScope	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def withInnerScope[A](scope: NamespaceBinding, outer: NamespaceBinding)$/;"	m
-withSubData	src/main/scala/database/DBReadOnly.scala	/^  protected def withSubData(subId: Int)(handleInfoItems: DBInfoItem => DBInfoItem): Option[OdfObjects] = {$/;"	m
 wrapResultsToResponseAndEnvelope	src/main/scala/responses/RequestHandler.scala	/^  def wrapResultsToResponseAndEnvelope(ttl: Double, results: xmlTypes.RequestResultType* ) = {$/;"	m
 writeRequest	src/test/scala/http/SystemTests.scala	/^    val writeRequest =$/;"	V
 write_response_odf	src/test/scala/parsing/ParserTest.scala	/^  val write_response_odf: OdfObjects = {$/;"	V
@@ -1453,8 +1474,8 @@ xmlGregorian	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val xmlGregorian 
 xmlMsg	src/main/scala/responses/RequestHandler.scala	/^  def xmlMsg( envelope: xmlTypes.OmiEnvelope) = {$/;"	m
 xmlMsg	src/main/scala/responses/SubscriptionHandler.scala	/^                  val xmlMsg = requestHandler.handleSubData(SubDataRequest(subscription))._1\/\/Returns tuple, second is return status$/;"	V
 xmlMsg	src/main/scala/responses/SubscriptionHandler.scala	/^        val xmlMsg = requestHandler.handleSubData(SubDataRequest(sub))._1\/\/Returns tuple, second is return status$/;"	V
-xmlReturn	src/main/scala/responses/RequestHandler.scala	/^           val xmlReturn = scalaxb.toXML[xmlTypes.ObjectType]( OdfObjectAsObjectType( odfObj ), Some("odf"), Some("Object"), scope ).headOption.getOrElse($/;"	V
-xmlReturn	src/main/scala/responses/RequestHandler.scala	/^           val xmlReturn = scalaxb.toXML[xmlTypes.ObjectsType]( OdfObjectsAsObjectsType( odfObj ), Some("odf"), Some("Objects"), scope ).headOption.getOrElse($/;"	V
+xmlReturn	src/main/scala/responses/RequestHandler.scala	/^           val xmlReturn = scalaxb.toXML[xmlTypes.ObjectType]( odfObj.asObjectType, Some("odf"), Some("Object"), scope ).headOption.getOrElse($/;"	V
+xmlReturn	src/main/scala/responses/RequestHandler.scala	/^           val xmlReturn = scalaxb.toXML[xmlTypes.ObjectsType]( odfObj.asObjectsType, Some("odf"), Some("Objects"), scope ).headOption.getOrElse($/;"	V
 xmlTypes	src/main/scala/parsing/xmlGen/odf.scala	/^package xmlTypes$/;"	p
 xmlTypes	src/main/scala/parsing/xmlGen/omi.scala	/^package xmlTypes$/;"	p
 xmlreturn	src/test/scala/responses/SubscriptionTest.scala	/^      val xmlreturn = requestHandler.handleRequest((PollRequest(10, None, Seq(1234))))$/;"	V
