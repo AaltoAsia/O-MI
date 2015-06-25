@@ -76,13 +76,14 @@ trait OmiService extends HttpService {
               <html>
                 <body>
                   <h1>Say hello to <i>O-MI Node service</i>!</h1>
-                  <a href="./Objects">Url Data Discovery /Objects: Root of the hierarchy</a>
+                  <a href="Objects">Url Data Discovery /Objects: Root of the hierarchy</a>
                   <p>
                     With url data discovery you can discover or request Objects,
                      InfoItems and values with HTTP Get request by giving some existing
                      path to the O-DF xml hierarchy.
                   </p>
-                  <a href="./html/form.html">O-MI Test Client WebApp</a>
+                  <a href="html/form.html">O-MI Test Client WebApp</a><br/>
+                  <a href="html/ImplementationDetails.html">Implementation details, request-response examples</a>
                 </body>
               </html>
             }

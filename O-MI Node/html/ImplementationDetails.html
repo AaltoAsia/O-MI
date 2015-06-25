@@ -1,0 +1,1017 @@
+<html>
+    <body>
+	<h1> O-DF in DataBase </h1>
+	<article>
+	    <textarea rows=47 cols=100 style="border: none;" readonly>
+<Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+    <Object>
+	<id>Object1</id>
+	<description>Human readable description.</description>
+	<InfoItem name="Sensor1">
+	    <description>Human readable description.</description>
+	    <MetaData>
+		<InfoItem name="MetaData1">
+		    <value unixTime="0" type="xs:string">value0</value>
+		</InfoItem>
+	    </MetaData>
+	    <value unixTime="0" type="xs:integer">0</value>
+	    <value unixTime="1" type="xs:integer">1</value>
+	    <value unixTime="2" type="xs:integer">2</value>
+	    <value unixTime="3" type="xs:integer">3</value>
+	    <value unixTime="4" type="xs:integer">4</value>
+	    <value unixTime="5" type="xs:integer">5</value>
+	    <value unixTime="6" type="xs:integer">6</value>
+	    <value unixTime="7" type="xs:integer">7</value>
+	    <value unixTime="8" type="xs:integer">8</value>
+	    <value unixTime="9" type="xs:integer">9</value>
+	</InfoItem>
+	<Object>
+	    <id>SubObject1</id>
+	    <description>Human readable description.</description>
+	    <InfoItem name="Sensor1">
+		<description>Human readable description.</description>
+		<MetaData>
+		    <InfoItem name="MetaData1">
+			<value unixTime="0" type="xs:string">value0</value>
+		    </InfoItem>
+		</MetaData>
+		<value unixTime="0" type="xs:integer">0</value>
+		<value unixTime="1" type="xs:integer">1</value>
+		<value unixTime="2" type="xs:integer">2</value>
+		<value unixTime="3" type="xs:integer">3</value>
+		<value unixTime="4" type="xs:integer">4</value>
+		<value unixTime="5" type="xs:integer">5</value>
+		<value unixTime="6" type="xs:integer">6</value>
+		<value unixTime="7" type="xs:integer">7</value>
+		<value unixTime="8" type="xs:integer">8</value>
+		<value unixTime="9" type="xs:integer">9</value>
+	    </InfoItem>
+	</Object>
+    </Object>
+</Objects>
+	    </textarea>
+	</article>
+	<h1> Write request </h1>
+	<article class="test"> 
+	    <h2> Normal </h2>
+	    <div><p class="description">
+		This is normal write request, writes all data to data for test.
+		Written from localhost.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:write msgformat="odf">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+		<Object>
+		    <id>Object1</id>
+		    <description>Human readable description.</description>
+		    <InfoItem name="Sensor1">
+			<description>Human readable description.</description>
+			<MetaData>
+			    <InfoItem name="MetaData1">
+				<value unixTime="0" type="xs:string">value0</value>
+			    </InfoItem>
+			</MetaData>
+			<value unixTime="0" type="xs:integer">0</value>
+			<value unixTime="1" type="xs:integer">1</value>
+			<value unixTime="2" type="xs:integer">2</value>
+			<value unixTime="3" type="xs:integer">3</value>
+			<value unixTime="4" type="xs:integer">4</value>
+			<value unixTime="5" type="xs:integer">5</value>
+			<value unixTime="6" type="xs:integer">6</value>
+			<value unixTime="7" type="xs:integer">7</value>
+			<value unixTime="8" type="xs:integer">8</value>
+			<value unixTime="9" type="xs:integer">9</value>
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <MetaData>
+				<InfoItem name="MetaData1">
+				    <value unixTime="0" type="xs:string">value0</value>
+				</InfoItem>
+			    </MetaData>
+			    <value unixTime="0" type="xs:integer">0</value>
+			    <value unixTime="1" type="xs:integer">1</value>
+			    <value unixTime="2" type="xs:integer">2</value>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			    <value unixTime="5" type="xs:integer">5</value>
+			    <value unixTime="6" type="xs:integer">6</value>
+			    <value unixTime="7" type="xs:integer">7</value>
+			    <value unixTime="8" type="xs:integer">8</value>
+			    <value unixTime="9" type="xs:integer">9</value>
+			</InfoItem>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+	   <omi:return returnCode="200"></omi:return>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<h1> Read request </h1>
+	<article class="test"> 
+	    <h2> Normal </h2>
+	    <div><p class="description">
+		This is normal read request without any extraarguments
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1"></InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+    	<omi:return returnCode="200"></omi:return>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <description>Human readable description.</description>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Subtree </h2>
+	    <div><p class="description">
+		This is normal read request without any extraarguments, but now only Object1's subtree is wanted.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+    	<omi:return returnCode="200"></omi:return>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <description>Human readable description.</description>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Objects </h2>
+	    <div><p class="description">
+		This is normal read request without any extraarguments, but now whole tree is wanted.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+    	<omi:return returnCode="200"></omi:return>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <description>Human readable description.</description>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Not existing </h2>
+	    <div><p class="description">
+		This is normal read request without any extraarguments, now O-DF includes not existing elements. 
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1"></InfoItem>
+		    <InfoItem name="NotExistsSensor"></InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		    <Object>
+			<id>NotExistsObject</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="9" type="xs:integer">9</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="9" type="xs:integer">9</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+	<omi:return description="Could not find the following elements from the database:
+	    Objects/Object1/NotExistsSensor
+	    Objects/Object1/NotExistsObject" returnCode="404"></omi:return>
+	<omi:result>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Getting MetaData </h2>
+	    <div><p class="description">
+		This is normal read request without any extraarguments, now MetaData is wanted from Objects/Object1/Sensor1
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+			<MetaData/>
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <MetaData>
+				<InfoItem name="MetaData1">
+				    <value unixTime="0" type="xs:string">value0</value>
+				</InfoItem>
+			    </MetaData>
+			    <value unixTime="9" type="xs:integer">9</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="9" type="xs:integer">9</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Newest </h2>
+	    <div><p class="description">
+		User wants 3 newest values. 
+		</p>
+		Argument:
+		<ul>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" newest=3>
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="7" type="xs:integer">7</value>
+			    <value unixTime="8" type="xs:integer">8</value>
+			    <value unixTime="9" type="xs:integer">9</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="7" type="xs:integer">7</value>
+				<value unixTime="8" type="xs:integer">8</value>
+				<value unixTime="9" type="xs:integer">9</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Oldest </h2>
+	    <div><p class="description">
+		User wants 3 oldest values. 
+		</p>
+		Argument:
+		<ul>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" oldest=3>
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="0" type="xs:integer">0</value>
+			    <value unixTime="1" type="xs:integer">1</value>
+			    <value unixTime="2" type="xs:integer">2</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="0" type="xs:integer">0</value>
+				<value unixTime="1" type="xs:integer">1</value>
+				<value unixTime="2" type="xs:integer">2</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Closed timeframe </h2>
+	    <div><p class="description">
+		User wants values between 01-01-1970T00:00:03 and 00:00:06. 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>end</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			    <value unixTime="5" type="xs:integer">5</value>
+			    <value unixTime="6" type="xs:integer">6</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="3" type="xs:integer">3</value>
+				<value unixTime="4" type="xs:integer">4</value>
+				<value unixTime="5" type="xs:integer">5</value>
+				<value unixTime="6" type="xs:integer">6</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Open timeframe, begin </h2>
+	    <div><p class="description">
+		User wants values after 01-01-1970T00:00:03 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			    <value unixTime="5" type="xs:integer">5</value>
+			    <value unixTime="6" type="xs:integer">6</value>
+			    <value unixTime="7" type="xs:integer">7</value>
+			    <value unixTime="8" type="xs:integer">8</value>
+			    <value unixTime="9" type="xs:integer">9</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="3" type="xs:integer">3</value>
+				<value unixTime="4" type="xs:integer">4</value>
+				<value unixTime="5" type="xs:integer">5</value>
+				<value unixTime="6" type="xs:integer">6</value>
+				<value unixTime="7" type="xs:integer">7</value>
+				<value unixTime="8" type="xs:integer">8</value>
+				<value unixTime="9" type="xs:integer">9</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Open timeframe, end  </h2>
+	    <div><p class="description">
+		User wants values before 01-01-1970T00:00:06. 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" end="1970-01-01T00:00:06">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="0" type="xs:integer">0</value>
+			    <value unixTime="1" type="xs:integer">1</value>
+			    <value unixTime="2" type="xs:integer">2</value>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			    <value unixTime="5" type="xs:integer">5</value>
+			    <value unixTime="6" type="xs:integer">6</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="0" type="xs:integer">0</value>
+				<value unixTime="1" type="xs:integer">1</value>
+				<value unixTime="2" type="xs:integer">2</value>
+				<value unixTime="3" type="xs:integer">3</value>
+				<value unixTime="4" type="xs:integer">4</value>
+				<value unixTime="5" type="xs:integer">5</value>
+				<value unixTime="6" type="xs:integer">6</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Closed timeframe with newest  </h2>
+	    <div><p class="description">
+		User wants two newest values between 01-01-1970T00:00:003 and 00:00:06. 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>end</li>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" newest=2>
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="5" type="xs:integer">5</value>
+			    <value unixTime="6" type="xs:integer">6</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="5" type="xs:integer">5</value>
+				<value unixTime="6" type="xs:integer">6</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Closed timeframe with oldest  </h2>
+	    <div > <p class="description">
+		User wants two oldest values between 01-01-1970T00:00:003 and 00:00:06.
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>end</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" oldest=2>
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<description>Human readable description.</description>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="3" type="xs:integer">3</value>
+				<value unixTime="4" type="xs:integer">4</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Callback  </h2>
+	    <div > <p class="description">
+		 User wants to node send response for actual request to another address.
+		</p>
+		Argument:
+		<ul>
+		    <li>callback</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" callback="http://localhost:5432" >
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return description="OK, callback job started" returnCode="200"></omi:return>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="test"> 
+	    <h2> Newest and Oldest  </h2>
+	    <div > <p class="description">
+		User has gone mad and wants two newest and two oldest values for same time
+		</p>
+		Argument:
+		<ul>
+		    <li>newest</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" newest=2 oldest=2 >
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1"></InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+	   <omi:return description="Bad request: requirement failed: Both newest and oldest at the same time not supported!" returnCode="400"></omi:return>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+    </body>
+</html>

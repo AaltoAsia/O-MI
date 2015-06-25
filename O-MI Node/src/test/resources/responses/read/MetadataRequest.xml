@@ -5,7 +5,9 @@
  			<Objects>
  				<Object>
  					<id>Metatest</id>
- 					<InfoItem name="Temperature"></InfoItem>
+ 					<InfoItem name="Temperature">
+ 					  <MetaData/>
+ 					</InfoItem>
  				</Object>
 			 </Objects>
  		</omi:msg>

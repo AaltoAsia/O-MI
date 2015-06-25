@@ -43,7 +43,7 @@ class CancelTest extends Specification with BeforeAfterAll {
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
 
-    dbConnection.clearDB()
+//    dbConnection.clearDB()
     val testData = Map(
       Path("Objects/CancelTest/Refrigerator123/PowerConsumption") -> "0.123",
       Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",

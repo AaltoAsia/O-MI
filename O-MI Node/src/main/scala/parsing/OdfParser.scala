@@ -88,7 +88,7 @@ object OdfParser extends Parser[OdfParseResult] {
         if(item.MetaData.isEmpty){
           None
         } else {
-          Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, Some("odf"),Some("MetaData"), xmlGen.defaultScope).toString) )
+          Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString) )
         }
       ) 
   }

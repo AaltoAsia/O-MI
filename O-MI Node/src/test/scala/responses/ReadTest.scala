@@ -26,14 +26,14 @@ import akka.testkit.TestActorRef
 
 class ReadTest extends Specification with BeforeAfterAll {
   sequential
-  
-  
+
   //  val ReadResponseGen = new ReadResponseGen
   implicit val system = ActorSystem("readtest")
   implicit val dbConnection = new TestDB("read-test")
-  
+
   val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))
   val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
+  val printer = new scala.xml.PrettyPrinter(80, 2)
 
   def beforeAll = {
     val calendar = Calendar.getInstance()
@@ -41,7 +41,7 @@ class ReadTest extends Specification with BeforeAfterAll {
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
-//    dbConnection.clearDB()
+    //    dbConnection.clearDB()
     val testData = Map(
       Path("Objects/ReadTest/Refrigerator123/PowerConsumption") -> "0.123",
       Path("Objects/ReadTest/Refrigerator123/RefrigeratorDoorOpenWarning") -> "door closed",
@@ -74,7 +74,7 @@ class ReadTest extends Specification with BeforeAfterAll {
     }
 
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
-    dbConnection.remove(Path("Objects/Metatest/Temperature"))
+//    dbConnection.remove(Path("Objects/Metatest/Temperature"))
     dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
     dbConnection.setMetaData(Path("Objects/Metatest/Temperature"),
       """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
@@ -83,7 +83,7 @@ class ReadTest extends Specification with BeforeAfterAll {
   def afterAll = {
     dbConnection.destroy()
   }
-/*
+  /*
  * Removed the Option get calls and head calls for sequences.
  * Tests have duplication but that is to allow easier debugging incase tests fail.
  */
@@ -96,12 +96,14 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(simpletestfile)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))//.asInstanceOf[ReadRequest]))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y })) //.asInstanceOf[ReadRequest]))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
+      val node = resultOption.get._1
+      node must \ ("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
       
+      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
@@ -112,12 +114,15 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(intervaltestfile)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
-      
-      resultOption must beSome.which(_._2 === 200)
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
 
+      resultOption must beSome.which(_._2 === 200)
+      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      val node = resultOption.get._1
+
+      node must \ ("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
+ 
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
@@ -127,11 +132,15 @@ class ReadTest extends Specification with BeforeAfterAll {
       val parserlist = OmiParser.parse(plainxml)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
-      
+
       resultOption must beSome.which(_._2 === 200)
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
+      println("test3:")
+      println(printer.format(resultOption.get._1.head))
+      println("correct:")
+      println(printer.format(correctxmlreturn.head))
+      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
@@ -142,27 +151,77 @@ class ReadTest extends Specification with BeforeAfterAll {
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
       val parserlist = OmiParser.parse(erroneousxml)
       parserlist.isRight === true
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       //returnCode should not be 200
       resultOption must beSome.which(_._2 !== 200)
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
+      println("test4:")
+      println(printer.format(resultOption.get._1.head))
+      println("correct:")
+      println(printer.format(correctxmlreturn.head))
+      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
     }
+/*    "Give partial result when part of the request is wrong" in {
+      val partialxml =
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+          <omi:read msgformat="odf">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>ReadTest</id>
+                  <Object>
+                    <id>NonexistingObject</id>
+                  </Object>
+                  <Object>
+                    <id>SmartOven</id>
+                  </Object>
+                  <Object>
+                    <id>Roomsensors1</id>
+                    <InfoItem name="CarbonDioxide"></InfoItem>
+                    <InfoItem name="wrong"></InfoItem>
+                    <InfoItem name="Temperature"></InfoItem>
+                  </Object>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>
+        
+        val parserlist= OmiParser.parse(partialxml.toString())
+        parserlist.isRight === true
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
+      val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
+      //returnCode should not be 200
+//      resultOption must beSome.which(_._2 !== 200)
+      println("test6:")
+      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
+            resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(partialxml \\ ("Objects")))
+
+      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(partialxml))
+        
+
+    }*/ //TODO: test with partially correct data should be in separate results
 
     "Return with correct metadata" in {
       lazy val metarequestxml = Source.fromFile("src/test/resources/responses/read/MetadataRequest.xml").getLines.mkString("\n")
       lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/MetadataCorrectReturn.xml")
       val parserlist = OmiParser.parse(metarequestxml)
+      if(parserlist.isLeft) println(parserlist.left.get.toSeq)
       parserlist.isRight === true
 
-      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({case y: ReadRequest => y}))
+      val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
-      
+
       resultOption must beSome.which(_._2 === 200)
+      println("test5:")
+      println(printer.format(resultOption.get._1.head))
+      println("correct:")
+      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
-      
 
     }
 

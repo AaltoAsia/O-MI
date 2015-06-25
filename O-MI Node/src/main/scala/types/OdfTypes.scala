@@ -185,7 +185,7 @@ object OdfTypes{
       require(this.path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
       InfoItemType(
         description = description.map( des => des.asDescription ),
-        MetaData = metaData.map{ metadata => scalaxb.fromXML[MetaData]( XML.loadString( metadata.data ) ) },
+        MetaData = metaData.map{ odfMetaData => odfMetaData.asMetaData},
         name = path.last, // require checks
         value = values.map{ 
           value : OdfValue =>
@@ -197,7 +197,11 @@ object OdfTypes{
   }
   case class OdfMetaData(
     data:                 String
-  ) extends OdfElement
+  ) extends OdfElement {
+    implicit def asMetaData : MetaData = {
+      scalaxb.fromXML[MetaData]( XML.loadString( data ) )
+    }
+  }
 
   case class OdfValue(
     value:                String,
