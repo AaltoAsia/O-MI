@@ -1,4 +1,4 @@
-package testHelpers
+/*package testHelpers
 import org.specs2.mutable._
 import org.specs2.specification.{Step, Fragments}
 import akka.testkit.TestKit
@@ -49,4 +49,4 @@ class SubscriptionHandlerTestActor extends Actor {
     }
     case _ => sender() ! false
   }
-}
+}*/

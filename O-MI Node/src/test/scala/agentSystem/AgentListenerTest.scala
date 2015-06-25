@@ -1,4 +1,4 @@
-package agentSystem
+/*package agentSystem
 
 import org.specs2.mutable._
 import akka.testkit.{ TestProbe, TestKit, EventFilter }
@@ -170,3 +170,4 @@ class AgentListenerTest extends Specification {
 
   }
 }
+*/

@@ -1,4 +1,4 @@
-package responses
+/*package responses
 
 import org.specs2.mutable._
 import org.specs2.matcher.XmlMatchers._
@@ -392,3 +392,4 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
 
 
+*/

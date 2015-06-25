@@ -1,4 +1,4 @@
-package agentSystem
+/*package agentSystem
 
 import org.specs2.mutable._
 import akka.actor.{Props, ActorSystem}
@@ -58,3 +58,4 @@ class AgentLoaderTest extends TestKit(ActorSystem()) with SpecificationLike with
   }
 }
   */
+*/

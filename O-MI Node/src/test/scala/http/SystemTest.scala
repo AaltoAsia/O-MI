@@ -15,12 +15,12 @@ class SystemTest extends Specification{
   
   "test block" should {
     (1 to 500) foreach { i=>
-      ("example " + i ) in {(i % 2 === 0)}.updateMessage(f => "asd")
+      ("example " + i ) in {(i % 2 === 0).updateMessage(f=> "ASDASD")}.updateMessage(f => "asd")
       }
     
     (500 to 1000 by 2) foreach { i=>
       ("example " + i ) >> {
-        (i aka "lol failed" must_== 1000)}
+        (i aka "lol failed" must_== 1000).setMessage("ASdasdasd")}.updateMessage(c => "asd")
       }
     
   }
