@@ -69,7 +69,7 @@ class TypesTest extends Specification {
   }
   
   def e11 = {
-    !new OdfObject(Seq("test"), Seq(), Seq()).isInstanceOf[OmiRequest]
+    !new OdfObject(Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
   }
   
   def e100 = {
@@ -77,7 +77,7 @@ class TypesTest extends Specification {
   }
   
   def e101 = {
-    new OdfObject(Seq("test"), Seq(), Seq()).isInstanceOf[OdfElement]
+    new OdfObject(Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfElement]
   }
   
   def e200 = {
