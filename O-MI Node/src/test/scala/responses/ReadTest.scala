@@ -136,10 +136,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      println("test3:")
-      println(printer.format(resultOption.get._1.head))
-      println("correct:")
-      println(printer.format(correctxmlreturn.head))
+//      println("test3:")
+//      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       resultOption must beSome.which(
@@ -155,10 +155,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       //returnCode should not be 200
       resultOption must beSome.which(_._2 !== 200)
-      println("test4:")
-      println(printer.format(resultOption.get._1.head))
-      println("correct:")
-      println(printer.format(correctxmlreturn.head))
+//      println("test4:")
+//      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -217,10 +217,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      println("test5:")
-      println(printer.format(resultOption.get._1.head))
-      println("correct:")
-      println(printer.format(correctxmlreturn.head))
+//      println("test5:")
+//      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
 
     }

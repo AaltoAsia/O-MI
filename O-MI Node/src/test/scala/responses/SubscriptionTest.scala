@@ -355,7 +355,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
       val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
       val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
-      println(test.\\("value"))
+//      println(test.\\("value"))
       test.\\("value").length === 8
       val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
