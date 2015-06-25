@@ -48,12 +48,15 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
     *
     */
   override def handleInfoItems( infoitems: Iterable[OdfInfoItem]) : Unit = {
-    
-      val infos = infoitems.map{ info => 
-        info.values.map{ tv => (info.path, tv) }
-      }.flatten[(Path,OdfValue)].toList 
-      val many = dbobject.setMany(infos) 
+    val infos = infoitems.map{ info => 
+      info.values.map{ tv => (info.path, tv) }
+    }.flatten[(Path,OdfValue)].toList 
+    val many = dbobject.setMany(infos) 
     log.debug("Successfully saved InfoItems to DB")
+    val meta = infoitems.collect{ case info if info.metaData.nonEmpty => 
+      (info.path, info.metaData.get.data) 
+    }
+    if(meta.nonEmpty) handlePathMetaDataPairs(meta)
   } 
   
   /** Function for handling sequences of path and value pairs.
