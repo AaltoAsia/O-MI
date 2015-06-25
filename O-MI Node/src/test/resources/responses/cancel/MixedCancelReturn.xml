@@ -5,7 +5,7 @@
          <omi:return returnCode="200" />
       </omi:result>
       <omi:result>
-         <omi:return description="Such item/s not found." returnCode="404" />
+         <omi:return description="A subscription with this id has expired or doesn't exist" returnCode="404" />
       </omi:result>
    </omi:response>
 </omi:omiEnvelope>
