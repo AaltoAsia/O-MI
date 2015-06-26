@@ -149,7 +149,7 @@ function joinPath(a, b) {
             || aLast !== "/" && bHead === "/") {
         return a + b;
     } else {
-        a + "/" + b;
+        return a + "/" + b;
     }
 }
 
@@ -185,9 +185,9 @@ function ajaxGet(indent, url, listId, pathArray){
 		error: function(a, b, c){
 			//alert("Error accessing data discovery");
 			console.log("Error accessing data discovery ");
-                        console.log(a)
-                        console.log(b)
-                        console.log(c)
+                        console.log(a);
+                        console.log(b);
+                        console.log(c);
 		}
     });
 }
