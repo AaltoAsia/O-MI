@@ -77,7 +77,7 @@ class ReadTest extends Specification with BeforeAfterAll {
 //    dbConnection.remove(Path("Objects/Metatest/Temperature"))
     dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
     dbConnection.setMetaData(Path("Objects/Metatest/Temperature"),
-      """<MetaData><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
+      """<MetaData xmlns="odf.xsd"><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
 
   }
   def afterAll = {
@@ -136,10 +136,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      println("test3:")
-      println(printer.format(resultOption.get._1.head))
-      println("correct:")
-      println(printer.format(correctxmlreturn.head))
+//      println("test3:")
+//      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       resultOption must beSome.which(
@@ -155,10 +155,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       //returnCode should not be 200
       resultOption must beSome.which(_._2 !== 200)
-      println("test4:")
-      println(printer.format(resultOption.get._1.head))
-      println("correct:")
-      println(printer.format(correctxmlreturn.head))
+//      println("test4:")
+//      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
@@ -217,10 +217,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      println("test5:")
-      println(printer.format(resultOption.get._1.head))
-      println("correct:")
-      println(printer.format(correctxmlreturn.head))
+//      println("test5:")
+//      println(printer.format(resultOption.get._1.head))
+//      println("correct:")
+//      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
 
     }
@@ -249,8 +249,8 @@ class ReadTest extends Specification with BeforeAfterAll {
     "Give correct XML when asked with an InfoItem path and trailing /" in {
       val RESTXML = requestHandler.generateODFREST(Path("Objects/ReadTest/RoomSensors1/CarbonDioxide"))
 
-      val rightXML = <InfoItem name="CarbonDioxide">
-                       <value dateTime="1970-01-17T12:56:15.723">too much</value>
+      val rightXML = <InfoItem name="CarbonDioxide" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                       <value unixTime="1421775">too much</value>
                      </InfoItem>
 
       RESTXML must beSome.which(_ must beRight.which(_ must beEqualToIgnoringSpace(rightXML)))
