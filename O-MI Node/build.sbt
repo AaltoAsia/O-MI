@@ -110,6 +110,7 @@ release <<= (resourceDirectory in Compile, releaseDir, baseDirectory, artifact, 
         baseDirectory / "start.bat" -> "start.bat",
         baseDirectory / ".." / "callbackTestServer.py" -> "callbackTestServer.py",
         baseDirectory / "SmartHouse.xml" -> "SmartHouse.xml",
+        baseDirectory / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
         baseDirectory / "README-release.md" -> "README.md",
         jar -> jar.getName()
       )
