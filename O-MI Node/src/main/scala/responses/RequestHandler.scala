@@ -8,7 +8,7 @@ import parsing.xmlGen.xmlTypes
 import parsing.xmlGen.scalaxb
 import database._
 import agentSystem.InputPusher
-import CallbackHandlers.sendCallback
+import CallbackHandlers._
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
@@ -32,7 +32,7 @@ import scala.collection.mutable.Buffer
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-
+  import http.Boot.system.log
   private def date = new Date()
 
 
@@ -45,6 +45,29 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case sub : SubscriptionRequest =>
         runGeneration(sub)
 
+      case subdata : SubDataRequest =>  {
+        val sub = subdata.sub
+        val interval = sub.interval
+        val callbackAddr = sub.callback.get
+        val (xmlMsg, returnCode) = runGeneration(subdata) 
+        log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
+
+        def failed(reason: String) =
+          log.warning(
+            s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
+
+
+        sendCallback(callbackAddr, xmlMsg) onComplete {
+            case Success(CallbackSuccess) =>
+              log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
+
+            case Success(fail: CallbackFailure) =>
+              failed(fail.toString)
+            case Failure(e) =>
+              failed(e.getMessage)
+          }
+          (success, 200)//DUMMY
+      }
       case _ if (request.callback.nonEmpty) => {
         // TODO: Can't cancel this callback
 
@@ -149,9 +172,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleCancel(cancel)
     }
     case subdata : SubDataRequest => {
-      //SHOULD NOT BE CALLED THERE 
-      //Used whan O-MI Node need to send data on interval
-      ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Subdata reuqeust shouldn't be send to RequestHandler.." ) ) ), 500)
+      handleSubData(subdata)
     }
     case _ =>{
       ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Unknown request." ) ) ), 500)
