@@ -52,7 +52,7 @@
 	    </textarea>
 	</article>
 	<h1> Write request </h1>
-	<article class="test"> 
+	<article class="write test"> 
 	    <h2> Normal </h2>
 	    <div><p class="description">
 		This is normal write request, writes all data to data for test.
@@ -112,7 +112,7 @@
 		</Object>
 	    </Objects>
 	</omi:msg>
-    </omi:read>
+    </omi:write>
 </omi:omiEnvelope>
 		</textarea>
 	    </div>
@@ -130,10 +130,10 @@
 	    </div>
 	</article>
 	<h1> Read request </h1>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Normal </h2>
 	    <div><p class="description">
-		This is normal read request without any extraarguments
+		This is normal read request without any extra arguments
 		</p>
 	    </div>
 	    <div>
@@ -189,10 +189,10 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Subtree </h2>
 	    <div><p class="description">
-		This is normal read request without any extraarguments, but now only Object1's subtree is wanted.
+		This is normal read request without any extra arguments, but now only Object1's subtree is wanted.
 		</p>
 	    </div>
 	    <div>
@@ -244,10 +244,10 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Objects </h2>
 	    <div><p class="description">
-		This is normal read request without any extraarguments, but now whole tree is wanted.
+		This is normal read request without any extra arguments, but now whole tree is wanted.
 		</p>
 	    </div>
 	    <div>
@@ -296,10 +296,10 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Not existing </h2>
 	    <div><p class="description">
-		This is normal read request without any extraarguments, now O-DF includes not existing elements. 
+		This is normal read request without any extra arguments, now O-DF includes not existing elements. 
 		</p>
 	    </div>
 	    <div>
@@ -364,10 +364,10 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Getting MetaData </h2>
 	    <div><p class="description">
-		This is normal read request without any extraarguments, now MetaData is wanted from Objects/Object1/Sensor1
+		This is normal read request without any extra arguments, now MetaData is wanted from Objects/Object1/Sensor1
 		</p>
 	    </div>
 	    <div>
@@ -435,7 +435,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Newest </h2>
 	    <div><p class="description">
 		User wants 3 newest values. 
@@ -503,7 +503,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Oldest </h2>
 	    <div><p class="description">
 		User wants 3 oldest values. 
@@ -571,7 +571,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Closed timeframe </h2>
 	    <div><p class="description">
 		User wants values between 01-01-1970T00:00:03 and 00:00:06. 
@@ -642,7 +642,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Open timeframe, begin </h2>
 	    <div><p class="description">
 		User wants values after 01-01-1970T00:00:03 
@@ -718,7 +718,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Open timeframe, end  </h2>
 	    <div><p class="description">
 		User wants values before 01-01-1970T00:00:06. 
@@ -794,7 +794,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Closed timeframe with newest  </h2>
 	    <div><p class="description">
 		User wants two newest values between 01-01-1970T00:00:003 and 00:00:06. 
@@ -862,7 +862,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Closed timeframe with oldest  </h2>
 	    <div > <p class="description">
 		User wants two oldest values between 01-01-1970T00:00:003 and 00:00:06.
@@ -930,7 +930,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Callback  </h2>
 	    <div > <p class="description">
 		 User wants to node send response for actual request to another address.
@@ -974,7 +974,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="test"> 
+	<article class="read test"> 
 	    <h2> Newest and Oldest  </h2>
 	    <div > <p class="description">
 		User has gone mad and wants two newest and two oldest values for same time
