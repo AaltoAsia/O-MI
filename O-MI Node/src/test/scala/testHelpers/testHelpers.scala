@@ -1,12 +1,15 @@
-/*package testHelpers
+package testHelpers
 import org.specs2.mutable._
 import org.specs2.specification.{Step, Fragments}
+import org.xml.sax.InputSource
 import akka.testkit.TestKit
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.Scope
 import akka.actor._
 import responses.RemoveSubscription
+import scala.xml._
+import parsing._
 
 trait BeforeAll extends Specification {
   override def map(fs: =>Fragments) ={
@@ -49,4 +52,22 @@ class SubscriptionHandlerTestActor extends Actor {
     }
     case _ => sender() ! false
   }
-}*/
+}
+
+class HTML5Parser extends NoBindingFactoryAdapter{
+  override def loadXML(source: InputSource, parser: SAXParser) = {
+    loadXML(source)
+  }
+  
+  def loadXML(source: InputSource) = {
+    import nu.validator.htmlparser.{sax,common}
+    import sax.HtmlParser
+    import common.XmlViolationPolicy
+    
+    val reader = new HtmlParser
+    reader.setXmlPolicy(XmlViolationPolicy.ALLOW)
+    reader.setContentHandler(this)
+    reader.parse(source)
+    rootElem
+  }
+}
