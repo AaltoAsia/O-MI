@@ -35,9 +35,6 @@ object OdfParser extends Parser[OdfParseResult] {
     ).getOrElse(
       return  Left( Iterable( ParseError("Invalid XML") ) ) 
     )
-    val schema_err = schemaValitation(root)
-    if (schema_err.nonEmpty)
-      return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
 
     parse(root)
   }
