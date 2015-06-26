@@ -34,7 +34,7 @@ sequential
     val description = node \ ("div") \ ("p") text
     
     (request, correctResponse, description)
-    }//.filter(a => a.\@("class") == "read test").map(_ \\ ("textarea")).map(p => p)
+    }
   
   "Automatic System Tests" should {
     "WriteTest" in {
@@ -60,8 +60,8 @@ sequential
         correctResponse aka "Correct read response message" must beSome
         
         val response = pipeline(Post("http://localhost:8080/", request.get))
-        
-        response must beEqualToIgnoringSpace(correctResponse.get).await(2, scala.concurrent.duration.Duration.apply(2, "second"))
+        s"${"\n"+printer.format(Await.result(response,scala.concurrent.duration.Duration.apply(2,"second")).head)}" <==>{
+        response must beEqualToIgnoringSpace(correctResponse.get).await(2, scala.concurrent.duration.Duration.apply(2, "second"))}
         }
         //(i % 2 === 0).updateMessage(f=> "ASDASD")}.updateMessage(f => "asd")
       }
