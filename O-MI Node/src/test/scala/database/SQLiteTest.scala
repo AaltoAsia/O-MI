@@ -1,4 +1,4 @@
-/*package database
+package database
 
 import org.specs2.mutable._
 import database._
@@ -445,4 +445,4 @@ class SQLiteTest extends Specification with AfterAll {
     //    }
   }
 }
-*/
+

@@ -161,7 +161,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-        <omi:result>
+        <omi:result msgformat="odf">
     	<omi:return returnCode="200"></omi:return>
     	<omi:msg>
     	    <Objects>
@@ -215,7 +215,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-        <omi:result>
+        <omi:result msgformat="odf">
     	<omi:return returnCode="200"></omi:return>
     	<omi:msg>
     	    <Objects>
@@ -267,7 +267,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-        <omi:result>
+        <omi:result msgformat="odf">
     	<omi:return returnCode="200"></omi:return>
     	<omi:msg>
     	    <Objects>
@@ -328,9 +328,9 @@
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+<omi:omiEnvelope version="1.0" ttl="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -352,10 +352,9 @@
 		</Objects>
 	    </omi:msg>
 	</omi:result>
-	<omi:return description="Could not find the following elements from the database:
-	    Objects/Object1/NotExistsSensor
-	    Objects/Object1/NotExistsObject" returnCode="404"></omi:return>
 	<omi:result>
+	<omi:return description="Could not find the following elements from the database: Objects/Object1/NotExistsSensor Objects/Object1/NotExistsObject" returnCode="404">
+	</omi:return>
 	</omi:result>
     </omi:response>
 </omi:omiEnvelope>
@@ -395,7 +394,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -405,14 +404,9 @@
 			    <description>Human readable description.</description>
 			    <MetaData>
 				<InfoItem name="MetaData1">
-				    <MetaData>
-					<InfoItem name="MetaData1">
-					    <value unixTime="0" type="xs:string">value0</value>
-					</InfoItem>
-				    </MetaData>
-				    <value unixTime="9" type="xs:integer">9</value>
-				</InfoItem>
-			    </MetaData>
+					<value unixTime="0" type="xs:string">value0</value>
+				</InfoItem>	
+				</MetaData>
 			    <value unixTime="9" type="xs:integer">9</value>
 			</InfoItem>
 			<Object>
@@ -446,7 +440,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-    <omi:read msgformat="odf" newest=3>
+    <omi:read msgformat="odf" newest="3">
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 		<Object>
@@ -468,7 +462,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -513,7 +507,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-    <omi:read msgformat="odf" oldest=3>
+    <omi:read msgformat="odf" oldest="3">
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 		<Object>
@@ -535,7 +529,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -603,7 +597,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -672,7 +666,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -747,7 +741,7 @@
 		    <textarea class="response"  class="request" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -802,7 +796,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" newest=2>
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" newest="2">
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 		<Object>
@@ -824,7 +818,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -869,7 +863,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" oldest=2>
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" oldest="2">
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 		<Object>
@@ -891,7 +885,7 @@
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result>
+	<omi:result msgformat="odf">
 	    <omi:return returnCode="200"></omi:return>
 	    <omi:msg>
 		<Objects>
@@ -979,7 +973,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-    <omi:read msgformat="odf" newest=2 oldest=2 >
+    <omi:read msgformat="odf" newest="2" oldest="2" >
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 		<Object>

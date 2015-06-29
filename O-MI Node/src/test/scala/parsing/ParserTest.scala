@@ -1,4 +1,4 @@
-/*package parsing
+package parsing
 
 import org.specs2._
 import scala.io.Source
@@ -746,4 +746,3 @@ class ParserTest extends Specification {
 
 
 
-*/

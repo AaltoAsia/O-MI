@@ -47,7 +47,7 @@ sequential
     }
   def afterAll = {
     system.shutdown()
-//    dbConnection.destroy()
+    dbConnection.destroy()
   }
   "Automatic System Tests" should {
     "WriteTest" >> {
@@ -65,7 +65,7 @@ sequential
       response must beEqualToIgnoringSpace(correctResponse.get).await(2, scala.concurrent.duration.Duration.apply(2, "second"))
     }
     
-    step({Thread.sleep(2000); println("sleeping")})
+    step({Thread.sleep(2000)})
     
     readTests foreach { i=>
       val(request, correctResponse, testDescription) = i

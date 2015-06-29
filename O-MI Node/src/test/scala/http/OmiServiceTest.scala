@@ -1,4 +1,4 @@
-/*package http
+package http
 
 import responses.RequestHandler
 import parsing._
@@ -440,4 +440,4 @@ class OmiServiceSpec extends Specification
 
 }
 
-*/
+
