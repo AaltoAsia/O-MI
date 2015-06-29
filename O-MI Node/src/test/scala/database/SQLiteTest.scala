@@ -345,7 +345,7 @@ class SQLiteTest extends Specification with AfterAll {
       db.getSub(id3.id) must beNone
     }
 
-    "return right values in getsubdata" in {
+    "return right values in getPollData" in {
       val timeNow = new java.util.Date().getTime
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
@@ -365,7 +365,7 @@ class SQLiteTest extends Specification with AfterAll {
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.9C")
       val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
-      val res = db.getSubData(id.id) //), Some(new Timestamp(timeNow)))
+      val res = db.getPollData(id.id, new Timestamp(timeNow))
       db.removeSub(id)
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
@@ -425,7 +425,7 @@ class SQLiteTest extends Specification with AfterAll {
       val values1 = temp1.map(OdfObjectsToValues(_))
       values1 must beSome.which(_ must have size (13))
       val temp2 = db.get(Path("/Objects/path/to/setmany/test2")).map(fromPath(_))
-      val values2 = temp1.map(OdfObjectsToValues(_))
+      val values2 = temp2.map(OdfObjectsToValues(_))
       values2 must beSome.which(_ must have size (10))
       db.removeSub(testSub3.id)
       db.remove(Path("/Objects/path/to/setmany/test1"))

@@ -140,6 +140,19 @@ function getObjects() {
 	ajaxObjectQuery(objectUrl, fullObjectsRequest);
 }
 
+function joinPath(a, b) {
+    var aLast = a.charAt(a.length - 1);
+    var bHead = b.charAt(0);
+    if (aLast === "/" && bHead === "/") {
+        return a + b.substr(1);
+    } else if (aLast === "/" && bHead !== "/"
+            || aLast !== "/" && bHead === "/") {
+        return a + b;
+    } else {
+        return a + "/" + b;
+    }
+}
+
 
 /**
  * Gets the objects from the server using AJAX (multiple AJAX requests)
@@ -148,7 +161,7 @@ function dataDiscovery() {
 	console.log("Sending AJAX GET for the objects...");
 	
 	// Get user specified URL from the DOM
-	objectUrl = $("#url-field").val() + "/Objects";
+	objectUrl = joinPath($("#url-field").val(), "Objects");
 
 	// Send ajax get-request for the objects
 	//loadXML("request/objects.xml", objectUrl);
@@ -172,9 +185,9 @@ function ajaxGet(indent, url, listId, pathArray){
 		error: function(a, b, c){
 			//alert("Error accessing data discovery");
 			console.log("Error accessing data discovery ");
-                        console.log(a)
-                        console.log(b)
-                        console.log(c)
+                        console.log(a);
+                        console.log(b);
+                        console.log(c);
 		}
     });
 }
@@ -202,7 +215,7 @@ function displayDiscoveryObjects(data, indent, url, listId, pathArray) {
 				var pathArray = [id];
 				
 				// Get lower hierarchy values (Subobjects/Infoitems)
-				ajaxGet(indent + 1, url + "/" + id, "list-" + id, pathArray);
+				ajaxGet(indent + 1, joinPath(url, id), "list-" + id, pathArray);
 			});
 		});
 	} else {
@@ -232,7 +245,7 @@ function displayDiscoveryObjects(data, indent, url, listId, pathArray) {
 			addInfoItems(this, id, indent);
 			
 			for(var i = 0; i < sub.length; i++){
-				ajaxGet(indent + 1, url + "/" + sub[i], "list-" + id, arrays[i]);
+				ajaxGet(indent + 1, joinPath(url, sub[i]), "list-" + id, arrays[i]);
 			}
 		});
 	}
