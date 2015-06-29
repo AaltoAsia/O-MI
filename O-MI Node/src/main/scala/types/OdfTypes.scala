@@ -260,6 +260,13 @@ object OdfTypes{
     def path: Path
     def description: Option[OdfDescription]
   }
+  def getHasPaths(hasPaths : Seq[HasPath]) : Seq[HasPath] ={
+    hasPaths.flatMap{ 
+      case info : OdfInfoItem => Seq(info)
+      case obj : OdfObject => Seq( obj ) ++ getHasPaths(obj.objects.toSeq ++ obj.infoItems.toSeq)
+      case objs : OdfObjects => Seq( objs ) ++ getHasPaths(objs.objects.toSeq)
+    }.toSeq
+  }
   
   /**
    * Generates odf tree containing the ancestors of given object.

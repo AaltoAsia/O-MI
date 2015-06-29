@@ -223,7 +223,32 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     database.getSetHooks foreach {_(pathsData.keys.toSeq)}
   } 
 
+  def setDescription(hasPath: HasPath) : Unit  = {
 
+    val path = hasPath.path
+    val description = if(hasPath.description.nonEmpty) 
+      hasPath.description.get.value
+    else 
+      throw new RuntimeException("Tried to set unexisting description.")
+
+    val updateAction = for {
+      _ <- hasPath match {
+        case objs : OdfObjects => addObjectsI(path, lastIsInfoItem=false) 
+        case obj : OdfObject => addObjectsI(path,  lastIsInfoItem=false) 
+        case info : OdfInfoItem => addObjectsI(path,  lastIsInfoItem=true) 
+      }
+
+      nodeO <- getHierarchyNodeI(path)
+      
+      result <- nodeO match {
+        case Some(hNode) => 
+          hierarchyNodes.filter( _.id === hNode.id).update(DBNode(hNode.id,hNode.path, hNode.leftBoundary, hNode.rightBoundary, hNode.depth, description, hNode.pollRefCount, hNode.isInfoItem))
+        case _ =>
+          throw new RuntimeException("Tried to set description on unknown object.")
+      }
+    } yield result
+    runSync(updateAction.transactionally)
+  }
   /**
    * Used to store metadata for a sensor to database
    * @param path path to sensor
