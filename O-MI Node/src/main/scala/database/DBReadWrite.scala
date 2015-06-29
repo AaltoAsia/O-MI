@@ -275,7 +275,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def setMetaDataI(hierarchyId: Int, data: String): DBIOrw[Int] = {
     val qry = metadatas filter (_.hierarchyId === hierarchyId) map (_.metadata)
     val qryres = qry.result map (_.headOption)
-    qryres flatMap[Int, NoStream, Effect.Write] {
+    qryres flatMap {
       case None => 
         metadatas += DBMetaData(hierarchyId, data)
       case Some(_) =>
