@@ -22,6 +22,7 @@ object OdfTypes{
     version:              Option[String] = None
   ) extends OdfElement with HasPath {
     val path = Path("Objects")
+    val description: Option[OdfDescription] = None
     def combine( another: OdfObjects ): OdfObjects ={
       val uniques : Seq[OdfObject]  = ( 
         objects.filterNot( 
@@ -194,7 +195,10 @@ object OdfTypes{
         attributes = Map.empty
       )
     }
+    def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = OdfInfoItem(data._1, Iterable( data._2))
+    def apply(path: Path, timestamp: Timestamp, value: String, valueType: String = "") : OdfInfoItem = OdfInfoItem(path, Iterable( OdfValue(value, valueType, Some(timestamp))))
   }
+
   case class OdfMetaData(
     data:                 String
   ) extends OdfElement {
@@ -254,6 +258,7 @@ object OdfTypes{
   }
   sealed trait HasPath {
     def path: Path
+    def description: Option[OdfDescription]
   }
   
   /**
