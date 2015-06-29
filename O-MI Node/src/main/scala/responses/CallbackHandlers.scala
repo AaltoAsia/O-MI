@@ -13,8 +13,7 @@ import spray.client.pipelining._
 object CallbackHandlers {
   sealed trait CallbackResult
   // Base error
-  sealed class CallbackFailure               extends CallbackResult
-
+  sealed class CallbackFailure              extends Throwable with CallbackResult
   //Success
   case object  CallbackSuccess               extends CallbackResult
   // Errors

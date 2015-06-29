@@ -5,7 +5,7 @@ val scalaBuildVersion = "2.11.4"
 //lazy val root = (project in file(".")).
 name := "O-MI-Node"
 
-version := "0.1.1-SNAPSHOT"
+version := "0.1.2-SNAPSHOT"
 
 scalaVersion := scalaBuildVersion
 
@@ -114,6 +114,7 @@ release <<= (resourceDirectory in Compile, releaseDir, baseDirectory, artifact, 
         baseDirectory / "start.bat" -> "start.bat",
         baseDirectory / ".." / "callbackTestServer.py" -> "callbackTestServer.py",
         baseDirectory / "SmartHouse.xml" -> "SmartHouse.xml",
+        baseDirectory / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
         baseDirectory / "README-release.md" -> "README.md",
         jar -> jar.getName()
       )

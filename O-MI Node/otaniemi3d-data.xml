@@ -1,9 +1,23 @@
 <?xml version="1.0"?>
 <Objects xmlns="odf.xsd">
     <Object>
-        <id>vtt</id>
+        <id>K1</id>
+        <InfoItem name="K1 Building">
+            <MetaData>
+                <InfoItem name="description">
+                    <value>Aalto University building for the Department of Engineering Design and Production</value>
+                <InfoItem name="address">
+                    <value>Otakaari 4, 02150, Espoo</value>
+                </InfoItem>
+                <InfoItem name="gps location">
+                    <value>60.1873168,24.826894</value>
+                </InfoItem>
+                <InfoItem name="location on map">
+                    <value>https://www.google.fi/maps/place/Konetekniikka+1,+Otakaari+4,+02150+Espoo/@60.1873168,24.826894,16z/data=!4m2!3m1!1s0x468df5ec8ae0237f:0x4214bb313b20bda9</value>
+                </InfoItem>
+            <value></value>
         <Object>
-            <id>101</id>
+            <id>Room-101</id>
             <InfoItem name="temperature">
                 <value>22.3</value>
             </InfoItem>
@@ -21,7 +35,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>102</id>
+            <id>Room-102</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -39,7 +53,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>103</id>
+            <id>Room-103</id>
             <InfoItem name="temperature">
                 <value>23.6</value>
             </InfoItem>
@@ -57,7 +71,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>104</id>
+            <id>Room-104</id>
             <InfoItem name="temperature">
                 <value>21.5</value>
             </InfoItem>
@@ -75,7 +89,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>105</id>
+            <id>Room-105</id>
             <InfoItem name="temperature">
                 <value>19.3</value>
             </InfoItem>
@@ -93,7 +107,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>106</id>
+            <id>Room-106</id>
             <InfoItem name="temperature">
                 <value>18.8</value>
             </InfoItem>
@@ -111,7 +125,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>107</id>
+            <id>Room-107</id>
             <InfoItem name="temperature">
                 <value>20.4</value>
             </InfoItem>
@@ -129,7 +143,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>108</id>
+            <id>Room-108</id>
             <InfoItem name="temperature">
                 <value>19.3</value>
             </InfoItem>
@@ -147,7 +161,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>109</id>
+            <id>Room-109</id>
             <InfoItem name="temperature">
                 <value>24.8</value>
             </InfoItem>
@@ -165,7 +179,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>110</id>
+            <id>Room-110</id>
             <InfoItem name="temperature">
                 <value>20</value>
             </InfoItem>
@@ -183,7 +197,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>111</id>
+            <id>Room-111</id>
             <InfoItem name="temperature">
                 <value>18</value>
             </InfoItem>
@@ -201,7 +215,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>112</id>
+            <id>Room-112</id>
             <InfoItem name="temperature">
                 <value>22.1</value>
             </InfoItem>
@@ -219,7 +233,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>113</id>
+            <id>Room-113</id>
             <InfoItem name="temperature">
                 <value>23.5</value>
             </InfoItem>
@@ -237,7 +251,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>114</id>
+            <id>Room-114</id>
             <InfoItem name="temperature">
                 <value>20.8</value>
             </InfoItem>
@@ -255,7 +269,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>115</id>
+            <id>Room-115</id>
             <InfoItem name="temperature">
                 <value>20.2</value>
             </InfoItem>
@@ -273,7 +287,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>116</id>
+            <id>Room-116</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -291,7 +305,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>117</id>
+            <id>Room-117</id>
             <InfoItem name="temperature">
                 <value>20.2</value>
             </InfoItem>
@@ -309,7 +323,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>118</id>
+            <id>Room-118</id>
             <InfoItem name="temperature">
                 <value>20.7</value>
             </InfoItem>
@@ -327,7 +341,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>119</id>
+            <id>Room-119</id>
             <InfoItem name="temperature">
                 <value>22.3</value>
             </InfoItem>
@@ -345,7 +359,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>120</id>
+            <id>Room-120</id>
             <InfoItem name="temperature">
                 <value>23</value>
             </InfoItem>
@@ -363,7 +377,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>121</id>
+            <id>Room-121</id>
             <InfoItem name="temperature">
                 <value>20</value>
             </InfoItem>
@@ -381,7 +395,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>122</id>
+            <id>Room-122</id>
             <InfoItem name="temperature">
                 <value>19.9</value>
             </InfoItem>
@@ -399,7 +413,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>123</id>
+            <id>Room-123</id>
             <InfoItem name="temperature">
                 <value>21.2</value>
             </InfoItem>
@@ -417,7 +431,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>124</id>
+            <id>Room-124</id>
             <InfoItem name="temperature">
                 <value>22.8</value>
             </InfoItem>
@@ -435,7 +449,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>125</id>
+            <id>Room-125</id>
             <InfoItem name="temperature">
                 <value>21.9</value>
             </InfoItem>
@@ -453,7 +467,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>126</id>
+            <id>Room-126</id>
             <InfoItem name="temperature">
                 <value>19.4</value>
             </InfoItem>
@@ -471,7 +485,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>127</id>
+            <id>Room-127</id>
             <InfoItem name="temperature">
                 <value>20.2</value>
             </InfoItem>
@@ -489,7 +503,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>128</id>
+            <id>Room-128</id>
             <InfoItem name="temperature">
                 <value>25</value>
             </InfoItem>
@@ -507,7 +521,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>129</id>
+            <id>Room-129</id>
             <InfoItem name="temperature">
                 <value>19.1</value>
             </InfoItem>
@@ -525,7 +539,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>130</id>
+            <id>Room-130</id>
             <InfoItem name="temperature">
                 <value>18.8</value>
             </InfoItem>
@@ -543,7 +557,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>131</id>
+            <id>Room-131</id>
             <InfoItem name="temperature">
                 <value>22.4</value>
             </InfoItem>
@@ -561,7 +575,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>132</id>
+            <id>Room-132</id>
             <InfoItem name="temperature">
                 <value>24.7</value>
             </InfoItem>
@@ -579,7 +593,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>133</id>
+            <id>Room-133</id>
             <InfoItem name="temperature">
                 <value>20.1</value>
             </InfoItem>
@@ -597,7 +611,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>134</id>
+            <id>Room-134</id>
             <InfoItem name="temperature">
                 <value>23.3</value>
             </InfoItem>
@@ -615,7 +629,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>135</id>
+            <id>Room-135</id>
             <InfoItem name="temperature">
                 <value>22.7</value>
             </InfoItem>
@@ -633,7 +647,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>136</id>
+            <id>Room-136</id>
             <InfoItem name="temperature">
                 <value>24.6</value>
             </InfoItem>
@@ -651,7 +665,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>137</id>
+            <id>Room-137</id>
             <InfoItem name="temperature">
                 <value>18.4</value>
             </InfoItem>
@@ -669,7 +683,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>138</id>
+            <id>Room-138</id>
             <InfoItem name="temperature">
                 <value>25</value>
             </InfoItem>
@@ -687,7 +701,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>139</id>
+            <id>Room-139</id>
             <InfoItem name="temperature">
                 <value>23.1</value>
             </InfoItem>
@@ -705,7 +719,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>140</id>
+            <id>Room-140</id>
             <InfoItem name="temperature">
                 <value>24.1</value>
             </InfoItem>
@@ -723,7 +737,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>141</id>
+            <id>Room-141</id>
             <InfoItem name="temperature">
                 <value>22</value>
             </InfoItem>
@@ -741,7 +755,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>142</id>
+            <id>Room-142</id>
             <InfoItem name="temperature">
                 <value>19.3</value>
             </InfoItem>
@@ -759,7 +773,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>143</id>
+            <id>Room-143</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -777,7 +791,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>144</id>
+            <id>Room-144</id>
             <InfoItem name="temperature">
                 <value>23.2</value>
             </InfoItem>
@@ -795,7 +809,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>145</id>
+            <id>Room-145</id>
             <InfoItem name="temperature">
                 <value>23.7</value>
             </InfoItem>
@@ -813,7 +827,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>146</id>
+            <id>Room-146</id>
             <InfoItem name="temperature">
                 <value>21.2</value>
             </InfoItem>
@@ -831,7 +845,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>147</id>
+            <id>Room-147</id>
             <InfoItem name="temperature">
                 <value>18.3</value>
             </InfoItem>
@@ -849,7 +863,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>148</id>
+            <id>Room-148</id>
             <InfoItem name="temperature">
                 <value>24.3</value>
             </InfoItem>
@@ -867,7 +881,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>149</id>
+            <id>Room-149</id>
             <InfoItem name="temperature">
                 <value>18.8</value>
             </InfoItem>
@@ -885,7 +899,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>150</id>
+            <id>Room-150</id>
             <InfoItem name="temperature">
                 <value>23.3</value>
             </InfoItem>
@@ -903,7 +917,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>151</id>
+            <id>Room-151</id>
             <InfoItem name="temperature">
                 <value>18.7</value>
             </InfoItem>
@@ -921,7 +935,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>152</id>
+            <id>Room-152</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -939,7 +953,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>153</id>
+            <id>Room-153</id>
             <InfoItem name="temperature">
                 <value>24.2</value>
             </InfoItem>
@@ -957,7 +971,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>154</id>
+            <id>Room-154</id>
             <InfoItem name="temperature">
                 <value>21.3</value>
             </InfoItem>
@@ -975,7 +989,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>155</id>
+            <id>Room-155</id>
             <InfoItem name="temperature">
                 <value>18.4</value>
             </InfoItem>
@@ -993,7 +1007,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>156</id>
+            <id>Room-156</id>
             <InfoItem name="temperature">
                 <value>18.3</value>
             </InfoItem>
@@ -1011,7 +1025,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>157</id>
+            <id>Room-157</id>
             <InfoItem name="temperature">
                 <value>21.6</value>
             </InfoItem>
@@ -1029,7 +1043,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>158</id>
+            <id>Room-158</id>
             <InfoItem name="temperature">
                 <value>23.7</value>
             </InfoItem>
@@ -1047,7 +1061,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>159</id>
+            <id>Room-159</id>
             <InfoItem name="temperature">
                 <value>20.9</value>
             </InfoItem>
@@ -1065,7 +1079,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>160</id>
+            <id>Room-160</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -1083,7 +1097,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>161</id>
+            <id>Room-161</id>
             <InfoItem name="temperature">
                 <value>24.1</value>
             </InfoItem>
@@ -1101,7 +1115,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>162</id>
+            <id>Room-162</id>
             <InfoItem name="temperature">
                 <value>20.1</value>
             </InfoItem>
@@ -1119,7 +1133,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>163</id>
+            <id>Room-163</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -1137,7 +1151,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>164</id>
+            <id>Room-164</id>
             <InfoItem name="temperature">
                 <value>18.9</value>
             </InfoItem>
@@ -1155,7 +1169,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>165</id>
+            <id>Room-165</id>
             <InfoItem name="temperature">
                 <value>21.7</value>
             </InfoItem>
@@ -1173,7 +1187,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>166</id>
+            <id>Room-166</id>
             <InfoItem name="temperature">
                 <value>19.7</value>
             </InfoItem>
@@ -1191,7 +1205,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>167</id>
+            <id>Room-167</id>
             <InfoItem name="temperature">
                 <value>19.5</value>
             </InfoItem>
@@ -1209,7 +1223,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>168</id>
+            <id>Room-168</id>
             <InfoItem name="temperature">
                 <value>24.2</value>
             </InfoItem>
@@ -1227,7 +1241,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>169</id>
+            <id>Room-169</id>
             <InfoItem name="temperature">
                 <value>23.8</value>
             </InfoItem>
@@ -1245,7 +1259,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>170</id>
+            <id>Room-170</id>
             <InfoItem name="temperature">
                 <value>19.2</value>
             </InfoItem>
@@ -1263,7 +1277,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>201</id>
+            <id>Room-201</id>
             <InfoItem name="temperature">
                 <value>19.7</value>
             </InfoItem>
@@ -1281,7 +1295,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>202</id>
+            <id>Room-202</id>
             <InfoItem name="temperature">
                 <value>18.3</value>
             </InfoItem>
@@ -1299,7 +1313,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>203</id>
+            <id>Room-203</id>
             <InfoItem name="temperature">
                 <value>22.5</value>
             </InfoItem>
@@ -1317,7 +1331,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>204</id>
+            <id>Room-204</id>
             <InfoItem name="temperature">
                 <value>18.2</value>
             </InfoItem>
@@ -1335,7 +1349,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>205</id>
+            <id>Room-205</id>
             <InfoItem name="temperature">
                 <value>20</value>
             </InfoItem>
@@ -1353,7 +1367,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>206</id>
+            <id>Room-206</id>
             <InfoItem name="temperature">
                 <value>20.4</value>
             </InfoItem>
@@ -1371,7 +1385,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>207</id>
+            <id>Room-207</id>
             <InfoItem name="temperature">
                 <value>20.3</value>
             </InfoItem>
@@ -1389,7 +1403,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>208</id>
+            <id>Room-208</id>
             <InfoItem name="temperature">
                 <value>20.6</value>
             </InfoItem>
@@ -1407,7 +1421,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>209</id>
+            <id>Room-209</id>
             <InfoItem name="temperature">
                 <value>18.2</value>
             </InfoItem>
@@ -1425,7 +1439,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>210</id>
+            <id>Room-210</id>
             <InfoItem name="temperature">
                 <value>22</value>
             </InfoItem>
@@ -1443,7 +1457,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>211</id>
+            <id>Room-211</id>
             <InfoItem name="temperature">
                 <value>19.7</value>
             </InfoItem>
@@ -1461,7 +1475,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>212</id>
+            <id>Room-212</id>
             <InfoItem name="temperature">
                 <value>21.5</value>
             </InfoItem>
@@ -1479,7 +1493,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>213</id>
+            <id>Room-213</id>
             <InfoItem name="temperature">
                 <value>21.1</value>
             </InfoItem>
@@ -1497,7 +1511,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>214</id>
+            <id>Room-214</id>
             <InfoItem name="temperature">
                 <value>23.9</value>
             </InfoItem>
@@ -1515,7 +1529,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>215</id>
+            <id>Room-215</id>
             <InfoItem name="temperature">
                 <value>22.9</value>
             </InfoItem>
@@ -1533,7 +1547,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>216</id>
+            <id>Room-216</id>
             <InfoItem name="temperature">
                 <value>24.9</value>
             </InfoItem>
@@ -1551,7 +1565,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>217</id>
+            <id>Room-217</id>
             <InfoItem name="temperature">
                 <value>18.4</value>
             </InfoItem>
@@ -1569,7 +1583,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>218</id>
+            <id>Room-218</id>
             <InfoItem name="temperature">
                 <value>24.9</value>
             </InfoItem>
@@ -1587,7 +1601,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>219</id>
+            <id>Room-219</id>
             <InfoItem name="temperature">
                 <value>18.7</value>
             </InfoItem>
@@ -1605,7 +1619,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>220</id>
+            <id>Room-220</id>
             <InfoItem name="temperature">
                 <value>20.8</value>
             </InfoItem>
@@ -1623,7 +1637,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>221</id>
+            <id>Room-221</id>
             <InfoItem name="temperature">
                 <value>24.6</value>
             </InfoItem>
@@ -1641,7 +1655,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>222</id>
+            <id>Room-222</id>
             <InfoItem name="temperature">
                 <value>22.8</value>
             </InfoItem>
@@ -1659,7 +1673,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>223</id>
+            <id>Room-223</id>
             <InfoItem name="temperature">
                 <value>22.6</value>
             </InfoItem>
@@ -1677,7 +1691,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>224</id>
+            <id>Room-224</id>
             <InfoItem name="temperature">
                 <value>24.7</value>
             </InfoItem>
@@ -1695,7 +1709,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>225</id>
+            <id>Room-225</id>
             <InfoItem name="temperature">
                 <value>24.5</value>
             </InfoItem>
@@ -1713,7 +1727,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>226</id>
+            <id>Room-226</id>
             <InfoItem name="temperature">
                 <value>19.1</value>
             </InfoItem>
@@ -1731,7 +1745,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>227</id>
+            <id>Room-227</id>
             <InfoItem name="temperature">
                 <value>18.7</value>
             </InfoItem>
@@ -1749,7 +1763,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>228</id>
+            <id>Room-228</id>
             <InfoItem name="temperature">
                 <value>22.3</value>
             </InfoItem>
@@ -1767,7 +1781,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>229</id>
+            <id>Room-229</id>
             <InfoItem name="temperature">
                 <value>24.6</value>
             </InfoItem>
@@ -1785,7 +1799,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>230</id>
+            <id>Room-230</id>
             <InfoItem name="temperature">
                 <value>19.5</value>
             </InfoItem>
@@ -1803,7 +1817,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>231</id>
+            <id>Room-231</id>
             <InfoItem name="temperature">
                 <value>21.8</value>
             </InfoItem>
@@ -1821,7 +1835,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>232</id>
+            <id>Room-232</id>
             <InfoItem name="temperature">
                 <value>20.2</value>
             </InfoItem>
@@ -1839,7 +1853,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>233</id>
+            <id>Room-233</id>
             <InfoItem name="temperature">
                 <value>24.3</value>
             </InfoItem>
@@ -1857,7 +1871,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>234</id>
+            <id>Room-234</id>
             <InfoItem name="temperature">
                 <value>20.3</value>
             </InfoItem>
@@ -1875,7 +1889,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>235</id>
+            <id>Room-235</id>
             <InfoItem name="temperature">
                 <value>23.8</value>
             </InfoItem>
@@ -1893,7 +1907,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>236</id>
+            <id>Room-236</id>
             <InfoItem name="temperature">
                 <value>21</value>
             </InfoItem>
@@ -1911,7 +1925,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>238</id>
+            <id>Room-238</id>
             <InfoItem name="temperature">
                 <value>22.4</value>
             </InfoItem>
@@ -1929,7 +1943,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>239</id>
+            <id>Room-239</id>
             <InfoItem name="temperature">
                 <value>19</value>
             </InfoItem>
@@ -1947,7 +1961,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>240</id>
+            <id>Room-240</id>
             <InfoItem name="temperature">
                 <value>22.4</value>
             </InfoItem>
@@ -1965,7 +1979,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>241</id>
+            <id>Room-241</id>
             <InfoItem name="temperature">
                 <value>19.9</value>
             </InfoItem>
@@ -1983,7 +1997,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>242</id>
+            <id>Room-242</id>
             <InfoItem name="temperature">
                 <value>19.6</value>
             </InfoItem>
@@ -2001,7 +2015,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>243</id>
+            <id>Room-243</id>
             <InfoItem name="temperature">
                 <value>23.2</value>
             </InfoItem>
@@ -2019,7 +2033,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>244</id>
+            <id>Room-244</id>
             <InfoItem name="temperature">
                 <value>19.9</value>
             </InfoItem>
@@ -2037,7 +2051,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>245</id>
+            <id>Room-245</id>
             <InfoItem name="temperature">
                 <value>18.8</value>
             </InfoItem>
@@ -2055,7 +2069,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>246</id>
+            <id>Room-246</id>
             <InfoItem name="temperature">
                 <value>24.2</value>
             </InfoItem>
@@ -2073,7 +2087,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>247</id>
+            <id>Room-247</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -2091,7 +2105,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>248</id>
+            <id>Room-248</id>
             <InfoItem name="temperature">
                 <value>22.6</value>
             </InfoItem>
@@ -2109,7 +2123,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>249</id>
+            <id>Room-249</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -2127,7 +2141,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>250</id>
+            <id>Room-250</id>
             <InfoItem name="temperature">
                 <value>24.2</value>
             </InfoItem>
@@ -2145,7 +2159,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>251</id>
+            <id>Room-251</id>
             <InfoItem name="temperature">
                 <value>18.6</value>
             </InfoItem>
@@ -2163,7 +2177,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>252</id>
+            <id>Room-252</id>
             <InfoItem name="temperature">
                 <value>19.1</value>
             </InfoItem>
@@ -2181,7 +2195,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>253</id>
+            <id>Room-253</id>
             <InfoItem name="temperature">
                 <value>24.8</value>
             </InfoItem>
@@ -2199,7 +2213,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>254</id>
+            <id>Room-254</id>
             <InfoItem name="temperature">
                 <value>18.6</value>
             </InfoItem>
@@ -2217,7 +2231,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>255</id>
+            <id>Room-255</id>
             <InfoItem name="temperature">
                 <value>20.5</value>
             </InfoItem>
@@ -2235,7 +2249,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>256</id>
+            <id>Room-256</id>
             <InfoItem name="temperature">
                 <value>22.9</value>
             </InfoItem>
@@ -2253,7 +2267,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>257</id>
+            <id>Room-257</id>
             <InfoItem name="temperature">
                 <value>18.4</value>
             </InfoItem>
@@ -2271,7 +2285,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>258</id>
+            <id>Room-258</id>
             <InfoItem name="temperature">
                 <value>20.7</value>
             </InfoItem>
@@ -2289,7 +2303,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>259</id>
+            <id>Room-259</id>
             <InfoItem name="temperature">
                 <value>21.2</value>
             </InfoItem>
@@ -2307,7 +2321,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>260</id>
+            <id>Room-260</id>
             <InfoItem name="temperature">
                 <value>23.9</value>
             </InfoItem>
@@ -2325,7 +2339,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>261</id>
+            <id>Room-261</id>
             <InfoItem name="temperature">
                 <value>19.3</value>
             </InfoItem>
@@ -2343,7 +2357,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>262</id>
+            <id>Room-262</id>
             <InfoItem name="temperature">
                 <value>24.5</value>
             </InfoItem>
@@ -2361,7 +2375,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>263</id>
+            <id>Room-263</id>
             <InfoItem name="temperature">
                 <value>19.8</value>
             </InfoItem>
@@ -2379,7 +2393,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>264</id>
+            <id>Room-264</id>
             <InfoItem name="temperature">
                 <value>18.7</value>
             </InfoItem>
@@ -2397,7 +2411,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>265</id>
+            <id>Room-265</id>
             <InfoItem name="temperature">
                 <value>21.2</value>
             </InfoItem>
@@ -2415,7 +2429,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>266</id>
+            <id>Room-266</id>
             <InfoItem name="temperature">
                 <value>21</value>
             </InfoItem>
@@ -2433,7 +2447,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>267</id>
+            <id>Room-267</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -2451,7 +2465,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>268</id>
+            <id>Room-268</id>
             <InfoItem name="temperature">
                 <value>24.4</value>
             </InfoItem>
@@ -2469,7 +2483,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>269</id>
+            <id>Room-269</id>
             <InfoItem name="temperature">
                 <value>24.6</value>
             </InfoItem>
@@ -2487,7 +2501,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>270</id>
+            <id>Room-270</id>
             <InfoItem name="temperature">
                 <value>18.8</value>
             </InfoItem>
@@ -2505,7 +2519,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>301</id>
+            <id>Room-301</id>
             <InfoItem name="temperature">
                 <value>24.2</value>
             </InfoItem>
@@ -2523,7 +2537,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>302</id>
+            <id>Room-302</id>
             <InfoItem name="temperature">
                 <value>18.5</value>
             </InfoItem>
@@ -2541,7 +2555,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>303</id>
+            <id>Room-303</id>
             <InfoItem name="temperature">
                 <value>23.7</value>
             </InfoItem>
@@ -2559,7 +2573,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>304</id>
+            <id>Room-304</id>
             <InfoItem name="temperature">
                 <value>18.6</value>
             </InfoItem>
@@ -2577,7 +2591,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>305</id>
+            <id>Room-305</id>
             <InfoItem name="temperature">
                 <value>20.8</value>
             </InfoItem>
@@ -2595,7 +2609,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>306</id>
+            <id>Room-306</id>
             <InfoItem name="temperature">
                 <value>23.6</value>
             </InfoItem>
@@ -2613,7 +2627,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>307</id>
+            <id>Room-307</id>
             <InfoItem name="temperature">
                 <value>19.1</value>
             </InfoItem>
@@ -2631,7 +2645,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>308</id>
+            <id>Room-308</id>
             <InfoItem name="temperature">
                 <value>19.1</value>
             </InfoItem>
@@ -2649,7 +2663,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>309</id>
+            <id>Room-309</id>
             <InfoItem name="temperature">
                 <value>22</value>
             </InfoItem>
@@ -2667,7 +2681,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>310</id>
+            <id>Room-310</id>
             <InfoItem name="temperature">
                 <value>18.2</value>
             </InfoItem>
@@ -2685,7 +2699,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>311</id>
+            <id>Room-311</id>
             <InfoItem name="temperature">
                 <value>18.8</value>
             </InfoItem>
@@ -2703,7 +2717,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>312</id>
+            <id>Room-312</id>
             <InfoItem name="temperature">
                 <value>20.2</value>
             </InfoItem>
@@ -2721,7 +2735,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>313</id>
+            <id>Room-313</id>
             <InfoItem name="temperature">
                 <value>19.3</value>
             </InfoItem>
@@ -2739,7 +2753,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>314</id>
+            <id>Room-314</id>
             <InfoItem name="temperature">
                 <value>20.9</value>
             </InfoItem>
@@ -2757,7 +2771,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>315</id>
+            <id>Room-315</id>
             <InfoItem name="temperature">
                 <value>24.4</value>
             </InfoItem>
@@ -2775,7 +2789,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>316</id>
+            <id>Room-316</id>
             <InfoItem name="temperature">
                 <value>24</value>
             </InfoItem>
@@ -2793,7 +2807,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>317</id>
+            <id>Room-317</id>
             <InfoItem name="temperature">
                 <value>18.1</value>
             </InfoItem>
@@ -2811,7 +2825,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>318</id>
+            <id>Room-318</id>
             <InfoItem name="temperature">
                 <value>20.6</value>
             </InfoItem>
@@ -2829,7 +2843,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>319</id>
+            <id>Room-319</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -2847,7 +2861,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>320</id>
+            <id>Room-320</id>
             <InfoItem name="temperature">
                 <value>21.5</value>
             </InfoItem>
@@ -2865,7 +2879,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>321</id>
+            <id>Room-321</id>
             <InfoItem name="temperature">
                 <value>19.3</value>
             </InfoItem>
@@ -2883,7 +2897,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>322</id>
+            <id>Room-322</id>
             <InfoItem name="temperature">
                 <value>22.6</value>
             </InfoItem>
@@ -2901,7 +2915,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>323</id>
+            <id>Room-323</id>
             <InfoItem name="temperature">
                 <value>19.7</value>
             </InfoItem>
@@ -2919,7 +2933,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>324</id>
+            <id>Room-324</id>
             <InfoItem name="temperature">
                 <value>22.9</value>
             </InfoItem>
@@ -2937,7 +2951,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>325</id>
+            <id>Room-325</id>
             <InfoItem name="temperature">
                 <value>23.6</value>
             </InfoItem>
@@ -2955,7 +2969,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>326</id>
+            <id>Room-326</id>
             <InfoItem name="temperature">
                 <value>24.8</value>
             </InfoItem>
@@ -2973,7 +2987,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>327</id>
+            <id>Room-327</id>
             <InfoItem name="temperature">
                 <value>21</value>
             </InfoItem>
@@ -2991,7 +3005,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>328</id>
+            <id>Room-328</id>
             <InfoItem name="temperature">
                 <value>20.8</value>
             </InfoItem>
@@ -3009,7 +3023,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>329</id>
+            <id>Room-329</id>
             <InfoItem name="temperature">
                 <value>18.3</value>
             </InfoItem>
@@ -3027,7 +3041,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>330</id>
+            <id>Room-330</id>
             <InfoItem name="temperature">
                 <value>21.7</value>
             </InfoItem>
@@ -3045,7 +3059,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>331</id>
+            <id>Room-331</id>
             <InfoItem name="temperature">
                 <value>18</value>
             </InfoItem>
@@ -3063,7 +3077,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>332</id>
+            <id>Room-332</id>
             <InfoItem name="temperature">
                 <value>22.7</value>
             </InfoItem>
@@ -3081,7 +3095,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>333</id>
+            <id>Room-333</id>
             <InfoItem name="temperature">
                 <value>22.4</value>
             </InfoItem>
@@ -3099,7 +3113,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>334</id>
+            <id>Room-334</id>
             <InfoItem name="temperature">
                 <value>23.8</value>
             </InfoItem>
@@ -3117,7 +3131,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>335</id>
+            <id>Room-335</id>
             <InfoItem name="temperature">
                 <value>24.1</value>
             </InfoItem>
@@ -3135,7 +3149,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>336</id>
+            <id>Room-336</id>
             <InfoItem name="temperature">
                 <value>21.2</value>
             </InfoItem>
@@ -3153,7 +3167,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>337</id>
+            <id>Room-337</id>
             <InfoItem name="temperature">
                 <value>22</value>
             </InfoItem>
@@ -3171,7 +3185,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>338</id>
+            <id>Room-338</id>
             <InfoItem name="temperature">
                 <value>24.2</value>
             </InfoItem>
@@ -3189,7 +3203,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>339</id>
+            <id>Room-339</id>
             <InfoItem name="temperature">
                 <value>18.7</value>
             </InfoItem>
@@ -3207,7 +3221,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>340</id>
+            <id>Room-340</id>
             <InfoItem name="temperature">
                 <value>18.5</value>
             </InfoItem>
@@ -3225,7 +3239,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>341</id>
+            <id>Room-341</id>
             <InfoItem name="temperature">
                 <value>22.8</value>
             </InfoItem>
@@ -3243,7 +3257,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>342</id>
+            <id>Room-342</id>
             <InfoItem name="temperature">
                 <value>20.4</value>
             </InfoItem>
@@ -3261,7 +3275,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>343</id>
+            <id>Room-343</id>
             <InfoItem name="temperature">
                 <value>19.7</value>
             </InfoItem>
@@ -3279,7 +3293,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>344</id>
+            <id>Room-344</id>
             <InfoItem name="temperature">
                 <value>19.2</value>
             </InfoItem>
@@ -3297,7 +3311,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>345</id>
+            <id>Room-345</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -3315,7 +3329,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>346</id>
+            <id>Room-346</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -3333,7 +3347,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>347</id>
+            <id>Room-347</id>
             <InfoItem name="temperature">
                 <value>23.9</value>
             </InfoItem>
@@ -3351,7 +3365,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>348</id>
+            <id>Room-348</id>
             <InfoItem name="temperature">
                 <value>21.5</value>
             </InfoItem>
@@ -3369,7 +3383,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>349</id>
+            <id>Room-349</id>
             <InfoItem name="temperature">
                 <value>19</value>
             </InfoItem>
@@ -3387,7 +3401,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>350</id>
+            <id>Room-350</id>
             <InfoItem name="temperature">
                 <value>21.9</value>
             </InfoItem>
@@ -3405,7 +3419,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>351</id>
+            <id>Room-351</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -3423,7 +3437,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>352</id>
+            <id>Room-352</id>
             <InfoItem name="temperature">
                 <value>20.3</value>
             </InfoItem>
@@ -3441,7 +3455,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>353</id>
+            <id>Room-353</id>
             <InfoItem name="temperature">
                 <value>19.9</value>
             </InfoItem>
@@ -3459,7 +3473,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>354</id>
+            <id>Room-354</id>
             <InfoItem name="temperature">
                 <value>24</value>
             </InfoItem>
@@ -3477,7 +3491,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>355</id>
+            <id>Room-355</id>
             <InfoItem name="temperature">
                 <value>22.2</value>
             </InfoItem>
@@ -3495,7 +3509,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>356</id>
+            <id>Room-356</id>
             <InfoItem name="temperature">
                 <value>24.8</value>
             </InfoItem>
@@ -3513,7 +3527,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>357</id>
+            <id>Room-357</id>
             <InfoItem name="temperature">
                 <value>22.9</value>
             </InfoItem>
@@ -3531,7 +3545,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>358</id>
+            <id>Room-358</id>
             <InfoItem name="temperature">
                 <value>18.3</value>
             </InfoItem>
@@ -3549,7 +3563,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>359</id>
+            <id>Room-359</id>
             <InfoItem name="temperature">
                 <value>19.5</value>
             </InfoItem>
@@ -3567,7 +3581,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>360</id>
+            <id>Room-360</id>
             <InfoItem name="temperature">
                 <value>24.3</value>
             </InfoItem>
@@ -3585,7 +3599,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>361</id>
+            <id>Room-361</id>
             <InfoItem name="temperature">
                 <value>21</value>
             </InfoItem>
@@ -3603,7 +3617,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>362</id>
+            <id>Room-362</id>
             <InfoItem name="temperature">
                 <value>21.4</value>
             </InfoItem>
@@ -3621,7 +3635,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>363</id>
+            <id>Room-363</id>
             <InfoItem name="temperature">
                 <value>20.9</value>
             </InfoItem>
@@ -3639,7 +3653,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>364</id>
+            <id>Room-364</id>
             <InfoItem name="temperature">
                 <value>22.4</value>
             </InfoItem>
@@ -3657,7 +3671,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>365</id>
+            <id>Room-365</id>
             <InfoItem name="temperature">
                 <value>23.6</value>
             </InfoItem>
@@ -3675,7 +3689,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>366</id>
+            <id>Room-366</id>
             <InfoItem name="temperature">
                 <value>20.9</value>
             </InfoItem>
@@ -3693,7 +3707,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>367</id>
+            <id>Room-367</id>
             <InfoItem name="temperature">
                 <value>20.5</value>
             </InfoItem>
@@ -3711,7 +3725,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>368</id>
+            <id>Room-368</id>
             <InfoItem name="temperature">
                 <value>23.7</value>
             </InfoItem>
@@ -3729,7 +3743,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>369</id>
+            <id>Room-369</id>
             <InfoItem name="temperature">
                 <value>23.4</value>
             </InfoItem>
@@ -3747,7 +3761,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>370</id>
+            <id>Room-370</id>
             <InfoItem name="temperature">
                 <value>19.6</value>
             </InfoItem>
@@ -3891,7 +3905,7 @@
             </InfoItem>
         </Object>
         <Object>
-            <id>237c</id>
+            <id>Room-237c</id>
             <InfoItem name="temperature">
                 <value>18.1</value>
             </InfoItem>

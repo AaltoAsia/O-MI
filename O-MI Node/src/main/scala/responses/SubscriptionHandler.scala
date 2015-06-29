@@ -211,8 +211,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
                   val addr = subscription.callback 
                   if (addr == None) return
 
-                  val xmlMsg = requestHandler.handleSubData(SubDataRequest(subscription))._1//Returns tuple, second is return status
-                  sendCallback(addr.get.toString, xmlMsg)
+                  val xmlMsg = requestHandler.handleRequest(SubDataRequest(subscription))
 
                 }
               }
@@ -264,31 +263,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
 
         log.debug(s"generateOmi for subId:${sub.id}")
-        val xmlMsg = requestHandler.handleSubData(SubDataRequest(sub))._1//Returns tuple, second is return status
-        val interval = sub.interval
-        val callbackAddr = sub.callback.get // should always be defined
-        log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
-
-        def failed(reason: String) =
-          log.warning(
-            s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
-
-
-        sendCallback(callbackAddr, xmlMsg) onComplete {
-            case Success(CallbackSuccess) =>
-              log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
-
-            case Success(fail: CallbackFailure) =>
-              failed(fail.toString)
-
-            case Failure(e) =>
-              failed(e.getMessage)
-          }
-        /*Try etc. {}.onFailure {
-          case err: Throwable =>
-            log.error(s"Error in callback handling of sub $id: ${err.getStackTrace.mkString("\n")}")
-        }
-        */
+        requestHandler.handleRequest(SubDataRequest(sub))//Returns tuple, second is return status
       }
     }
 

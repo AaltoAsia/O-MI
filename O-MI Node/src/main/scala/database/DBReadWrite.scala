@@ -173,46 +173,82 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
    def setMany(data: List[(Path, OdfValue)]): Unit = {
      
-    val pathsData = data.groupBy(_._1).mapValues(v =>v.map(_._2))
+    val pathsData: Map[Path, Seq[OdfValue]] =
+      data.groupBy(_._1).mapValues(v => v.map(_._2))
 
-    val addObjectsAction = DBIO.sequence(pathsData.keys.map(addObjectsI(_,true)))
-    
-    val idQry = getHierarchyNodesQ(pathsData.keys.toSeq).map { hNode =>
-      (hNode.path, (hNode.id, hNode.pollRefCount === 0)) 
+    val writeAction = for {
+      addObjectsAction <- DBIO.sequence(
+        pathsData.keys map ( addObjectsI(_, lastIsInfoItem=true) )
+      )
+      
+      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode =>
+        (hNode.path, (hNode.id, hNode.pollRefCount === 0)) 
       } result
-    
-    val updateAction = addObjectsAction flatMap {unit =>
-      idQry flatMap { qResult => 
-        
-        val idMap = qResult.toMap
-        val pathsToIds = pathsData.map(n => (idMap(n._1)._1,n._2))
-        val dbValues = pathsToIds.flatMap{
-          
-          case (key,value) =>value.map(odfVal =>{
-            DBValue(
-                key, 
-                //create new timestamp if option is None
-                odfVal.timestamp.fold(new Timestamp(new java.util.Date().getTime))( ts => ts), 
-                odfVal.value, 
-                odfVal.typeValue
-                )  
-          })
-        }
-        val addDataAction = latestValues ++= dbValues
-        addDataAction.flatMap { x => 
-          val remSeq = idMap.filter(n=> n._2._2).map(n=> n._2._1)
-          DBIO.sequence(remSeq.map(removeExcessI(_)))
+      
+      idMap = idQry.toMap : Map[Path, (Int, Boolean)]
+
+      pathsToIds = pathsData map {
+        case (path, odfValues) => (idMap(path)._1, odfValues)
+      }
+
+      dbValues = pathsToIds flatMap {
+        case (id, odfValues) => odfValues map { odfVal =>
+          DBValue(
+              id, 
+              //create new timestamp if option is None
+              odfVal.timestamp.getOrElse{
+                new Timestamp(new java.util.Date().getTime)
+              }, 
+              odfVal.value, 
+              odfVal.typeValue
+          )  
         }
       }
-    }
+      updateAction <- latestValues ++= dbValues
 
-    runSync(updateAction.transactionally)
+      remSeq = idMap.filter{
+        case (_, (_, zeroPollRefs)) => zeroPollRefs
+      }.map{
+        case (_, (nodeId, _)) => nodeId
+      }
+
+      removeAction <- DBIO.sequence(
+        remSeq.map(removeExcessI(_))
+      )
+    } yield ()
+
+    runSync(writeAction.transactionally)
+
     //Call hooks
     database.getSetHooks foreach {_(pathsData.keys.toSeq)}
-
   } 
 
+  def setDescription(hasPath: HasPath) : Unit  = {
 
+    val path = hasPath.path
+    val description = if(hasPath.description.nonEmpty) 
+      hasPath.description.get.value
+    else 
+      throw new RuntimeException("Tried to set unexisting description.")
+
+    val updateAction = for {
+      _ <- hasPath match {
+        case objs : OdfObjects => addObjectsI(path, lastIsInfoItem=false) 
+        case obj : OdfObject => addObjectsI(path,  lastIsInfoItem=false) 
+        case info : OdfInfoItem => addObjectsI(path,  lastIsInfoItem=true) 
+      }
+
+      nodeO <- getHierarchyNodeI(path)
+      
+      result <- nodeO match {
+        case Some(hNode) => 
+          hierarchyNodes.filter( _.id === hNode.id).update(DBNode(hNode.id,hNode.path, hNode.leftBoundary, hNode.rightBoundary, hNode.depth, description, hNode.pollRefCount, hNode.isInfoItem))
+        case _ =>
+          throw new RuntimeException("Tried to set description on unknown object.")
+      }
+    } yield result
+    runSync(updateAction.transactionally)
+  }
   /**
    * Used to store metadata for a sensor to database
    * @param path path to sensor
@@ -222,6 +258,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def setMetaData(path: Path, data: String): Unit = {
 
     val updateAction = for {
+      _ <- addObjectsI(path, lastIsInfoItem=true)  // Only InfoItems can have MetaData in O-DF v1.0
+
       nodeO <- getHierarchyNodeI(path)
       
       result <- nodeO match {
@@ -299,20 +337,31 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   private def removeExcessI(pathId: Int): DBIO[Int] = {
-    val pathQuery = latestValues.filter(_.hierarchyId === pathId).sortBy(_.timestamp.asc)//getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
+    val pathQuery = 
+      latestValues filter (_.hierarchyId === pathId) sortBy (_.timestamp.asc)
+
     val historyLen = database.historyLength
-    val qry = pathQuery.result
-    val qLenI = pathQuery.length.result
-    qLenI.flatMap { qLen => 
-    if(qLen>historyLen){
-      qry.flatMap { sortedVals =>
-        val oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
-        latestValues.filter(value => value.hierarchyId === pathId && value.timestamp < oldTime).delete
-        }
-    } else 
-        DBIO.successful(0)
-    }
-    }
+
+    val removeAction = for {
+      queryLen <- pathQuery.length.result
+
+      removeCount <-
+        if(queryLen > historyLen) for {
+
+          sortedVals <- pathQuery.result
+          oldTime = sortedVals.drop(queryLen - historyLen).head.timestamp
+
+          result <- latestValues.filter( value =>
+            value.hierarchyId === pathId && value.timestamp < oldTime
+          ).delete
+
+          } yield result
+        else DBIO.successful(0)
+
+    } yield removeCount
+
+    removeAction.transactionally
+  }
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
