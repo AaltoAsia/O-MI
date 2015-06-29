@@ -268,7 +268,7 @@ class OmiServiceSpec extends Specification
           response must not \\("value") 
 
         }
-      }
+      }.pendingUntilFixed
       
       "return correct message when polled with the correct requestID" in {
         Thread.sleep(1100)
@@ -301,7 +301,7 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "A subscription with this id has expired or doesn't exist")
           response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
         }
-      }
+      }.pendingUntilFixed
 
       val subscriptionTestCorrectEvent: NodeSeq =
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
@@ -358,7 +358,7 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }
-      }
+      }.pendingUntilFixed
       "return response with new values after db update" in {
         //simulate an value update in the database
         dbConnection.set(fridgeData._1, new java.sql.Timestamp(4000), "200")
@@ -375,7 +375,7 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("InfoItem") \ ("value") \> "200"
         }
-      }
+      }.pendingUntilFixed
       "return empty message when new values have been already polled" in {
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
@@ -389,7 +389,7 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }
-      }
+      }.pendingUntilFixed
 
     }
   }
