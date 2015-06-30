@@ -1,6 +1,6 @@
 import com.github.retronym.SbtOneJar
 
-val scalaBuildVersion = "2.11.4"
+val scalaBuildVersion = "2.11.7"
 
 //lazy val root = (project in file(".")).
 name := "O-MI-Node"
