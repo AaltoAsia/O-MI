@@ -363,16 +363,17 @@ class SQLiteTest extends Specification with AfterAll {
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 3000), "21.7C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.8C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.9C")
-      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
+      val sub  = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
-      val res = db.getPollData(id.id, new Timestamp(timeNow))
-      db.removeSub(id)
+      val res = db.getPollData(sub.id, new Timestamp(timeNow))
+      db.removeSub(sub.id)
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
       db.remove(Path("/Objects/path/to/sensor3/temp"))
 //      println(OdfObjectsToPaths(res.get))
 //      println("\\")
 //      println(OdfObjectsToValues(res.get))
+      println(sub.interval)
       res must beSome.which(OdfObjectsToValues(_) must have size (9))
     }
 

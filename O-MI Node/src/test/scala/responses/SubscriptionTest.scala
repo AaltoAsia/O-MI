@@ -372,7 +372,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
-    }
+    }.pendingUntilFixed
     "Subscriptions should be removed from database when their ttl expires" in {
       val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
       val parserlist = OmiParser.parse(simpletestfile)

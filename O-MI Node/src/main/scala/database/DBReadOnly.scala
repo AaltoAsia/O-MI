@@ -170,7 +170,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         if ( sub.isEventBased )
           handleEventPoll(sub, lastValues, seqVals)
         else  // Normal poll
-          getByIntervalBetween(seqVals, sub.startTime, newTime, sub.interval.toLong )
+          getByIntervalBetween(seqVals, sub.startTime, newTime, (sub.interval * 1000).toLong )
       }
 
       // Update SubItems lastValues

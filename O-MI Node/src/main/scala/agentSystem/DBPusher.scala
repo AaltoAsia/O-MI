@@ -36,6 +36,9 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
     val data = getLeafs(objects)
     handleInfoItems( data.collect{ case infoitem : OdfInfoItem => infoitem } )
     log.debug("Successfully saved Odfs to DB")
+    val hasPaths = getHasPaths(objects.objects.toSeq).toSet
+    val des = hasPaths.collect{ case hPath if hPath.description.nonEmpty => hPath }.toIterable
+    des.foreach{ hpath => dbobject.setDescription(hpath)}
   }
   /** Function for handling sequences of OdfObject.
     *
@@ -57,6 +60,10 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
       (info.path, info.metaData.get.data) 
     }
     if(meta.nonEmpty) handlePathMetaDataPairs(meta)
+    val des = infoitems.collect{ case info if info.description.nonEmpty => 
+      info
+    }
+    des.foreach{ info => dbobject.setDescription(info) }
   } 
   
   /** Function for handling sequences of path and value pairs.
