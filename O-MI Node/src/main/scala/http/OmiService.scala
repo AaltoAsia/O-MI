@@ -131,6 +131,7 @@ trait OmiService extends HttpService with CORSSupport {
                   if(ip.toOption.nonEmpty && hasPermission(ip.toOption.get))
                     requestHandler.handleRequest(pRequest)
                   else
+                    log.warning(s"Unauthorized: ${ip.toOption} tried to use ${pRequest.toString.take(80)}...")
                     (requestHandler.unauthorized, 401)
 
                 case req : OmiRequest => 
