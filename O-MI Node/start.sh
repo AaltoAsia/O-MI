@@ -27,7 +27,7 @@ fi
 
 
 echo Starting...
-echo java -jar -Dconfig.file=application.conf o-mi-node-*.jar >> "log-startedon-`date -I`" &
+java -jar -Dconfig.file=application.conf o-mi-node-*.jar >> "log-startedon-`date -I`" &
 javapid=$!
 echo Started pid $javapid.
 
