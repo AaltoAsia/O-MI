@@ -51,12 +51,16 @@ libraryDependencies ++= Seq(
 "com.h2database" % "h2" % "1.4.187"
 )
 
+//html5parser for systemtest
+libraryDependencies += "nu.validator.htmlparser" % "htmlparser" % "1.4"
+
 //remove database files
 cleanFiles <++= baseDirectory {_ * "*.db" get}
 
 oneJarSettings
 
 Revolver.settings
+
 
 // Eclipse
 EclipseKeys.withSource := true
