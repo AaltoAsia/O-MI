@@ -37,7 +37,7 @@ sequential
   val testArticles = sourceXML \\ ("article")
   val tests = testArticles.groupBy( x => x.\@("class") )
   
-  val readTests = tests("readtest").map { node => 
+  val readTests = tests("request-response test").map { node => 
     val textAreas = node \\ ("textarea")
     val request = Try(textAreas.find(x=> x.\@("class") == "request").map(_.text).map(XML.loadString(_))).toOption.flatten
     val correctResponse = Try(textAreas.find(x => x.\@("class") == "response").map(_.text).map(XML.loadString(_))).toOption.flatten
@@ -52,7 +52,7 @@ sequential
   "Automatic System Tests" should {
     "WriteTest" >> {
       //Only 1 write test
-      val testCase = tests("writetest").head \\ ("textarea")
+      val testCase = tests("write test").head \\ ("textarea")
       //val testCase = testArticles.filter(a => a.\@("class") == "write test" ).head \\ ("textarea") //sourceXML \\ ("write test")
       val request: Option[Elem] = Try(testCase.find(x=> x.\@("class") == "request").map(_.text).map(XML.loadString(_))).toOption.flatten
       val correctResponse: Option[Elem] = Try(testCase.find(x => x.\@("class") == "response").map(_.text).map(XML.loadString(_))).toOption.flatten
@@ -65,7 +65,10 @@ sequential
       response must beEqualToIgnoringSpace(correctResponse.get).await(2, scala.concurrent.duration.Duration.apply(2, "second"))
     }
     
-    step({Thread.sleep(2000)})
+    step({
+      Thread.sleep(2000);
+//      val temp = dbConnection.get(types.Path("Objects/Object1")).map(types.OdfTypes.fromPath(_))
+      })
     
     readTests foreach { i=>
       val(request, correctResponse, testDescription) = i

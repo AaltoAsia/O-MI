@@ -52,7 +52,7 @@
 	    </textarea>
 	</article>
 	<h1> Write request </h1>
-	<article class="writetest"> 
+	<article class="write test"> 
 	    <h2> Normal </h2>
 	    <div><p class="description">
 		This is normal write request, writes all data to data for test.
@@ -130,7 +130,7 @@
 	    </div>
 	</article>
 	<h1> Read request </h1>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Normal </h2>
 	    <div><p class="description">
 		This is normal read request without any extra arguments
@@ -188,7 +188,7 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Subtree </h2>
 	    <div><p class="description">
 		This is normal read request without any extra arguments, but now only Object1's subtree is wanted.
@@ -243,7 +243,7 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Objects </h2>
 	    <div><p class="description">
 		This is normal read request without any extra arguments, but now whole tree is wanted.
@@ -253,7 +253,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-    <omi:read msgformat="odf">
+    <omi:read msgformat="odf" newest="20">
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 	    </Objects>
@@ -295,7 +295,7 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Not existing </h2>
 	    <div><p class="description">
 		This is normal read request without any extra arguments, now O-DF includes not existing elements. 
@@ -361,7 +361,7 @@
 		</textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Getting MetaData </h2>
 	    <div><p class="description">
 		This is normal read request without any extra arguments, now MetaData is wanted from Objects/Object1/Sensor1
@@ -426,7 +426,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Newest </h2>
 	    <div><p class="description">
 		User wants 3 newest values. 
@@ -493,7 +493,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Oldest </h2>
 	    <div><p class="description">
 		User wants 3 oldest values. 
@@ -560,7 +560,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Closed timeframe </h2>
 	    <div><p class="description">
 		User wants values between 01-01-1970T00:00:03 and 00:00:06. 
@@ -630,7 +630,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Open timeframe, begin </h2>
 	    <div><p class="description">
 		User wants values after 01-01-1970T00:00:03 
@@ -705,7 +705,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Open timeframe, end  </h2>
 	    <div><p class="description">
 		User wants values before 01-01-1970T00:00:06. 
@@ -780,7 +780,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Closed timeframe with newest  </h2>
 	    <div><p class="description">
 		User wants two newest values between 01-01-1970T00:00:003 and 00:00:06. 
@@ -847,7 +847,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Closed timeframe with oldest  </h2>
 	    <div > <p class="description">
 		User wants two oldest values between 01-01-1970T00:00:003 and 00:00:06.
@@ -914,7 +914,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Callback  </h2>
 	    <div > <p class="description">
 		 User wants to node send response for actual request to another address.
@@ -958,7 +958,7 @@
 		    </textarea>
 	    </div>
 	</article>
-	<article class="readtest"> 
+	<article class="request-response test"> 
 	    <h2> Newest and Oldest  </h2>
 	    <div > <p class="description">
 		User has gone mad and wants two newest and two oldest values for same time
