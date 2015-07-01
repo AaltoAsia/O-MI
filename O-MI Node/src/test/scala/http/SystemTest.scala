@@ -12,7 +12,7 @@ import scala.util.Try
 import parsing._
 import testHelpers.HTML5Parser
 import database._
-import testHelpers.AfterAll
+import testHelpers.{BeEqualFormatted, AfterAll}
 import responses.{ SubscriptionHandler, RequestHandler }
 import agentSystem.ExternalAgentListener
 import scala.concurrent.duration._
@@ -20,28 +20,21 @@ import akka.util.Timeout
 import akka.io.{ IO, Tcp }
 import akka.pattern.ask
 import java.net.InetSocketAddress
-import org.specs2.matcher._
 
-class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
-  val printer = new scala.xml.PrettyPrinter(80, 2)
-  override def apply[S <: Seq[Node]](n: Expectable[S]) = {
-    super.apply(n).updateMessage { x => n.description + "\nis not equal to correct:\n" + printer.format(node.head) }
 
-  }
-}
+//class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
+//  val printer = new scala.xml.PrettyPrinter(80, 2)
+//  override def apply[S <: Seq[Node]](n: Expectable[S]) = {
+//    super.apply(n).updateMessage { x => n.description + "\nis not equal to correct:\n" + printer.format(node.head) }
+//
+//  }
+//}
 
 class SystemTest extends Specification with Starter with AfterAll {
 
   override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
-
-    // create and start sensor data listener
-    // TODO: Maybe refactor to an internal agent!
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
-
-    //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
-
-    // create omi service actor
     val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
@@ -50,8 +43,8 @@ class SystemTest extends Specification with Starter with AfterAll {
 
     return omiService
   }
+  
   sequential
-  //  implicit val system = ActorSystem()
   import system.dispatcher
 
   //start the program
@@ -73,56 +66,72 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   val readTests = tests("request-response test").map { node =>
     val textAreas = node \\ ("textarea")
-    val request = Try(textAreas.find(x => x.\@("class") == "request").map(_.text).map(XML.loadString(_))).toOption.flatten
-    val correctResponse = Try(textAreas.find(x => x.\@("class") == "response").map(_.text).map(XML.loadString(_))).toOption.flatten
+    require(textAreas.length == 2)
+    val request: Try[Elem] = getSingleRequest(textAreas)
+    val correctResponse: Try[Elem] = getSingleResponse(textAreas)
     val testDescription = node \ ("div") \ ("p") text
 
     (request, correctResponse, testDescription)
   }
+  
+  
 //  dbConnection.remove(types.Path("Objects/OMI-service"))
   def afterAll = {
     system.shutdown()
     dbConnection.destroy()
   }
+  
+  def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
+    require(reqresp.length >= 1)
+    Try(XML.loadString(reqresp.head.text))
+  }
+  
+  def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
+    Try(XML.loadString(reqresp.last.text))
+  }
+  
   "Automatic System Tests" should {
     "WriteTest" >> {
       dbConnection.clearDB()
       //Only 1 write test
-      val testCase = tests("write test").head \\ ("textarea")
-      //val testCase = testArticles.filter(a => a.\@("class") == "write test" ).head \\ ("textarea") //sourceXML \\ ("write test")
-      val request: Option[Elem] = Try(testCase.find(x => x.\@("class") == "request").map(_.text).map(XML.loadString(_))).toOption.flatten
-      val correctResponse: Option[Elem] = Try(testCase.find(x => x.\@("class") == "response").map(_.text).map(XML.loadString(_))).toOption.flatten
-
-      request aka "Write request message" must beSome
-      correctResponse aka "Correct write response message" must beSome
+      val writearticle = tests("write test").head
+      val testCase = writearticle \\ ("textarea")
+      val request: Try[Elem] = getSingleRequest(testCase)
+      val correctResponse: Try[Elem] = getSingleRequest(testCase)
+      val testDescription = writearticle \ ("div") \ ("p") text
+      
+      ("test case:\n "  + testDescription.trim + "\n") >> {
+      request aka "Write request message" must beSuccessfulTry
+      correctResponse aka "Correct write response message" must beSuccessfulTry
 
       val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
       val response = Try(Await.result(responseFuture, scala.concurrent.duration.Duration.apply(2, "second")))
 
       response must beSuccessfulTry
 
-      response.get showAs (n => "Request Message:\n" + printer.format(request.head) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get) //.await(2, scala.concurrent.duration.Duration.apply(2, "second"))
-    }
+      response.get showAs (n => 
+        "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+    }}
 
     step({
       //let the database write the data
       Thread.sleep(2000);
-      //      val temp = dbConnection.get(types.Path("Objects/Object1")).map(types.OdfTypes.fromPath(_))
     })
 
     readTests foreach { i =>
       val (request, correctResponse, testDescription) = i
-      ("test Case:\n" + testDescription.trim + "\n" /*+ Try(printer.format(request.head)).getOrElse("head of an empty list")  */ ) >> {
+      ("test case:\n" + testDescription.trim + "\n" /*+ Try(printer.format(request.head)).getOrElse("head of an empty list")  */ ) >> {
 
-        request aka "Read request message" must beSome
-        correctResponse aka "Correct read response message" must beSome
+        request aka "Read request message" must beSuccessfulTry
+        correctResponse aka "Correct read response message" must beSuccessfulTry
 
         val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
         val response = Try(Await.result(responseFuture, scala.concurrent.duration.Duration.apply(2, "second")))
 
         response must beSuccessfulTry
         //                                                                          prettyprinter only returns string :/
-        response.get showAs (n => "Request Message:\n" + printer.format(request.head) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+        response.get showAs (n => 
+          "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
 
       }
 

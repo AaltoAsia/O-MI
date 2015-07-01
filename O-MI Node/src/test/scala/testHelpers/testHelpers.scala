@@ -71,3 +71,11 @@ class HTML5Parser extends NoBindingFactoryAdapter{
     rootElem
   }
 }
+import org.specs2.matcher._
+class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
+  val printer = new scala.xml.PrettyPrinter(80, 2)
+  override def apply[S <: Seq[Node]](n: Expectable[S]) = {
+    super.apply(n).updateMessage { x => n.description + "\nis not equal to correct:\n" + printer.format(node.head) }
+
+  }
+}
