@@ -56,7 +56,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
-  //dbConnection.clearDB()
+  
   init(dbConnection)
   val serviceActor = start(dbConnection)
   bindHttp(serviceActor)
@@ -79,13 +79,14 @@ class SystemTest extends Specification with Starter with AfterAll {
 
     (request, correctResponse, testDescription)
   }
-  dbConnection.remove(types.Path("Objects/OMI-service"))
+//  dbConnection.remove(types.Path("Objects/OMI-service"))
   def afterAll = {
     system.shutdown()
     dbConnection.destroy()
   }
   "Automatic System Tests" should {
     "WriteTest" >> {
+      dbConnection.clearDB()
       //Only 1 write test
       val testCase = tests("write test").head \\ ("textarea")
       //val testCase = testArticles.filter(a => a.\@("class") == "write test" ).head \\ ("textarea") //sourceXML \\ ("write test")
