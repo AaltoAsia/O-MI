@@ -1306,7 +1306,7 @@
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
 	<omi:result>
-	    <omi:return description="Successfully started subcription" returnCode="200"></omi:return>
+	    <omi:return description="Successfully started subscription" returnCode="200"></omi:return>
 		<omi:requestID>1</omi:requestID>
 	</omi:result>
     </omi:response>
@@ -1401,7 +1401,7 @@
 		</div>
 	    </div>
 	</article>
-	<article class="sequential-test ">
+	<article class="subscription-nocallback">
 	    <h2> Polled inteval subscription</h2>
 	    <div >
 		<p class="description">
@@ -1413,7 +1413,7 @@
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-    <omi:read msgformat="odf" interval=1>
+    <omi:read msgformat="odf" interval="1">
 	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
 	    <Objects>
 		<Object>
@@ -1435,8 +1435,8 @@
 <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
 	<omi:result>
-	    <omi:return description="Successfully started subcription" returnCode="200"></omi:return>
-		<omi:requestID>2</omi:requestID>
+	    <omi:return description="Successfully started subscription" returnCode="200"></omi:return>
+		<omi:requestID>1</omi:requestID>
 	</omi:result>
     </omi:response>
 </omi:omiEnvelope>
@@ -1447,7 +1447,7 @@
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
     <omi:read msgformat="odf">
-	<omi:requestID>2</omi:requestID>
+	<omi:requestID>1</omi:requestID>
     </omi:read>
 </omi:omiEnvelope>
 			</textarea>
@@ -1481,7 +1481,7 @@
     	</omi:msg>
         </omi:result>
     </omi:response>
-</omi:omiEnvelope wait=2>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
 		<div>
@@ -1489,7 +1489,7 @@
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
     <omi:read msgformat="odf">
-	<omi:requestID>2</omi:requestID>
+	<omi:requestID>1</omi:requestID>
     </omi:read>
 </omi:omiEnvelope>
 			</textarea>
@@ -1533,7 +1533,7 @@
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
     <omi:cancel>
-	<omi:requestID>2</omi:requestID>
+	<omi:requestID>1</omi:requestID>
     </omi:cancel>
 </omi:omiEnvelope>
 			</textarea>

@@ -65,7 +65,7 @@ object Result{
     omiResult(
       omiReturn(
         "200",
-        Some("Successfully started subcription")
+        Some("Successfully started subscription")
       ),
       Some(requestID)
     )
