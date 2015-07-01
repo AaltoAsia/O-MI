@@ -166,7 +166,7 @@ object OdfTypes{
       assert(path == another.path)
       OdfInfoItem(
         path,
-        (values ++ another.values).toSeq.distinct,
+        (values ++ another.values).toSeq,
         (description, another.description) match{
           case (Some(a), Some(b)) => Some(a)
           case (None, Some(b)) => Some(b)

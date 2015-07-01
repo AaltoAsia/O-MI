@@ -18,7 +18,7 @@ object PermissionCheck {
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("IPv" + ip.length + " : " + ip.mkString(".")) 
     ip
-  }.toArray 
+  }.toVector
 
   log.debug("Totally " + whiteIPs.length + "IPs")
 
@@ -41,18 +41,18 @@ object PermissionCheck {
   def hasPermission(addr: InetAddress) : Boolean = {
     whiteIPs.contains( inetAddrToBytes( addr ) ) ||
     whiteMasks.exists{
-      case (subnet : Array[Byte], bits : Int) =>
+      case (subnet : Seq[Byte], bits : Int) =>
       isInSubnet(subnet, bits, inetAddrToBytes( addr ))
     }
   }
   
-  /** Helper method for converting InetAddress to Array of Bytes.
+  /** Helper method for converting InetAddress to sequence of Bytes.
     *
     * @param addr addr is InetAddress of connector.
-    * @return Array of bytes.
+    * @return sequence of bytes.
     **/
-  private def inetAddrToBytes(addr: InetAddress) : Array[Byte] = {
-    addr.getAddress()
+  private def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {
+    addr.getAddress().toList
   }
   
   /** Helper method for checkking if connection is in allowed subnets.
@@ -60,7 +60,7 @@ object PermissionCheck {
     * @param addr addr is InetAddress of connector.
     * @return Boolean, true if connection is in allowed suybnet.
     **/
-  private def isInSubnet(subnet: Array[Byte], bits: Int, ip: Array[Byte]) : Boolean = {
+  private def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
     if( subnet.length == ip.length){
       log.debug("Whitelist check for IPv" + ip.length + " address: " + ip.map{b => b.toHexString}.mkString(":") + " against " + subnet.map{b => b.toHexString}.mkString(":"))
       ip.length match{
@@ -70,12 +70,12 @@ object PermissionCheck {
         }
         case 16 =>{
           val mask = -1 << (64 - bits)
-          val ipArea = bytesToInt( Array( ip(4), ip(5), ip(6), ip(7) ) )
-          val subnetArea = bytesToInt( Array( subnet(4), subnet(5), subnet(6), subnet(7) ) )
+          val ipArea = bytesToInt( List( ip(4), ip(5), ip(6), ip(7) ) )
+          val subnetArea = bytesToInt( List( subnet(4), subnet(5), subnet(6), subnet(7) ) )
           /*if( bits > 56 )
-            Array[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
+            List[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
           else 
-            Array[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
+            List[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
           */
           return ( subnet(0)   & 0xFF  ) == (  ip(0)   & 0xFF     ) && 
           ( subnet(1)   & 0xFF  ) == (  ip(1)   & 0xFF     ) &&
@@ -98,7 +98,7 @@ object PermissionCheck {
     * @param bytes bytes to be converted.
     * @return Int, bytes presented as Int.
     **/
-  private def bytesToInt(bytes: Array[Byte]) : Int = {
+  private def bytesToInt(bytes: Seq[Byte]) : Int = {
     val ip : Int = ((bytes(0) & 0xFF) << 24) |
       ((bytes(1) & 0xFF) << 16) |
       ((bytes(2) & 0xFF) << 8)  |
