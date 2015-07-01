@@ -101,11 +101,11 @@ class SystemTest extends Specification with Starter with AfterAll {
 
       response must beSuccessfulTry
 
-      response.get showAs (n => "\n" + printer.format(n.head)) must beEqualToIgnoringSpace(correctResponse.get) //.await(2, scala.concurrent.duration.Duration.apply(2, "second"))
+      response.get showAs (n => "Request Message:\n" + printer.format(request.head) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get) //.await(2, scala.concurrent.duration.Duration.apply(2, "second"))
     }
 
     step({
-
+      //let the database write the data
       Thread.sleep(2000);
       //      val temp = dbConnection.get(types.Path("Objects/Object1")).map(types.OdfTypes.fromPath(_))
     })
@@ -122,7 +122,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
         response must beSuccessfulTry
         //                                                                          prettyprinter only returns string :/
-        response.get showAs (n => "Request Message:\n" + printer.format(request.head) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must /*beEqualToIgnoringSpace*/ new BeEqualFormatted(XML.loadString(printer.format(correctResponse.get.head)))
+        response.get showAs (n => "Request Message:\n" + printer.format(request.head) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
 
       }
 
