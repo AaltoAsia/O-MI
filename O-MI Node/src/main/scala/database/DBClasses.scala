@@ -312,7 +312,7 @@ trait OmiNodeTables extends DBBase {
   def clearDB() = runWait(
     DBIO.seq(
       (allTables map (_.delete)): _* 
-    )
+    ).andThen(hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false))
   )
 
   def dropDB() = runWait( allSchemas.drop )

@@ -65,9 +65,7 @@ object OdfParser extends Parser[OdfParseResult] {
         npath, 
         obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
         obj.Object.map{ child => parseObject( child, npath ) }.toIterable,
-        obj.description.map{ des => 
-          println(des.value)
-          OdfDescription( des.value, des.lang )
+        obj.description.map{ des => OdfDescription( des.value, des.lang )
         }
       ) 
   }
