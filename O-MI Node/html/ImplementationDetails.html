@@ -1,7 +1,7 @@
 <html>
     <body>
 	<div>
-	<h1> O-DF in DataBase </h1>
+	<h1> O-DF in Database </h1>
 	<article>
 	    <textarea rows=47 cols=100 style="border: none;" readonly>
 <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
@@ -918,6 +918,270 @@
 	    </div>
 	</article>
 	<article class="request-response test"> 
+	    <h2> Open timeframe with oldest, begin </h2>
+	    <div > <p class="description">
+		User wants two oldest values after 01-01-1970T00:00:03.
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03"  oldest="2">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result msgformat="odf">
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="3" type="xs:integer">3</value>
+				<value unixTime="4" type="xs:integer">4</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response test"> 
+	    <h2> Open timeframe with newest, begin  </h2>
+	    <div > <p class="description">
+		User wants two newest values after 01-01-1970T00:00:03.
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" begin="1970-01-01T00:00:03"  newest="2">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result msgformat="odf">
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="3" type="xs:integer">3</value>
+			    <value unixTime="4" type="xs:integer">4</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="8" type="xs:integer">8</value>
+				<value unixTime="9" type="xs:integer">9</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response test"> 
+	    <h2> Open timeframe with oldest, end  </h2>
+	    <div > <p class="description">
+		User wants two oldest values before 01-01-1970T00:00:06.
+		</p>
+		Argument:
+		<ul>
+		    <li>end</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" end="1970-01-01T00:00:06"  oldest="2">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result msgformat="odf">
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="1" type="xs:integer">1</value>
+			    <value unixTime="2" type="xs:integer">2</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="1" type="xs:integer">1</value>
+				<value unixTime="2" type="xs:integer">2</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response test"> 
+	    <h2> Open timeframe with newest, end </h2>
+	    <div > <p class="description">
+		User wants two newest values before 01-01-1970T00:00:06.
+		</p>
+		Argument:
+		<ul>
+		    <li>end</li>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:read msgformat="odf" end="1970-01-01T00:00:06"  newest="2">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1">
+		    </InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result msgformat="odf">
+	    <omi:return returnCode="200"></omi:return>
+	    <omi:msg>
+		<Objects>
+		    <Object>
+			<id>Object1</id>
+			<InfoItem name="Sensor1">
+			    <description>Human readable description.</description>
+			    <value unixTime="5" type="xs:integer">5</value>
+			    <value unixTime="6" type="xs:integer">6</value>
+			</InfoItem>
+			<Object>
+			    <id>SubObject1</id>
+			    <description>Human readable description.</description>
+			    <InfoItem name="Sensor1">
+				<description>Human readable description.</description>
+				<value unixTime="5" type="xs:integer">5</value>
+				<value unixTime="6" type="xs:integer">6</value>
+			    </InfoItem>
+			</Object>
+		    </Object>
+		</Objects>
+	    </omi:msg>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response test"> 
 	    <h2> Callback  </h2>
 	    <div > <p class="description">
 		 User wants to node send response for actual request to another address.
@@ -1009,59 +1273,283 @@
 	<div>
 	<h1> Subscription request </h1>
 	<article class="sequential-test ">
-	    <h2> Newest and Oldest  </h2>
+	    <h2> Normal inteval subscription</h2>
 	    <div >
 		<p class="description">
-		Exaple structure for subscription tests
+		Subscription with interval of 1 and with a callback address.
 		</p>
 	    </div>
 	    <div class="msg-sequence">
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
+    <omi:read msgformat="odf" interval=1 callback="http://callbackAdrress.com:5432">
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1"></InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return description="Successfully started subcription" returnCode="200"></omi:return>
+		<omi:requestID>1</omi:requestID>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response to callback:</h3>
-			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=3>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=1>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result msgformat="odf">
+    	<omi:return returnCode="200"></omi:return>
+	<omi:requestID>1</omi:requestID>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response to callback:</h3>
-			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=3>
-			</textarea>
-		</div>
-		<div>
-		    <h3>Response to callback:</h3>
-			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=3>
-			</textarea>
-		</div>
-		<div>
-		    <h3>Response to callback:</h3>
-			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=3>
-			</textarea>
-		</div>
-		<div>
-		    <h3>Response to callback:</h3>
-			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=1>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result msgformat="odf">
+    	<omi:return returnCode="200"></omi:return>
+	<omi:requestID>1</omi:requestID>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:cancel>
+	<omi:requestID>1</omi:requestID>
+    </omi:cancel>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+	   <omi:return returnCode="200"></omi:return>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
 			</textarea>
 		</div>
-		
+	    </div>
+	</article>
+	<article class="sequential-test ">
+	    <h2> Polled inteval subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of 1, but without a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
+    <omi:read msgformat="odf" interval=1>
+	<omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+	    <Objects>
+		<Object>
+		    <id>Object1</id>
+		    <InfoItem name="Sensor1"></InfoItem>
+		    <Object>
+			<id>SubObject1</id>
+		    </Object>
+		</Object>
+	    </Objects>
+	</omi:msg>
+    </omi:read>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+	<omi:result>
+	    <omi:return description="Successfully started subcription" returnCode="200"></omi:return>
+		<omi:requestID>2</omi:requestID>
+	</omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
+    <omi:read msgformat="odf">
+	<omi:requestID>2</omi:requestID>
+    </omi:read>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result msgformat="odf">
+    	<omi:return returnCode="200"></omi:return>
+	<omi:requestID>1</omi:requestID>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope wait=2>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
+    <omi:read msgformat="odf">
+	<omi:requestID>2</omi:requestID>
+    </omi:read>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result msgformat="odf">
+    	<omi:return returnCode="200"></omi:return>
+	<omi:requestID>1</omi:requestID>
+    	<omi:msg>
+    	    <Objects>
+    		<Object>
+    		    <id>Object1</id>
+    		    <InfoItem name="Sensor1">
+    			<description>Human readable description.</description>
+    			<value unixTime="9" type="xs:integer">9</value>
+    			<value unixTime="9" type="xs:integer">9</value>
+    		    </InfoItem>
+    		    <Object>
+    			<id>SubObject1</id>
+    			<description>Human readable description.</description>
+    			<InfoItem name="Sensor1">
+    			    <description>Human readable description.</description>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			    <value unixTime="9" type="xs:integer">9</value>
+    			</InfoItem>
+    		    </Object>
+    		</Object>
+    	    </Objects>
+    	</omi:msg>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+    <omi:cancel>
+	<omi:requestID>2</omi:requestID>
+    </omi:cancel>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <omi:response>
+        <omi:result>
+	   <omi:return returnCode="200"></omi:return>
+        </omi:result>
+    </omi:response>
+</omi:omiEnvelope>
+			</textarea>
+		</div>
 	    </div>
 	</article>
 	</div>
