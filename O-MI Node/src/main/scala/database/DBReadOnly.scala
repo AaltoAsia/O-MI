@@ -169,7 +169,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       data = dataSorted mapValues { seqVals =>
         if ( sub.isEventBased )
           handleEventPoll(sub, lastValues, seqVals)
-        else  // Normal poll
+        else  // Normal interval poll
           getByIntervalBetween(seqVals, sub.startTime, newTime, (sub.interval * 1000).toLong )
       }
 
@@ -241,8 +241,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   protected def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
     var intervalTime =
-      endTime.getTime - (endTime.getTime - beginTime.getTime)%interval // last interval before poll
-    val timeframe  = values.sortBy(
+      endTime.getTime - (endTime.getTime - beginTime.getTime) % interval // last interval before poll
+    val timeframedVals  = values.sortBy(
         value =>
         value.timestamp.getTime
       ) //ascending
@@ -251,9 +251,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     var index = 1
 
     while( index > -1 && intervalTime >= beginTime.getTime ){
-      index = timeframe.lastIndexWhere( value => value.timestamp.getTime <= intervalTime )
+      index = timeframedVals.lastIndexWhere( value => value.timestamp.getTime <= intervalTime )
       if( index > -1) {
-        intervalValues = intervalValues :+ timeframe( index )
+        intervalValues = intervalValues :+ timeframedVals( index )
         intervalTime -= interval
       }
     }   
