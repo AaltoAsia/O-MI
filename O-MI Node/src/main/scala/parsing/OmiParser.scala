@@ -3,15 +3,18 @@ package parsing
 import types._
 import types.OmiTypes._
 import types.OdfTypes._
-import java.sql.Timestamp
 import xmlGen.xmlTypes
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+import scala.collection.mutable.Map
+import scala.concurrent.duration._
+
 import scala.xml._
 import scala.util.Try
-import scala.collection.mutable.Map
-import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import org.xml.sax.SAXException
+
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.seqAsJavaList
@@ -38,13 +41,19 @@ object OmiParser extends Parser[OmiParseResult] {
 
     val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
     envelope.omienvelopeoption.value match {
-      case read: xmlTypes.ReadRequest => parseRead(read, envelope.ttl)
-      case write: xmlTypes.WriteRequest => parseWrite(write, envelope.ttl)
-      case cancel: xmlTypes.CancelRequest => parseCancel(cancel, envelope.ttl)
-      case response: xmlTypes.ResponseListType => parseResponse(response, envelope.ttl)
+      case read: xmlTypes.ReadRequest => parseRead(read, parseTTL(envelope.ttl))
+      case write: xmlTypes.WriteRequest => parseWrite(write, parseTTL(envelope.ttl))
+      case cancel: xmlTypes.CancelRequest => parseCancel(cancel, parseTTL(envelope.ttl))
+      case response: xmlTypes.ResponseListType => parseResponse(response, parseTTL(envelope.ttl))
     }
   }
-  private def parseRead(read: xmlTypes.ReadRequest, ttl: Double): OmiParseResult = {
+
+  // fixes problem with duration: -1.0.seconds == -999999999 nanoseconds
+  def parseInterval(v: Double) = if (v == -1.0) -1.seconds else v.seconds // or: Math.round(v * 1000).milliseconds
+  def parseTTL(v: Double)      = if (v == -1.0 || v == 0.0) Duration.Inf else v.seconds // or: Math.round(v * 1000).milliseconds
+
+  
+  private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = {
     if (read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
@@ -58,25 +67,30 @@ object OmiParser extends Parser[OmiParseResult] {
       if (errors.nonEmpty)
         return Left(errors)
 
-      if (read.interval.isEmpty) {
-        Right(Iterable(
-          ReadRequest(
-            ttl,
-            odf.right.get,
-            gcalendarToTimestampOption(read.begin),
-            gcalendarToTimestampOption(read.end),
-            read.newest,
-            read.oldest,
-            uriToStringOption(read.callback))))
-      } else {
-        Right(Iterable(
-          SubscriptionRequest(
-            ttl,
-            read.interval.get,
-            odf.right.get,
-            read.newest,
-            read.oldest,
-            uriToStringOption(read.callback))))
+      read.interval match {
+        case None =>
+          Right(Iterable(
+            ReadRequest(
+              ttl,
+              odf.right.get,
+              gcalendarToTimestampOption(read.begin),
+              gcalendarToTimestampOption(read.end),
+              read.newest,
+              read.oldest,
+              uriToStringOption(read.callback)
+            )
+          ))
+        case Some(interval) =>
+          Right(Iterable(
+            SubscriptionRequest(
+              ttl,
+              parseInterval(interval),
+              odf.right.get,
+              read.newest,
+              read.oldest,
+              uriToStringOption(read.callback)
+            )
+          ))
       }
     } else {
       Left(
@@ -87,7 +101,7 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
-  private def parseWrite(write: xmlTypes.WriteRequest, ttl: Double): OmiParseResult = {
+  private def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
     val odf = parseMsg(write.msg, write.msgformat)
     val errors = OdfTypes.getErrors(odf)
 
@@ -101,7 +115,7 @@ object OmiParser extends Parser[OmiParseResult] {
           uriToStringOption(write.callback))))
   }
 
-  private def parseCancel(cancel: xmlTypes.CancelRequest, ttl: Double): OmiParseResult = {
+  private def parseCancel(cancel: xmlTypes.CancelRequest, ttl: Duration): OmiParseResult = {
     Right(Iterable(
       CancelRequest(
         ttl,
@@ -109,7 +123,7 @@ object OmiParser extends Parser[OmiParseResult] {
       )
     ))
   }
-  private def parseResponse(response: xmlTypes.ResponseListType, ttl: Double): OmiParseResult = {
+  private def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = {
     Right(Iterable(
       ResponseRequest(
         response.result.map {

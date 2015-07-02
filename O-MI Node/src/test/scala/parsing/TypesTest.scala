@@ -7,9 +7,12 @@ import types.Path._
 import types.OmiTypes._
 import types.OdfTypes._
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList, iterableAsScalaIterable}
+import scala.concurrent.duration._
+
+import testHelpers.DeactivatedTimeConversions
 
 /* Test class for testing ODF Types */
-class TypesTest extends Specification {
+class TypesTest extends Specification with DeactivatedTimeConversions{
 
   def is = s2"""
   This is Specification to check inheritance for Types. Also testing Path Object
@@ -45,15 +48,15 @@ class TypesTest extends Specification {
   }
 
   def e2 = {
-    new ReadRequest(10, OdfObjects()).isInstanceOf[OmiRequest]
+    new ReadRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
   }
 
   def e3 = {
-    new WriteRequest(10, OdfObjects()).isInstanceOf[OmiRequest]
+    new WriteRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
   }
 
   def e4 = {
-    new SubscriptionRequest(0, 0, OdfObjects()).isInstanceOf[OmiRequest]
+    new SubscriptionRequest(0.seconds, 0.seconds, OdfObjects()).isInstanceOf[OmiRequest]
   }
 
   def e5 = {
@@ -61,7 +64,7 @@ class TypesTest extends Specification {
   }
 
   def e6 = {
-    new CancelRequest(10, Seq()).isInstanceOf[OmiRequest]
+    new CancelRequest(10.seconds, Seq()).isInstanceOf[OmiRequest]
   }
   
   def e10 = {

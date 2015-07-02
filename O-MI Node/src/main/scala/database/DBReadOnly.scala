@@ -7,6 +7,7 @@ import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.SortedMap
@@ -170,7 +171,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         if ( sub.isEventBased )
           handleEventPoll(sub, lastValues, seqVals)
         else  // Normal interval poll
-          getByIntervalBetween(seqVals, sub.startTime, newTime, (sub.interval * 1000).toLong )
+          getByIntervalBetween(seqVals, sub.startTime, newTime, sub.interval )
       }
 
       // Update SubItems lastValues
@@ -193,19 +194,19 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
       // Update subscription, move begin time forward
 
-      elapsedTimeSecs = (newTime.getTime - sub.startTime.getTime) / 1000.0
+      elapsedTime: Duration = (newTime.getTime - sub.startTime.getTime) milliseconds
 
       // Move begin and ttl to virtually delete the old data that is given now as a response
       (newBegin, newTTL) = 
         if (sub.isEventBased) {
-          (newTime, sub.ttl - elapsedTimeSecs)
+          (newTime, sub.ttl - elapsedTime)
 
         } else {
           // How many intervals are in the past?:
-          val intervalsPast = ( elapsedTimeSecs / sub.interval ).toInt // floor
+          val intervalsPast = ( elapsedTime / sub.interval ).toInt // floor
 
           (new Timestamp(
-            sub.startTime.getTime + (intervalsPast * sub.interval * 1000).toLong
+            sub.startTime.getTime + (intervalsPast * sub.interval).toMillis
           ),
             sub.ttl - intervalsPast * sub.interval // Intervals between 
           )
@@ -237,24 +238,33 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   */
 
 
-  /** Get values for each interval
+  /** 
+   * Get values for each interval
+   * @param values input values
+   * @param beginTime of the subscription
+   * @param endTime for the timeframe, timestamp for the current poll
+   * @param interval of the subscription
+   * @return the poll result for these parameters
    */
-  protected def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Long ) = {
-    var intervalTime =
-      endTime.getTime - (endTime.getTime - beginTime.getTime) % interval // last interval before poll
-    val timeframedVals  = values.sortBy(
+  protected def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Duration ) = {
+    val timeFrameLengthMs = endTime.getTime - beginTime.getTime
+    // last interval time before the poll
+    val lastIntervalTime = endTime.getTime - (timeFrameLengthMs % interval.toMillis)
+
+    val sortedVals  = values.sortBy(
         value =>
         value.timestamp.getTime
       ) //ascending
    
+    var intervalTime = lastIntervalTime
     var intervalValues : Seq[DBValue] = Seq.empty
     var index = 1
 
     while( index > -1 && intervalTime >= beginTime.getTime ){
-      index = timeframedVals.lastIndexWhere( value => value.timestamp.getTime <= intervalTime )
+      index = sortedVals.lastIndexWhere( value => value.timestamp.getTime <= intervalTime )
       if( index > -1) {
-        intervalValues = intervalValues :+ timeframedVals( index )
-        intervalTime -= interval
+        intervalValues = intervalValues :+ sortedVals( index )
+        intervalTime -= interval.toMillis
       }
     }   
     intervalValues.reverse
@@ -389,7 +399,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       timeFrameEmpty: Boolean
     ): Seq[DBValue] => Seq[DBValue] = {
       if ( oldest.nonEmpty ) {
-        _ sortBy ( _.timestamp.getTime ) take (oldest.get)
+        _.sortBy( _.timestamp.getTime ) take (oldest.get)
       } else if ( newest.nonEmpty ) {
         _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get) reverse
       } else if ( timeFrameEmpty ) {
@@ -444,7 +454,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             timeframedTreeData =
               subTreeData filter {
                 case (node, Some(value)) => betweenLogic(begin, end)(value)
-                case (node, None) => true
+                case (node, None) => true // keep objects for their description etc.
               }
 
             dbInfoItems: DBInfoItems =
@@ -460,7 +470,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     }
     
-    val allResults = requestsSeq.par map {
+    val allResults = requestsSeq map { // par
 
       case obj @ OdfObjects(objects,_) =>
         require(objects.isEmpty,

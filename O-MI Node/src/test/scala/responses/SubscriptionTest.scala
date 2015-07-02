@@ -3,6 +3,7 @@ package responses
 import org.specs2.mutable._
 import org.specs2.matcher.XmlMatchers._
 import scala.io.Source
+
 import responses._
 //import responses.Common._
 import parsing._
@@ -11,25 +12,38 @@ import types.Path._
 import types.OmiTypes._
 import database._
 import parsing.OdfParser._
+
 import java.util.Date;
 import java.util.Calendar;
 import java.util.TimeZone
 import java.text.SimpleDateFormat;
+import java.sql.Timestamp
+
 import scala.xml.Utility.trim
 import scala.xml.XML
+
 import akka.actor._
 import akka.testkit.{ TestKit, TestActorRef }
-import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor }
 import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.util.Try
+
 import scala.collection.mutable.Iterable
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.util.Try
-import java.sql.Timestamp
 
-class SubscriptionTest extends Specification with BeforeAfterAll {
+import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor, DeactivatedTimeConversions }
+
+// For eclipse:
+//import org.junit.runner.RunWith
+//import org.specs2.runner.JUnitRunner
+//
+//@RunWith(classOf[JUnitRunner])
+class SubscriptionTest extends Specification with BeforeAfterAll with DeactivatedTimeConversions {
   sequential
+
+
 
   implicit val system = ActorSystem("on-core")
   implicit val dbConnection = new TestDB("subscription-response-test")
@@ -135,7 +149,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
       val requestID = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
       //      dbConnection.getSub(requestID.get) must beSome
-      val subxml = requestID.map(id => requestHandler.handleRequest((PollRequest(10, None, asJavaIterable(Seq(id))))))
+      val subxml = requestID.map(id => requestHandler.handleRequest((PollRequest(10.seconds, None, asJavaIterable(Seq(id))))))
       //might fail after change in namespaces
       val correctxml = requestID map (x => {
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
@@ -176,11 +190,11 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val requestID = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
       //XXX: Stupid hack, for interval      
       Thread.sleep(1000)
-      val subxml = requestID.map(id => requestHandler.handleRequest((PollRequest(10, None, asJavaIterable(Seq(id))))))
+      val subxml = requestID.map(id => requestHandler.handleRequest((PollRequest(10.seconds, None, asJavaIterable(Seq(id))))))
 
       //      val (requestIDcallback, xmlreturncallback) = requestHandler.handleRequest(parserlistcallback.right.get.head.asInstanceOf[SubscriptionRequest])
 
-      //      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(requestIDcallback))))
+      //      val subxml = omiResponse(pollResponseGen.genResult(PollRequest(10.seconds, None, Seq(requestIDcallback))))
 
       //      val correctxml =
       /*
@@ -236,7 +250,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     }
 
     "Return with error when subscription doesn't exist" in {
-      val xmlreturn = requestHandler.handleRequest((PollRequest(10, None, Seq(1234))))
+      val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(1234))))
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
@@ -256,8 +270,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       //      dbConnection.setVal(testPath)
 
       val testTime = new Date().getTime - 10000
-      //      db.saveSub(NewDBSub(1, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
-      //      val testSub = dbConnection.saveSub(NewDBSub(1, newTimestamp(testTime), -1, None), Array(testPath))
+      //      db.saveSub(NewDBSub(1.seconds, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
+      //      val testSub = dbConnection.saveSub(NewDBSub(1.seconds, newTimestamp(testTime), -1, None), Array(testPath))
       //      dbConnection.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
 
       //      dbConnection.remove(testPath)
@@ -265,15 +279,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
       (0 to 10).foreach(n =>
         dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 1000), n.toString()))
-      val testSub = dbConnection.saveSub(NewDBSub(1, newTimestamp(testTime), 60.0, None), Array(testPath))
-      val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val testSub = dbConnection.saveSub(NewDBSub(1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
 
-      //omiResponse(pollResponseGen.genResult(PollRequest(10, None, Seq(testSub))))
+      //omiResponse(pollResponseGen.genResult(PollRequest(10.seconds, None, Seq(testSub))))
 
       val dataLength = test.\\("value").length
 
       dataLength must be_>=(10)
-      val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       val newDataLength = test2.\\("value").length
       newDataLength must be_<=(dataLength) and be_<=(3)
 
@@ -291,18 +305,23 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val testTime = new Date().getTime - 10000
 
       //      val ttlFirst = dbConnection.getSub(testSub.id).map(_.ttl)
-      //      ttlFirst must beSome(60.0)
+      //      ttlFirst must beSome(60.0.seconds)
       (0 to 10).foreach(n =>
         dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 1000), n.toString()))
 
-      val testSub = dbConnection.saveSub(NewDBSub(3, newTimestamp(testTime), 60.0, None), Array(testPath))
+      val testSub = dbConnection.saveSub(NewDBSub(3.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
       val ttlFirst = dbConnection.getSub(testSub.id).map(_.ttl)
-      ttlFirst must beSome(60.0)
+      ttlFirst must beSome(60.0.seconds)
 
-      requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))
-      requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))
+      requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))
+      requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))
+
       val ttlEnd = dbConnection.getSub(testSub.id).map(_.ttl)
-      ttlFirst must beSome.which(first => ttlEnd must beSome.which(last => (first - last) % 3 === 0)) //(ttlFirst - ttlEnd) % 3 === 0
+      ttlFirst must beSome.which(first =>
+        ttlEnd must beSome.which(last =>
+          (first.toUnit(SECONDS) - last.toUnit(SECONDS)) % 3 === 0
+        )
+      ) //(ttlFirst - ttlEnd) % 3 === 0
 
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
@@ -315,12 +334,12 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       (0 to 10).foreach(n =>
         dbConnection.set(testPath, new java.sql.Timestamp(testTime - 4999 + n * 1000), n.toString()))
 
-      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
+      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
 
-      val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
-      test.\\("value").length === 6
+      val test = requestHandler.handleRequest(PollRequest(60.seconds, None, Seq(testSub.id)))._1
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
+      test.\\("value").length === 6
 
     }
     "Event based subscription without callback should not return already polled data" in {
@@ -332,13 +351,13 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       (0 to 10).foreach(n =>
         dbConnection.set(testPath, new java.sql.Timestamp(testTime - 5000 + n * 1000), n.toString()))
 
-      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
-      val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test.\\("value").length === 6
-      val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
       dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
-      val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
 
       //      dbConnection.remove(testPath)
@@ -349,25 +368,25 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       //      dbConnection.setVal(testPath)
 
       val testTime = new Date().getTime - 10000
-      //      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
+      //      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
       (0 to 10).zip(Array(1, 1, 1, 2, 3, 4, 3, 5, 5, 6, 7)).foreach(n =>
         dbConnection.set(testPath, new java.sql.Timestamp(testTime + n._1 * 900), n._2.toString()))
 
-      val testSub = dbConnection.saveSub(NewDBSub(-1, newTimestamp(testTime), 60.0, None), Array(testPath))
-      val test = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
 //      println(test.\\("value"))
       test.\\("value").length === 8
-      val test2 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
       dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
-      val test3 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
       //does not return same value twice
-      val test4 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test4.\\("value").length === 0
 
       dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
-      val test5 = requestHandler.handleRequest(PollRequest(10, None, Seq(testSub.id)))._1
+      val test5 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test5.\\("value").length === 0
 
       //      dbConnection.remove(testPath)

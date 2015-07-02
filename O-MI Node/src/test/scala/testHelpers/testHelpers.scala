@@ -92,6 +92,7 @@ class HTML5Parser extends NoBindingFactoryAdapter {
     rootElem
   }
 }
+
 import org.specs2.matcher._
 class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
   val printer = new scala.xml.PrettyPrinter(80, 2)
@@ -100,3 +101,8 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
 
   }
 }
+
+// Disable implicit from specs2 Specification so concurrent.Duration int.seconds etc can be used
+trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {
+  override def intToRichLong(v: Int) = super.intToRichLong(v)
+} 

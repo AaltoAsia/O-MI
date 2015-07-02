@@ -113,7 +113,7 @@ trait OdfConversions extends OmiNodeTables {
 
     // safe version of reduce
     odfObjectsTrees.headOption map { head =>
-        odfObjectsTrees.fold(head)(_ combine _)
+        odfObjectsTrees.reduce(_ combine _)
     }
   }
 }

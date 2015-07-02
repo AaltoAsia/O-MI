@@ -13,6 +13,9 @@ import scala.xml.Utility.trim
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
+
+import scala.concurrent.duration._
+import testHelpers.DeactivatedTimeConversions
 /*
  * Test class for testing parsing parsing package
  * tests e1   - e99 are for testing OmiParser general methods
@@ -21,7 +24,7 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
  * tests e300 - e399 are for testing read requests
  * tests e400 - e499 are for testing OdfParser class
  */
-class ParserTest extends Specification {
+class ParserTest extends Specification with DeactivatedTimeConversions {
   lazy val omi_subscription_test_file = Source.fromFile("src/test/resources/parsing/omi_subscription_test.xml").getLines.mkString("\n")
   lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
   lazy val omi_write_test_file = Source.fromFile("src/test/resources/parsing/omi_write_test.xml").getLines.mkString("\n")
@@ -305,8 +308,8 @@ class ParserTest extends Specification {
   }
 
   def e100 = {
-    OmiParser.parse(omi_write_test_file) should be equalTo Right(Iterable(WriteRequest(10.0, write_response_odf, Some("http://testing.test"))))
-    //    Right(Iterable(WriteRequest(10, OdfObjects(Iterable(), Some("test")), Some("http://testing.test"))))
+    OmiParser.parse(omi_write_test_file) should be equalTo Right(Iterable(WriteRequest(10.0.seconds, write_response_odf, Some("http://testing.test"))))
+    //    Right(Iterable(WriteRequest(10.seconds, OdfObjects(Iterable(), Some("test")), Some("http://testing.test"))))
     //      Iterable(
     //      Write("10", Iterable(
     //        OdfObject(Iterable("Objects","SmartHouse","SmartFridge","PowerConsumption"), InfoItem, Some("56"), Some("dateTime=\"2014-12-186T15:34:52\""), Some( Timestamp.valueOf("2014-12-18 15:34:52.0"))),
@@ -376,12 +379,12 @@ class ParserTest extends Specification {
     //      case WriteRequest(a,b,c) => println(a);println(b.getClass);println(b.eq(OdfObjects()))
     //      case _ => println("WWWWWWWWWWWWWWWWWWWWWWWW\n\n\n")
     //    }
-    temp.right.get.iterator().next() should be equalTo WriteRequest(10.0, OdfObjects())
+    temp.right.get.iterator().next() should be equalTo WriteRequest(10.0.seconds, OdfObjects())
 
   }
 
   def e106 = {
-    OmiParser.parse(omi_write_test_file.replace("callback=\"http://testing.test\" ", "")) should be equalTo Right(Iterable(WriteRequest(10.0, write_response_odf)))
+    OmiParser.parse(omi_write_test_file.replace("callback=\"http://testing.test\" ", "")) should be equalTo Right(Iterable(WriteRequest(10.0.seconds, write_response_odf)))
   }
 
   def e200 = {
@@ -472,7 +475,7 @@ class ParserTest extends Specification {
     
 
     temp.isRight === true
-    temp.right.get.head should be equalTo ReadRequest(10.0,readOdf)
+    temp.right.get.head should be equalTo ReadRequest(10.0.seconds,readOdf)
     
     //        Iterable(
     //      OneTimeRead(10, Iterable(
@@ -591,15 +594,15 @@ class ParserTest extends Specification {
   </omi:read>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Right(Iterable(ReadRequest(10.0, OdfObjects())))
+    temp should be equalTo Right(Iterable(ReadRequest(10.0.seconds, OdfObjects())))
 
   }
 
   def e306 = {
     val temp = OmiParser.parse(omi_subscription_test_file)
     temp.isRight === true
-    temp.right.get.head should be equalTo SubscriptionRequest(10.0,40, readOdf, Some(5), Some(3), Some("http://testing.test"))
-//      SubscriptionRequest(1, 2, read)))
+    temp.right.get.head should be equalTo SubscriptionRequest(10.0.seconds,40.seconds, readOdf, Some(5), Some(3), Some("http://testing.test"))
+//      SubscriptionRequest(1.seconds, 2, read)))
     //      Subscription(10, 40, Iterable(
     //        OdfObject(
     //          Iterable("Objects", "SmartHouse"),
@@ -739,7 +742,7 @@ class ParserTest extends Specification {
     temp.isRight === true
     val temp2 = temp.right.get.head.asInstanceOf[CancelRequest]
     //Some type problem here with iterators
-    temp2 should be equalTo CancelRequest(10.0, asJavaIterable(Iterable(123, 456)) )
+    temp2 should be equalTo CancelRequest(10.0.seconds, asJavaIterable(Iterable(123, 456)) )
   }
 
 }

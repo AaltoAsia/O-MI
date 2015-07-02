@@ -4,9 +4,10 @@ import slick.driver.H2Driver.api._
 import java.sql.Timestamp
 
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
+
 
 import types._
 import types.OdfTypes._
@@ -44,7 +45,9 @@ case class SubscriptionItem(
   val lastValue: Option[String] // for event polling subs
 )
 
+// For db table type, match to and use subclasses of this
 sealed trait DBSubInternal
+
 /**
  * DBSub class to represent subscription information
  * @param ttl time to live. in seconds. subscription expires after ttl seconds
@@ -53,16 +56,16 @@ sealed trait DBSubInternal
  */
 case class DBSub(
   val id: Int,
-  val interval: Double,
+  val interval: Duration,
   val startTime: Timestamp,
-  val ttl: Double,
+  val ttl: Duration,
   val callback: Option[String]
 ) extends SubLike with DBSubInternal
 
 case class NewDBSub(
-  val interval: Double,
+  val interval: Duration,
   val startTime: Timestamp,
-  val ttl: Double,
+  val ttl: Duration,
   val callback: Option[String]
 ) extends SubLike with DBSubInternal
 
@@ -234,19 +237,35 @@ trait OmiNodeTables extends DBBase {
     def ttl       = column[Double]("TTL")
     def callback  = column[Option[String]]("CALLBACK")
 
+
     private def dbsubTupled:
       ((Option[Int], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
         case (None, interval_, startTime_, ttl_, callback_) =>
-          NewDBSub(interval_, startTime_, ttl_, callback_)
+          val durationTtl =
+            if (ttl_ == -1.0) Duration.Inf else ttl_.seconds
+
+          val durationInt = parsing.OmiParser.parseInterval(interval_)
+          NewDBSub(durationInt, startTime_, durationTtl, callback_)
+
         case (Some(id_), interval_, startTime_, ttl_, callback_) =>
-          DBSub(id_, interval_, startTime_, ttl_, callback_)
+          val durationTtl =
+            if (ttl_ == -1.0) Duration.Inf else ttl_.seconds
+
+          val durationInt = parsing.OmiParser.parseInterval(interval_)
+          DBSub(id_, durationInt, startTime_, durationTtl, callback_)
       }
     private def dbsubUnapply: 
       DBSubInternal => Option[(Option[Int], Double, Timestamp, Double, Option[String])] = {
         case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
-          Some((Some(id_), interval_, startTime_, ttl_, callback_))
+          val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0
+
+          Some((Some(id_), interval_.toUnit(SECONDS), startTime_, ttlDouble, callback_))
+
         case NewDBSub(interval_, startTime_, ttl_, callback_) =>
-          Some((None, interval_, startTime_, ttl_, callback_))
+          val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0
+
+          Some((None, interval_.toUnit(SECONDS), startTime_, ttlDouble, callback_))
+          
         case _ => None
       }
 
