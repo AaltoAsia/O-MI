@@ -454,7 +454,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             timeframedTreeData =
               subTreeData filter {
                 case (node, Some(value)) => betweenLogic(begin, end)(value)
-                case (node, None) => false
+                case (node, None) => true // keep objects for their description etc.
               }
 
             dbInfoItems: DBInfoItems =
