@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat
 import java.util.{ TimeZone, Locale }
 import akka.testkit.TestProbe
 
- 
 class SystemTest extends Specification with Starter with AfterAll {
 
   override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
@@ -46,7 +45,7 @@ class SystemTest extends Specification with Starter with AfterAll {
   init(dbConnection)
   val serviceActor = start(dbConnection)
   bindHttp(serviceActor)
-  
+
   val probe = TestProbe()
   lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
 
@@ -76,7 +75,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
     val testDescription: String = node \ ("div") \ ("p") text
 
-    val groupedRequests = textAreas.grouped(2).toSeq.map { reqresp =>
+    val groupedRequests = textAreas.grouped(2).map { reqresp =>
       val request: Try[Elem] = getSingleRequest(reqresp)
       val correctresponse: Try[Elem] = getSingleResponse(reqresp)
       val responseWait: Option[Int] = Try(reqresp.last.\@("wait").toInt).toOption
@@ -85,25 +84,27 @@ class SystemTest extends Specification with Starter with AfterAll {
     (groupedRequests, testDescription)
 
   }
-  
-//  lazy val sequentialTest = tests("sequential-test").map { node => 
-//    val textAreas = node \\ ("textarea")
-//    textAreas.scanLeft(NodeSeq.Empty){(res,i) => 
-//      if(res.isEmpty) i
-//      else{
-//        if(res.last.\@("class") == "request"){
-//          res.lastIndexWhere { x => ??? }
-//          res.updated(index, elem)
-//        }
-//        else res ++ i
-//      }}
-//    ??? }
+
+  lazy val sequentialTest = tests("sequential-test").map { node =>
+    val textAreas = node \\ ("textarea")
+    val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>
+      if (res.isEmpty) Seq(i)
+      else {
+        if (res.last.head.\@("class") == "request") {
+          val indx: Int = res.lastIndexWhere { x => x.head.\@("class") == "request" }
+          res.updated(indx, NodeSeq.fromSeq(Seq(res.last.head, i)))
+
+        } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
+      }
+    }
+
+  }
 
   //  dbConnection.remove(types.Path("Objects/OMI-service"))
   def afterAll = {
     system.shutdown()
     dbConnection.destroy()
-    
+
   }
 
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
@@ -121,7 +122,7 @@ class SystemTest extends Specification with Starter with AfterAll {
       case date(pref, timestamp) => {
         val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
         form.setTimeZone(TimeZone.getTimeZone("UTC"))
-//        println(form.parse(timestamp).getTime)
+        //        println(form.parse(timestamp).getTime)
 
         val parsedTimestamp = form.parse(timestamp)
         form.setTimeZone(TimeZone.getDefault)
@@ -191,9 +192,9 @@ class SystemTest extends Specification with Starter with AfterAll {
               val (request, correctResponse, responseWait) = j
               request aka "Subscription request message" must beSuccessfulTry
               correctResponse aka "Correct response message" must beSuccessfulTry
-              
+
               responseWait.foreach { x => Thread.sleep(x * 1000) }
-              
+
               val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
               val response = Try(Await.result(responseFuture, scala.concurrent.duration.Duration.apply(2, "second")))
 
