@@ -87,6 +87,8 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   lazy val sequentialTest = tests("sequential-test").map { node =>
     val textAreas = node \\ ("textarea")
+    println("\n\n\n\n")
+    println(textAreas)
     val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>
       if (res.isEmpty) Seq(i)
       else {
@@ -97,6 +99,7 @@ class SystemTest extends Specification with Starter with AfterAll {
         } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
       }
     }
+    reqrespCombined
   }
 
   //  dbConnection.remove(types.Path("Objects/OMI-service"))
@@ -117,15 +120,20 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   def setTimezoneToSystemLocale(in: String): String = {
     val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})"""".r
+    
     val replaced = date replaceAllIn (in, _ match {
+      
       case date(pref, timestamp) => {
+        
         val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
         form.setTimeZone(TimeZone.getTimeZone("UTC"))
-        //        println(form.parse(timestamp).getTime)
-
+        
         val parsedTimestamp = form.parse(timestamp)
+        
         form.setTimeZone(TimeZone.getDefault)
+        
         val newTimestamp = form.format(parsedTimestamp)
+        
         (pref + "=\"" + newTimestamp + "\"")
       }
     })
@@ -207,7 +215,6 @@ class SystemTest extends Specification with Starter with AfterAll {
 
       })
     }
-    
     "Callback Test\n" >> {
       sequentialTest.foldLeft(Fragments())((res, i) =>{
         println("\n\n\n")
