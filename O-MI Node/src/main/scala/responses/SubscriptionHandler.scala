@@ -128,7 +128,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
         log.debug(s"Added sub as EventSub: $dbsub")
       }
-    } else {
+    } else if (! dbsub.isImmortal ) {
       ttlQueue.enqueue((dbsub.id, (dbsub.ttlToMillis + dbsub.startTime.getTime)))
       self ! CheckTTL
     }
@@ -301,7 +301,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    * @return Either Failure(exception) or the request (subscription) id as Success(Int)
    */
   def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Try[Int] = Try {
-    require(subscription.ttl > 0.0, "Zero time-to-live not supported")
+    require(subscription.ttl.toMillis > 0, "Zero time-to-live not supported")
 
     val paths = getPaths(subscription)
 
@@ -346,6 +346,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
       if (scheduledTimes.forall(_._1.isCancelled)) {
         scheduledTimes = Some((cancellable, currentTime + nextRun))
+
       } else if (scheduledTimes.exists(_._2 > (currentTime + nextRun))) {
         scheduledTimes.foreach(_._1.cancel())
         scheduledTimes=Some((cancellable,currentTime+nextRun))

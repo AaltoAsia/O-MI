@@ -6,12 +6,13 @@ import java.sql.Timestamp
 import types.OdfTypes._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
-//import scala.collection.JavaConversions.i
-import testHelpers.AfterAll
+
+import scala.concurrent.duration._
+import testHelpers.{AfterAll, DeactivatedTimeConversions}
 
 import types._
 
-class SQLiteTest extends Specification with AfterAll {
+class SQLiteTest extends Specification with AfterAll with DeactivatedTimeConversions {
   sequential
   //  implicit def javaIterableToSeq[T](x: java.lang.Iterable[T]): Seq[T] = {
   //    iterableAsScalaIterable(x).toSeq
@@ -40,8 +41,8 @@ class SQLiteTest extends Specification with AfterAll {
     val temp1: Seq[HasPath] = getLeafs(x).toSeq
     temp1.map(n => n.path)
   }
-  lazy val testSub1 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
-  lazy val testSub2 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/sensor3/temp")))
+  lazy val testSub1 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
+  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
     //    sequential
@@ -53,9 +54,9 @@ class SQLiteTest extends Specification with AfterAll {
     var data6 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(6000), "21.7C")
 
     //uncomment other tests too from parsing/responses when fixing this
-    lazy val id1 = db.saveSub(NewDBSub(1, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
-    lazy val id2 = db.saveSub(NewDBSub(2, newTs, 0, Some("callbackaddress")), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
-    lazy val id3 = db.saveSub(NewDBSub(2, newTs, 100, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3")))//, Path("/Objects/path/to/another/sensor2")))
+    lazy val id1 = db.saveSub(NewDBSub(1.seconds, newTs, 0.seconds, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
+    lazy val id2 = db.saveSub(NewDBSub(2.seconds, newTs, 0.seconds, Some("callbackaddress")), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
+    lazy val id3 = db.saveSub(NewDBSub(2.seconds, newTs, 100.seconds, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3")))//, Path("/Objects/path/to/another/sensor2")))
 
     "return true when adding new data" in {
       db.set(data1._1, data1._2, data1._3)
@@ -350,7 +351,7 @@ class SQLiteTest extends Specification with AfterAll {
       db.remove(Path("/Objects/path/to/sensor1/temp"))
       db.remove(Path("/Objects/path/to/sensor2/temp"))
       db.remove(Path("/Objects/path/to/sensor3/temp"))
-//      val id = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
+//      val id = db.saveSub(NewDBSub(1.seconds, new Timestamp(timeNow - 3500), 60.seconds, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
       db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 3000), "21.1C")
       db.set(Path("/Objects/path/to/sensor1/temp"), new Timestamp(timeNow - 2000), "21.2C")
@@ -363,7 +364,7 @@ class SQLiteTest extends Specification with AfterAll {
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 3000), "21.7C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 2000), "21.8C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new Timestamp(timeNow - 1000), "21.9C")
-      val sub  = db.saveSub(NewDBSub(1, new Timestamp(timeNow - 3500), 60, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
+      val sub  = db.saveSub(NewDBSub(1.seconds, new Timestamp(timeNow - 3500), 60.seconds, None), Array(Path("/Objects/path/to/sensor1/temp"), Path("/Objects/path/to/sensor2/temp"), Path("/Objects/path/to/sensor3/temp")))
 
       val res = db.getPollData(sub.id, new Timestamp(timeNow))
       db.removeSub(sub.id)
@@ -380,15 +381,15 @@ class SQLiteTest extends Specification with AfterAll {
     "return correct subscriptions with getAllSubs" in
       {
         val time = Some(new Timestamp(1000))
-        val id1 = db.saveSub(new NewDBSub(1, newTs, 0, None), Array[Path]())
-        val id2 = db.saveSub(new NewDBSub(1, newTs, 0, None), Array[Path]())
-        val id3 = db.saveSub(new NewDBSub(1, newTs, 0, None), Array[Path]())
-        val id4 = db.saveSub(new NewDBSub(1, newTs, 0, None), Array[Path]())
-        val id5 = db.saveSub(new NewDBSub(1, newTs, 0, Some("addr1")), Array[Path]())
-        val id6 = db.saveSub(new NewDBSub(1, newTs, 0, Some("addr2")), Array[Path]())
-        val id7 = db.saveSub(new NewDBSub(1, newTs, 0, Some("addr3")), Array[Path]())
-        val id8 = db.saveSub(new NewDBSub(1, newTs, 0, Some("addr4")), Array[Path]())
-        val id9 = db.saveSub(new NewDBSub(1, newTs, 0, Some("addr5")), Array[Path]())
+        val id1 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, None), Array[Path]())
+        val id2 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, None), Array[Path]())
+        val id3 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, None), Array[Path]())
+        val id4 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, None), Array[Path]())
+        val id5 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr1")), Array[Path]())
+        val id6 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr2")), Array[Path]())
+        val id7 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr3")), Array[Path]())
+        val id8 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr4")), Array[Path]())
+        val id9 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr5")), Array[Path]())
 
         db.getAllSubs(None).length should be >= 9
         db.getAllSubs(Some(true)).length should be >= 5
@@ -406,7 +407,7 @@ class SQLiteTest extends Specification with AfterAll {
     "be able to add many values in one go" in {
 //      db.clearDB()
       db.set(Path("/Objects/path/to/setmany/test1"), new Timestamp(1000), "first")
-      val testSub3 = db.saveSub(NewDBSub(-1, newTs, -1, None), Array(Path("/Objects/path/to/setmany/test1")))
+      val testSub3 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
 
       //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
       val testdata: List[(Path, OdfValue)] = {

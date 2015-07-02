@@ -398,11 +398,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *
    */
   def removeSub(id: Int): Boolean ={
+      
     val result = for {
       subO <- getSubI(id)
 
       subQ      = subs filter (_.id === id)
       subItemsQ = subItems filter( _.subId === id )
+
 
       isSuccess <- subO match {
         case None =>
@@ -415,14 +417,15 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
             _.id inSet subItemNodeIds
           ) result
 
+
           _ <- if (!sub.hasCallback) { 
             val subItemRefCountUpdates = subItemNodes map {
               case node @ DBNode(Some(nodeId),_,_,_,_,_,_,_) =>
                 val newRefCount = node.pollRefCount - 1 
 
-                if ( newRefCount == 0 ) 
-                    removeExcessI(nodeId)
-                else {
+                if ( newRefCount == 0 ) {
+                  removeExcessI(nodeId)
+                }else {
                   val updatedNode = node.copy( pollRefCount = newRefCount )
 
                   getHierarchyNodeQ(nodeId) update updatedNode
@@ -443,6 +446,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     runSync(result.transactionally)
   }
+
   def removeSub(sub: DBSub): Boolean = removeSub(sub.id)
 
 

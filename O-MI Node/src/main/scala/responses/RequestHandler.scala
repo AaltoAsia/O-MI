@@ -94,12 +94,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param request request is O-MI request to be handled
     **/
   def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    val timeout = if (request.ttl > 0) request.ttl.seconds else Duration.Inf
-
     val responseFuture = Future{xmlFromRequest(request)}
 
     Try {
-      Await.result(responseFuture, timeout)
+      Await.result(responseFuture, request.ttl)
     } match {
       case Success((xml: NodeSeq, code: Int)) => (xml, code)
 

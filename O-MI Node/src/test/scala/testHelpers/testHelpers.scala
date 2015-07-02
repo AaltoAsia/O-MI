@@ -71,3 +71,8 @@ class HTML5Parser extends NoBindingFactoryAdapter{
     rootElem
   }
 }
+
+// Disable implicit from specs2 Specification so concurrent.Duration int.seconds etc can be used
+trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {
+  override def intToRichLong(v: Int) = super.intToRichLong(v)
+} 

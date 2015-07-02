@@ -82,12 +82,12 @@ object OdfTypes{
           obj => another.infoItems.toSeq.exists( 
             aobj => aobj.path  == obj.path 
           ) 
-      ).toSeq ++ 
-      another.infoItems.filterNot(
-        aobj => infoItems.toSeq.exists(
-          obj => aobj.path  == obj.path
-        )
-      ).toSeq
+        ).toSeq ++ 
+        another.infoItems.filterNot(
+          aobj => infoItems.toSeq.exists(
+            obj => aobj.path  == obj.path
+          )
+        ).toSeq
       )
       val sameInfos = (infoItems.toSeq ++ another.infoItems.toSeq).filterNot(
         obj => uniqueInfos.exists(
@@ -163,7 +163,8 @@ object OdfTypes{
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement with HasPath {
     def combine(another: OdfInfoItem) : OdfInfoItem ={
-      assert(path == another.path)
+      require(path == another.path, "Should have same paths")
+
       OdfInfoItem(
         path,
         (values ++ another.values).toSeq,
