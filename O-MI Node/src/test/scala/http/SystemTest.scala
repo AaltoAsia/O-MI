@@ -97,7 +97,6 @@ class SystemTest extends Specification with Starter with AfterAll {
         } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
       }
     }
-
   }
 
   //  dbConnection.remove(types.Path("Objects/OMI-service"))
@@ -208,6 +207,14 @@ class SystemTest extends Specification with Starter with AfterAll {
 
       })
     }
-
+    
+    "Callback Test\n" >> {
+      sequentialTest.foldLeft(Fragments())((res, i) =>{
+        println("\n\n\n")
+        println(i)
+        println("\n\n\n")
+        1===1
+      })
+    }
   }
 }
