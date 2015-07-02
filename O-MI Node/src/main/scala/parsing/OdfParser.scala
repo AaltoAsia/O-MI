@@ -45,18 +45,23 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(root: xml.Node): OdfParseResult = { 
-    val schema_err = schemaValitation(root)
-    if (schema_err.nonEmpty)
-      return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
+    try{
+      val schema_err = schemaValitation(root)
+      if (schema_err.nonEmpty)
+        return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
 
-    val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
-    Right(
-      OdfObjects( 
-        if(objects.Object.isEmpty) asJavaIterable(Iterable.empty[OdfObject])
-        else objects.Object.map{ obj => parseObject( obj ) }.toIterable,
-        objects.version 
+      val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
+      Right(
+        OdfObjects( 
+          if(objects.Object.isEmpty) asJavaIterable(Iterable.empty[OdfObject])
+          else objects.Object.map{ obj => parseObject( obj ) }.toIterable,
+          objects.version 
+        )
       )
-    )
+    }catch{
+      case e : Exception => 
+        return Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+    }
   }
 
   private def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
