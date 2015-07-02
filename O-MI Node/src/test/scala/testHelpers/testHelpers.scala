@@ -1,6 +1,6 @@
 package testHelpers
 import org.specs2.mutable._
-import org.specs2.specification.{Step, Fragments}
+import org.specs2.specification.{ Step, Fragments }
 import org.xml.sax.InputSource
 import akka.testkit.TestKit
 import akka.actor.ActorSystem
@@ -11,8 +11,29 @@ import responses.RemoveSubscription
 import scala.xml._
 import parsing._
 
+class SystemTestCallbackServer(destination: ActorRef) extends Actor {
+  import akka.io.IO
+  import spray.can.Http
+  import spray.http._
+  import HttpMethods._
+  import spray.httpx.unmarshalling.BasicUnmarshallers.NodeSeqUnmarshaller
+  import spray.util._
+
+  implicit val system = ActorSystem()
+  //vvv in test
+  //  IO(Http) ! Http.Bind(this, interface = "localhost", port = "12345"
+  def receive = {
+    case _: Http.Connected => sender ! Http.Register(self)
+
+    case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
+      val xmldata = entity.asInstanceOf[NodeSeq]
+      destination ! xmldata
+    }
+  }
+}
+
 trait BeforeAll extends Specification {
-  override def map(fs: =>Fragments) ={
+  override def map(fs: => Fragments) = {
     Step(beforeAll) ^ fs
   }
 
@@ -20,15 +41,15 @@ trait BeforeAll extends Specification {
 }
 
 trait AfterAll extends Specification {
-  override def map(fs: =>Fragments) ={
+  override def map(fs: => Fragments) = {
     fs ^ Step(afterAll)
   }
-    
+
   protected def afterAll()
 }
 
 trait BeforeAfterAll extends Specification {
-  override def map(fs: => Fragments)={
+  override def map(fs: => Fragments) = {
     Step(beforeAll) ^ fs ^ Step(afterAll)
   }
   protected def beforeAll()
@@ -37,9 +58,9 @@ trait BeforeAfterAll extends Specification {
 
 abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
-  """))) with After with Scope{
-    def after = system.shutdown()
-  }
+  """))) with After with Scope {
+  def after = system.shutdown()
+}
 
 class SubscriptionHandlerTestActor extends Actor {
   def receive = {
@@ -54,16 +75,16 @@ class SubscriptionHandlerTestActor extends Actor {
   }
 }
 
-class HTML5Parser extends NoBindingFactoryAdapter{
+class HTML5Parser extends NoBindingFactoryAdapter {
   override def loadXML(source: InputSource, parser: SAXParser) = {
     loadXML(source)
   }
-  
+
   def loadXML(source: InputSource) = {
-    import nu.validator.htmlparser.{sax,common}
+    import nu.validator.htmlparser.{ sax, common }
     import sax.HtmlParser
     import common.XmlViolationPolicy
-    
+
     val reader = new HtmlParser
     reader.setXmlPolicy(XmlViolationPolicy.ALLOW)
     reader.setContentHandler(this)

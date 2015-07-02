@@ -7,7 +7,7 @@ import scala.concurrent._
 import scala.xml._
 import scala.util.Try
 import parsing._
-import testHelpers.{ BeEqualFormatted, HTML5Parser }
+import testHelpers.{ BeEqualFormatted, HTML5Parser, SystemTestCallbackServer }
 import database._
 import testHelpers.AfterAll
 import responses.{ SubscriptionHandler, RequestHandler }
@@ -20,7 +20,9 @@ import java.net.InetSocketAddress
 import org.specs2.specification.Fragments
 import java.text.SimpleDateFormat
 import java.util.{ TimeZone, Locale }
+import akka.testkit.TestProbe
 
+ 
 class SystemTest extends Specification with Starter with AfterAll {
 
   override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
@@ -44,6 +46,9 @@ class SystemTest extends Specification with Starter with AfterAll {
   init(dbConnection)
   val serviceActor = start(dbConnection)
   bindHttp(serviceActor)
+  
+  val probe = TestProbe()
+  lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
 
   val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
   val printer = new scala.xml.PrettyPrinter(80, 2)
@@ -85,6 +90,7 @@ class SystemTest extends Specification with Starter with AfterAll {
   def afterAll = {
     system.shutdown()
     dbConnection.destroy()
+    
   }
 
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
@@ -172,7 +178,9 @@ class SystemTest extends Specification with Starter with AfterAll {
               val (request, correctResponse, responseWait) = j
               request aka "Subscription request message" must beSuccessfulTry
               correctResponse aka "Correct response message" must beSuccessfulTry
-
+              
+              responseWait.foreach { x => Thread.sleep(x * 1000) }
+              
               val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
               val response = Try(Await.result(responseFuture, scala.concurrent.duration.Duration.apply(2, "second")))
 
