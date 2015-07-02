@@ -7,7 +7,7 @@ import scala.concurrent._
 import scala.xml._
 import scala.util.Try
 import parsing._
-import testHelpers.{BeEqualFormatted ,HTML5Parser}
+import testHelpers.{ BeEqualFormatted, HTML5Parser }
 import database._
 import testHelpers.AfterAll
 import responses.{ SubscriptionHandler, RequestHandler }
@@ -18,8 +18,8 @@ import akka.io.{ IO, Tcp }
 import akka.pattern.ask
 import java.net.InetSocketAddress
 import org.specs2.specification.Fragments
-
-
+import java.text.SimpleDateFormat
+import java.util.{ TimeZone, Locale }
 
 class SystemTest extends Specification with Starter with AfterAll {
 
@@ -89,11 +89,28 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
-    Try(XML.loadString(reqresp.head.text))
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
   }
 
   def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
-    Try(XML.loadString(reqresp.last.text))
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text)))
+  }
+
+  def setTimezoneToSystemLocale(in: String): String = {
+    val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})"""".r
+    val replaced = date replaceAllIn (in, _ match {
+      case date(pref, timestamp) => {
+        val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        form.setTimeZone(TimeZone.getTimeZone("UTC"))
+        println(form.parse(timestamp).getTime)
+
+        val parsedTimestamp = form.parse(timestamp)
+        form.setTimeZone(TimeZone.getDefault)
+        val newTimestamp = form.format(parsedTimestamp)
+        (pref + "=\"" + newTimestamp + "\"")
+      }
+    })
+    replaced
   }
 
   "Automatic System Tests" should {
