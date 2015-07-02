@@ -85,6 +85,19 @@ class SystemTest extends Specification with Starter with AfterAll {
     (groupedRequests, testDescription)
 
   }
+  
+//  lazy val sequentialTest = tests("sequential-test").map { node => 
+//    val textAreas = node \\ ("textarea")
+//    textAreas.scanLeft(NodeSeq.Empty){(res,i) => 
+//      if(res.isEmpty) i
+//      else{
+//        if(res.last.\@("class") == "request"){
+//          res.lastIndexWhere { x => ??? }
+//          res.updated(index, elem)
+//        }
+//        else res ++ i
+//      }}
+//    ??? }
 
   //  dbConnection.remove(types.Path("Objects/OMI-service"))
   def afterAll = {
@@ -108,7 +121,7 @@ class SystemTest extends Specification with Starter with AfterAll {
       case date(pref, timestamp) => {
         val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
         form.setTimeZone(TimeZone.getTimeZone("UTC"))
-        println(form.parse(timestamp).getTime)
+//        println(form.parse(timestamp).getTime)
 
         val parsedTimestamp = form.parse(timestamp)
         form.setTimeZone(TimeZone.getDefault)
