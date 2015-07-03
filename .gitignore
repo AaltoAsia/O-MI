@@ -29,6 +29,8 @@ Session.vim
 # this might be allowed if we get it working nicely
 .project
 .classpath
+.cache-main
+.cache-tests
 
 #
 *.pydevproject
