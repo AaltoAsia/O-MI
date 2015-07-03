@@ -155,14 +155,11 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       //returnCode should not be 200
       resultOption must beSome.which(_._2 !== 200)
-//      println("test4:")
-//      println(printer.format(resultOption.get._1.head))
-//      println("correct:")
-//      println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      resultOption must beSome.which(n=> (n._1) must beEqualToIgnoringSpace(correctxmlreturn))
 
       //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
-    }.pendingUntilFixed
+    }
+
 /*    "Give partial result when part of the request is wrong" in {
       val partialxml =
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
