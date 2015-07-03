@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
 import java.net.InetAddress
 
 import testHelpers.BeforeAfterAll
-class OmiServiceSpec extends Specification
+class OmiServiceTest extends Specification
 
   with XmlMatchers
   with Specs2RouteTest
@@ -57,7 +57,8 @@ class OmiServiceSpec extends Specification
 
   def afterAll() = {
     // clear db
-    dbConnection.clearDB()
+    dbConnection.destroy()
+    system.shutdown()
   }
 
   "Data discovery, GET: OmiService" should {
@@ -265,13 +266,16 @@ class OmiServiceSpec extends Specification
           rstatus === OK
           response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
-          response must not \\("value") 
+          //response must not \\("value") 
+          // currently we will return value straight away
+          response must \\("value") length 1
+          response must \\("value") \> "180"
 
         }
-      }.pendingUntilFixed
+      }
       
       "return correct message when polled with the correct requestID" in {
-        Thread.sleep(1100)
+        Thread.sleep(1000)
         requestID1 must beSome
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
@@ -283,25 +287,26 @@ class OmiServiceSpec extends Specification
           rstatus === OK
           response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
+          response must \\("value") length 1
           response must \\("value") \> "180"
 
         }
       }
       "return correct message when subscription ttl has ended" in {
         requestID1 must beSome
-        Thread.sleep(1500)
+        Thread.sleep(1100)
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           val response = responseAs[NodeSeq].head
           val mtype = mediaType
           val rstatus = status
 
           mtype === `text/xml`
-          //          rstatus === BadRequest //TODO: UNCOMMENT 
+          rstatus === NotFound
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "A subscription with this id has expired or doesn't exist")
           response must \("response") \ ("result") \ ("requestID") \> requestID1.get.toString()
         }
-      }.pendingUntilFixed
+      }
 
       val subscriptionTestCorrectEvent: NodeSeq =
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
@@ -317,8 +322,8 @@ class OmiServiceSpec extends Specification
           </omi:read>
         </omi:omiEnvelope>
 
-      s"event subscription request:\n $subscriptionTestCorrect" in {
-        Post("/", subscriptionTestCorrect).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+      s"event subscription request:\n $subscriptionTestCorrectEvent" in {
+        Post("/", subscriptionTestCorrectEvent).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           val response = responseAs[NodeSeq].head
           val mtype = mediaType
           val rstatus = status
@@ -358,10 +363,10 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }
-      }.pendingUntilFixed
+      }
       "return response with new values after db update" in {
         //simulate an value update in the database
-        dbConnection.set(fridgeData._1, new java.sql.Timestamp(4000), "200")
+        dbConnection.set(fridgeData._1, new java.sql.Timestamp(new java.util.Date().getTime()), "200")
 
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
@@ -375,7 +380,7 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("InfoItem") \ ("value") \> "200"
         }
-      }.pendingUntilFixed
+      }
       "return empty message when new values have been already polled" in {
         Post("/", pollmessage).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
 
@@ -389,7 +394,7 @@ class OmiServiceSpec extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object") \ ("id") \> "SmartFridge22334411"
           response must not \\ ("value")
         }
-      }.pendingUntilFixed
+      }
 
     }
   }

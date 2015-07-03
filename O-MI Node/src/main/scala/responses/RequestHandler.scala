@@ -66,7 +66,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             case Failure(e) =>
               failed(e.getMessage)
           }
-          (success, 200)//DUMMY
+        (success, 200)//DUMMY
       }
       case _ if (request.callback.nonEmpty) => {
         // TODO: Can't cancel this callback
@@ -241,7 +241,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           case Some(objects) =>
             Result.pollResult( id.toString, objects ) 
           case None =>
-            Result.notFoundSub
+            Result.notFoundSub(id.toString)
         }
       }
     val returnTuple = (
@@ -249,7 +249,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         1.0,
         results.toSeq : _*
       ),
-      200
+      if (results.exists(_.returnValue.returnCode == "404")) 404 else 200
     )
 
     returnTuple

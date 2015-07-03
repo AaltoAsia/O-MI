@@ -129,7 +129,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return description="Successfully started subcription" returnCode="200"/>
+              <omi:return description="Successfully started subscription" returnCode="200"/>
               <omi:requestID>{ x._1.\\("requestID").text }</omi:requestID>
             </omi:result>
           </omi:response>
@@ -250,14 +250,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Return with error when subscription doesn't exist" in {
-      val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(1234))))
+      val rid = 1234
+      val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(rid))))
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist">
-              </omi:return>
+              <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist"/>
+              <omi:requestID>{ rid }</omi:requestID>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -374,13 +375,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
       val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
       val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-//      println(test.\\("value"))
       test.\\("value").length === 8
+
       val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
+
       dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
       val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
+
       //does not return same value twice
       val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test4.\\("value").length === 0
@@ -391,7 +394,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
-    }.pendingUntilFixed
+    }
     "Subscriptions should be removed from database when their ttl expires" in {
       val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
       val parserlist = OmiParser.parse(simpletestfile)

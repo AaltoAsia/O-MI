@@ -1,8 +1,5 @@
 package http
-import org.specs2.mutable._ //Specification
-import org.specs2.matcher.XmlMatchers._
-//import org.specs2.specification.{Example, ExampleFactory}
-import org.xml.sax.InputSource
+import org.specs2.mutable._
 import spray.http._
 import spray.client.pipelining._
 import akka.actor.{ ActorRef, ActorSystem, Props }
@@ -10,7 +7,7 @@ import scala.concurrent._
 import scala.xml._
 import scala.util.Try
 import parsing._
-import testHelpers.HTML5Parser
+import testHelpers.{ BeEqualFormatted, HTML5Parser, SystemTestCallbackServer }
 import database._
 import testHelpers.AfterAll
 import responses.{ SubscriptionHandler, RequestHandler }
@@ -20,29 +17,26 @@ import akka.util.Timeout
 import akka.io.{ IO, Tcp }
 import akka.pattern.ask
 import java.net.InetSocketAddress
-import org.specs2.matcher._
+import org.specs2.specification.Fragments
+import java.text.SimpleDateFormat
+import java.util.{ TimeZone, Locale }
+import akka.testkit.TestProbe
+import spray.can.Http
 
-class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
-  val printer = new scala.xml.PrettyPrinter(80, 2)
-  override def apply[S <: Seq[Node]](n: Expectable[S]) = {
-    super.apply(n).updateMessage { x => n.description + "\nis not equal to correct:\n" + printer.format(node.head) }
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
 
-  }
-}
-
-class SystemTest extends Specification with Starter with AfterAll {
+@RunWith(classOf[JUnitRunner])
+class SystemTest extends Specification with Starter with AfterAll{
 
   override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
-
-    // create and start sensor data listener
-    // TODO: Maybe refactor to an internal agent!
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
     //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
+    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection), dbConnection)), "omi-service")
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
@@ -50,16 +44,20 @@ class SystemTest extends Specification with Starter with AfterAll {
 
     return omiService
   }
+
   sequential
-  //  implicit val system = ActorSystem()
   import system.dispatcher
 
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
-  
+
   init(dbConnection)
   val serviceActor = start(dbConnection)
   bindHttp(serviceActor)
+
+  val probe = TestProbe()
+  lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
+  IO(Http) ! Http.Bind(testServer, interface = "localhost", port = 20002)
 
   val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
   val printer = new scala.xml.PrettyPrinter(80, 2)
@@ -71,62 +69,205 @@ class SystemTest extends Specification with Starter with AfterAll {
   val testArticles = sourceXML \\ ("article")
   val tests = testArticles.groupBy(x => x.\@("class"))
 
-  val readTests = tests("request-response test").map { node =>
+  lazy val readTests = tests("request-response single test").map { node =>
     val textAreas = node \\ ("textarea")
-    val request = Try(textAreas.find(x => x.\@("class") == "request").map(_.text).map(XML.loadString(_))).toOption.flatten
-    val correctResponse = Try(textAreas.find(x => x.\@("class") == "response").map(_.text).map(XML.loadString(_))).toOption.flatten
+    require(textAreas.length == 2, s"Each request must have exactly 1 response in request-response tests, could not find for: $node")
+    val request: Try[Elem] = getSingleRequest(textAreas)
+    val correctResponse: Try[Elem] = getSingleResponse(textAreas)
     val testDescription = node \ ("div") \ ("p") text
 
     (request, correctResponse, testDescription)
   }
-//  dbConnection.remove(types.Path("Objects/OMI-service"))
-  def afterAll = {
-    system.shutdown()
-    dbConnection.destroy()
+
+  lazy val subsNoCallback = tests("request-response test").map { node =>
+    val textAreas = node \\ ("textarea")
+    require(textAreas.length % 2 == 0, "There must be even amount of response and request messages(1 response for each request)\n" + textAreas)
+
+    val testDescription: String = node \ ("div") \ ("p") text
+
+    val groupedRequests = textAreas.grouped(2).map { reqresp =>
+      val request: Try[Elem] = getSingleRequest(reqresp)
+      val correctresponse: Try[Elem] = getSingleResponse(reqresp)
+      val responseWait: Option[Int] = Try(reqresp.last.\@("wait").toInt).toOption
+      (request, correctresponse, responseWait)
+    }
+    (groupedRequests, testDescription)
+
   }
+
+  lazy val sequentialTest = tests("sequential-test").map { node =>
+    val textAreas = node \\ ("textarea")
+    val testDescription: String = node \ ("div") \ ("p") text
+    val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>
+      if (res.isEmpty) i
+      else {
+        if (res.last.length == 1 && res.last.head.\@("class") == "request" || res.last.head.\@("class") == "write") {
+          val indx: Int = math.max(res.lastIndexWhere { x => x.head.\@("class") == "request" }, res.lastIndexWhere { x => x.head.\@("class") == "write" })
+          res.updated(indx,res.last.head :+ i)
+
+        } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
+      }
+    }
+    (reqrespCombined, testDescription)
+  }
+
+  //  dbConnection.remove(types.Path("Objects/OMI-service"))
+    def afterAll = {
+      system.shutdown()
+      dbConnection.destroy()
+  
+    }
+
+  def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
+    require(reqresp.length >= 1)
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
+  }
+
+  def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text)))
+  }
+  def getCallbackRequest(reqresp: NodeSeq): Try[Elem] = {
+    require(reqresp.length >= 1)
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text.replaceAll("""callback\s*=\s*"(http:\/\/callbackAdrress\.com:5432)"""", """callback="http://localhost:20002/""""))))
+  }
+
+  def setTimezoneToSystemLocale(in: String): String = {
+    val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})"""".r
+
+    val replaced = date replaceAllIn (in, _ match {
+
+      case date(pref, timestamp) => {
+
+        val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        form.setTimeZone(TimeZone.getTimeZone("UTC"))
+
+        val parsedTimestamp = form.parse(timestamp)
+
+        form.setTimeZone(TimeZone.getDefault)
+
+        val newTimestamp = form.format(parsedTimestamp)
+
+        (pref + "=\"" + newTimestamp + "\"")
+      }
+    })
+    replaced
+  }
+
   "Automatic System Tests" should {
-    "WriteTest" >> {
+    "Write Test" >> {
       dbConnection.clearDB()
       //Only 1 write test
-      val testCase = tests("write test").head \\ ("textarea")
-      //val testCase = testArticles.filter(a => a.\@("class") == "write test" ).head \\ ("textarea") //sourceXML \\ ("write test")
-      val request: Option[Elem] = Try(testCase.find(x => x.\@("class") == "request").map(_.text).map(XML.loadString(_))).toOption.flatten
-      val correctResponse: Option[Elem] = Try(testCase.find(x => x.\@("class") == "response").map(_.text).map(XML.loadString(_))).toOption.flatten
+      val writearticle = tests("write test").head
+      val testCase = writearticle \\ ("textarea")
+      val request: Try[Elem] = getSingleRequest(testCase)
+      val correctResponse: Try[Elem] = getSingleResponse(testCase)
+      val testDescription = writearticle \ ("div") \ ("p") text
 
-      request aka "Write request message" must beSome
-      correctResponse aka "Correct write response message" must beSome
+      ("test case:\n " + testDescription.trim + "\n") >> {
+        request aka "Write request message" must beSuccessfulTry
+        correctResponse aka "Correct write response message" must beSuccessfulTry
 
-      val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-      val response = Try(Await.result(responseFuture, scala.concurrent.duration.Duration.apply(2, "second")))
+        val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
+        val response = Try(Await.result(responseFuture, Duration(2, "second")))
 
-      response must beSuccessfulTry
+        response must beSuccessfulTry
 
-      response.get showAs (n => "\n" + printer.format(n.head)) must beEqualToIgnoringSpace(correctResponse.get) //.await(2, scala.concurrent.duration.Duration.apply(2, "second"))
+        response.get showAs (n =>
+          "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+      }
     }
 
     step({
-
+      //let the database write the data
       Thread.sleep(2000);
-      //      val temp = dbConnection.get(types.Path("Objects/Object1")).map(types.OdfTypes.fromPath(_))
     })
+    "Read Test\n" >> {
+      readTests.foldLeft(Fragments())((res, i) => {
+        val (request, correctResponse, testDescription) = i
+        res.append(
+          (testDescription.trim + "\n") >> {
 
-    readTests foreach { i =>
-      val (request, correctResponse, testDescription) = i
-      ("test Case:\n" + testDescription.trim + "\n" /*+ Try(printer.format(request.head)).getOrElse("head of an empty list")  */ ) >> {
+            request aka "Read request message" must beSuccessfulTry
+            correctResponse aka "Correct read response message" must beSuccessfulTry
 
-        request aka "Read request message" must beSome
-        correctResponse aka "Correct read response message" must beSome
+            val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
+            val response = Try(Await.result(responseFuture, Duration(2, "second")))
 
-        val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-        val response = Try(Await.result(responseFuture, scala.concurrent.duration.Duration.apply(2, "second")))
+            response must beSuccessfulTry
 
-        response must beSuccessfulTry
-        //                                                                          prettyprinter only returns string :/
-        response.get showAs (n => "Request Message:\n" + printer.format(request.head) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must /*beEqualToIgnoringSpace*/ new BeEqualFormatted(XML.loadString(printer.format(correctResponse.get.head)))
-
-      }
-
+            response.get showAs (n =>
+              "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+          })
+      })
     }
 
+    "Subscription Test\n" >> {
+      subsNoCallback.foldLeft(Fragments())((res, i) => {
+        val (reqrespwait, testDescription) = i
+        (testDescription.trim() + "\n") >> {
+
+          reqrespwait.foldLeft(Fragments())((res, j) => {
+            "step: " >> {
+
+              val (request, correctResponse, responseWait) = j
+              request aka "Subscription request message" must beSuccessfulTry
+              correctResponse aka "Correct response message" must beSuccessfulTry
+
+              responseWait.foreach { x => Thread.sleep(x * 1000) }
+
+              val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
+              val response = Try(Await.result(responseFuture, Duration(2, "second")))
+
+              response must beSuccessfulTry
+
+              response.get showAs (n =>
+                "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+            }
+          })
+        }
+
+      })
+    }
+    "Callback Test\n" >> {
+      sequentialTest.foldLeft(Fragments())((res, i) => {
+
+        val (singleTest, testDescription) = i
+
+        (testDescription.trim() + "\n") >> {
+          singleTest.foldLeft(Fragments())((res, j) => {
+            "Step: " >> {
+
+              require(j.length == 2 || j.length == 1)
+              val correctResponse = getSingleResponse(j)
+              val responseWait: Option[Int] = Try(j.last.\@("wait").toInt).toOption
+
+              correctResponse aka "Correct response message" must beSuccessfulTry
+
+              if (j.length == 2) {
+                val request = getCallbackRequest(j)
+
+                request aka "Subscription request message" must beSuccessfulTry
+
+                responseWait.foreach { x => Thread.sleep(x * 1000) }
+                println(request.get)
+                val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
+                val response = Try(Await.result(responseFuture, Duration(2, "second")))
+                //              
+                response must beSuccessfulTry
+                //              
+                response.get showAs (n =>
+                  "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+                //              
+              } else {
+
+                //              probe.expectMsgType[NodeSeq](Duration(1, "second")) must new BeEqualFormatted(correctResponse.get)
+                1 === 1
+              }
+              //
+            }
+          })
+        }
+      })
+    }
   }
 }

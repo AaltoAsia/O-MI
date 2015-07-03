@@ -84,7 +84,7 @@ trait Starter {
     val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection) )), "omi-service")
+    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection), dbConnection)), "omi-service")
 
 
 

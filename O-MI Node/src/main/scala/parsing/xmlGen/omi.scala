@@ -93,7 +93,8 @@ case object NodeValue extends TargetTypeType { override def toString = "node" }
 
 /** Result of a request.
 */
-case class RequestResultType(returnValue: ReturnType,
+case class RequestResultType(
+  returnValue: ReturnType,
   requestID: Option[IdType] = None,
   msg: Option[scalaxb.DataRecord[Any]] = None,
   nodeList: Option[NodesType] = None,
@@ -105,7 +106,8 @@ case class RequestResultType(returnValue: ReturnType,
 
 /** Return status of request. Use HTTP codes / descriptions when applicable.
 */
-case class ReturnType(value: String,
+case class ReturnType(
+  value: String,
   returnCode: String,
   description: Option[String] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]])

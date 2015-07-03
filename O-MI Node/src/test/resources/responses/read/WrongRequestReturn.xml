@@ -1,27 +1,7 @@
-<omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <omi:response>
-	<omi:result msgformat="odf">
-	    <omi:return returnCode="200"></omi:return>
-	    <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
-		<Objects>
-		    <Object>
-			<id>ReadTest</id>
-			<Object>
-			    <id>NonexistingObject</id>
-			    <Error> Item not found or wrong type (InfoItem/Object) </Error>
-			</Object>
-			<Object>
-			    <id>Roomsensors1</id>
-			    <InfoItem name="wrong">
-				<Error> Item not found in the database </Error>
-			    </InfoItem>
-			    <InfoItem name="Temperature">
-				<Error> Item not found in the database </Error>
-			    </InfoItem>
-			</Object>
-		    </Object>
-		</Objects>
-	    </omi:msg>
-	</omi:result>
+        <omi:result>
+            <omi:return description="Such item/s not found." returnCode="404"></omi:return>
+        </omi:result>
     </omi:response>
 </omi:omiEnvelope>
