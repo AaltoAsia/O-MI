@@ -24,7 +24,7 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
  * Actor that handles incoming http messages
  * @param requestHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(reqHandler: RequestHandler, dbobj: DB) extends Actor with ActorLogging with OmiService {
 
   /**
    * the HttpService trait defines only one abstract member, which
@@ -42,7 +42,7 @@ class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLoggin
    */
   def receive = runRoute(myRoute)
 
-  implicit val dbobject = new SQLiteConnection
+  implicit val dbobject = dbobj
 
 }
 
