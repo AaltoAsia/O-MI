@@ -42,7 +42,7 @@ class SystemTest extends Specification with Starter with AfterAll {
     //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
+    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection), dbConnection)), "omi-service")
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
