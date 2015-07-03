@@ -374,13 +374,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
       val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
       val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-//      println(test.\\("value"))
       test.\\("value").length === 8
+
       val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test2.\\("value").length === 0
+
       dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
       val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test3.\\("value").length === 1
+
       //does not return same value twice
       val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
       test4.\\("value").length === 0
@@ -391,7 +393,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
-    }.pendingUntilFixed
+    }
     "Subscriptions should be removed from database when their ttl expires" in {
       val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
       val parserlist = OmiParser.parse(simpletestfile)

@@ -114,9 +114,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       //GET all vals
       val timeframedVals = sortedValues filter betweenLogic(Some(dbsub.startTime), Some(newTime))
 
-      val lastValO = for {
+      val lastValO: Option[String] = for {
         head <- timeframedVals.headOption
-        lastVal <- lastValues.get(head.hierarchyId)
+        lastValRes <- lastValues.get(head.hierarchyId)
+        lastVal <- lastValRes
         } yield lastVal
 
       val sameAsLast = lastValO match {
@@ -177,15 +178,16 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       // Update SubItems lastValues
       lastValUpdates <- if ( sub.isEventBased ){
         val actions = data map {
-          case (node, vals) =>
+          case (node, vals) if vals.nonEmpty =>
             val lastVal = vals.lastOption.map{ _.value }
             val subItemQ = subItems.filter{ subItem =>
               subItem.hierarchyId === node.id &&
               subItem.subId === sub.id
             }
             subItemQ.update(
-              DBSubscriptionItem( sub.id, node.id.get, lastVal ) 
+              DBSubscriptionItem( sub.id, node.id.get, lastVal )
             )
+          case _ => DBIO.successful(())
         }
         DBIO.sequence(actions)
 

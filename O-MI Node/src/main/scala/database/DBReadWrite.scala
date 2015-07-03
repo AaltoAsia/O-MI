@@ -480,20 +480,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       subId <- subsWithInsertId += sub
       subItemNodes <- getHierarchyNodesI(dbItems) 
 
-      subInfoItems: DBInfoItems <- getInfoItemsI(subItemNodes)
-
-
       _ = require( subItemNodes.length >= dbItems.length, "Invalid path, no such item found")
 
-      newSubItems = subInfoItems map {
-        case (hNode, values) =>
-          val lastValue: Option[String] = for {
-            dbValue <- values.headOption
-            if (sub.isEventBased)
-          } yield dbValue.value
+      newSubItems = subItemNodes map
+        (node => DBSubscriptionItem( subId, node.id.get, None ))
 
-          DBSubscriptionItem( subId, hNode.id.get, lastValue) 
-        }
       _ <- subItems ++= newSubItems 
 
       _ <- if (!sub.hasCallback) {
