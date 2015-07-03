@@ -226,10 +226,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def setDescription(hasPath: HasPath) : Unit  = {
 
     val path = hasPath.path
-    val description = if(hasPath.description.nonEmpty) 
-      hasPath.description.get.value
-    else 
-      throw new RuntimeException("Tried to set unexisting description.")
+    val description = hasPath.description.getOrElse(
+      throw new IllegalArgumentException("Tried to set unexisting description.")
+    )
 
     val updateAction = for {
       _ <- hasPath match {
@@ -242,7 +241,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       
       result <- nodeO match {
         case Some(hNode) => 
-          hierarchyNodes.filter( _.id === hNode.id).update(DBNode(hNode.id,hNode.path, hNode.leftBoundary, hNode.rightBoundary, hNode.depth, description, hNode.pollRefCount, hNode.isInfoItem))
+          val newNode = hNode.copy(description = description.value)
+          hierarchyNodes.filter( _.id === hNode.id).update(newNode)
         case _ =>
           throw new RuntimeException("Tried to set description on unknown object.")
       }

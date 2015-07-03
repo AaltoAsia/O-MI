@@ -129,7 +129,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return description="Successfully started subcription" returnCode="200"/>
+              <omi:return description="Successfully started subscription" returnCode="200"/>
               <omi:requestID>{ x._1.\\("requestID").text }</omi:requestID>
             </omi:result>
           </omi:response>
