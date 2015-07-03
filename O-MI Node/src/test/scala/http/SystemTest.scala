@@ -27,7 +27,7 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SystemTest extends Specification with Starter with AfterAll{
+class SystemTest extends Specification with Starter with AfterAll {
 
   override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
@@ -103,7 +103,7 @@ class SystemTest extends Specification with Starter with AfterAll{
       else {
         if (res.last.length == 1 && res.last.head.\@("class") == "request" || res.last.head.\@("class") == "write") {
           val indx: Int = math.max(res.lastIndexWhere { x => x.head.\@("class") == "request" }, res.lastIndexWhere { x => x.head.\@("class") == "write" })
-          res.updated(indx,res.last.head :+ i)
+          res.updated(indx, res.last.head :+ i)
 
         } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
       }
@@ -112,11 +112,11 @@ class SystemTest extends Specification with Starter with AfterAll{
   }
 
   //  dbConnection.remove(types.Path("Objects/OMI-service"))
-    def afterAll = {
-      system.shutdown()
-      dbConnection.destroy()
-  
-    }
+  def afterAll = {
+    system.shutdown()
+    dbConnection.destroy()
+
+  }
 
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
@@ -201,7 +201,7 @@ class SystemTest extends Specification with Starter with AfterAll{
       })
     }
 
-    "Subscription Test\n" >> {
+    "Subscription Test" >> {
       subsNoCallback.foldLeft(Fragments())((res, i) => {
         val (reqrespwait, testDescription) = i
         (testDescription.trim() + "\n") >> {
@@ -233,7 +233,7 @@ class SystemTest extends Specification with Starter with AfterAll{
 
         val (singleTest, testDescription) = i
 
-        (testDescription.trim() + "\n") >> {
+        (testDescription.trim()) >> {
           singleTest.foldLeft(Fragments())((res, j) => {
             "Step: " >> {
 
@@ -260,8 +260,13 @@ class SystemTest extends Specification with Starter with AfterAll{
                 //              
               } else {
 
-                //              probe.expectMsgType[NodeSeq](Duration(1, "second")) must new BeEqualFormatted(correctResponse.get)
-                1 === 1
+                val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
+                
+                messageOption must beSome
+                
+                messageOption.get showAs (n =>
+                  "Response at callback server:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+
               }
               //
             }

@@ -16,7 +16,7 @@ class SystemTestCallbackServer(destination: ActorRef) extends Actor {
   import spray.can.Http
   import spray.http._
   import HttpMethods._
-  import spray.httpx.unmarshalling.BasicUnmarshallers.NodeSeqUnmarshaller
+  import spray.httpx.unmarshalling._
   import spray.util._
 
   implicit val system = ActorSystem()
@@ -26,9 +26,12 @@ class SystemTestCallbackServer(destination: ActorRef) extends Actor {
     case _: Http.Connected => sender ! Http.Register(self)
 
     case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
-      val xmldata = entity.asInstanceOf[NodeSeq]
+      val xmldata: Option[NodeSeq] = entity.as[NodeSeq].toOption//.asInstanceOf[NodeSeq]
+      println(xmldata)
       destination ! xmldata
     }
+    
+    
   }
 }
 
