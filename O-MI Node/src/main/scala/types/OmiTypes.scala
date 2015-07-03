@@ -37,8 +37,8 @@ object OmiTypes{
     // Note: defs can be implemented also as val and lazy val
     def interval: Duration
     def ttl: Duration
-    def isIntervalBased  = interval.toMillis >= 0
-    def isEventBased = interval.toSeconds == -1
+    def isIntervalBased  = interval >= 0.milliseconds
+    def isEventBased = interval == -1.seconds
     def ttlToMillis: Long = ttl.toMillis
     def intervalToMillis: Long = interval.toMillis
     def isImmortal = ! ttl.isFinite
@@ -47,7 +47,7 @@ object OmiTypes{
   }
 
 /** Request for getting data for current interval.
-  *
+  * Used for subscription callbacks.
   **/
   case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
     def ttl = sub.ttl

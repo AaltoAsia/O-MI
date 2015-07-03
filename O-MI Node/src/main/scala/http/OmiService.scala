@@ -139,7 +139,7 @@ trait OmiService extends HttpService with CORSSupport {
                     requestHandler.handleRequest(request)
               }
 
-              complete((200, response))
+              complete((returnCode, response))
 
             case Left(errors) =>  // Errors found
 
