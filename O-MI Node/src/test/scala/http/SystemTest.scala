@@ -87,8 +87,6 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   lazy val sequentialTest = tests("sequential-test").map { node =>
     val textAreas = node \\ ("textarea")
-    println("\n\n\n\n")
-    println(textAreas)
     val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>
       if (res.isEmpty) Seq(i)
       else {
