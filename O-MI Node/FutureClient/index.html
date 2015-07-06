@@ -21,8 +21,7 @@
      <![endif]-->
     </head>
     <body>
-	<div class="navbar-fixed-top">
-	    <nav class="navbar navbar-default navbar-fixed-top navbar-inverse" style="margin-bottom:0;">
+	    <nav class="navbar navbar-default navbar-static-top navbar-inverse" style="margin-bottom:0;">
 		<div class="container-fluid">
 		    <div class="navbar-header">
 			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -57,8 +56,8 @@
 		    </ul>
 		</div>
 	    </nav>
-	    <div class="row col-md-12" style="top:52px;">
-		<div class="col-md-2 sidebar sidebar-fixed-top navbar-default" >
+	    <div class="row col-md-12">
+		<div class="col-md-3 sidebar navbar-default" >
 		    <div class="row">
 			<div class="sidebar-header">
 			    <a class="sidebar-brand">
@@ -66,172 +65,131 @@
 			    </a>
 			</div>
 		    </div>
+		    <div class="row" style="margin-left:20px">
+			<button class="btn btn-danger" type="button" >
+			    Read All
+			</button>
+		    </div>
 		    <div class="row">
 			<div id="nodetree">
 			    <ul>
-				<li>Root node 1
-				    <ul>
-					<li id="child_node_1">Child node 1</li>
-					<li>Child node 2</li>
-				    </ul>
+				<li>Objects
 				</li>
-				<li>Root node 2</li>
 			    </ul>
 			</div>
 		    </div>
-		</div>
-		<nav class="col-md-10 navbar navbar-default" style="margin-bottom:0;margin-left:17%; ">
-		    <div class="container-fluid">
-		    <div class="navbar-header">
-			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-			    <span class="sr-only">Toggle navigation</span>
-			    <span class="icon-bar"></span>
-			    <span class="icon-bar"></span>
-			    <span class="icon-bar"></span>
-			</button>
-			<a class="navbar-brand">Request</a> 
-		    </div>
-		    <div class="btn-group navbar-btn" data-toggle="buttons">
-			<label class="btn btn-primary active">
-			    <input type="radio" name="options" id="option1" autocomplete="off" checked> Read
-			</label>
-			<label class="btn btn-primary">
-			    <input type="radio" name="options" id="option2" autocomplete="off"> Subscription
-			</label>
-			<label class="btn btn-primary">
-			    <input type="radio" name="options" id="option3" autocomplete="off"> Poll
-			</label>
-			<label class="btn btn-primary">
-			    <input type="radio" name="options" id="option3" autocomplete="off"> Cancel
-			</label>
-			<label class="btn btn-primary">
-			    <input type="radio" name="options" id="option3" autocomplete="off"> Write
-			</label>
-			<label class="btn btn-primary">
-			    <input type="radio" name="options" id="option3" autocomplete="off"> Data Discovery
-			</label>
-		    </div>
-		    </div>
-		</nav>
-	    </div>
-	</div>
-	<div class="container-fluid" style="padding-right:0;padding-left:0;">
-	    <div class="row col-md-12" style="top:104px;">
-		<div class="page-content col-md-10" style="padding-right=0;" >
-		    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-			<div class="panel panel-default">
-			    <div class="panel-heading" role="tab" id="headingDescription">
-				<a class="panel-title" role="button" data-toggle="collapse" href="#collapseDescription" aria-expanded="true" aria-controls="collapseDescription">
-				    <h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-				   <b>Description</b></h5>
-				</a>
-			    </div>
-			    <div id="collapseDescription" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingDescription">
-				<div class="panel-body">
-				    <h4>Name of Example of Request</h4>
-				    <p>Textual description of request</p>
-				</div>
-			    </div>
+		    <div class="row">
+			<div id="requesttree">
+			    <ul>
+				<li data-jstree='{"opened":true}' >Read
+				    <ul>
+					<li>One time read
+					</li>
+					<li>Subscription
+					</li>
+					<li>Poll
+					</li>
+				    </ul>
+				</li>
+				<li>Cancel
+				</li>
+				<li>Write
+				</li>
+			    </ul>
 			</div>
-			<div class="panel panel-default">
-			    <div class="panel-heading" role="tab" id="headingExample">
-				<div class="panel-title">
-				    <a class="collapsed" aria-controls="collapseExample" aria-expanded="false" href="#collapseExample" data-toggle="collapse" role="button">
-					<h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-					<b>Example</b></h5>
-				    </a>
-				</div>
-			    </div>
-			    <div id="collapseExample" class="panel-collapse collapse" aria-labelledby="headingExample" role="tabpanel" aria-expanded="false" style="height: 0px;">
-				<div class="panel-body">
-				    <div class="btn-group pull-left">
-					<button type="button" class="btn btn-default dropdown-toggle btn-block btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-					    Example Selector <span class="caret"></span>
-					</button>
-					<ul class="dropdown-menu">
-					    <li><a>Example selector</a></li>
-					    <li><a>Example selector</a></li>
-					    <li><a>Example selector</a></li>
-					    <li><a>Example selector</a></li>
-					    <li><a>Example selector</a></li>
-					    <li><a>Example selector</a></li>
-					</ul>
+		    </div>
+		    <div class="row">
+			<form>
+			    <div class="panel panel-default" style="margin:20px;">
+				<div class="panel-heading">
+				    <div class="panel-title">
+					<h5 style="margin-top:0px;margin-bottom:0px;">
+					    <b>Required</b></h5>
 				    </div>
+				</div>
+				<div class="panel-body">
 				    <div class="well">
-					<div class="container">
-					    <textarea class="col-md-10"></textarea>
+					<div id="sharedParams" class="form-group form-inline">
+					    <label for="ttl">ttl:</label>
+					    <input type="int" class="form-control" id="ttl">
 					</div>
 				    </div>
 				</div>
 			    </div>
-			</div>
-			<div class="panel panel-default">
-			    <div class="panel-heading" role="tab" id="requestCreationheading">
-				<a class="panel-title" role="button" data-toggle="collapse" href="#collapseRequestCreation" aria-expanded="true" aria-controls="collapseRequestCreation">
-				    <h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-					<b>Request Creation</b></h5>
-				</a>
-			    </div>
-			    <div id="collapseRequestCreation" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="requestCreationHeading">
-				<div class="panel-body">
-				    <div class="row">
-					<form>
-					    <label style="margin-left:20px">Shared:</label>
-					    <div class="well">
-						<div id="sharedParams" class="form-group form-inline">
-						    <label for="ttl">ttl:</label>
-						    <input type="int" class="form-control" id="ttl">
-						    <label for="callback">callback:</label>
-						    <input type="int" class="form-control" id="callback">
-						</div>
-					    </div>
-					    <label style="margin-left:20px">Specific:</label>
-					    <div class="well">
-						<div id="requestParams" class="form-inline">
-						    <div class="form-group">
-							<label>Take:</label>
-							<div class="form-horizontal">
-							    <label for="newest">Newest:</label>
-							    <input type="int" class="form-control" id="newest">
-							</div>
-							<div class="form-horizontal">
-							    <label for="newest">Oldest:</label>
-							    <input type="int" class="form-control" id="oldest">
-							</div>
-						    </div>
-						    <div class="form-group">
-							<label>Timeframe:</label>
-							<div class="form-horizontal">
-							    <label for="begin">begin</label>
-							    <input type="int" class="form-control" id="begin" >
-							</div>
-							    <div class="form-horizontal">
-								<label for="end">end</label>
-								<input type="int" class="form-control" id="end" >
-							    </div>
-						    </div>
-						</div>
-					    </div>
-					</form>
+			    <div class="panel panel-default" style="margin:20px;">
+				<div class="panel-heading" role="tab" id="headingOptionalParams">
+				    <div class="panel-title">
+					<a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
+					    <h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+						<b>Optional</b></h5>
+					</a>
 				    </div>
-				    <div class="row">
-					<div class="col-md-6">
-					    <p>
-					    <button type="button" class="btn btn-sm btn-primary">Send</button>
-					    <b>Request:</b>
-					    </p>
-					    <textarea class="col-md-5"></textarea>
+				</div>
+				<div id="collapseOptionalParams" class="panel-collapse collapse" aria-labelledby="headingOptionalParams" role="tabpanel" aria-expanded="false" style="height: 0px;">
+				    <div class="panel-body">
+					<div class="well">
+					    <div id="sharedParams" class="form-group form-inline">
+						<label for="callback">callback:</label>
+						<input type="int" class="form-control" id="callback">
+					    </div>
+					    <div id="requestParams" class="form-inline">
+						<div class="form-group">
+						    <label>Take:</label>
+						    <div class="form-horizontal">
+							<label for="newest">Newest:</label>
+							<input type="int" class="form-control" id="newest">
+						    </div>
+						    <div class="form-horizontal">
+							<label for="newest">Oldest:</label>
+							<input type="int" class="form-control" id="oldest">
+						    </div>
+						</div>
+						<div class="form-group">
+						    <label>Timeframe:</label>
+						    <div class="form-horizontal">
+							<label for="begin">begin:</label>
+							<input type="int" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS">
+						    </div>
+						    <div class="form-horizontal">
+							<label for="end">end:</label>
+							<input type="int" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS">
+						    </div>
+						</div>
+					    </div>
 					</div>
-					<div class="col-md-6">
-					    <p><b>Response:</b></p>
-					    <textarea class="col-md-5"></textarea>
-					</div>
+				    </div>
+				</div>
+			    </div>
+			</form>
+		    </div>
+		</div>
+		<div class="col-md-9 container-fluid" style="padding-right:0;padding-left:0;">
+		    <div class="page-content" style="padding-right=0;" >
+			<div class="panel panel-default">
+			    <div class="panel-heading">
+				<h5 style="margin-top:0px;margin-bottom:0px;"><b>Request and response</b></h5>
+			    </div>
+			    <div class="panel-body">
+				<div class="row">
+				    <div class="col-md-6">
+					<p>
+					<button type="button" class="btn btn-sm btn-primary">Send</button>
+					<b>Request:</b>
+					</p>
+					<textarea class="col-md-5"></textarea>
+				    </div>
+				</div>
+				<div class="row">
+				    <div class="col-md-6">
+					<p><b>Response:</b></p>
+					<textarea class="col-md-5"></textarea>
 				    </div>
 				</div>
 			    </div>
 			</div>
 		    </div>
 		</div>
+	    </div>
 	    </div>
 	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
