@@ -112,8 +112,20 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
       } else if (dbsub.isEventBased) {
 
-        dbConnection.getSubscribtedItems(dbsub.id) foreach {
-          case SubscriptionItem(_, path, Some(lastValue)) =>
+        dbConnection.getSubscribedItems(dbsub.id) foreach {
+          case SubscriptionItem(_, path, lastValueO) =>
+            val lastValue: String = lastValueO match {
+              case Some(v) => v
+              case None    => (for {
+                infoItem <- dbConnection.get(path)
+                last     <- infoItem match {
+                  case info: OdfInfoItem => info.values.headOption
+                  case o => //noop
+                    log.error(s"Didn't expect other than InfoItem: $o")
+                    None
+                }
+              } yield last.value).getOrElse("")
+            }
             eventSubs.get(path.toString) match {
 
               case Some( ses : Seq[EventSub] ) => 
@@ -139,6 +151,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    * @return true on success
    */
   private def removeSub(id: Int): Boolean = {
+    log.debug(s"Removing sub $id...")
     dbConnection.getSub(id) match {
       case Some(dbsub) => removeSub(dbsub)
       case None => false
@@ -151,9 +164,18 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    */
   private def removeSub(sub: DBSub): Boolean = {
     if (sub.isEventBased) {
-      eventSubs.foreach{ 
-        case (path: String, ses: Seq[EventSub])  =>
-        eventSubs = eventSubs.updated(path, ses.filter( _.sub.id != sub.id ))    
+      val removedPaths = dbConnection.getSubscribedPaths(sub.id) 
+      removedPaths foreach { removedPath => 
+        val path = removedPath.toString
+        eventSubs get path match {
+          case Some(ses: Seq[EventSub]) if ses.length > 1 =>
+            eventSubs.updated(path, ses.filter( _.sub.id != sub.id ))    
+          case Some(ses: Seq[EventSub]) if ses.length == 1 &&
+              ses.headOption.map(_.sub.id == sub.id).getOrElse(false) =>
+            // remove the whole entry to keep empty lists from piling up in the map
+            eventSubs -= path
+          case None => // noop
+        } 
       }
     } else {
       //remove from intervalSubs
@@ -182,7 +204,6 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    * @param paths Paths of modified InfoItems.
    */
   def checkEventSubs(paths: Seq[Path]): Unit = {
-
     for (infoItemPath <- paths; path <- infoItemPath.getParentsAndSelf) {
       var newestValue: Option[String] = None
 
@@ -190,7 +211,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
         case Some(ses : Seq[EventSub]) => {
           ses.foreach{
-            case EventSub(subscription, lastValue) => 
+            case e@EventSub(subscription, lastValue) => 
               if (hasTTLEnded(subscription, currentTimeMillis())) {
                 removeSub(subscription)
               } else {
@@ -202,7 +223,8 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
                     }.getOrElse("")
                     case _ => ""// noop, already logged at loadSub
                   }
-                
+               
+                println(s"MATCHING EVENTSUB: $e")
                 if (lastValue != newestValue.getOrElse("")){
 
                   //def failed(reason: String) =
@@ -318,7 +340,10 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     val requestID = dbsub.id 
     Future{
       loadSub(dbsub)
-    }
+      } onComplete {
+        case Success(v) => println("SUCCESS")
+        case Failure(e) => log.error(e.getStackTrace().mkString("\n"))
+      }
     requestID
   }
 

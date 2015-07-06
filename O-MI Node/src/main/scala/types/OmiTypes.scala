@@ -23,7 +23,7 @@ object OmiTypes{
   sealed trait OmiRequest {
     def ttl: Duration
     def callback: Option[String]
-    def hasCallback = callback.isDefined
+    def hasCallback = callback.isDefined && callback.getOrElse("").nonEmpty
   }
   sealed trait PermissiveRequest
   sealed trait OdfRequest {

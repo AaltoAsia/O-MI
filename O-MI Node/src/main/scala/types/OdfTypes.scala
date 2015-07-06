@@ -158,7 +158,7 @@ object OdfTypes{
 
   case class OdfInfoItem(
     path:                 Path,
-    values:               JavaIterable[OdfValue],
+    values:               JavaIterable[OdfValue] = Iterable(),
     description:          Option[OdfDescription] = None,
     metaData:             Option[OdfMetaData] = None
   ) extends OdfElement with HasPath {
