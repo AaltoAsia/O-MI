@@ -10,7 +10,7 @@
 	<!-- Bootstrap -->
 	<link href="css/bootstrap.min.css" rel="stylesheet">
 	<link rel="stylesheet" href="themes/default/style.min.css" />
-
+	<link href="css/codemirror.css" rel="stylesheet">
 	<link href="css/mystyle.css" rel="stylesheet">
 
 	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -57,7 +57,7 @@
 		</div>
 	    </nav>
 	    <div class="row col-md-12">
-		<div class="col-md-3 sidebar navbar-default" >
+		<div class="col-md-4 sidebar navbar-default" >
 		    <div class="row">
 			<div class="sidebar-header">
 			    <a class="sidebar-brand">
@@ -104,7 +104,7 @@
 				<div class="panel-heading">
 				    <div class="panel-title">
 					<h5 style="margin-top:0px;margin-bottom:0px;">
-					    <b>Required</b></h5>
+					    <b>Required parameters</b></h5>
 				    </div>
 				</div>
 				<div class="panel-body">
@@ -121,7 +121,7 @@
 				    <div class="panel-title">
 					<a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
 					    <h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-						<b>Optional</b></h5>
+						<b>Optional parameters</b></h5>
 					</a>
 				    </div>
 				</div>
@@ -163,7 +163,7 @@
 			</form>
 		    </div>
 		</div>
-		<div class="col-md-9 container-fluid" style="padding-right:0;padding-left:0;">
+		<div class="col-md-8 container-fluid" style="padding-right:0;padding-left:0;">
 		    <div class="page-content" style="padding-right=0;" >
 			<div class="panel panel-default">
 			    <div class="panel-heading">
@@ -171,18 +171,22 @@
 			    </div>
 			    <div class="panel-body">
 				<div class="row">
-				    <div class="col-md-6">
+				    <div class="col-md-12">
 					<p>
-					<button type="button" class="btn btn-sm btn-primary">Send</button>
-					<b>Request:</b>
+					    <button type="button" class="btn btn-sm btn-primary">Send</button>
+					    <b>Request:</b>
 					</p>
-					<textarea class="col-md-5"></textarea>
+					<div class="well">
+					    <textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off"  wrap="off"></textarea>
+					</div>
 				    </div>
 				</div>
 				<div class="row">
-				    <div class="col-md-6">
+				    <div class="col-md-12">
 					<p><b>Response:</b></p>
-					<textarea class="col-md-5"></textarea>
+					<div class="well">
+					    <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off"  wrap="off"></textarea>
+					</div>
 				    </div>
 				</div>
 			    </div>
@@ -196,6 +200,8 @@
 	<!-- Include all compiled plugins (below), or include individual files as needed -->
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/jstree.min.js"></script>
+	<script src="js/codemirror.js"></script>
+	<script src="js/xml.js"></script>
 	<script src="js/myjs.js"></script>
     </body>
 </html>
