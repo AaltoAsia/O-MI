@@ -1,5 +1,6 @@
 .well {
-    margin: 20px 20px 20px 20px;
+    padding: 5px;
+    margin-bottom: 0px;
 }
 .siderbar{
     position: relative;
@@ -32,5 +33,5 @@
 }
 
 .page-content {
-    left: 17%;
+    left: 25.5%;
 }
