@@ -30,3 +30,7 @@
 .page-content {
     left: 25.5%;
 }
+
+.panel + form {
+    margin-top: 5px;
+}
