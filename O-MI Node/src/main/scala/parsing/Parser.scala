@@ -4,7 +4,7 @@ import types._
 import types.OmiTypes._
 import types.OdfTypes._
 import scala.xml._
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 import java.io.StringReader
 import java.io.IOException
 import org.xml.sax.SAXException;
@@ -31,22 +31,24 @@ abstract trait Parser[Result] {
    * @return ParseErrors found while checking, if empty, successful
    */
   def schemaValitation(xml: Node): Seq[ParseError] = {
-    try {
-      val xsdPath = schemaPath
-      val factory : SchemaFactory =
-        SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-      val schema: Schema = factory.newSchema(xsdPath)
-      val validator: Validator = schema.newValidator()
+    val factory : SchemaFactory =
+      SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+    val schema: Schema = factory.newSchema(schemaPath)
+    val validator: Validator = schema.newValidator()
+    Try {
       validator.validate(new StreamSource(new StringReader(xml.toString)))
-    } catch {
-      case e: IOException =>
-        return Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
-      case e: SAXException =>
-        return Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
-      case e: Exception =>
-        return Seq(ParseError("Unknown exception: " + e.getMessage))
+    } match {
+      case Success(a) =>
+        Seq.empty;
+      case Failure(e) => e match {
+        case e: IOException =>
+          Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
+        case e: SAXException =>
+          Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
+        case e: Exception =>
+          Seq(ParseError("Unknown exception: " + e.getMessage))
+      }
     }
-    return Seq.empty;
   }
 
 }
