@@ -15,7 +15,7 @@ function formatXml(xml) {
 			if (trim.match( /.+<\/\w[^>]*>$/ )) {
 				indent = 0;
 			} else if (trim.match( /^<\/\w/ )) {
-				if (pad != 0) {
+				if (pad !== 0) {
 					pad -= 2;
 				}
 			} else if (trim.match( /^<\w[^>]*[^\/]>.*$/ )) {

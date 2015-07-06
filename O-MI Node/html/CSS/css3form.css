@@ -1,5 +1,3 @@
-	/*custom font*/
-@import url(http://fonts.googleapis.com/css?family=Montserrat);
 
 /*basic reset*/
 * {margin: 0; padding: 0;}
@@ -13,7 +11,7 @@ body {
 	font-family: montserrat, arial, verdana;
 }
 /*form styles*/
-#msform {
+.msform {
 	width: 80em;
 	min-height: 85%;
 	margin: 0 auto;
@@ -21,26 +19,30 @@ body {
 	position: relative;
 }
 
-#msform fieldset {
+.msform fieldset {
 	background: white;
 	border: 0 none;
 	border-radius: 3px;
 	box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
 	padding: 20px 30px;
 	
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
 	box-sizing: border-box;
 }
 /*Hide all except first fieldset*/
-#msform fieldset:not(:first-of-type) {
+.msform fieldset:not(:first-of-type) {
 	display: none;
 }
 /*inputs*/
-#msform input, #msform textarea {
+.msform input, .msform textarea {
 	padding: 15px;
 	border: 1px solid #ccc;
 	border-radius: 3px;
 	margin-bottom: 10px;
 	width: 100%;
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
 	box-sizing: border-box;
 	font-family: montserrat;
 	color: #2C3E50;
@@ -48,7 +50,7 @@ body {
 }
 
 /*buttons*/
-#msform .action-button {
+.msform .action-button {
 	width: 100px;
 	background: #27AE60;
 	font-weight: bold;
@@ -60,7 +62,7 @@ body {
 	margin: 10px 5px;
 }
 
-#msform .highlight-button {
+.msform .highlight-button {
 	width: 100px;
 	background: #2E64FE;
 	font-weight: bold;
@@ -72,7 +74,7 @@ body {
 	margin: 10px 5px;
 }
 
-#msform .action-button:hover, #msform .action-button:focus, #msform .highlight-button:focus, #msform .highlight-button:focus {
+.msform .action-button:hover, .msform .action-button:focus, .msform .highlight-button:focus, .msform .highlight-button:focus {
 	box-shadow: 0 0 0 2px white, 0 0 0 3px #27AE60;
 }
 /*headings*/
@@ -89,13 +91,13 @@ body {
 	margin-bottom: 5px;
 }
 /*progressbar*/
-#progressbar {
+.progressbar {
 	margin-bottom: 10px;
 	overflow: hidden;
 	/*CSS counters to number the steps*/
 	counter-reset: step;
 }
-#progressbar li {
+.progressbar li {
 	list-style-type: none;
 	color: white;
 	text-transform: uppercase;
@@ -104,7 +106,7 @@ body {
 	float: left;
 	position: relative;
 }
-#progressbar li:before {
+.progressbar li:before {
 	content: counter(step);
 	counter-increment: step;
 	width: 20px;
@@ -117,7 +119,7 @@ body {
 	margin: 0 auto 5px auto;
 }
 /*progressbar connectors*/
-#progressbar li:after {
+.progressbar li:after {
 	content: '';
 	width: 100%;
 	height: 2px;
@@ -127,13 +129,13 @@ body {
 	top: 9px;
 	z-index: -1; /*put it behind the numbers*/
 }
-#progressbar li:first-child:after {
+.progressbar li:first-child:after {
 	/*connector not needed before the first step*/
 	content: none; 
 }
 /*marking active/completed steps green*/
 /*The number of the step and the connector before it = green*/
-#progressbar li.active:before,  #progressbar li.active:after{
+.progressbar li.active:before,  .progressbar li.active:after{
 	background: #27AE60;
 	color: white;
 }

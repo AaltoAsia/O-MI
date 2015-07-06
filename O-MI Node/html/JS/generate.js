@@ -1,3 +1,6 @@
+
+var omi;
+
 /**
  * Passes input data to OMI request generation and display the request in the editRequest textarea
  * NOTE: This along with Omi class are relics of old, and extremely unefficient at the moment, fixing them might not
@@ -24,7 +27,7 @@ function generateRequest(){
 	if(!omi){
 		omi = new Omi();
 	} 
-	if(omi.operation && omi.operation != operation){
+	if(omi.operation && omi.operation !== operation){
 		omi.saveOptions();
 	}
 	omi.update(operation, ttl, interval, begin, end, newest, oldest, callback, requestIDs);

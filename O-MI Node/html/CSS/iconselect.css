@@ -9,14 +9,14 @@ and open the template in the editor.
 */
 
 .icon-select{
-    width:0px;
+    width:0;
  }
 
  .icon-select .selected-box {
 
      position: relative;
-     margin: 0px;
-     padding: 0px;
+     margin: 0;
+     padding: 0;
      width: 70px; /* sil */
      height: 60px; /* sil */
      border: 1px solid #999999;
@@ -30,8 +30,8 @@ and open the template in the editor.
  .icon-select .selected-box:hover {
 
      position: relative;
-     margin: 0px;
-     padding: 0px;
+     margin: 0;
+     padding: 0;
      width: 70px; /* sil */
      height: 60px; /* sil */
      border: 1px solid #000000;
@@ -46,8 +46,8 @@ and open the template in the editor.
  .icon-select .selected-icon {
 
      position: absolute;
-     margin: 0px;
-     padding: 0px;
+     margin: 0;
+     padding: 0;
      top:5px;
      left:5px;
      width: 48px; /* sil */
@@ -68,10 +68,10 @@ and open the template in the editor.
  .icon-select .box {
 
      position: absolute;
-     top:0px;
+     top:0;
      left:71px;
-     margin: 0px;
-     padding: 0px;
+     margin: 0;
+     padding: 0;
      width: 170px; /* sil */
      height: 170px; /* sil */
      border: 1px solid #EEEEEE;
@@ -91,8 +91,8 @@ and open the template in the editor.
 
  .icon-select .icon {
      position: relative;
-     margin: 5px 0px 0px 5px;
-     padding: 0px;
+     margin: 5px 0 0 5px;
+     padding: 0;
      width: 48px; /* sil */
      height: 48px; /* sil */
      border: 1px solid #CCCCCC;
@@ -112,8 +112,8 @@ and open the template in the editor.
 
  .icon-select .icon.selected {
      position: relative;
-     margin: 5px 0px 0px 5px;
-     padding: 0px;
+     margin: 5px 0 0 5px;
+     padding: 0;
      width: 48px; /* sil */
      height: 48px; /* sil */
      border: 1px solid #EEEEEE;

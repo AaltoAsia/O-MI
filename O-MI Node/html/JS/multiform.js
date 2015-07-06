@@ -1,80 +1,9 @@
 //jQuery time
-var current_fs, next_fs, previous_fs; // fieldsets
-var left, opacity, scale; // fieldset properties which we will animate
+var next_fs, previous_fs; // fieldsets
 var animating; // flag to prevent quick multi-click glitches
-var count;
 
 // Variable to keep count on which page we are
 var page = 1; 
-
-/* Event handler for the next button */
-$(document).on('click', '.next', function() {
-	if (page === 1) {
-		if (!page1Verified()) {
-			alert("Please check at least one object");
-			return;
-		}
-	} else if (page === 2) {
-		if (!page2Verified()) {
-			alert("Please specify TTL (Time to live) as numeric value");
-			return;
-		}
-		$("#responseBox").html("");
-	} else if (page === 3) {
-		return false;
-	}
-	transitionButton(this, animateNext);
-});
-
-/* Event handler for clicking the previous button */
-$(document).on('click', '.prev', function() {
-	if(page === 1){
-		return false;
-	}
-	transitionButton(this, animatePrev);
-});
-
-/**
- * Set timeout for prev/next button animation
- * @param {Object} button The button clicked
- * @param {Function} func The function to be called after timeout
- */
-function transitionButton(button, func){
-	if(!animating){
-		// Small resize animation for next/prev buttons
-		$(button).addClass("resize");
-		
-		// Timeout to stop the animation
-		setTimeout(function(){
-			$(".resize").removeClass("resize");
-		}, 150);
-		
-		// Call function after both ended
-		setTimeout(func, 300);
-	}
-	animating = true;
-}
-
-/**
- * Handle switching from current page to previous page
- */
-function animatePrev() {
-	if (page === 1)
-		return;
-
-	// Update pages and page index
-	page -= 1;
-	loadPages(page);
-	
-	// de-activate current step on progressbar
-	$("#progressbar li").eq(page).removeClass("active");
-	
-	previous_fs = $("#page" + page);
-	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
-	
-	// Allow animation again
-	animating = false;
-}	
 
 /**
  * Handle switching from current page to next page
@@ -91,7 +20,7 @@ function animateNext() {
 	loadPages(page);
 	
 	// activate next step on progressbar using the page number
-	$("#progressbar li").eq((page - 1)).addClass("active");
+	$(".progressbar li").eq((page - 1)).addClass("active");
 	
 	next_fs = $("#page" + page);
 	next_fs.animate({ scrollTop: 0 }, "slow");
@@ -140,3 +69,75 @@ function page1Verified(){
 function page2Verified(){
 	return ($.isNumeric($("#ttl").val().replace(/\s/g, ''))) && !($('#request').is(':empty'));
 }
+
+/**
+ * Set timeout for prev/next button animation
+ * @param {Object} button The button clicked
+ * @param {Function} func The function to be called after timeout
+ */
+function transitionButton(button, func){
+	if(!animating){
+		// Small resize animation for next/prev buttons
+		$(button).addClass("resize");
+		
+		// Timeout to stop the animation
+		setTimeout(function(){
+			$(".resize").removeClass("resize");
+		}, 150);
+		
+		// Call function after both ended
+		setTimeout(func, 300);
+	}
+	animating = true;
+}
+
+
+/* Event handler for the next button */
+$(document).on('click', '.next', function() {
+	if (page === 1) {
+		if (!page1Verified()) {
+			alert("Please check at least one object");
+			return;
+		}
+	} else if (page === 2) {
+		if (!page2Verified()) {
+			alert("Please specify TTL (Time to live) as numeric value");
+			return;
+		}
+		$("#responseBox").html("");
+	} else if (page === 3) {
+		return false;
+	}
+	transitionButton(this, animateNext);
+});
+
+/**
+ * Handle switching from current page to previous page
+ */
+function animatePrev() {
+	if (page === 1) { return; }
+
+	// Update pages and page index
+	page -= 1;
+	loadPages(page);
+	
+	// de-activate current step on progressbar
+	$(".progressbar li").eq(page).removeClass("active");
+	
+	previous_fs = $("#page" + page);
+	previous_fs.animate({ scrollTop: 0 }, "slow"); // Move to animation complete?
+	
+	// Allow animation again
+	animating = false;
+}	
+
+/* Event handler for clicking the previous button */
+$(document).on('click', '.prev', function() {
+	if(page === 1){
+		return false;
+	}
+	transitionButton(this, animatePrev);
+});
+
+
+

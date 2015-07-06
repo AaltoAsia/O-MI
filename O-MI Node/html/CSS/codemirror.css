@@ -27,13 +27,14 @@
   background-color: #f7f7f7;
   white-space: nowrap;
 }
-.CodeMirror-linenumbers {}
+/* .CodeMirror-linenumbers {} */
 .CodeMirror-linenumber {
   padding: 0 3px 0 5px;
   min-width: 20px;
   text-align: right;
   color: #999;
   -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
   box-sizing: content-box;
 }
 
@@ -42,19 +43,19 @@
 
 /* CURSOR */
 
-.CodeMirror div.CodeMirror-cursor {
+.CodeMirror .CodeMirror-cursor {
   border-left: 1px solid black;
 }
 /* Shown when moving in bi-directional text */
-.CodeMirror div.CodeMirror-secondarycursor {
+.CodeMirror .CodeMirror-secondarycursor {
   border-left: 1px solid silver;
 }
-.CodeMirror.cm-fat-cursor div.CodeMirror-cursor {
+.CodeMirror.cm-fat-cursor .CodeMirror-cursor {
   width: auto;
   border: 0;
   background: #7e7;
 }
-.CodeMirror.cm-fat-cursor div.CodeMirror-cursors {
+.CodeMirror.cm-fat-cursor .CodeMirror-cursors {
   z-index: 1;
 }
 
@@ -82,7 +83,7 @@
 }
 
 /* Can style cursor different in overwrite (non-insert) mode */
-div.CodeMirror-overwrite div.CodeMirror-cursor {}
+/*.CodeMirror-overwrite .CodeMirror-cursor {}*/
 
 .cm-tab { display: inline-block; text-decoration: inherit; }
 
@@ -97,10 +98,10 @@ div.CodeMirror-overwrite div.CodeMirror-cursor {}
 .cm-s-default .cm-atom {color: #219;}
 .cm-s-default .cm-number {color: #164;}
 .cm-s-default .cm-def {color: #00f;}
-.cm-s-default .cm-variable,
+/*.cm-s-default .cm-variable,
 .cm-s-default .cm-punctuation,
 .cm-s-default .cm-property,
-.cm-s-default .cm-operator {}
+.cm-s-default .cm-operator {}*/
 .cm-s-default .cm-variable-2 {color: #05a;}
 .cm-s-default .cm-variable-3 {color: #085;}
 .cm-s-default .cm-comment {color: #a50;}
@@ -155,6 +156,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   outline: none; /* Prevent dragging from highlighting the element */
   position: relative;
   -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
   box-sizing: content-box;
   
   min-height: 0;
@@ -164,6 +166,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   position: relative;
   border-right: 30px solid transparent;
   -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
   box-sizing: content-box;
 }
 
@@ -200,6 +203,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   white-space: normal;
   height: 100%;
   -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
   box-sizing: content-box;
   display: inline-block;
   margin-bottom: -30px;
@@ -219,6 +223,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 }
 .CodeMirror-gutter-wrapper {
   -webkit-user-select: none;
+  -ms-user-select: none;
   -moz-user-select: none;
   user-select: none;
 }
@@ -262,7 +267,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   overflow: auto;
 }
 
-.CodeMirror-widget {}
+/*.CodeMirror-widget {}*/
 
 .CodeMirror-code {
   outline: none;
