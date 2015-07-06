@@ -87,7 +87,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
     val groupedRequests = textAreas.grouped(2).map { reqresp =>
       val request: Try[Elem] = getSingleRequest(reqresp)
-      val correctresponse: Try[Elem] = getSingleResponse(reqresp)
+      val correctresponse: Try[Elem] = getSingleResponseNoTime(reqresp)
       val responseWait: Option[Int] = Try(reqresp.last.\@("wait").toInt).toOption
       (request, correctresponse, responseWait)
     }
@@ -125,6 +125,9 @@ class SystemTest extends Specification with Starter with AfterAll {
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
   }
 
+  def getSingleResponseNoTime(reqresp: NodeSeq): Try[Elem] = {
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text.replaceAll("""unixTime\s*=\s*"\d*"""", ""))))
+  }
   def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text)))
   }
@@ -218,11 +221,13 @@ class SystemTest extends Specification with Starter with AfterAll {
               responseWait.foreach { x => Thread.sleep(x * 1000) }
 
               val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-              val response = Try(Await.result(responseFuture, Duration(2, "second")))
+              val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
 
-              response must beSuccessfulTry
+              responseXml must beSuccessfulTry
+              
+              val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
 
-              response.get showAs (n =>
+              response showAs (n =>
                 "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
             }
           })
