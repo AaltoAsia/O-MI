@@ -258,16 +258,20 @@ class SystemTest extends Specification with Starter with AfterAll {
                 responseWait.foreach { x => Thread.sleep(x * 1000) }
                 println(request.get)
                 val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-                val response = Try(Await.result(responseFuture, Duration(2, "second")))
+                val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
                 //              
-                response must beSuccessfulTry
+//                response must beSuccessfulTry
                 //              
 //              
+                
+                responseXml must beSuccessfulTry
+              
+              val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
                 //TODO remove if possible
                 if(request.get.\\("write").nonEmpty){
                   Thread.sleep(2000)
                 }
-                response.get showAs (n =>
+                response showAs (n =>
                   "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
                 //              
                 
@@ -275,8 +279,8 @@ class SystemTest extends Specification with Starter with AfterAll {
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
                 
                 messageOption must beSome
-                
-                messageOption.get showAs (n =>
+                val response = XML.loadString(messageOption.get.toString().replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+                response showAs (n =>
                   "Response at callback server:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
 
               }
