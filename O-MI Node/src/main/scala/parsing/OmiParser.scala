@@ -10,7 +10,7 @@ import scala.collection.mutable.Map
 import scala.concurrent.duration._
 
 import scala.xml._
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import org.xml.sax.SAXException
@@ -31,15 +31,18 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @return OmiParseResults
    */
   def parse(xml_msg: String): OmiParseResult = {
-    try{
-      /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-      val root = Try(
-        XML.loadString(xml_msg)).getOrElse(
-          return Left(Iterable(ParseError("OmiParser: Invalid XML"))))
-      val schema_err = schemaValitation(root)
-      if (schema_err.nonEmpty)
-        return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
+    /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
+    val root = Try(
+      XML.loadString(xml_msg)
+    ).getOrElse(
+        return Left(Iterable(ParseError("OmiParser: Invalid XML")))
+    )
 
+    val schema_err = schemaValitation(root)
+    if (schema_err.nonEmpty)
+      return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
+
+    Try{
       val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
       envelope.omienvelopeoption.value match {
         case read: xmlTypes.ReadRequest => parseRead(read, parseTTL(envelope.ttl))
@@ -47,15 +50,22 @@ object OmiParser extends Parser[OmiParseResult] {
         case cancel: xmlTypes.CancelRequest => parseCancel(cancel, parseTTL(envelope.ttl))
         case response: xmlTypes.ResponseListType => parseResponse(response, parseTTL(envelope.ttl))
       }
-    }catch{
-      case e : Exception => 
+    } match {
+      case Success(res) => res
+      case Failure(e) => 
         return Left( Iterable( ParseError(e + " thrown when parsed.") ) )
     }
   }
 
   // fixes problem with duration: -1.0.seconds == -999999999 nanoseconds
-  def parseInterval(v: Double) = if (v == -1.0) -1.seconds else if (v > 0) v.seconds else throw new Exception("Negative Interval, diffrent than -1 isn't allowed.")// or: Math.round(v * 1000).milliseconds
-  def parseTTL(v: Double)      = if (v == -1.0 || v == 0.0) Duration.Inf else if (v > 0) v.seconds else throw new Exception("Negative TTL, diffrent than -1 isn't allowed.")// or: Math.round(v * 1000).milliseconds
+  def parseInterval(v: Double) =
+    if (v == -1.0) -1.seconds
+    else if (v > 0) v.seconds // or: Math.round(v * 1000).milliseconds
+    else throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
+  def parseTTL(v: Double)      =
+    if (v == -1.0 || v == 0.0) Duration.Inf
+    else if (v > 0) v.seconds
+    else throw new IllegalArgumentException("Negative TTL, diffrent than -1 isn't allowed.")
 
   
   private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = {

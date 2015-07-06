@@ -6,7 +6,8 @@ import types.OdfTypes._
 import xmlGen._
 import xmlGen.xmlTypes._
 import scala.collection.mutable.Map
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
+import scala.util.control.NonFatal
 import scala.xml.XML
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
@@ -14,7 +15,6 @@ import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import java.util.Objects
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
@@ -45,22 +45,26 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(root: xml.Node): OdfParseResult = { 
-    try{
-      val schema_err = schemaValitation(root)
-      if (schema_err.nonEmpty)
-        return Left( schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)} ) 
+    val schema_err = schemaValitation(root)
+    if (schema_err.nonEmpty) return Left(
+      schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
+    ) 
 
+    Try{
       val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
       Right(
         OdfObjects( 
-          if(objects.Object.isEmpty) asJavaIterable(Iterable.empty[OdfObject])
-          else objects.Object.map{ obj => parseObject( obj ) }.toIterable,
+          if(objects.Object.isEmpty)
+            Iterable.empty[OdfObject]
+          else
+            objects.Object.map{ obj => parseObject( obj ) }.toIterable,
           objects.version 
         )
       )
-    }catch{
-      case e : Exception => 
-        return Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+    } match {
+      case Success(res) => res
+      case Failure(e) => 
+        Left( Iterable( ParseError(e + " thrown when parsed.") ) )
     }
   }
 
