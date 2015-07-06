@@ -20,6 +20,16 @@ function InfoItem(name){
 }
 
 /**
+ * Sets XML writer settings
+ * @param {XMLWriter} writer The current xml writer
+ */
+function setWriterSettings(writer) {
+	writer.formatting = 'indented';
+    writer.indentChar = ' ';
+    writer.indentation = 2;
+}
+
+/**
 * Write the O-DF message (XML) based on form input
 * @param {Array} Array of objects, that have their 
 * @param {Object} OMI object
@@ -111,7 +121,6 @@ function writeObjects(writer, items, interval, begin, end, newest, oldest, callb
 	writer.writeStartElement('Objects');
 
 	//Payload
-	var ids = [];
 	var objects = [];
 	
 	for(var i = 0; i < items.length; i++){
@@ -125,8 +134,8 @@ function writeObjects(writer, items, interval, begin, end, newest, oldest, callb
 		}
 	}
 	
-	for(var i = 0; i < objects.length; i++){
-		writeObject(objects[i], writer);
+	for(var j = 0; j < objects.length; j++){
+		writeObject(objects[j], writer);
 	}
 }
 
@@ -145,8 +154,8 @@ function addChildren(object, items){
 		}
 	}
 	
-	for(var i = 0; i < children.length; i++){
-		var child = children[i];
+	for(var j = 0; j < children.length; j++){
+		var child = children[j];
 		
 		if(child.id){ //Object
 			var subobj = new OdfObject(child.id, child.name);
@@ -177,8 +186,8 @@ function writeObject(object, writer){
 	}
 	
 	// Write subobjects
-	for(var i = 0; i < object.subObjects.length; i++){
-		writeObject(object.subObjects[i], writer);
+	for(var j = 0; j < object.subObjects.length; j++){
+		writeObject(object.subObjects[j], writer);
 	}
 	writer.writeEndElement();
 }
@@ -244,10 +253,9 @@ function writeSubscribe(requestID, items, ttl, interval, begin, end, newest, old
 	}
 
 	writerequestID(writer, requestID);
-	writeMsg(writer)
+	writeMsg(writer);
 	writer.writeStartElement('Objects');
 
-	var ids = [];
 	var objects = [];
 	
 	for(var i = 0; i < items.length; i++){
@@ -260,8 +268,8 @@ function writeSubscribe(requestID, items, ttl, interval, begin, end, newest, old
 		}
 	}
 	
-	for(var i = 0; i < objects.length; i++){
-		writeObject(objects[i], writer);
+	for(var j = 0; j < objects.length; j++){
+		writeObject(objects[j], writer);
 	}
 	writer.writeEndElement();
     writer.writeEndDocument();
@@ -301,12 +309,3 @@ function writeOmiInfo(writer, ttl) {
 	if(ttl) writer.writeAttributeString('ttl', ttl);
 }
 
-/**
- * Sets XML writer settings
- * @param {XMLWriter} writer The current xml writer
- */
-function setWriterSettings(writer) {
-	writer.formatting = 'indented';
-    writer.indentChar = ' ';
-    writer.indentation = 2;
-}

@@ -153,17 +153,14 @@ class ReadTest extends Specification with BeforeAfterAll {
       parserlist.isRight === true
       val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
-      //returnCode should not be 200
-      resultOption must beSome.which(_._2 !== 200)
-//      println("test4:")
-//      println(printer.format(resultOption.get._1.head))
-//      println("correct:")
-//      println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
-      //OmiParser.parse(resultXML.toString()).head should beAnInstanceOf[Result]
-    }.pendingUntilFixed
-/*    "Give partial result when part of the request is wrong" in {
+      resultOption must beSome.which(_._2 !== 200)
+      resultOption must beSome.which(n=> (n._1) must beEqualToIgnoringSpace(correctxmlreturn))
+
+    }
+
+    "Give partial result when part of the request is wrong" in {
+      // NOTE: Maybe a bit specific test about the error message
       val partialxml =
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
           <omi:read msgformat="odf">
@@ -188,23 +185,49 @@ class ReadTest extends Specification with BeforeAfterAll {
             </omi:msg>
           </omi:read>
         </omi:omiEnvelope>
+      val partialresult = 
+        <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <omi:response>
+            <omi:result msgformat="odf">
+              <omi:return returnCode="200"></omi:return>
+              <omi:msg>
+                <Objects>
+                  <Object>
+                    <id>ReadTest</id>
+                    <Object>
+                      <id>SmartOven</id>
+                      <InfoItem name="Temperature">
+                        <value unixTime="1421780">117</value>
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:result>
+            <omi:result>
+              <omi:return description={ "Could not find the following elements from the database:" +
+                  "\nObjects/ReadTest/NonexistingObject" +
+                  "\nObjects/ReadTest/Roomsensors1/CarbonDioxide" +
+                  "\nObjects/ReadTest/Roomsensors1/wrong" +
+                  "\nObjects/ReadTest/Roomsensors1/Temperature" } returnCode="404">
+              </omi:return>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+                                                                                                                                                                                                      
         
-        val parserlist= OmiParser.parse(partialxml.toString())
-        parserlist.isRight === true
+      val parserlist= OmiParser.parse(partialxml.toString())
+      parserlist.isRight === true
       val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
+      readRequestOption must beSome
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
       //returnCode should not be 200
-//      resultOption must beSome.which(_._2 !== 200)
-      println("test6:")
-      println(printer.format(resultOption.get._1.head))
-//      println("correct:")
-//      println(printer.format(correctxmlreturn.head))
-            resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(partialxml \\ ("Objects")))
+      //resultOption must beSome.which(_._2 !== 200)
 
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(partialxml))
+      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(partialresult))
         
 
-    }*/ //TODO: test with partially correct data should be in separate results
+    }
 
     "Return with correct metadata" in {
       lazy val metarequestxml = Source.fromFile("src/test/resources/responses/read/MetadataRequest.xml").getLines.mkString("\n")

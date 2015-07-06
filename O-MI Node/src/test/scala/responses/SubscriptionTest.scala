@@ -250,14 +250,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Return with error when subscription doesn't exist" in {
-      val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(1234))))
+      val rid = 1234
+      val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(rid))))
 
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist">
-              </omi:return>
+              <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist"/>
+              <omi:requestID>{ rid }</omi:requestID>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
