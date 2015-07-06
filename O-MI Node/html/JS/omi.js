@@ -8,18 +8,18 @@
  * @constructor
  */
 function Omi() {
-	this.operation;
-	this.ttl;
-	this.interval;
-	this.begin;
-	this.end;
-	this.newest;
-	this.oldest;
-	this.callback;
-	this.requestIDs;
+	this.operation = undefined;
+	this.ttl = undefined;
+	this.interval = undefined;
+	this.begin = undefined;
+	this.end = undefined;
+	this.newest = undefined;
+	this.oldest = undefined;
+	this.callback = undefined;
+	this.requestIDs = undefined;
 
-	this.request;
-	this.subscribe;
+	this.request = undefined;
+	this.subscribe = undefined;
 	
 	this.save = {};
 }
