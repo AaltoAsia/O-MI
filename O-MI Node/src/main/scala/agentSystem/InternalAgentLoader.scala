@@ -12,6 +12,7 @@ import java.net.URLClassLoader
 import java.util.jar.JarFile
 import java.io.File
 import scala.concurrent._
+import scala.util.{Try, Success, Failure }
 
 import java.util.Date
 import java.sql.Timestamp
@@ -144,7 +145,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
   }
 
   def loadAndStart(classname: String, configPath: String) ={
-      try {
+      Try {
         log.info("Instantitating agent: " + classname )
         val clazz = classLoader.loadClass(classname)
         val const = clazz.getConstructors()(0)
@@ -152,14 +153,17 @@ class InternalAgentLoader  extends Actor with ActorLogging {
         val date = new Date()
         agents += Tuple2( classname, Tuple3( Some(agent), configPath, new Timestamp(date.getTime) ) )
         agent.start()
-      } catch {
-        case e: NoClassDefFoundError => 
-          log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
-        case e: ClassNotFoundException  =>
-          log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
-        case e: Exception =>
-          log.warning(s"Classloading failed. $e")
-      }    
+      } match {
+        case Success(_) => _
+        case Failure(e) => e match {
+          case e: NoClassDefFoundError => 
+            log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
+          case e: ClassNotFoundException  =>
+            log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
+          case e: Exception =>
+            log.warning(s"Classloading failed. $e")
+        }
+      }
   }
 
   /** Creates classloader for loading classes from jars in deploy directory.
