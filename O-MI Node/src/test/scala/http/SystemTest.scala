@@ -101,13 +101,15 @@ class SystemTest extends Specification with Starter with AfterAll {
     val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>
       if (res.isEmpty) i
       else {
-        if (res.last.length == 1 && res.last.head.\@("class") == "request" || res.last.head.\@("class") == "write") {
-          val indx: Int = math.max(res.lastIndexWhere { x => x.head.\@("class") == "request" }, res.lastIndexWhere { x => x.head.\@("class") == "write" })
+        if (res.last.length == 1 && (res.last.head.\@("class") == "request")) {
+          val indx: Int = res.lastIndexWhere { x => x.head.\@("class") == "request" }
           res.updated(indx, res.last.head :+ i)
 
         } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
       }
     }
+//    println("\n\nWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
+//    reqrespCombined foreach println
     (reqrespCombined, testDescription)
   }
 
@@ -255,11 +257,16 @@ class SystemTest extends Specification with Starter with AfterAll {
                 //              
                 response must beSuccessfulTry
                 //              
+//              
+                //TODO remove if possible
+                if(request.get.\\("write").nonEmpty){
+                  Thread.sleep(2000)
+                }
                 response.get showAs (n =>
                   "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
                 //              
+                
               } else {
-
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
                 
                 messageOption must beSome
