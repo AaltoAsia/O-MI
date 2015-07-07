@@ -154,7 +154,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
         agents += Tuple2( classname, Tuple3( Some(agent), configPath, new Timestamp(date.getTime) ) )
         agent.start()
       } match {
-        case Success(_) => _
+        case Success(_) => ()
         case Failure(e) => e match {
           case e: NoClassDefFoundError => 
             log.warning("Classloading failed. Could not load: " + classname +"\n" + e + " caught")
