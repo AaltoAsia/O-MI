@@ -8,11 +8,11 @@
 
 	<title>O-MI Node</title>
 
-	<link href="lib/css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/lib/bootstrap.min.css" rel="stylesheet">
 	<link href="themes/default/style.min.css" rel="stylesheet" />
-	<link href="lib/css/codemirror.css" rel="stylesheet">
+	<link href="css/lib/codemirror.css" rel="stylesheet">
 
-	<link href="lib/css/mystyle.css" rel="stylesheet">
+	<link href="css/mystyle.css" rel="stylesheet">
 
 	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -24,11 +24,12 @@
 	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 	<!-- Include all compiled plugins (below), or include individual files as needed -->
-	<script src="lib/js/bootstrap.min.js"></script>
-	<script src="lib/js/jstree.min.js"></script>
-	<script src="lib/js/codemirror.js"></script>
-	<script src="lib/js/xml.js"></script>
+	<script src="js/lib/bootstrap.min.js"></script>
+	<script src="js/lib/jstree.min.js"></script>
+	<script src="js/lib/codemirror.js"></script>
+	<script src="js/lib/xml.js"></script>
 
+	<script src="js/CodeMirrorFormatExt.js"></script>
 	<script src="js/myjs.js"></script>
 
     </head>
@@ -137,7 +138,8 @@
 			    <div class="panel-title">
 				<a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
 				    <h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-					<b>Optional parameters</b></h5>
+              <b>Optional parameters</b>
+            </h5>
 				</a>
 			    </div>
 			</div>
@@ -189,7 +191,7 @@
 				    <button type="button" class="btn btn-sm btn-primary">Send</button>
 				    <b>Request:</b>
 				    </p>
-				    <div class="well">
+				    <div class="well request">
 					<textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off"  wrap="off"></textarea>
 				    </div>
 				</div>
@@ -197,7 +199,7 @@
 			    <div class="row">
 				<div class="col-md-12">
 				    <p><b>Response:</b></p>
-				    <div class="well">
+				    <div class="well response">
 					<textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off"  wrap="off"></textarea>
 				    </div>
 				</div>

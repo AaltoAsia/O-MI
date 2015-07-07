@@ -1,3 +1,5 @@
+var webOmi;
+
 $( function(){
 
 
@@ -15,15 +17,19 @@ $('button').on('click', function () {
 	  $.jstree.reference('#jstree').select_node('child_node_1');
 });
 
-});
-var requestCodeMirror = CodeMirror.fromTextArea(document.getElementById("requestArea"), {
-    mode: "text/html",
-    lineNumbers: true,
-    lineWrapping: true
-});
+// Module
+webOmi = (function(my) {
+    my.codeMirrorSettings = {
+        mode: "text/html",
+        lineNumbers: true,
+        lineWrapping: true
+    };
 
-var responseCodeMirror = CodeMirror.fromTextArea(document.getElementById("responseArea"), {
-    mode: "text/html",
-    lineNumbers: true,
-    lineWrapping: true
+    my.requestCodeMirror = CodeMirror.fromTextArea($("#requestArea")[0], my.codeMirrorSettings);
+
+    my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], my.codeMirrorSettings);
+
+    return my;
+}(webOmi || {}));
+
 });

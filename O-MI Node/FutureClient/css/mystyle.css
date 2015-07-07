@@ -34,3 +34,13 @@
 .panel + form {
     margin-top: 5px;
 }
+.CodeMirror {
+    font-size: 12px
+}
+
+.request .CodeMirror {
+    height: 30em;
+}
+.response .CodeMirror {
+    height: 30em;
+}
