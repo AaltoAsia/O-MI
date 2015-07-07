@@ -35,7 +35,7 @@ trait Starter {
    * This is called in [[init]]. Create input pusher actor for handling agent input.
    * @param dbConnection Use a specific db connection for all agents, intended for testing
    */
-  def initInputPusher(dbConnection: DB = new SQLiteConnection, actorname: String = "input-pusher-for-db") = {
+  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-pusher-for-db") = {
     InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),actorname)
   }
 
@@ -45,7 +45,7 @@ trait Starter {
    *
    * @param dbConnection Use a specific db connection for one-time db actions, intended for testing
    */
-  def init(dbConnection: DB = new SQLiteConnection): Unit = {
+  def init(dbConnection: DB = new DatabaseConnection): Unit = {
     database.setHistoryLength(settings.numLatestValues)
 
     // Current time for odf values of the settings
@@ -74,7 +74,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
+  def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
 
     // create and start sensor data listener

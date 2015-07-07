@@ -12,7 +12,7 @@ import testHelpers.{AfterAll, DeactivatedTimeConversions}
 
 import types._
 
-class SQLiteTest extends Specification with AfterAll with DeactivatedTimeConversions {
+class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConversions {
   sequential
   //  implicit def javaIterableToSeq[T](x: java.lang.Iterable[T]): Seq[T] = {
   //    iterableAsScalaIterable(x).toSeq

@@ -62,7 +62,7 @@ object singleConnection extends DB {
  * Database class for sqlite. Actually uses config parameters through forConfig in singleConnection.
  * To be used during actual runtime.
  */
-class SQLiteConnection extends DB {
+class DatabaseConnection extends DB {
   //override val db = singleConnection.db
   val db = Database.forConfig(dbConfigName)
   initialize()

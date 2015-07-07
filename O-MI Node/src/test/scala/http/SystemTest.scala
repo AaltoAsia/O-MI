@@ -29,7 +29,7 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class SystemTest extends Specification with Starter with AfterAll {
 
-  override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
+  override def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
@@ -193,7 +193,7 @@ class SystemTest extends Specification with Starter with AfterAll {
       Thread.sleep(2000);
     })
     
-    "Read Test\n" >> {
+    "Read Test" >> {
       readTests.foldLeft(Fragments())((res, i) => {
         val (request, correctResponse, testDescription) = i
         res.append(
@@ -242,7 +242,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
       })
     }
-    "Callback Test\n" >> {
+    "Callback Test" >> {
       sequentialTest.foldLeft(Fragments())((res, i) => {
 
         val (singleTest, testDescription) = i

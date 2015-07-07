@@ -38,7 +38,7 @@ class OmiServiceTest extends Specification
   def actorRefFactory = system
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
-  implicit val dbConnection = new TestDB("system-test") // new SQLiteConnection
+  implicit val dbConnection = new TestDB("system-test") // new DatabaseConnection
   implicit val dbobject = dbConnection
   val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))
   val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
