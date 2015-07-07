@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 
 	<title>O-MI Node</title>
 
-	<link href="css/lib/bootstrap.min.css" rel="stylesheet">
+	<link href="css/lib/bootstrap.css" rel="stylesheet" />
 	<link href="themes/default/style.min.css" rel="stylesheet" />
-	<link href="css/lib/codemirror.css" rel="stylesheet">
+	<link href="css/lib/codemirror.css" rel="stylesheet" />
 
-	<link href="css/mystyle.css" rel="stylesheet">
+	<link href="css/mystyle.css" rel="stylesheet" />
 
 	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -22,193 +22,178 @@
      <![endif]-->
 
 	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-	<!-- Include all compiled plugins (below), or include individual files as needed -->
-	<script src="js/lib/bootstrap.min.js"></script>
-	<script src="js/lib/jstree.min.js"></script>
-	<script src="js/lib/codemirror.js"></script>
-	<script src="js/lib/xml.js"></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script type="text/javascript" src="js/lib/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/lib/jstree.min.js"></script>
+	<script type="text/javascript" src="js/lib/codemirror.js"></script>
+	<script type="text/javascript" src="js/lib/xml.js"></script>
 
-	<script src="js/CodeMirrorFormatExt.js"></script>
-	<script src="js/myjs.js"></script>
+	<script type="text/javascript" src="js/CodeMirrorFormatExt.js"></script>
+	<script type="text/javascript" src="js/myjs.js"></script>
 
-    </head>
-    <body>
-	<nav class="navbar navbar-default navbar-static-top navbar-inverse" style="margin-bottom:0;">
-	    <div class="container-fluid">
-		<div class="navbar-header">
-		    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-			<span class="sr-only">Toggle navigation</span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-		    </button>
-		    <a class="navbar-brand">O-MI Node</a> 
-		</div>
-		<p id="versionNumber" class="navbar-text">v0.1.4</p>
-		<form class="navbar-form navbar-left" role="search">
-		    <div class="form-group">
-			<input id="targetService" type="text" class="form-control" placeholder="http://localhost:8080">
-		    </div>
-		</form>
-		<a class="navbar-brand">Requests</a> 
-		<ul class="nav navbar-nav navbar-right">
-		    <li class="dropdown">
-			<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
-			<ul class="dropdown-menu">
-			    <li><a href="#">API</a></li>
-			    <li><a href="#">Architecture</a></li>
-			    <li><a href="#">Implementation Details</a></li>
-			</ul>
-		    </li>
-		    <li>
-			<a class="navbar-brand">Subscriptions 
-			    <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-			</a>
-		    </li>
-		</ul>
-	    </div>
-	</nav>
-	<div class="row col-md-12">
-	    <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-		<div class="panel panel-default"  >
-		    <div class="panel-heading">
-			<div class="panel-title">
-			    <h5 style="margin-top:0px;margin-bottom:0px;">
-				<button class="btn btn-danger" style="float: right;" type="button" >
-				    Read All
-				</button>
-				    <b>O-DF Structure</b></h5>
-			</div>
-		    </div>
-		    <div class="panel-body">
-			<div id="nodetree">
-			    <ul>
-				<li>Objects
-				</li>
-			    </ul>
-			</div>
-		    </div>
-		</div>
-		<div class="panel panel-default"  >
-		    <div class="panel-heading">
-			<div class="panel-title">
-			    <h5 style="margin-top:0px;margin-bottom:0px;">
-				<b>O-MI Request</b></h5>
-			</div>
-		    </div>
-		    <div class="panel-body">
-			<div id="requesttree">
-			    <ul>
-				<li data-jstree='{"opened":true}' >Read
-				    <ul>
-					<li>One time read
-					</li>
-				    <li>Subscription
-				    </li>
-				    <li>Poll
-				    </li>
-				    </ul>
-				</li>
-				<li>Cancel
-				</li>
-				<li>Write
-				</li>
-			    </ul>
-			</div>
-		    </div>
-		</div>
-		<form>
-		    <div class="panel panel-default"  >
-			<div class="panel-heading">
-			    <div class="panel-title">
-				<h5 style="margin-top:0px;margin-bottom:0px;">
-				    <b>Required parameters</b></h5>
-			    </div>
-			</div>
-			<div class="panel-body">
-			    <div id="sharedParams" class="form-group form-inline">
-				<label for="ttl">ttl:</label>
-				<input type="int" class="form-control" id="ttl">
-			    </div>
-			</div>
-		    </div>
-		    <div class="panel panel-default"  >
-			<div class="panel-heading" role="tab" id="headingOptionalParams">
-			    <div class="panel-title">
-				<a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
-				    <h5 style="margin-top:0px;margin-bottom:0px;"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+</head>
+<body>
+  <nav class="navbar navbar-default navbar-static-top navbar-inverse" style="margin-bottom:0;">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand">O-MI Node</a>
+      </div>
+      <p id="versionNumber" class="navbar-text">v0.1.4</p>
+      <form class="navbar-form navbar-left" role="search">
+        <div class="form-group">
+          <input id="targetService" type="text" class="form-control" placeholder="http://localhost:8080" />
+        </div>
+      </form>
+      <a class="navbar-brand">Requests</a>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li> <a href="#">API</a> </li>
+            <li> <a href="#">Architecture</a> </li>
+            <li> <a href="#">Implementation Details</a> </li>
+          </ul>
+        </li>
+        <li>
+          <a class="navbar-brand">Subscriptions 
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h5 class="panel-title">
+          <button class="btn btn-danger" style="float: right;" type="button">
+            Read All
+          </button>
+          <b>O-DF Structure</b>
+        </h5>
+      </div>
+      <div class="panel-body">
+        <div id="nodetree">
+          <ul>
+            <li>Objects </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h5 class="panel-title">
+          <b>O-MI Request</b>
+        </h5>
+      </div>
+      <div class="panel-body">
+        <div id="requesttree">
+          <ul>
+            <li data-jstree="{opened:true}">Read</li>
+            <ul>
+              <li>One time read </li>
+              <li>Subscription </li>
+              <li>Poll </li>
+            </ul>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <form>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h5 class="panel-title">
+            <b>Required parameters</b>
+          </h5>
+        </div>
+        <div class="panel-body">
+          <div id="sharedParams" class="form-group form-inline">
+            <label for="ttl">ttl:</label>
+            <input type="int" class="form-control" id="ttl"/>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading" role="tab" id="headingOptionalParams">
+          <h5 class="panel-title">
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+            <a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
               <b>Optional parameters</b>
-            </h5>
-				</a>
-			    </div>
-			</div>
-			<div id="collapseOptionalParams" class="panel-collapse collapse" aria-labelledby="headingOptionalParams" role="tabpanel" aria-expanded="false" style="height: 0px;">
-			    <div class="panel-body">
-				<div id="sharedParams" class="form-group form-inline">
-				    <label for="callback">callback:</label>
-				    <input type="int" class="form-control" id="callback">
-				</div>
-				<div id="requestParams" class="form-inline">
-				    <div class="form-group">
-					<label>Take:</label>
-					<div class="form-horizontal">
-					    <label for="newest">Newest:</label>
-					    <input type="int" class="form-control" id="newest">
-					</div>
-					<div class="form-horizontal">
-					    <label for="newest">Oldest:</label>
-					    <input type="int" class="form-control" id="oldest">
-					</div>
-				    </div>
-				    <div class="form-group">
-					<label>Timeframe:</label>
-					<div class="form-horizontal">
-					    <label for="begin">begin:</label>
-					    <input type="int" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS">
-					</div>
-					<div class="form-horizontal">
-					    <label for="end">end:</label>
-					    <input type="int" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS">
-					</div>
-				    </div>
-				</div>
-			    </div>
-			</div>
-		    </div>
-		</form>
-	    </div>
-	    <div class="col-md-8 container-fluid" style="padding-right:0;padding-left:0;">
-		<div class="page-content" style="padding-right=0;" >
-		    <div class="panel panel-default">
-			<div class="panel-heading">
-			    <h5 style="margin-top:0px;margin-bottom:0px;"><b>Request and response</b></h5>
-			</div>
-			<div class="panel-body">
-			    <div class="row">
-				<div class="col-md-12">
-				    <p>
-				    <button type="button" class="btn btn-sm btn-primary">Send</button>
-				    <b>Request:</b>
-				    </p>
-				    <div class="well request">
-					<textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off"  wrap="off"></textarea>
-				    </div>
-				</div>
-			    </div>
-			    <div class="row">
-				<div class="col-md-12">
-				    <p><b>Response:</b></p>
-				    <div class="well response">
-					<textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off"  wrap="off"></textarea>
-				    </div>
-				</div>
-			    </div>
-			</div>
-		    </div>
-		</div>
-	    </div>
-	</div>
-	</div>
-    </body>
+            </a>
+          </h5>
+        </div>
+        <div id="collapseOptionalParams" class="panel-collapse collapse" aria-labelledby="headingOptionalParams" role="tabpanel" aria-expanded="false" style="height: 0px;">
+          <div class="panel-body">
+            <div id="sharedParams" class="form-group form-inline">
+              <label for="callback">callback:</label>
+              <input type="int" class="form-control" id="callback"/>
+            </div>
+            <div id="requestParams" class="form-inline">
+              <div class="form-group">
+                <label>Take:</label>
+                <div class="form-horizontal">
+                  <label for="newest">Newest:</label>
+                  <input type="int" class="form-control" id="newest"/>
+                </div>
+                <div class="form-horizontal">
+                  <label for="newest">Oldest:</label>
+                  <input type="int" class="form-control" id="oldest"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Timeframe:</label>
+                <div class="form-horizontal">
+                  <label for="begin">begin:</label>
+                  <input type="int" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                </div>
+                <div class="form-horizontal">
+                  <label for="end">end:</label>
+                  <input type="int" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="col-md-8">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h5 class="panel-title">
+          <b>Request and response</b>
+        </h5>
+      </div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-12">
+            <p>
+              <button type="button" class="btn btn-sm btn-primary">Send</button>
+              <b>Request:</b>
+            </p>
+            <div class="well request">
+              <textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <p>
+              <b>Response:</b>
+            </p>
+            <div class="well response">
+              <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
 </html>
