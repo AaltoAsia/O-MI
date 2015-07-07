@@ -33,6 +33,7 @@ class SystemTest extends Specification with Starter with AfterAll {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
+    // do not start InternalAgents to keep database clean
     //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
@@ -69,6 +70,7 @@ class SystemTest extends Specification with Starter with AfterAll {
   val testArticles = sourceXML \\ ("article")
   val tests = testArticles.groupBy(x => x.\@("class"))
 
+  //tests with request response pairs, each containing description and forming single test(req, resp), (req, resp)...
   lazy val readTests = tests("request-response single test").map { node =>
     val textAreas = node \\ ("textarea")
     require(textAreas.length == 2, s"Each request must have exactly 1 response in request-response tests, could not find for: $node")
@@ -79,6 +81,7 @@ class SystemTest extends Specification with Starter with AfterAll {
     (request, correctResponse, testDescription)
   }
 
+  //tests that have multiple request-response pairs that all have common description (req, resp, req, resp...)
   lazy val subsNoCallback = tests("request-response test").map { node =>
     val textAreas = node \\ ("textarea")
     require(textAreas.length % 2 == 0, "There must be even amount of response and request messages(1 response for each request)\n" + textAreas)
@@ -94,7 +97,12 @@ class SystemTest extends Specification with Starter with AfterAll {
     (groupedRequests, testDescription)
 
   }
-
+  /*
+   * tests that have callback server responses mixed:
+   * for example if the test in html is (req, resp, callbackresp, callbackresp, req, resp)
+   * this groups them like: (req, resp), (callbackresp), (callbackresp), (req,resp)
+   * so that each req resp pair forms 1 test and callbackresp alone forms 1 test
+   */
   lazy val sequentialTest = tests("sequential-test").map { node =>
     val textAreas = node \\ ("textarea")
     val testDescription: String = node \ ("div") \ ("p") text
@@ -105,16 +113,15 @@ class SystemTest extends Specification with Starter with AfterAll {
           val indx: Int = res.lastIndexWhere { x => x.head.\@("class") == "request" }
           res.updated(indx, res.last.head :+ i)
 
-        } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
+        } else res.:+(i) 
       }
     }
-//    println("\n\nWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
-//    reqrespCombined foreach println
+
     (reqrespCombined, testDescription)
   }
 
-  //  dbConnection.remove(types.Path("Objects/OMI-service"))
   def afterAll = {
+    
     system.shutdown()
     dbConnection.destroy()
 
@@ -183,9 +190,9 @@ class SystemTest extends Specification with Starter with AfterAll {
     }
 
     step({
-      //let the database write the data
       Thread.sleep(2000);
     })
+    
     "Read Test\n" >> {
       readTests.foldLeft(Fragments())((res, i) => {
         val (request, correctResponse, testDescription) = i
@@ -245,7 +252,7 @@ class SystemTest extends Specification with Starter with AfterAll {
             "Step: " >> {
 
               require(j.length == 2 || j.length == 1)
-              val correctResponse = getSingleResponse(j)
+              val correctResponse = getSingleResponseNoTime(j)
               val responseWait: Option[Int] = Try(j.last.\@("wait").toInt).toOption
 
               correctResponse aka "Correct response message" must beSuccessfulTry
@@ -256,35 +263,31 @@ class SystemTest extends Specification with Starter with AfterAll {
                 request aka "Subscription request message" must beSuccessfulTry
 
                 responseWait.foreach { x => Thread.sleep(x * 1000) }
-                println(request.get)
+
                 val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
                 val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
-                //              
-//                response must beSuccessfulTry
-                //              
-//              
-                
+             
+
                 responseXml must beSuccessfulTry
               
               val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
-                //TODO remove if possible
+                //remove blocking waits if possible
                 if(request.get.\\("write").nonEmpty){
                   Thread.sleep(2000)
                 }
                 response showAs (n =>
                   "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
-                //              
-                
+
               } else {
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
                 
                 messageOption must beSome
                 val response = XML.loadString(messageOption.get.toString().replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+                
                 response showAs (n =>
                   "Response at callback server:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
 
               }
-              //
             }
           })
         }

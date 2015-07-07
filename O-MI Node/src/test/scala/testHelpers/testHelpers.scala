@@ -27,10 +27,10 @@ class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLo
 
     case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
       val xmldata: Option[NodeSeq] = entity.as[NodeSeq].toOption//.asInstanceOf[NodeSeq]
-      println("server received:")
-      println(xmldata)
+//      println("server received:")
+//      println(xmldata)
       destination ! xmldata
-      println("\n\ndata sent to listener")
+//      println("\n\ndata sent to listener")
     }
 //    case Timedout(_) => log.info("Callback test server connection timed out")
     

@@ -224,7 +224,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
                     case _ => ""// noop, already logged at loadSub
                   }
                
-                println(s"MATCHING EVENTSUB: $e")
+                
                 if (lastValue != newestValue.getOrElse("")){
 
                   //def failed(reason: String) =
