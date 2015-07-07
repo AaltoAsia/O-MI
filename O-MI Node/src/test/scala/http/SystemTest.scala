@@ -29,7 +29,7 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class SystemTest extends Specification with Starter with AfterAll {
 
-  override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
+  override def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 

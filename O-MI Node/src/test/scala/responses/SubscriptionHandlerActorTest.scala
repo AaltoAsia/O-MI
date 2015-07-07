@@ -28,7 +28,7 @@
 //    }
 //  }
 //  
-//  implicit val dbConnection = new SQLiteConnection // TestDB("subscriptionHandler-test")
+//  implicit val dbConnection = new DatabaseConnection // TestDB("subscriptionHandler-test")
 //
 //  def beforeAll={
 //    dbConnection.clearDB()

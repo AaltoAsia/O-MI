@@ -198,7 +198,7 @@ ResponseRequest	src/main/scala/types/OmiTypes.scala	/^case class ResponseRequest
 Result	src/main/scala/responses/Result.scala	/^object Result{$/;"	o
 ReturnType	src/main/scala/parsing/xmlGen/omi.scala	/^case class ReturnType(value: String,$/;"	C
 ReturnTypeFormat	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val ReturnTypeFormat: scalaxb.XMLFormat[ReturnType] = new DefaultReturnTypeFormat {}$/;"	V
-SQLiteConnection	src/main/scala/database/DBInterface.scala	/^class SQLiteConnection extends DB {$/;"	c
+DatabaseConnection	src/main/scala/database/DBInterface.scala	/^class DatabaseConnection extends DB {$/;"	c
 SQLiteTest	src/test/scala/database/SQLiteTest.scala	/^class SQLiteTest extends Specification with AfterAll with DeactivatedTimeConversions {$/;"	c
 SavedSub	src/main/scala/responses/SubscriptionHandler.scala	/^  sealed trait SavedSub {$/;"	t
 SeqAsPath	src/main/scala/types/Types.scala	/^    implicit def SeqAsPath(s: Seq[String]): Path = Path(s.toVector)$/;"	m
@@ -450,7 +450,7 @@ db	src/main/scala/database/DBInterface.scala	/^  val db = Database.forURL(s"jdbc
 db	src/test/scala/database/SQLiteTest.scala	/^  implicit val db = new TestDB("dbtest")$/;"	V
 dbConfigName	src/main/scala/database/DBInterface.scala	/^  val dbConfigName = "h2-conf"$/;"	V
 dbConnection	src/test/scala/agentSystem/AgentListenerTest.scala	/^  implicit val dbConnection = new TestDB("agent-listener")$/;"	V
-dbConnection	src/test/scala/http/OmiServiceTest.scala	/^  implicit val dbConnection = new TestDB("system-test") \/\/ new SQLiteConnection$/;"	V
+dbConnection	src/test/scala/http/OmiServiceTest.scala	/^  implicit val dbConnection = new TestDB("system-test") \/\/ new DatabaseConnection$/;"	V
 dbConnection	src/test/scala/http/SystemTest.scala	/^  implicit val dbConnection = new TestDB("SystemTest")$/;"	V
 dbConnection	src/test/scala/responses/CancelTest.scala	/^  implicit val dbConnection = testdb$/;"	V
 dbConnection	src/test/scala/responses/ReadTest.scala	/^  implicit val dbConnection = new TestDB("read-test")$/;"	V
@@ -458,7 +458,7 @@ dbConnection	src/test/scala/responses/SubscriptionTest.scala	/^  implicit val db
 dbPath	src/main/scala/database/DBInterface.scala	/^     val dbPath = confUrl.split(":").lastOption.getOrElse("")$/;"	V
 dbioDBInfoItemsSum	src/main/scala/database/DBUtility.scala	/^  protected def dbioDBInfoItemsSum(actions: Seq[DBIO[DBInfoItems]]): DBIO[DBInfoItems] =$/;"	m
 dbioSeqSum	src/main/scala/database/DBUtility.scala	/^  protected def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {$/;"	m
-dbobject	src/main/scala/http/OmiService.scala	/^  implicit val dbobject = new SQLiteConnection$/;"	V
+dbobject	src/main/scala/http/OmiService.scala	/^  implicit val dbobject = new DatabaseConnection$/;"	V
 dbobject	src/main/scala/http/OmiService.scala	/^  implicit val dbobject: DB$/;"	V
 dbobject	src/test/scala/http/OmiServiceTest.scala	/^  implicit val dbobject = dbConnection$/;"	V
 dbsub	src/main/scala/responses/SubscriptionHandler.scala	/^    val dbsub = dbConnection.saveSub( newSub, paths )$/;"	V
@@ -706,8 +706,8 @@ infoitems	src/test/scala/database/SQLiteTest.scala	/^          val infoitems: Se
 infos	src/main/scala/agentSystem/DBPusher.scala	/^    val infos = infoitems.map{ info => $/;"	V
 init	src/main/java/agentSystem/InternalAgent.java	/^    abstract public void init();$/;"	m	class:InternalAgent
 init	src/main/scala/database/DBReadWrite.scala	/^      val init = missingPaths.dropRight(1)$/;"	V
-init	src/main/scala/http/Boot.scala	/^  def init(dbConnection: DB = new SQLiteConnection): Unit = {$/;"	m
-initInputPusher	src/main/scala/http/Boot.scala	/^  def initInputPusher(dbConnection: DB = new SQLiteConnection, actorname: String = "input-pusher-for-db") = {$/;"	m
+init	src/main/scala/http/Boot.scala	/^  def init(dbConnection: DB = new DatabaseConnection): Unit = {$/;"	m
+initInputPusher	src/main/scala/http/Boot.scala	/^  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-pusher-for-db") = {$/;"	m
 initialize	src/main/scala/database/DBReadWrite.scala	/^  def initialize() = this.synchronized {$/;"	m
 inputWhiteListIps	src/main/scala/http/OmiConfigExtension.scala	/^  val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") $/;"	V
 inputWhiteListSubnets	src/main/scala/http/OmiConfigExtension.scala	/^  val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") $/;"	V
@@ -1214,8 +1214,8 @@ splitBySpace	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def splitBySpace = 
 splitBySpace	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def splitBySpace(text: String) = text.split(' ').filter("" !=)$/;"	m
 splitQName	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def splitQName(value: String, scope: scala.xml.NamespaceBinding): (Option[String], String) =$/;"	m
 start	src/main/scala/agentSystem/InternalAgentLoader.scala	/^  def start() = {$/;"	m
-start	src/main/scala/http/Boot.scala	/^  def start(dbConnection: DB = new SQLiteConnection): ActorRef = {$/;"	m
-start	src/test/scala/http/SystemTest.scala	/^  override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {$/;"	m
+start	src/main/scala/http/Boot.scala	/^  def start(dbConnection: DB = new DatabaseConnection): ActorRef = {$/;"	m
+start	src/test/scala/http/SystemTest.scala	/^  override def start(dbConnection: DB = new DatabaseConnection): ActorRef = {$/;"	m
 startTime	src/main/scala/database/DBClasses.scala	/^    def startTime = column[Timestamp]("START")$/;"	m
 startTime	src/main/scala/database/DBClasses.scala	/^  val startTime: Timestamp,$/;"	V
 staticHtml	src/main/scala/http/OmiService.scala	/^  val staticHtml = getFromDirectory("html")$/;"	V

@@ -391,32 +391,36 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
     }
-//    "Having 2 subs on same data should work without problems" in {
-//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
-//      val testTime = new Date().getTime - 20000
-//      (1 to 10).foreach(n =>
-//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
-//
-//      val testSub1 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime), -1 seconds, None), Array(testPath))
-//      val testSub2 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime + 10000), -1 seconds, None), Array(testPath))
-//      
-//      (11 to 20).foreach(n =>
-//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
-//      
-//      val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-//      test1.\\("value").length === 20
-//      
-//      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-//      test2.\\("value").length === 0
-//      
-//      dbConnection.set(testPath, newTimestamp(), "21")
-//      
-//      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-//      test3.\\("value").length === 1
-//      
-//      
-//      
-//    }
+    "Having 2 subs on same data should work without problems" in {
+      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
+      val testTime = new Date().getTime - 20000
+      (1 to 10).foreach(n =>
+        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
+
+      val testSub1 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime), Duration.Inf, None), Array(testPath))
+      val testSub2 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime + 5000), Duration.Inf, None), Array(testPath))
+      
+      (11 to 20).foreach(n =>
+        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
+      
+      val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+      test1.\\("value").length === 20
+      
+      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+      test2.\\("value").length === 0
+      
+      dbConnection.set(testPath, newTimestamp(), "21")
+      
+      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+      test3.\\("value").length === 1
+      
+      val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub2.id)))._1
+      test4.\\("value").length === 16
+      
+      
+      
+      
+    }
 
     "Subscriptions should be removed from database when their ttl expires" in {
       val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")

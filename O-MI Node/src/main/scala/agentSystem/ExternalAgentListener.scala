@@ -14,7 +14,7 @@ import http.Settings
 import http.PermissionCheck._
 import parsing.OdfParser
 import parsing.OmiParser
-import database.SQLiteConnection
+import database.DatabaseConnection
 
 import types._
 import types.Path._
