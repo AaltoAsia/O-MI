@@ -193,7 +193,7 @@ class SystemTest extends Specification with Starter with AfterAll {
       Thread.sleep(2000);
     })
     
-    "Read Test\n" >> {
+    "Read Test" >> {
       readTests.foldLeft(Fragments())((res, i) => {
         val (request, correctResponse, testDescription) = i
         res.append(
@@ -242,7 +242,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
       })
     }
-    "Callback Test\n" >> {
+    "Callback Test" >> {
       sequentialTest.foldLeft(Fragments())((res, i) => {
 
         val (singleTest, testDescription) = i

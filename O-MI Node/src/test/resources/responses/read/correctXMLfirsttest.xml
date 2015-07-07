@@ -9,7 +9,7 @@
                   <Object>
                     <id>Refrigerator123</id>
                     <InfoItem name="PowerConsumption">
-                    <value unixTime="1421775">0.123</value>
+                    <value unixTime="1428975">0.123</value>
                     </InfoItem>
                   </Object>
                   <Object>
@@ -17,7 +17,7 @@
                     <Object>
                       <id>Temperature</id>
                       <InfoItem name="Inside">
-                      <value unixTime="1421775">21.2</value>
+                      <value unixTime="1428975">21.2</value>
                       </InfoItem>
                     </Object>
                   </Object>

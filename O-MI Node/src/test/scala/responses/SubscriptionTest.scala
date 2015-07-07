@@ -36,14 +36,12 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor, DeactivatedTimeConversions }
 
 // For eclipse:
-//import org.junit.runner.RunWith
-//import org.specs2.runner.JUnitRunner
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
 //
-//@RunWith(classOf[JUnitRunner])
+@RunWith(classOf[JUnitRunner])
 class SubscriptionTest extends Specification with BeforeAfterAll with DeactivatedTimeConversions {
   sequential
-
-
 
   implicit val system = ActorSystem("on-core")
   implicit val dbConnection = new TestDB("subscription-response-test")
@@ -113,7 +111,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     //  val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[SubscriptionRequest])
   }
   def afterAll = {
-//    dbConnection.destroy()
+    //    dbConnection.destroy()
   }
 
   "Subscription response" should {
@@ -320,9 +318,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       val ttlEnd = dbConnection.getSub(testSub.id).map(_.ttl)
       ttlFirst must beSome.which(first =>
         ttlEnd must beSome.which(last =>
-          (first.toUnit(SECONDS) - last.toUnit(SECONDS)) % 3 === 0
-        )
-      ) //(ttlFirst - ttlEnd) % 3 === 0
+          (first.toUnit(SECONDS) - last.toUnit(SECONDS)) % 3 === 0)) //(ttlFirst - ttlEnd) % 3 === 0
 
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
@@ -395,6 +391,33 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       //      dbConnection.remove(testPath)
       dbConnection.removeSub(testSub)
     }
+//    "Having 2 subs on same data should work without problems" in {
+//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
+//      val testTime = new Date().getTime - 20000
+//      (1 to 10).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
+//
+//      val testSub1 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime), -1 seconds, None), Array(testPath))
+//      val testSub2 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime + 10000), -1 seconds, None), Array(testPath))
+//      
+//      (11 to 20).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
+//      
+//      val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+//      test1.\\("value").length === 20
+//      
+//      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+//      test2.\\("value").length === 0
+//      
+//      dbConnection.set(testPath, newTimestamp(), "21")
+//      
+//      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+//      test3.\\("value").length === 1
+//      
+//      
+//      
+//    }
+
     "Subscriptions should be removed from database when their ttl expires" in {
       val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
       val parserlist = OmiParser.parse(simpletestfile)

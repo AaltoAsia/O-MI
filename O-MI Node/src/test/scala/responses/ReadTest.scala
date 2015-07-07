@@ -23,7 +23,12 @@ import akka.actor._
 import scala.util.Try
 import shapeless.headOption
 import akka.testkit.TestActorRef
+import java.util.TimeZone
 
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
+//
+@RunWith(classOf[JUnitRunner])
 class ReadTest extends Specification with BeforeAfterAll {
   sequential
 
@@ -37,7 +42,10 @@ class ReadTest extends Specification with BeforeAfterAll {
 
   def beforeAll = {
     val calendar = Calendar.getInstance()
-    calendar.setTime(new Date(1421775723))
+    val timeZone = TimeZone.getTimeZone("UTC")
+   
+  calendar.setTimeZone(timeZone)
+  calendar.setTime(new Date(1421775723))
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
@@ -197,7 +205,7 @@ class ReadTest extends Specification with BeforeAfterAll {
                     <Object>
                       <id>SmartOven</id>
                       <InfoItem name="Temperature">
-                        <value unixTime="1421780">117</value>
+                        <value unixTime="1428980">117</value>
                       </InfoItem>
                     </Object>
                   </Object>
@@ -273,7 +281,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       val RESTXML = requestHandler.generateODFREST(Path("Objects/ReadTest/RoomSensors1/CarbonDioxide"))
 
       val rightXML = <InfoItem name="CarbonDioxide" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                       <value unixTime="1421775">too much</value>
+                       <value unixTime="1428975">too much</value>
                      </InfoItem>
 
       RESTXML must beSome.which(_ must beRight.which(_ must beEqualToIgnoringSpace(rightXML)))
