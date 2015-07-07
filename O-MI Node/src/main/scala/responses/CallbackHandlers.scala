@@ -27,6 +27,7 @@ object CallbackHandlers {
   private val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
 
   private def sendHttp(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
+
       val request = Post(address, data)
       val responseFuture = httpHandler(request)
       

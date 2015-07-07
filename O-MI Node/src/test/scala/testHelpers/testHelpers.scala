@@ -11,12 +11,12 @@ import responses.RemoveSubscription
 import scala.xml._
 import parsing._
 
-class SystemTestCallbackServer(destination: ActorRef) extends Actor {
+class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
   import akka.io.IO
   import spray.can.Http
   import spray.http._
   import HttpMethods._
-  import spray.httpx.unmarshalling.BasicUnmarshallers.NodeSeqUnmarshaller
+  import spray.httpx.unmarshalling._
   import spray.util._
 
   implicit val system = ActorSystem()
@@ -26,9 +26,15 @@ class SystemTestCallbackServer(destination: ActorRef) extends Actor {
     case _: Http.Connected => sender ! Http.Register(self)
 
     case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
-      val xmldata = entity.asInstanceOf[NodeSeq]
+      val xmldata: Option[NodeSeq] = entity.as[NodeSeq].toOption//.asInstanceOf[NodeSeq]
+//      println("server received:")
+//      println(xmldata)
       destination ! xmldata
+//      println("\n\ndata sent to listener")
     }
+//    case Timedout(_) => log.info("Callback test server connection timed out")
+    
+    
   }
 }
 
