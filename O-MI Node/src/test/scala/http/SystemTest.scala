@@ -27,12 +27,13 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SystemTest extends Specification with Starter with AfterAll{
+class SystemTest extends Specification with Starter with AfterAll {
 
   override def start(dbConnection: DB = new SQLiteConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
+    // do not start InternalAgents to keep database clean
     //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
 
     // create omi service actor
@@ -69,6 +70,7 @@ class SystemTest extends Specification with Starter with AfterAll{
   val testArticles = sourceXML \\ ("article")
   val tests = testArticles.groupBy(x => x.\@("class"))
 
+  //tests with request response pairs, each containing description and forming single test(req, resp), (req, resp)...
   lazy val readTests = tests("request-response single test").map { node =>
     val textAreas = node \\ ("textarea")
     require(textAreas.length == 2, s"Each request must have exactly 1 response in request-response tests, could not find for: $node")
@@ -79,6 +81,7 @@ class SystemTest extends Specification with Starter with AfterAll{
     (request, correctResponse, testDescription)
   }
 
+  //tests that have multiple request-response pairs that all have common description (req, resp, req, resp...)
   lazy val subsNoCallback = tests("request-response test").map { node =>
     val textAreas = node \\ ("textarea")
     require(textAreas.length % 2 == 0, "There must be even amount of response and request messages(1 response for each request)\n" + textAreas)
@@ -87,42 +90,51 @@ class SystemTest extends Specification with Starter with AfterAll{
 
     val groupedRequests = textAreas.grouped(2).map { reqresp =>
       val request: Try[Elem] = getSingleRequest(reqresp)
-      val correctresponse: Try[Elem] = getSingleResponse(reqresp)
+      val correctresponse: Try[Elem] = getSingleResponseNoTime(reqresp)
       val responseWait: Option[Int] = Try(reqresp.last.\@("wait").toInt).toOption
       (request, correctresponse, responseWait)
     }
     (groupedRequests, testDescription)
 
   }
-
+  /*
+   * tests that have callback server responses mixed:
+   * for example if the test in html is (req, resp, callbackresp, callbackresp, req, resp)
+   * this groups them like: (req, resp), (callbackresp), (callbackresp), (req,resp)
+   * so that each req resp pair forms 1 test and callbackresp alone forms 1 test
+   */
   lazy val sequentialTest = tests("sequential-test").map { node =>
     val textAreas = node \\ ("textarea")
     val testDescription: String = node \ ("div") \ ("p") text
     val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>
       if (res.isEmpty) i
       else {
-        if (res.last.length == 1 && res.last.head.\@("class") == "request" || res.last.head.\@("class") == "write") {
-          val indx: Int = math.max(res.lastIndexWhere { x => x.head.\@("class") == "request" }, res.lastIndexWhere { x => x.head.\@("class") == "write" })
-          res.updated(indx,res.last.head :+ i)
+        if (res.last.length == 1 && (res.last.head.\@("class") == "request")) {
+          val indx: Int = res.lastIndexWhere { x => x.head.\@("class") == "request" }
+          res.updated(indx, res.last.head :+ i)
 
-        } else res.:+(i) //NodeSeq.fromSeq(Seq(i)))
+        } else res.:+(i) 
       }
     }
+
     (reqrespCombined, testDescription)
   }
 
-  //  dbConnection.remove(types.Path("Objects/OMI-service"))
-    def afterAll = {
-      system.shutdown()
-      dbConnection.destroy()
-  
-    }
+  def afterAll = {
+    
+    system.shutdown()
+    dbConnection.destroy()
+
+  }
 
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
   }
 
+  def getSingleResponseNoTime(reqresp: NodeSeq): Try[Elem] = {
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text.replaceAll("""unixTime\s*=\s*"\d*"""", ""))))
+  }
   def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text)))
   }
@@ -178,9 +190,9 @@ class SystemTest extends Specification with Starter with AfterAll{
     }
 
     step({
-      //let the database write the data
       Thread.sleep(2000);
     })
+    
     "Read Test\n" >> {
       readTests.foldLeft(Fragments())((res, i) => {
         val (request, correctResponse, testDescription) = i
@@ -201,7 +213,7 @@ class SystemTest extends Specification with Starter with AfterAll{
       })
     }
 
-    "Subscription Test\n" >> {
+    "Subscription Test" >> {
       subsNoCallback.foldLeft(Fragments())((res, i) => {
         val (reqrespwait, testDescription) = i
         (testDescription.trim() + "\n") >> {
@@ -216,11 +228,13 @@ class SystemTest extends Specification with Starter with AfterAll{
               responseWait.foreach { x => Thread.sleep(x * 1000) }
 
               val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-              val response = Try(Await.result(responseFuture, Duration(2, "second")))
+              val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
 
-              response must beSuccessfulTry
+              responseXml must beSuccessfulTry
+              
+              val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
 
-              response.get showAs (n =>
+              response showAs (n =>
                 "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
             }
           })
@@ -233,12 +247,12 @@ class SystemTest extends Specification with Starter with AfterAll{
 
         val (singleTest, testDescription) = i
 
-        (testDescription.trim() + "\n") >> {
+        (testDescription.trim()) >> {
           singleTest.foldLeft(Fragments())((res, j) => {
             "Step: " >> {
 
               require(j.length == 2 || j.length == 1)
-              val correctResponse = getSingleResponse(j)
+              val correctResponse = getSingleResponseNoTime(j)
               val responseWait: Option[Int] = Try(j.last.\@("wait").toInt).toOption
 
               correctResponse aka "Correct response message" must beSuccessfulTry
@@ -249,21 +263,31 @@ class SystemTest extends Specification with Starter with AfterAll{
                 request aka "Subscription request message" must beSuccessfulTry
 
                 responseWait.foreach { x => Thread.sleep(x * 1000) }
-                println(request.get)
-                val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-                val response = Try(Await.result(responseFuture, Duration(2, "second")))
-                //              
-                response must beSuccessfulTry
-                //              
-                response.get showAs (n =>
-                  "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
-                //              
-              } else {
 
-                //              probe.expectMsgType[NodeSeq](Duration(1, "second")) must new BeEqualFormatted(correctResponse.get)
-                1 === 1
+                val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
+                val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
+             
+
+                responseXml must beSuccessfulTry
+              
+              val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+                //remove blocking waits if possible
+                if(request.get.\\("write").nonEmpty){
+                  Thread.sleep(2000)
+                }
+                response showAs (n =>
+                  "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+
+              } else {
+                val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
+                
+                messageOption must beSome
+                val response = XML.loadString(messageOption.get.toString().replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+                
+                response showAs (n =>
+                  "Response at callback server:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+
               }
-              //
             }
           })
         }
