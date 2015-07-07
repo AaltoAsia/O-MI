@@ -160,9 +160,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield updateResult
 
     val run = runSync(updateAction.transactionally)
-
+    val infoitem = OdfInfoItem( path, collection.JavaConversions.asJavaIterable(Iterable( DBValue( 0, timestamp, value, valueType ).toOdf) ) ) 
     //Call hooks
-    database.getSetHooks foreach { _(Seq(path))}
+    database.getSetHooks foreach { _(Seq(infoitem))}
 //    println(s"RUN with $path:  $run")
     run
   }
@@ -174,7 +174,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    def setMany(data: List[(Path, OdfValue)]): Unit = {
      
     val pathsData: Map[Path, Seq[OdfValue]] =
-      data.groupBy(_._1).mapValues(v => v.map(_._2))
+    data.groupBy(_._1).mapValues(
+      v => v.map(_._2).sortBy(
+        _.timestamp match {
+          case Some(time) => time.getTime
+          case None => 0
+        }
+    ))
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(
@@ -219,8 +225,12 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     runSync(writeAction.transactionally)
 
+    val infoitems = pathsData.collect{
+      case (path: Path, values : Seq[OdfValue] ) if values.nonEmpty =>
+        OdfInfoItem(path,collection.JavaConversions.asJavaIterable(values.toSet))
+    }
     //Call hooks
-    database.getSetHooks foreach {_(pathsData.keys.toSeq)}
+    database.getSetHooks foreach {_(infoitems.toSeq)}
   } 
 
   def setDescription(hasPath: HasPath) : Unit  = {

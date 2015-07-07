@@ -126,7 +126,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
                 }
               } yield last.value).getOrElse("")
             }
-            eventSubs.get(path.toString) match {
+           eventSubs.get(path.toString) match {
 
               case Some( ses : Seq[EventSub] ) => 
                 eventSubs = eventSubs.updated(
@@ -141,6 +141,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
         log.debug(s"Added sub as EventSub: $dbsub")
       }
     } else if (! dbsub.isImmortal ) {
+      log.debug(s"Added sub as polled sub: $dbsub")
       ttlQueue.enqueue((dbsub.id, (dbsub.ttlToMillis + dbsub.startTime.getTime)))
       self ! CheckTTL
     }
@@ -203,8 +204,64 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
   /**
    * @param paths Paths of modified InfoItems.
    */
-  def checkEventSubs(paths: Seq[Path]): Unit = {
-    for (infoItemPath <- paths; path <- infoItemPath.getParentsAndSelf) {
+  def checkEventSubs(items: Seq[OdfInfoItem]): Unit = {
+    val idItemLastVal = items.flatMap{ item =>
+      val itemPath = item.path
+      val subItemTuples  = eventSubs.collect{
+        case ( path, subs) if itemPath.toString  == path.toString => 
+        subs
+      }.flatten
+
+      subItemTuples.map{ eventsub => (eventsub.sub.id, item, eventsub.lastValue ) }
+    }
+
+    val idToItems =idItemLastVal.groupBy{ 
+      case (id, item, lastValue ) =>
+      id 
+    }.mapValues{ _.collect{
+      case (id,item, lastValue) if item.values.dropWhile(_ == lastValue).nonEmpty => 
+        val newVals = item.values.dropWhile(_ == lastValue)
+        eventSubs = eventSubs.updated(
+          item.path.toString,
+          eventSubs.get(item.path.toString).get.map{
+            esub => EventSub(esub.sub, newVals.last.value.toString)
+          }
+        )
+        fromPath( OdfInfoItem( item.path, collection.JavaConversions.asJavaIterable(newVals) ) ) 
+
+      }.foldLeft(OdfObjects())(_ combine _) 
+    }
+    idToItems.foreach{ case (id, odf) =>
+        log.debug(s"Sending data to event sub: $id.")
+        val subs =  eventSubs.values.flatten.filter(_.sub.id == id )
+        if( subs.isEmpty) 
+         return;
+
+        val callbackAddr = subs.head.sub.callback.get
+        val xmlMsg = requestHandler.xmlFromResults(
+              1.0,
+              Result.pollResult( id.toString, odf )
+            )
+        log.info(s"Sending in progress; Subscription subId:${id} addr:$callbackAddr interval:-1")
+
+        def failed(reason: String) =
+          log.warning(
+            s"Callback failed; subscription id:${id} interval:-1  reason: $reason")
+
+
+        sendCallback(callbackAddr, xmlMsg) onComplete {
+            case Success(CallbackSuccess) =>
+              log.info(s"Callback sent; subscription id:${id} addr:$callbackAddr interval:-1")
+
+            case Success(fail: CallbackFailure) =>
+              failed(fail.toString)
+            case Failure(e) =>
+              failed(e.getMessage)
+          }
+    }
+    /*
+    for (infoItem <- items; path <- infoItem.path.getParentsAndSelf) {
+>>>>>>> Stashed changes
       var newestValue: Option[String] = None
 
       eventSubs.get(path.toString) match {
@@ -242,7 +299,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
         case None => // noop
       }
-    }
+    }*/
   }
 
   private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {

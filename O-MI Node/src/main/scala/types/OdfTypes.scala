@@ -217,7 +217,7 @@ object OdfTypes{
       ValueType(
         value,
         typeValue,
-        unixTime = Some(timestamp.get.getTime/1000),
+        unixTime = timestamp.map( _.getTime/1000),
         attributes = Map.empty
       )
     }

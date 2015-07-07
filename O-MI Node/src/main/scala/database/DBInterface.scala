@@ -1,5 +1,6 @@
 package database
 
+import types.OdfTypes.OdfInfoItem
 import slick.driver.H2Driver.api._
 import java.sql.Timestamp
 
@@ -15,13 +16,13 @@ import types.Path
 
 package object database {
 
-  private var setEventHooks: List[Seq[Path] => Unit] = List()
+  private var setEventHooks: List[Seq[OdfInfoItem] => Unit] = List()
 
   /**
    * Set hooks are run when new data is saved to database.
    * @param f Function that takes the updated paths as parameter.
    */
-  def attachSetHook(f: Seq[Path] => Unit) =
+  def attachSetHook(f: Seq[OdfInfoItem] => Unit) =
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
