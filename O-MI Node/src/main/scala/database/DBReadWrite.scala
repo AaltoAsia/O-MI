@@ -160,7 +160,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield updateResult
 
     val run = runSync(updateAction.transactionally)
-    val infoitem = OdfInfoItem( path, collection.JavaConversions.asJavaIterable(Iterable( DBValue( 0, timestamp, value, valueType ).toOdf) ) ) 
+    val infoitem = OdfInfoItem( path, collection.JavaConversions.asJavaIterable(Iterable( OdfValue(value, valueType, Some(timestamp) ) ) ) ) 
     //Call hooks
     database.getSetHooks foreach { _(Seq(infoitem))}
 //    println(s"RUN with $path:  $run")
