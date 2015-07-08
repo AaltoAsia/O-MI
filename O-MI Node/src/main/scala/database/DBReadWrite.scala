@@ -8,6 +8,7 @@ import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.SortedMap
 
@@ -125,6 +126,188 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     // NOTE: transaction level probably could be reduced to increaseAfter + DBNode insert
     addingAction.transactionally
+  }
+  
+    /**
+   * Used to remove data before given timestamp
+   * @param path path to sensor as Path object
+   * @param timestamp that tells how old data will be removed, exclusive.
+   */
+   private[database] def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
+    //check for other subs?, check historylen?
+//    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
+//    val historyLen = database.historyLength
+//    pathQuery.filter(_.timestamp < timestamp).delete
+     val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get)
+//     val subscriptions = subItems.filter(subItem => subItem.hierarchyId.inSet(infoitems)).map(n=> n.subId)
+//     subscriptions.flatMap { n =>
+//       }
+//     
+     val items = for {
+//       node <- test if node.isInfoItem == true
+       subscriptionitems <- subItems filter (subItem => subItem.hierarchyId.inSet(infoitems)) result
+       
+//       subsWithPath <- subItems if subsWithPath.hierarchyId === node.id
+       
+       
+     } yield subscriptionitems
+     
+     
+     /*
+      *  subsItems <- subItems filter (_.subId === subId) result
+      * 
+      lastValUpdates <- if ( sub.isEventBased ){
+        val actions = data map {
+          case (node, vals) if vals.nonEmpty =>
+            val lastVal = vals.lastOption.map{ _.value }
+            val subItemQ = subItems.filter{ subItem =>
+              subItem.hierarchyId === node.id &&
+              subItem.subId === sub.id
+            }
+            subItemQ.update(
+              DBSubscriptionItem( sub.id, node.id.get, lastVal )
+            )
+          case _ => DBIO.successful(())
+        }
+        DBIO.sequence(actions)
+
+      } else DBIO.successful(()) // noop
+      */
+     
+     DBIO.successful(( ))
+  }
+  
+  /**
+   * Get poll data for subscription without a callback.
+   * This operation by definition returns the requested data that is accumulated since the start of
+   * the subscription or since last poll request.
+   * @param subId Subscription id
+   * @param newTime Timestamp for the poll time, might be the new start time for the subscription
+   * @return Some results or None if something important was not found
+   */
+  def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] = {
+
+    // lastValues: map from hierarchyId to its lastValue (for this subscription)
+    def handleEventPoll(dbsub: DBSub, lastValues: Map[Int, Option[String]], sortedValues: Seq[DBValue]): Seq[DBValue] = {
+      //GET all vals
+      val timeframedVals = sortedValues filter betweenLogic(Some(dbsub.startTime), Some(newTime))
+
+      val lastValO: Option[String] = for {
+        head <- timeframedVals.headOption
+        lastValRes <- lastValues.get(head.hierarchyId)
+        lastVal <- lastValRes
+        } yield lastVal
+
+      val sameAsLast = lastValO match {
+        case Some( lastVal) =>
+          (testVal: DBValue) =>
+            lastVal == testVal.value
+        case None =>
+          (_: DBValue) => false
+      }
+
+      val sorted = timeframedVals.sortBy( _.timestamp.getTime )
+      
+      val empty = Seq.empty[DBValue]
+
+      // drops values from start that are same as before
+      val dbvals = (sorted dropWhile sameAsLast).foldLeft(empty)(
+        // Reduce subsequences with the same value to one element
+        (accumulator, b) =>
+          if (accumulator.lastOption.exists(_.value == b.value))
+            accumulator
+          else
+            accumulator :+ b
+      )
+
+      dbvals
+    }
+    
+    
+    // option checking easier at top level because of the "return" 
+    val sub = getSub( subId ) match {
+      case None => 
+        return None 
+      case Some(s) => s
+    }
+
+    val items = for {
+      subsItems <- subItems filter (_.subId === subId) result
+
+      subData <- getSubItemDataI(subsItems)
+
+      // sort time ascending; newest last
+      dataSorted = subData mapValues (
+        _.sortBy( _.timestamp.getTime )
+      )
+      
+      lastValues = subsItems groupBy ( _.hierarchyId ) map {
+        case (hId, valueSeq) => (hId, valueSeq.headOption flatMap (_.lastValue))
+      }
+
+      // Get right data for each infoitem
+      data = dataSorted mapValues { seqVals =>
+        if ( sub.isEventBased )
+          handleEventPoll(sub, lastValues, seqVals)
+        else  // Normal interval poll
+          getByIntervalBetween(seqVals, sub.startTime, newTime, sub.interval )
+      }
+
+      // Update SubItems lastValues
+      lastValUpdates <- if ( sub.isEventBased ){
+        val actions = data map {
+          case (node, vals) if vals.nonEmpty =>
+            val lastVal = vals.lastOption.map{ _.value }
+            val subItemQ = subItems.filter{ subItem =>
+              subItem.hierarchyId === node.id &&
+              subItem.subId === sub.id
+            }
+            subItemQ.update(
+              DBSubscriptionItem( sub.id, node.id.get, lastVal )
+            )
+          case _ => DBIO.successful(())
+        }
+        DBIO.sequence(actions)
+
+      } else DBIO.successful(()) // noop
+
+
+      // Update subscription, move begin time forward
+
+      elapsedTime: Duration = (newTime.getTime - sub.startTime.getTime) milliseconds
+
+      // Move begin and ttl to virtually delete the old data that is given now as a response
+      (newBegin, newTTL) = 
+        if (sub.isEventBased) {
+          (newTime, sub.ttl - elapsedTime)
+
+        } else {
+          // How many intervals are in the past?:
+          val intervalsPast = ( elapsedTime / sub.interval ).toInt // floor
+
+          (new Timestamp(
+            sub.startTime.getTime + (intervalsPast * sub.interval).toMillis
+          ),
+            sub.ttl - intervalsPast * sub.interval // Intervals between 
+          )
+        }
+
+      updatedSub = sub.copy(startTime = newBegin, ttl = newTTL)
+      
+      subQ = subs.filter(_.id === sub.id)
+      
+      updateSub <- subQ update updatedSub
+      
+      
+        
+//      removeold <- removeBefore(dataSorted, newTime)
+
+      
+    } yield data
+
+    odfConversion(
+      runSync(items.transactionally)
+    )
   }
 
 
@@ -384,17 +567,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
 
-  /**
-   * Used to remove data before given timestamp
-   * @param path path to sensor as Path object
-   * @param timestamp that tells how old data will be removed, exclusive.
-   */
-   private def removeBefore(path:Path, timestamp: Timestamp) ={
-    //check for other subs?, check historylen?
-    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
-//    val historyLen = database.historyLength
-    pathQuery.filter(_.timestamp < timestamp).delete
-  }
+
 
   
 
