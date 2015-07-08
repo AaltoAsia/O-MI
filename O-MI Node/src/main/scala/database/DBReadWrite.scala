@@ -133,48 +133,65 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    * @param timestamp that tells how old data will be removed, exclusive.
    */
-   private[database] def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
-    //check for other subs?, check historylen?
-//    val pathQuery = getWithHierarchyQ[DBValue,DBValuesTable](path,latestValues)
-//    val historyLen = database.historyLength
-//    pathQuery.filter(_.timestamp < timestamp).delete
-     val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get)
-//     val subscriptions = subItems.filter(subItem => subItem.hierarchyId.inSet(infoitems)).map(n=> n.subId)
-//     subscriptions.flatMap { n =>
-//       }
-//     
-     val items = for {
-//       node <- test if node.isInfoItem == true
-       subscriptionitems <- subItems filter (subItem => subItem.hierarchyId.inSet(infoitems)) result
-       
-//       subsWithPath <- subItems if subsWithPath.hierarchyId === node.id
-       
-       
-     } yield subscriptionitems
-     
-     
-     /*
-      *  subsItems <- subItems filter (_.subId === subId) result
-      * 
-      lastValUpdates <- if ( sub.isEventBased ){
-        val actions = data map {
-          case (node, vals) if vals.nonEmpty =>
-            val lastVal = vals.lastOption.map{ _.value }
-            val subItemQ = subItems.filter{ subItem =>
-              subItem.hierarchyId === node.id &&
-              subItem.subId === sub.id
-            }
-            subItemQ.update(
-              DBSubscriptionItem( sub.id, node.id.get, lastVal )
-            )
-          case _ => DBIO.successful(())
-        }
-        DBIO.sequence(actions)
+   private def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
 
-      } else DBIO.successful(()) // noop
-      */
+     val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get).toSeq
+     val historyLen = database.historyLength
+
+     val removeBeforeActions = infoitems.map { iItem => 
+     val items = for {
+       subscriptionitems <- subItems filter (subItem => subItem.hierarchyId === iItem) result
+       
+       earliest <- subs.filter { sub => sub.id.inSet(subscriptionitems.map(_.subId)) }.map(_.startTime).sorted.result
+       
+       time = earliest.headOption
+       
+       pathQuery = latestValues filter (_.hierarchyId === iItem) sortBy (_.timestamp.asc)
+       
+       qLen <- pathQuery.length.result
+       
+       removeAction <- if( qLen > historyLen) for {
+         
+         sortedVals <- pathQuery.result
+         oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
+         
+         cutOffTime = time.fold(oldTime)(subtime => if( subtime.before(oldTime) ) subtime else oldTime)
+         
+         result <- latestValues.filter(value => 
+           value.hierarchyId === iItem && value.timestamp < cutOffTime).delete
+           
+         asd <- latestValues.filter(value => 
+           value.hierarchyId === iItem).map(_.value).result
+           
+//           debug={
+////            println("removedebug:vvvvvvvvvvvvvvv")
+////            asd.foreach(println(_))
+//         }
+           
+       } yield result
+       else DBIO.successful((0))
+       
+//       debug = {
+//         println(s"""
+//earliest: $earliest
+//time:     $time
+//pathQuery:$pathQuery
+//qLen:     $qLen
+//removeAction: $removeAction
+//timestamp:$timestamp
+//
+//""")
+//       }
+       
+     } yield (removeAction) 
+//     println(iItem)
+//     println("\n" + runSync(items))
+     items
      
-     DBIO.successful(( ))
+     }
+
+     DBIO.sequence(removeBeforeActions)
+
   }
   
   /**
@@ -298,13 +315,19 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       
       updateSub <- subQ update updatedSub
       
+      removeOld <- DBIO.sequence(subData.keys.map(key => removeExcessI(key.id.get)))
       
+//      removeOld <- removeBefore(dataSorted, newTime)
+      
+//      debug = {
+//        println(dataSorted)
+//        println(removeOld)
+//        println("AAAAAAAAAAAAAAAAAAAAAAAAAA")
+//      }
         
-//      removeold <- removeBefore(dataSorted, newTime)
 
       
     } yield data
-
     odfConversion(
       runSync(items.transactionally)
     )
@@ -521,7 +544,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runSync( DBIO.seq(removeActions, updateActions) )
     true
   } 
-
+/*
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
@@ -554,7 +577,119 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield removeCount
 
     removeAction.transactionally
+  }*/
+  /**
+   * Used to clear excess data from database for given path
+   * for example after stopping buffering we want to revert to using
+   * historyLength
+   * @param path path to sensor as Path object
+   *
+   */
+  private def removeExcessI(pathId: Int): DBIO[Int] = {
+    val pathQuery = 
+      latestValues filter (_.hierarchyId === pathId) sortBy (_.timestamp.asc)
+
+    val historyLen = database.historyLength
+
+    val removeAction = for {
+      queryLen <- pathQuery.length.result
+
+      removeCount <-
+        if(queryLen > historyLen) for {
+          
+          subscriptionitems <- subItems filter (subItem => subItem.hierarchyId === pathId) result
+          
+          earliest <- subs.filter { sub => sub.id.inSet(subscriptionitems.map(_.subId)) }.map(_.startTime).sorted.result
+          
+          time = earliest.headOption
+          
+         
+          sortedVals <- pathQuery.result
+          oldTime = sortedVals.drop(queryLen - historyLen).head.timestamp
+
+          cutOffTime = time.fold(oldTime)(subtime => if( subtime.before(oldTime) ) subtime else oldTime)
+          
+           debug = {
+            println(s"""
+earliest: $earliest
+time: $time
+oldTime: $oldTime
+cutOffTime: $cutOffTime
+
+""")
+          }
+          result <- latestValues.filter( value =>
+            value.hierarchyId === pathId && value.timestamp < cutOffTime
+          ).delete
+
+          } yield result
+        else DBIO.successful(0)
+
+    } yield removeCount
+
+    removeAction.transactionally
   }
+  
+//  private def removeBefodre(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
+//
+//     val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get).toSeq
+//     val historyLen = database.historyLength
+//
+//     val removeBeforeActions = infoitems.map { iItem => 
+//     val items = for {
+//       subscriptionitems <- subItems filter (subItem => subItem.hierarchyId === iItem) result
+//       
+//       earliest <- subs.filter { sub => sub.id.inSet(subscriptionitems.map(_.subId)) }.map(_.startTime).sorted.result
+//       
+//       time = earliest.headOption
+//       
+//       pathQuery = latestValues filter (_.hierarchyId === iItem) sortBy (_.timestamp.asc)
+//       
+//       qLen <- pathQuery.length.result
+//       
+//       removeAction <- if( qLen > historyLen) for {
+//         
+//         sortedVals <- pathQuery.result
+//         oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
+//         
+//         cutOffTime = time.fold(oldTime)(subtime => if( subtime.before(oldTime) ) subtime else oldTime)
+//         
+//         result <- latestValues.filter(value => 
+//           value.hierarchyId === iItem && value.timestamp < cutOffTime).delete
+//           
+//         asd <- latestValues.filter(value => 
+//           value.hierarchyId === iItem).map(_.value).result
+//           
+//           debug={
+//            println("removedebug:vvvvvvvvvvvvvvv")
+//            asd.foreach(println(_))
+//         }
+//           
+//       } yield result
+//       else DBIO.successful((0))
+//       
+//       debug = {
+//         println(s"""
+//earliest: $earliest
+//time:     $time
+//pathQuery:$pathQuery
+//qLen:     $qLen
+//removeAction: $removeAction
+//timestamp:$timestamp
+//
+//""")
+//       }
+//       
+//     } yield (removeAction) 
+////     println(iItem)
+////     println("\n" + runSync(items))
+//     items
+//     
+//     }
+//
+//     DBIO.sequence(removeBeforeActions)
+//
+//  }
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
@@ -602,19 +737,20 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
           _ <- if (!sub.hasCallback) { 
-            val subItemRefCountUpdates = subItemNodes map {
-              case node @ DBNode(Some(nodeId),_,_,_,_,_,_,_) =>
-                val newRefCount = node.pollRefCount - 1 
-
-                if ( newRefCount == 0 ) {
-                  removeExcessI(nodeId)
-                }else {
-                  val updatedNode = node.copy( pollRefCount = newRefCount )
-
-                  getHierarchyNodeQ(nodeId) update updatedNode
-                }
-            }
-            DBIO.sequence(subItemRefCountUpdates)
+            DBIO.sequence(subItemNodeIds.map { x => removeExcessI(x) })
+//            val subItemRefCountUpdates = subItemNodes map {
+//              case node @ DBNode(Some(nodeId),_,_,_,_,_,_,_) =>
+//                val newRefCount = node.pollRefCount - 1 
+//
+//                if ( newRefCount == 0 ) {
+//                  removeExcessI(nodeId)
+//                }else {
+//                  val updatedNode = node.copy( pollRefCount = newRefCount )
+//
+//                  getHierarchyNodeQ(nodeId) update updatedNode
+//                }
+//            }
+//            DBIO.sequence(subItemRefCountUpdates)
           } else {
             DBIO.successful(Unit)
           }

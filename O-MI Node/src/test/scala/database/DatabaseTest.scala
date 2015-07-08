@@ -293,9 +293,11 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
 
     "should not rever to historyLength if other are still buffering" in {
 
+      println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       db.removeSub(testSub1)
       val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
+      println("????????????????????????????")
       temp2 must beSome.which(_ must have size (21))
     }
 
@@ -442,6 +444,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       db.remove(Path("/Objects/path/to/setmany/test1"))
       db.remove(Path("/Objects/path/to/setmany/test2"))
     }
+    
     "be able to save and load metadata for a path" in {
       db.set(Path("/Objects/path/to/metaDataTest/test"), newTs, "test")
       val metadata = "<meta><infoItem1>value</infoItem1></meta>"
@@ -449,7 +452,8 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       db.getMetaData(Path("/Objects/path/to/metaDataTest/test/fail")) shouldEqual None
       db.getMetaData(Path("/Objects/path/to/metaDataTest/test")).map(_.data) shouldEqual Some(metadata)
     }
-    "database should not hold unneccessary data when subscription has polled the oldest data" in {
+    
+    "polling should remove data from database when length > historyLenght and nobody is interested in it" in {
       val startTime = new java.util.Date().getTime - 30000
       val testPath = Path("/Objects/DatabaseTest/EventSubTest")
       
@@ -462,21 +466,22 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       (11 to 30).foreach(n =>
         db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
         
-        val getDataForPath1 = db.get(Path("/Objects/DatabaseTest/EventSubTest")).map(fromPath(_))
+        val getDataForPath1 = db.get(testPath).map(fromPath(_))
         val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))
         
         dbValuesForPath1 must beSome.which(_ must have size (30))
         
         val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-        test1.\\("value").length ===30
-        
-        val getDataForPath2 = db.get(Path("/Objects/DatabaseTest/EventSubTest")).map(fromPath(_))
+        test1.\\("value").length === 30
+        val getDataForPath2 = db.get(testPath).map(fromPath(_))
         val dbValuesForPath2 = getDataForPath2.map(OdfObjectsToValues(_))
-        
-        dbValuesForPath1 must beSome.which(_ must have size (25))
+        dbValuesForPath2 must beSome.which(_ must have size (25))
         
         db.removeSub(testSub1.id)
         db.removeSub(testSub2.id)
+        
+        
+        //revert to history length
         
         val getDataForPath3 = db.get(Path("/Objects/DatabaseTest/EventSubTest")).map(fromPath(_))
         val dbValuesForPath3 = getDataForPath3.map(OdfObjectsToValues(_))
