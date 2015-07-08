@@ -6,7 +6,7 @@
     var afterWaits, my;
     my = parent.consts = {};
     my.codeMirrorSettings = {
-      mode: "text/xml",
+      mode: "text/html",
       lineNumbers: true,
       lineWrapping: true
     };

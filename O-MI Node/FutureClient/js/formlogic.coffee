@@ -5,7 +5,7 @@ formLogicExt = ($, WebOmi) ->
 
     my.send = ->
         server  = WebOmi.consts.serverUrl.val()
-        request = WebOmi.consts.requestCodeMirror.getValue
+        request = WebOmi.consts.requestCodeMirror.getValue()
         $.ajax
             type: "POST"
             url: server
@@ -15,7 +15,7 @@ formLogicExt = ($, WebOmi) ->
             dataType: "text"
             #success: -> true
             #error: -> true
-            complete: (response) ->
+            success: (response) ->
                 WebOmi.consts.responseCodeMirror.setValue response
                 WebOmi.consts.responseCodeMirror.autoFormatAll
             

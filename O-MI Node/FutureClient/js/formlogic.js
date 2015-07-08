@@ -8,7 +8,7 @@
     my.send = function() {
       var request, server;
       server = WebOmi.consts.serverUrl.val();
-      request = WebOmi.consts.requestCodeMirror.getValue;
+      request = WebOmi.consts.requestCodeMirror.getValue();
       return $.ajax({
         type: "POST",
         url: server,
@@ -16,7 +16,7 @@
         contentType: "text/xml",
         processData: false,
         dataType: "text",
-        complete: function(response) {
+        success: function(response) {
           WebOmi.consts.responseCodeMirror.setValue(response);
           return WebOmi.consts.responseCodeMirror.autoFormatAll;
         }
