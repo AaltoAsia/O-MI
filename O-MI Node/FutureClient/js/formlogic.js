@@ -35,4 +35,19 @@
     });
   })(window.WebOmi.consts, window.WebOmi.requests);
 
+  $(function() {
+    return $('.optional-parameters .panel-heading a').on('click', function() {
+      var glyph;
+      console.log(this);
+      glyph = $(this).children('span');
+      if (glyph.hasClass('glyphicon-menu-right')) {
+        glyph.removeClass('glyphicon-menu-right');
+        return glyph.addClass('glyphicon-menu-down');
+      } else {
+        glyph.removeClass('glyphicon-menu-down');
+        return glyph.addClass('glyphicon-menu-right');
+      }
+    });
+  });
+
 }).call(this);
