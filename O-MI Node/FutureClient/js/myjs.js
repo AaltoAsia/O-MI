@@ -17,7 +17,6 @@ $('button').on('click', function () {
 	  $.jstree.reference('#jstree').select_node('child_node_1');
 });
 
-<<<<<<< Updated upstream
 // Module
 webOmi = (function(my) {
     my.codeMirrorSettings = {
@@ -33,13 +32,4 @@ webOmi = (function(my) {
     return my;
 }(webOmi || {}));
 
-=======
-$(".omi-textarea").each(function(index,element){
-    CodeMirror.fromTextArea(element, {
-	mode: "text/html",
-	lineNumbers: true,
-	lineWrapping: true
-    });
-});
->>>>>>> Stashed changes
 });
