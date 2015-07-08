@@ -1,53 +1,58 @@
 
 # extend module webOmi; public vars
-WebOmiExt = ($, parent) ->
+constsExt = ($, parent) ->
 
     # Module WebOmi constants
-    #my = parent.consts = {}
-    parent.consts = ( ->
-        my = {}
-        my.codeMirrorSettings =
-            mode: "text/html"
-            lineNumbers: true
-            lineWrapping: true
+    my = parent.consts = {}
 
-        afterWaits = []
+    my.codeMirrorSettings =
+        mode: "text/xml"
+        lineNumbers: true
+        lineWrapping: true
 
-        # use afterJquery for things that depend on const module
-        my.afterJquery = (fn) -> afterWaits.push fn
+    # private, [functions]
+    afterWaits = []
 
-        $ ->
-            # initialize UI
-            my.requestCodeMirror  = CodeMirror.fromTextArea($("#requestArea" )[0], my.codeMirrorSettings)
-            my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], my.codeMirrorSettings)
-            
-            my.odfTree    = $ '#nodetree'
-            my.requestSel = $ '.requesttree'
-            my.readAllBtn = $ '#readall'
+    # use afterJquery for things that depend on const module
+    my.afterJquery = (fn) -> afterWaits.push fn
 
-            my.odfTree
-                .jstree
-                  plugins : ["checkbox"]
-                .on "changed.jstree", (_, data) ->
-                  console.log data.node
-
-
-            my.requestSel
-                .jstree
-                  core :
-                    themes :
-                      icons : false
-                    multiple : false
-                .on "changed.jstree", (_, data) ->
-                  console.log data.node.id
-
-            my.afterJquery = (fn) -> fn()
-
-            fn() for fn in afterWaits
+    $ ->
+        responseCMSettings = $.extend(
+            readOnly : true
+            , my.codeMirrorSettings
+        )
         
-        my
-    )()
+        # initialize UI
+        my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
+        my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], responseCMSettings
+        
+        my.serverUrl  = $ '#targetService'
+        my.odfTree    = $ '#nodetree'
+        my.requestSel = $ '.requesttree'
+        my.readAllBtn = $ '#readall'
+
+        my.odfTree
+            .jstree
+              plugins : ["checkbox"]
+            .on "changed.jstree", (_, data) ->
+              console.log data.node
+
+
+        my.requestSel
+            .jstree
+              core :
+                themes :
+                  icons : false
+                multiple : false
+            .on "changed.jstree", (_, data) ->
+              console.log data.node.id
+
+        my.afterJquery = (fn) -> fn()
+
+        fn() for fn in afterWaits
+    
+
     parent # export module
 
 # extend WebOmi
-window.WebOmi = WebOmiExt($, window.WebOmi || {})
+window.WebOmi = constsExt($, window.WebOmi || {})
