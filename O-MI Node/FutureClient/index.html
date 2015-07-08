@@ -70,12 +70,14 @@
   <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h5 class="panel-title">
+        <h4 class="panel-title">
+          <b>O-DF Structure
+            <small>1. Select nodes that you want in the request</small>
+          </b>
           <button id="readall" class="btn btn-danger" style="float: right;" type="button">
             Read All
           </button>
-          <b>O-DF Structure</b>
-        </h5>
+        </h4>
       </div>
       <div class="panel-body">
         <div id="nodetree">
@@ -87,14 +89,16 @@
     </div>
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h5 class="panel-title">
-          <b>O-MI Request</b>
-        </h5>
+        <h4 class="panel-title">
+          <b>O-MI Request
+            <small>2. Select some request type*</small>
+          </b>
+        </h4>
       </div>
       <div class="panel-body">
-        <div id="requesttree">
+        <div class="requesttree">
           <ul>
-            <li data-jstree='{"opened":true}'>Read
+            <li id="basic-read" data-jstree='{"opened":true}'>Read
               <ul>
                 <li id="one-time-read">One time read </li>
                 <li id="subscribe">Subscription </li>
@@ -110,9 +114,11 @@
     <form>
       <div class="panel panel-default">
         <div class="panel-heading">
-          <h5 class="panel-title">
-            <b>Required parameters</b>
-          </h5>
+          <h4 class="panel-title">
+            <b>Required parameters
+              <small>3. Change or use the defaults*
+            </b>
+          </h4>
         </div>
         <div class="panel-body">
           <div id="sharedParams" class="form-group form-inline">
@@ -123,12 +129,12 @@
       </div>
       <div class="panel panel-default">
         <div class="panel-heading" role="tab" id="headingOptionalParams">
-          <h5 class="panel-title">
+          <h4 class="panel-title">
             <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
             <a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
               <b>Optional parameters</b>
             </a>
-          </h5>
+          </h4>
         </div>
         <div id="collapseOptionalParams" class="panel-collapse collapse" aria-labelledby="headingOptionalParams" role="tabpanel" aria-expanded="false" style="height: 0px;">
           <div class="panel-body">
@@ -168,16 +174,18 @@
   <div class="col-md-8">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h5 class="panel-title">
-          <b>Request and response</b>
-        </h5>
+        <h4 class="panel-title">
+          <b>Request and response
+            <small>4. Edit or send the request</small>
+          </b>
+        </h4>
       </div>
       <div class="panel-body">
         <div class="row">
           <div class="col-md-12">
-            <p>
+            <h4>Request:
               <button type="button" class="btn btn-sm btn-primary">Send</button>
-              <b>Request:</b>
+            </h4>
             </p>
             <div class="well request">
               <textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
@@ -187,7 +195,7 @@
         <div class="row">
           <div class="col-md-12">
             <p>
-              <b>Response:</b>
+              <h4>Response:</h4>
             </p>
             <div class="well response">
               <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>

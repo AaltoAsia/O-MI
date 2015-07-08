@@ -1,6 +1,6 @@
 
 # loose augmentation
-webOmi = (($, my) ->
+WebOmi = (($, my) ->
 
     # Module webOmi constants
     #
@@ -11,33 +11,40 @@ webOmi = (($, my) ->
 
 
     my
-)($, webOmi || {})
+)($, WebOmi || {})
+
+
 
 # initialize
 $ ->
     # extend module webOmi; public vars
-    webOmi = (($, my) ->
+    WebOmi = (($, my) ->
         my.requestCodeMirror  = CodeMirror.fromTextArea($("#requestArea" )[0], my.codeMirrorSettings)
         my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], my.codeMirrorSettings)
         
         my.odfTree    = $ '#nodetree'
-        my.requestSel = $ '#requesttree'
+        my.requestSel = $ '.requesttree'
         my.readAllBtn = $ '#readall'
 
-        webOmi.odfTree
-          .jstree
-            plugins : ["checkbox"]
-          .on "changed.jstree", (_, data) ->
-            console.log data.id
+        my.odfTree
+            .jstree
+              plugins : ["checkbox"]
+            .on "changed.jstree", (_, data) ->
+              console.log data.node
 
 
-        webOmi.requestSel
-          .jstree
-            core :
-              themes :
-                icons : false
-          .on "changed.jstree", (_, data) ->
-            console.log data
+        my.requestSel
+            .jstree
+              core :
+                themes :
+                  icons : false
+                multiple : false
+            .on "changed.jstree", (_, data) ->
+              console.log data.node.id
 
-    )($, webOmi)
+        my.readAllBtn
+            .on 'click', my.requests.readAll(true)
+
+
+    )($, WebOmi)
 
