@@ -609,13 +609,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
   def getSubscribedPaths( subId: Int ): Seq[Path] = {
     val pathsQ = for{
-      (hie,_) <- joinWithHierarchyQ(subItems)
+      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
     }yield( hie.path )
     runSync( pathsQ.result )
   }
   def getSubscribedItems( subId: Int ): Seq[SubscriptionItem] = {
     val pathsQ = for{
-      (hie, subId) <- joinWithHierarchyQ(subItems)
+      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
     } yield (subI.subId, hie.path, subI.lastValue)
     runSync( pathsQ.result ) map SubscriptionItem.tupled
   }
