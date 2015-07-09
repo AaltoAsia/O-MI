@@ -292,12 +292,9 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     }
 
     "should not revert to historyLength if other are still buffering" in {
-
-      println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       db.removeSub(testSub1)
       val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
-      println("????????????????????????????")
       temp2 must beSome.which(_ must have size (21))
     }
 
@@ -418,7 +415,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     "be able to add many values in one go" in {
 //      db.clearDB()
       db.set(Path("/Objects/path/to/setmany/test1"), new Timestamp(1000), "first")
-      val testSub3 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
+      val testSub3 = db.saveSub(NewDBSub(-1.seconds, new Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
 
       //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
       val testdata: List[(Path, OdfValue)] = {

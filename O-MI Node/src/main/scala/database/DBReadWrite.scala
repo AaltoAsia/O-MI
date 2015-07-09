@@ -391,14 +391,25 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
       updateAction <- latestValues ++= dbValues
 
-      remSeq = idMap.filter {
-        case (_, (_, zeroPollRefs)) => zeroPollRefs
-      }.map {
-        case (_, (nodeId, _)) => nodeId
+      remSeq = idMap.map{
+        case (_,(nodeId, _ )) => nodeId
       }
+      
+////remove excess refactor
+//      .filter {
+//        case (_, (_, zeroPollRefs)) => zeroPollRefs
+//      }.map {
+//        case (_, (nodeId, _)) => nodeId
+//      }
 
       removeAction <- DBIO.sequence(
         remSeq.map(removeExcessI(_)))
+        
+//        debug = {
+//        println(s"""
+//removeAction: $removeAction
+//""")
+//      }
     } yield ()
 
     runSync(writeAction.transactionally)
@@ -591,8 +602,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //          println(s"""
 //result: $result
 //""")
-          
-        }
+//}
 
       } yield result
       else DBIO.successful(0)
