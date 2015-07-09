@@ -21,8 +21,10 @@ formLogicExt = ($, WebOmi) ->
         callback(response) if (callback?)
 
   # recursively build odf jstree
-  #my.buildOdfTree = (xmlNode) ->
-  #  switch xmlNode.nodeName
+  my.buildOdfTree = (xmlNode) ->
+    switch xmlNode.nodeName
+      when "Objects" then console.log "Objects"
+
 
   # parse xml string and build odf jstree
   my.buildOdfTreeStr = (responseString) ->

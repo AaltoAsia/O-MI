@@ -25,6 +25,12 @@
         }
       });
     };
+    my.buildOdfTree = function(xmlNode) {
+      switch (xmlNode.nodeName) {
+        case "Objects":
+          return console.log("Objects");
+      }
+    };
     return my.buildOdfTreeStr = function(responseString) {
       var objectsArr, omi, parsed;
       omi = WebOmi.omi;
