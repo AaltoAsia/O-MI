@@ -416,10 +416,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       
       val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub2.id)))._1
       test4.\\("value").length === 16
-      
-      
-      
-      
+
     }
 
     "Subscriptions should be removed from database when their ttl expires" in {
