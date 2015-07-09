@@ -45,26 +45,27 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param request request is O-MI request to be handled
     **/
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    if(request.callback.nonEmpty){
-      var error = ""
-      try{
-        val url = new URL(request.callback.get)
-        val addr = InetAddress.getByName(request.callback.get)
-        val hostname = url.getHost()
-        val protocol = url.getProtocol()
-        if( protocol != "http" &&  protocol != "https" ) 
-          error = "Unsupported protocol."
-        
-      } catch {
-        case e:  java.net.MalformedURLException =>
-        error = e.getMessage
-        case e : UnknownHostException =>  
-        error = "Unknown host."
-        case e : SecurityException =>
-        error = "Unauthorized"
-      }
-      if( error.nonEmpty )
-        return (invalidCallback(error), 200)
+    request.callback match {
+      case Some(callback) =>
+        var error = ""
+        try{
+          val url = new URL(callback)
+          val addr = InetAddress.getByName(url.getHost)
+          val protocol = url.getProtocol()
+          if( protocol != "http" &&  protocol != "https" ) 
+            error = "Unsupported protocol."
+          
+        } catch {
+          case e:  java.net.MalformedURLException =>
+          error = e.getMessage
+          case e : UnknownHostException =>  
+          error = "Unknown host: " +e.getMessage 
+          case e : SecurityException =>
+          error = "Unauthorized " +e.getMessage
+        }
+        if( error.nonEmpty )
+          return (invalidCallback(error), 200)
+      case None => //noop
     } 
       request match {
         case sub : SubscriptionRequest =>
