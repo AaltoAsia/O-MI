@@ -1,7 +1,3 @@
-.well {
-    padding: 5px;
-    margin-bottom: 0;
-}
 .siderbar{
     position: relative;
     min-height: 50px;
@@ -27,20 +23,11 @@
     z-index: 1030;
 }
 
-.page-content {
-    left: 25.5%;
-}
-
-.panel + form {
-    margin-top: 5px;
-}
 .CodeMirror {
     font-size: 12px
 }
 
-.request .CodeMirror {
-    height: 30em;
-}
+.request .CodeMirror,
 .response .CodeMirror {
     height: 30em;
 }
@@ -55,4 +42,14 @@
 }
 .requesttree .jstree-clicked {
     font-weight: bold;
+}
+
+.odf-objects {
+    color:green;
+}
+.odf-object {
+    color: #AAAA00;
+}
+.odf-infoitem {
+    color:red;
 }

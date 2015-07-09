@@ -1,5 +1,11 @@
 
 (function (Codemirror) {
+    CodeMirror.extendMode("xml", {
+        newlineAfterToken: function(type, content, textAfter, state) {
+          return ((type == "tag" && />$/.test(content) && state.context) ||
+                             /^</.test(textAfter));
+        }
+    });
     // CodeMirror autoFormat extension
     CodeMirror.defineExtension("autoFormatRange", function (from, to) {
         var cm = this;
