@@ -58,7 +58,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
       val id = sub.id
   }
 
-  case class EventSub(sub: DBSub, lastValue: String)
+  case class EventSub(sub: DBSub, lastValue: OdfValue)
     extends SavedSub {
       val id = sub.id
   }
@@ -114,8 +114,8 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
         dbConnection.getSubscribedItems(dbsub.id) foreach {
           case SubscriptionItem(_, path, lastValueO) =>
-            val lastValue: String = lastValueO match {
-              case Some(v) => v
+            val lastValue: OdfValue = lastValueO match {
+              case Some(v) => OdfValue(v,"")
               case None    => (for {
                 infoItem <- dbConnection.get(path)
                 last     <- infoItem match {
@@ -124,7 +124,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
                     log.error(s"Didn't expect other than InfoItem: $o")
                     None
                 }
-              } yield last.value).getOrElse("")
+              } yield last).getOrElse(OdfValue("","",None))
             }
            eventSubs.get(path.toString) match {
 
@@ -223,23 +223,38 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     val idToItems =idItemLastVal.groupBy{ 
       case (sub, item, lastValue ) =>
       sub
-    }.mapValues{ _.collect{
-      case (sub, item, lastValue) if item.values.dropWhile(_ == lastValue).nonEmpty => 
-        val newVals = item.values.dropWhile(_ == lastValue)
+    }.mapValues{ _.flatMap{
+      case (sub, item, lastValue)  => 
+        val newVals = item.values.filter{ odfvalue : OdfValue =>
+          (lastValue.timestamp, odfvalue.timestamp) match{
+            case (_,None) => 
+              log.error("Event caused by timeless value " + item.path)
+              false
+            case (None, Some(_)) => 
+              true
+            case (Some(time : Timestamp),Some(itemTime : Timestamp)) =>
+              itemTime.after(time)
+          }
+        }.dropWhile{
+          odfvalue : OdfValue =>
+            odfvalue.value == lastValue.value
+        }
+        if(newVals.isEmpty)
+          return Seq.empty
+        
         val eventSubsO = eventSubs.get(item.path.toString)
         eventSubsO match {
           case Some(subs) => 
             eventSubs = eventSubs.updated(
               item.path.toString,
               subs.map{
-                esub => EventSub(esub.sub, newVals.last.value.toString)
+                esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue))
               }
             )
           case None => 
-            eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.last.value.toString))
+            eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.last))
         } 
-        fromPath( OdfInfoItem( item.path, collection.JavaConversions.asJavaIterable(newVals) ) ) 
-
+        Seq( fromPath( OdfInfoItem( item.path, collection.JavaConversions.asJavaIterable(newVals) ) ) ) 
       }.foldLeft(OdfObjects())(_ combine _) 
     }
     //log.debug("idToItems are nonempty: " + idToItems.nonEmpty)
