@@ -46,7 +46,9 @@ constsExt = ($, parent) ->
             icon : "odf-infoitem glyphicon glyphicon-apple"
         checkbox :
           three_state : false
+          keep_selected_style : true # Consider false
           cascade : "up+undetermined"
+          tie_selection : true
       .on "changed.jstree", (_, data) ->
         console.log data.node
 

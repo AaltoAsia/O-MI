@@ -74,18 +74,25 @@
     <div class="panel panel-default">
       <div class="panel-heading">
         <h4 class="panel-title">
-          <b>
-          <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-            O-DF Structure
-            <small>1. Select nodes that you want in the request</small>
-          </b>
-          <button id="readall" class="btn btn-danger" type="button">
-            Read All
-            <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
-          </button>
+          <span>
+            <b>
+            <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+              O-DF Structure
+              <small>1. Select nodes that you want in the request</small>
+            </b>
+          </span>
+          <span style="text-align:right;">
+            <button id="resetall" class="btn btn-sm btn-danger" type="button">
+              Reset All
+            </button>
+          </span>
         </h4>
       </div>
       <div class="panel-body">
+        <button id="readall" class="btn btn-sm btn-warning" type="button">
+          <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+          <b>Read All</b>
+        </button>
         <div id="nodetree">
           <ul>
             <li>Objects </li>
