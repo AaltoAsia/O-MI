@@ -21,7 +21,7 @@ requestsExt = (WebOmi) ->
   my.readAll = (fastForward) ->
     WebOmi.consts.requestCodeMirror.setValue my.xmls.readAll
     if fastForward
-      WebOmi.formLogic.send(WebOmi.formLogic.parseXmlResponse)
+      WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr)
 
           
 

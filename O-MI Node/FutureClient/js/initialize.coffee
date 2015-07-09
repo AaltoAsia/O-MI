@@ -27,15 +27,30 @@ constsExt = ($, parent) ->
     my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], responseCMSettings
     
     my.serverUrl  = $ '#targetService'
-    my.odfTree    = $ '#nodetree'
+    my.odfTreeDom = $ '#nodetree'
     my.requestSel = $ '.requesttree'
     my.readAllBtn = $ '#readall'
+    my.sendBtn    = $ '#send'
 
-    my.odfTree
+    my.odfTreeDom
       .jstree
-        plugins : ["checkbox"]
+        plugins : ["checkbox", "types"]
+        types :
+          default :
+            icon : "odf-objects glyphicon glyphicon-tree-deciduous"
+          object :
+            icon : "odf-object glyphicon glyphicon-folder-open"
+          objects :
+            icon : "odf-objects glyphicon glyphicon-tree-deciduous"
+          infoitem :
+            icon : "odf-infoitem glyphicon glyphicon-apple"
+        checkbox :
+          three_state : false
+          cascade : "up+undetermined"
       .on "changed.jstree", (_, data) ->
         console.log data.node
+
+    my.odfTree = my.odfTreeDom.jstree()
 
 
     my.requestSel
@@ -50,9 +65,14 @@ constsExt = ($, parent) ->
     my.afterJquery = (fn) -> fn()
 
     fn() for fn in afterWaits
-  
+
 
   parent # export module
 
 # extend WebOmi
 window.WebOmi = constsExt($, window.WebOmi || {})
+
+# extend String
+String.prototype.trim = String.prototype.trim || ->
+  String(this).replace /^\s+|\s+$/g, ''
+

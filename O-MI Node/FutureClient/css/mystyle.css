@@ -43,3 +43,13 @@
 .requesttree .jstree-clicked {
     font-weight: bold;
 }
+
+.odf-objects {
+    color:green;
+}
+.odf-object {
+    color: #AAAA00;
+}
+.odf-infoitem {
+    color:red;
+}

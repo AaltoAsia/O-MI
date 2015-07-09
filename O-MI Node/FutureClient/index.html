@@ -31,6 +31,7 @@
 	<script type="text/javascript" src="js/initialize.js"></script>
 	<script type="text/javascript" src="js/requests.js"></script>
 	<script type="text/javascript" src="js/formlogic.js"></script>
+	<script type="text/javascript" src="js/omi.js"></script>
 
 </head>
 <body>
@@ -225,11 +226,11 @@
         <div class="row">
           <div class="col-md-12">
             <h4>
-	      <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
+              <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
               Request:
-              <button type="button" class="btn btn-md btn-primary">
+              <button id="send" type="button" class="btn btn-md btn-primary">
                 Send
-	        <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+                <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
               </button>
             </h4>
             <div class="well request">
@@ -240,8 +241,8 @@
         <div class="row">
           <div class="col-md-12">
             <h4>
-	        <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
-                Response:
+              <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
+              Response:
             </h4>
             <div class="well response">
               <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>

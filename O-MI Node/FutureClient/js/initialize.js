@@ -22,14 +22,34 @@
       my.requestCodeMirror = CodeMirror.fromTextArea($("#requestArea")[0], my.codeMirrorSettings);
       my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], responseCMSettings);
       my.serverUrl = $('#targetService');
-      my.odfTree = $('#nodetree');
+      my.odfTreeDom = $('#nodetree');
       my.requestSel = $('.requesttree');
       my.readAllBtn = $('#readall');
-      my.odfTree.jstree({
-        plugins: ["checkbox"]
+      my.sendBtn = $('#send');
+      my.odfTreeDom.jstree({
+        plugins: ["checkbox", "types"],
+        types: {
+          "default": {
+            icon: "odf-objects glyphicon glyphicon-tree-deciduous"
+          },
+          object: {
+            icon: "odf-object glyphicon glyphicon-folder-open"
+          },
+          objects: {
+            icon: "odf-objects glyphicon glyphicon-tree-deciduous"
+          },
+          infoitem: {
+            icon: "odf-infoitem glyphicon glyphicon-apple"
+          }
+        },
+        checkbox: {
+          three_state: false,
+          cascade: "up+undetermined"
+        }
       }).on("changed.jstree", function(_, data) {
         return console.log(data.node);
       });
+      my.odfTree = my.odfTreeDom.jstree();
       my.requestSel.jstree({
         core: {
           themes: {
@@ -54,5 +74,9 @@
   };
 
   window.WebOmi = constsExt($, window.WebOmi || {});
+
+  String.prototype.trim = String.prototype.trim || function() {
+    return String(this).replace(/^\s+|\s+$/g, '');
+  };
 
 }).call(this);

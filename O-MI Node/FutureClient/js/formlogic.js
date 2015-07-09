@@ -25,30 +25,95 @@
         }
       });
     };
-    my.buildOdfTree = function(xmlNode) {
-      switch (xmlNode.nodeName) {
-        case "Objects":
-          return console.log("Objects");
-      }
+    my.buildOdfTree = function(objectsNode) {
+      var evaluateXPath, genData, objChildren, tree, treeData;
+      tree = WebOmi.consts.odfTree;
+      evaluateXPath = WebOmi.omi.evaluateXPath;
+      objChildren = function(xmlNode) {
+        return evaluateXPath(xmlNode, './odf:InfoItem | ./odf:Object');
+      };
+      genData = function(xmlNode, parentPath) {
+        var child, name, path;
+        switch (xmlNode.nodeName) {
+          case "Objects":
+            name = xmlNode.nodeName;
+            return {
+              id: name,
+              text: name,
+              state: {
+                opened: true
+              },
+              type: "objects",
+              children: (function() {
+                var i, len, ref, results;
+                ref = objChildren(xmlNode);
+                results = [];
+                for (i = 0, len = ref.length; i < len; i++) {
+                  child = ref[i];
+                  results.push(genData(child, name));
+                }
+                return results;
+              })()
+            };
+          case "Object":
+            name = evaluateXPath(xmlNode, './odf:id')[0].textContent.trim();
+            path = parentPath + "/" + name;
+            return {
+              id: path,
+              text: name,
+              type: "object",
+              children: (function() {
+                var i, len, ref, results;
+                ref = objChildren(xmlNode);
+                results = [];
+                for (i = 0, len = ref.length; i < len; i++) {
+                  child = ref[i];
+                  results.push(genData(child, path));
+                }
+                return results;
+              })()
+            };
+          case "InfoItem":
+            name = xmlNode.attributes.name.value;
+            path = parentPath + "/" + name;
+            return {
+              id: path,
+              text: name,
+              type: "infoitem",
+              children: []
+            };
+        }
+      };
+      treeData = genData(objectsNode);
+      console.log(treeData);
+      tree.settings.core.data = [treeData];
+      return tree.refresh();
     };
-    return my.buildOdfTreeStr = function(responseString) {
+    my.buildOdfTreeStr = function(responseString) {
       var objectsArr, omi, parsed;
       omi = WebOmi.omi;
       parsed = omi.parseXmlResponse(responseString);
-      objectsArr = omi.evaluateXPath(parsed, "//Objects");
-      return WebOmi;
+      objectsArr = omi.evaluateXPath(parsed, "//odf:Objects");
+      if (objectsArr.length !== 1) {
+        alert("failed to get single Objects odf root");
+      }
+      return my.buildOdfTree(objectsArr[0]);
     };
+    return WebOmi;
   };
 
   window.WebOmi = formLogicExt($, window.WebOmi || {});
 
-  (function(consts, requests) {
+  (function(consts, requests, formLogic) {
     return consts.afterJquery(function() {
-      return consts.readAllBtn.on('click', function() {
+      consts.readAllBtn.on('click', function() {
         return requests.readAll(true);
       });
+      return consts.sendBtn.on('click', function() {
+        return formLogic.send();
+      });
     });
-  })(window.WebOmi.consts, window.WebOmi.requests);
+  })(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic);
 
   $(function() {
     return $('.optional-parameters .panel-heading a').on('click', function() {
