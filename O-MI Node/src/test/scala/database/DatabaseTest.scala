@@ -51,7 +51,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
   val requestHandler = new RequestHandler(subscriptionHandlerRef)(db)
   
   lazy val testSub1 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
-  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
+  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, new java.sql.Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
     //    sequential
@@ -291,7 +291,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       temp2 must beNone
     }
 
-    "should not rever to historyLength if other are still buffering" in {
+    "should not revert to historyLength if other are still buffering" in {
 
       println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       db.removeSub(testSub1)
