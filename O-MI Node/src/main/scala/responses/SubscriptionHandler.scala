@@ -205,44 +205,54 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    * @param paths Paths of modified InfoItems.
    */
   def checkEventSubs(items: Seq[OdfInfoItem]): Unit = {
+    //log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
+    //log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
+
     val idItemLastVal = items.flatMap{ item =>
-      val itemPath = item.path
+      val itemPaths = item.path.getParentsAndSelf.map(_.toString)
       val subItemTuples  = eventSubs.collect{
-        case ( path, subs) if itemPath.toString  == path.toString => 
+        case ( path, subs) if itemPaths.contains(path) => 
         subs
       }.flatten
 
-      subItemTuples.map{ eventsub => (eventsub.sub.id, item, eventsub.lastValue ) }
+      //log.debug("subItemTuples are nonempty: " + subItemTuples.nonEmpty)
+      subItemTuples.map{ eventsub => (eventsub.sub, item, eventsub.lastValue ) }
     }
+    //log.debug("idItemLastVal are nonempty: " + idItemLastVal.nonEmpty)
 
     val idToItems =idItemLastVal.groupBy{ 
-      case (id, item, lastValue ) =>
-      id 
+      case (sub, item, lastValue ) =>
+      sub
     }.mapValues{ _.collect{
-      case (id,item, lastValue) if item.values.dropWhile(_ == lastValue).nonEmpty => 
+      case (sub, item, lastValue) if item.values.dropWhile(_ == lastValue).nonEmpty => 
         val newVals = item.values.dropWhile(_ == lastValue)
-        eventSubs = eventSubs.updated(
-          item.path.toString,
-          eventSubs.get(item.path.toString).get.map{
-            esub => EventSub(esub.sub, newVals.last.value.toString)
-          }
-        )
+        val eventSubsO = eventSubs.get(item.path.toString)
+        eventSubsO match {
+          case Some(subs) => 
+            eventSubs = eventSubs.updated(
+              item.path.toString,
+              subs.map{
+                esub => EventSub(esub.sub, newVals.last.value.toString)
+              }
+            )
+          case None => 
+            eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.last.value.toString))
+        } 
         fromPath( OdfInfoItem( item.path, collection.JavaConversions.asJavaIterable(newVals) ) ) 
 
       }.foldLeft(OdfObjects())(_ combine _) 
     }
-    idToItems.foreach{ case (id, odf) =>
+    //log.debug("idToItems are nonempty: " + idToItems.nonEmpty)
+    idToItems.foreach{ case (sub, odf) =>
+        val id = sub.id
         log.debug(s"Sending data to event sub: $id.")
-        val subs =  eventSubs.values.flatten.filter(_.sub.id == id )
-        if( subs.isEmpty) 
-         return;
-
-        val callbackAddr = subs.head.sub.callback.get
+        val callbackAddr = sub.callback.getOrElse("")
         val xmlMsg = requestHandler.xmlFromResults(
               1.0,
               Result.pollResult( id.toString, odf )
             )
         log.info(s"Sending in progress; Subscription subId:${id} addr:$callbackAddr interval:-1")
+        //log.debug("Send msg:\n" + xmlMsg)
 
         def failed(reason: String) =
           log.warning(
@@ -261,7 +271,6 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     }
     /*
     for (infoItem <- items; path <- infoItem.path.getParentsAndSelf) {
->>>>>>> Stashed changes
       var newestValue: Option[String] = None
 
       eventSubs.get(path.toString) match {

@@ -163,6 +163,9 @@ trait OmiService extends HttpService with CORSSupport {
     pathPrefix("html") {
       staticHtml
     } ~
+    pathPrefix("FutureClient") {
+      getFromDirectory("FutureClient")
+    } ~
     pathPrefixTest("Objects") {
       getDataDiscovery
     }

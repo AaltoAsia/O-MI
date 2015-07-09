@@ -44,3 +44,15 @@
 .response .CodeMirror {
     height: 30em;
 }
+
+.requesttree .jstree-anchor {
+    border: 1px solid;
+    border-radius: 2px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    min-width: 7em;
+    text-align: center;
+}
+.requesttree .jstree-clicked {
+    font-weight: bold;
+}
