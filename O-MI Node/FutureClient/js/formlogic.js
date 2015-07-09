@@ -5,7 +5,7 @@
   formLogicExt = function($, WebOmi) {
     var my;
     my = WebOmi.formLogic = {};
-    my.send = function() {
+    my.send = function(callback) {
       var request, server;
       server = WebOmi.consts.serverUrl.val();
       request = WebOmi.consts.requestCodeMirror.getValue();
@@ -18,11 +18,20 @@
         dataType: "text",
         success: function(response) {
           WebOmi.consts.responseCodeMirror.setValue(response);
-          return WebOmi.consts.responseCodeMirror.autoFormatAll();
+          WebOmi.consts.responseCodeMirror.autoFormatAll();
+          if ((callback != null)) {
+            return callback(response);
+          }
         }
       });
     };
-    return WebOmi;
+    return my.buildOdfTreeStr = function(responseString) {
+      var objectsArr, omi, parsed;
+      omi = WebOmi.omi;
+      parsed = omi.parseXmlResponse(responseString);
+      objectsArr = omi.evaluateXPath(parsed, "//Objects");
+      return WebOmi;
+    };
   };
 
   window.WebOmi = formLogicExt($, window.WebOmi || {});
@@ -38,7 +47,6 @@
   $(function() {
     return $('.optional-parameters .panel-heading a').on('click', function() {
       var glyph;
-      console.log(this);
       glyph = $(this).children('span');
       if (glyph.hasClass('glyphicon-menu-right')) {
         glyph.removeClass('glyphicon-menu-right');

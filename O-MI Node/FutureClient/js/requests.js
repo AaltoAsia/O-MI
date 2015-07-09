@@ -11,7 +11,7 @@
     my.readAll = function(fastForward) {
       WebOmi.consts.requestCodeMirror.setValue(my.xmls.readAll);
       if (fastForward) {
-        return WebOmi.formLogic.send();
+        return WebOmi.formLogic.send(WebOmi.formLogic.parseXmlResponse);
       }
     };
     return WebOmi;
