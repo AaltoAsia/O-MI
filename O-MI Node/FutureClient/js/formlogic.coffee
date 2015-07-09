@@ -17,7 +17,7 @@ formLogicExt = ($, WebOmi) ->
             #error: -> true
             success: (response) ->
                 WebOmi.consts.responseCodeMirror.setValue response
-                WebOmi.consts.responseCodeMirror.autoFormatAll
+                WebOmi.consts.responseCodeMirror.autoFormatAll()
             
     WebOmi # export
 

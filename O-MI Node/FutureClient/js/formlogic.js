@@ -18,7 +18,7 @@
         dataType: "text",
         success: function(response) {
           WebOmi.consts.responseCodeMirror.setValue(response);
-          return WebOmi.consts.responseCodeMirror.autoFormatAll;
+          return WebOmi.consts.responseCodeMirror.autoFormatAll();
         }
       });
     };
