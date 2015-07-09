@@ -6,20 +6,23 @@ import java.sql.Timestamp
 import types.OdfTypes._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
+import types.OmiTypes._
+import akka.testkit.TestActorRef
+import akka.actor.{Props, ActorSystem}
+import responses.{RequestHandler, SubscriptionHandler}
 
 import scala.concurrent.duration._
 import testHelpers.{AfterAll, DeactivatedTimeConversions}
 
 import types._
 
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
+//
+@RunWith(classOf[JUnitRunner])
 class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConversions {
   sequential
-  //  implicit def javaIterableToSeq[T](x: java.lang.Iterable[T]): Seq[T] = {
-  //    iterableAsScalaIterable(x).toSeq
-  //  }
-  //  implicit def seqAsjavaIterable[T](x: Seq[T]): java.lang.Iterable[T] = {
-  //    asJavaIterable(x.toIterable)
-  //  }
+  
   def newTs = new Timestamp(new java.util.Date().getTime)
   implicit val db = new TestDB("dbtest")
 
@@ -41,8 +44,14 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     val temp1: Seq[HasPath] = getLeafs(x).toSeq
     temp1.map(n => n.path)
   }
+  implicit val system = ActorSystem()
+  
+  val subscriptionHandlerRef = TestActorRef(Props(new SubscriptionHandler()(db))) //[SubscriptionHandler]
+
+  val requestHandler = new RequestHandler(subscriptionHandlerRef)(db)
+  
   lazy val testSub1 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
-  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
+  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, new java.sql.Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
     //    sequential
@@ -282,8 +291,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       temp2 must beNone
     }
 
-    "should not rever to historyLength if other are still buffering" in {
-
+    "should not revert to historyLength if other are still buffering" in {
       db.removeSub(testSub1)
       val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
@@ -331,7 +339,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     //      db.isExpired(id3) shouldEqual false
     //    }
 
-    "subscribing to Object should subscribe to alla child infoitems" in {
+    "subscribing to Object should subscribe to all child infoitems" in {
       db.getSubData(id1.id) must beSome.which(OdfObjectsToPaths(_) must have size (4))
       db.getSubData(id2.id) must beSome.which(OdfObjectsToPaths(_) must have size (4))
       db.getSubData(id3.id) must beSome.which(OdfObjectsToPaths(_) must have size (5))
@@ -407,7 +415,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     "be able to add many values in one go" in {
 //      db.clearDB()
       db.set(Path("/Objects/path/to/setmany/test1"), new Timestamp(1000), "first")
-      val testSub3 = db.saveSub(NewDBSub(-1.seconds, newTs, Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
+      val testSub3 = db.saveSub(NewDBSub(-1.seconds, new Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
 
       //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
       val testdata: List[(Path, OdfValue)] = {
@@ -433,12 +441,50 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       db.remove(Path("/Objects/path/to/setmany/test1"))
       db.remove(Path("/Objects/path/to/setmany/test2"))
     }
+    
     "be able to save and load metadata for a path" in {
       db.set(Path("/Objects/path/to/metaDataTest/test"), newTs, "test")
       val metadata = "<meta><infoItem1>value</infoItem1></meta>"
       db.setMetaData(Path("/Objects/path/to/metaDataTest/test"), metadata)
       db.getMetaData(Path("/Objects/path/to/metaDataTest/test/fail")) shouldEqual None
       db.getMetaData(Path("/Objects/path/to/metaDataTest/test")).map(_.data) shouldEqual Some(metadata)
+    }
+    
+    "polling should remove data from database when length > historyLenght and nobody is interested in it" in {
+      val startTime = new java.util.Date().getTime - 30000
+      val testPath = Path("/Objects/DatabaseTest/EventSubTest")
+      
+      (1 to 10).foreach(n =>
+        db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
+        
+      val testSub1 = db.saveSub(NewDBSub(-1 seconds, new Timestamp(startTime), Duration.Inf, None), Array(testPath))
+      val testSub2 = db.saveSub(NewDBSub(-1 seconds, new Timestamp(startTime + 5000), Duration.Inf, None), Array(testPath))
+      
+      (11 to 30).foreach(n =>
+        db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
+        
+        val getDataForPath1 = db.get(testPath).map(fromPath(_))
+        val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))
+        
+        dbValuesForPath1 must beSome.which(_ must have size (30))
+        
+        val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+        test1.\\("value").length === 30
+        val getDataForPath2 = db.get(testPath).map(fromPath(_))
+        val dbValuesForPath2 = getDataForPath2.map(OdfObjectsToValues(_))
+        dbValuesForPath2 must beSome.which(_ must have size (25))
+        
+        db.removeSub(testSub1.id)
+        db.removeSub(testSub2.id)
+        
+        
+        //revert to history length
+        
+        val getDataForPath3 = db.get(Path("/Objects/DatabaseTest/EventSubTest")).map(fromPath(_))
+        val dbValuesForPath3 = getDataForPath3.map(OdfObjectsToValues(_))
+        
+        dbValuesForPath3 must beSome.which(_ must have size (10))
+        
     }
     //    "close" in {
     //      db.destroy()
