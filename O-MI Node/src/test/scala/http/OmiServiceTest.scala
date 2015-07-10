@@ -243,7 +243,7 @@ class OmiServiceTest extends Specification
     }
 
     "respond to permissive requests" in {
-      val request: NodeSeq =
+      val request: String = """
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
           <omi:write msgformat="odf">
             <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
@@ -257,10 +257,21 @@ class OmiServiceTest extends Specification
               </Objects>
             </omi:msg>
           </omi:write>
-        </omi:omiEnvelope>
+        </omi:omiEnvelope>"""
 
-      "respond correctly to write request with whitelisted IP-address" in {
-        Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+      "respond correctly to write request with whitelisted IPv4-addresses" in {
+        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+        }
+
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor1"))).withHeaders(`Remote-Address`("127.255.255.255")) ~> myRoute ~> check {
           mediaType === `text/xml`
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
@@ -272,8 +283,37 @@ class OmiServiceTest extends Specification
         }
       }
 
-      "respond correctly to write requests with not whitelister IP-address" in {
-        Post("/", request).withHeaders(`Remote-Address`("137.0.0.1")) ~> myRoute ~> check {
+      "respond correctly to write request with non-whitelisted IPv4-addresses" in {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor2"))).withHeaders(`Remote-Address`("192.65.127.80")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          val description = resp.\("response").\("result").\("return").\@("description")
+          description === "Unauthorized"
+        }
+
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor3"))).withHeaders(`Remote-Address`("128.0.0.1")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          val description = resp.\("response").\("result").\("return").\@("description")
+          description === "Unauthorized"
+        }
+
+      }
+
+      "respond correctly to write request with whitelisted IPv6-addresses" in {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("0:0:0:0:0:0:0:1")) ~> myRoute ~> check {
           mediaType === `text/xml`
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
@@ -283,7 +323,44 @@ class OmiServiceTest extends Specification
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
-      }.pendingUntilFixed
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor5"))).withHeaders(`Remote-Address`("0:0:0:FFFF:FFFF:FFFF:FFFF:FFFF")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+        }
+      }
+      "respond correctly to write request with non-whitelisted IPv6-addresses" in {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("0:0:1:0:0:0:0:0")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          val description = resp.\("response").\("result").\("return").\@("description")
+          description === "Unauthorized"
+        }
+
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("2001:DB80:ABBA:BABB:A:0:FF:FF")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          val description = resp.\("response").\("result").\("return").\@("description")
+          description === "Unauthorized"
+        }
+      }
     }
 
     //    def postTest(request: NodeSeq, remote: String = "127.0.0.1", mType: MediaType = `text/xml`, tests: MatchResult[Node]*): MatchResult[Any] = {
