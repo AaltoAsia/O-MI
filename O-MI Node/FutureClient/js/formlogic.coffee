@@ -79,7 +79,7 @@ formLogicExt = ($, WebOmi) ->
   my.buildOdfTreeStr = (responseString) ->
     omi = WebOmi.omi
 
-    parsed = omi.parseXmlResponse responseString # FIXME: get
+    parsed = omi.parseXml responseString # FIXME: get
 
     objectsArr = omi.evaluateXPath parsed, "//odf:Objects"
 

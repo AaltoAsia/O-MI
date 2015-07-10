@@ -3,17 +3,29 @@
   var requestsExt;
 
   requestsExt = function(WebOmi) {
-    var my;
+    var lastParameters, my;
     my = WebOmi.requests = {};
     my.xmls = {
       readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> ",
       template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> \n"
     };
-    my.defaults = {
+    my.defaults = {};
+    my.defaults.empty = {
+      request: null,
       ttl: 0,
-      callback: "",
-      requestID: 1
+      callback: null,
+      requestID: null,
+      odf: null,
+      interval: null,
+      newest: null,
+      oldest: null,
+      begin: null,
+      end: null
     };
+    my.defaults.readAll = $.extend({}, my.defaults.empty, {
+      odf: '<Objects></Objects>'
+    });
+    lastParameters = my.defaults;
     my.readAll = function(fastForward) {
       WebOmi.formLogic.setRequest(my.xmls.readAll);
       if (fastForward) {
@@ -21,9 +33,11 @@
       }
     };
     my.addPathToOdf = function(path) {
-      var reqCM;
+      var o, reqCM, xmltree;
+      o = WebOmi.omi;
       reqCM = WebOmi.consts.requestCodeMirror;
-      return reqCM.getValue();
+      xmltree = o.parseXml(reqCM.getValue);
+      return o.evaluateXPath(xmlTree, '//omi:msg');
     };
     my.read = function() {};
     return WebOmi;

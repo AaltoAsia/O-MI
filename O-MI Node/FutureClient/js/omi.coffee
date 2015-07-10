@@ -3,13 +3,15 @@ omiExt = (WebOmi) ->
   # Sub module for handling omi xml
   my = WebOmi.omi = {}
 
-  my.parseXmlResponse = (responseString) ->
+  my.parseXml = (responseString) ->
     window.xmlTree = new DOMParser().parseFromString responseString, 'text/xml'
 
   nsResolver = (name) ->
     ns =
       omi : "omi.xsd"
       odf : "odf.xsd"
+      xsi : "http://www.w3.org/2001/XMLSchema-instance"
+      xs  : "http://www.w3.org/2001/XMLSchema-instance"
     ns[name] || ns.odf
 
   my.evaluateXPath = (elem, xpath) ->

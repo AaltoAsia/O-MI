@@ -29,10 +29,25 @@ requestsExt = (WebOmi) ->
 
       """
 
-  my.defaults =
-    ttl: 0
-    callback: ""
-    requestID: 1
+  my.defaults = {}
+  my.defaults.empty =
+    request  : null  # Maybe string
+    ttl      : 0     # double
+    callback : null  # Maybe string
+    requestID: null  # Maybe int
+    odf      : null  # Maybe xml
+    interval : null  # Maybe number
+    newest   : null  # Maybe int
+    oldest   : null  # Maybe int
+    begin    : null  # Maybe Date
+    end      : null  # Maybe Date
+
+  my.defaults.readAll = $.extend {}, my.defaults.empty,
+    odf : '<Objects></Objects>'
+
+  # private
+  lastParameters = my.defaults
+
 
 
   # @param fastforward: Boolean Whether to also send the request and update odfTree also
@@ -43,9 +58,14 @@ requestsExt = (WebOmi) ->
 
 
   my.addPathToOdf = (path) ->
+    o = WebOmi.omi
     reqCM = WebOmi.consts.requestCodeMirror
-    reqCM.getValue()
-    # TODO:
+    xmltree = o.parseXml(reqCM.getValue)
+    # TODO: user edit conflict check
+    
+    o.evaluateXPath(xmlTree, '//omi:msg')
+
+    
 
   my.read = () ->
 
