@@ -1,6 +1,6 @@
 package responses
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{ Actor, ActorLogging }
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import akka.pattern.ask
@@ -17,7 +17,7 @@ import java.sql.Timestamp
 import java.util.Date
 import System.currentTimeMillis
 import scala.math.Ordering
-import scala.util.{Try, Success, Failure }
+import scala.util.{ Try, Success, Failure }
 import scala.collection.mutable.{ PriorityQueue, Map, HashMap }
 
 import xml._
@@ -36,7 +36,7 @@ case class RemoveSubscription(id: Int)
 /**
  * Handles interval counting and event checking for subscriptions
  */
-class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorLogging {
+class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLogging {
 
   private def date = new Date()
   implicit val timeout = Timeout(5.seconds)
@@ -50,12 +50,12 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
   case class TimedSub(sub: DBSub, nextRunTime: Timestamp)
     extends SavedSub {
-      val id = sub.id
+    val id = sub.id
   }
 
   case class EventSub(sub: DBSub, lastValue: OdfValue)
     extends SavedSub {
-      val id = sub.id
+    val id = sub.id
   }
 
   object TimedSubOrdering extends Ordering[TimedSub] {
@@ -93,53 +93,51 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
   private def loadSub(dbsub: DBSub): Unit = {
     log.debug(s"Adding sub: $dbsub")
 
-    dbsub.hasCallback match{
+    dbsub.hasCallback match {
       case true =>
-      dbsub.isIntervalBased match{
-        case true =>
-          intervalSubs += TimedSub(
-            dbsub,
-            new Timestamp(currentTimeMillis())
-          )
+        dbsub.isIntervalBased match {
+          case true =>
+            intervalSubs += TimedSub(
+              dbsub,
+              new Timestamp(currentTimeMillis()))
 
-          // FIXME: schedules many times
-          handleIntervals()
+            // FIXME: schedules many times
+            handleIntervals()
 
-          log.debug(s"Added sub as TimedSub: $dbsub")
+            log.debug(s"Added sub as TimedSub: $dbsub")
 
           case false =>
-          dbsub.isEventBased match {
-            case true =>
-              dbConnection.getSubscribedItems(dbsub.id) foreach {
-                case SubscriptionItem(_, path, lastValueO) =>
-                  val lastValue: OdfValue = lastValueO match {
-                    case Some(v) => OdfValue(v,"")
-                    case None    => (for {
-                      infoItem <- dbConnection.get(path)
-                      last     <- infoItem match {
-                        case info: OdfInfoItem => info.values.headOption
-                        case o => //noop
-                          log.error(s"Didn't expect other than InfoItem: $o")
-                          None
-                      }
-                    } yield last).getOrElse(OdfValue("","",None))
-                  }
-                 eventSubs.get(path.toString) match {
+            dbsub.isEventBased match {
+              case true =>
+                dbConnection.getSubscribedItems(dbsub.id) foreach {
+                  case SubscriptionItem(_, path, lastValueO) =>
+                    val lastValue: OdfValue = lastValueO match {
+                      case Some(v) => OdfValue(v, "")
+                      case None => (for {
+                        infoItem <- dbConnection.get(path)
+                        last <- infoItem match {
+                          case info: OdfInfoItem => info.values.headOption
+                          case o => //noop
+                            log.error(s"Didn't expect other than InfoItem: $o")
+                            None
+                        }
+                      } yield last).getOrElse(OdfValue("", "", None))
+                    }
+                    eventSubs.get(path.toString) match {
 
-                    case Some( ses : Seq[EventSub] ) => 
-                      eventSubs = eventSubs.updated(
-                        path.toString, EventSub(dbsub, lastValue) :: ses.toList
-                      )
+                      case Some(ses: Seq[EventSub]) =>
+                        eventSubs = eventSubs.updated(
+                          path.toString, EventSub(dbsub, lastValue) :: ses.toList)
 
-                    case None => 
-                      eventSubs += path.toString -> Seq( EventSub(dbsub, lastValue))
-                  }
-              }
+                      case None =>
+                        eventSubs += path.toString -> Seq(EventSub(dbsub, lastValue))
+                    }
+                }
 
-              log.debug(s"Added sub as EventSub: $dbsub")
-          case false =>
+                log.debug(s"Added sub as EventSub: $dbsub")
+              case false =>
+            }
         }
-      }
       case false =>
         dbsub.isImmortal match {
           case false =>
@@ -159,10 +157,10 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     log.debug(s"Removing sub $id...")
     dbConnection.getSub(id) match {
       case Some(dbsub) => removeSub(dbsub)
-      case None => false
+      case None        => false
     }
   }
-  
+
   /**
    * @param sub The subscription to remove
    * @return true on success
@@ -170,26 +168,26 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
   private def removeSub(sub: DBSub): Boolean = {
     sub.isEventBased match {
       case true =>
-        val removedPaths = dbConnection.getSubscribedPaths(sub.id) 
-        removedPaths foreach { removedPath => 
+        val removedPaths = dbConnection.getSubscribedPaths(sub.id)
+        removedPaths foreach { removedPath =>
           val path = removedPath.toString
           eventSubs get path match {
             case Some(ses: Seq[EventSub]) if ses.length > 1 =>
-              eventSubs.updated(path, ses.filter( _.sub.id != sub.id ))    
+              eventSubs.updated(path, ses.filter(_.sub.id != sub.id))
             case Some(ses: Seq[EventSub]) if ses.length == 1 &&
-                ses.headOption.map(_.sub.id == sub.id).getOrElse(false) =>
+              ses.headOption.map(_.sub.id == sub.id).getOrElse(false) =>
               // remove the whole entry to keep empty lists from piling up in the map
               eventSubs -= path
             case None => // noop
-          } 
+          }
         }
       case false =>
         //remove from intervalSubs
-        sub.hasCallback match{
+        sub.hasCallback match {
           case true =>
             intervalSubs = intervalSubs.filterNot(sub.id == _.id)
           case false =>
-            ttlQueue = ttlQueue.filterNot( sub.id == _.id)
+            ttlQueue = ttlQueue.filterNot(sub.id == _.id)
         }
     }
     dbConnection.removeSub(sub.id)
@@ -204,7 +202,7 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
 
     case RemoveSubscription(requestID) => sender() ! removeSub(requestID)
-  
+
     case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
 
@@ -215,64 +213,64 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     //log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
     //log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
 
-    val idItemLastVal = items.flatMap{ item =>
+    val idItemLastVal = items.flatMap { item =>
       val itemPaths = item.path.getParentsAndSelf.map(_.toString)
-      val subItemTuples  = eventSubs.collect{
-        case ( path, subs) if itemPaths.contains(path) => 
-        subs
+      val subItemTuples = eventSubs.collect {
+        case (path, subs) if itemPaths.contains(path) =>
+          subs
       }.flatten
 
       //log.debug("subItemTuples are nonempty: " + subItemTuples.nonEmpty)
-      subItemTuples.map{ eventsub => (eventsub.sub, item, eventsub.lastValue ) }
+      subItemTuples.map { eventsub => (eventsub.sub, item, eventsub.lastValue) }
     }
     //log.debug("idItemLastVal are nonempty: " + idItemLastVal.nonEmpty)
 
-    val idToItems =idItemLastVal.groupBy{ 
-      case (sub, item, lastValue ) =>
-      sub
-    }.mapValues{ _.flatMap{
-      case (sub, item, lastValue)  => 
-        val newVals = item.values.filter{ odfvalue : OdfValue =>
-          (lastValue.timestamp, odfvalue.timestamp) match{
-            case (_,None) => 
-              log.error("Event caused by timeless value " + item.path)
-              false
-            case (None, Some(_)) => 
-              true
-            case (Some(time : Timestamp),Some(itemTime : Timestamp)) =>
-              itemTime.after(time)
+    val idToItems = idItemLastVal.groupBy {
+      case (sub, item, lastValue) =>
+        sub
+    }.mapValues {
+      _.flatMap {
+        case (sub, item, lastValue) =>
+          val newVals = item.values.filter { odfvalue: OdfValue =>
+            (lastValue.timestamp, odfvalue.timestamp) match {
+              case (_, None) =>
+                log.error("Event caused by timeless value " + item.path)
+                false
+              case (None, Some(_)) =>
+                true
+              case (Some(time: Timestamp), Some(itemTime: Timestamp)) =>
+                itemTime.after(time)
+            }
+          }.dropWhile {
+            odfvalue: OdfValue =>
+              odfvalue.value == lastValue.value
           }
-        }.dropWhile{
-          odfvalue : OdfValue =>
-            odfvalue.value == lastValue.value
-        }
-        if(newVals.isEmpty)
-          return Seq.empty
-        
-        val eventSubsO = eventSubs.get(item.path.toString)
-        eventSubsO match {
-          case Some(subs) => 
-            eventSubs = eventSubs.updated(
-              item.path.toString,
-              subs.map{
-                esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue))
-              }
-            )
-          case None => 
-            eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.lastOption.getOrElse(lastValue)))
-        } 
-        Seq( fromPath( OdfInfoItem( item.path, collection.JavaConversions.asJavaIterable(newVals) ) ) ) 
-      }.foldLeft(OdfObjects())(_ combine _) 
+          if (newVals.isEmpty)
+            return Seq.empty
+
+          val eventSubsO = eventSubs.get(item.path.toString)
+          eventSubsO match {
+            case Some(subs) =>
+              eventSubs = eventSubs.updated(
+                item.path.toString,
+                subs.map {
+                  esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue))
+                })
+            case None =>
+              eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.lastOption.getOrElse(lastValue)))
+          }
+          Seq(fromPath(OdfInfoItem(item.path, collection.JavaConversions.asJavaIterable(newVals))))
+      }.foldLeft(OdfObjects())(_ combine _)
     }
     //log.debug("idToItems are nonempty: " + idToItems.nonEmpty)
-    idToItems.foreach{ case (sub, odf) =>
+    idToItems.foreach {
+      case (sub, odf) =>
         val id = sub.id
         log.debug(s"Sending data to event sub: $id.")
         val callbackAddr = sub.callback.getOrElse("")
         val xmlMsg = requestHandler.xmlFromResults(
-              1.0,
-              Result.pollResult( id.toString, odf )
-            )
+          1.0,
+          Result.pollResult(id.toString, odf))
         log.info(s"Sending in progress; Subscription subId:${id} addr:$callbackAddr interval:-1")
         //log.debug("Send msg:\n" + xmlMsg)
 
@@ -280,16 +278,15 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
           log.warning(
             s"Callback failed; subscription id:${id} interval:-1  reason: $reason")
 
-
         sendCallback(callbackAddr, xmlMsg) onComplete {
-            case Success(CallbackSuccess) =>
-              log.info(s"Callback sent; subscription id:${id} addr:$callbackAddr interval:-1")
+          case Success(CallbackSuccess) =>
+            log.info(s"Callback sent; subscription id:${id} addr:$callbackAddr interval:-1")
 
-            case Success(fail: CallbackFailure) =>
-              failed(fail.toString)
-            case Failure(e) =>
-              failed(e.getMessage)
-          }
+          case Success(fail: CallbackFailure) =>
+            failed(fail.toString)
+          case Failure(e) =>
+            failed(e.getMessage)
+        }
     }
   }
 
@@ -331,9 +328,8 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
 
         intervalSubs += TimedSub(sub, newTime)
 
-
         log.debug(s"generateOmi for subId:${sub.id}")
-        requestHandler.handleRequest(SubDataRequest(sub))//Returns tuple, second is return status
+        requestHandler.handleRequest(SubDataRequest(sub)) //Returns tuple, second is return status
       }
     }
 
@@ -347,11 +343,10 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     }
   }
 
-
   /**
    * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
-  case class PolledSub(id : Int, ttlMillis: Long)
+  case class PolledSub(id: Int, ttlMillis: Long)
 
   /**
    * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
@@ -366,11 +361,11 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    */
   private var ttlQueue: PriorityQueue[PolledSub] = new PriorityQueue()(subOrder.reverse)
   var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
-  
+
   /**
    * @return Either Failure(exception) or the request (subscription) id as Success(Int)
    */
-  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB) : Try[Int] = Try {
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB): Try[Int] = Try {
     require(subscription.ttl > 0.seconds, "Zero time-to-live not supported")
 
     val paths = getPaths(subscription)
@@ -378,25 +373,23 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
     require(paths.nonEmpty, "Subscription request should have some items to subscribe.")
 
     val interval = subscription.interval
-    val ttl      = subscription.ttl
+    val ttl = subscription.ttl
     val callback = subscription.callback
     val timeStamp = new Timestamp(date.getTime())
 
     val newSub = NewDBSub(interval, timeStamp, ttl, callback)
-    val dbsub = dbConnection.saveSub( newSub, paths )
+    val dbsub = dbConnection.saveSub(newSub, paths)
 
-    val requestID = dbsub.id 
-    Future{
+    val requestID = dbsub.id
+    Future {
       loadSub(dbsub)
-      } onComplete {
-        case Success(v) => println("SUCCESS")
-        case Failure(e) => log.error(e.getStackTrace().mkString("\n"))
-      }
+    } onComplete {
+      case Success(v) => println("SUCCESS")
+      case Failure(e) => log.error(e.getStackTrace().mkString("\n"))
+    }
     requestID
   }
 
-
-  
   /**
    * This method is called by scheduler and when new sub is added to subQueue.
    *
@@ -404,35 +397,48 @@ class SubscriptionHandler(implicit dbConnection : DB ) extends Actor with ActorL
    * schedules new checkSub method call.
    */
   def checkTTL()(implicit dbConnection: DB): Unit = {
-    
+
     val currentTime = date.getTime
-    
+
     //exists returns false if Option is None
     while (ttlQueue.headOption.exists(_.ttlMillis <= currentTime)) {
       dbConnection.removeSub(ttlQueue.dequeue().id)
     }
-    
+
     //foreach does nothing if Option is None
     ttlQueue.headOption.foreach { polledSub =>
+      
+      //time until checkTTL will be next called
       val nextRun = ((polledSub.ttlMillis) - currentTime)
+      
+      //cancellable event of the next checkTTL method call
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
-      scheduledTimes.forall(_._1.isCancelled) match {
+      
+      /*
+       * logic for updating the cancellable:
+       * if event is cancelled or empty, then add the previous cancellable to queue
+       * else check if the scheduledTimes variable is going to be run before the cancellable and update variable accordingly
+       * so that only 1 event is scheduled
+       */
+      
+      
+      //forall returns true is Option is None
+      scheduledTimes.forall { case (scheduledEvent, _) => scheduledEvent.isCancelled } match {
         case true =>
-        scheduledTimes = Some((cancellable, currentTime + nextRun))
+          scheduledTimes = Some((cancellable, currentTime + nextRun))
 
         case false =>
-          scheduledTimes.exists(_._2 > (currentTime + nextRun)) match{
+          scheduledTimes.exists { case (_, eventRunTime) => eventRunTime > (currentTime + nextRun) } match {
             case true =>
-              scheduledTimes.foreach(_._1.cancel())
-              scheduledTimes=Some((cancellable,currentTime+nextRun))
-            case false => 
-              (scheduledTimes.exists(polledSub =>((polledSub._2 > currentTime) && (polledSub._2 < (currentTime + nextRun))))) match {
-                case true => 
-                  cancellable.cancel()
-                case false => 
-                  //Noop
-                }
-              }
+              scheduledTimes.foreach { case (scheduledEvent, _) => scheduledEvent.cancel() }
+              scheduledTimes = Some((cancellable, currentTime + nextRun))
+            case false =>
+              
+              //filter returns None if Option is None or predicate is false
+              scheduledTimes.filter {
+                case (_, eventRunTime) => ((eventRunTime > currentTime) && (eventRunTime < (currentTime + nextRun)))
+              }.foreach { case (scheduledEvent, _) => scheduledEvent.cancel() }
+          }
       }
     }
   }
