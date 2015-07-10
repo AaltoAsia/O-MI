@@ -16,6 +16,7 @@ import scala.util.{Try, Success, Failure }
 
 import java.util.Date
 import java.sql.Timestamp
+  import ExecutionContext.Implicits.global
 
 import InternalAgentCLICmds._
 /** Helper Object for creating AgentLoader.
@@ -34,12 +35,10 @@ object InternalAgentLoader{
 class InternalAgentLoader  extends Actor with ActorLogging {
   
   import Tcp._
-  import ExecutionContext.Implicits.global
-  import context.system
 
-  case class AgentInfo(name: String, configPath: String, thread: Thread)
+  case class AgentInfo(name: String, configPath: String, agent: Option[InternalAgent], timestamp: Timestamp)
   //Container for bootables
-  protected var agents : scala.collection.mutable.Map[String,(Option[InternalAgent], String, Timestamp)] = Map.empty
+  protected var agents : scala.collection.mutable.Map[String,AgentInfo] = Map.empty
   //getter method to allow testing
   private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.
@@ -52,57 +51,77 @@ class InternalAgentLoader  extends Actor with ActorLogging {
   InternalAgent.setLog(log)
   start()
 
+  def handleAgentCmd(agent: String)( handle : AgentInfo => Unit) : Unit = {
+      val agentInfoO = agents.get(agent)
+      agentInfoO match{
+        case None =>
+         log.warning("Command for not stored agent!: " + agent)
+         case Some(agentInfo) =>
+          handle(agentInfo)
+      }
+  }
   /** Method for handling received messages.
     * Should handle:
     *   -- ConfigUpdate with updating running AgentActors.
     *   -- Terminated with trying to restart AgentActor. 
     */
   def receive = {
-    case StartCmd(agent: String) =>{
-    
-      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[Option[InternalAgent],String, Timestamp]] => info._1 == agent}
-      if(agentInfo.isEmpty){
-         log.warning("Command for not stored agent!: " + agent)
-       } else if( agentInfo.get._2._1.isEmpty ){
-        log.warning(s"Starting: " + agentInfo.get._1)
-        agents -= agentInfo.get._1
-        Thread.sleep(3000)
-        loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
+    case StartCmd(agentname: String) =>{
+      handleAgentCmd(agentname){agentInfo : AgentInfo =>
+        agentInfo.agent.collect{ 
+          case agent : InternalAgent =>
+            log.warning(s"Starting: " + agentInfo.name)
+            agents -= agentInfo.name
+            Thread.sleep(3000)
+            loadAndStart(agentInfo.name, agentInfo.configPath)
+        }
       }
     } 
-    case ReStartCmd(agent: String) =>{
-      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[Option[InternalAgent],String, Timestamp]] => info._1 == agent}
-      if(agentInfo.isEmpty){
-         log.warning("Command for not stored agent!: " + agent)
-       } else  if( agentInfo.get._2._1.nonEmpty && agentInfo.get._2._1.get.isAlive){
-        log.warning(s"Re-Starting: " + agentInfo.get._1)
-        agents -= agentInfo.get._1
-        agentInfo.get._2._1.get.shutdown();
-        Thread.sleep(3000)
-        loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
+
+    case ReStartCmd(agentname: String) =>{
+      handleAgentCmd(agentname){agentInfo : AgentInfo =>
+        agentInfo.agent.collect{
+          case agent : InternalAgent if agent.isAlive =>
+          log.warning(s"Re-Starting: " + agentInfo.name)
+          agents -= agentInfo.name
+          agent.shutdown();
+          Thread.sleep(3000)
+          loadAndStart(agentInfo.name, agentInfo.configPath)
+        }
       }
     }
+    
     case StopCmd(agent: String) => {
-      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[Option[InternalAgent],String, Timestamp]] => info._1 == agent}
-      if(agentInfo.isEmpty){
-         log.warning("Command for not stored agent!: " + agent)
-       } else  if( agentInfo.get._2._1.nonEmpty && agentInfo.get._2._1.get.isAlive){
-        log.warning(s"Stopping: " + agentInfo.get._1)
-        agents -= agentInfo.get._1
-        agentInfo.get._2._1.get.shutdown();
-        agents += Tuple2( agentInfo.get._1, Tuple3( None, agentInfo.get._2._2, agentInfo.get._2._3) )
+      handleAgentCmd(agent){agentInfo : AgentInfo =>
+        agentInfo.agent.collect{
+          case agent : InternalAgent if agent.isAlive =>
+          log.warning(s"Stopping: " + agentInfo.name)
+          agents -= agentInfo.name
+          agent.shutdown();
+          agents += Tuple2( agentInfo.name, AgentInfo(agentInfo.name, agentInfo.configPath, None, agentInfo.timestamp) )
+      }
       }
     }
-    case ThreadException( agent: InternalAgent, exception: Exception ) =>
+    
+    case ThreadException( sender: InternalAgent, exception: Exception ) =>
       log.warning(s"InternalAgent caugth exception: $exception")
-      val agentInfo = agents.find{ info: Tuple2[String,Tuple3[Option[InternalAgent],String, Timestamp]] => info._2._1.get == agent}
       var date = new Date()
-      if(agentInfo.isEmpty){
-         log.warning("Exception from not stored agent!: "+ agent)
-       } else if( agentInfo.get._2._1.nonEmpty && date.getTime - agentInfo.get._2._3.getTime > 300000 ) {
-        log.warning(s"Trying to relaunch:" + agentInfo.get._1)
-        agents -= agentInfo.get._1
-        loadAndStart(agentInfo.get._1, agentInfo.get._2._2)
+      val agentInfoO = agents.filter{
+        case (_, AgentInfo( _, _, agentO, _) ) if agentO.nonEmpty => agentO match{ 
+          case Some(a) => a == sender
+          case None => false
+        }
+      }.headOption
+      agentInfoO match{
+        case None =>
+           log.warning("Exception from not stored agent!: "+ sender)
+        case Some(Tuple2(name,agentInfo)) =>
+        agentInfo.agent.collect{ 
+          case agent : InternalAgent if date.getTime - agentInfo.timestamp.getTime > 300000 =>
+          log.warning(s"Trying to relaunch:" + agentInfo.name)
+          agents -= agentInfo.name
+          loadAndStart(agentInfo.name, agentInfo.configPath)
+        }
       }
     case ThreadInitialisationException( agent: InternalAgent, exception: Exception) =>
       log.warning(s"InternalAgent $agent initialisation failed. $exception")
@@ -124,6 +143,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
         "cli-"+remote.toString.tail
       )
       connection ! Register(cli)
+    case _ => //noop?
   }
 
   /** Load Bootables from jars in deploy directory and start AgentActors up.
@@ -151,7 +171,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
         val const = clazz.getConstructors()(0)
         val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
         val date = new Date()
-        agents += Tuple2( classname, Tuple3( Some(agent), configPath, new Timestamp(date.getTime) ) )
+        agents += Tuple2( classname, AgentInfo( classname, configPath, Some(agent), new Timestamp(date.getTime) ) )
         agent.start()
       } match {
         case Success(_) => ()
@@ -197,23 +217,6 @@ class InternalAgentLoader  extends Actor with ActorLogging {
     urls.foreach{ url => log.info("Deploying " + url) }
 
     new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
-  }
-  /** Simple shutdown hook adder for AgentActors.
-    *
-    */
-  private def addShutdownHook(agents: Map[String, Tuple3[InternalAgent, String, Timestamp]]): Unit = {
-    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
-      def run = {
-        log.warning("Shutting down Akka...")
-
-        for (agent <- agents) {
-          log.info("Shutting down " + agent._1)
-          agent._2._1.shutdown
-        }
-
-        log.info("Successfully shut down Akka")
-      }
-    }))
   }
 
   /** Simple function for getting Bootable's name and Agent config file path pairs.
