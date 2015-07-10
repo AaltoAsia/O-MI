@@ -3,17 +3,43 @@
   var requestsExt;
 
   requestsExt = function(WebOmi) {
-    var my;
+    var lastParameters, my;
     my = WebOmi.requests = {};
     my.xmls = {
-      readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> "
+      readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> ",
+      template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> \n"
     };
+    my.defaults = {};
+    my.defaults.empty = {
+      request: null,
+      ttl: 0,
+      callback: null,
+      requestID: null,
+      odf: null,
+      interval: null,
+      newest: null,
+      oldest: null,
+      begin: null,
+      end: null
+    };
+    my.defaults.readAll = $.extend({}, my.defaults.empty, {
+      odf: '<Objects></Objects>'
+    });
+    lastParameters = my.defaults;
     my.readAll = function(fastForward) {
-      WebOmi.consts.requestCodeMirror.setValue(my.xmls.readAll);
+      WebOmi.formLogic.setRequest(my.xmls.readAll);
       if (fastForward) {
-        return WebOmi.formLogic.send();
+        return WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr);
       }
     };
+    my.addPathToOdf = function(path) {
+      var o, reqCM, xmltree;
+      o = WebOmi.omi;
+      reqCM = WebOmi.consts.requestCodeMirror;
+      xmltree = o.parseXml(reqCM.getValue);
+      return o.evaluateXPath(xmlTree, '//omi:msg');
+    };
+    my.read = function() {};
     return WebOmi;
   };
 

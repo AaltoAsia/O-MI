@@ -416,9 +416,21 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     runSync(writeAction.transactionally)
 
-    val infoitems = pathsData.collect {
-      case (path: Path, values: Seq[OdfValue]) if values.nonEmpty =>
-        OdfInfoItem(path, collection.JavaConversions.asJavaIterable(values.toSet))
+    val infoitems = pathsData.collect{
+      case (path: Path, values : Seq[OdfValue] ) if values.nonEmpty =>
+        OdfInfoItem(
+          path,
+          collection.JavaConversions.asJavaIterable(
+            values.map{ va => 
+              OdfValue(
+                va.value,
+                va.typeValue,
+                Some(va.timestamp.getOrElse{
+                  new Timestamp(new java.util.Date().getTime)
+                })
+              )
+          }.toSet)
+      )
     }
     //Call hooks
     database.getSetHooks foreach { _(infoitems.toSeq) }

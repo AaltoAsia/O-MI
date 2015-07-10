@@ -3,9 +3,7 @@ package responses
 import types._
 import types.OmiTypes._
 import types.OdfTypes._
-import types.Path
-import parsing.xmlGen.xmlTypes
-import parsing.xmlGen.scalaxb
+import parsing.xmlGen.{xmlTypes, scalaxb}
 import database._
 import agentSystem.InputPusher
 import CallbackHandlers._
@@ -24,14 +22,16 @@ import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.sql.Timestamp
 import java.util.Date
+import java.net.{URL, InetAddress, UnknownHostException}
+import java.lang.SecurityException
 import xml._
 import scala.collection.mutable.Buffer
+import scala.concurrent.ExecutionContext.Implicits.global
 /** Class for handling all request.
   *
   **/
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   import http.Boot.system.log
   private def date = new Date()
 
@@ -41,52 +41,74 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param request request is O-MI request to be handled
     **/
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    request match {
-      case sub : SubscriptionRequest =>
-        runGeneration(sub)
-
-      case subdata : SubDataRequest =>  {
-        val sub = subdata.sub
-        val interval = sub.interval
-        val callbackAddr = sub.callback.get
-        val (xmlMsg, returnCode) = runGeneration(subdata) 
-        log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
-
-        def failed(reason: String) =
-          log.warning(
-            s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
-
-
-        sendCallback(callbackAddr, xmlMsg) onComplete {
-            case Success(CallbackSuccess) =>
-              log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
-
-            case Success(fail: CallbackFailure) =>
-              failed(fail.toString)
-            case Failure(e) =>
-              failed(e.getMessage)
-          }
-        (success, 200)//DUMMY
-      }
-      case _ if (request.callback.nonEmpty) => {
-        // TODO: Can't cancel this callback
-
-        Future{ runGeneration(request) } map {
-          case (xml : NodeSeq, code: Int) =>
-            sendCallback(request.callback.get.toString, xml)
+    request.callback match {
+      case Some(callback) =>
+        var error = ""
+        try{
+          val url = new URL(callback)
+          val addr = InetAddress.getByName(url.getHost)
+          val protocol = url.getProtocol()
+          if( protocol != "http" &&  protocol != "https" ) 
+            error = "Unsupported protocol."
+          
+        } catch {
+          case e:  java.net.MalformedURLException =>
+          error = e.getMessage
+          case e : UnknownHostException =>  
+          error = "Unknown host: " +e.getMessage 
+          case e : SecurityException =>
+          error = "Unauthorized " +e.getMessage
         }
-        (
-          xmlFromResults(
-            1.0,
-            Result.simpleResult("200", Some("OK, callback job started"))
-          ),
-          200
-        )
+        if( error.nonEmpty )
+          return (invalidCallback(error), 200)
+      case None => //noop
+    } 
+      request match {
+        case sub : SubscriptionRequest =>
+          runGeneration(sub)
+
+        case subdata : SubDataRequest =>  {
+          val sub = subdata.sub
+          val interval = sub.interval
+          val callbackAddr = sub.callback.get
+          val (xmlMsg, returnCode) = runGeneration(subdata) 
+          log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
+
+          def failed(reason: String) =
+            log.warning(
+              s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
+
+
+          sendCallback(callbackAddr, xmlMsg) onComplete {
+              case Success(CallbackSuccess) =>
+                log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
+
+              case Success(fail: CallbackFailure) =>
+                failed(fail.toString)
+              case Failure(e) =>
+                failed(e.getMessage)
+            }
+          (success, 200)//DUMMY
+        }
+        case _ if (request.callback.nonEmpty) => {
+          // TODO: Can't cancel this callback
+
+          Future{ runGeneration(request) } map {
+            case (xml : NodeSeq, code: Int) =>
+              sendCallback(request.callback.get.toString, xml)
+          }
+          (
+            xmlFromResults(
+              1.0,
+              Result.simpleResult("200", Some("OK, callback job started"))
+            ),
+            200
+          )
+        }
+        case _ =>{
+          runGeneration(request)
+        } 
       }
-      case _ =>{
-        runGeneration(request)
-      } 
-    }
   }
 
   /** Method for runnig response generation. Handles tiemout etc. upper level failures.
@@ -365,6 +387,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         Some(err.map { e => e.msg }.mkString("\n"))
       )
     )
+  def invalidCallback(err: String) =
+    xmlFromResults(
+      1.0,
+      Result.simpleResult("400",
+        Some("Invalid callback address: "+ err)
+      )
+    )
   def internalError(e: Throwable) =
     xmlFromResults(
       1.0,
@@ -382,10 +411,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def generateODFREST(orgPath: Path)(implicit dbConnection: DB): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: Path): (Path, Int) = path.lastOption match {
-      case Some("value") => (path.init, 1)
-      case Some("MetaData") => (path.init, 2)
-      case _ => (path, 0)
+    def restNormalizePath(path: Path): (Path, Option[String]) = path.lastOption match {
+      case attr @ Some("value") => (path.init, attr)
+      case attr @ Some("MetaData") => (path.init, attr)
+      case _ => (path, None)
     }
 
     // safeguard
@@ -396,14 +425,15 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     dbConnection.get(path) match {
       case Some(infoitem: OdfInfoItem) =>
 
-        if (wasValue == 1){
+        wasValue match{
+          case Some("value")  =>
           Some( Left(
             infoitem.values.headOption match{
               case Some(value: OdfValue) => value.value
               case None => "NO VALUE FOUND"
             }
           ) )
-        }else if (wasValue == 2){
+          case Some("MetaData") =>
           val metaDataO = dbConnection.getMetaData(path)
           metaDataO match {
             case None =>
@@ -412,7 +442,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               Some(Right(XML.loadString(metaData.data)))
           }
 
-        }else{
+          case _ =>
           return Some( Right(
             scalaxb.toXML[xmlTypes.InfoItemType]( infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), scope ).headOption.getOrElse(
               <error>Could not create from OdfInfoItem </error>
