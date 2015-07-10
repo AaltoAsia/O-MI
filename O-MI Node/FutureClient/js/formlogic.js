@@ -104,7 +104,7 @@
     my.buildOdfTreeStr = function(responseString) {
       var objectsArr, omi, parsed;
       omi = WebOmi.omi;
-      parsed = omi.parseXmlResponse(responseString);
+      parsed = omi.parseXml(responseString);
       objectsArr = omi.evaluateXPath(parsed, "//odf:Objects");
       if (objectsArr.length !== 1) {
         alert("failed to get single Objects odf root");

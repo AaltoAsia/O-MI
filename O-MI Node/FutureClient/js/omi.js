@@ -5,14 +5,16 @@
   omiExt = function(WebOmi) {
     var my, nsResolver;
     my = WebOmi.omi = {};
-    my.parseXmlResponse = function(responseString) {
+    my.parseXml = function(responseString) {
       return window.xmlTree = new DOMParser().parseFromString(responseString, 'text/xml');
     };
     nsResolver = function(name) {
       var ns;
       ns = {
         omi: "omi.xsd",
-        odf: "odf.xsd"
+        odf: "odf.xsd",
+        xsi: "http://www.w3.org/2001/XMLSchema-instance",
+        xs: "http://www.w3.org/2001/XMLSchema-instance"
       };
       return ns[name] || ns.odf;
     };
