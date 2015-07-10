@@ -140,4 +140,5 @@ case class OmiResult(
       case Left( pes: Iterable[ParseError]) => pes
       case _ => asJavaIterable(Seq.empty[ParseError])
     }
+  def getPaths(request: OdfRequest) = getLeafs(request.odf).map{ _.path }.toSeq
 }
