@@ -5,6 +5,18 @@
   formLogicExt = function($, WebOmi) {
     var my;
     my = WebOmi.formLogic = {};
+    my.setRequest = function(xmlString) {
+      var mirror;
+      mirror = WebOmi.consts.requestCodeMirror;
+      mirror.setValue(xmlString);
+      return mirror.autoFormatAll();
+    };
+    my.setResponse = function(xmlString) {
+      var mirror;
+      mirror = WebOmi.consts.responseCodeMirror;
+      mirror.setValue(xmlString);
+      return mirror.autoFormatAll();
+    };
     my.send = function(callback) {
       var request, server;
       server = WebOmi.consts.serverUrl.val();
@@ -16,9 +28,9 @@
         contentType: "text/xml",
         processData: false,
         dataType: "text",
+        error: my.setResponse,
         success: function(response) {
-          WebOmi.consts.responseCodeMirror.setValue(response);
-          WebOmi.consts.responseCodeMirror.autoFormatAll();
+          my.setResponse(response);
           if ((callback != null)) {
             return callback(response);
           }

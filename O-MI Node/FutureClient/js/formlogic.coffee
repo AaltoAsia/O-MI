@@ -1,8 +1,22 @@
 
+######################
 # formLogic sub module
 formLogicExt = ($, WebOmi) ->
   my = WebOmi.formLogic = {}
 
+  my.setRequest = (xmlString) ->
+    mirror = WebOmi.consts.requestCodeMirror
+    mirror.setValue xmlString
+    mirror.autoFormatAll()
+
+
+  my.setResponse = (xmlString) ->
+    mirror = WebOmi.consts.responseCodeMirror
+    mirror.setValue xmlString
+    mirror.autoFormatAll()
+
+
+  # send, callback is called with response text if successful
   my.send = (callback) ->
     server  = WebOmi.consts.serverUrl.val()
     request = WebOmi.consts.requestCodeMirror.getValue()
@@ -13,11 +27,10 @@ formLogicExt = ($, WebOmi) ->
       contentType: "text/xml"
       processData: false
       dataType: "text"
-      #success: -> true
-      #error: -> true
+      #complete: -> true
+      error: my.setResponse
       success: (response) ->
-        WebOmi.consts.responseCodeMirror.setValue response
-        WebOmi.consts.responseCodeMirror.autoFormatAll()
+        my.setResponse response
         callback(response) if (callback?)
 
   # recursively build odf jstree from the Objects xml node
@@ -61,11 +74,12 @@ formLogicExt = ($, WebOmi) ->
     tree.settings.core.data = [treeData]
     tree.refresh()
 
+
   # parse xml string and build odf jstree
   my.buildOdfTreeStr = (responseString) ->
     omi = WebOmi.omi
 
-    parsed = omi.parseXmlResponse responseString
+    parsed = omi.parseXmlResponse responseString # FIXME: get
 
     objectsArr = omi.evaluateXPath parsed, "//odf:Objects"
 
@@ -75,13 +89,15 @@ formLogicExt = ($, WebOmi) ->
     my.buildOdfTree objectsArr[0]
 
 
-
-
   WebOmi # export
 
 # extend WebOmi
 window.WebOmi = formLogicExt($, window.WebOmi || {})
 
+
+
+
+##########################
 # Intialize events, import
 ((consts, requests, formLogic) ->
   consts.afterJquery ->

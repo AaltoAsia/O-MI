@@ -44,7 +44,9 @@
         },
         checkbox: {
           three_state: false,
-          cascade: "up+undetermined"
+          keep_selected_style: true,
+          cascade: "up+undetermined",
+          tie_selection: true
         }
       }).on("changed.jstree", function(_, data) {
         return console.log(data.node);

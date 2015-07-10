@@ -37,8 +37,8 @@
     border-radius: 2px;
     margin-top: 1px;
     margin-bottom: 1px;
-    min-width: 7em;
-    text-align: center;
+    min-width: 7.5em;
+    text-align: left;
 }
 .requesttree .jstree-clicked {
     font-weight: bold;
