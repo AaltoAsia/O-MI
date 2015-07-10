@@ -80,7 +80,7 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   }
   def httpRef = IO(Http) //If problems change to def
 
-    def loopOnce(): Unit = {
+  def loopOnce(): Unit = {
       // Set loading to true, 
       loading = true
 

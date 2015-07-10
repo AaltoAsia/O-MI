@@ -27,20 +27,22 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
 
   override def receive = {
     case HandleOdf( objects ) => handleOdf( objects )
-    case HandleObjects(objs) => handleObjects(objs)
-    case HandleInfoItems(items) => handleInfoItems(items)
-    case HandlePathValuePairs(pairs) => handlePathValuePairs(pairs)
-    case HandlePathMetaDataPairs(pairs) => handlePathMetaDataPairs(pairs)
+    case HandleObjects(objs) => if(objs.nonEmpty) handleObjects(objs)
+    case HandleInfoItems(items) => if(items.nonEmpty) handleInfoItems(items)
+    case HandlePathValuePairs(pairs) => if(pairs.nonEmpty) handlePathValuePairs(pairs)
+    case HandlePathMetaDataPairs(pairs) => if(pairs.nonEmpty) handlePathMetaDataPairs(pairs)
   }
   override def handleOdf( objects: OdfObjects) : Unit = {
     val data = getLeafs(objects)
-    handleInfoItems( data.collect{ case infoitem : OdfInfoItem => infoitem } )
-    log.debug("Successfully saved Odfs to DB")
-    val hasPaths = getHasPaths(objects.objects.toSeq).toSet
-    val des = hasPaths.collect{
-      case hPath if hPath.description.nonEmpty => hPath 
-    }.toIterable
-    des.foreach{ hpath => dbobject.setDescription(hpath)}
+    if( data.nonEmpty){
+      handleInfoItems( data.collect{ case infoitem : OdfInfoItem => infoitem } )
+      log.debug("Successfully saved Odfs to DB")
+      val hasPaths = getHasPaths(objects.objects.toSeq).toSet
+      val des = hasPaths.collect{
+        case hPath if hPath.description.nonEmpty => hPath 
+      }.toIterable
+      des.foreach{ hpath => dbobject.setDescription(hpath)}
+    }
   }
   /** Function for handling sequences of OdfObject.
     *
