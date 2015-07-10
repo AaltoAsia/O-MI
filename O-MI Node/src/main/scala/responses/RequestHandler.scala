@@ -3,9 +3,7 @@ package responses
 import types._
 import types.OmiTypes._
 import types.OdfTypes._
-import types.Path
-import parsing.xmlGen.xmlTypes
-import parsing.xmlGen.scalaxb
+import parsing.xmlGen.{xmlTypes, scalaxb}
 import database._
 import agentSystem.InputPusher
 import CallbackHandlers._
@@ -24,18 +22,16 @@ import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.sql.Timestamp
 import java.util.Date
-import java.net.URL
-import java.net.InetAddress
-import java.net.UnknownHostException
+import java.net.{URL, InetAddress, UnknownHostException}
 import java.lang.SecurityException
 import xml._
 import scala.collection.mutable.Buffer
+import scala.concurrent.ExecutionContext.Implicits.global
 /** Class for handling all request.
   *
   **/
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   import http.Boot.system.log
   private def date = new Date()
 
@@ -415,10 +411,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def generateODFREST(orgPath: Path)(implicit dbConnection: DB): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: Path): (Path, Int) = path.lastOption match {
-      case Some("value") => (path.init, 1)
-      case Some("MetaData") => (path.init, 2)
-      case _ => (path, 0)
+    def restNormalizePath(path: Path): (Path, Option[String]) = path.lastOption match {
+      case attr @ Some("value") => (path.init, attr)
+      case attr @ Some("MetaData") => (path.init, attr)
+      case _ => (path, None)
     }
 
     // safeguard
@@ -429,14 +425,15 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     dbConnection.get(path) match {
       case Some(infoitem: OdfInfoItem) =>
 
-        if (wasValue == 1){
+        wasValue match{
+          case Some("value")  =>
           Some( Left(
             infoitem.values.headOption match{
               case Some(value: OdfValue) => value.value
               case None => "NO VALUE FOUND"
             }
           ) )
-        }else if (wasValue == 2){
+          case Some("MetaData") =>
           val metaDataO = dbConnection.getMetaData(path)
           metaDataO match {
             case None =>
@@ -445,7 +442,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               Some(Right(XML.loadString(metaData.data)))
           }
 
-        }else{
+          case _ =>
           return Some( Right(
             scalaxb.toXML[xmlTypes.InfoItemType]( infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), scope ).headOption.getOrElse(
               <error>Could not create from OdfInfoItem </error>
