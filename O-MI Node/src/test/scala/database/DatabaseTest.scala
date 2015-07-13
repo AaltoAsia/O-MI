@@ -382,7 +382,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
 //      println(OdfObjectsToPaths(res.get))
 //      println("\\")
 //      println(OdfObjectsToValues(res.get))
-      println(sub.interval)
+//      println(sub.interval)
       res must beSome.which(OdfObjectsToValues(_) must have size (9))
     }
 
@@ -490,6 +490,30 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     //      db.destroy()
     //      true shouldEqual true
     //    }
+    
+    "setHistoryLenght method should change the historylenght value and increase maximum number of values stored" in {
+      val testPath = Path("/Objects/DatabaseTest/EventSubTest2")
+      val startTime = new java.util.Date().getTime - 30000
+      
+      
+      (1 to 30).foreach(n =>
+        db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
+        
+      val getDataForPath = db.get(testPath).map(fromPath(_))
+      val dbValuesForPath = getDataForPath.map(OdfObjectsToValues(_))
+      dbValuesForPath must beSome.which(_ must have size (10))
+      
+      database.historyLength === 10
+      database.setHistoryLength(20)
+      database.historyLength === 20
+      
+      (31 to 50).foreach(n =>
+        db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
+        
+      val getDataForPath1 = db.get(testPath).map(fromPath(_))
+      val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))
+      dbValuesForPath1 must beSome.which(_ must have size (20))
+    }
   }
 }
 
