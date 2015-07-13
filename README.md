@@ -1,11 +1,15 @@
 O-MI Node Server
 ==============
 
-[![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=development)](https://travis-ci.org/TK009/Code-Gardeners)
-[![Coverage Status](https://coveralls.io/repos/TK009/Code-Gardeners/badge.png?branch=development)](https://coveralls.io/r/TK009/Code-Gardeners?branch=development)
-[![Codacy Badge](https://www.codacy.com/project/badge/a4c681fb3fef4d21bb561a1b160c6d07)](https://www.codacy.com/app/tkinnunen/Code-Gardeners)
+[![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=development)](https://travis-ci.org/AaltoAsia/O-MI)
+[![Coverage Status](https://coveralls.io/repos/AaltoAsia/O-MI/badge.svg?branch=development&service=github)](https://coveralls.io/github/AaltoAsia/O-MI?branch=development)
+[![Codacy Badge](placeholder)](https://www.codacy.com/app/tkinnunen/O-MI)
 
-Implementation of Internet of Things standards Open Messaging Interface and Open Data Format. 
+
+Internet of Things data server.
+Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard.
+
+See `development` branch for latest progress.
 
 [API Documentation](http://pesutykki.mooo.com/dump/Code-Gardeners-api/#package)
 
