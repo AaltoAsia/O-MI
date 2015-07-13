@@ -1,12 +1,15 @@
 Code-Gardeners
 ==============
 
-[![Build Status](https://travis-ci.org/TK009/Code-Gardeners.svg?branch=master)](https://travis-ci.org/TK009/Code-Gardeners)
-[![Coverage Status](https://coveralls.io/repos/TK009/Code-Gardeners/badge.svg)](https://coveralls.io/r/TK009/Code-Gardeners)
-[![Codacy Badge](https://www.codacy.com/project/badge/a4c681fb3fef4d21bb561a1b160c6d07)](https://www.codacy.com/app/tkinnunen/Code-Gardeners)
+[![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=master)](https://travis-ci.org/AaltoAsia/O-MI)
+[![Coverage Status](https://coveralls.io/repos/AaltoAsia/O-MI/badge.svg?branch=master&service=github)](https://coveralls.io/github/AaltoAsia/O-MI?branch=master)
+[![Codacy Badge](placeholder)](https://www.codacy.com/app/tkinnunen/O-MI)
 
 
-Software project course repository
+Internet of Things data server.
+Implementation of [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard.
+
+See `development` branch for latest progress.
 
 
 Setup development environment
