@@ -102,12 +102,24 @@ class VTTAgent(configPath : String) extends InternalAgent(configPath) {
   }
   
   def loopOnce(): Unit = {
+    def isNotK1Building(name : Option[String] ) = name match { 
+                case Some("K1 Building") => false 
+                case None => false
+                case _ => true
+              } 
     val date = new java.util.Date()
     odfInfoItems =  odfInfoItems.map{ 
-      _.map{ case ((info: OdfInfoItem, firstValue:String )) =>
-          val newVal = info.values.headOption match {
-            case Some(value)  => value.value.toDouble  + firstValue.toDouble/ 10 *Random.nextGaussian
-            case None => Random.nextInt
+      _.collect{ 
+        case (info: OdfInfoItem, firstValue:String ) if info.path.nonEmpty && isNotK1Building(info.path.lastOption ) =>
+          val newVal = info.path.lastOption match {
+            case Some( name ) => 
+            info.values.lastOption match {
+              case Some(oldVal) =>
+                genValue(name, oldVal.value.toDouble)
+              case None => 
+               -1000.0
+            }
+            case None => -1000.0
           }
         (
           OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "" , Some( new Timestamp( date.getTime) ) ))),
@@ -120,10 +132,32 @@ class VTTAgent(configPath : String) extends InternalAgent(configPath) {
     InputPusher.handleInfoItems(
       odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info} 
     )
-    Thread.sleep(10000)
+    Thread.sleep(60000)
   }
 
   def finish(): Unit = {
 	    println("VTTAgent has died.")
+  }
+  def genValue(sensorType: String, oldval: Double ) : String = {
+    val newval = (sensorType match {
+      case "temperature" => between( 18, oldval + Random.nextGaussian * 0.3, 26)
+      case "light" => between(100, oldval + Random.nextGaussian, 2500)
+      case "co2" => between(400, oldval + 20 * Random.nextGaussian, 1200)
+      case "humidity" => between(40, oldval + Random.nextGaussian, 60)
+      case "pir" => between(0, oldval + 10*Random.nextGaussian, 40)
+    })
+    f"$newval%.1f"
+  }
+  def between( begin: Double, value: Double, end: Double ) : Double = {
+    (begin <= value, value <= end) match {
+      case (false, true) =>
+        begin
+      case (true, true) =>
+        value
+      case (true, false) =>
+        end
+      case (false, false) =>
+        Double.NaN
+    }
   }
 }

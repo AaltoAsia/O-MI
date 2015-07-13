@@ -22,16 +22,16 @@
     <Object>
       <id>Room-101</id>
       <InfoItem name="temperature">
-        <value>22.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>464</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3282</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -43,13 +43,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>634</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4156</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>35.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -61,13 +61,13 @@
         <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>443</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6383</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -76,16 +76,16 @@
     <Object>
       <id>Room-104</id>
       <InfoItem name="temperature">
-        <value>21.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1278</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2219</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>37</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -94,16 +94,16 @@
     <Object>
       <id>Room-105</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1392</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3275</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -112,16 +112,16 @@
     <Object>
       <id>Room-106</id>
       <InfoItem name="temperature">
-        <value>18.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>356</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5767</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>31.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -130,16 +130,16 @@
     <Object>
       <id>Room-107</id>
       <InfoItem name="temperature">
-        <value>20.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>971</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1285</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>31.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -148,16 +148,16 @@
     <Object>
       <id>Room-108</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1447</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7562</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>33.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -166,16 +166,16 @@
     <Object>
       <id>Room-109</id>
       <InfoItem name="temperature">
-        <value>24.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1381</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>632</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -184,16 +184,16 @@
     <Object>
       <id>Room-110</id>
       <InfoItem name="temperature">
-        <value>20</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>925</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3693</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -202,16 +202,16 @@
     <Object>
       <id>Room-111</id>
       <InfoItem name="temperature">
-        <value>18</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>749</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6317</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>57.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -220,16 +220,16 @@
     <Object>
       <id>Room-112</id>
       <InfoItem name="temperature">
-        <value>22.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1415</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6379</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>42.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -241,13 +241,13 @@
         <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>612</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2986</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -256,16 +256,16 @@
     <Object>
       <id>Room-114</id>
       <InfoItem name="temperature">
-        <value>20.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>423</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2328</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -274,16 +274,16 @@
     <Object>
       <id>Room-115</id>
       <InfoItem name="temperature">
-        <value>20.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>691</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1170</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>59.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -295,13 +295,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>718</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5347</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>60.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -310,16 +310,16 @@
     <Object>
       <id>Room-117</id>
       <InfoItem name="temperature">
-        <value>20.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>622</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4487</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>65.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -328,16 +328,16 @@
     <Object>
       <id>Room-118</id>
       <InfoItem name="temperature">
-        <value>20.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1000</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5079</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -346,16 +346,16 @@
     <Object>
       <id>Room-119</id>
       <InfoItem name="temperature">
-        <value>22.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1106</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4758</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>59.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -367,13 +367,13 @@
         <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1157</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4673</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -382,16 +382,16 @@
     <Object>
       <id>Room-121</id>
       <InfoItem name="temperature">
-        <value>20</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>651</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2946</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>65.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -400,16 +400,16 @@
     <Object>
       <id>Room-122</id>
       <InfoItem name="temperature">
-        <value>19.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>560</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5739</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -418,16 +418,16 @@
     <Object>
       <id>Room-123</id>
       <InfoItem name="temperature">
-        <value>21.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1486</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4767</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -436,16 +436,16 @@
     <Object>
       <id>Room-124</id>
       <InfoItem name="temperature">
-        <value>22.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>788</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6321</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>66.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -454,16 +454,16 @@
     <Object>
       <id>Room-125</id>
       <InfoItem name="temperature">
-        <value>21.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>888</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2917</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>56.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -472,16 +472,16 @@
     <Object>
       <id>Room-126</id>
       <InfoItem name="temperature">
-        <value>19.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>705</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3777</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -490,16 +490,16 @@
     <Object>
       <id>Room-127</id>
       <InfoItem name="temperature">
-        <value>20.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1299</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6392</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>34.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -508,16 +508,16 @@
     <Object>
       <id>Room-128</id>
       <InfoItem name="temperature">
-        <value>25</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1478</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1388</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -526,16 +526,16 @@
     <Object>
       <id>Room-129</id>
       <InfoItem name="temperature">
-        <value>19.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1134</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4334</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>40.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -544,16 +544,16 @@
     <Object>
       <id>Room-130</id>
       <InfoItem name="temperature">
-        <value>18.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1210</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1833</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>67.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -562,16 +562,16 @@
     <Object>
       <id>Room-131</id>
       <InfoItem name="temperature">
-        <value>22.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>778</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3166</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>69.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -580,16 +580,16 @@
     <Object>
       <id>Room-132</id>
       <InfoItem name="temperature">
-        <value>24.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1194</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3837</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -598,16 +598,16 @@
     <Object>
       <id>Room-133</id>
       <InfoItem name="temperature">
-        <value>20.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1190</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7113</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -619,13 +619,13 @@
         <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>383</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3501</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>68.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -634,16 +634,16 @@
     <Object>
       <id>Room-135</id>
       <InfoItem name="temperature">
-        <value>22.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>983</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1262</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -652,16 +652,16 @@
     <Object>
       <id>Room-136</id>
       <InfoItem name="temperature">
-        <value>24.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1174</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3379</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -670,16 +670,16 @@
     <Object>
       <id>Room-137</id>
       <InfoItem name="temperature">
-        <value>18.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>861</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2905</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>68.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -688,16 +688,16 @@
     <Object>
       <id>Room-138</id>
       <InfoItem name="temperature">
-        <value>25</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>462</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2475</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -709,13 +709,13 @@
         <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1289</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6853</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>57.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -724,16 +724,16 @@
     <Object>
       <id>Room-140</id>
       <InfoItem name="temperature">
-        <value>24.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>588</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2140</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>67.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -742,16 +742,16 @@
     <Object>
       <id>Room-141</id>
       <InfoItem name="temperature">
-        <value>22</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>378</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2603</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -760,16 +760,16 @@
     <Object>
       <id>Room-142</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1347</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2035</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>35</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -778,16 +778,16 @@
     <Object>
       <id>Room-143</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>978</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1631</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -799,13 +799,13 @@
         <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1427</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7769</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>35.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -817,13 +817,13 @@
         <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>449</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5483</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>33.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -832,16 +832,16 @@
     <Object>
       <id>Room-146</id>
       <InfoItem name="temperature">
-        <value>21.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1173</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5945</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>46.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -850,16 +850,16 @@
     <Object>
       <id>Room-147</id>
       <InfoItem name="temperature">
-        <value>18.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1482</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4443</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>48.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -868,16 +868,16 @@
     <Object>
       <id>Room-148</id>
       <InfoItem name="temperature">
-        <value>24.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1302</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1326</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>57</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -886,16 +886,16 @@
     <Object>
       <id>Room-149</id>
       <InfoItem name="temperature">
-        <value>18.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>935</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>533</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>39.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -907,13 +907,13 @@
         <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>741</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4613</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>58.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -922,16 +922,16 @@
     <Object>
       <id>Room-151</id>
       <InfoItem name="temperature">
-        <value>18.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>956</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4716</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>31</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -940,16 +940,16 @@
     <Object>
       <id>Room-152</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>351</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5223</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>47.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -958,16 +958,16 @@
     <Object>
       <id>Room-153</id>
       <InfoItem name="temperature">
-        <value>24.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>698</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>534</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -976,16 +976,16 @@
     <Object>
       <id>Room-154</id>
       <InfoItem name="temperature">
-        <value>21.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>379</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2901</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -994,16 +994,16 @@
     <Object>
       <id>Room-155</id>
       <InfoItem name="temperature">
-        <value>18.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1248</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6251</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1012,16 +1012,16 @@
     <Object>
       <id>Room-156</id>
       <InfoItem name="temperature">
-        <value>18.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>451</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4461</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>46.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1030,16 +1030,16 @@
     <Object>
       <id>Room-157</id>
       <InfoItem name="temperature">
-        <value>21.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>823</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4133</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1051,13 +1051,13 @@
         <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>608</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7323</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1066,16 +1066,16 @@
     <Object>
       <id>Room-159</id>
       <InfoItem name="temperature">
-        <value>20.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>520</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7365</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>33.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1087,13 +1087,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1110</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4781</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1102,16 +1102,16 @@
     <Object>
       <id>Room-161</id>
       <InfoItem name="temperature">
-        <value>24.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1167</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3886</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1120,16 +1120,16 @@
     <Object>
       <id>Room-162</id>
       <InfoItem name="temperature">
-        <value>20.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1219</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5735</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>42.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1141,13 +1141,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1143</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5790</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>47.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1156,16 +1156,16 @@
     <Object>
       <id>Room-164</id>
       <InfoItem name="temperature">
-        <value>18.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1209</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1136</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1174,16 +1174,16 @@
     <Object>
       <id>Room-165</id>
       <InfoItem name="temperature">
-        <value>21.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>594</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6041</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1192,16 +1192,16 @@
     <Object>
       <id>Room-166</id>
       <InfoItem name="temperature">
-        <value>19.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1433</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4369</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1210,16 +1210,16 @@
     <Object>
       <id>Room-167</id>
       <InfoItem name="temperature">
-        <value>19.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1317</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4173</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>68.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1228,16 +1228,16 @@
     <Object>
       <id>Room-168</id>
       <InfoItem name="temperature">
-        <value>24.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>631</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2025</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>46.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1249,13 +1249,13 @@
         <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>857</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6966</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1264,16 +1264,16 @@
     <Object>
       <id>Room-170</id>
       <InfoItem name="temperature">
-        <value>19.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>914</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7462</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>46.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1282,16 +1282,16 @@
     <Object>
       <id>Room-201</id>
       <InfoItem name="temperature">
-        <value>19.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1414</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>236</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1300,16 +1300,16 @@
     <Object>
       <id>Room-202</id>
       <InfoItem name="temperature">
-        <value>18.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1200</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1052</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1318,16 +1318,16 @@
     <Object>
       <id>Room-203</id>
       <InfoItem name="temperature">
-        <value>22.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>921</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5868</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1336,16 +1336,16 @@
     <Object>
       <id>Room-204</id>
       <InfoItem name="temperature">
-        <value>18.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>753</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2633</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>61.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1354,16 +1354,16 @@
     <Object>
       <id>Room-205</id>
       <InfoItem name="temperature">
-        <value>20</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>606</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4083</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1372,16 +1372,16 @@
     <Object>
       <id>Room-206</id>
       <InfoItem name="temperature">
-        <value>20.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>394</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7041</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>58.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1390,16 +1390,16 @@
     <Object>
       <id>Room-207</id>
       <InfoItem name="temperature">
-        <value>20.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>726</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4616</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>54.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1408,16 +1408,16 @@
     <Object>
       <id>Room-208</id>
       <InfoItem name="temperature">
-        <value>20.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1037</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2539</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>48.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1426,16 +1426,16 @@
     <Object>
       <id>Room-209</id>
       <InfoItem name="temperature">
-        <value>18.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1247</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3628</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1444,16 +1444,16 @@
     <Object>
       <id>Room-210</id>
       <InfoItem name="temperature">
-        <value>22</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>597</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4550</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>38</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1462,16 +1462,16 @@
     <Object>
       <id>Room-211</id>
       <InfoItem name="temperature">
-        <value>19.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>661</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7280</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1480,16 +1480,16 @@
     <Object>
       <id>Room-212</id>
       <InfoItem name="temperature">
-        <value>21.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>973</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2170</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1498,16 +1498,16 @@
     <Object>
       <id>Room-213</id>
       <InfoItem name="temperature">
-        <value>21.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>804</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4544</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1519,13 +1519,13 @@
         <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>462</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4439</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>61.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1534,16 +1534,16 @@
     <Object>
       <id>Room-215</id>
       <InfoItem name="temperature">
-        <value>22.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1042</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6090</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1552,16 +1552,16 @@
     <Object>
       <id>Room-216</id>
       <InfoItem name="temperature">
-        <value>24.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>639</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2863</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>69.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1570,16 +1570,16 @@
     <Object>
       <id>Room-217</id>
       <InfoItem name="temperature">
-        <value>18.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1041</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2506</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>40.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1588,16 +1588,16 @@
     <Object>
       <id>Room-218</id>
       <InfoItem name="temperature">
-        <value>24.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>677</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4488</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1606,16 +1606,16 @@
     <Object>
       <id>Room-219</id>
       <InfoItem name="temperature">
-        <value>18.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1329</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>121</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1624,16 +1624,16 @@
     <Object>
       <id>Room-220</id>
       <InfoItem name="temperature">
-        <value>20.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>976</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>357</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1642,16 +1642,16 @@
     <Object>
       <id>Room-221</id>
       <InfoItem name="temperature">
-        <value>24.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1210</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7127</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>38.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1660,16 +1660,16 @@
     <Object>
       <id>Room-222</id>
       <InfoItem name="temperature">
-        <value>22.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1247</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7632</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1678,16 +1678,16 @@
     <Object>
       <id>Room-223</id>
       <InfoItem name="temperature">
-        <value>22.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1162</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5160</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>54.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1696,16 +1696,16 @@
     <Object>
       <id>Room-224</id>
       <InfoItem name="temperature">
-        <value>24.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1245</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>856</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1714,16 +1714,16 @@
     <Object>
       <id>Room-225</id>
       <InfoItem name="temperature">
-        <value>24.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>700</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6125</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1732,16 +1732,16 @@
     <Object>
       <id>Room-226</id>
       <InfoItem name="temperature">
-        <value>19.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>988</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5930</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1750,16 +1750,16 @@
     <Object>
       <id>Room-227</id>
       <InfoItem name="temperature">
-        <value>18.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>927</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5901</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1768,16 +1768,16 @@
     <Object>
       <id>Room-228</id>
       <InfoItem name="temperature">
-        <value>22.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1285</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3433</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1786,16 +1786,16 @@
     <Object>
       <id>Room-229</id>
       <InfoItem name="temperature">
-        <value>24.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1488</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1803</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>39.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1804,16 +1804,16 @@
     <Object>
       <id>Room-230</id>
       <InfoItem name="temperature">
-        <value>19.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>395</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1094</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>33.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1822,16 +1822,16 @@
     <Object>
       <id>Room-231</id>
       <InfoItem name="temperature">
-        <value>21.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>577</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7814</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>48.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1840,16 +1840,16 @@
     <Object>
       <id>Room-232</id>
       <InfoItem name="temperature">
-        <value>20.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>569</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4486</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1858,16 +1858,16 @@
     <Object>
       <id>Room-233</id>
       <InfoItem name="temperature">
-        <value>24.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>470</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4156</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>53.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1876,16 +1876,16 @@
     <Object>
       <id>Room-234</id>
       <InfoItem name="temperature">
-        <value>20.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1036</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2328</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1897,13 +1897,13 @@
         <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>885</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5878</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1912,16 +1912,16 @@
     <Object>
       <id>Room-236</id>
       <InfoItem name="temperature">
-        <value>21</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>807</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2466</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -1930,16 +1930,16 @@
     <Object>
       <id>Room-238</id>
       <InfoItem name="temperature">
-        <value>22.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1212</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6487</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1948,16 +1948,16 @@
     <Object>
       <id>Room-239</id>
       <InfoItem name="temperature">
-        <value>19</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>946</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7784</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1966,16 +1966,16 @@
     <Object>
       <id>Room-240</id>
       <InfoItem name="temperature">
-        <value>22.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>375</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3345</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -1984,16 +1984,16 @@
     <Object>
       <id>Room-241</id>
       <InfoItem name="temperature">
-        <value>19.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>565</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3849</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>60.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2002,16 +2002,16 @@
     <Object>
       <id>Room-242</id>
       <InfoItem name="temperature">
-        <value>19.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1192</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3861</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2023,13 +2023,13 @@
         <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>392</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6685</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>59.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2038,16 +2038,16 @@
     <Object>
       <id>Room-244</id>
       <InfoItem name="temperature">
-        <value>19.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1047</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>254</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2056,16 +2056,16 @@
     <Object>
       <id>Room-245</id>
       <InfoItem name="temperature">
-        <value>18.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>687</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>777</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2074,16 +2074,16 @@
     <Object>
       <id>Room-246</id>
       <InfoItem name="temperature">
-        <value>24.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>863</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1190</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2095,13 +2095,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>430</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1483</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>37.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2110,16 +2110,16 @@
     <Object>
       <id>Room-248</id>
       <InfoItem name="temperature">
-        <value>22.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1331</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7610</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>34.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2128,16 +2128,16 @@
     <Object>
       <id>Room-249</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>462</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>847</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>33.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2146,16 +2146,16 @@
     <Object>
       <id>Room-250</id>
       <InfoItem name="temperature">
-        <value>24.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1242</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2549</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>37.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2164,16 +2164,16 @@
     <Object>
       <id>Room-251</id>
       <InfoItem name="temperature">
-        <value>18.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>577</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1864</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2182,16 +2182,16 @@
     <Object>
       <id>Room-252</id>
       <InfoItem name="temperature">
-        <value>19.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1058</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>913</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2200,16 +2200,16 @@
     <Object>
       <id>Room-253</id>
       <InfoItem name="temperature">
-        <value>24.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>994</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4060</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>42</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2218,16 +2218,16 @@
     <Object>
       <id>Room-254</id>
       <InfoItem name="temperature">
-        <value>18.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1128</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5201</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2236,16 +2236,16 @@
     <Object>
       <id>Room-255</id>
       <InfoItem name="temperature">
-        <value>20.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1266</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7758</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2254,16 +2254,16 @@
     <Object>
       <id>Room-256</id>
       <InfoItem name="temperature">
-        <value>22.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>650</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2597</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>64.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2272,16 +2272,16 @@
     <Object>
       <id>Room-257</id>
       <InfoItem name="temperature">
-        <value>18.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>585</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7720</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>61.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2290,16 +2290,16 @@
     <Object>
       <id>Room-258</id>
       <InfoItem name="temperature">
-        <value>20.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1155</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3187</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>47.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2308,16 +2308,16 @@
     <Object>
       <id>Room-259</id>
       <InfoItem name="temperature">
-        <value>21.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>668</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3621</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>39.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2329,13 +2329,13 @@
         <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1492</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>96</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>33</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2344,16 +2344,16 @@
     <Object>
       <id>Room-261</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1494</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4911</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>61.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2362,16 +2362,16 @@
     <Object>
       <id>Room-262</id>
       <InfoItem name="temperature">
-        <value>24.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>641</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4067</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2380,16 +2380,16 @@
     <Object>
       <id>Room-263</id>
       <InfoItem name="temperature">
-        <value>19.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1035</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2962</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2398,16 +2398,16 @@
     <Object>
       <id>Room-264</id>
       <InfoItem name="temperature">
-        <value>18.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>836</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7285</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>69.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2416,16 +2416,16 @@
     <Object>
       <id>Room-265</id>
       <InfoItem name="temperature">
-        <value>21.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1182</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6156</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2434,16 +2434,16 @@
     <Object>
       <id>Room-266</id>
       <InfoItem name="temperature">
-        <value>21</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1140</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3153</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2452,16 +2452,16 @@
     <Object>
       <id>Room-267</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>403</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5926</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2470,16 +2470,16 @@
     <Object>
       <id>Room-268</id>
       <InfoItem name="temperature">
-        <value>24.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1204</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1461</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>38.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2488,16 +2488,16 @@
     <Object>
       <id>Room-269</id>
       <InfoItem name="temperature">
-        <value>24.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1162</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1176</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2506,16 +2506,16 @@
     <Object>
       <id>Room-270</id>
       <InfoItem name="temperature">
-        <value>18.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1178</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3753</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>67.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2524,16 +2524,16 @@
     <Object>
       <id>Room-301</id>
       <InfoItem name="temperature">
-        <value>24.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>796</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2143</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>39.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2542,16 +2542,16 @@
     <Object>
       <id>Room-302</id>
       <InfoItem name="temperature">
-        <value>18.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>922</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7947</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>66.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2563,13 +2563,13 @@
         <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>853</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6783</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>61.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2578,16 +2578,16 @@
     <Object>
       <id>Room-304</id>
       <InfoItem name="temperature">
-        <value>18.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>968</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>726</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>62</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2596,16 +2596,16 @@
     <Object>
       <id>Room-305</id>
       <InfoItem name="temperature">
-        <value>20.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1186</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5783</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2617,13 +2617,13 @@
         <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>600</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4489</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>55.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2632,16 +2632,16 @@
     <Object>
       <id>Room-307</id>
       <InfoItem name="temperature">
-        <value>19.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>616</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4817</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>34.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2650,16 +2650,16 @@
     <Object>
       <id>Room-308</id>
       <InfoItem name="temperature">
-        <value>19.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>889</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7949</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>54.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2668,16 +2668,16 @@
     <Object>
       <id>Room-309</id>
       <InfoItem name="temperature">
-        <value>22</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>437</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5535</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>62</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2686,16 +2686,16 @@
     <Object>
       <id>Room-310</id>
       <InfoItem name="temperature">
-        <value>18.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>472</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5391</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>59.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2704,16 +2704,16 @@
     <Object>
       <id>Room-311</id>
       <InfoItem name="temperature">
-        <value>18.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>639</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3236</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2722,16 +2722,16 @@
     <Object>
       <id>Room-312</id>
       <InfoItem name="temperature">
-        <value>20.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1231</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4952</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2740,16 +2740,16 @@
     <Object>
       <id>Room-313</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>998</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>459</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2758,16 +2758,16 @@
     <Object>
       <id>Room-314</id>
       <InfoItem name="temperature">
-        <value>20.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1489</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>461</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>58.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2776,16 +2776,16 @@
     <Object>
       <id>Room-315</id>
       <InfoItem name="temperature">
-        <value>24.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>784</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1036</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>58.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2794,16 +2794,16 @@
     <Object>
       <id>Room-316</id>
       <InfoItem name="temperature">
-        <value>24</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>655</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4808</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2812,16 +2812,16 @@
     <Object>
       <id>Room-317</id>
       <InfoItem name="temperature">
-        <value>18.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>952</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2748</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2830,16 +2830,16 @@
     <Object>
       <id>Room-318</id>
       <InfoItem name="temperature">
-        <value>20.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>380</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4470</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2851,13 +2851,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>951</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1641</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>60.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2866,16 +2866,16 @@
     <Object>
       <id>Room-320</id>
       <InfoItem name="temperature">
-        <value>21.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1219</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5728</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>60.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2884,13 +2884,13 @@
     <Object>
       <id>Room-321</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1455</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>540</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
         <value>50</value>
@@ -2902,16 +2902,16 @@
     <Object>
       <id>Room-322</id>
       <InfoItem name="temperature">
-        <value>22.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>619</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2486</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>60.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2920,16 +2920,16 @@
     <Object>
       <id>Room-323</id>
       <InfoItem name="temperature">
-        <value>19.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>542</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2099</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>31.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2938,16 +2938,16 @@
     <Object>
       <id>Room-324</id>
       <InfoItem name="temperature">
-        <value>22.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1228</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>96</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>53.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2959,13 +2959,13 @@
         <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>377</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5885</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>31.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -2974,16 +2974,16 @@
     <Object>
       <id>Room-326</id>
       <InfoItem name="temperature">
-        <value>24.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>684</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4292</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>65.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -2992,16 +2992,16 @@
     <Object>
       <id>Room-327</id>
       <InfoItem name="temperature">
-        <value>21</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1114</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4339</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3010,16 +3010,16 @@
     <Object>
       <id>Room-328</id>
       <InfoItem name="temperature">
-        <value>20.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>958</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2669</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>48.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3028,16 +3028,16 @@
     <Object>
       <id>Room-329</id>
       <InfoItem name="temperature">
-        <value>18.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1012</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5732</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3046,16 +3046,16 @@
     <Object>
       <id>Room-330</id>
       <InfoItem name="temperature">
-        <value>21.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>400</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5837</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>60.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3064,16 +3064,16 @@
     <Object>
       <id>Room-331</id>
       <InfoItem name="temperature">
-        <value>18</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>655</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7074</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3082,16 +3082,16 @@
     <Object>
       <id>Room-332</id>
       <InfoItem name="temperature">
-        <value>22.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1042</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5148</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3100,16 +3100,16 @@
     <Object>
       <id>Room-333</id>
       <InfoItem name="temperature">
-        <value>22.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1179</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3203</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>68.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3121,13 +3121,13 @@
         <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1407</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4035</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>39.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3136,16 +3136,16 @@
     <Object>
       <id>Room-335</id>
       <InfoItem name="temperature">
-        <value>24.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>617</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3243</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>34.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3154,16 +3154,16 @@
     <Object>
       <id>Room-336</id>
       <InfoItem name="temperature">
-        <value>21.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>599</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6427</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>31.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3172,16 +3172,16 @@
     <Object>
       <id>Room-337</id>
       <InfoItem name="temperature">
-        <value>22</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>705</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6687</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>58.2</value>
+        <value>50.2</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3190,16 +3190,16 @@
     <Object>
       <id>Room-338</id>
       <InfoItem name="temperature">
-        <value>24.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>586</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5555</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3208,16 +3208,16 @@
     <Object>
       <id>Room-339</id>
       <InfoItem name="temperature">
-        <value>18.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>693</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>215</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3226,16 +3226,16 @@
     <Object>
       <id>Room-340</id>
       <InfoItem name="temperature">
-        <value>18.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>900</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3756</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>47.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3244,16 +3244,16 @@
     <Object>
       <id>Room-341</id>
       <InfoItem name="temperature">
-        <value>22.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>654</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1497</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3262,16 +3262,16 @@
     <Object>
       <id>Room-342</id>
       <InfoItem name="temperature">
-        <value>20.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>973</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2439</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>62.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3280,16 +3280,16 @@
     <Object>
       <id>Room-343</id>
       <InfoItem name="temperature">
-        <value>19.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>656</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>810</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>57.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3298,16 +3298,16 @@
     <Object>
       <id>Room-344</id>
       <InfoItem name="temperature">
-        <value>19.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1381</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6226</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>42.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3316,16 +3316,16 @@
     <Object>
       <id>Room-345</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1024</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1508</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>67.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3334,16 +3334,16 @@
     <Object>
       <id>Room-346</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>436</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5595</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>32.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3355,13 +3355,13 @@
         <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>503</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>687</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>54.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3370,16 +3370,16 @@
     <Object>
       <id>Room-348</id>
       <InfoItem name="temperature">
-        <value>21.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>909</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3388,16 +3388,16 @@
     <Object>
       <id>Room-349</id>
       <InfoItem name="temperature">
-        <value>19</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>445</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2300</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>65.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3406,16 +3406,16 @@
     <Object>
       <id>Room-350</id>
       <InfoItem name="temperature">
-        <value>21.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>511</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3183</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3427,10 +3427,10 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1056</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>110</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
         <value>50.3</value>
@@ -3442,16 +3442,16 @@
     <Object>
       <id>Room-352</id>
       <InfoItem name="temperature">
-        <value>20.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>583</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6885</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>69.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3460,16 +3460,16 @@
     <Object>
       <id>Room-353</id>
       <InfoItem name="temperature">
-        <value>19.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1397</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2931</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>63.3</value>
+        <value>50.3</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3478,16 +3478,16 @@
     <Object>
       <id>Room-354</id>
       <InfoItem name="temperature">
-        <value>24</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1322</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6828</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>30.9</value>
+        <value>50.9</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3496,16 +3496,16 @@
     <Object>
       <id>Room-355</id>
       <InfoItem name="temperature">
-        <value>22.2</value>
+        <value>23.2</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1327</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3473</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>36.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3514,16 +3514,16 @@
     <Object>
       <id>Room-356</id>
       <InfoItem name="temperature">
-        <value>24.8</value>
+        <value>23.8</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1229</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6149</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3532,16 +3532,16 @@
     <Object>
       <id>Room-357</id>
       <InfoItem name="temperature">
-        <value>22.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1372</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7427</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3550,16 +3550,16 @@
     <Object>
       <id>Room-358</id>
       <InfoItem name="temperature">
-        <value>18.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>765</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1736</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>62.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3568,16 +3568,16 @@
     <Object>
       <id>Room-359</id>
       <InfoItem name="temperature">
-        <value>19.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>741</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4669</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>59.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3586,16 +3586,16 @@
     <Object>
       <id>Room-360</id>
       <InfoItem name="temperature">
-        <value>24.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>789</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1487</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3604,16 +3604,16 @@
     <Object>
       <id>Room-361</id>
       <InfoItem name="temperature">
-        <value>21</value>
+        <value>23</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1120</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6202</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>52.7</value>
+        <value>50.7</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3622,16 +3622,16 @@
     <Object>
       <id>Room-362</id>
       <InfoItem name="temperature">
-        <value>21.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>688</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6486</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>44.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3640,16 +3640,16 @@
     <Object>
       <id>Room-363</id>
       <InfoItem name="temperature">
-        <value>20.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1235</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5961</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>49.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3658,16 +3658,16 @@
     <Object>
       <id>Room-364</id>
       <InfoItem name="temperature">
-        <value>22.4</value>
+        <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1159</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4239</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41.5</value>
+        <value>50.5</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3679,10 +3679,10 @@
         <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>873</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>3362</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
         <value>50.4</value>
@@ -3694,13 +3694,13 @@
     <Object>
       <id>Room-366</id>
       <InfoItem name="temperature">
-        <value>20.9</value>
+        <value>23.9</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1243</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>2602</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
         <value>50.1</value>
@@ -3712,16 +3712,16 @@
     <Object>
       <id>Room-367</id>
       <InfoItem name="temperature">
-        <value>20.5</value>
+        <value>23.5</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1354</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5155</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>69.6</value>
+        <value>50.6</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3733,13 +3733,13 @@
         <value>23.7</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1379</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4622</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>45.1</value>
+        <value>50.1</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3751,13 +3751,13 @@
         <value>23.4</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>798</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>1466</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3766,16 +3766,16 @@
     <Object>
       <id>Room-370</id>
       <InfoItem name="temperature">
-        <value>19.6</value>
+        <value>23.6</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>732</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6632</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>51.8</value>
+        <value>50.8</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3784,16 +3784,16 @@
     <Object>
       <id>2nd Floor Corridor Start</id>
       <InfoItem name="temperature">
-        <value>21.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6000</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>411</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>34</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3802,16 +3802,16 @@
     <Object>
       <id>2nd Floor Corridor Middle</id>
       <InfoItem name="temperature">
-        <value>22.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6100</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>420</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>35</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3820,16 +3820,16 @@
     <Object>
       <id>2nd Floor Corridor End</id>
       <InfoItem name="temperature">
-        <value>24.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6050</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>389</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>34</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
@@ -3838,16 +3838,16 @@
     <Object>
       <id>Cafeteria</id>
       <InfoItem name="temperature">
-        <value>29.7</value>
+        <value>23.7</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>5990</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>398</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>40</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3856,16 +3856,16 @@
     <Object>
       <id>Entrance</id>
       <InfoItem name="temperature">
-        <value>18.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>6090</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>401</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>39</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3874,16 +3874,16 @@
     <Object>
       <id>Corridor Cafeteria Side</id>
       <InfoItem name="temperature">
-        <value>19.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4200</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>430</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>43</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3892,16 +3892,16 @@
     <Object>
       <id>Corridor Entrance Side</id>
       <InfoItem name="temperature">
-        <value>20.3</value>
+        <value>23.3</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>4302</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>451</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>41</value>
+        <value>50</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>30</value>
@@ -3910,16 +3910,16 @@
     <Object>
       <id>Room-237c</id>
       <InfoItem name="temperature">
-        <value>18.1</value>
+        <value>23.1</value>
       </InfoItem>
       <InfoItem name="co2">
-        <value>1067</value>
+        <value>800</value>
       </InfoItem>
       <InfoItem name="light">
-        <value>7005</value>
+        <value>500</value>
       </InfoItem>
       <InfoItem name="humidity">
-        <value>57.4</value>
+        <value>50.4</value>
       </InfoItem>
       <InfoItem name="pir">
         <value>0</value>
