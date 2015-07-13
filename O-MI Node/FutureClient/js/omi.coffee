@@ -6,13 +6,16 @@ omiExt = (WebOmi) ->
   my.parseXml = (responseString) ->
     window.xmlTree = new DOMParser().parseFromString responseString, 'text/xml'
 
-  nsResolver = (name) ->
-    ns =
-      omi : "omi.xsd"
-      odf : "odf.xsd"
-      xsi : "http://www.w3.org/2001/XMLSchema-instance"
-      xs  : "http://www.w3.org/2001/XMLSchema-instance"
-    ns[name] || ns.odf
+  # XML Namespace URIs used in the client
+  my.ns =
+    omi : "omi.xsd"
+    odf : "odf.xsd"
+    xsi : "http://www.w3.org/2001/XMLSchema-instance"
+    xs  : "http://www.w3.org/2001/XMLSchema-instance"
+
+  # XML Namespace resolver, (defaults to odf)
+  my.nsResolver = (name) ->
+    my.ns[name] || my.ns.odf
 
   my.evaluateXPath = (elem, xpath) ->
     xpe = elem.ownerDocument || elem
