@@ -7,24 +7,68 @@
     my = WebOmi.requests = {};
     my.xmls = {
       readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> ",
+      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> \n",
       template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> \n"
     };
     my.defaults = {};
-    my.defaults.empty = {
-      request: null,
-      ttl: 0,
-      callback: null,
-      requestID: null,
-      odf: null,
-      interval: null,
-      newest: null,
-      oldest: null,
-      begin: null,
-      end: null
+    my.defaults.empty = function() {
+      return {
+        request: null,
+        ttl: 0,
+        callback: null,
+        requestID: null,
+        odf: null,
+        interval: null,
+        newest: null,
+        oldest: null,
+        begin: null,
+        end: null,
+        resultDoc: null,
+        msg: true
+      };
     };
-    my.defaults.readAll = $.extend({}, my.defaults.empty, {
-      odf: '<Objects></Objects>'
-    });
+    my.defaults.readAll = function() {
+      var res;
+      res = $.extend({}, my.defaults.empty(), {
+        request: "read",
+        resultDoc: WebOmi.omi.parseXml(my.xmls.readAll)
+      });
+      return res.odf = res.resultDoc.createElement("Objects");
+    };
+    my.defaults.readOnce = function() {
+      return $.extend({}, my.defaults.empty(), {
+        request: "read"
+      });
+    };
+    my.defaults.subscription = function() {
+      return $.extend({}, my.defaults.empty(), {
+        request: "read",
+        interval: 5,
+        ttl: 60
+      });
+    };
+    my.defaults.poll = function() {
+      return $.extend({}, my.defaults.empty(), {
+        request: "read",
+        requestID: 1
+      });
+    };
+    my.defaults.write = function() {
+      var doc;
+      doc = WebOmi.omi.parseXml(my.xmls.templateMsg);
+      return $.extend({}, my.defaults.empty(), {
+        request: "write",
+        odf: doc.createElement("Objects")
+      });
+    };
+    my.defaults.cancel = function() {
+      return $.extend({}, my.defaults.empty(), {
+        request: "cancel",
+        requestID: 1,
+        odf: null,
+        msg: false
+      });
+    };
     lastParameters = my.defaults;
     my.readAll = function(fastForward) {
       WebOmi.formLogic.setRequest(my.xmls.readAll);
@@ -32,12 +76,61 @@
         return WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr);
       }
     };
-    my.addPathToOdf = function(path) {
-      var o, reqCM, xmltree;
+    my.addPathToRequest = function(path) {
+      var currentObjectsHead, i, len, msg, o, objects, ref, reqCM, results, xmlTree;
       o = WebOmi.omi;
       reqCM = WebOmi.consts.requestCodeMirror;
-      xmltree = o.parseXml(reqCM.getValue);
-      return o.evaluateXPath(xmlTree, '//omi:msg');
+      xmlTree = o.parseXml(reqCM.getValue);
+      ref = o.evaluateXPath(xmlTree, '//omi:msg');
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        msg = ref[i];
+        currentObjectsHead = o.evaluateXPath(msg, '/odf:Objects')[0];
+        if (currentObjectsHead != null) {
+          results.push(my.addPathToOdf(path, currentObjectsHead));
+        } else {
+          objects = xmlTree.createElementNS(o.ns.odf, "Objects");
+          my.addPathToOdf(path, objects);
+          results.push(msg.appendChild(objects));
+        }
+      }
+      return results;
+    };
+    my.addPathToOdf = function(path, odfXmlTree, elementName) {
+      var child, createdElement, head, headIdx, object, setObjectId, tail;
+      setObjectId = function(createdElement, id) {
+        var idElem, textElem;
+        idElem = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "id");
+        textElem = odfXmlTree.createTextNode(path);
+        idElem.appendChild(textElem);
+        createdElement.appendChild(idElem);
+        return createdElement;
+      };
+      headIdx = path.indexOf("/");
+      switch (headIdx) {
+        case 0:
+          return my.addPathToOdf(path.substr(1), odfXmlTree, elementName);
+        case -1:
+          createdElement = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, elementName);
+          switch (elementName) {
+            case "odf:InfoItem":
+              createdElement.setAttribute("name", path);
+              break;
+            case "odf:Object":
+              setObjectId(createdElement, path);
+              break;
+            default:
+              alert("error in addPathToOdf");
+          }
+          return odfXmlTree.appendChild(createdElement);
+        default:
+          head = path.substr(0, headIdx);
+          tail = path.substr(headIdx + 1);
+          child = WebOmi.omi.evaluateXPath(odfXmlTree, "./odf:Object");
+          object = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "Object");
+          setObjectId(object, head);
+          return my.addPathToOdf(object(tail));
+      }
     };
     my.read = function() {};
     return WebOmi;

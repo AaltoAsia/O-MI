@@ -3,20 +3,19 @@
   var omiExt;
 
   omiExt = function(WebOmi) {
-    var my, nsResolver;
+    var my;
     my = WebOmi.omi = {};
     my.parseXml = function(responseString) {
       return window.xmlTree = new DOMParser().parseFromString(responseString, 'text/xml');
     };
-    nsResolver = function(name) {
-      var ns;
-      ns = {
-        omi: "omi.xsd",
-        odf: "odf.xsd",
-        xsi: "http://www.w3.org/2001/XMLSchema-instance",
-        xs: "http://www.w3.org/2001/XMLSchema-instance"
-      };
-      return ns[name] || ns.odf;
+    my.ns = {
+      omi: "omi.xsd",
+      odf: "odf.xsd",
+      xsi: "http://www.w3.org/2001/XMLSchema-instance",
+      xs: "http://www.w3.org/2001/XMLSchema-instance"
+    };
+    my.nsResolver = function(name) {
+      return my.ns[name] || my.ns.odf;
     };
     my.evaluateXPath = function(elem, xpath) {
       var iter, res, results, xpe;
