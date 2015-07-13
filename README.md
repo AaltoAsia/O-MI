@@ -1,4 +1,4 @@
-Code-Gardeners
+O-MI Node
 ==============
 
 [![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=master)](https://travis-ci.org/AaltoAsia/O-MI)
@@ -7,7 +7,7 @@ Code-Gardeners
 
 
 Internet of Things data server.
-Implementation of [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard.
+Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard.
 
 See `development` branch for latest progress.
 
