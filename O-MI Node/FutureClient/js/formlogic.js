@@ -107,9 +107,10 @@
       parsed = omi.parseXml(responseString);
       objectsArr = omi.evaluateXPath(parsed, "//odf:Objects");
       if (objectsArr.length !== 1) {
-        alert("failed to get single Objects odf root");
+        return alert("failed to get single Objects odf root");
+      } else {
+        return my.buildOdfTree(objectsArr[0]);
       }
-      return my.buildOdfTree(objectsArr[0]);
     };
     return WebOmi;
   };

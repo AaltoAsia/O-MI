@@ -96,42 +96,51 @@
       }
       return results;
     };
-    my.addPathToOdf = function(path, odfXmlTree, elementName) {
-      var child, createdElement, head, headIdx, object, setObjectId, tail;
-      setObjectId = function(createdElement, id) {
-        var idElem, textElem;
-        idElem = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "id");
-        textElem = odfXmlTree.createTextNode(path);
-        idElem.appendChild(textElem);
-        createdElement.appendChild(idElem);
-        return createdElement;
-      };
-      headIdx = path.indexOf("/");
-      switch (headIdx) {
-        case 0:
-          return my.addPathToOdf(path.substr(1), odfXmlTree, elementName);
-        case -1:
-          createdElement = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, elementName);
-          switch (elementName) {
-            case "odf:InfoItem":
-              createdElement.setAttribute("name", path);
-              break;
-            case "odf:Object":
-              setObjectId(createdElement, path);
-              break;
-            default:
-              alert("error in addPathToOdf");
-          }
-          return odfXmlTree.appendChild(createdElement);
-        default:
-          head = path.substr(0, headIdx);
-          tail = path.substr(headIdx + 1);
-          child = WebOmi.omi.evaluateXPath(odfXmlTree, "./odf:Object");
-          object = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "Object");
-          setObjectId(object, head);
-          return my.addPathToOdf(object(tail));
-      }
-    };
+    my.addPathToOdf = function(odfTreeNode, odfXmlTree, elementName) {};
+
+    /*
+     * Creates Objects along the path and then the elementName to the `path`
+     * path: String; "Objects/path/to/node" (relative to the odfXmlTree as root)
+     * odfXmlTree: XML Dom; the Objects node or other root corresponding to the path
+     * elementName: String; One of odf elements, "InfoItem" "Object" TODO: MetaData etc.
+    my.addPathToOdf = (path, odfXmlTree, elementName) ->
+       * for Object
+      setObjectId = (createdElement, id) ->
+        idElem = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "id")
+        textElem = odfXmlTree.createTextNode(path)
+        idElem.appendChild textElem
+        createdElement.appendChild idElem
+        createdElement
+    
+      headIdx = path.indexOf "/"
+      switch headIdx
+        when 0  then my.addPathToOdf (path.substr 1), odfXmlTree, elementName# drop 1
+        when -1
+          createdElement = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, elementName)
+    
+           * set name or id
+          switch elementName
+            when "odf:InfoItem" then createdElement.setAttribute("name", path)
+            when "odf:Object"   then setObjectId createdElement, path
+            else alert "error in addPathToOdf"
+    
+           * finally append the element
+          odfXmlTree.appendChild(createdElement)
+    
+        else
+          head = path.substr(0, headIdx)
+          tail = path.substr(headIdx+1)
+    
+          child = WebOmi.omi.evaluateXPath(odfXmlTree, "./odf:Object")
+           * TODO TODO
+           * create Object
+          object = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "Object")
+          setObjectId object, head
+           * replace newChild, oldChild
+           * currentObjectsHead.parent.replaceChild currentObjectsHead
+    
+          my.addPathToOdf object tail
+     */
     my.read = function() {};
     return WebOmi;
   };

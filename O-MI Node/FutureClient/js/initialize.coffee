@@ -74,6 +74,10 @@ constsExt = ($, parent) ->
 # extend WebOmi
 window.WebOmi = constsExt($, window.WebOmi || {})
 
+# escaped jquery identifier
+# adds one # in the beginning and \\ in front of every special symbol
+window.jqesc = (mySel) -> mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" )
+
 # extend String
 String.prototype.trim = String.prototype.trim || ->
   String(this).replace /^\s+|\s+$/g, ''

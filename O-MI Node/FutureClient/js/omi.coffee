@@ -19,7 +19,7 @@ omiExt = (WebOmi) ->
 
   my.evaluateXPath = (elem, xpath) ->
     xpe = elem.ownerDocument || elem
-    iter = xpe.evaluate(xpath, elem, nsResolver, 0, null)
+    iter = xpe.evaluate(xpath, elem, my.nsResolver, 0, null)
 
     res while res = iter.iterateNext()
 

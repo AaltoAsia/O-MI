@@ -77,6 +77,10 @@
 
   window.WebOmi = constsExt($, window.WebOmi || {});
 
+  window.jqesc = function(mySel) {
+    return mySel.replace(/(:|\.|\[|\]|,|\/)/g, "\\$1");
+  };
+
   String.prototype.trim = String.prototype.trim || function() {
     return String(this).replace(/^\s+|\s+$/g, '');
   };

@@ -20,7 +20,7 @@
     my.evaluateXPath = function(elem, xpath) {
       var iter, res, results, xpe;
       xpe = elem.ownerDocument || elem;
-      iter = xpe.evaluate(xpath, elem, nsResolver, 0, null);
+      iter = xpe.evaluate(xpath, elem, my.nsResolver, 0, null);
       results = [];
       while (res = iter.iterateNext()) {
         results.push(res);

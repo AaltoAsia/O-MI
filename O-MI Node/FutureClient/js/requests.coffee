@@ -120,12 +120,20 @@ requestsExt = (WebOmi) ->
         my.addPathToOdf path, objects
         msg.appendChild objects
 
+  # Creates Objects from the path using the odfTree
+  # odfTreeNode: jquery object; some li object from the tree containing the path in the id
+  # odfXmlTree: XML Dom; the odf Objects node, will be updated accordingly
+  my.addPathToOdf = (odfTreeNode, odfXmlTree, elementName) ->
+   
+
+
+  ###
   # Creates Objects along the path and then the elementName to the `path`
   # path: String; "Objects/path/to/node" (relative to the odfXmlTree as root)
   # odfXmlTree: XML Dom; the Objects node or other root corresponding to the path
   # elementName: String; One of odf elements, "InfoItem" "Object" TODO: MetaData etc.
   my.addPathToOdf = (path, odfXmlTree, elementName) ->
-    # for odf:Object
+    # for Object
     setObjectId = (createdElement, id) ->
       idElem = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "id")
       textElem = odfXmlTree.createTextNode(path)
@@ -161,7 +169,7 @@ requestsExt = (WebOmi) ->
         # currentObjectsHead.parent.replaceChild currentObjectsHead
 
         my.addPathToOdf object tail
-
+  ###
 
 
     

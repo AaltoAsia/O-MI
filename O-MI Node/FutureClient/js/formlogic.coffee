@@ -85,8 +85,8 @@ formLogicExt = ($, WebOmi) ->
 
     if objectsArr.length != 1
       alert "failed to get single Objects odf root"
-
-    my.buildOdfTree objectsArr[0]
+    else
+      my.buildOdfTree objectsArr[0] # head, checked above
 
 
   WebOmi # export
@@ -98,7 +98,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
 ##########################
-# Intialize events, import
+# Intialize, connect events, import
 ((consts, requests, formLogic) ->
   consts.afterJquery ->
     consts.readAllBtn
