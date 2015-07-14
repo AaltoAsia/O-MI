@@ -82,6 +82,18 @@
       }
       return null;
     };
+    my.hasOdfChildren = function(odfNode) {
+      var child, i, len, maybeId, ref;
+      ref = odfNode.childNodes;
+      for (i = 0, len = ref.length; i < len; i++) {
+        child = ref[i];
+        maybeId = my.getOdfId(child);
+        if ((maybeId != null) && maybeId !== "") {
+          return true;
+        }
+      }
+      return false;
+    };
     return WebOmi;
   };
 

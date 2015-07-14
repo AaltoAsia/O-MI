@@ -95,6 +95,24 @@ requestsExt = (WebOmi) ->
   # private
   lastParameters = my.defaults
 
+  ###
+  my.set =
+    request  : null  # Maybe string (request tag name)
+    ttl      : 0     # double
+    callback : null  # Maybe string
+    requestID: null  # Maybe int
+    odf      : null  # Maybe xml
+    interval : null  # Maybe number
+    newest   : null  # Maybe int
+    oldest   : null  # Maybe int
+    begin    : null  # Maybe Date
+    end      : null  # Maybe Date
+    resultDoc: null  # Maybe xml dom document
+    msg      : true  # Boolean Is message included
+    ###
+
+  my.loadParams = (omiRequestObject) ->
+
 
 
   # @param fastforward: Boolean Whether to also send the request and update odfTree also
@@ -108,13 +126,11 @@ requestsExt = (WebOmi) ->
   my.addPathToRequest = (path) ->
     # imports
     o = WebOmi.omi
-    reqCM = WebOmi.consts.requestCodeMirror
+    fl = WebOmi.formLogic
 
-    xmlTree = o.parseXml(reqCM.getValue()) # FIXME get
+    odfTreeNode = $ jqesc path
     
-    for msg in o.evaluateXPath(xmlTree, '//omi:msg')
-      currentObjectsHead = o.evaluateXPath(msg, './odf:Objects')[0]
-      odfTreeNode = $ jqesc path
+    fl.modifyRequestOdfs (currentObjectsHead) ->
 
       if currentObjectsHead?
         # TODO: user edit conflict check
@@ -124,21 +140,62 @@ requestsExt = (WebOmi) ->
         my.addPathToOdf odfTreeNode, objects
         msg.appendChild objects
     
-    newRequest = new XMLSerializer().serializeToString xmlTree
-    WebOmi.formLogic.setRequest newRequest
 
-  # Adds odf elems to given Objects node from the path using the odfTree
-  # odfTreeNode: jquery object; some li object from the tree containing the path in the id
-  # odfXmlTree: XML Dom; the odf Objects node, will be updated in-place accordingly
-  my.addPathToOdf = (odfTreeNode, odfObjectsTree) ->
+  # path: String "Objects/path/to/node"
+  my.removePathFromRequest = (path) ->
+    # imports
     o = WebOmi.omi
-    odfDoc = odfObjectsTree.ownerDocument || odfObjectsTree
+    fl = WebOmi.formLogic
+
+    odfTreeNode = $ jqesc path
+    fl.modifyRequestOdfs (odfObjects) ->
+      my.removePathFromOdf odfTreeNode, odfObjects
+
+  my.removePathFromOdf = (odfTreeNode, odfObjects) ->
+    # imports
+    o = WebOmi.omi
 
     nodeElems = $.makeArray odfTreeNode.parentsUntil "#Objects", "li"
     nodeElems.reverse()
-    nodeElems.push(odfTreeNode)
+    nodeElems.push odfTreeNode
 
-    currentOdfNode = odfObjectsTree
+    lastOdfElem = odfObjects
+    allOdfElems = for node in nodeElems
+
+      id = $(node).children("a").text()
+
+      maybeChild = o.getOdfChild(id, lastOdfElem)
+      if maybeChild?
+        lastOdfElem = maybeChild
+      maybeChild
+
+    # remove requested
+    lastOdfElem.parentElement.removeChild lastOdfElem
+    allOdfElems.pop()
+
+    # remove empty parents
+    allOdfElems.reverse()
+    for elem in allOdfElems
+      if not o.hasOdfChildren elem
+        elem.parentElement.removeChild elem
+
+    odfObjects
+
+
+
+
+  # Adds odf elems to given Objects node from the path using the odfTree
+  # odfTreeNode: jquery object; some li object from the tree containing the path in the id
+  # odfObjects: XML Dom; the odf Objects node, will be updated in-place accordingly
+  my.addPathToOdf = (odfTreeNode, odfObjects) ->
+    o = WebOmi.omi
+    odfDoc = odfObjects.ownerDocument || odfObjects
+
+    nodeElems = $.makeArray odfTreeNode.parentsUntil "#Objects", "li"
+    nodeElems.reverse()
+    nodeElems.push odfTreeNode
+
+    currentOdfNode = odfObjects
 
     for node in nodeElems
 
@@ -157,7 +214,7 @@ requestsExt = (WebOmi) ->
         currentOdfNode.appendChild obj
         currentOdfNode = obj
 
-    odfObjectsTree
+    odfObjects
 
 
 

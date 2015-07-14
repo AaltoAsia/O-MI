@@ -71,6 +71,13 @@ omiExt = (WebOmi) ->
         return child
     return null
 
+  my.hasOdfChildren = (odfNode) ->
+    # Could also be made from getOdfChildren
+    for child in odfNode.childNodes
+      maybeId = my.getOdfId(child)
+      if maybeId? && maybeId != ""
+        return true
+    return false
 
 
   WebOmi # export module
