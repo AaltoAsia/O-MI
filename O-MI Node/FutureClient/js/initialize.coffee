@@ -49,8 +49,6 @@ constsExt = ($, parent) ->
           keep_selected_style : true # Consider false
           cascade : "up+undetermined"
           tie_selection : true
-      .on "changed.jstree", (_, data) ->
-        console.log data.node
 
     my.odfTree = my.odfTreeDom.jstree()
 
@@ -61,7 +59,7 @@ constsExt = ($, parent) ->
           themes :
             icons : false
           multiple : false
-      .on "changed.jstree", (_, data) ->
+      .on "changed.jstree", (e, data) ->
         console.log data.node.id
 
     my.afterJquery = (fn) -> fn()
@@ -76,9 +74,9 @@ window.WebOmi = constsExt($, window.WebOmi || {})
 
 # escaped jquery identifier
 # adds one # in the beginning and \\ in front of every special symbol
-window.jqesc = (mySel) -> mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" )
+window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" )
 
-# extend String
+# extend String (FIXME)
 String.prototype.trim = String.prototype.trim || ->
   String(this).replace /^\s+|\s+$/g, ''
 

@@ -3,7 +3,7 @@
   var omiExt;
 
   omiExt = function(WebOmi) {
-    var my;
+    var createOdf, my;
     my = WebOmi.omi = {};
     my.parseXml = function(responseString) {
       return window.xmlTree = new DOMParser().parseFromString(responseString, 'text/xml');
@@ -26,6 +26,61 @@
         results.push(res);
       }
       return results;
+    };
+    createOdf = function(elem, doc) {
+      return doc.createElementNS(my.ns.odf, elem);
+    };
+    my.createOdfObjects = function(doc) {
+      return createOdf("Objects", doc);
+    };
+    my.createOdfObject = function(doc, id) {
+      var createdElem, idElem, textElem;
+      createdElem = createOdf("Object", doc);
+      idElem = createOdf("id", doc);
+      textElem = doc.createTextNode(id);
+      idElem.appendChild(textElem);
+      createdElem.appendChild(idElem);
+      return createdElem;
+    };
+    my.createOdfInfoItem = function(doc, name) {
+      var createdElem;
+      createdElem = createOdf("InfoItem", doc);
+      createdElem.setAttribute("name", name);
+      return createdElem;
+    };
+    my.getOdfId = function(xmlNode) {
+      var head, nameAttr;
+      switch (xmlNode.nodeName) {
+        case "Object":
+          head = my.evaluateXPath(xmlNode, './odf:id')[0];
+          if (head != null) {
+            return head.textContent.trim();
+          } else {
+            return null;
+          }
+          break;
+        case "InfoItem":
+          nameAttr = xmlNode.attributes.name;
+          if (nameAttr != null) {
+            return nameAttr.value;
+          } else {
+            return null;
+          }
+          break;
+        default:
+          return null;
+      }
+    };
+    my.getOdfChild = function(odfId, odfNode) {
+      var child, i, len, ref;
+      ref = odfNode.childNodes;
+      for (i = 0, len = ref.length; i < len; i++) {
+        child = ref[i];
+        if (my.getOdfId(child) === odfId) {
+          return child;
+        }
+      }
+      return null;
     };
     return WebOmi;
   };

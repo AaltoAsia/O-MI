@@ -60,7 +60,8 @@ requestsExt = (WebOmi) ->
     res = $.extend {}, my.defaults.empty(),
       request : "read"
       resultDoc: WebOmi.omi.parseXml(my.xmls.readAll)
-    res.odf = res.resultDoc.createElement("Objects")
+    res.odf = res.resultDoc
+    res
 
   my.defaults.readOnce = ->
     $.extend {}, my.defaults.empty(),
@@ -81,7 +82,7 @@ requestsExt = (WebOmi) ->
     doc = WebOmi.omi.parseXml(my.xmls.templateMsg) # TODO
     $.extend {}, my.defaults.empty(),
       request : "write"
-      odf     : doc.createElement("Objects")
+      odf     : WebOmi.omi.createOdf(doc, "Objects")
       
   my.defaults.cancel = ->
     $.extend {}, my.defaults.empty(),
@@ -105,78 +106,60 @@ requestsExt = (WebOmi) ->
 
   # path: String "Objects/path/to/node"
   my.addPathToRequest = (path) ->
+    # imports
     o = WebOmi.omi
     reqCM = WebOmi.consts.requestCodeMirror
-    xmlTree = o.parseXml(reqCM.getValue) # FIXME get
+
+    xmlTree = o.parseXml(reqCM.getValue()) # FIXME get
     
     for msg in o.evaluateXPath(xmlTree, '//omi:msg')
-      currentObjectsHead = o.evaluateXPath(msg, '/odf:Objects')[0]
+      currentObjectsHead = o.evaluateXPath(msg, './odf:Objects')[0]
+      odfTreeNode = $ jqesc path
 
       if currentObjectsHead?
         # TODO: user edit conflict check
-        my.addPathToOdf path, currentObjectsHead
+        my.addPathToOdf odfTreeNode, currentObjectsHead
       else
-        objects = xmlTree.createElementNS(o.ns.odf, "Objects")
-        my.addPathToOdf path, objects
+        objects = o.createOdfObjects xmlTree
+        my.addPathToOdf odfTreeNode, objects
         msg.appendChild objects
+    
+    newRequest = new XMLSerializer().serializeToString xmlTree
+    WebOmi.formLogic.setRequest newRequest
 
-  # Creates Objects from the path using the odfTree
+  # Adds odf elems to given Objects node from the path using the odfTree
   # odfTreeNode: jquery object; some li object from the tree containing the path in the id
-  # odfXmlTree: XML Dom; the odf Objects node, will be updated accordingly
-  my.addPathToOdf = (odfTreeNode, odfXmlTree, elementName) ->
-   
+  # odfXmlTree: XML Dom; the odf Objects node, will be updated in-place accordingly
+  my.addPathToOdf = (odfTreeNode, odfObjectsTree) ->
+    o = WebOmi.omi
+    odfDoc = odfObjectsTree.ownerDocument || odfObjectsTree
 
+    nodeElems = $.makeArray odfTreeNode.parentsUntil "#Objects", "li"
+    nodeElems.reverse()
+    nodeElems.push(odfTreeNode)
 
-  ###
-  # Creates Objects along the path and then the elementName to the `path`
-  # path: String; "Objects/path/to/node" (relative to the odfXmlTree as root)
-  # odfXmlTree: XML Dom; the Objects node or other root corresponding to the path
-  # elementName: String; One of odf elements, "InfoItem" "Object" TODO: MetaData etc.
-  my.addPathToOdf = (path, odfXmlTree, elementName) ->
-    # for Object
-    setObjectId = (createdElement, id) ->
-      idElem = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "id")
-      textElem = odfXmlTree.createTextNode(path)
-      idElem.appendChild textElem
-      createdElement.appendChild idElem
-      createdElement
+    currentOdfNode = odfObjectsTree
 
-    headIdx = path.indexOf "/"
-    switch headIdx
-      when 0  then my.addPathToOdf (path.substr 1), odfXmlTree, elementName# drop 1
-      when -1
-        createdElement = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, elementName)
+    for node in nodeElems
 
-        # set name or id
-        switch elementName
-          when "odf:InfoItem" then createdElement.setAttribute("name", path)
-          when "odf:Object"   then setObjectId createdElement, path
-          else alert "error in addPathToOdf"
+      id = $(node).children("a").text()
 
-        # finally append the element
-        odfXmlTree.appendChild(createdElement)
+      maybeChild = o.getOdfChild(id, currentOdfNode)
+      if maybeChild?
+        # object exists: TODO: what happens now, murder the children or no-op 
+        currentOdfNode = maybeChild
 
       else
-        head = path.substr(0, headIdx)
-        tail = path.substr(headIdx+1)
+        obj = switch WebOmi.consts.odfTree.get_type(node)
+          when "object"   then o.createOdfObject odfDoc, id
+          when "infoitem" then o.createOdfInfoItem odfDoc, id
 
-        child = WebOmi.omi.evaluateXPath(odfXmlTree, "./odf:Object")
-        # TODO TODO
-        # create Object
-        object = odfXmlTree.createElementNS(WebOmi.omi.ns.odf, "Object")
-        setObjectId object, head
-        # replace newChild, oldChild
-        # currentObjectsHead.parent.replaceChild currentObjectsHead
+        currentOdfNode.appendChild obj
+        currentOdfNode = obj
 
-        my.addPathToOdf object tail
-  ###
+    odfObjectsTree
 
 
-    
-
-  my.read = ->
-
-          
 
   WebOmi # export module
 

@@ -68,7 +68,7 @@
               })()
             };
           case "Object":
-            name = evaluateXPath(xmlNode, './odf:id')[0].textContent.trim();
+            name = WebOmi.omi.getOdfId(xmlNode);
             path = parentPath + "/" + name;
             return {
               id: path,
@@ -86,7 +86,7 @@
               })()
             };
           case "InfoItem":
-            name = xmlNode.attributes.name.value;
+            name = WebOmi.omi.getOdfId(xmlNode);
             path = parentPath + "/" + name;
             return {
               id: path,
@@ -97,7 +97,6 @@
         }
       };
       treeData = genData(objectsNode);
-      console.log(treeData);
       tree.settings.core.data = [treeData];
       return tree.refresh();
     };
@@ -122,8 +121,11 @@
       consts.readAllBtn.on('click', function() {
         return requests.readAll(true);
       });
-      return consts.sendBtn.on('click', function() {
+      consts.sendBtn.on('click', function() {
         return formLogic.send();
+      });
+      return consts.odfTreeDom.on("select_node.jstree", function(_, data) {
+        return requests.addPathToRequest(data.node.id);
       });
     });
   })(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic);

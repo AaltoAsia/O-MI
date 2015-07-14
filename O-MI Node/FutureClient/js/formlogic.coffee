@@ -54,7 +54,7 @@ formLogicExt = ($, WebOmi) ->
           children :
             genData(child, name) for child in objChildren(xmlNode)
         when "Object"
-          name = evaluateXPath(xmlNode, './odf:id')[0].textContent.trim() # FIXME: head
+          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
           id   : path
           text : name
@@ -62,7 +62,7 @@ formLogicExt = ($, WebOmi) ->
           children :
             genData(child, path) for child in objChildren(xmlNode)
         when "InfoItem"
-          name = xmlNode.attributes.name.value # FIXME: get
+          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
           id   : path
           text : name
@@ -70,7 +70,6 @@ formLogicExt = ($, WebOmi) ->
           children : []
 
     treeData = genData objectsNode
-    console.log treeData
     tree.settings.core.data = [treeData]
     tree.refresh()
 
@@ -105,6 +104,10 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
       .on 'click', -> requests.readAll(true)
     consts.sendBtn
       .on 'click', -> formLogic.send()
+
+    consts.odfTreeDom
+      .on "select_node.jstree", (_, data) ->
+        requests.addPathToRequest data.node.id
 
 )(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic)
 

@@ -48,8 +48,6 @@
           cascade: "up+undetermined",
           tie_selection: true
         }
-      }).on("changed.jstree", function(_, data) {
-        return console.log(data.node);
       });
       my.odfTree = my.odfTreeDom.jstree();
       my.requestSel.jstree({
@@ -59,7 +57,7 @@
           },
           multiple: false
         }
-      }).on("changed.jstree", function(_, data) {
+      }).on("changed.jstree", function(e, data) {
         return console.log(data.node.id);
       });
       my.afterJquery = function(fn) {
@@ -78,7 +76,7 @@
   window.WebOmi = constsExt($, window.WebOmi || {});
 
   window.jqesc = function(mySel) {
-    return mySel.replace(/(:|\.|\[|\]|,|\/)/g, "\\$1");
+    return '#' + mySel.replace(/(:|\.|\[|\]|,|\/)/g, "\\$1");
   };
 
   String.prototype.trim = String.prototype.trim || function() {
