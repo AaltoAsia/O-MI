@@ -1,15 +1,11 @@
 package responses
 
-import database._
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.scalaxb
-import types.Path
-import types.OdfTypes
-import types.OdfTypes._
-import xml.XML
-import xml.Node
+import types.OdfTypes.OdfObjects
+import scala.xml.{XML, Node}
 import scala.language.existentials
-import OmiGenerator._
+import OmiGenerator.{omiResult, omiReturn, odfMsg}
 
 /** Object containing helper mehtods for generating RequestResultTypes. Used to generate results  for requests.
   *

@@ -9,8 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.SortedMap
 
 import types._
-import types.OdfTypes._
-import scala.collection.JavaConversions.asJavaIterable
+import OdfTypes._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 trait DBUtility extends OmiNodeTables with OdfConversions {

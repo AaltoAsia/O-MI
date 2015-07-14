@@ -10,10 +10,10 @@ version := "0.1.3-SNAPSHOT"
 scalaVersion := scalaBuildVersion
 
 // build options
-scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-Xlint")
+scalacOptions := Seq("-unchecked", "-feature", "-encoding", "utf8", "-Xlint")
 
 // build api options
-scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8")
+scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8")
 
 autoAPIMappings := true 
 
@@ -53,6 +53,9 @@ libraryDependencies ++= Seq(
 
 //html5parser for systemtest
 libraryDependencies += "nu.validator.htmlparser" % "htmlparser" % "1.4"
+
+//scala xml
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.3"
 
 //remove database files
 cleanFiles <++= baseDirectory {_ * "*.db" get}

@@ -2,12 +2,10 @@ package types
 
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
-import xml.XML
+import scala.xml.XML
 import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 
 
 /** Object containing internal types used to represent O-DF formatted data

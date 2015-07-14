@@ -1,19 +1,14 @@
 package parsing
 
-import types._
-import types.OmiTypes._
-import types.OdfTypes._
-import scala.xml._
+import types.ParseError
+
+import scala.xml.Node
 import scala.util.{Try, Success, Failure}
-import java.io.StringReader
-import java.io.IOException
+import java.io.{StringReader, IOException}
 import org.xml.sax.SAXException;
-//Schema validation
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.Schema
-import javax.xml.validation.SchemaFactory
-import javax.xml.validation.Validator
+import javax.xml.validation.{Schema, SchemaFactory, Validator}
 
 /**
  * Parser trait that parsers inherit,

@@ -1,8 +1,7 @@
 package agentSystem
 
-import akka.actor.{ Actor, ActorRef, Props  }
+import akka.actor.{ Actor, Props  }
 import akka.io.{ IO, Tcp  }
-import akka.util.ByteString
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
 

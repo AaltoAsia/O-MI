@@ -1,28 +1,25 @@
 package responses
 
 import akka.actor.{ Actor, ActorLogging }
-import akka.event.LoggingAdapter
+
 import akka.util.Timeout
-import akka.pattern.ask
 
 import database._
-import types.Path
+
 import CallbackHandlers._
-import types.OmiTypes._
-import types.OdfTypes._
-import parsing.xmlGen
-import parsing.xmlGen.scalaxb
+import types.OmiTypes.{SubscriptionRequest, getPaths, SubDataRequest}
+import types.OdfTypes.{OdfValue, OdfInfoItem,fromPath, OdfObjects}
 
 import java.sql.Timestamp
 import java.util.Date
 import System.currentTimeMillis
-import scala.math.Ordering
+
 import scala.util.{ Try, Success, Failure }
 import scala.collection.mutable.{ PriorityQueue, Map, HashMap }
 
-import xml._
-import scala.concurrent.duration._
 import scala.concurrent._
+import duration._
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import ExecutionContext.Implicits.global
 

@@ -1,23 +1,20 @@
 package parsing
 
 import types._
-import types.OmiTypes._
-import types.OdfTypes._
+import OmiTypes._
+import OdfTypes._
+
 import xmlGen.xmlTypes
 import java.sql.Timestamp
-import java.text.SimpleDateFormat
-import scala.collection.mutable.Map
+
 import scala.concurrent.duration._
 
 import scala.xml._
 import scala.util.{Try, Success, Failure}
 import javax.xml.transform.stream.StreamSource
-import scala.xml.Utility.trim
-import org.xml.sax.SAXException
 
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.seqAsJavaList
 
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {

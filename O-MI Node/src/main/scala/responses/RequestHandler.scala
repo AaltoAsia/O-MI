@@ -1,31 +1,28 @@
 package responses
 
 import types._
-import types.OmiTypes._
-import types.OdfTypes._
+import OmiTypes._
+import OdfTypes._
 import parsing.xmlGen.{xmlTypes, scalaxb}
-import database._
+import database.DB
 import agentSystem.InputPusher
 import CallbackHandlers._
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import java.lang.IllegalArgumentException
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.event.LoggingAdapter
 import akka.util.Timeout
 import akka.pattern.ask
 
-import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.sql.Timestamp
 import java.util.Date
 import java.net.{URL, InetAddress, UnknownHostException}
-import java.lang.SecurityException
-import xml._
-import scala.collection.mutable.Buffer
+
+import scala.xml.{NodeSeq, XML}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 /** Class for handling all request.
   *

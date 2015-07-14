@@ -1,23 +1,16 @@
 package agentSystem
 
-import akka.actor.{ Actor, ActorRef, Props  }
+import akka.actor.{ Actor, Props  }
 import akka.io.{ IO, Tcp  }
-import akka.util.ByteString
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
-import java.net.InetAddress
-
-import scala.collection.mutable.Map
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import http.Settings
 import http.PermissionCheck._
 import parsing.OdfParser
-import parsing.OmiParser
-import database.DatabaseConnection
 
 import types._
-import types.Path._
 import types.OdfTypes._
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
