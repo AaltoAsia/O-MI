@@ -15,7 +15,8 @@ import java.util.Date
 import System.currentTimeMillis
 
 import scala.util.{ Try, Success, Failure }
-import scala.collection.mutable.{ PriorityQueue, Map, HashMap }
+import scala.collection.mutable.{ PriorityQueue, HashMap }
+import scala.collection.SortedSet
 
 import scala.concurrent._
 import duration._
@@ -60,13 +61,13 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
       a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
 
-  private var intervalSubs: PriorityQueue[TimedSub] = {
-    PriorityQueue()(TimedSubOrdering.reverse)
+  private var intervalSubs: SortedSet[TimedSub] = {
+    SortedSet()(TimedSubOrdering.reverse)
   }
   def getIntervalSubs = intervalSubs
 
   //var eventSubs: Map[Path, EventSub] = HashMap()
-  private var eventSubs: Map[String, Seq[EventSub]] = HashMap()
+  private var eventSubs: HashMap[String, Seq[EventSub]] = HashMap()
   def getEventSubs = eventSubs
 
   // Attach to db events
@@ -122,9 +123,8 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
                     }
                     eventSubs.get(path.toString) match {
 
-                      case Some(ses: Seq[EventSub]) =>
-                        eventSubs = eventSubs.updated(
-                          path.toString, EventSub(dbsub, lastValue) :: ses.toList)
+                      case Some(ses: List[EventSub]) =>
+                        eventSubs += path.toString -> (EventSub(dbsub, lastValue) :: ses)
 
                       case None =>
                         eventSubs += path.toString -> Seq(EventSub(dbsub, lastValue))
@@ -170,7 +170,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           val path = removedPath.toString
           eventSubs get path match {
             case Some(ses: Seq[EventSub]) if ses.length > 1 =>
-              eventSubs.updated(path, ses.filter(_.sub.id != sub.id))
+              eventSubs += path -> ses.filter(_.sub.id != sub.id)
             case Some(ses: Seq[EventSub]) if ses.length == 1 &&
               ses.headOption.map(_.sub.id == sub.id).getOrElse(false) =>
               // remove the whole entry to keep empty lists from piling up in the map
@@ -182,7 +182,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         //remove from intervalSubs
         sub.hasCallback match {
           case true =>
-            intervalSubs = intervalSubs.filterNot(sub.id == _.id)
+            intervalSubs.find(sub.id == _.id).foreach { intervalSub =>  intervalSubs -= intervalSub}//intervalSubs.filterNot(sub.id == _.id)
           case false =>
             ttlQueue = ttlQueue.filterNot(sub.id == _.id)
         }
@@ -248,11 +248,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           val eventSubsO = eventSubs.get(item.path.toString)
           eventSubsO match {
             case Some(subs) =>
-              eventSubs = eventSubs.updated(
-                item.path.toString,
-                subs.map {
-                  esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue))
-                })
+              eventSubs += item.path.toString -> subs.map {esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue))}
             case None =>
               eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.lastOption.getOrElse(lastValue)))
           }
@@ -307,8 +303,13 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     val checkTime = currentTimeMillis()
 
     while (intervalSubs.headOption.exists(_.nextRunTime.getTime <= checkTime)) {
-
-      val TimedSub(sub, time) = intervalSubs.dequeue()
+      
+      //dequeue operation
+      val firstSub = intervalSubs.headOption
+      firstSub.foreach {n=> intervalSubs = intervalSubs.tail }
+      
+      val TimedSub(sub, time) = firstSub.getOrElse(throw new Exception("Interval Subs was empty when handling intervals"))
+      
 
       log.debug(s"handleIntervals: delay:${checkTime - time.getTime}ms currentTime:$checkTime targetTime:${time.getTime} id:${sub.id}")
 
@@ -420,6 +421,11 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
       
       
       //forall returns true is Option is None
+//      for{
+//        (event, time) <-scheduledTimes if(event.isCancelled)
+//        
+//        
+//      }
       scheduledTimes.forall { case (scheduledEvent, _) => scheduledEvent.isCancelled } match {
         case true =>
           scheduledTimes = Some((cancellable, currentTime + nextRun))
@@ -432,9 +438,10 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
             case false =>
               
               //filter returns None if Option is None or predicate is false
+              //
               scheduledTimes.filter {
                 case (_, eventRunTime) => ((eventRunTime > currentTime) && (eventRunTime < (currentTime + nextRun)))
-              }.foreach { case (scheduledEvent, _) => scheduledEvent.cancel() }
+              }.foreach { event => cancellable.cancel() }//case (scheduledEvent, _) => scheduledEvent.cancel() }
           }
       }
     }
