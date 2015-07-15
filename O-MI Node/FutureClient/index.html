@@ -36,229 +36,261 @@
 </head>
 <body>
   <nav class="navbar navbar-default navbar-static-top navbar-inverse" style="margin-bottom:0;">
-    <div class="container-fluid">
-      <div class="navbar-header">
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-        <a class="navbar-brand">O-MI Node</a>
-      </div>
-      <p id="versionNumber" class="navbar-text">v0.1.4</p>
-      <form class="navbar-form navbar-left" role="search">
-        <div class="form-group">
-          <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080" />
-          <script>$(function (){$("#targetService").val(window.location.href.replace("FutureClient/index.html", ""));})</script>
-        </div>
-      </form>
-      <a class="navbar-brand">Requests</a>
-      <ul class="nav navbar-nav navbar-right">
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li> <a href="#">API</a> </li>
-            <li> <a href="#">Architecture</a> </li>
-            <li> <a href="#">Implementation Details</a> </li>
-          </ul>
-        </li>
-        <li>
-          <a class="navbar-brand">Subscriptions 
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-          </a>
-        </li>
-      </ul>
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand">O-MI Node</a>
     </div>
+    <p id="versionNumber" class="navbar-text">v0.1.4</p>
+    <form class="navbar-form navbar-left" role="search">
+      <div class="form-group">
+        <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080" />
+        <script>$(function (){$("#targetService").val(window.location.href.replace("FutureClient/index.html", ""));})</script>
+      </div>
+    </form>
+    <a class="navbar-brand">Requests</a>
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li> <a href="#">API</a> </li>
+          <li> <a href="#">Architecture</a> </li>
+          <li> <a href="#">Implementation Details</a> </li>
+        </ul>
+      </li>
+      <li>
+        <a class="navbar-brand">Subscriptions 
+          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+        </a>
+      </li>
+    </ul>
   </nav>
-  <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <span>
-            <b>
-            <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-              O-DF Structure
-              <small>1. Select nodes that you want in the request</small>
-            </b>
-          </span>
-          <span style="text-align:right;">
-            <button id="resetall" class="btn btn-sm btn-danger" type="button">
-              Reset All
-            </button>
-          </span>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <button id="readall" class="btn btn-sm btn-warning" type="button">
-          <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
-          <b>Read All</b>
-        </button>
-        <div id="nodetree">
-          <ul>
-            <li>Objects </li>
-          </ul>
+  <div class="container-fluid" role="main"><div class="row">
+    <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <span>
+              <b>
+              <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+                O-DF Structure
+                <small>1. Select nodes that you want in the request</small>
+              </b>
+            </span>
+            <span style="text-align:right;">
+              <button id="resetall" class="btn btn-sm btn-danger" type="button">
+                Reset All
+              </button>
+            </span>
+          </h4>
         </div>
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <b>O-MI Request
-            <small>2. Select some request type*</small>
-          </b>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <div class="requesttree">
-          <ul>
-            <li id="basic-read" data-jstree='{"opened":true}'>Read
-              <ul>
-                <li id="one-time-read">
-                  <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
-                  One-time read
-                </li>
-                <li id="subscribe">
-                  <span class="glyphicon glyphicon-bookmark" aria-hidden="true"></span>
-                  Subscription
-                </li>
-                <li id="poll">
-                  <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
-                  Poll
-                </li>
-              </ul>
-              <li id="cancel">
-                <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>
-                Cancel
-              </li>
-              <li id="write">
-                <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-                Write
-              </li>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <b>Required parameters
-            <small>3. Change or use the defaults*</small>
-          </b>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <div id="sharedParams" class="form-group form-inline">
-          <label for="ttl">
-        <span class="glyphicon glyphicon-hourglass" aria-hidden="true"></span>
-              ttl:
-          </label>
-          <input type="int" class="form-control" id="ttl"/>
-        </div>
-      </div>
-    </div>
-    <div class="panel panel-default optional-parameters" >
-      <div class="panel-heading" role="tab" id="headingOptionalParams">
-        <h4 class="panel-title">
-          <a class="collapsed" aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-            <b>Optional parameters</b>
-          </a>
-        </h4>
-      </div>
-      <div id="collapseOptionalParams" class="panel-collapse collapse" aria-labelledby="headingOptionalParams" role="tabpanel" aria-expanded="false" style="height: 0px;">
         <div class="panel-body">
-          <form>
-            <div id="sharedParams" class="form-group form-inline">
-              <label for="callback">
+          <button id="readall" class="btn btn-sm btn-warning" type="button">
+            <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+            <b>Read All</b>
+          </button>
+          <div id="nodetree">
+            <ul>
+              <li id="Objects">Objects </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <b>O-MI Request
+              <small>2. Select some request type*</small>
+            </b>
+          </h4>
+        </div>
+        <div class="panel-body">
+          <div class="requesttree">
+            <ul>
+              <li id="read" data-jstree='{"opened":true}'>Read
+                <ul>
+                  <li id="readOnce">
+                    <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                    One-time read
+                  </li>
+                  <li id="subscription">
+                    <span class="glyphicon glyphicon-bookmark" aria-hidden="true"></span>
+                    Subscription
+                  </li>
+                  <li id="poll">
+                    <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+                    Poll
+                  </li>
+                </ul>
+                <li id="cancel">
+                  <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>
+                  Cancel
+                </li>
+                <li id="write">
+                  <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                  Write
+                </li>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <b>Required parameters
+              <small>3. Change or use the defaults*</small>
+            </b>
+          </h4>
+        </div>
+        <div class="panel-body form-horizontal">
+          <div class="form-group">
+            <label for="ttl" class="control-label text-nowrap col-md-4 col-lg-3">
+              <span class="glyphicon glyphicon-hourglass" aria-hidden="true"></span>
+              ttl:
+            </label>
+            <div class="col-md-8 col-lg-9">
+              <input type="int" class="form-control" id="ttl"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="interval" class="control-label text-nowrap col-md-4 col-lg-3">
+              <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+              interval:
+            </label>
+            <div class="col-md-8 col-lg-9">
+              <input type="int" class="form-control" id="interval"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="requestID" class="control-label text-nowrap col-md-4 col-lg-3">
+              <span class="glyphicon glyphicon-tag" aria-hidden="true"></span>
+              requestID:
+            </label>
+            <div class="col-md-8 col-lg-9">
+              <input type="int" class="form-control" id="requestID"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default optional-parameters" >
+        <a aria-controls="collapseOptionalParams" aria-expanded="false" href="#collapseOptionalParams" data-toggle="collapse" role="button">
+          <div class="panel-heading" role="tab" id="headingOptionalParams">
+            <h4 class="panel-title">
+              <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+              <b>Optional parameters</b>
+            </h4>
+          </div>
+        </a>
+        <div id="collapseOptionalParams" class="panel-collapse collapse" aria-labelledby="headingOptionalParams" role="tabpanel" aria-expanded="false" style="height: 0px;">
+          <div class="panel-body form-horizontal">
+            <div class="form-group">
+              <label for="callback" class="control-label text-nowrap col-md-4 col-lg-3">
                 <span class="glyphicon glyphicon-credit-card" aria-hidden="true"></span>
                 callback:
               </label>
-              <input type="int" class="form-control" id="callback"/>
-            </div>
-            <div id="requestParams" class="form-inline">
-              <div class="form-group">
-                <label>Take:</label>
-                <div class="form-horizontal">
-                  <label for="newest">Newest:</label>
-                  <input type="int" class="form-control" id="newest"/>
-                </div>
-                <div class="form-horizontal">
-                  <label for="newest">Oldest:</label>
-                  <input type="int" class="form-control" id="oldest"/>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>
-                  <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
-                  Timeframe:
-                </label>
-                <div class="form-horizontal">
-                  <label for="begin">begin:</label>
-                  <input type="int" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
-                </div>
-                <div class="form-horizontal">
-                  <label for="end">end:</label>
-                  <input type="int" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
-                </div>
-              </div>
-              <div class="form-horizontal">
-                <label for="MetaData">
-                  MetaData:
-                </label>
-                <input type="checkbox" class="form-control" id="MetaData"/>
-              </div>
-              <div class="form-horizontal">
-                <label for="description">
-                  Description:
-                </label>
-                <input type="checkbox" class="form-control" id="description"/>
+              <div class="col-md-8 col-lg-9">
+                <input type="int" class="form-control" id="callback"/>
               </div>
             </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-8">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <b>Request and response
-            <small>4. Edit or send the request</small>
-          </b>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <div class="row">
-          <div class="col-md-12">
-            <h4>
-              <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
-              Request:
-              <button id="send" type="button" class="btn btn-md btn-primary">
-                Send
-                <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
-              </button>
-            </h4>
-            <div class="well request">
-              <textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+            <div class="form-group">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label class="col-md-4 col-lg-3 text-right">Take:</label>
+                </div>
+                <div class="form-group">
+                  <label for="newest" class="control-label text-nowrap col-md-4 col-lg-3">Newest:</label>
+                  <div class="col-md-8 col-lg-9">
+                    <input type="int" class="form-control" id="newest"/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="oldest" class="control-label text-nowrap col-md-4 col-lg-3">Oldest:</label>
+                  <div class="col-md-8 col-lg-9">
+                    <input type="int" class="form-control" id="oldest"/>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label class="col-md-4 col-lg-3 text-right text-nowrap">
+                    <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+                    Timeframe:
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label for="begin" class="control-label text-nowrap col-md-4 col-lg-3">begin:</label>
+                  <div class="col-md-8 col-lg-9">
+                    <input type="int" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="end" class="control-label text-nowrap col-md-4 col-lg-3">end:</label>
+                  <div class="col-md-8 col-lg-9">
+                    <input type="int" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-12">
-            <h4>
-              <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
-              Response:
-            </h4>
-            <div class="well response">
-              <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+            <div class="form-group">
+              <div class="checkbox text-nowrap col-md-offset-4 col-lg-offset-0 col-lg-6">
+                <label style="font-weight:bold;">
+                  <input type="checkbox" id="MetaData"/> Request MetaData
+                </label>
+              </div>
+              <div class="checkbox text-nowrap col-md-offset-4 col-lg-offset-0 col-lg-6">
+                <label style="font-weight:bold;">
+                  <input type="checkbox" id="description"/> Request description
+                </label>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+    <div class="col-md-8">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <b>Request and response
+              <small>4. Edit or send the request</small>
+            </b>
+          </h4>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12">
+              <h4>
+                <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
+                Request:
+                <button id="send" type="button" class="btn btn-md btn-primary">
+                  Send
+                  <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+                </button>
+              </h4>
+              <div class="well request">
+                <textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <h4>
+                <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
+                Response:
+              </h4>
+              <div class="well response">
+                <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
 </body>
 </html>

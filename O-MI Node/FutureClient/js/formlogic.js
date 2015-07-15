@@ -165,9 +165,9 @@
   })(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic);
 
   $(function() {
-    return $('.optional-parameters .panel-heading a').on('click', function() {
+    return $('.optional-parameters > a').on('click', function() {
       var glyph;
-      glyph = $(this).children('span');
+      glyph = $(this).find('span.glyphicon');
       if (glyph.hasClass('glyphicon-menu-right')) {
         glyph.removeClass('glyphicon-menu-right');
         return glyph.addClass('glyphicon-menu-down');
