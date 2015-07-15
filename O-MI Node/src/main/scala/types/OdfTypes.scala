@@ -3,11 +3,13 @@ package OdfTypes
 
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
-import xml.XML
+import scala.xml.XML
 import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
+
 import scala.language.existentials
+
 
 
 /** Object containing internal types used to represent O-DF formatted data

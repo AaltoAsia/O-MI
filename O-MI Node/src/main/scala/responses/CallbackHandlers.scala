@@ -3,7 +3,7 @@ package responses
 import scala.concurrent._
 
 import akka.actor.ActorSystem
-import spray.http._
+import spray.http.{StatusCode, HttpResponse, HttpRequest, Uri}
 import spray.client.pipelining._
 
 

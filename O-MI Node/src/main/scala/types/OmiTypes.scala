@@ -4,9 +4,7 @@ import OdfTypes._
 
 import java.sql.Timestamp
 import java.lang.Iterable
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 
 import scala.concurrent.duration._
 

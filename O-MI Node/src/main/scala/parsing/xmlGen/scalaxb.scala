@@ -9,9 +9,7 @@ import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, Pr
 import javax.xml.datatype.{XMLGregorianCalendar}
 import javax.xml.namespace.QName
 import javax.xml.bind.DatatypeConverter
-import scala.language.postfixOps
-import scala.language.existentials
-import scala.language.implicitConversions
+import scala.language.{postfixOps, existentials, implicitConversions}
 
 /** Scalaxb library.
   *

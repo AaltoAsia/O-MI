@@ -14,7 +14,6 @@ import scala.collection.SortedMap
 import types._
 import types.OdfTypes._
 
-import java.lang.RuntimeException
 
 /**
  * Read only restricted interface methods for db tables

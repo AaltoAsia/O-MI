@@ -2,7 +2,7 @@ package http
 
 import spray.http.{HttpMethods, HttpMethod, HttpResponse, AllOrigins}
 import spray.http.HttpHeaders._
-import spray.http.HttpMethods._
+import spray.http.HttpMethods.OPTIONS
 import spray.routing._
  
 /**

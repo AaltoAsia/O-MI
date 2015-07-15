@@ -2,15 +2,10 @@ package database
 
 import types.OdfTypes.OdfInfoItem
 import slick.driver.H2Driver.api._
-import java.sql.Timestamp
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import java.io.File
 
-import types.Path
+
 
 
 

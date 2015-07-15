@@ -6,18 +6,15 @@ import spray.routing._
 import spray.http._
 import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
-import java.net.InetSocketAddress
-import java.net.InetAddress
 
-import responses._
-import parsing._
+import responses.RequestHandler
+import parsing.OmiParser
 import PermissionCheck._
-import types._
-import types.OmiTypes._
-import database._
+import types.{Path, OmiTypes}
+import OmiTypes._
+import database.DB
 
-import xml._
-import scala.collection.JavaConverters._
+import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
