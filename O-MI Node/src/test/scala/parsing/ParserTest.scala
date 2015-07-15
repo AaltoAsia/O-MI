@@ -16,6 +16,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import scala.concurrent.duration._
 import testHelpers.DeactivatedTimeConversions
+
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
 /*
  * Test class for testing parsing parsing package
  * tests e1   - e99 are for testing OmiParser general methods
@@ -24,6 +27,9 @@ import testHelpers.DeactivatedTimeConversions
  * tests e300 - e399 are for testing read requests
  * tests e400 - e499 are for testing OdfParser class
  */
+
+
+@RunWith(classOf[JUnitRunner])
 class ParserTest extends Specification with DeactivatedTimeConversions {
   lazy val omi_subscription_test_file = Source.fromFile("src/test/resources/parsing/omi_subscription_test.xml").getLines.mkString("\n")
   lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
@@ -53,7 +59,8 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
                 OdfInfoItem(
                   Path("Objects/SmartHouse/SmartFridge/PowerConsumption"), Iterable(
                     OdfValue(
-                      "56", "xs:string", None)), None, None)), Iterable(), None, None), OdfObject(
+                      "56", "xs:string", Some(
+                          Timestamp.valueOf("2014-12-18 15:34:52")))), None, None)), Iterable(), None, None), OdfObject(
               Path("Objects/SmartHouse/SmartOven"), Iterable(
                 OdfInfoItem(
                   Path("Objects/SmartHouse/SmartOven/PowerOn"), Iterable(
