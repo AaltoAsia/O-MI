@@ -1,6 +1,6 @@
 # import WebOmi, add submodule
 requestsExt = (WebOmi) ->
-  # Sub module for containing all request type templates 
+  # Sub module for containing all request type templates
   my = WebOmi.requests = {}
 
   my.xmls =
@@ -14,7 +14,7 @@ requestsExt = (WebOmi) ->
             <Objects></Objects>
           </omi:msg>
         </omi:read>
-      </omi:omiEnvelope> 
+      </omi:omiEnvelope>
       """
     templateMsg :
       """
@@ -25,7 +25,7 @@ requestsExt = (WebOmi) ->
           <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
           </omi:msg>
         </omi:read>
-      </omi:omiEnvelope> 
+      </omi:omiEnvelope>
 
       """
     template :
@@ -37,7 +37,7 @@ requestsExt = (WebOmi) ->
           <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
           </omi:msg>
         </omi:read>
-      </omi:omiEnvelope> 
+      </omi:omiEnvelope>
 
       """
 
@@ -53,37 +53,38 @@ requestsExt = (WebOmi) ->
     oldest   : null  # Maybe int
     begin    : null  # Maybe Date
     end      : null  # Maybe Date
-    resultDoc: null  # Maybe xml dom document
+    requestDoc: null  # Maybe xml dom document
     msg      : true  # Boolean Is message included
 
   my.defaults.readAll = ->
-    res = $.extend {}, my.defaults.empty(),
+    $.extend {}, my.defaults.empty(),
       request : "read"
-      resultDoc: WebOmi.omi.parseXml(my.xmls.readAll)
-    res.odf = res.resultDoc
-    res
+      odf     : ["Objects"]
+      requestDoc: WebOmi.omi.parseXml(my.xmls.readAll)
 
   my.defaults.readOnce = ->
     $.extend {}, my.defaults.empty(),
       request : "read"
+      odf     : ["Objects"]
 
   my.defaults.subscription = ->
     $.extend {}, my.defaults.empty(),
       request : "read"
       interval: 5
       ttl     : 60
+      odf     : ["Objects"]
 
   my.defaults.poll = ->
     $.extend {}, my.defaults.empty(),
       request : "read"
       requestID : 1
+      msg     : false
 
   my.defaults.write = ->
-    doc = WebOmi.omi.parseXml(my.xmls.templateMsg) # TODO
     $.extend {}, my.defaults.empty(),
       request : "write"
-      odf     : WebOmi.omi.createOdf(doc, "Objects")
-      
+      odf     : ["Objects"]
+
   my.defaults.cancel = ->
     $.extend {}, my.defaults.empty(),
       request : "cancel"
@@ -93,31 +94,69 @@ requestsExt = (WebOmi) ->
 
 
   # private
-  lastParameters = my.defaults
+  currentParams = my.defaults.empty
 
-  ###
-  my.set =
-    request  : null  # Maybe string (request tag name)
+  # true
+  my.confirmOverwrite = (oldVal, newVal) ->
+    confirm "You have edited the request manually.\n
+      Do you want to overwrite #{oldVal.toString} with #{newVal.toString}"
+
+  # Req generation setters that check if user has written some own value
+  # Modify request checking the current vs internal, if disagree ask user, set internal
+  # Saves the result in currentParams.requestDoc
+  my.update =
+    request  : (reqName, userDoc) -> # Maybe string (request tag name)
+      if not currentParams.request?
+        my.loadParams my.defaults[reqName]
+      else
+        if userDoc?
+        else
+
+
     ttl      : 0     # double
-    callback : null  # Maybe string
-    requestID: null  # Maybe int
-    odf      : null  # Maybe xml
-    interval : null  # Maybe number
-    newest   : null  # Maybe int
-    oldest   : null  # Maybe int
+    callback : null  # Maybe String
+    requestID: null  # Maybe Int
+    odf      : null  # Maybe Array String paths
+    interval : null  # Maybe Number
+    newest   : null  # Maybe Int
+    oldest   : null  # Maybe Int
     begin    : null  # Maybe Date
     end      : null  # Maybe Date
-    resultDoc: null  # Maybe xml dom document
-    msg      : true  # Boolean Is message included
-    ###
+    msg      : true  # Boolean whether message is included
 
-  my.loadParams = (omiRequestObject) ->
+  # wrapper to update the ui with generated request
+  my.generate = ->
+    formLogic.setRequest cp.resultDoc
 
+
+  # generate a new request from currentParams
+  my.forceGenerate = ->
+    o = WebOmi.omi
+    cp = currentParams
+
+    # essential parameters
+    if cp.request? && cp.request.length > 0 && cp.ttl?
+      cp.requestDoc = o.parseXml my.xmls.empty
+
+    for key, updateFn of my.update
+      updateFn cp[key],  # TODO: tutturuu~
+      
+
+
+  # force load all parameters in the omiRequestObject and
+  # set them in corresponding UI elements
+  my.forceLoadParams = (omiRequestObject) ->
+    for key, newVal of omiRequestObject
+      currentParams[key] = newVal
+      WebOmi.consts.ui[key].set(newVal)
+    my.forceGenerate()
 
 
   # @param fastforward: Boolean Whether to also send the request and update odfTree also
   my.readAll = (fastForward) ->
+    # my.forceLoadParams defaults.readAll()
     WebOmi.formLogic.setRequest my.xmls.readAll
+
     if fastForward
       WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr)
 
@@ -129,7 +168,7 @@ requestsExt = (WebOmi) ->
     fl = WebOmi.formLogic
 
     odfTreeNode = $ jqesc path
-    
+
     fl.modifyRequestOdfs (currentObjectsHead) ->
 
       if currentObjectsHead?
@@ -139,7 +178,7 @@ requestsExt = (WebOmi) ->
         objects = o.createOdfObjects xmlTree
         my.addPathToOdf odfTreeNode, objects
         msg.appendChild objects
-    
+
 
   # path: String "Objects/path/to/node"
   my.removePathFromRequest = (path) ->
@@ -203,7 +242,7 @@ requestsExt = (WebOmi) ->
 
       maybeChild = o.getOdfChild(id, currentOdfNode)
       if maybeChild?
-        # object exists: TODO: what happens now, murder the children or no-op 
+        # object exists: TODO: what happens now, murder the children or no-op
         currentOdfNode = maybeChild
 
       else

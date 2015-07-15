@@ -156,6 +156,9 @@
       consts.sendBtn.on('click', function() {
         return formLogic.send();
       });
+      consts.resetAllBtn.on('click', function() {
+        return requests.forceLoadParams(requests.defaults.empty());
+      });
       return consts.odfTreeDom.on("select_node.jstree", function(_, data) {
         return requests.addPathToRequest(data.node.id);
       }).on("deselect_node.jstree", function(_, data) {

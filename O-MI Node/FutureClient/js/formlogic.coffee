@@ -131,6 +131,9 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
     consts.sendBtn
       .on 'click', -> formLogic.send()
 
+    consts.resetAllBtn
+      .on 'click', -> requests.forceLoadParams requests.defaults.empty()
+
     consts.odfTreeDom
       .on "select_node.jstree", (_, data) ->
         requests.addPathToRequest data.node.id
