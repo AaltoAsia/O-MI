@@ -7,14 +7,14 @@ import xmlGen._
 import xmlGen.xmlTypes._
 import scala.collection.mutable.Map
 import scala.util.{Try, Success, Failure}
+import java.util.Date
 import scala.util.control.NonFatal
 import scala.xml.XML
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
@@ -102,9 +102,10 @@ object OdfParser extends Parser[OdfParseResult] {
       ) 
   }
 
+  def timer = new Timestamp( new Date().getTime ) 
   private def timeSolver(value: ValueType ) = value.dateTime match {
     case None => value.unixTime match {
-      case None => None
+      case None => Some(timer)
       case Some(seconds) => Some( new Timestamp(seconds.toLong * 1000))
     }
     case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()))
