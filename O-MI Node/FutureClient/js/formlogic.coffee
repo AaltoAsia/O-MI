@@ -4,15 +4,38 @@
 formLogicExt = ($, WebOmi) ->
   my = WebOmi.formLogic = {}
 
-  my.setRequest = (xmlString) ->
+  my.setRequest = (xml) ->
     mirror = WebOmi.consts.requestCodeMirror
-    mirror.setValue xmlString
+    if typeof xml == "string"
+      mirror.setValue xml
+    else
+      mirror.setValue new XMLSerializer().serializeToString xml
     mirror.autoFormatAll()
 
+  my.getRequest = () ->
+    str = WebOmi.consts.requestCodeMirror.getValue()
+    WebOmi.omi.parseXml str
 
-  my.setResponse = (xmlString) ->
+  # Do stuff with Objects and automatically write it back
+  # callback: Function (XmlNodeOdf -> ())  
+  my.modifyRequestOdfs = (callback) ->
+    o = WebOmi.omi
+    str = WebOmi.consts.requestCodeMirror.getValue()
+    req = o.parseXml str
+    callback(objects) for objects in o.evaluateXPath(req, '//odf:Objects')
+    my.setRequest req
+
+  my.getRequestOdf = () ->
+    str = WebOmi.consts.requestCodeMirror.getValue()
+    o.evaluateXPath(str, '//odf:Objects')[0]
+
+
+  my.setResponse = (xml) ->
     mirror = WebOmi.consts.responseCodeMirror
-    mirror.setValue xmlString
+    if typeof xml == "string"
+      mirror.setValue xml
+    else
+      mirror.setValue new XMLSerializer().serializeToString xml
     mirror.autoFormatAll()
 
 
@@ -28,7 +51,10 @@ formLogicExt = ($, WebOmi) ->
       processData: false
       dataType: "text"
       #complete: -> true
-      error: my.setResponse
+      error: (response) ->
+        my.setResponse response.responseText
+        # TODO: Tell somewhere the "Bad Request" etc
+        # response.statusText
       success: (response) ->
         my.setResponse response
         callback(response) if (callback?)
@@ -54,7 +80,7 @@ formLogicExt = ($, WebOmi) ->
           children :
             genData(child, name) for child in objChildren(xmlNode)
         when "Object"
-          name = evaluateXPath(xmlNode, './odf:id')[0].textContent.trim() # FIXME: head
+          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
           id   : path
           text : name
@@ -62,7 +88,7 @@ formLogicExt = ($, WebOmi) ->
           children :
             genData(child, path) for child in objChildren(xmlNode)
         when "InfoItem"
-          name = xmlNode.attributes.name.value # FIXME: get
+          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
           id   : path
           text : name
@@ -70,7 +96,6 @@ formLogicExt = ($, WebOmi) ->
           children : []
 
     treeData = genData objectsNode
-    console.log treeData
     tree.settings.core.data = [treeData]
     tree.refresh()
 
@@ -85,8 +110,8 @@ formLogicExt = ($, WebOmi) ->
 
     if objectsArr.length != 1
       alert "failed to get single Objects odf root"
-
-    my.buildOdfTree objectsArr[0]
+    else
+      my.buildOdfTree objectsArr[0] # head, checked above
 
 
   WebOmi # export
@@ -98,13 +123,19 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
 ##########################
-# Intialize events, import
+# Intialize, connect events, import
 ((consts, requests, formLogic) ->
   consts.afterJquery ->
     consts.readAllBtn
       .on 'click', -> requests.readAll(true)
     consts.sendBtn
       .on 'click', -> formLogic.send()
+
+    consts.odfTreeDom
+      .on "select_node.jstree", (_, data) ->
+        requests.addPathToRequest data.node.id
+      .on "deselect_node.jstree", (_, data) ->
+        requests.removePathFromRequest data.node.id
 
 )(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic)
 

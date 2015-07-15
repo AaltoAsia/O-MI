@@ -7,8 +7,8 @@ import akka.util.Timeout
 import database._
 
 import CallbackHandlers._
-import types.OmiTypes.{SubscriptionRequest, getPaths, SubDataRequest}
-import types.OdfTypes.{OdfValue, OdfInfoItem,fromPath, OdfObjects}
+import types.OmiTypes.{ SubscriptionRequest, getPaths, SubDataRequest }
+import types.OdfTypes.{ OdfValue, OdfInfoItem, fromPath, OdfObjects }
 
 import java.sql.Timestamp
 import java.util.Date
@@ -47,12 +47,12 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   }
 
   case class TimedSub(sub: DBSub, nextRunTime: Timestamp)
-    extends SavedSub {
+      extends SavedSub {
     val id = sub.id
   }
 
   case class EventSub(sub: DBSub, lastValue: OdfValue)
-    extends SavedSub {
+      extends SavedSub {
     val id = sub.id
   }
 
@@ -182,7 +182,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         //remove from intervalSubs
         sub.hasCallback match {
           case true =>
-            intervalSubs.find(sub.id == _.id).foreach { intervalSub =>  intervalSubs -= intervalSub}//intervalSubs.filterNot(sub.id == _.id)
+            intervalSubs.find(sub.id == _.id).foreach { intervalSub => intervalSubs -= intervalSub } //intervalSubs.filterNot(sub.id == _.id)
           case false =>
             ttlQueue = ttlQueue.filterNot(sub.id == _.id)
         }
@@ -248,7 +248,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           val eventSubsO = eventSubs.get(item.path.toString)
           eventSubsO match {
             case Some(subs) =>
-              eventSubs += item.path.toString -> subs.map {esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue))}
+              eventSubs += item.path.toString -> subs.map { esub => EventSub(esub.sub, newVals.lastOption.getOrElse(lastValue)) }
             case None =>
               eventSubs += item.path.toString -> Seq(EventSub(sub, newVals.lastOption.getOrElse(lastValue)))
           }
@@ -303,13 +303,12 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     val checkTime = currentTimeMillis()
 
     while (intervalSubs.headOption.exists(_.nextRunTime.getTime <= checkTime)) {
-      
+
       //dequeue operation
       val firstSub = intervalSubs.headOption
-      firstSub.foreach {n=> intervalSubs = intervalSubs.tail }
-      
+      firstSub.foreach { n => intervalSubs = intervalSubs.tail }
+
       val TimedSub(sub, time) = firstSub.getOrElse(throw new Exception("Interval Subs was empty when handling intervals"))
-      
 
       log.debug(s"handleIntervals: delay:${checkTime - time.getTime}ms currentTime:$checkTime targetTime:${time.getTime} id:${sub.id}")
 
@@ -405,44 +404,35 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
     //foreach does nothing if Option is None
     ttlQueue.headOption.foreach { polledSub =>
-      
+
       //time until checkTTL will be next called
       val nextRun = ((polledSub.ttlMillis) - currentTime)
-      
+
       //cancellable event of the next checkTTL method call
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
-      
+
       /*
        * logic for updating the cancellable:
        * if event is cancelled or empty, then add the previous cancellable to queue
        * else check if the scheduledTimes variable is going to be run before the cancellable and update variable accordingly
        * so that only 1 event is scheduled
        */
-      
-      
-      //forall returns true is Option is None
-//      for{
-//        (event, time) <-scheduledTimes if(event.isCancelled)
-//        
-//        
-//      }
-      scheduledTimes.forall { case (scheduledEvent, _) => scheduledEvent.isCancelled } match {
-        case true =>
-          scheduledTimes = Some((cancellable, currentTime + nextRun))
 
-        case false =>
-          scheduledTimes.exists { case (_, eventRunTime) => eventRunTime > (currentTime + nextRun) } match {
-            case true =>
-              scheduledTimes.foreach { case (scheduledEvent, _) => scheduledEvent.cancel() }
-              scheduledTimes = Some((cancellable, currentTime + nextRun))
-            case false =>
-              
-              //filter returns None if Option is None or predicate is false
-              //
-              scheduledTimes.filter {
-                case (_, eventRunTime) => ((eventRunTime > currentTime) && (eventRunTime < (currentTime + nextRun)))
-              }.foreach { event => cancellable.cancel() }//case (scheduledEvent, _) => scheduledEvent.cancel() }
-          }
+      //forall returns true is Option is None
+      if (scheduledTimes.forall { case (scheduledEvent, _) => scheduledEvent.isCancelled }) {
+        scheduledTimes = Some((cancellable, currentTime + nextRun))
+      } else {
+        //exists returns false is Option is None
+        if (scheduledTimes.exists { case (_, eventRunTime) => eventRunTime > (currentTime + nextRun) }) {
+          scheduledTimes.foreach { case (scheduledEvent, _) => scheduledEvent.cancel() }
+          scheduledTimes = Some((cancellable, currentTime + nextRun))
+        } else {
+          //filter returns None if Option is None or predicate is false
+          //
+          scheduledTimes.filter {
+            case (_, eventRunTime) => ((eventRunTime > currentTime) && (eventRunTime < (currentTime + nextRun)))
+          }.foreach { event => cancellable.cancel() } //case (scheduledEvent, _) => scheduledEvent.cancel() }
+        }
       }
     }
   }

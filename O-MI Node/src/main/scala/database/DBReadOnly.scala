@@ -8,8 +8,7 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable }
 import scala.collection.SortedMap
 
 import types._
@@ -20,8 +19,6 @@ import types.OdfTypes._
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
-
-
   protected def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
 
   protected def findParentQ(childPath: Path) = (

@@ -11,6 +11,7 @@ import http.PermissionCheck._
 import parsing.OdfParser
 
 import types._
+import types.Path._ //Useless?
 import types.OdfTypes._
 
 import scala.collection.JavaConversions.iterableAsScalaIterable

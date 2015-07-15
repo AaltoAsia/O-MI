@@ -5,16 +5,46 @@
   formLogicExt = function($, WebOmi) {
     var my;
     my = WebOmi.formLogic = {};
-    my.setRequest = function(xmlString) {
+    my.setRequest = function(xml) {
       var mirror;
       mirror = WebOmi.consts.requestCodeMirror;
-      mirror.setValue(xmlString);
+      if (typeof xml === "string") {
+        mirror.setValue(xml);
+      } else {
+        mirror.setValue(new XMLSerializer().serializeToString(xml));
+      }
       return mirror.autoFormatAll();
     };
-    my.setResponse = function(xmlString) {
+    my.getRequest = function() {
+      var str;
+      str = WebOmi.consts.requestCodeMirror.getValue();
+      return WebOmi.omi.parseXml(str);
+    };
+    my.modifyRequestOdfs = function(callback) {
+      var i, len, o, objects, ref, req, str;
+      o = WebOmi.omi;
+      str = WebOmi.consts.requestCodeMirror.getValue();
+      req = o.parseXml(str);
+      ref = o.evaluateXPath(req, '//odf:Objects');
+      for (i = 0, len = ref.length; i < len; i++) {
+        objects = ref[i];
+        callback(objects);
+      }
+      return my.setRequest(req);
+    };
+    my.getRequestOdf = function() {
+      var str;
+      str = WebOmi.consts.requestCodeMirror.getValue();
+      return o.evaluateXPath(str, '//odf:Objects')[0];
+    };
+    my.setResponse = function(xml) {
       var mirror;
       mirror = WebOmi.consts.responseCodeMirror;
-      mirror.setValue(xmlString);
+      if (typeof xml === "string") {
+        mirror.setValue(xml);
+      } else {
+        mirror.setValue(new XMLSerializer().serializeToString(xml));
+      }
       return mirror.autoFormatAll();
     };
     my.send = function(callback) {
@@ -28,7 +58,9 @@
         contentType: "text/xml",
         processData: false,
         dataType: "text",
-        error: my.setResponse,
+        error: function(response) {
+          return my.setResponse(response.responseText);
+        },
         success: function(response) {
           my.setResponse(response);
           if ((callback != null)) {
@@ -68,7 +100,7 @@
               })()
             };
           case "Object":
-            name = evaluateXPath(xmlNode, './odf:id')[0].textContent.trim();
+            name = WebOmi.omi.getOdfId(xmlNode);
             path = parentPath + "/" + name;
             return {
               id: path,
@@ -86,7 +118,7 @@
               })()
             };
           case "InfoItem":
-            name = xmlNode.attributes.name.value;
+            name = WebOmi.omi.getOdfId(xmlNode);
             path = parentPath + "/" + name;
             return {
               id: path,
@@ -97,7 +129,6 @@
         }
       };
       treeData = genData(objectsNode);
-      console.log(treeData);
       tree.settings.core.data = [treeData];
       return tree.refresh();
     };
@@ -107,9 +138,10 @@
       parsed = omi.parseXml(responseString);
       objectsArr = omi.evaluateXPath(parsed, "//odf:Objects");
       if (objectsArr.length !== 1) {
-        alert("failed to get single Objects odf root");
+        return alert("failed to get single Objects odf root");
+      } else {
+        return my.buildOdfTree(objectsArr[0]);
       }
-      return my.buildOdfTree(objectsArr[0]);
     };
     return WebOmi;
   };
@@ -121,8 +153,13 @@
       consts.readAllBtn.on('click', function() {
         return requests.readAll(true);
       });
-      return consts.sendBtn.on('click', function() {
+      consts.sendBtn.on('click', function() {
         return formLogic.send();
+      });
+      return consts.odfTreeDom.on("select_node.jstree", function(_, data) {
+        return requests.addPathToRequest(data.node.id);
+      }).on("deselect_node.jstree", function(_, data) {
+        return requests.removePathFromRequest(data.node.id);
       });
     });
   })(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic);

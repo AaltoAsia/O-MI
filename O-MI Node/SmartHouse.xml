@@ -106,7 +106,7 @@
 		<value>15</value>
 	    </InfoItem>
 	    <Object>
-		<id>AirContitioner</id>
+		<id>AirConditioner</id>
 		<InfoItem name="Power">
 		    <MetaData>
 			<InfoItem name="Latency">
@@ -618,7 +618,7 @@
 		<value>15</value>
 	    </InfoItem>
 	    <Object>
-		<id>AirContitioner</id>
+		<id>AirConditioner</id>
 		<InfoItem name="Power">
 		    <MetaData>
 			<InfoItem name="Latency">
@@ -844,7 +844,7 @@
 		<value>15</value>
 	    </InfoItem>
 	    <Object>
-		<id>AirContitioner</id>
+		<id>AirConditioner</id>
 		<InfoItem name="Power">
 		    <MetaData>
 			<InfoItem name="Latency">
