@@ -3,24 +3,24 @@ package http
 import scala.collection.JavaConverters._
 import java.net.InetAddress
 
-/** Helper object for checking, is connected ip permited to do input actions, a ExternalAgent or using Write request.
+/** Helper object for checking, is connected IP permitted to do input actions, a ExternalAgent or using Write request.
   *
   **/
 object PermissionCheck {
 
   import Boot.settings
   import Boot.system.log
-  /** Contains white listed ips
+  /** Contains white listed IPs
     *
     **/
   val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
-    log.debug("IPv" + ip.length + " : " + ip.mkString(".")) 
+    log.debug("IPv" + ip.length + ": " + ip.mkString(".")) 
     ip
   }.toVector
 
-  log.debug("Totally " + whiteIPs.length + "IPs")
+  log.debug("Totally " + whiteIPs.length + " IPs")
 
   /** Contains masks of white listed subnets.
     *

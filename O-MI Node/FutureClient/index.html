@@ -50,6 +50,7 @@
       <form class="navbar-form navbar-left" role="search">
         <div class="form-group">
           <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080" />
+          <script>$(function (){$("#targetService").val(window.location.href.replace("FutureClient/index.html", ""));})</script>
         </div>
       </form>
       <a class="navbar-brand">Requests</a>
