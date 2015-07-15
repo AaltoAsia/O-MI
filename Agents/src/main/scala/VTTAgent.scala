@@ -146,7 +146,7 @@ class VTTAgent(configPath : String) extends InternalAgent(configPath) {
       case "humidity" => between(40, oldval + Random.nextGaussian, 60)
       case "pir" => between(0, oldval + 10*Random.nextGaussian, 40)
     })
-    f"$newval%.1f"
+    f"$newval%.1f".replace(',', '.')
   }
   def between( begin: Double, value: Double, end: Double ) : Double = {
     (begin <= value, value <= end) match {
