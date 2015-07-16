@@ -23,7 +23,7 @@ class OdfObjectsImpl(
         case (path:Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
         sobj.head.combine(sobj.last) // assert checks
-      }.toSeq ++ uniqueObjs,
+      }.toSeq ++ uniqueObjs ++ anotherUniqueObjs,
       (version, another.version) match{
         case (Some(a), Some(b)) => Some(a)
         case (None, Some(b)) => Some(b)
