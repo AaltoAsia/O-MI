@@ -55,7 +55,7 @@ libraryDependencies ++= Seq(
 libraryDependencies += "nu.validator.htmlparser" % "htmlparser" % "1.4"
 
 //scala xml
-libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.3"
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
 
 //remove database files
 cleanFiles <++= baseDirectory {_ * "*.db" get}

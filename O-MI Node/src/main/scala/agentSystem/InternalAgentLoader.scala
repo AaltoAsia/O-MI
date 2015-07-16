@@ -167,15 +167,9 @@ class InternalAgentLoader  extends Actor with ActorLogging {
 
   def loadAndStart(classname: String, configPath: String) ={
       Try {
-        log.info("Instantitating agent: " + classname +"$")
+        log.info("Instantitating agent: " + classname)
         val clazz = classLoader.loadClass(classname)
-        log.info("tostring: " + clazz.toString())
-        log.info("canonname: " + clazz.getCanonicalName)
-        log.info("classes")
         clazz.getClasses.foreach {n=> log.info(n.getName) }
-        log.info(clazz.getPackage.getName)
-        log.info(clazz.getName)
-//        log.info("clazz is instance of Vttagent")
         val const = clazz.getConstructors()(0)
         val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
         val date = new Date()

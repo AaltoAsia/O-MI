@@ -22,9 +22,9 @@ import scala.xml
 import scala.xml._
 
 
-class Actorstest extends TestKit(ActorSystem("test")) with Scope with After with ImplicitSender {
+class Actorstest(_system:ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
     
-    def after = system.shutdown()
+    def after = TestKit.shutdownActorSystem(system)
   }
 
 import org.junit.runner.RunWith
@@ -37,20 +37,14 @@ class InternalAgentLoaderTest extends Specification{// with AfterAll {
 
     
     //workds with Eclipse Junit Test but fails in sbt due to NoClassDefFoundError: scala/xml/Node
-    "contain agents.SmartHouseBoot in bootables" in new Actorstest {
+    "contain external agents in the bootables" in new Actorstest(ActorSystem("agentloaderTest")) {
 
       val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props() , "agent-loader")
-
       val actor = actorRef.underlyingActor
-
-      val probe = TestProbe()
-      println(actor.getAgents)
-      println("test")
-      actor.getClassnamesWithConfigPath.foreach(println)
-      println("test4")
-
-
-      1 === 1
+      val agents = actor.getAgents
+      agents must haveKey("agents.VTTAgent")
+      agents must haveKey("agents.SmartHouseAgent")
+      agents must haveKey("agents.CoffeeMaker")
     }
 
     "contain agents.SensorBoot in bootables" in {
