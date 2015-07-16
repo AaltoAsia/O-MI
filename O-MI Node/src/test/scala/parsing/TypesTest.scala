@@ -76,11 +76,11 @@ class TypesTest extends Specification with DeactivatedTimeConversions{
   }
   
   def e100 = {
-    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfElement]
+    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfNode]
   }
   
   def e101 = {
-    new OdfObject(Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfElement]
+    new OdfObject(Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
   }
   
   def e200 = {

@@ -263,7 +263,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         val callbackAddr = sub.callback.getOrElse("")
         val xmlMsg = requestHandler.xmlFromResults(
           1.0,
-          Result.pollResult(id.toString, odf))
+          Result.poll(id.toString, odf))
         log.info(s"Sending in progress; Subscription subId:${id} addr:$callbackAddr interval:-1")
         //log.debug("Send msg:\n" + xmlMsg)
 

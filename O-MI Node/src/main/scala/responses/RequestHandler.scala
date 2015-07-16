@@ -97,7 +97,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           (
             xmlFromResults(
               1.0,
-              Result.simpleResult("200", Some("OK, callback job started"))
+              Result.simple("200", Some("OK, callback job started"))
             ),
             200
           )
@@ -124,7 +124,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         (
           xmlFromResults(
             1.0,
-            Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))
+            Result.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))
           ),
           500
         )
@@ -136,7 +136,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         (
           xmlFromResults(
             1.0,
-            Result.simpleResult(e.errorCode.toString, Some( e.getMessage()))
+            Result.simple(e.errorCode.toString, Some( e.getMessage()))
           ),
           501
         )
@@ -145,7 +145,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         (
           xmlFromResults(
             1.0,
-            Result.simpleResult("501", Some( "Internal server error: " + e.getMessage()))
+            Result.simple("501", Some( "Internal server error: " + e.getMessage()))
           ),
           501
         )
@@ -192,7 +192,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleSubData(subdata)
     }
     case _ =>{
-      ( xmlFromResults( 1.0, Result.simpleResult("500", Some( "Unknown request." ) ) ), 500)
+      ( xmlFromResults( 1.0, Result.simple("500", Some( "Unknown request." ) ) ), 500)
     }
   }
 
@@ -225,13 +225,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
       objectsO match {
         case Some(objects) =>
-          val found = Result.readResult(objects)
+          val found = Result.read(objects)
           val requestsPaths = getLeafs(read.odf).map{_.path}
           val foundOdfAsPaths = getLeafs(objects).flatMap{_.path.getParentsAndSelf}.toSet
           val notFound = requestsPaths.filterNot{ path => foundOdfAsPaths.contains(path) }.toSet.toSeq
           var results = Seq( found )
           if( notFound.nonEmpty ) 
-            results ++= Seq( Result.simpleResult("404",
+            results ++= Seq( Result.simple("404",
               Some("Could not find the following elements from the database:\n" + notFound.mkString("\n") )
             ) )
 
@@ -258,7 +258,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
         objectsO match {
           case Some(objects) =>
-            Result.pollResult( id.toString, objects ) 
+            Result.poll( id.toString, objects ) 
           case None =>
             Result.notFoundSub(id.toString)
         }
@@ -285,7 +285,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             (Result.internalError(s"Internal server error when trying to create subscription: ${e.getMessage}"),
               500)
           case Success(id: Int) =>
-            (Result.subscriptionResult(id.toString), 200)
+            (Result.subscription(id.toString), 200)
         }
     (
       xmlFromResults(
@@ -324,11 +324,11 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             }
             case Failure(n: NumberFormatException) =>{
               returnCode = 400
-              Result.simpleResult(returnCode.toString, Some("Invalid requestID"))
+              Result.simple(returnCode.toString, Some("Invalid requestID"))
             }
             case Failure(e : RequestHandlingException) =>{ 
               returnCode = e.errorCode
-              Result.simpleResult(returnCode.toString, Some(e.msg))
+              Result.simple(returnCode.toString, Some(e.msg))
             }
             case Failure(e) =>{
               returnCode = 501
@@ -346,7 +346,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       objectsO match {
         case Some(objects) =>
           ( xmlFromResults(
-          1.0, Result.pollResult(subdata.sub.id.toString,objects)
+          1.0, Result.poll(subdata.sub.id.toString,objects)
           ), 200)
 
         case None =>
@@ -380,24 +380,24 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def parseError(err: ParseError*) =
     xmlFromResults(
       1.0,
-      Result.simpleResult("400",
+      Result.simple("400",
         Some(err.map { e => e.msg }.mkString("\n"))
       )
     )
   def invalidCallback(err: String) =
     xmlFromResults(
       1.0,
-      Result.simpleResult("400",
+      Result.simple("400",
         Some("Invalid callback address: "+ err)
       )
     )
   def internalError(e: Throwable) =
     xmlFromResults(
       1.0,
-      Result.simpleResult("501", Some("Internal server error: " + e.getMessage())))
+      Result.simple("501", Some("Internal server error: " + e.getMessage())))
   def timeOutError = xmlFromResults(
     1.0,
-    Result.simpleResult("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?")))
+    Result.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?")))
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.

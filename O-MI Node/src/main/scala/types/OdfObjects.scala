@@ -8,38 +8,22 @@ import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 
-case class OdfObjects(
+class OdfObjectsImpl(
   objects:              JavaIterable[OdfObject] = Iterable(),
   version:              Option[String] = None
-) extends OdfElement with HasPath {
+) {
 
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
   
-  def combine( another: OdfObjects ): OdfObjects ={
-    val uniques : Seq[OdfObject]  = ( 
-      objects.filterNot( 
-        obj => another.objects.toSeq.exists( 
-          aobj => aobj.path  == obj.path 
-        ) 
-      ).toSeq ++ 
-      another.objects.filterNot(
-        aobj => objects.toSeq.exists(
-          obj => aobj.path  == obj.path
-        )
-      ).toSeq
-    )
-    val sames = ( objects.toSeq ++ another.objects.toSeq ).filterNot(
-      obj => uniques.exists(
-        uobj => uobj.path == obj.path
-      )
-    ).groupBy(_.path)
+  def combine( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){
+    (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
     OdfObjects(
-      sames.map{
+      sharedObjs.map{
         case (path:Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
         sobj.head.combine(sobj.last) // assert checks
-      }.toSeq ++ uniques,
+      }.toSeq ++ uniqueObjs ++ anotherUniqueObjs,
       (version, another.version) match{
         case (Some(a), Some(b)) => Some(a)
         case (None, Some(b)) => Some(b)
@@ -48,30 +32,30 @@ case class OdfObjects(
       }
     )
   }
-  def update( another: OdfObjects ): OdfObjects ={
-    val uniques : Seq[OdfObject]  = ( 
-      objects.filterNot( 
-        obj => another.objects.toSeq.exists( 
-          aobj => aobj.path  == obj.path 
-        ) 
-      ).toSeq ++ 
-      another.objects.filterNot(
-        aobj => objects.toSeq.exists(
-          obj => aobj.path  == obj.path
-        )
-      ).toSeq
-    )
-    val sames = ( objects.toSeq ++ another.objects.toSeq ).filterNot(
-      obj => uniques.exists(
-        uobj => uobj.path == obj.path
-      )
-    ).groupBy(_.path)
-    OdfObjects(
-      sames.map{
+  def update( another: OdfObjects ): (OdfObjects, Seq[(Path,OdfNode)]) =sharedAndUniques[(OdfObjects,Seq[(Path,OdfNode)])]( another ){
+    (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
+    val sharedObjsTuples = sharedObjs.map{
         case (path:Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
-        sobj.head.update(sobj.last) // assert checks
-      }.toSeq ++ uniques,
+        sobj.headOption match{
+          case Some( head ) =>
+            sobj.lastOption match{
+              case Some(last) => 
+                head.update(last)
+              case None =>
+                throw new Exception("No last found when updating OdfObject")
+            }
+            case None =>
+              throw new Exception("No head found when updating OdfObject")
+          }
+      }
+    val updatedSharedObjs = sharedObjsTuples.map(_._1).toSeq
+    val sharedObjsOut  = sharedObjsTuples.flatMap(_._2).toSeq
+    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) } 
+    val newObjs = OdfObjects(
+      updatedSharedObjs  ++ 
+      uniqueObjs ++ 
+      anotherUniqueObjs,
       (version, another.version) match{
         case (Some(a), Some(b)) => Some(b)
         case (None, Some(b)) => Some(b)
@@ -79,10 +63,39 @@ case class OdfObjects(
         case (None, None) => None
       }
     )
+    (
+      newObjs,
+      (Seq((Path("Objects"),newObjs)) ++
+      sharedObjsOut ++
+      anotherUniqueObjsOut).toSeq
+    )
+  }
+  private def sharedAndUniques[A]( another: OdfObjects )( constructor: (
+    Seq[OdfObject],
+    Seq[OdfObject],
+    Map[Path,Seq[OdfObject]]) => A) = {
+    val uniqueObjs : Seq[OdfObject]  = objects.filterNot( 
+        obj => another.objects.toSeq.exists( 
+          aobj => aobj.path  == obj.path 
+        ) 
+      ).toSeq  
+     val anotherUniqueObjs =  another.objects.filterNot(
+        aobj => objects.toSeq.exists(
+          obj => aobj.path  == obj.path
+        )
+      ).toSeq
+    
+    val sharedObjs = ( objects.toSeq ++ another.objects.toSeq ).filterNot(
+      obj => (uniqueObjs ++ anotherUniqueObjs).exists(
+        uobj => uobj.path == obj.path
+      )
+    ).groupBy(_.path)
+    constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
   }
 
-  def get(path: Path) : Option[HasPath] = {
-    val grouped = objects.groupBy(_.path).mapValues{_.headOption.getOrElse(OdfObjects())}
+  def get(path: Path) : Option[OdfNode] = {
+    //HeadOption is because of values being Iterable of OdfObject
+    val grouped = objects.groupBy(_.path).mapValues{_.headOption.getOrElse(throw new Exception("Pathless Object was grouped."))}
     grouped.get(path) match {
       case None => 
         grouped.get(path.take(2)) match{

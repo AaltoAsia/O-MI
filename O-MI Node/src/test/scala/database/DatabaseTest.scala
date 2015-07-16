@@ -41,7 +41,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     //    temp3.map(x => x.map(_.value))
   }
   def OdfObjectsToPaths(x: OdfObjects): Seq[Path] = {
-    val temp1: Seq[HasPath] = getLeafs(x).toSeq
+    val temp1: Seq[OdfNode] = getLeafs(x).toSeq
     temp1.map(n => n.path)
   }
   implicit val system = ActorSystem()

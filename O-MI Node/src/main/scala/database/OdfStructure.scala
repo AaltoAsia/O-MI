@@ -9,131 +9,94 @@ import java.sql.Timestamp
 
 object OdfStructure {
   private var numberOfHierarchyObjects = 0
-  class PathInfo(
-    val hierarchyId : Int,
-    var odfElement : HasPath,
-    val eventSubs : Set[Int]
-  ){
-  def currentValue : String = odfElement match{
-    case info : OdfInfoItem =>
-    info.values.headOption.getOrElse(OdfValue("","")).value
-    case _ => ""
-  }
     
-  }
-  class PollSubInfo(subId: Int, timestamp: Timestamp, paths: Seq[PathInfo])
-  protected var PathMap : collection.mutable.Map[String, PathInfo] = HashMap.empty()
+  
+  class PollSubInfo(subId: Int, timestamp: Timestamp, hIDs: Set[Int])
   protected var OdfTree : OdfObjects = OdfObjects()
-  protected var PollSubs : collection.mutable.HashMap[Int, PollSubInfo] = HashMap.empty()
-  private var PathSpace : HashSet[Path] = HashSet()
+  protected var PathMap : collection.mutable.Map[String, OdfNode] = HashMap.empty
+  protected var PathToHierarchyId : collection.mutable.Map[String, Int] = HashMap.empty
+  protected var NormalSubs : collection.mutable.HashMap[Int, Seq[Path]] = HashMap.empty
+  protected var EventSubs : collection.mutable.HashMap[Path, Seq[Int]] = HashMap.empty
+  protected var PollSubs : collection.mutable.HashMap[Int, PollSubInfo] = HashMap.empty
 
-  def addOrUpdate( hasPath: HasPath* ) ={
-   val triggeredSubs = hasPath.map{ hpath =>
-      def recursive( hasPath : HasPath ) : Set[Int]= {
-        var pathInfoO = PathMap.get(hasPath.path.toString)
-        pathInfoO match {
-          case Some(pathInfo) => 
-          (pathInfo.odfElement, hasPath) match{
-              case (i: OdfInfoItem, u: OdfInfoItem) => pathInfo.odfElement = i.update(u)
-              case (i: OdfObject, u: OdfObject) => pathInfo.odfElement = i.update(u)
-              case (i: OdfObjects, u: OdfObjects) => pathInfo.odfElement = i.update(u)
-              case (i, u ) => throw new Exception("Type missmatch: " + u.getClass + " isn't "+ u.getClass )
-          }
-          pathInfo.eventSubs ++ (hasPath match{
-            case info : OdfInfoItem =>
-              Set[Int]()
-            case obj : OdfObject => 
-              obj.objects.flatMap( recursive ) ++ obj.infoItems.flatMap( recursive )
-            case objs : OdfObjects => 
-              objs.objects.flatMap( recursive )
-            case _ => 
-              Set[Int]()
-          })
-          case None => 
-            (hasPath match{
-            case info : OdfInfoItem =>
-              numberOfHierarchyObjects += 1
-              PathMap += hasPath.path.toString  -> new PathInfo( numberOfHierarchyObjects, hasPath, Set())
-              Set[Int]()
-            case obj : OdfObject => 
-              numberOfHierarchyObjects += 1
-              PathMap += hasPath.path.toString  -> new PathInfo( numberOfHierarchyObjects, hasPath, Set())
-              (obj.objects.flatMap( recursive ) ++ obj.infoItems.flatMap( recursive )).toSet
-            case objs : OdfObjects => 
-              numberOfHierarchyObjects += 1
-              PathMap += hasPath.path.toString  -> new PathInfo( numberOfHierarchyObjects, hasPath, Set())
-              objs.objects.flatMap( recursive ).toSet
-            case _ => 
-              Set[Int]()
-          })
-        }
-      }
-      val subs = recursive(hpath)
-      (hpath, subs)
-    }.toSet
+  def addOrUpdate( odfNodes: Seq[OdfNode] ) ={
+    val tmp : (OdfObjects, Seq[(Path, OdfNode)])= odfNodes.map(fromPath(_)).foldLeft((OdfObjects(), Seq[(Path,OdfNode)]())){
+      (a, b) =>
+      val updated = a._1.update(b)
+      (updated._1,updated._2 ++ a._2) 
       
-  } 
+    }
+    val (objects, tuples) = OdfTree.update(tmp._1)
+    val updated = (tuples ++ tmp._2).toSet.toSeq
+    PathMap ++= tuples.map{a => (a._1.toString,a._2)}
 
-  def get(hasPaths: Seq[HasPath]) : OdfObjects ={
-    hasPaths.flatMap{
+    //Todo DB update and adding, and hierarchy ids
+    val mapIdToPaths = odfNodes.flatMap{
       hpath =>
-      def recursive( hasPath: HasPath) : Seq[HasPath] = {
-        PathMap.get(hasPath.path.toString) match {
-          case None => Seq.empty
-          case Some(pathInfo) =>
-          pathInfo.odfElement match{
-            case info : OdfInfoItem =>
-              Seq(info.copy( values = info.values.take(1) ) ) 
-            case obj : OdfObject => 
-              (obj.objects.flatMap( recursive ) ++ obj.infoItems.flatMap( recursive )).toSeq
-            case objs : OdfObjects => 
-              objs.objects.flatMap( recursive ).toSeq
-            case _ => 
-              Seq()
-          }   
-        }
+      EventSubs.get(hpath.path) match{
+        case Some(ids) =>
+          ids.map{ id => (id, hpath.path) }
+        case None => Seq.empty
+      } 
+    }.groupBy{ case (id, path) => id}.mapValues{ case seq => seq.map{ case (id, path) => path} }
+    //TODO: Trigger event sub responsese  
+  } 
+  def get(odfNodes: Seq[OdfNode]) : OdfObjects ={
+    odfNodes.map{
+      node => 
+      (node, OdfTree.get(node.path)) match{
+        case (requested: OdfObjects, found: OdfObjects) =>
+          found
+        case (requested: OdfObject, found: OdfObject) =>
+          fromPath(found)
+        case (requested: OdfInfoItem, found: OdfInfoItem) =>
+          fromPath(found)
       }
-      recursive(hpath)
-    }.toSet.map{fromPath}.foldLeft(OdfObjects())(_.combine(_))
-
-    
+    }.foldLeft(OdfObjects())(_.combine(_))
   }
   
   def getNBetween(
-    hasPaths: Seq[HasPath], 
+    odfNodes: Seq[OdfNode], 
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
     oldest: Option[Int] ) : OdfObjects  = {
-    val hIds =getHierarchyIdsRecursively( hasPaths )
+    val hIds = getHierarchyIdsRecursively(odfNodes)
     //DATABASE METHOD
     def getNBetween( hIds: Set[Int], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int] ) : OdfObjects  = ???
 
     getNBetween( hIds, begin, end, newest, oldest)
   }
 
-  private def getHierarchyIdsRecursively( hasPaths: Seq[HasPath] ) = {
-    hasPaths.flatMap{
-      hpath =>
-      def recursive( hasPath: HasPath) : Seq[Int] = {
-        PathMap.get(hasPath.path.toString) match {
-          case None => Seq.empty
-          case Some(pathInfo) =>
-          pathInfo.odfElement match{
-            case info : OdfInfoItem =>
-              Seq[Int](pathInfo.hierarchyId)
-            case obj : OdfObject => 
-              (obj.objects.flatMap( recursive ) ++ obj.infoItems.flatMap( recursive )).toSeq
-            case objs : OdfObjects => 
-              objs.objects.flatMap( recursive ).toSeq
-            case _ => 
-              Seq[Int]()
-          }   
-        }
+  private def getHierarchyIdsRecursively( odfNodes: Seq[OdfNode] ) = {
+    odfNodes.flatMap{
+      node => 
+        def recursive( node : OdfNode ) : Iterable[Int] = OdfTree.get(node.path) match {
+            case Some( info : OdfInfoItem ) =>
+              PathToHierarchyId.get(info.path.toString) match{
+                case Some(id) => Seq(id)
+                case None => throw new Exception("Couldn't find " + info.path.toString)
+              }
+            case Some( obj : OdfObject ) => 
+              obj.objects.flatMap( recursive ) ++ obj.infoItems.flatMap( recursive )
+            case Some( objs : OdfObjects ) => 
+              objs.objects.flatMap( recursive )
       }
-      recursive(hpath)
-    }.toSet 
-  }
+      recursive(node)
+    }.toSet  }
 
+  def getNormalSub(id: Int) : OdfObjects ={
+    NormalSubs.get(id) match{
+      case Some(paths) =>
+      paths.map{ 
+        path => OdfTree.get( path ) match {
+          case Some( node ) => fromPath( node )
+          case None => OdfObjects()
+        }
+      }.fold(OdfObjects())(_.combine(_))
+      case None =>
+        throw new Exception(s"Normal sub not found with id: $id.")       
+    }
+  }
 
 }

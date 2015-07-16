@@ -6,24 +6,12 @@ import parsing.xmlGen.xmlTypes._
 import scala.xml.XML
 import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
-
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable }
 import scala.language.existentials
-
-
-
 /** Object containing internal types used to represent O-DF formatted data
   *
   **/
 object `package` {
-  trait OdfElement
-
-  case class OdfDescription(
-    value:                String,
-    lang:                 Option[String] = None
-  ) extends OdfElement {
-    implicit def asDescription = Description( value, lang, Map.empty)
-  }
   type  OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]
   def getObjects( odf: OdfParseResult ) : JavaIterable[OdfObject] = 
     odf match{
@@ -36,8 +24,8 @@ object `package` {
       case _ => Iterable()
     }
 
-  def getLeafs(objects: OdfObjects ) : JavaIterable[HasPath] = {
-    def getLeafs(obj: OdfObject ) : JavaIterable[HasPath] = {
+  def getLeafs(objects: OdfObjects ) : JavaIterable[OdfNode] = {
+    def getLeafs(obj: OdfObject ) : JavaIterable[OdfNode] = {
       if(obj.infoItems.isEmpty && obj.objects.isEmpty)
         Iterable(obj)
       else 
@@ -52,15 +40,11 @@ object `package` {
       }
     else Iterable(objects)
   }
-  trait HasPath {
-    def path: Path
-    def description: Option[OdfDescription]
-  }
-  def getHasPaths(hasPaths : HasPath *) : Seq[HasPath] ={
+  def getOdfNodes(hasPaths : OdfNode *) : Seq[OdfNode] ={
     hasPaths.flatMap{ 
       case info : OdfInfoItem => Seq(info)
-      case obj : OdfObject => Seq( obj ) ++ getHasPaths( (obj.objects.toSeq ++ obj.infoItems.toSeq ): _* )
-      case objs : OdfObjects => Seq( objs ) ++ getHasPaths(objs.objects.toSeq: _*)
+      case obj : OdfObject => Seq( obj ) ++ getOdfNodes( (obj.objects.toSeq ++ obj.infoItems.toSeq ): _* )
+      case objs : OdfObjects => Seq( objs ) ++ getOdfNodes(objs.objects.toSeq: _*)
     }.toSeq
   }
   
@@ -68,7 +52,7 @@ object `package` {
    * Generates odf tree containing the ancestors of given object.
    */
   @annotation.tailrec
-  def fromPath( last: HasPath) : OdfObjects = {
+  def fromPath( last: OdfNode) : OdfObjects = {
 
     val parentPath = last.path.dropRight(1)
 
@@ -89,7 +73,7 @@ object `package` {
         objs
     }
   }
-  def getparent( child: HasPath) : HasPath = {
+  def getParent( child: OdfNode) : OdfNode = {
     val parentPath = child.path.dropRight(1)
     child match {
       case info: OdfInfoItem =>
@@ -108,3 +92,44 @@ object `package` {
     }
   }
 }
+
+
+sealed trait OdfNode{
+    def path: Path
+    def description: Option[OdfDescription]
+    def get( path: Path) : Option[OdfNode] 
+    //def combine( another : OdfNode ) : OdfNode
+    //def update( another : OdfNode ) : OdfNode
+}
+
+case class OdfObjects(
+  objects:              JavaIterable[OdfObject] = Iterable(),
+  version:              Option[String] = None
+) extends OdfObjectsImpl(objects,version) with OdfNode 
+
+case class OdfObject(
+  path:                 Path,
+  infoItems:            JavaIterable[OdfInfoItem],
+  objects:              JavaIterable[OdfObject],
+  description:          Option[OdfDescription] = None,
+  typeValue:            Option[String] = None
+) extends OdfObjectImpl(path,infoItems,objects,description,typeValue) with OdfNode 
+
+case class OdfInfoItem(
+  path:                 Path,
+  values:               JavaIterable[OdfValue] = Iterable(),
+  description:          Option[OdfDescription] = None,
+  metaData:             Option[OdfMetaData] = None
+)  extends OdfInfoItemImpl(path,values,description,metaData) with OdfNode {
+  def get( path: Path ) : Option[OdfNode] = if( path == this.path ) Some(this) else None  
+}
+
+
+
+  case class OdfDescription(
+    value:                String,
+    lang:                 Option[String] = None
+  ) {
+    implicit def asDescription = Description( value, lang, Map.empty)
+  }
+

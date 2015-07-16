@@ -9,12 +9,12 @@ import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 import http.Boot.settings
 
-case class OdfInfoItem(
+class  OdfInfoItemImpl(
   path:                 Path,
   values:               JavaIterable[OdfValue] = Iterable(),
   description:          Option[OdfDescription] = None,
   metaData:             Option[OdfMetaData] = None
-) extends OdfElement with HasPath {
+){
   def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = OdfInfoItem(data._1, Iterable( data._2))
   def apply(path: Path, timestamp: Timestamp, value: String, valueType: String = "") : OdfInfoItem = 
     OdfInfoItem(path, Iterable( OdfValue(value, valueType, Some(timestamp))))
@@ -39,14 +39,16 @@ case class OdfInfoItem(
     )
   }
 
-  def update(another: OdfInfoItem) : OdfInfoItem ={
+  def update(another: OdfInfoItem) : (Path, OdfInfoItem) ={
     require(path == another.path, "Should have same paths")
-    OdfInfoItem(
+    (
+      path,
+      OdfInfoItem(
       path,
       ( values ++ another.values ).toSeq.sortWith{ 
         (left,right) => 
         left.timestamp.forall{ l => right.timestamp.forall{ r => l.before( r ) } }
-        }.take(settings.numLatestValues ),
+        }.take(1),
       ( description, another.description ) match{
         case (Some(a), Some(b)) => Some(b)
         case (None, Some(b)) => Some(b)
@@ -59,6 +61,7 @@ case class OdfInfoItem(
         case (Some(a), None) => Some(a)
         case (None, None) => None
       }
+    )
     )
   
   }
@@ -81,7 +84,7 @@ case class OdfInfoItem(
 
 case class OdfMetaData(
   data:                 String
-) extends OdfElement {
+) {
   implicit def asMetaData : MetaData = {
     scalaxb.fromXML[MetaData]( XML.loadString( data ) )
   }
@@ -91,7 +94,7 @@ case class OdfValue(
   value:                String,
   typeValue:            String,
   timestamp:            Option[Timestamp] = None
-) extends OdfElement {
+) {
   implicit def asValueType : ValueType = {
     ValueType(
       value,
