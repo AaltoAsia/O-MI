@@ -3,12 +3,12 @@
   var requestsExt;
 
   requestsExt = function(WebOmi) {
-    var lastParameters, my;
+    var currentParams, my;
     my = WebOmi.requests = {};
     my.xmls = {
-      readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> ",
-      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> \n",
-      template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope> \n"
+      readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
+      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n",
+      template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n"
     };
     my.defaults = {};
     my.defaults.empty = function() {
@@ -23,43 +23,42 @@
         oldest: null,
         begin: null,
         end: null,
-        resultDoc: null,
+        requestDoc: null,
         msg: true
       };
     };
     my.defaults.readAll = function() {
-      var res;
-      res = $.extend({}, my.defaults.empty(), {
+      return $.extend({}, my.defaults.empty(), {
         request: "read",
-        resultDoc: WebOmi.omi.parseXml(my.xmls.readAll)
+        odf: ["Objects"],
+        requestDoc: WebOmi.omi.parseXml(my.xmls.readAll)
       });
-      res.odf = res.resultDoc;
-      return res;
     };
     my.defaults.readOnce = function() {
       return $.extend({}, my.defaults.empty(), {
-        request: "read"
+        request: "read",
+        odf: ["Objects"]
       });
     };
     my.defaults.subscription = function() {
       return $.extend({}, my.defaults.empty(), {
         request: "read",
         interval: 5,
-        ttl: 60
+        ttl: 60,
+        odf: ["Objects"]
       });
     };
     my.defaults.poll = function() {
       return $.extend({}, my.defaults.empty(), {
         request: "read",
-        requestID: 1
+        requestID: 1,
+        msg: false
       });
     };
     my.defaults.write = function() {
-      var doc;
-      doc = WebOmi.omi.parseXml(my.xmls.templateMsg);
       return $.extend({}, my.defaults.empty(), {
         request: "write",
-        odf: WebOmi.omi.createOdf(doc, "Objects")
+        odf: ["Objects"]
       });
     };
     my.defaults.cancel = function() {
@@ -70,24 +69,60 @@
         msg: false
       });
     };
-    lastParameters = my.defaults;
+    currentParams = my.defaults.empty;
+    my.confirmOverwrite = function(oldVal, newVal) {
+      return confirm("You have edited the request manually.\n Do you want to overwrite " + oldVal.toString + " with " + newVal.toString);
+    };
+    my.update = {
+      request: function(reqName, userDoc) {
+        if (currentParams.request == null) {
+          return my.loadParams(my.defaults[reqName]);
+        } else {
+          if (userDoc != null) {
 
-    /*
-    my.set =
-      request  : null  # Maybe string (request tag name)
-      ttl      : 0     # double
-      callback : null  # Maybe string
-      requestID: null  # Maybe int
-      odf      : null  # Maybe xml
-      interval : null  # Maybe number
-      newest   : null  # Maybe int
-      oldest   : null  # Maybe int
-      begin    : null  # Maybe Date
-      end      : null  # Maybe Date
-      resultDoc: null  # Maybe xml dom document
-      msg      : true  # Boolean Is message included
-     */
-    my.loadParams = function(omiRequestObject) {};
+          } else {
+
+          }
+        }
+      },
+      ttl: 0,
+      callback: null,
+      requestID: null,
+      odf: null,
+      interval: null,
+      newest: null,
+      oldest: null,
+      begin: null,
+      end: null,
+      msg: true
+    };
+    my.generate = function() {
+      return formLogic.setRequest(cp.resultDoc);
+    };
+    my.forceGenerate = function() {
+      var cp, key, o, ref, results, updateFn;
+      o = WebOmi.omi;
+      cp = currentParams;
+      if ((cp.request != null) && cp.request.length > 0 && (cp.ttl != null)) {
+        cp.requestDoc = o.parseXml(my.xmls.empty);
+      }
+      ref = my.update;
+      results = [];
+      for (key in ref) {
+        updateFn = ref[key];
+        results.push(updateFn(cp[key]));
+      }
+      return results;
+    };
+    my.forceLoadParams = function(omiRequestObject) {
+      var key, newVal;
+      for (key in omiRequestObject) {
+        newVal = omiRequestObject[key];
+        currentParams[key] = newVal;
+        WebOmi.consts.ui[key].set(newVal);
+      }
+      return my.forceGenerate();
+    };
     my.readAll = function(fastForward) {
       WebOmi.formLogic.setRequest(my.xmls.readAll);
       if (fastForward) {

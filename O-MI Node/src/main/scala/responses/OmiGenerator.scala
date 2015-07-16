@@ -1,14 +1,10 @@
 package responses
 
-import database._
+
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.scalaxb
 import parsing.xmlGen.scalaxb._
-import types.Path
-import parsing.xmlGen.scalaxb.DataRecord._
-import parsing.xmlGen.scalaxb.XMLStandardTypes._
-import xml.XML
-import xml.NodeSeq
+import scala.xml.NodeSeq
 
 /** Object containing helper mehtods for generating scalaxb generated O-MI types. Used to generate response messages when received a request.
   *

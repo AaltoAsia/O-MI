@@ -1,9 +1,8 @@
 package agentSystem
 
 import http._
-import akka.actor._
+import akka.actor.{Props, Actor, ActorLogging, SupervisorStrategy, OneForOneStrategy, ActorInitializationException, ActorKilledException}
 import akka.actor.SupervisorStrategy._
-import akka.event.{Logging, LoggingAdapter}
 import akka.io.{ IO, Tcp  }
 import scala.collection.mutable.Map
 import scala.collection.immutable
@@ -16,7 +15,9 @@ import scala.util.{Try, Success, Failure }
 
 import java.util.Date
 import java.sql.Timestamp
-  import ExecutionContext.Implicits.global
+
+
+import ExecutionContext.Implicits.global
 
 import InternalAgentCLICmds._
 /** Helper Object for creating AgentLoader.
@@ -38,7 +39,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
 
   case class AgentInfo(name: String, configPath: String, agent: Option[InternalAgent], timestamp: Timestamp)
   //Container for bootables
-  protected var agents : scala.collection.mutable.Map[String,AgentInfo] = Map.empty
+  protected val agents : scala.collection.mutable.Map[String,AgentInfo] = Map.empty
   //getter method to allow testing
   private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.
@@ -168,6 +169,7 @@ class InternalAgentLoader  extends Actor with ActorLogging {
       Try {
         log.info("Instantitating agent: " + classname )
         val clazz = classLoader.loadClass(classname)
+        log.info(classLoader.getParent.toString())
         val const = clazz.getConstructors()(0)
         val agent : InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent] 
         val date = new Date()

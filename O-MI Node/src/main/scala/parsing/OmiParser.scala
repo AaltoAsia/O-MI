@@ -1,23 +1,19 @@
 package parsing
 
 import types._
-import types.OmiTypes._
-import types.OdfTypes._
+import OmiTypes._
+import OdfTypes._
+
 import xmlGen.xmlTypes
 import java.sql.Timestamp
-import java.text.SimpleDateFormat
-import scala.collection.mutable.Map
+
 import scala.concurrent.duration._
 
 import scala.xml._
 import scala.util.{Try, Success, Failure}
 import javax.xml.transform.stream.StreamSource
-import scala.xml.Utility.trim
-import org.xml.sax.SAXException
 
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
@@ -49,70 +45,79 @@ object OmiParser extends Parser[OmiParseResult] {
         case write: xmlTypes.WriteRequest => parseWrite(write, parseTTL(envelope.ttl))
         case cancel: xmlTypes.CancelRequest => parseCancel(cancel, parseTTL(envelope.ttl))
         case response: xmlTypes.ResponseListType => parseResponse(response, parseTTL(envelope.ttl))
+        case _ => throw new Exception("Unknown request type returned by scalaxb")
       }
     } match {
       case Success(res) => res
       case Failure(e) => 
         return Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+      case _ => throw new Exception("Unknown end state from OmiParser.")
     }
   }
 
   // fixes problem with duration: -1.0.seconds == -999999999 nanoseconds
   def parseInterval(v: Double) =
-    if (v == -1.0) -1.seconds
-    else if (v > 0) v.seconds // or: Math.round(v * 1000).milliseconds
-    else throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
+  v match{
+    case -1.0 =>  -1.seconds
+    case w if w > 0 => w.seconds
+    case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
+  }
   def parseTTL(v: Double)      =
-    if (v == -1.0 || v == 0.0) Duration.Inf
-    else if (v > 0) v.seconds
-    else throw new IllegalArgumentException("Negative TTL, diffrent than -1 isn't allowed.")
-
+  v match{
+    case -1.0 => Duration.Inf
+    case 0.0 => Duration.Inf
+    case w if w > 0 => w.seconds
+    case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
+  }
   
-  private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = {
-    if (read.requestID.nonEmpty) {
+  private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
+  read.requestID.nonEmpty match {
+      case true =>
       Right(Iterable(
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
           read.requestID.map { id => id.value.toInt })))
-    } else if( read.msg.nonEmpty ){
-      val odf = parseMsg(read.msg, read.msgformat)
-      val errors = OdfTypes.getErrors(odf)
+      case false =>
+      read.msg match {
+        case Some(msg) =>
+        val odf = parseMsg(read.msg, read.msgformat)
+        val errors = OdfTypes.getErrors(odf)
 
-      if (errors.nonEmpty)
-        return Left(errors)
+        if (errors.nonEmpty)
+          return Left(errors)
 
-      read.interval match {
-        case None =>
-          Right(Iterable(
-            ReadRequest(
-              ttl,
-              odf.right.get,
-              gcalendarToTimestampOption(read.begin),
-              gcalendarToTimestampOption(read.end),
-              read.newest,
-              read.oldest,
-              uriToStringOption(read.callback)
-            )
-          ))
-        case Some(interval) =>
-          Right(Iterable(
-            SubscriptionRequest(
-              ttl,
-              parseInterval(interval),
-              odf.right.get,
-              read.newest,
-              read.oldest,
-              uriToStringOption(read.callback)
-            )
-          ))
-      }
-    } else {
-      Left(
-        Iterable(
-          ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+        read.interval match {
+          case None =>
+            Right(Iterable(
+              ReadRequest(
+                ttl,
+                odf.right.get,
+                gcalendarToTimestampOption(read.begin),
+                gcalendarToTimestampOption(read.end),
+                read.newest,
+                read.oldest,
+                uriToStringOption(read.callback)
+              )
+            ))
+          case Some(interval) =>
+            Right(Iterable(
+              SubscriptionRequest(
+                ttl,
+                parseInterval(interval),
+                odf.right.get,
+                read.newest,
+                read.oldest,
+                uriToStringOption(read.callback)
+              )
+            ))
+        }
+      case None =>
+        Left(
+          Iterable(
+            ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+          )
         )
-      )
     }
   }
 
@@ -148,9 +153,10 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              if (result.requestID.nonEmpty) {
-                asJavaIterable(Iterable(result.requestID.get.value.toInt))
-              } else {
+              result.requestID match{
+                case Some(rId) =>
+                  asJavaIterable(Iterable(rId.value.toInt))
+                case None =>
                 asJavaIterable(Iterable.empty[Int])
               },
               if (result.msg.isEmpty)
@@ -168,16 +174,16 @@ object OmiParser extends Parser[OmiParseResult] {
     ))
   }
 
-  private def parseMsg(msg: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = {
-    if (msg.isEmpty)
-      return Left(Iterable(ParseError("OmiParser: No msg element found in write request.")))
-    
+  private def parseMsg(msgO: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = msgO match{
+      case None =>
+        Left(Iterable(ParseError("OmiParser: No msg element found in write request.")))
+      case Some(msg) =>
     if (format.isEmpty) 
       return Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
 
-    val data = msg.get.as[Elem]
-    format.get match {
-      case "odf" =>
+    val data = msg.as[Elem]
+    format match {
+      case Some("odf") =>
         val odf = (data \ "Objects")
         odf.headOption match {
           case Some(head) =>

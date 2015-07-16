@@ -10,15 +10,24 @@ import java.sql.Timestamp
 object OdfStructure {
   private var numberOfHierarchyObjects = 0
     
+  
   class PollSubInfo(subId: Int, timestamp: Timestamp, hIDs: Set[Int])
   protected var OdfTree : OdfObjects = OdfObjects()
+  protected var PathMap : collection.mutable.Map[String, OdfNode] = HashMap.empty
   protected var PathToHierarchyId : collection.mutable.Map[String, Int] = HashMap.empty
   protected var NormalSubs : collection.mutable.HashMap[Int, Seq[Path]] = HashMap.empty
   protected var EventSubs : collection.mutable.HashMap[Path, Seq[Int]] = HashMap.empty
   protected var PollSubs : collection.mutable.HashMap[Int, PollSubInfo] = HashMap.empty
 
+  /*
   def addOrUpdate( odfNodes: Seq[OdfNode] ) ={
-    OdfTree = OdfTree.update(odfNodes.map(fromPath(_)).fold(OdfObjects())(_.update(_)))
+    val tmp : (OdfObjects, Seq[(Path, OdfNode)])= odfNodes.map(fromPath(_)).fold((OdfObjects(), Seq[(Path,OdfNode)]())){
+      (a, b) =>
+      a._1.update(b).map{(c,d) => (c,d ++ a._2)} 
+    }
+    val (objects, tuples) = OdfTree.update(tmp._1)
+    val updated = (tuples ++ tmp._2).toSet.toSeq
+    PathMap ++= tuples.map{a => (a._1.toString,a._2)}
 
     //Todo DB update and adding, and hierarchy ids
     val mapIdToPaths = odfNodes.flatMap{
@@ -31,7 +40,7 @@ object OdfStructure {
     }.groupBy{ case (id, path) => id}.mapValues{ case seq => seq.map{ case (id, path) => path} }
     //TODO: Trigger event sub responsese  
   } 
-
+*/
   def get(odfNodes: Seq[OdfNode]) : OdfObjects ={
     odfNodes.map{
       node => 

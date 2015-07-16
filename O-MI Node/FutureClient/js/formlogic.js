@@ -156,6 +156,9 @@
       consts.sendBtn.on('click', function() {
         return formLogic.send();
       });
+      consts.resetAllBtn.on('click', function() {
+        return requests.forceLoadParams(requests.defaults.empty());
+      });
       return consts.odfTreeDom.on("select_node.jstree", function(_, data) {
         return requests.addPathToRequest(data.node.id);
       }).on("deselect_node.jstree", function(_, data) {
@@ -165,9 +168,9 @@
   })(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic);
 
   $(function() {
-    return $('.optional-parameters .panel-heading a').on('click', function() {
+    return $('.optional-parameters > a').on('click', function() {
       var glyph;
-      glyph = $(this).children('span');
+      glyph = $(this).find('span.glyphicon');
       if (glyph.hasClass('glyphicon-menu-right')) {
         glyph.removeClass('glyphicon-menu-right');
         return glyph.addClass('glyphicon-menu-down');

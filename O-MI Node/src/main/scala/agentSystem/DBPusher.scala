@@ -2,9 +2,7 @@ package agentSystem
 
 import database._
 import types._
-import types.Path._
 import types.OdfTypes._
-import java.util.Date
 import akka.actor._
 import java.lang.Iterable
 import scala.collection.JavaConversions.iterableAsScalaIterable

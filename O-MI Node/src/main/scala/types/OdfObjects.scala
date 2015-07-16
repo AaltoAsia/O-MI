@@ -16,7 +16,7 @@ class OdfObjectsImpl(
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
   
-  def combine( another: OdfObjects ): OdfObjects = sharedAndUniques( another ){
+  def combine( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){
     (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
     OdfObjects(
       sharedObjs.map{
@@ -32,10 +32,9 @@ class OdfObjectsImpl(
       }
     )
   }
-  def update( another: OdfObjects ): OdfObjects ={
-    sharedAndUniques( another ){
+  def update( another: OdfObjects ): (OdfObjects, Seq[(Path,OdfNode)]) =sharedAndUniques[(OdfObjects,Seq[(Path,OdfNode)])]( another ){
     (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
-    val sharedObjsOut = sharedObjs.map{
+    val sharedObjsTuples = sharedObjs.map{
         case (path:Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
         sobj.headOption match{
@@ -44,14 +43,19 @@ class OdfObjectsImpl(
               case Some(last) => 
                 head.update(last)
               case None =>
-                throw new Exception("No last found when updating OdfObjects")
+                throw new Exception("No last found when updating OdfObject")
             }
             case None =>
-              throw new Exception("No head found when updating OdfObjects")
+              throw new Exception("No head found when updating OdfObject")
           }
       }
-    OdfObjects(
-      sharedObjs ++ uniqueObjs ++ anotherUniqueObjs,
+    val updatedSharedObjs = sharedObjsTuples.map(_._1).toSeq
+    val sharedObjsOut  = sharedObjsTuples.flatMap(_._2).toSeq
+    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) } 
+    val newObjs = OdfObjects(
+      updatedSharedObjs  ++ 
+      uniqueObjs ++ 
+      anotherUniqueObjs,
       (version, another.version) match{
         case (Some(a), Some(b)) => Some(b)
         case (None, Some(b)) => Some(b)
@@ -59,12 +63,17 @@ class OdfObjectsImpl(
         case (None, None) => None
       }
     )
-    }
+    (
+      newObjs,
+      (Seq((Path("Objects"),newObjs)) ++
+      sharedObjsOut ++
+      anotherUniqueObjsOut).toSeq
+    )
   }
-  private def sharedAndUniques( another: OdfObjects )( constructor: (
+  private def sharedAndUniques[A]( another: OdfObjects )( constructor: (
     Seq[OdfObject],
     Seq[OdfObject],
-    Map[Path,Seq[OdfObject]]) => OdfObjects) = {
+    Map[Path,Seq[OdfObject]]) => A) = {
     val uniqueObjs : Seq[OdfObject]  = objects.filterNot( 
         obj => another.objects.toSeq.exists( 
           aobj => aobj.path  == obj.path 

@@ -1,6 +1,6 @@
 import com.github.retronym.SbtOneJar
 
-val scalaBuildVersion = "2.11.4"
+val scalaBuildVersion = "2.11.7"
 
 scalaVersion := scalaBuildVersion
 
@@ -34,6 +34,9 @@ Seq(
 libraryDependencies += "com.beachape.filemanagement" %% "schwatcher" % "0.1.8"
 
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
+
+//scala xml
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.3"
 
 //slick
 libraryDependencies ++= Seq(

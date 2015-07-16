@@ -43,9 +43,18 @@ require(path.length > 1,
     val sharedObjsOut = sharedObjs.map{
         case (path:Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
-        sobj.head.combine(sobj.last) // assert checks
+        sobj.headOption match{
+          case Some( head ) =>
+            sobj.lastOption match{
+              case Some(last) => 
+                head.combine(last)
+              case None =>
+                throw new Exception("No last found when combining OdfObject")
+            }
+            case None =>
+              throw new Exception("No head found when combining OdfObject")
+          }
       }
-    def getNodes[A]( tuples : Map[Path, A] ) = tuples.collect{case (path, node : A) => node}.toSeq
     OdfObject(
       path, 
       sharedInfosOut ++
@@ -69,7 +78,7 @@ require(path.length > 1,
     )
   }
 
-  def update( another: OdfObject ) : Seq[(Path, OdfNode)] = sharedAndUniques[Seq[(Path,OdfNode)]](another){(
+  def update( another: OdfObject ) : (OdfObject, Seq[(Path, OdfNode)]) = sharedAndUniques[(OdfObject,Seq[(Path,OdfNode)])](another){(
       uniqueInfos : Seq[OdfInfoItem] ,
       anotherUniqueInfos : Seq[OdfInfoItem] ,
       sharedInfos : Map[Path, Seq[OdfInfoItem]],
@@ -92,20 +101,31 @@ require(path.length > 1,
               throw new Exception("No head found when updating OdfObject")
           }
       }
-    val sharedObjsOut = sharedObjs.flatMap{
+    val sharedObjsTuples = sharedObjs.map{
         case (path:Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
-        sobj.head.update(sobj.last) // assert checks
+        sobj.headOption match{
+          case Some( head ) =>
+            sobj.lastOption match{
+              case Some(last) => 
+                head.update(last)
+              case None =>
+                throw new Exception("No last found when updating OdfObject")
+            }
+            case None =>
+              throw new Exception("No head found when updating OdfObject")
+          }
       }
+    val updatedSharedObjs = sharedObjsTuples.map(_._1).toSeq
+    val sharedObjsOut  = sharedObjsTuples.flatMap(_._2).toSeq
     val anotherUniqueInfosOut = anotherUniqueInfos.map{ info => (info.path, info)}
-    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) } 
-    def getNodes[A]( tuples : Map[Path, _] ) = tuples.collect{case (path, node : A) => node}.toSeq
-    val newObj = (path, OdfObject(
+    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) }
+    val newObj = OdfObject(
       path, 
-      getNodes[OdfInfoItem]( sharedInfosOut ) ++
+      sharedInfosOut.collect{case (path, node : OdfInfoItem) => node}.toSeq ++
       uniqueInfos ++
       anotherUniqueInfos,
-      getNodes[OdfObject]( sharedObjsOut ) ++ 
+      updatedSharedObjs  ++ 
       uniqueObjs ++ 
       anotherUniqueObjs,
       (description, another.description) match{
@@ -120,12 +140,15 @@ require(path.length > 1,
         case (Some(a), None) => Some(a)
         case (None, None) => None
       }
-    ))
-    (Seq(newObj) ++
+    )
+    (
+      newObj,
+      (Seq((path,newObj)) ++
       sharedInfosOut ++
-    sharedObjsOut ++
-    anotherUniqueInfosOut ++
-    anotherUniqueObjsOut).toSeq
+      sharedObjsOut ++
+      anotherUniqueInfosOut ++
+      anotherUniqueObjsOut).toSeq
+    )
   }
 
   private def sharedAndUniques[A]( another: OdfObject )( 

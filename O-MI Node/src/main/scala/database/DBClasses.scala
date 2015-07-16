@@ -12,7 +12,7 @@ import scala.collection.JavaConversions.asJavaIterable
 import types._
 import types.OdfTypes._
 import types.OmiTypes.SubLike
-import types.Path._
+//import types.Path._
 import database._
 
 

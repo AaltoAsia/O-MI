@@ -15,7 +15,7 @@
       return afterWaits.push(fn);
     };
     $(function() {
-      var fn, i, len, responseCMSettings, results;
+      var basicInput, fn, i, len, responseCMSettings, results;
       responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
@@ -26,6 +26,15 @@
       my.requestSel = $('.requesttree');
       my.readAllBtn = $('#readall');
       my.sendBtn = $('#send');
+      ({
+        request: function(reqName) {
+          if (currentParams.request == null) {
+            return my.loadParams(my.defaults[reqName]);
+          } else {
+
+          }
+        }
+      });
       my.odfTreeDom.jstree({
         plugins: ["checkbox", "types"],
         types: {
@@ -50,6 +59,7 @@
         }
       });
       my.odfTree = my.odfTreeDom.jstree();
+      my.odfTree.set_type('Objects', 'objects');
       my.requestSel.jstree({
         core: {
           themes: {
@@ -60,6 +70,51 @@
       }).on("changed.jstree", function(e, data) {
         return console.log(data.node.id);
       });
+      basicInput = function(selector) {
+        return {
+          ref: $(selector),
+          get: function() {
+            return this.ref.val();
+          },
+          set: function(val) {
+            return this.ref.val(val);
+          }
+        };
+      };
+      my.ui = {
+        ttl: basicInput('#ttl'),
+        callback: basicInput('#callback'),
+        requestID: basicInput('#requestID'),
+        odf: {
+          ref: my.odfTreeDom,
+          get: function() {
+            return my.odfTree.get_selected();
+          },
+          set: function(vals) {
+            var i, len, node, results;
+            results = [];
+            for (i = 0, len = vals.length; i < len; i++) {
+              node = vals[i];
+              results.push(my.odfTree.select_node(node));
+            }
+            return results;
+          }
+        },
+        interval: basicInput('#interval'),
+        newest: basicInput('#newest'),
+        oldest: basicInput('#oldest'),
+        begin: basicInput('#begin'),
+        end: basicInput('#end'),
+        requestDoc: {
+          ref: my.requestCodeMirror,
+          get: function() {
+            return WebOmi.formLogic.getRequest();
+          },
+          set: function(val) {
+            return WebOmi.formLogic.setRequest(val);
+          }
+        }
+      };
       my.afterJquery = function(fn) {
         return fn();
       };

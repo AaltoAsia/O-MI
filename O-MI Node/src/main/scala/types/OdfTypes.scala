@@ -3,7 +3,7 @@ package OdfTypes
 
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
-import xml.XML
+import scala.xml.XML
 import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable }

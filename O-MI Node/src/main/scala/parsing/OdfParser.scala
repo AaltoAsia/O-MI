@@ -1,11 +1,10 @@
 package parsing
 
 import types._
-import types.OmiTypes._
-import types.OdfTypes._
+import OmiTypes._
+import OdfTypes._
 import xmlGen._
 import xmlGen.xmlTypes._
-import scala.collection.mutable.Map
 import scala.util.{Try, Success, Failure}
 import java.util.Date
 import scala.util.control.NonFatal

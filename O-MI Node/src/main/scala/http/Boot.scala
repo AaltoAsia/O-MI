@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import java.util.Date
 import java.net.InetSocketAddress
 import agentSystem._
-import responses._
+import responses.{RequestHandler, SubscriptionHandler}
 
 import types._
 import database._

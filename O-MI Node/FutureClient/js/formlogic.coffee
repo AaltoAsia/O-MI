@@ -17,7 +17,7 @@ formLogicExt = ($, WebOmi) ->
     WebOmi.omi.parseXml str
 
   # Do stuff with Objects and automatically write it back
-  # callback: Function (XmlNodeOdf -> ())  
+  # callback: Function (XmlNodeOdf -> ())
   my.modifyRequestOdfs = (callback) ->
     o = WebOmi.omi
     str = WebOmi.consts.requestCodeMirror.getValue()
@@ -131,6 +131,9 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
     consts.sendBtn
       .on 'click', -> formLogic.send()
 
+    consts.resetAllBtn
+      .on 'click', -> requests.forceLoadParams requests.defaults.empty()
+
     consts.odfTreeDom
       .on "select_node.jstree", (_, data) ->
         requests.addPathToRequest data.node.id
@@ -140,9 +143,9 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 )(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic)
 
 $ ->
-  $('.optional-parameters .panel-heading a')
+  $('.optional-parameters > a')
     .on 'click', () ->
-      glyph = $(this).children('span')
+      glyph = $(this).find('span.glyphicon')
       if glyph.hasClass('glyphicon-menu-right')
         glyph.removeClass('glyphicon-menu-right')
         glyph.addClass('glyphicon-menu-down')
