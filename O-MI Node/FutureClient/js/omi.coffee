@@ -29,6 +29,9 @@ omiExt = (WebOmi) ->
   createOdf = (elem, doc) ->
     doc.createElementNS(my.ns.odf, elem)
 
+  my.createOmi = (elem, doc) ->
+    doc.createElementNS(my.ns.omi, elem)
+
   my.createOdfObjects = (doc) ->
     createOdf "Objects", doc
 
