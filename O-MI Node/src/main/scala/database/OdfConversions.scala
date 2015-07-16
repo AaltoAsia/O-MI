@@ -50,7 +50,7 @@ trait OdfConversions extends OmiNodeTables {
     odfConversion(nodeMap)
   }
 
-  protected def hasPathConversion: DBInfoItem => HasPath = {
+  protected def hasPathConversion: DBInfoItem => OdfNode = {
     case (infoItemNode, values) if infoItemNode.isInfoItem  =>
       val odfValues      = values map (_.toOdf) toIterable
       val odfInfoItem    = infoItemNode.toOdfInfoItem(odfValues)
@@ -67,7 +67,7 @@ trait OdfConversions extends OmiNodeTables {
    * @param items input data for single object (objects and infoitems for the first level of children)
    * @return Single object or infoItem extracted from items
    */
-  protected def singleObjectConversion(items: DBInfoItems): Option[HasPath] = {
+  protected def singleObjectConversion(items: DBInfoItems): Option[OdfNode] = {
     //require(items.size > 0, "singleObjectConversion requires data!")
     if (items.size == 0) return None
 

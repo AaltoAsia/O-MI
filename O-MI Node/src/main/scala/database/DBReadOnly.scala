@@ -156,10 +156,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return either Some(OdfInfoItem),Some(OdfObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[ HasPath ] = runSync(getQ(path))
+  def get(path: Path): Option[ OdfNode ] = runSync(getQ(path))
 
   //def getQ(single: OdfElement): OdfElement = ???
-  def getQ(path: Path): DBIOro[Option[HasPath]] = for {
+  def getQ(path: Path): DBIOro[Option[OdfNode]] = for {
 
     subTreeData <- getSubTreeI(path, depth=Some(1))
 
@@ -302,7 +302,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
-    requests: Iterable[HasPath],
+    requests: Iterable[OdfNode],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],

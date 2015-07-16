@@ -436,7 +436,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     database.getSetHooks foreach { _(infoitems.toSeq) }
   }
 
-  def setDescription(hasPath: HasPath): Unit = {
+  def setDescription(hasPath: OdfNode): Unit = {
 
     val path = hasPath.path
     val description = hasPath.description.getOrElse(

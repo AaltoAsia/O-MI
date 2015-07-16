@@ -37,7 +37,7 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
     if( data.nonEmpty){
       handleInfoItems( data.collect{ case infoitem : OdfInfoItem => infoitem } )
       log.debug("Successfully saved Odfs to DB")
-      val hasPaths = getHasPaths(objects.objects.toSeq : _ *).toSet
+      val hasPaths = getOdfNodes(objects.objects.toSeq : _ *).toSet
       val des = hasPaths.collect{
         case hPath if hPath.description.nonEmpty => hPath 
       }.toIterable
