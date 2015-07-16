@@ -19,11 +19,12 @@ object OdfStructure {
   protected var EventSubs : collection.mutable.HashMap[Path, Seq[Int]] = HashMap.empty
   protected var PollSubs : collection.mutable.HashMap[Int, PollSubInfo] = HashMap.empty
 
-  /*
   def addOrUpdate( odfNodes: Seq[OdfNode] ) ={
-    val tmp : (OdfObjects, Seq[(Path, OdfNode)])= odfNodes.map(fromPath(_)).fold((OdfObjects(), Seq[(Path,OdfNode)]())){
+    val tmp : (OdfObjects, Seq[(Path, OdfNode)])= odfNodes.map(fromPath(_)).foldLeft((OdfObjects(), Seq[(Path,OdfNode)]())){
       (a, b) =>
-      a._1.update(b).map{(c,d) => (c,d ++ a._2)} 
+      val updated = a._1.update(b)
+      (updated._1,updated._2 ++ a._2) 
+      
     }
     val (objects, tuples) = OdfTree.update(tmp._1)
     val updated = (tuples ++ tmp._2).toSet.toSeq
@@ -40,7 +41,6 @@ object OdfStructure {
     }.groupBy{ case (id, path) => id}.mapValues{ case seq => seq.map{ case (id, path) => path} }
     //TODO: Trigger event sub responsese  
   } 
-*/
   def get(odfNodes: Seq[OdfNode]) : OdfObjects ={
     odfNodes.map{
       node => 
