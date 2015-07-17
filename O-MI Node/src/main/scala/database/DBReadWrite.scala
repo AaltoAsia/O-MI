@@ -9,7 +9,7 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 import scala.collection.SortedMap
 
 import types._
@@ -60,8 +60,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   /**
    * Adds missing objects(if any) to hierarchy based on given path
    * @param path path whose hierarchy is to be stored to database
+   * @return Inserted (path, id) tuples
    */
-  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[Unit]] = {
+  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[(Path, Int)]] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -77,22 +78,22 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         sqlu"UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY + 2 WHERE LEFTBOUNDARY > ${value}")
     }
 
-    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOrw[Unit] = {
+    // @return insertId
+    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOrw[(Path, Int)] = (for {
 
-      findParentI(fullpath) flatMap { parentO =>
-        val parent = parentO getOrElse {
-          throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
-        }
-
-        val parentRight = parent.rightBoundary
-        val left = parentRight
-        val right = left + 1
-
-        DBIO.seq(
-          increaseAfterQ(parentRight),
-          hierarchyNodes += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)).transactionally
+      parentO <- findParentI(fullpath)
+      parent = parentO getOrElse {
+        throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
       }
-    }
+
+      parentRight = parent.rightBoundary
+      left = parentRight
+      right = left + 1
+
+      _ <- increaseAfterQ(parentRight)
+      
+      insertId <- hierarchyWithInsertId += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)
+    } yield (fullpath, insertId) ).transactionally
 
     val parentsAndPath = path.getParentsAndSelf
 
@@ -317,8 +318,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  Does not remove excess rows if path is set or buffer
    *
    *  @param data sensordata, of type DBSensor to be stored to database.
+   *  @return hierarchy id
    */
-  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Int = {
+  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): (Path, Int) = {
     val updateAction = for {
 
       _ <- addObjectsI(path, true)
@@ -328,34 +330,36 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
       updateResult <- nodeIdSeq.headOption match {
         case None =>
-          DBIO.successful(0)
+          // shouldn't happen
+          throw new RuntimeException("Didn't get nodeIds from query when they were just checked/added")
 
         case Some((id, buffering)) => for {
           _ <- (latestValues += DBValue(id, timestamp, value, valueType))
 
-          result <- if (buffering)
-            removeExcessI(id)
-          else
-            DBIO.successful(1)
-        } yield result
+
+          _ <- if (buffering)
+              removeExcessI(id)
+            else
+              DBIO.successful(())
+        } yield (path, id)
       }
     } yield updateResult
 
-    val run = runSync(updateAction.transactionally)
+    val returnId = runSync(updateAction.transactionally)
 
-    val infoitem = OdfInfoItem( path, collection.JavaConversions.asJavaIterable(Iterable( OdfValue(value, valueType, Some(timestamp) ) ) ) ) 
+    val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, Some(timestamp) ) ) ) 
 
     //Call hooks
     database.getSetHooks foreach { _(Seq(infoitem)) }
     //    println(s"RUN with $path:  $run")
-    run
+    returnId
   }
 
   /**
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def setMany(data: List[(Path, OdfValue)]): Unit = {
+  def setMany(data: List[(Path, OdfValue)]): Seq[(Path, Int)] = {
 
     val pathsData: Map[Path, Seq[OdfValue]] =
       data.groupBy(_._1).mapValues(
@@ -412,28 +416,29 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 //removeAction: $removeAction
 //""")
 //      }
-    } yield ()
+    } yield (idMap map { case (path, (id, _)) => (path, id) }).toSeq
 
-    runSync(writeAction.transactionally)
+    val pathIdRelations = runSync(writeAction.transactionally)
 
     val infoitems = pathsData.collect{
       case (path: Path, values : Seq[OdfValue] ) if values.nonEmpty =>
         OdfInfoItem(
           path,
-          collection.JavaConversions.asJavaIterable(
-            values.map{ va => 
-              OdfValue(
-                va.value,
-                va.typeValue,
-                Some(va.timestamp.getOrElse{
-                  new Timestamp(new java.util.Date().getTime)
-                })
-              )
-          }.toSet)
+          values.map{ va => 
+            OdfValue(
+              va.value,
+              va.typeValue,
+              Some(va.timestamp.getOrElse{
+                new Timestamp(new java.util.Date().getTime)
+              })
+            )
+          }.toIterable
       )
     }
     //Call hooks
     database.getSetHooks foreach { _(infoitems.toSeq) }
+
+    pathIdRelations
   }
 
   def setDescription(hasPath: OdfNode): Unit = {
@@ -787,7 +792,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       subId <- subsWithInsertId += sub
       subItemNodes <- getHierarchyNodesI(dbItems)
 
-      _ = require(subItemNodes.length >= dbItems.length, "Invalid path, no such item found")
+      _ = require(subItemNodes.length >= dbItems.length,
+        s"Invalid path, no such item found, requested $dbItems, found ${subItemNodes.map(_.path)}")
 
       newSubItems = subItemNodes map
         (node => DBSubscriptionItem(subId, node.id.get, None))

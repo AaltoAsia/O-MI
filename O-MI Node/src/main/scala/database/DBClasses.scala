@@ -148,6 +148,7 @@ trait OmiNodeTables extends DBBase {
     )
   }
   protected val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
+  protected val hierarchyWithInsertId = hierarchyNodes returning hierarchyNodes.map(_.id)
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
