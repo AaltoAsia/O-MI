@@ -207,7 +207,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           ////            asd.foreach(println(_))
           //         }
 
-        } yield result
+          } yield result
         else DBIO.successful((0))
 
         //       debug = {

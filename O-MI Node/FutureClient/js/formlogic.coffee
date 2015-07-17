@@ -6,23 +6,26 @@ formLogicExt = ($, WebOmi) ->
 
   my.setRequest = (xml) ->
     mirror = WebOmi.consts.requestCodeMirror
-    if typeof xml == "string"
+    if not xml?
+      mirror.setValue ""
+    else if typeof xml == "string"
       mirror.setValue xml
     else
       mirror.setValue new XMLSerializer().serializeToString xml
+
     mirror.autoFormatAll()
 
   my.getRequest = () ->
     str = WebOmi.consts.requestCodeMirror.getValue()
     WebOmi.omi.parseXml str
 
-  # Do stuff with Objects and automatically write it back
-  # callback: Function (XmlNodeOdf -> ())
-  #my.modifyRequestOdfs = (callback) ->
-  #  o = WebOmi.omi
-  #  req = my.getRequest()
-  #  callback(objects, req) for objects in o.evaluateXPath(req, '//odf:Objects')
-  #  my.setRequest req
+  # Do stuff with RequestDocument and automatically write it back
+  # callback: Function
+  my.modifyRequest = (callback) ->
+    req = my.getRequest()
+    callback()
+    #my.setRequest _
+    WebOmi.requests.generate()
 
   my.getRequestOdf = () ->
     str = WebOmi.consts.requestCodeMirror.getValue()
@@ -133,11 +136,40 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
     consts.resetAllBtn
       .on 'click', -> requests.forceLoadParams requests.defaults.empty()
 
-    consts.odfTreeDom
+    consts.ui.odf.ref
+      .on "changed.jstree", (_, data) ->
+        switch data.action
+          when "select_node"
+            formLogic.modifyRequest -> requests.params.odf.add data.node.id
+          when "deselect_node"
+            formLogic.modifyRequest -> requests.params.odf.remove data.node.id
+
+    consts.ui.request.ref
       .on "select_node.jstree", (_, data) ->
-        requests.addPathToRequest data.node.id
-      .on "deselect_node.jstree", (_, data) ->
-        requests.removePathFromRequest data.node.id
+        reqName = data.node.id
+        console.log reqName
+
+        # force selection to readOnce
+        if reqName == "readReq"
+          consts.ui.request.set "read" # should trigger a new event
+        else
+          # update msg status
+          newHasMsg = requests.defaults[reqName]().msg
+          requests.params.msg.update newHasMsg
+
+          # update ui enabled/disabled settings (can have <msg>, interval, newest, oldest, timeframe?)
+          ui = WebOmi.consts.ui
+          readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end]
+          isReadReq = (
+            reqName == "readAll" or reqName == "read" or reqName == "readReq"
+          )
+          isRequestIdReq = reqName == "cancel" or reqName == "poll"
+
+          input.ref.attr('disabled', not isReadReq) for input in readReqWidgets
+          ui.requestID.ref.attr('disabled', not isRequestIdReq)
+
+          formLogic.modifyRequest -> requests.params.request.update reqName
+
 
 )(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic)
 
