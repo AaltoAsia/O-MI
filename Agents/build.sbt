@@ -17,18 +17,18 @@ autoAPIMappings := true
 
 // SPRAY
 libraryDependencies ++= {
-val akkaV = "2.3.6"
-val sprayV = "1.3.2"
-Seq(
-  "io.spray"            %%  "spray-can"     % sprayV,
-  "io.spray"            %%  "spray-routing" % sprayV,
-  "io.spray"            %%  "spray-testkit" % sprayV  % "test",
-"io.spray"			  %%  "spray-client"  % sprayV,
-  "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
-  "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
-  "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
-"org.json4s" 		  %%  "json4s-native" % "3.2.11"
-)
+  val akkaV = "2.3.6"
+  val sprayV = "1.3.2"
+  Seq(
+    "io.spray"            %%  "spray-can"     % sprayV,
+    "io.spray"            %%  "spray-routing" % sprayV,
+    "io.spray"            %%  "spray-testkit" % sprayV   % "test",
+    "io.spray"		      %%  "spray-client"  % sprayV,
+    "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
+    "com.typesafe.akka"   %%  "akka-testkit"  % akkaV    % "test",
+    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
+    "org.json4s" 		  %%  "json4s-native" % "3.2.11"
+    )
 }
 
 libraryDependencies += "com.beachape.filemanagement" %% "schwatcher" % "0.1.8"
@@ -36,7 +36,7 @@ libraryDependencies += "com.beachape.filemanagement" %% "schwatcher" % "0.1.8"
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
 //scala xml
-libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.3"
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
 
 //slick
 libraryDependencies ++= Seq(
