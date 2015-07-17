@@ -101,94 +101,7 @@ requestsExt = (WebOmi) ->
     confirm "You have edited the request manually.\n
       Do you want to overwrite #{oldVal.toString} with #{newVal.toString}"
 
-  # Req generation setters that check if user has written some own value
-  # Modify request checking the current vs internal, if disagree ask user, set internal
-  # Saves the result in currentParams.requestDoc
-  my.update =
-    request  : (reqName, userDoc) -> # Maybe string (request tag name)
-      if not currentParams.request?
-        my.loadParams my.defaults[reqName]
-      else
-        if userDoc?
-        else
 
-
-    ttl      : 0     # double
-    callback : null  # Maybe String
-    requestID: null  # Maybe Int
-    odf      : null  # Maybe Array String paths
-    interval : null  # Maybe Number
-    newest   : null  # Maybe Int
-    oldest   : null  # Maybe Int
-    begin    : null  # Maybe Date
-    end      : null  # Maybe Date
-    msg      : true  # Boolean whether message is included
-
-  # wrapper to update the ui with generated request
-  my.generate = ->
-    formLogic.setRequest cp.resultDoc
-
-
-  # generate a new request from currentParams
-  my.forceGenerate = ->
-    o = WebOmi.omi
-    cp = currentParams
-
-    # essential parameters
-    if cp.request? && cp.request.length > 0 && cp.ttl?
-      cp.requestDoc = o.parseXml my.xmls.empty
-
-    for key, updateFn of my.update
-      updateFn cp[key],  # TODO: tutturuu~
-      
-
-
-  # force load all parameters in the omiRequestObject and
-  # set them in corresponding UI elements
-  my.forceLoadParams = (omiRequestObject) ->
-    for key, newVal of omiRequestObject
-      currentParams[key] = newVal
-      WebOmi.consts.ui[key].set(newVal)
-    my.forceGenerate()
-
-
-  # @param fastforward: Boolean Whether to also send the request and update odfTree also
-  my.readAll = (fastForward) ->
-    # my.forceLoadParams defaults.readAll()
-    WebOmi.formLogic.setRequest my.xmls.readAll
-
-    if fastForward
-      WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr)
-
-
-  # path: String "Objects/path/to/node"
-  my.addPathToRequest = (path) ->
-    # imports
-    o = WebOmi.omi
-    fl = WebOmi.formLogic
-
-    odfTreeNode = $ jqesc path
-
-    fl.modifyRequestOdfs (currentObjectsHead) ->
-
-      if currentObjectsHead?
-        # TODO: user edit conflict check
-        my.addPathToOdf odfTreeNode, currentObjectsHead
-      else
-        objects = o.createOdfObjects xmlTree
-        my.addPathToOdf odfTreeNode, objects
-        msg.appendChild objects
-
-
-  # path: String "Objects/path/to/node"
-  my.removePathFromRequest = (path) ->
-    # imports
-    o = WebOmi.omi
-    fl = WebOmi.formLogic
-
-    odfTreeNode = $ jqesc path
-    fl.modifyRequestOdfs (odfObjects) ->
-      my.removePathFromOdf odfTreeNode, odfObjects
 
   my.removePathFromOdf = (odfTreeNode, odfObjects) ->
     # imports
@@ -254,6 +167,190 @@ requestsExt = (WebOmi) ->
         currentOdfNode = obj
 
     odfObjects
+
+  # Req generation setters that check if user has written some own value
+  # Modify request checking the current vs internal, if disagree ask user, set internal
+  # Saves the result in currentParams.requestDoc
+  my.params =
+    request  :
+      # selector: ()
+      update  : (reqName) -> # Maybe string (request tag name)
+        if not currentParams.request?
+          my.loadParams my.defaults.read[reqName]
+
+        else if reqName != currentParams.request
+          doc = currentParams.requestDoc
+          currentReq = WebOmi.omi.evaluateXPath(
+            doc, "/omi:Envelope/omi:#{currentParams.request}")[0] # FIXME: head
+
+          newReq = WebOmi.omi.createOmi reqName
+          $.extend newReq.attributes, currentReq.attributes
+          $.extend newReq.children, currentReq.children
+
+          # update enabled/disabled settings (can have <msg>, interval, newest, oldest, timeframe?)
+          newHasMsg = my.defaults[reqName].msg
+          if currentParams.msg != newHasMsg
+            my.params.msg.update newHasMsg
+            my.params.odf.update currentParams.odf
+
+          ui = WebOmi.consts.ui
+          readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end]
+          disabled = (
+            if reqName == "readAll" or reqName == "read" or reqName == "readOnce"
+              false
+            else
+              true
+          )
+          input.ref.props('disabled', disabled) for input in readReqWidgets
+          
+
+          # update internal state
+          currentParams.request = reqName
+
+
+
+    ttl      : # double
+      update : -> # TODO
+    callback : # Maybe String
+      update : -> # TODO
+    requestID: # Maybe Int
+      update : -> # TODO
+    odf      :
+      update : (paths) ->
+        o = WebOmi.omi
+        doc = currentParams.requestDoc
+        if paths? && paths.length > 0
+          obs = o.createOdfObjects doc
+
+          for path in paths  # add
+            odfTreeNode = $ jqesc path
+            my.addPathToOdf odfTreeNode, obs
+
+          if currentParams.msg
+            msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0]
+            msg.appendChild objects
+
+        else
+          obs = WebOmi.omi.evaluateXPath(doc, "//odf:Objects")
+          obs.parentElement.removeChild obs
+
+        currentParams.omi = paths
+
+      # path: String "Objects/path/to/node"
+      add : (path) ->
+        # imports
+        o = WebOmi.omi
+        fl = WebOmi.formLogic
+
+        odfTreeNode = $ jqesc path
+
+        fl.modifyRequestOdfs (currentObjectsHead, req) ->
+
+          if currentObjectsHead?
+            # TODO: user edit conflict check
+            my.addPathToOdf odfTreeNode, currentObjectsHead
+          else if currentParams.msg
+            objects = o.createOdfObjects xmlTree
+            my.addPathToOdf odfTreeNode, objects
+            msg = o.evaluateXPath(req, "//omi:msg")[0]
+            if msg?
+              msg.appendChild objects
+            else
+              console.log "error msg = #{msg}"
+
+          # update currentparams
+          if currentParams.odf?
+            currentParams.odf.push path
+          else currentParams.odf = [path]
+
+      # path: String "Objects/path/to/node"
+      remove : (path) ->
+        # imports
+        o = WebOmi.omi
+        fl = WebOmi.formLogic
+
+        if currentParams.msg
+          odfTreeNode = $ jqesc path
+          fl.modifyRequestOdfs (odfObjects) ->
+            my.removePathFromOdf odfTreeNode, odfObjects
+
+        # update currentparams
+        if currentParams.odf?
+          currentParams.odf.filter (p) -> p != path
+        else currentParams.odf = []
+
+    interval : # Maybe Number
+      update : -> # TODO
+    newest   : # Maybe Int
+      update : -> # TODO
+    oldest   : # Maybe Int
+      update : -> # TODO
+    begin    : # Maybe Date
+      update : -> # TODO
+    end      : # Maybe Date
+      update : -> # TODO
+    msg      : # Boolean whether message is included
+      update : (hasMsg) ->
+        o = WebOmi.omi
+        doc = currentParams.resultDoc
+        # recheck
+        if hasMsg == currentParams.msg then return
+
+        if hasMsg  # add
+          #msgExists = o.evaluateXPath(currentParams.requestDoc, "")
+          msg = o.createOmi "msg"
+          msg.setAttribute "xmlns", "odf.xsd"
+          requestElem = o.evaluateXPath(doc, "/omi:Envelope/*")[0]
+          if requestElem?
+            requestElem.appendChild msg
+          else return # TODO: what
+
+        else  # remove
+          msg = o.evaluateXPath(doc, "/omi:Envelope/*/omi:msg")
+          # extra safe: remove all msgs
+          m.parentElement.removeChild m for m in msg
+
+        currentParams.msg = hasMsg
+
+  # wrapper to update the ui with generated request
+  my.generate = ->
+    formLogic.setRequest cp.requestDoc
+
+
+  # generate a new request from currentParams
+  my.forceGenerate = (useOldDoc=false) ->
+    o = WebOmi.omi
+    cp = currentParams
+
+    # essential parameters
+    if cp.request? && cp.request.length > 0 && cp.ttl?
+      if not (cp.requestDoc? && useOldDoc)
+        cp.requestDoc = o.parseXml my.xmls.template
+    else return
+
+    for key, updateFn of my.update
+      updateFn cp[key],  # TODO: tutturuu~
+      
+
+
+  # force load all parameters in the omiRequestObject and
+  # set them in corresponding UI elements
+  my.forceLoadParams = (omiRequestObject, useOldDoc=false) ->
+    for key, newVal of omiRequestObject
+      currentParams[key] = newVal
+      WebOmi.consts.ui[key].set(newVal)
+    my.forceGenerate()
+
+
+  # @param fastforward: Boolean Whether to also send the request and update odfTree also
+  my.readAll = (fastForward) ->
+    # my.forceLoadParams defaults.readAll()
+    WebOmi.formLogic.setRequest my.xmls.readAll
+
+    if fastForward
+      WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr)
+
+
 
 
 

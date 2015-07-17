@@ -18,12 +18,11 @@ formLogicExt = ($, WebOmi) ->
 
   # Do stuff with Objects and automatically write it back
   # callback: Function (XmlNodeOdf -> ())
-  my.modifyRequestOdfs = (callback) ->
-    o = WebOmi.omi
-    str = WebOmi.consts.requestCodeMirror.getValue()
-    req = o.parseXml str
-    callback(objects) for objects in o.evaluateXPath(req, '//odf:Objects')
-    my.setRequest req
+  #my.modifyRequestOdfs = (callback) ->
+  #  o = WebOmi.omi
+  #  req = my.getRequest()
+  #  callback(objects, req) for objects in o.evaluateXPath(req, '//odf:Objects')
+  #  my.setRequest req
 
   my.getRequestOdf = () ->
     str = WebOmi.consts.requestCodeMirror.getValue()

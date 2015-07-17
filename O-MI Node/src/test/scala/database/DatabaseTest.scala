@@ -68,10 +68,10 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
     lazy val id3 = db.saveSub(NewDBSub(2.seconds, newTs, 100.seconds, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2"), Path("/Objects/path/to/sensor3")))//, Path("/Objects/path/to/another/sensor2")))
 
     "return true when adding new data" in {
-      db.set(data1._1, data1._2, data1._3)
-      db.set(data2._1, data2._2, data2._3) === 0
-      db.set(data3._1, data3._2, data3._3) === 0
-      db.set(data4._1, data4._2, data4._3) === 0
+      db.set(data1._1, data1._2, data1._3)._1 === data1._1
+      db.set(data2._1, data2._2, data2._3)._1 === data2._1
+      db.set(data3._1, data3._2, data3._3)._1 === data3._1
+      db.set(data4._1, data4._2, data4._3)._1 === data4._1
       //      db.set(data5._1, data5._2, data5._3) ===0 // shouldEqual false
       //      db.set(data6._1, data6._2, data6._3) ===0
     }
@@ -90,8 +90,8 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(15000), "21.5C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(16000), "21.5C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(17000), "21.6C")
-      db.set(data6._1, data6._2, data6._3) === 0
-      db.set(data5._1, data5._2, data5._3) === 0
+      db.set(data6._1, data6._2, data6._3)._1 === data6._1
+      db.set(data5._1, data5._2, data5._3)._1 === data5._1
     }
 
     "return correct value for given valid path" in {

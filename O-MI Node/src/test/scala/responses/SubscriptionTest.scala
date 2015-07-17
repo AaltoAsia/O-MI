@@ -229,9 +229,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       parserlist.isRight === true
       val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
-      val requestID = Try(requestReturn.map(x => x._1.\\("requestID").text.toInt)).toOption.flatten
-      //      val (requestID, xmlreturn) = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])
 
+      /* we don't want this to break every time we change the error message
       val correctxml =
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
@@ -240,11 +239,13 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
-
-      requestID must beNone //Some(===(-1)) // === -1
-      requestReturn must beSome.which(_._1.headOption must beSome.which(_ must beEqualToIgnoringSpace(correctxml)))
-      //xmlreturn.head must beEqualToIgnoringSpace(correctxml)
-      //      (requestID, trim(xmlreturn.head)) === (-1, trim(correctxml))
+        */
+      requestReturn must beSome.which {
+        _._1.headOption must beSome.which { response =>
+          response must not (\\("requestID"))
+          response must \("response") \("result") \("return", "returnCode" -> "40[40]")
+        }
+      }
     }
 
     "Return with error when subscription doesn't exist" in {
