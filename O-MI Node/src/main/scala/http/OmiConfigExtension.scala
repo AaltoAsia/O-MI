@@ -18,6 +18,7 @@ class OmiConfigExtension(config: Config) extends Extension {
   val internalAgents = config.getObject("agent-system.internal-agents") 
   val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
   val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") 
+  val timeoutOnThreadException: Int = config.getInt("agent-system.timeout-on-threadexception")
 }
 
 
