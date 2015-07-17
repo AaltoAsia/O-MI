@@ -407,6 +407,29 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
   }
 
+  def getNBetweenWithHierarchyIds(
+    infoItemIdTuples: Seq[(Int,OdfInfoItem)],
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]
+  ): OdfObjects =
+  {
+    val ids = infoItemIdTuples.map{case (id, info) => id}
+    val betweenValues = runSync( 
+      nBetweenLogicQ(
+        latestValues.filter{_.hierarchyId.inSet(ids)},
+        begin,
+        end,
+        newest,
+        oldest
+      ).result
+    )
+    infoItemIdTuples.map{
+      case (id, info) => 
+      fromPath( info.copy( values = betweenValues.collect{ case dbval if dbval.hierarchyId == id => dbval.toOdf} ) )
+    }.foldLeft(OdfObjects())(_.combine(_))
+  }
 
 
   /**
