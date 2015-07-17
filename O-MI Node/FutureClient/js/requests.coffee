@@ -43,6 +43,7 @@ requestsExt = (WebOmi) ->
 
   my.defaults = {}
   my.defaults.empty = ->
+    name     : "empty"
     request  : null  # Maybe string (request tag name)
     ttl      : 0     # double
     callback : null  # Maybe string
@@ -58,17 +59,22 @@ requestsExt = (WebOmi) ->
 
   my.defaults.readAll = ->
     $.extend {}, my.defaults.empty(),
+      name    : "readAll"
       request : "read"
       odf     : ["Objects"]
       requestDoc: WebOmi.omi.parseXml(my.xmls.readAll)
 
-  my.defaults.readOnce = ->
+  my.defaults.read = ->
     $.extend {}, my.defaults.empty(),
-      request : "read"
+      request : "readOnce"
       odf     : ["Objects"]
+
+  #my.defaults.readOnce = -> my.defaults.read()
+  # rather force selection to readOnce
 
   my.defaults.subscription = ->
     $.extend {}, my.defaults.empty(),
+      name    : "subscription"
       request : "read"
       interval: 5
       ttl     : 60
@@ -76,17 +82,20 @@ requestsExt = (WebOmi) ->
 
   my.defaults.poll = ->
     $.extend {}, my.defaults.empty(),
+      name    : "poll"
       request : "read"
       requestID : 1
       msg     : false
 
   my.defaults.write = ->
     $.extend {}, my.defaults.empty(),
+      name    : "write"
       request : "write"
       odf     : ["Objects"]
 
   my.defaults.cancel = ->
     $.extend {}, my.defaults.empty(),
+      name    : "cancel"
       request : "cancel"
       requestID : 1
       odf     : null
@@ -94,7 +103,7 @@ requestsExt = (WebOmi) ->
 
 
   # private
-  currentParams = my.defaults.empty
+  currentParams = my.defaults.empty()
 
   # true
   my.confirmOverwrite = (oldVal, newVal) ->
@@ -176,33 +185,18 @@ requestsExt = (WebOmi) ->
       # selector: ()
       update  : (reqName) -> # Maybe string (request tag name)
         if not currentParams.request?
-          my.loadParams my.defaults.read[reqName]
+          my.forceLoadParams my.defaults[reqName]()
 
         else if reqName != currentParams.request
           doc = currentParams.requestDoc
           currentReq = WebOmi.omi.evaluateXPath(
-            doc, "/omi:Envelope/omi:#{currentParams.request}")[0] # FIXME: head
+            doc, "omi:omiEnvelope/*")[0] # FIXME: head
 
-          newReq = WebOmi.omi.createOmi reqName
-          $.extend newReq.attributes, currentReq.attributes
-          $.extend newReq.children, currentReq.children
+          newReq = WebOmi.omi.createOmi reqName, doc
+          newReq.setAttribute attr.name,attr.value for attr in currentReq.attributes
+          newReq.appendChild child for child in currentReq.childNodes
 
-          # update enabled/disabled settings (can have <msg>, interval, newest, oldest, timeframe?)
-          newHasMsg = my.defaults[reqName].msg
-          if currentParams.msg != newHasMsg
-            my.params.msg.update newHasMsg
-            my.params.odf.update currentParams.odf
-
-          ui = WebOmi.consts.ui
-          readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end]
-          disabled = (
-            if reqName == "readAll" or reqName == "read" or reqName == "readOnce"
-              false
-            else
-              true
-          )
-          input.ref.props('disabled', disabled) for input in readReqWidgets
-          
+          currentReq.parentNode.replaceChild newReq, currentReq
 
           # update internal state
           currentParams.request = reqName
@@ -231,8 +225,8 @@ requestsExt = (WebOmi) ->
             msg.appendChild objects
 
         else
-          obs = WebOmi.omi.evaluateXPath(doc, "//odf:Objects")
-          obs.parentElement.removeChild obs
+          obss = WebOmi.omi.evaluateXPath(doc, "//odf:Objects")
+          obs.parentElement.removeChild obs for obs in obss
 
         currentParams.omi = paths
 
@@ -243,9 +237,10 @@ requestsExt = (WebOmi) ->
         fl = WebOmi.formLogic
 
         odfTreeNode = $ jqesc path
+        req = currentParams.requestDoc
 
-        fl.modifyRequestOdfs (currentObjectsHead, req) ->
-
+        if req?
+          currentObjectsHead = o.evaluateXPath(req, '//odf:Objects')[0]
           if currentObjectsHead?
             # TODO: user edit conflict check
             my.addPathToOdf odfTreeNode, currentObjectsHead
@@ -258,10 +253,10 @@ requestsExt = (WebOmi) ->
             else
               console.log "error msg = #{msg}"
 
-          # update currentparams
-          if currentParams.odf?
-            currentParams.odf.push path
-          else currentParams.odf = [path]
+        # update currentparams
+        if currentParams.odf?
+          currentParams.odf.push path
+        else currentParams.odf = [path]
 
       # path: String "Objects/path/to/node"
       remove : (path) ->
@@ -269,9 +264,12 @@ requestsExt = (WebOmi) ->
         o = WebOmi.omi
         fl = WebOmi.formLogic
 
-        if currentParams.msg
+        req = currentParams.requestDoc
+        if currentParams.msg and req?
           odfTreeNode = $ jqesc path
-          fl.modifyRequestOdfs (odfObjects) ->
+
+          odfObjects = o.evaluateXPath(req, '//odf:Objects')[0]
+          if odfObjects?
             my.removePathFromOdf odfTreeNode, odfObjects
 
         # update currentparams
@@ -292,21 +290,24 @@ requestsExt = (WebOmi) ->
     msg      : # Boolean whether message is included
       update : (hasMsg) ->
         o = WebOmi.omi
-        doc = currentParams.resultDoc
-        # recheck
+        doc = currentParams.requestDoc
+
         if hasMsg == currentParams.msg then return
 
         if hasMsg  # add
           #msgExists = o.evaluateXPath(currentParams.requestDoc, "")
-          msg = o.createOmi "msg"
+          msg = o.createOmi "msg", doc
           msg.setAttribute "xmlns", "odf.xsd"
-          requestElem = o.evaluateXPath(doc, "/omi:Envelope/*")[0]
+          requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.appendChild msg
-          else return # TODO: what
+            my.params.odf.update currentParams.odf
+          else
+            console.log "ERROR: No request found"
+            return # TODO: what
 
         else  # remove
-          msg = o.evaluateXPath(doc, "/omi:Envelope/*/omi:msg")
+          msg = o.evaluateXPath(doc, "/omi:omiEnvelope/*/omi:msg")
           # extra safe: remove all msgs
           m.parentElement.removeChild m for m in msg
 
@@ -314,7 +315,7 @@ requestsExt = (WebOmi) ->
 
   # wrapper to update the ui with generated request
   my.generate = ->
-    formLogic.setRequest cp.requestDoc
+    WebOmi.formLogic.setRequest currentParams.requestDoc
 
 
   # generate a new request from currentParams
@@ -322,24 +323,29 @@ requestsExt = (WebOmi) ->
     o = WebOmi.omi
     cp = currentParams
 
+    if not useOldDoc || not cp.requestDoc?
+      cp.requestDoc = o.parseXml my.xmls.template
+      cp.request = "empty" # just for params.request.update check
+
     # essential parameters
     if cp.request? && cp.request.length > 0 && cp.ttl?
-      if not (cp.requestDoc? && useOldDoc)
-        cp.requestDoc = o.parseXml my.xmls.template
+      for key, updateFn of my.update
+        updateFn cp[key]
+        
+        my.generate()
+
     else return
-
-    for key, updateFn of my.update
-      updateFn cp[key],  # TODO: tutturuu~
-      
-
 
   # force load all parameters in the omiRequestObject and
   # set them in corresponding UI elements
   my.forceLoadParams = (omiRequestObject, useOldDoc=false) ->
     for key, newVal of omiRequestObject
-      currentParams[key] = newVal
-      WebOmi.consts.ui[key].set(newVal)
-    my.forceGenerate()
+      #currentParams[key] = newVal # confuses the update logic
+      uiWidget = WebOmi.consts.ui[key]
+      if uiWidget?
+        uiWidget.set newVal
+
+    my.forceGenerate useOldDoc
 
 
   # @param fastforward: Boolean Whether to also send the request and update odfTree also

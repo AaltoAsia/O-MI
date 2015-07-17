@@ -26,16 +26,12 @@ constsExt = ($, parent) ->
     my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
     my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], responseCMSettings
     
-    my.serverUrl  = $ '#targetService'
-    my.odfTreeDom = $ '#nodetree'
-    my.requestSel = $ '.requesttree'
-    my.readAllBtn = $ '#readall'
-    my.sendBtn    = $ '#send'
-
-    request  : (reqName) -> # Maybe string (request tag name)
-      if not currentParams.request?
-        my.loadParams my.defaults[reqName]
-      else
+    my.serverUrl    = $ '#targetService'
+    my.odfTreeDom   = $ '#nodetree'
+    my.requestSelDom= $ '.requesttree'
+    my.readAllBtn   = $ '#readall'
+    my.sendBtn      = $ '#send'
+    my.resetAllBtn  = $ '#resetall'
 
 
     my.odfTreeDom
@@ -59,14 +55,12 @@ constsExt = ($, parent) ->
     my.odfTree = my.odfTreeDom.jstree()
     my.odfTree.set_type('Objects', 'objects')
 
-    my.requestSel
+    my.requestSelDom
       .jstree
         core :
           themes :
             icons : false
           multiple : false
-      .on "changed.jstree", (e, data) ->
-        console.log data.node.id
 
     basicInput = (selector) ->
       ref : $ selector
@@ -75,6 +69,16 @@ constsExt = ($, parent) ->
 
     # refs, setters, getters
     my.ui =
+      request  : # String
+        ref : my.requestSelDom
+        set : (reqName) -> # Maybe string (request tag name)
+          tree = @ref.jstree()
+          if not tree.is_selected reqName
+            tree.deselect_all()
+            tree.select_node reqName, true, false
+        get : ->
+          @ref.jstree().get_selected[0]
+
       ttl      : # double
         basicInput '#ttl'
       callback : # Maybe string
@@ -84,7 +88,11 @@ constsExt = ($, parent) ->
       odf      : # Array String paths
         ref : my.odfTreeDom
         get :        -> my.odfTree.get_selected()
-        set : (vals) -> my.odfTree.select_node node for node in vals
+        set : (vals) ->
+          if vals? and vals.length > 0
+            my.odfTree.select_node node, true, false for node in vals
+          else
+            my.odfTree.deselect_all true
       interval : # Maybe number
         basicInput '#interval'
       newest   : # Maybe int

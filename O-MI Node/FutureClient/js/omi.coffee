@@ -4,7 +4,20 @@ omiExt = (WebOmi) ->
   my = WebOmi.omi = {}
 
   my.parseXml = (responseString) ->
-    window.xmlTree = new DOMParser().parseFromString responseString, 'text/xml'
+    try
+      xmlTree = new DOMParser().parseFromString responseString, 'application/xml'
+    catch ex
+      # parsererror or FIXME: unsupported?
+      xmlTree = null
+  
+    # mozilla parsererror
+    if xmlTree.firstElementChild.nodeName == "parsererror" or not xmlTree?
+      console.log "PARSE ERROR:"
+      console.log "in:", responseString
+      console.log "out:", xmlTree # TODO: remove these debuglines
+      xmlTree = null
+
+    xmlTree
 
   # XML Namespace URIs used in the client
   my.ns =
