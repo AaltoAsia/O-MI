@@ -117,6 +117,56 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     addingAction.transactionally
   }
 
+  def addNodes(odfNodes: Seq[OdfNode] ) :Seq[(Path,Int)] = {
+    /** Query: Increase right and left values after value */
+    def increaseAfterQ(value: Int) = {
+
+      // NOTE: Slick 3.0.0 doesn't allow this query with its types, use sql instead
+      //val rightValsQ = hierarchyNodes map (_.rightBoundary) filter (_ > value) 
+      //val leftValsQ  = hierarchyNodes map (_.leftBoundary) filter (_ > value)
+      //val rightUpdateQ = rightValsQ.map(_ + 2).update(rightValsQ)
+      //val leftUpdateQ  =  leftValsQ.map(_ + 2).update(leftValsQ)
+
+      DBIO.seq(
+        sqlu"UPDATE HIERARCHYNODES SET RIGHTBOUNDARY = RIGHTBOUNDARY + 2 WHERE RIGHTBOUNDARY >= ${value}",
+        sqlu"UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY + 2 WHERE LEFTBOUNDARY > ${value}")
+    }
+
+    // @return insertId
+    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOrw[(Path, Int)] = (for {
+
+      parentO <- findParentI(fullpath)
+      parent = parentO getOrElse {
+        throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
+      }
+
+      parentRight = parent.rightBoundary
+      left = parentRight
+      right = left + 1
+
+      _ <- increaseAfterQ(parentRight)
+      
+      insertId <- hierarchyWithInsertId += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)
+    } yield (fullpath, insertId) ).transactionally
+
+    val addingAction = DBIO.sequence(
+      odfNodes.sortBy(_.path.length).map{
+        case objs : OdfObjects=> 
+          addNode(false)(objs.path)
+        case obj : OdfObject=> 
+          addNode(false)(obj.path)
+        case info : OdfInfoItem=> 
+          addNode(true)(info.path)
+      }
+    ) 
+
+    // NOTE: transaction level probably could be reduced to increaseAfter + DBNode insert
+    runSync( addingAction.transactionally )
+  
+  }
+
+
+
   /**
    * Used to remove data before given timestamp
    * @param path path to sensor as Path object
@@ -629,6 +679,23 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield removeCount
 
     removeAction.transactionally
+  }
+  def removeN(idNTuples: Seq[(Int,Int)])={
+    val removes = DBIO.sequence(
+    idNTuples.map{
+      case (id: Int, n: Int) =>
+        latestValues.filter(_.hierarchyId === id ).sortBy(_.timestamp.asc).take(n).delete
+    })
+    runSync(removes.transactionally)
+  }
+  def removeBefore(idTimeTuples: Seq[(Int,Timestamp)] ) = {
+    val removes = DBIO.sequence(
+    idTimeTuples.map{
+      case (id: Int, time: Timestamp) =>
+      latestValues.filter(_.hierarchyId === id ).filter{value => value.timestamp < time}.delete
+    })
+    runSync(removes.transactionally)
+  
   }
 
   //  private def removeBefodre(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
