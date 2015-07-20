@@ -376,6 +376,7 @@ requestsExt = (WebOmi) ->
           requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.appendChild msg
+            requestElem.setAttribute "msgformat", "odf"
             currentParams.msg = hasMsg
             my.params.odf.update currentParams.odf
             # FIXME dependency
@@ -387,6 +388,10 @@ requestsExt = (WebOmi) ->
           msg = o.evaluateXPath(doc, "/omi:omiEnvelope/*/omi:msg")
           # extra safe: remove all msgs
           m.parentElement.removeChild m for m in msg
+
+          requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
+          if requestElem?
+            requestElem.removeAttribute "msgformat"
 
         currentParams.msg = hasMsg
 

@@ -358,6 +358,7 @@
             requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
             if (requestElem != null) {
               requestElem.appendChild(msg);
+              requestElem.setAttribute("msgformat", "odf");
               currentParams.msg = hasMsg;
               my.params.odf.update(currentParams.odf);
             } else {
@@ -369,6 +370,10 @@
             for (i = 0, len = msg.length; i < len; i++) {
               m = msg[i];
               m.parentElement.removeChild(m);
+            }
+            requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
+            if (requestElem != null) {
+              requestElem.removeAttribute("msgformat");
             }
           }
           return currentParams.msg = hasMsg;
