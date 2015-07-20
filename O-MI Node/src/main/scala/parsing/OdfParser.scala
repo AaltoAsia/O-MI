@@ -68,7 +68,7 @@ object OdfParser extends Parser[OdfParseResult] {
   }
 
   private def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
-    val npath = path / obj.id.head.value
+    val npath = path / obj.id.head.value.trim
       OdfObject(
         npath, 
         obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
