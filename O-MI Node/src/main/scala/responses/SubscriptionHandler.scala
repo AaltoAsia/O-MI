@@ -381,7 +381,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     Future {
       loadSub(dbsub)
     } onComplete {
-      case Success(v) => println("SUCCESS")
+      case Success(v) => log.info("Successfully added subscription with ID: " + requestID)
       case Failure(e) => log.error(e.getStackTrace().mkString("\n"))
     }
     requestID
@@ -399,7 +399,9 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
     //exists returns false if Option is None
     while (ttlQueue.headOption.exists(_.ttlMillis <= currentTime)) {
-      dbConnection.removeSub(ttlQueue.dequeue().id)
+      val id = ttlQueue.dequeue().id
+//      log.info("removing sub: " + id)
+      dbConnection.removeSub(id)
     }
 
     //foreach does nothing if Option is None
@@ -410,7 +412,13 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
       //cancellable event of the next checkTTL method call
       val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
-
+      
+////////////////////////////////////////////////////
+//                                                //
+//   removed overly complicated logic  below      //
+//                                                //
+////////////////////////////////////////////////////
+/*
       /*
        * logic for updating the cancellable:
        * if event is cancelled or empty, then add the previous cancellable to queue
@@ -433,7 +441,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
             case (_, eventRunTime) => ((eventRunTime > currentTime) && (eventRunTime < (currentTime + nextRun)))
           }.foreach { event => cancellable.cancel() } //case (scheduledEvent, _) => scheduledEvent.cancel() }
         }
-      }
+      }*/
     }
   }
 }

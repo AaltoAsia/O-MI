@@ -2,6 +2,7 @@ package responses
 
 import org.specs2.mutable._
 import org.specs2.matcher.XmlMatchers._
+import org.specs2.specification.Scope
 import scala.io.Source
 
 import responses._
@@ -23,10 +24,13 @@ import scala.xml.Utility.trim
 import scala.xml.XML
 
 import akka.actor._
-import akka.testkit.{ TestKit, TestActorRef }
+import akka.testkit.{ TestKit, TestActorRef, EventFilter }
+import akka.testkit.TestEvent.{Mute, UnMute}
+import akka.pattern.ask
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.Try
+import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable.Iterable
 import scala.collection.JavaConversions.asJavaIterable
@@ -39,12 +43,21 @@ import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor, DeactivatedTi
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 //
+
 @RunWith(classOf[JUnitRunner])
 class SubscriptionTest extends Specification with BeforeAfterAll with DeactivatedTimeConversions {
   sequential
 
-  implicit val system = ActorSystem("on-core")
+  implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
+    """
+            akka.loggers = ["akka.testkit.TestEventListener"]
+            akka.stdout-loglevel = INFO
+            akka.loglevel = DEBUG
+            akka.log-dead-letters-during-shutdown = off
+            akka.jvm-exit-on-fatal-error = off
+            """))
   implicit val dbConnection = new TestDB("subscription-response-test")
+  implicit val timeout = akka.util.Timeout.apply(5000)
   //  {
   //    def setVal(path: Path) = runSync(this.addObjectsI(path, true))
   //  }
@@ -57,7 +70,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
   }
 
-  val subscriptionHandlerRef = TestActorRef(Props(new SubscriptionHandler()(dbConnection))) //[SubscriptionHandler]
+  val subscriptionHandlerRef = system.actorOf((Props(new SubscriptionHandler()(dbConnection)))) //[SubscriptionHandler]
 
   val requestHandler = new RequestHandler(subscriptionHandlerRef)(dbConnection)
 
@@ -111,7 +124,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     //  val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[SubscriptionRequest])
   }
   def afterAll = {
-    //    dbConnection.destroy()
+    system.shutdown()
+    dbConnection.destroy()
   }
 
   "Subscription response" should {
@@ -242,8 +256,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
         */
       requestReturn must beSome.which {
         _._1.headOption must beSome.which { response =>
-          response must not (\\("requestID"))
-          response must \("response") \("result") \("return", "returnCode" -> "40[40]")
+          response must not(\\("requestID"))
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "40[40]")
         }
       }
     }
@@ -400,21 +414,21 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
       val testSub1 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime), Duration.Inf, None), Array(testPath))
       val testSub2 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime + 5000), Duration.Inf, None), Array(testPath))
-      
+
       (11 to 20).foreach(n =>
         dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
-      
+
       val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
       test1.\\("value").length === 20
-      
+
       val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
       test2.\\("value").length === 0
-      
+
       dbConnection.set(testPath, newTimestamp(), "21")
-      
+
       val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
       test3.\\("value").length === 1
-      
+
       val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub2.id)))._1
       test4.\\("value").length === 16
 
@@ -430,6 +444,49 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       dbConnection.getSub(testSub) must beSome
       //      Thread.sleep(3000) //NOTE this might need to be uncommented 
       dbConnection.getSub(testSub) must beNone.eventually(3, new org.specs2.time.Duration(1000))
+    }
+
+    /*
+     * 
+   case class SubscriptionRequest(
+  ttl: Duration,
+  interval: Duration,
+  odf: OdfObjects ,
+  newest: Option[ Int ] = None,
+  oldest: Option[ Int ] = None,
+  callback: Option[ String ] = None
+) extends OmiRequest with SubLike with OdfRequest
+     */
+
+    "Subscription removing logic should work with large number of subscriptions" in {
+      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
+      val testTime = new Date().getTime - 3000
+      dbConnection.set(testPath, new java.sql.Timestamp(testTime), "testValue")
+      val testOdfObjects = dbConnection.getNBetween(dbConnection.get(testPath), None, None, None, None)
+      
+//      system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info()))
+//      system.eventStream.publish(Mute(EventFilter.info()))
+      
+      val start = System.currentTimeMillis()
+      val subscriptions = ((1 until 100).toList ::: List(10000)).par.map { a =>
+        //        println("saving sub with ttl " + a + " milliseconds")
+        Await.result((subscriptionHandlerRef ? NewSubscription(SubscriptionRequest(a milliseconds, -1 seconds, testOdfObjects.get))).mapTo[Try[Int]], Duration.Inf).get //dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(), a milliseconds, None), Array(testPath))
+        //        println(s"got $id")
+        //        id
+      }
+      
+      system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info()))
+      val stop = System.currentTimeMillis()
+      println("added 100 subs in: " + (stop-start) + "milliseconds")
+      //      }
+      println("sleepin 700");
+      Thread.sleep(800)
+
+      subscriptions.init.foreach { x =>
+        val das = dbConnection.getSub(x)
+        das must beNone
+      }
+      dbConnection.getSub(subscriptions.last) must beSome
     }
 
   }

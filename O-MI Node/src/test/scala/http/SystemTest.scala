@@ -20,15 +20,18 @@ import java.net.InetSocketAddress
 import org.specs2.specification.Fragments
 import java.text.SimpleDateFormat
 import java.util.{ TimeZone, Locale }
-import akka.testkit.TestProbe
+import akka.testkit.{TestProbe, EventFilter}
+import akka.testkit.TestEvent.{Mute, UnMute}
 import spray.can.Http
+import com.typesafe.config.ConfigFactory
 
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class SystemTest extends Specification with Starter with AfterAll {
-
+  
+            
   override def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
     val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
@@ -47,7 +50,9 @@ class SystemTest extends Specification with Starter with AfterAll {
   }
 
   sequential
+  
   import system.dispatcher
+
 
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")

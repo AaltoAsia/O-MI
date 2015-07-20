@@ -11,7 +11,7 @@ import responses.{ SubscriptionHandler, RequestHandler }
 import parsing._
 import http._
 import scala.concurrent.duration._
-import scala.concurrent.future
+import scala.concurrent.Future
 import agentSystem.InternalAgentCLICmds._
 
 import akka.testkit.{ TestKit, TestActorRef, TestProbe, ImplicitSender, EventFilter }
@@ -34,9 +34,9 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class InternalAgentLoaderTest extends Specification { // with AfterAll {
+//  sequential
 
   "InternalAgentLoaderActor" should {
-
     "contain external agents in the bootables" in new Actorstest(ActorSystem()) {
 
       val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
@@ -73,7 +73,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
         actorRef.receive(StartCmd(agentName))
       }
 
-      future { actor.getAgents(agentName).agent must beSome.which { agent => agent.isRunning must beTrue } }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
+      Future { actor.getAgents(agentName).agent must beSome.which { agent => agent.isRunning must beTrue } }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
 
     }
 
@@ -96,7 +96,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
 
       eActor must beSome.which { _.isRunning must beFalse }
 
-      future { actor.getAgents(agentName).agent must beSome.which(_.isRunning must beTrue) }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
+      Future { actor.getAgents(agentName).agent must beSome.which(_.isRunning must beTrue) }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
     }
 
     "handle exceptions if trying to load non-existing agents" in new Actorstest(
