@@ -62,11 +62,11 @@ requestsExt = (WebOmi) ->
       name    : "readAll"
       request : "read"
       odf     : ["Objects"]
-      requestDoc: WebOmi.omi.parseXml(my.xmls.readAll)
 
   my.defaults.read = ->
     $.extend {}, my.defaults.empty(),
-      request : "readOnce"
+      name    : "readOnce"
+      request : "read"
       odf     : ["Objects"]
 
   #my.defaults.readOnce = -> my.defaults.read()
@@ -181,14 +181,46 @@ requestsExt = (WebOmi) ->
 
     odfObjects
 
+  # private
+  updateSetterForAttr = (name, attrParentXPath) ->
+    update : (newVal) ->
+      o = WebOmi.omi
+      doc = currentParams.requestDoc
+      if currentParams[name] != newVal
+        attrParents = o.evaluateXPath doc, attrParentXPath
+        if not attrParents?
+          console.log "Tried to update #{name}, but #{attrParentXPath} was not found in", doc
+        else
+          for parent in attrParents
+            if newVal?
+              parent.setAttribute name, newVal
+            else
+              parent.removeAttribute name
+
+        currentParams[name] = newVal
+
+
+
   # Req generation setters that check if user has written some own value
   # Modify request checking the current vs internal, if disagree ask user, set internal
   # Saves the result in currentParams.requestDoc
   my.params =
+    name :
+      update : (name) ->
+        if currentParams.name != name
+          currentParams.name = name
+          requestTag = switch name
+            when "poll", "subscription", "readAll", "readReq", "readOnce", "template"
+              "read"
+            when "empty"
+              null
+            else name
+          my.params.request.update requestTag
+
     request  :
       # selector: ()
       update  : (reqName) -> # Maybe string (request tag name)
-        if not currentParams.request?
+        if not currentParams.requestDoc?
           my.forceLoadParams my.defaults[reqName]()
 
         else if reqName != currentParams.request
@@ -218,11 +250,35 @@ requestsExt = (WebOmi) ->
 
 
     ttl      : # double
-      update : -> # TODO
+      updateSetterForAttr "ttl", "omi:omiEnvelope"
     callback : # Maybe String
-      update : -> # TODO
+      updateSetterForAttr "callback", "omi:omiEnvelope/*"
     requestID: # Maybe Int
-      update : -> # TODO
+      update : (newVal) ->
+        o = WebOmi.omi
+        doc = currentParams.requestDoc
+        parentXPath = "omi:omiEnvelope/*"
+        if currentParams.requestID != newVal
+          parents = o.evaluateXPath doc, parentXPath
+          if not parents?
+            console.log "Tried to update requestID, but #{parentXPath} not found in", doc
+          else
+            existingIDs = o.evaluateXPath doc, "omi:requestID"
+
+            if existingIDs.some((elem) -> elem.textContent.trim == newVal.toString())
+              return # TODO multiple requestIDs
+            else if newVal?
+              for parent in parents
+                id.parent.removeChild id for id in existingIDs
+                newId = o.createOmi "requestID", doc
+                idTxt = doc.createTextNode newVal.toString()
+                newId.appendChild idTxt
+                parent.appendChild newId
+            else
+              id.parent.removeChild id for id in existingIDs
+
+          currentParams[name] = newVal
+
     odf      :
       update : (paths) ->
         o = WebOmi.omi
@@ -237,7 +293,8 @@ requestsExt = (WebOmi) ->
           if currentParams.msg
             msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0]
             if not msg?
-              my.params.msg.update(currentParams.msg) # calls odf update again
+              my.params.msg.update currentParams.msg # calls odf update again
+              # FIXME dependency
               return
 
             msg.appendChild obs
@@ -296,15 +353,15 @@ requestsExt = (WebOmi) ->
         else currentParams.odf = []
 
     interval : # Maybe Number
-      update : -> # TODO
+      updateSetterForAttr "interval", "omi:omiEnvelope/*"
     newest   : # Maybe Int
-      update : -> # TODO
+      updateSetterForAttr "newest", "omi:omiEnvelope/*"
     oldest   : # Maybe Int
-      update : -> # TODO
+      updateSetterForAttr "oldest", "omi:omiEnvelope/*"
     begin    : # Maybe Date
-      update : -> # TODO
+      updateSetterForAttr "begin", "omi:omiEnvelope/*"
     end      : # Maybe Date
-      update : -> # TODO
+      updateSetterForAttr "end", "omi:omiEnvelope/*"
     msg      : # Boolean whether message is included
       update : (hasMsg) ->
         o = WebOmi.omi
@@ -321,6 +378,7 @@ requestsExt = (WebOmi) ->
             requestElem.appendChild msg
             currentParams.msg = hasMsg
             my.params.odf.update currentParams.odf
+            # FIXME dependency
           else
             console.log "ERROR: No request found"
             return # TODO: what
@@ -337,40 +395,51 @@ requestsExt = (WebOmi) ->
     WebOmi.formLogic.setRequest currentParams.requestDoc
 
 
-  # generate a new request from currentParams
-  my.forceGenerate = (useOldDoc=false) ->
-    o = WebOmi.omi
-    cp = currentParams
-
-    if not useOldDoc || not cp.requestDoc?
-      cp.requestDoc = o.parseXml my.xmls.template
-      cp.request = "template" # just for params.request.update check
-
-    # essential parameters
-    if cp.request? && cp.request.length > 0 && cp.ttl?
-      for key, updateFn of my.update
-        updateFn cp[key]
-        
-      my.generate()
-
-    else return
 
   # force load all parameters in the omiRequestObject and
   # set them in corresponding UI elements
   my.forceLoadParams = (omiRequestObject, useOldDoc=false) ->
+    o = WebOmi.omi
+    cp = currentParams
+
     for key, newVal of omiRequestObject
       #currentParams[key] = newVal # confuses the update logic
       uiWidget = WebOmi.consts.ui[key]
       if uiWidget?
         uiWidget.set newVal
 
-    my.forceGenerate useOldDoc
+
+    # generate
+
+    if not useOldDoc || not cp.requestDoc?
+      cp.requestDoc = o.parseXml my.xmls.template
+
+    newParams = $.extend {}, cp, omiRequestObject
+
+    cp = my.defaults.empty()
+
+    # essential parameters
+    if newParams.request? && newParams.request.length > 0 && newParams.ttl?
+
+      # resolve update dependencies manually:
+      #my.update
+
+      for key, thing of my.params
+        thing.update newParams[key]
+        console.log "updated #{key}:", currentParams[key]
+        
+      my.generate()
+
+    else
+      console.log(
+        "tried to generate request, but missing a required parameter (name, ttl)", newParams
+      )
+      return
 
 
   # @param fastforward: Boolean Whether to also send the request and update odfTree also
   my.readAll = (fastForward) ->
-    # my.forceLoadParams defaults.readAll()
-    WebOmi.formLogic.setRequest my.xmls.readAll
+    my.forceLoadParams my.defaults.readAll()
 
     if fastForward
       WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr)

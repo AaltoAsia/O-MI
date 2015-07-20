@@ -60,7 +60,12 @@
           multiple: false
         }
       });
-      basicInput = function(selector) {
+      basicInput = function(selector, validator) {
+        if (validator == null) {
+          validator = function(a) {
+            return a !== "";
+          };
+        }
         return {
           ref: $(selector),
           get: function() {
@@ -68,6 +73,19 @@
           },
           set: function(val) {
             return this.ref.val(val);
+          },
+          bindTo: function(callback) {
+            return this.ref.on("input", (function(_this) {
+              return function() {
+                var val;
+                val = _this.get();
+                if (validator(val)) {
+                  return callback(val);
+                } else {
+                  return callback(null);
+                }
+              };
+            })(this));
           }
         };
       };

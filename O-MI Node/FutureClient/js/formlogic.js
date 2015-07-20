@@ -146,6 +146,7 @@
 
   (function(consts, requests, formLogic) {
     return consts.afterJquery(function() {
+      var controls, inputVar, ref;
       consts.readAllBtn.on('click', function() {
         return requests.readAll(true);
       });
@@ -156,18 +157,24 @@
         return requests.forceLoadParams(requests.defaults.empty());
       });
       consts.ui.odf.ref.on("changed.jstree", function(_, data) {
+        var odfTreePath;
         switch (data.action) {
           case "select_node":
+            odfTreePath = data.node.id;
             return formLogic.modifyRequest(function() {
-              return requests.params.odf.add(data.node.id);
+              return requests.params.odf.add(odfTreePath);
             });
           case "deselect_node":
-            return formLogic.modifyRequest(function() {
-              return requests.params.odf.remove(data.node.id);
+            odfTreePath = data.node.id;
+            formLogic.modifyRequest(function() {
+              return requests.params.odf.remove(odfTreePath);
+            });
+            return $(jqesc(odfTreePath)).children(".jstree-children").children(".jstree-node").each(function(_, node) {
+              return consts.odfTree.deselect_node(node);
             });
         }
       });
-      return consts.ui.request.ref.on("select_node.jstree", function(_, data) {
+      consts.ui.request.ref.on("select_node.jstree", function(_, data) {
         var i, input, isReadReq, isRequestIdReq, len, readReqWidgets, reqName, ui;
         reqName = data.node.id;
         console.log(reqName);
@@ -175,22 +182,60 @@
           return consts.ui.request.set("read");
         } else {
           ui = WebOmi.consts.ui;
-          readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end];
-          isReadReq = reqName === "readAll" || reqName === "read" || reqName === "readReq";
-          isRequestIdReq = reqName === "cancel" || reqName === "poll";
+          readReqWidgets = [ui.newest, ui.oldest, ui.begin, ui.end];
+          isReadReq = (function() {
+            switch (reqName) {
+              case "readAll":
+              case "read":
+              case "readReq":
+                return true;
+              default:
+                return false;
+            }
+          })();
+          isRequestIdReq = (function() {
+            switch (reqName) {
+              case "cancel":
+              case "poll":
+                return true;
+              default:
+                return false;
+            }
+          })();
           for (i = 0, len = readReqWidgets.length; i < len; i++) {
             input = readReqWidgets[i];
             input.ref.attr('disabled', !isReadReq);
+            input.set("");
+            input.ref.trigger("input");
           }
           ui.requestID.ref.attr('disabled', !isRequestIdReq);
+          ui.requestID.set("");
+          ui.requestID.ref.trigger("input");
+          ui.interval.ref.attr('disabled', reqName !== 'subscription');
+          ui.interval.set("");
+          ui.interval.ref.trigger("input");
           return formLogic.modifyRequest(function() {
             var newHasMsg;
-            requests.params.request.update(reqName);
+            requests.params.name.update(reqName);
             newHasMsg = requests.defaults[reqName]().msg;
             return requests.params.msg.update(newHasMsg);
           });
         }
       });
+      ref = consts.ui;
+      for (inputVar in ref) {
+        controls = ref[inputVar];
+        if (controls.bindTo != null) {
+          controls.bindTo((function(input) {
+            return function(val) {
+              return formLogic.modifyRequest(function() {
+                return requests.params[input].update(val);
+              });
+            };
+          })(inputVar));
+        }
+      }
+      return null;
     });
   })(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic);
 

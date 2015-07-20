@@ -3,7 +3,7 @@
   var requestsExt;
 
   requestsExt = function(WebOmi) {
-    var currentParams, my;
+    var currentParams, my, updateSetterForAttr;
     my = WebOmi.requests = {};
     my.xmls = {
       readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
@@ -32,13 +32,13 @@
       return $.extend({}, my.defaults.empty(), {
         name: "readAll",
         request: "read",
-        odf: ["Objects"],
-        requestDoc: WebOmi.omi.parseXml(my.xmls.readAll)
+        odf: ["Objects"]
       });
     };
     my.defaults.read = function() {
       return $.extend({}, my.defaults.empty(), {
-        request: "readOnce",
+        name: "readOnce",
+        request: "read",
         odf: ["Objects"]
       });
     };
@@ -146,11 +146,60 @@
       }
       return odfObjects;
     };
+    updateSetterForAttr = function(name, attrParentXPath) {
+      return {
+        update: function(newVal) {
+          var attrParents, doc, i, len, o, parent;
+          o = WebOmi.omi;
+          doc = currentParams.requestDoc;
+          if (currentParams[name] !== newVal) {
+            attrParents = o.evaluateXPath(doc, attrParentXPath);
+            if (attrParents == null) {
+              console.log("Tried to update " + name + ", but " + attrParentXPath + " was not found in", doc);
+            } else {
+              for (i = 0, len = attrParents.length; i < len; i++) {
+                parent = attrParents[i];
+                if (newVal != null) {
+                  parent.setAttribute(name, newVal);
+                } else {
+                  parent.removeAttribute(name);
+                }
+              }
+            }
+            return currentParams[name] = newVal;
+          }
+        }
+      };
+    };
     my.params = {
+      name: {
+        update: function(name) {
+          var requestTag;
+          if (currentParams.name !== name) {
+            currentParams.name = name;
+            requestTag = (function() {
+              switch (name) {
+                case "poll":
+                case "subscription":
+                case "readAll":
+                case "readReq":
+                case "readOnce":
+                case "template":
+                  return "read";
+                case "empty":
+                  return null;
+                default:
+                  return name;
+              }
+            })();
+            return my.params.request.update(requestTag);
+          }
+        }
+      },
       request: {
         update: function(reqName) {
           var attr, child, currentReq, doc, i, len, newReq, ref;
-          if (currentParams.request == null) {
+          if (currentParams.requestDoc == null) {
             return my.forceLoadParams(my.defaults[reqName]());
           } else if (reqName !== currentParams.request) {
             doc = currentParams.requestDoc;
@@ -172,14 +221,46 @@
           }
         }
       },
-      ttl: {
-        update: function() {}
-      },
-      callback: {
-        update: function() {}
-      },
+      ttl: updateSetterForAttr("ttl", "omi:omiEnvelope"),
+      callback: updateSetterForAttr("callback", "omi:omiEnvelope/*"),
       requestID: {
-        update: function() {}
+        update: function(newVal) {
+          var doc, existingIDs, i, id, idTxt, j, k, len, len1, len2, newId, o, parent, parentXPath, parents;
+          o = WebOmi.omi;
+          doc = currentParams.requestDoc;
+          parentXPath = "omi:omiEnvelope/*";
+          if (currentParams.requestID !== newVal) {
+            parents = o.evaluateXPath(doc, parentXPath);
+            if (parents == null) {
+              console.log("Tried to update requestID, but " + parentXPath + " not found in", doc);
+            } else {
+              existingIDs = o.evaluateXPath(doc, "omi:requestID");
+              if (existingIDs.some(function(elem) {
+                return elem.textContent.trim === newVal.toString();
+              })) {
+                return;
+              } else if (newVal != null) {
+                for (i = 0, len = parents.length; i < len; i++) {
+                  parent = parents[i];
+                  for (j = 0, len1 = existingIDs.length; j < len1; j++) {
+                    id = existingIDs[j];
+                    id.parent.removeChild(id);
+                  }
+                  newId = o.createOmi("requestID", doc);
+                  idTxt = doc.createTextNode(newVal.toString());
+                  newId.appendChild(idTxt);
+                  parent.appendChild(newId);
+                }
+              } else {
+                for (k = 0, len2 = existingIDs.length; k < len2; k++) {
+                  id = existingIDs[k];
+                  id.parent.removeChild(id);
+                }
+              }
+            }
+            return currentParams[name] = newVal;
+          }
+        }
       },
       odf: {
         update: function(paths) {
@@ -258,21 +339,11 @@
           }
         }
       },
-      interval: {
-        update: function() {}
-      },
-      newest: {
-        update: function() {}
-      },
-      oldest: {
-        update: function() {}
-      },
-      begin: {
-        update: function() {}
-      },
-      end: {
-        update: function() {}
-      },
+      interval: updateSetterForAttr("interval", "omi:omiEnvelope/*"),
+      newest: updateSetterForAttr("newest", "omi:omiEnvelope/*"),
+      oldest: updateSetterForAttr("oldest", "omi:omiEnvelope/*"),
+      begin: updateSetterForAttr("begin", "omi:omiEnvelope/*"),
+      end: updateSetterForAttr("end", "omi:omiEnvelope/*"),
       msg: {
         update: function(hasMsg) {
           var doc, i, len, m, msg, o, requestElem;
@@ -307,33 +378,13 @@
     my.generate = function() {
       return WebOmi.formLogic.setRequest(currentParams.requestDoc);
     };
-    my.forceGenerate = function(useOldDoc) {
-      var cp, key, o, ref, updateFn;
+    my.forceLoadParams = function(omiRequestObject, useOldDoc) {
+      var cp, key, newParams, newVal, o, ref, thing, uiWidget;
       if (useOldDoc == null) {
         useOldDoc = false;
       }
       o = WebOmi.omi;
       cp = currentParams;
-      if (!useOldDoc || (cp.requestDoc == null)) {
-        cp.requestDoc = o.parseXml(my.xmls.template);
-        cp.request = "template";
-      }
-      if ((cp.request != null) && cp.request.length > 0 && (cp.ttl != null)) {
-        ref = my.update;
-        for (key in ref) {
-          updateFn = ref[key];
-          updateFn(cp[key]);
-        }
-        return my.generate();
-      } else {
-
-      }
-    };
-    my.forceLoadParams = function(omiRequestObject, useOldDoc) {
-      var key, newVal, uiWidget;
-      if (useOldDoc == null) {
-        useOldDoc = false;
-      }
       for (key in omiRequestObject) {
         newVal = omiRequestObject[key];
         uiWidget = WebOmi.consts.ui[key];
@@ -341,10 +392,25 @@
           uiWidget.set(newVal);
         }
       }
-      return my.forceGenerate(useOldDoc);
+      if (!useOldDoc || (cp.requestDoc == null)) {
+        cp.requestDoc = o.parseXml(my.xmls.template);
+      }
+      newParams = $.extend({}, cp, omiRequestObject);
+      cp = my.defaults.empty();
+      if ((newParams.request != null) && newParams.request.length > 0 && (newParams.ttl != null)) {
+        ref = my.params;
+        for (key in ref) {
+          thing = ref[key];
+          thing.update(newParams[key]);
+          console.log("updated " + key + ":", currentParams[key]);
+        }
+        return my.generate();
+      } else {
+        console.log("tried to generate request, but missing a required parameter (name, ttl)", newParams);
+      }
     };
     my.readAll = function(fastForward) {
-      WebOmi.formLogic.setRequest(my.xmls.readAll);
+      my.forceLoadParams(my.defaults.readAll());
       if (fastForward) {
         return WebOmi.formLogic.send(WebOmi.formLogic.buildOdfTreeStr);
       }

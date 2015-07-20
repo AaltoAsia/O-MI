@@ -62,10 +62,19 @@ constsExt = ($, parent) ->
             icons : false
           multiple : false
 
-    basicInput = (selector) ->
+    
+    basicInput = (selector, validator= (a) -> a != "") ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
+      bindTo : (callback) ->
+        @ref.on "input", =>
+          val = @get()
+          if validator val
+            callback val
+          else
+            callback null
+      
 
     # refs, setters, getters
     my.ui =

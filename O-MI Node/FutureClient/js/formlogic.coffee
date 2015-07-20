@@ -140,9 +140,16 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
       .on "changed.jstree", (_, data) ->
         switch data.action
           when "select_node"
-            formLogic.modifyRequest -> requests.params.odf.add data.node.id
+            odfTreePath = data.node.id
+            formLogic.modifyRequest -> requests.params.odf.add odfTreePath
           when "deselect_node"
-            formLogic.modifyRequest -> requests.params.odf.remove data.node.id
+            odfTreePath = data.node.id
+            formLogic.modifyRequest -> requests.params.odf.remove odfTreePath
+            $ jqesc odfTreePath
+              .children ".jstree-children"
+              .children ".jstree-node"
+              .each (_, node) ->
+                consts.odfTree.deselect_node node
 
     consts.ui.request.ref
       .on "select_node.jstree", (_, data) ->
@@ -155,20 +162,41 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
         else
           # update ui enabled/disabled settings (can have <msg>, interval, newest, oldest, timeframe?)
           ui = WebOmi.consts.ui
-          readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end]
-          isReadReq = (
-            reqName == "readAll" or reqName == "read" or reqName == "readReq"
-          )
-          isRequestIdReq = reqName == "cancel" or reqName == "poll"
 
-          input.ref.attr('disabled', not isReadReq) for input in readReqWidgets
+          readReqWidgets = [ui.newest, ui.oldest, ui.begin, ui.end]
+          isReadReq = switch reqName
+            when "readAll", "read", "readReq" then true
+            else false
+          isRequestIdReq = switch reqName
+            when"cancel", "poll" then true
+            else false
+
+          for input in readReqWidgets
+            input.ref.attr('disabled', not isReadReq)
+            input.set ""
+            input.ref.trigger "input"
+
+          # TODO: better way of removing the disabled settings from the request xml
           ui.requestID.ref.attr('disabled', not isRequestIdReq)
+          ui.requestID.set ""
+          ui.requestID.ref.trigger "input"
+          ui.interval.ref.attr('disabled', reqName != 'subscription')
+          ui.interval.set ""
+          ui.interval.ref.trigger "input"
 
           formLogic.modifyRequest ->
-            requests.params.request.update reqName
+            requests.params.name.update reqName
             # update msg status
             newHasMsg = requests.defaults[reqName]().msg
             requests.params.msg.update newHasMsg
+
+    for inputVar, controls of consts.ui
+      if controls.bindTo?
+        controls.bindTo ((input) -> (val) ->
+          formLogic.modifyRequest -> requests.params[input].update val
+        ) inputVar
+
+    null # no return
 
 
 
