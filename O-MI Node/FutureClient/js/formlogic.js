@@ -168,14 +168,12 @@
         }
       });
       return consts.ui.request.ref.on("select_node.jstree", function(_, data) {
-        var i, input, isReadReq, isRequestIdReq, len, newHasMsg, readReqWidgets, reqName, ui;
+        var i, input, isReadReq, isRequestIdReq, len, readReqWidgets, reqName, ui;
         reqName = data.node.id;
         console.log(reqName);
         if (reqName === "readReq") {
           return consts.ui.request.set("read");
         } else {
-          newHasMsg = requests.defaults[reqName]().msg;
-          requests.params.msg.update(newHasMsg);
           ui = WebOmi.consts.ui;
           readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end];
           isReadReq = reqName === "readAll" || reqName === "read" || reqName === "readReq";
@@ -186,7 +184,10 @@
           }
           ui.requestID.ref.attr('disabled', !isRequestIdReq);
           return formLogic.modifyRequest(function() {
-            return requests.params.request.update(reqName);
+            var newHasMsg;
+            requests.params.request.update(reqName);
+            newHasMsg = requests.defaults[reqName]().msg;
+            return requests.params.msg.update(newHasMsg);
           });
         }
       });

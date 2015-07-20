@@ -89,10 +89,9 @@ constsExt = ($, parent) ->
         ref : my.odfTreeDom
         get :        -> my.odfTree.get_selected()
         set : (vals) ->
+          my.odfTree.deselect_all true
           if vals? and vals.length > 0
             my.odfTree.select_node node, true, false for node in vals
-          else
-            my.odfTree.deselect_all true
       interval : # Maybe number
         basicInput '#interval'
       newest   : # Maybe int

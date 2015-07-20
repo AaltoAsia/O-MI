@@ -76,6 +76,9 @@
       });
     };
     currentParams = my.defaults.empty();
+    my.getCurrentParams = function() {
+      return $.extend({}, currentParams);
+    };
     my.confirmOverwrite = function(oldVal, newVal) {
       return confirm("You have edited the request manually.\n Do you want to overwrite " + oldVal.toString + " with " + newVal.toString);
     };
@@ -115,6 +118,9 @@
       var currentOdfNode, i, id, len, maybeChild, node, nodeElems, o, obj, odfDoc;
       o = WebOmi.omi;
       odfDoc = odfObjects.ownerDocument || odfObjects;
+      if ((odfTreeNode[0] == null) || odfTreeNode[0].id === "Objects") {
+        return odfObjects;
+      }
       nodeElems = $.makeArray(odfTreeNode.parentsUntil("#Objects", "li"));
       nodeElems.reverse();
       nodeElems.push(odfTreeNode);
@@ -143,7 +149,7 @@
     my.params = {
       request: {
         update: function(reqName) {
-          var attr, child, currentReq, doc, i, j, len, len1, newReq, ref, ref1;
+          var attr, child, currentReq, doc, i, len, newReq, ref;
           if (currentParams.request == null) {
             return my.forceLoadParams(my.defaults[reqName]());
           } else if (reqName !== currentParams.request) {
@@ -155,10 +161,11 @@
               attr = ref[i];
               newReq.setAttribute(attr.name, attr.value);
             }
-            ref1 = currentReq.childNodes;
-            for (j = 0, len1 = ref1.length; j < len1; j++) {
-              child = ref1[j];
+            while (child = currentReq.firstChild) {
               newReq.appendChild(child);
+              if (child === currentReq.firstChild) {
+                currentReq.removeChild(child);
+              }
             }
             currentReq.parentNode.replaceChild(newReq, currentReq);
             return currentParams.request = reqName;
@@ -188,7 +195,11 @@
             }
             if (currentParams.msg) {
               msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0];
-              msg.appendChild(objects);
+              if (msg == null) {
+                my.params.msg.update(currentParams.msg);
+                return;
+              }
+              msg.appendChild(obs);
             }
           } else {
             obss = WebOmi.omi.evaluateXPath(doc, "//odf:Objects");
@@ -197,7 +208,7 @@
               obs.parentElement.removeChild(obs);
             }
           }
-          return currentParams.omi = paths;
+          return currentParams.odf = paths;
         },
         add: function(path) {
           var currentObjectsHead, fl, msg, o, objects, odfTreeNode, req;
@@ -210,7 +221,7 @@
             if (currentObjectsHead != null) {
               my.addPathToOdf(odfTreeNode, currentObjectsHead);
             } else if (currentParams.msg) {
-              objects = o.createOdfObjects(xmlTree);
+              objects = o.createOdfObjects(req);
               my.addPathToOdf(odfTreeNode, objects);
               msg = o.evaluateXPath(req, "//omi:msg")[0];
               if (msg != null) {
@@ -276,6 +287,7 @@
             requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
             if (requestElem != null) {
               requestElem.appendChild(msg);
+              currentParams.msg = hasMsg;
               my.params.odf.update(currentParams.odf);
             } else {
               console.log("ERROR: No request found");
@@ -296,7 +308,7 @@
       return WebOmi.formLogic.setRequest(currentParams.requestDoc);
     };
     my.forceGenerate = function(useOldDoc) {
-      var cp, key, o, ref, results, updateFn;
+      var cp, key, o, ref, updateFn;
       if (useOldDoc == null) {
         useOldDoc = false;
       }
@@ -304,17 +316,15 @@
       cp = currentParams;
       if (!useOldDoc || (cp.requestDoc == null)) {
         cp.requestDoc = o.parseXml(my.xmls.template);
-        cp.request = "empty";
+        cp.request = "template";
       }
       if ((cp.request != null) && cp.request.length > 0 && (cp.ttl != null)) {
         ref = my.update;
-        results = [];
         for (key in ref) {
           updateFn = ref[key];
           updateFn(cp[key]);
-          results.push(my.generate());
         }
-        return results;
+        return my.generate();
       } else {
 
       }

@@ -48,7 +48,7 @@ requestsExt = (WebOmi) ->
     ttl      : 0     # double
     callback : null  # Maybe string
     requestID: null  # Maybe int
-    odf      : null  # Maybe xml
+    odf      : null  # Maybe Array String paths
     interval : null  # Maybe number
     newest   : null  # Maybe int
     oldest   : null  # Maybe int
@@ -104,6 +104,7 @@ requestsExt = (WebOmi) ->
 
   # private
   currentParams = my.defaults.empty()
+  my.getCurrentParams = -> $.extend {}, currentParams
 
   # true
   my.confirmOverwrite = (oldVal, newVal) ->
@@ -152,6 +153,9 @@ requestsExt = (WebOmi) ->
     o = WebOmi.omi
     odfDoc = odfObjects.ownerDocument || odfObjects
 
+    if not odfTreeNode[0]? or odfTreeNode[0].id == "Objects"
+      return odfObjects
+
     nodeElems = $.makeArray odfTreeNode.parentsUntil "#Objects", "li"
     nodeElems.reverse()
     nodeElems.push odfTreeNode
@@ -193,9 +197,19 @@ requestsExt = (WebOmi) ->
             doc, "omi:omiEnvelope/*")[0] # FIXME: head
 
           newReq = WebOmi.omi.createOmi reqName, doc
-          newReq.setAttribute attr.name,attr.value for attr in currentReq.attributes
-          newReq.appendChild child for child in currentReq.childNodes
 
+          # copy attrs
+          newReq.setAttribute attr.name,attr.value for attr in currentReq.attributes
+          
+          # copy childs
+          while child = currentReq.firstChild
+            newReq.appendChild child
+            # firefox seems to remove the child from currentReq above,
+            # but for compatibility
+            if child == currentReq.firstChild
+              currentReq.removeChild(child)
+
+          # replace
           currentReq.parentNode.replaceChild newReq, currentReq
 
           # update internal state
@@ -222,13 +236,17 @@ requestsExt = (WebOmi) ->
 
           if currentParams.msg
             msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0]
-            msg.appendChild objects
+            if not msg?
+              my.params.msg.update(currentParams.msg) # calls odf update again
+              return
+
+            msg.appendChild obs
 
         else
           obss = WebOmi.omi.evaluateXPath(doc, "//odf:Objects")
           obs.parentElement.removeChild obs for obs in obss
 
-        currentParams.omi = paths
+        currentParams.odf = paths
 
       # path: String "Objects/path/to/node"
       add : (path) ->
@@ -245,7 +263,7 @@ requestsExt = (WebOmi) ->
             # TODO: user edit conflict check
             my.addPathToOdf odfTreeNode, currentObjectsHead
           else if currentParams.msg
-            objects = o.createOdfObjects xmlTree
+            objects = o.createOdfObjects req
             my.addPathToOdf odfTreeNode, objects
             msg = o.evaluateXPath(req, "//omi:msg")[0]
             if msg?
@@ -301,6 +319,7 @@ requestsExt = (WebOmi) ->
           requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.appendChild msg
+            currentParams.msg = hasMsg
             my.params.odf.update currentParams.odf
           else
             console.log "ERROR: No request found"
@@ -325,14 +344,14 @@ requestsExt = (WebOmi) ->
 
     if not useOldDoc || not cp.requestDoc?
       cp.requestDoc = o.parseXml my.xmls.template
-      cp.request = "empty" # just for params.request.update check
+      cp.request = "template" # just for params.request.update check
 
     # essential parameters
     if cp.request? && cp.request.length > 0 && cp.ttl?
       for key, updateFn of my.update
         updateFn cp[key]
         
-        my.generate()
+      my.generate()
 
     else return
 

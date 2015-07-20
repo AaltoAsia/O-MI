@@ -96,6 +96,7 @@
           },
           set: function(vals) {
             var i, len, node, results;
+            my.odfTree.deselect_all(true);
             if ((vals != null) && vals.length > 0) {
               results = [];
               for (i = 0, len = vals.length; i < len; i++) {
@@ -103,8 +104,6 @@
                 results.push(my.odfTree.select_node(node, true, false));
               }
               return results;
-            } else {
-              return my.odfTree.deselect_all(true);
             }
           }
         },

@@ -153,10 +153,6 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
         if reqName == "readReq"
           consts.ui.request.set "read" # should trigger a new event
         else
-          # update msg status
-          newHasMsg = requests.defaults[reqName]().msg
-          requests.params.msg.update newHasMsg
-
           # update ui enabled/disabled settings (can have <msg>, interval, newest, oldest, timeframe?)
           ui = WebOmi.consts.ui
           readReqWidgets = [ui.interval, ui.newest, ui.oldest, ui.begin, ui.end]
@@ -168,7 +164,12 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           input.ref.attr('disabled', not isReadReq) for input in readReqWidgets
           ui.requestID.ref.attr('disabled', not isRequestIdReq)
 
-          formLogic.modifyRequest -> requests.params.request.update reqName
+          formLogic.modifyRequest ->
+            requests.params.request.update reqName
+            # update msg status
+            newHasMsg = requests.defaults[reqName]().msg
+            requests.params.msg.update newHasMsg
+
 
 
 )(window.WebOmi.consts, window.WebOmi.requests, window.WebOmi.formLogic)
