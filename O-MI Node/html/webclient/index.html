@@ -155,7 +155,10 @@
               ttl:
             </label>
             <div class="col-md-8 col-lg-9">
-              <input type="int" class="form-control" id="ttl"/>
+              <div class="input-group">
+                <input type="number" required class="form-control" id="ttl"/>
+                <div class="input-group-addon">sec</div>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -164,7 +167,10 @@
               interval:
             </label>
             <div class="col-md-8 col-lg-9">
-              <input type="int" class="form-control" id="interval"/>
+              <div class="input-group">
+                <input type="number" required class="form-control" id="interval"/>
+                <div class="input-group-addon">sec</div>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -173,7 +179,7 @@
               requestID:
             </label>
             <div class="col-md-8 col-lg-9">
-              <input type="int" class="form-control" id="requestID"/>
+              <input type="number" required class="form-control" id="requestID"/>
             </div>
           </div>
         </div>
@@ -195,7 +201,10 @@
                 callback:
               </label>
               <div class="col-md-8 col-lg-9">
-                <input type="int" class="form-control" id="callback"/>
+                <div class="input-group">
+                  <input type="url" class="form-control" id="callback"/>
+                  <div class="input-group-addon">URL</div>
+                </div>
               </div>
             </div>
             <div class="form-group">
@@ -206,13 +215,13 @@
                 <div class="form-group">
                   <label for="newest" class="control-label text-nowrap col-md-4 col-lg-3">Newest:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="int" class="form-control" id="newest"/>
+                    <input type="number" class="form-control" id="newest"/>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="oldest" class="control-label text-nowrap col-md-4 col-lg-3">Oldest:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="int" class="form-control" id="oldest"/>
+                    <input type="number" class="form-control" id="oldest"/>
                   </div>
                 </div>
               </div>
@@ -226,13 +235,13 @@
                 <div class="form-group">
                   <label for="begin" class="control-label text-nowrap col-md-4 col-lg-3">begin:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="int" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    <input type="datetime-local" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="end" class="control-label text-nowrap col-md-4 col-lg-3">end:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="int" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    <input type="datetime-local" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
                   </div>
                 </div>
               </div>
