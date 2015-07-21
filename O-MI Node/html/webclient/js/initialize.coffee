@@ -25,6 +25,8 @@ constsExt = ($, parent) ->
     # initialize UI
     my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
     my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], responseCMSettings
+    my.responseDiv        = $ '.response .CodeMirror'
+    my.responseDiv.hide()
     
     my.serverUrl    = $ '#targetService'
     my.odfTreeDom   = $ '#nodetree'

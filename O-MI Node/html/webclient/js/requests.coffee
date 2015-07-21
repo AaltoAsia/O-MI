@@ -172,12 +172,22 @@ requestsExt = (WebOmi) ->
         currentOdfNode = maybeChild
 
       else
-        obj = switch WebOmi.consts.odfTree.get_type(node)
-          when "object"   then o.createOdfObject odfDoc, id
-          when "infoitem" then o.createOdfInfoItem odfDoc, id
+        # create new info or object, infos must be before objects but after <id>s
+        odfElem = switch WebOmi.consts.odfTree.get_type(node)
+          when "object"
+            object = o.createOdfObject odfDoc, id
+            currentOdfNode.appendChild object
+          when "infoitem"
+            info = o.createOdfInfoItem odfDoc, id
 
-        currentOdfNode.appendChild obj
-        currentOdfNode = obj
+            # find the first Object and insert before it
+            siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0]
+            if siblingObject?
+              currentOdfNode.insertBefore info, siblingObject
+            else
+              currentOdfNode.appendChild info
+
+        currentOdfNode = odfElem
 
     odfObjects
 
