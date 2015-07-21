@@ -464,11 +464,11 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       dbConnection.set(testPath, new java.sql.Timestamp(testTime), "testValue")
       val testOdfObjects = dbConnection.getNBetween(dbConnection.get(testPath), None, None, None, None)
       
-//      system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info()))
+      system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info()))
 //      system.eventStream.publish(Mute(EventFilter.info()))
       
       val start = System.currentTimeMillis()
-      val subscriptions = ((1 until 100).toList ::: List(10000)).par.map { a =>
+      val subscriptions = ((1 until 100).toList ::: List(10000)).map { a =>
         //        println("saving sub with ttl " + a + " milliseconds")
         Await.result((subscriptionHandlerRef ? NewSubscription(SubscriptionRequest(a milliseconds, -1 seconds, testOdfObjects.get))).mapTo[Try[Int]], Duration.Inf).get //dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(), a milliseconds, None), Array(testPath))
         //        println(s"got $id")
@@ -478,9 +478,9 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info()))
       val stop = System.currentTimeMillis()
       println("added 100 subs in: " + (stop-start) + "milliseconds")
-      //      }
-      println("sleepin 700");
-      Thread.sleep(800)
+//      //      }
+//      println("sleepin 1000");
+      Thread.sleep(1000)
 
       subscriptions.init.foreach { x =>
         val das = dbConnection.getSub(x)

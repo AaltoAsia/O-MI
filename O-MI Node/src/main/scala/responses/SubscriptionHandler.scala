@@ -15,8 +15,9 @@ import java.util.Date
 import System.currentTimeMillis
 
 import scala.util.{ Try, Success, Failure }
-import scala.collection.mutable.{ PriorityQueue, HashMap }
+import scala.collection.mutable.{ SynchronizedPriorityQueue, HashMap }
 import scala.collection.SortedSet
+import java.util.concurrent.ConcurrentSkipListSet
 
 import scala.concurrent._
 import duration._
@@ -139,7 +140,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         dbsub.isImmortal match {
           case false =>
             log.debug(s"Added sub as polled sub: $dbsub")
-            ttlQueue.enqueue(PolledSub(dbsub.id, (dbsub.ttlToMillis + dbsub.startTime.getTime)))
+            ttlQueue.add(PolledSub(dbsub.id, (dbsub.ttlToMillis + dbsub.startTime.getTime)))
             self ! CheckTTL
           case true => //noop
         }
@@ -184,7 +185,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           case true =>
             intervalSubs.find(sub.id == _.id).foreach { intervalSub => intervalSubs -= intervalSub } //intervalSubs.filterNot(sub.id == _.id)
           case false =>
-            ttlQueue = ttlQueue.filterNot(sub.id == _.id)
+           
         }
     }
     dbConnection.removeSub(sub.id)
@@ -356,7 +357,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    *
    * This queue contains only subs that have no callback address defined and have ttl > 0.
    */
-  private var ttlQueue: PriorityQueue[PolledSub] = new PriorityQueue()(subOrder.reverse)
+  private var ttlQueue: ConcurrentSkipListSet[PolledSub] = new ConcurrentSkipListSet(subOrder)
   var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
 
   /**
@@ -396,52 +397,24 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   def checkTTL()(implicit dbConnection: DB): Unit = {
 
     val currentTime = date.getTime
-
-    //exists returns false if Option is None
-    while (ttlQueue.headOption.exists(_.ttlMillis <= currentTime)) {
-      val id = ttlQueue.dequeue().id
-//      log.info("removing sub: " + id)
-      dbConnection.removeSub(id)
-    }
-
-    //foreach does nothing if Option is None
-    ttlQueue.headOption.foreach { polledSub =>
-
-      //time until checkTTL will be next called
-      val nextRun = ((polledSub.ttlMillis) - currentTime)
-
-      //cancellable event of the next checkTTL method call
-      val cancellable = system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
-      
-////////////////////////////////////////////////////
-//                                                //
-//   removed overly complicated logic  below      //
-//                                                //
-////////////////////////////////////////////////////
 /*
-      /*
-       * logic for updating the cancellable:
-       * if event is cancelled or empty, then add the previous cancellable to queue
-       * else check if the scheduledTimes variable is going to be run before the cancellable and update variable accordingly
-       * so that only 1 event is scheduled
-       */
+ * this to be bit more safe //TODO
+ */
+    var flag = true
+    while (flag) {
+      if (!ttlQueue.isEmpty) {
 
-      //forall returns true is Option is None
-      if (scheduledTimes.forall { case (scheduledEvent, _) => scheduledEvent.isCancelled }) {
-        scheduledTimes = Some((cancellable, currentTime + nextRun))
-      } else {
-        //exists returns false is Option is None
-        if (scheduledTimes.exists { case (_, eventRunTime) => eventRunTime > (currentTime + nextRun) }) {
-          scheduledTimes.foreach { case (scheduledEvent, _) => scheduledEvent.cancel() }
-          scheduledTimes = Some((cancellable, currentTime + nextRun))
-        } else {
-          //filter returns None if Option is None or predicate is false
-          //
-          scheduledTimes.filter {
-            case (_, eventRunTime) => ((eventRunTime > currentTime) && (eventRunTime < (currentTime + nextRun)))
-          }.foreach { event => cancellable.cancel() } //case (scheduledEvent, _) => scheduledEvent.cancel() }
+        val firstTTL = ttlQueue.first().ttlMillis
+        flag = if(firstTTL <= currentTime) dbConnection.removeSub(ttlQueue.pollFirst.id)
+        else {
+          val nextRun = firstTTL - currentTime
+          system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
+          false
         }
-      }*/
+
+      } else flag = false
+//      println( flag)
     }
+
   }
 }
