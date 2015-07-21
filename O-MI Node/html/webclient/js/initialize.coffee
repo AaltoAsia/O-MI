@@ -33,6 +33,8 @@ constsExt = ($, parent) ->
     my.sendBtn      = $ '#send'
     my.resetAllBtn  = $ '#resetall'
 
+    loc = window.location.href
+    my.serverUrl.val loc.substr 0, loc.indexOf "html/"
 
     my.odfTreeDom
       .jstree
