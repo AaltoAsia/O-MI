@@ -69,6 +69,8 @@ object OmiParser extends Parser[OmiParseResult] {
     case w if w > 0 => w.seconds
     case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
   }
+
+  private def parseRequestID(id: xmlTypes.IdType): Int = id.value.trim.toInt
   
   private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
   read.requestID.nonEmpty match {
@@ -77,7 +79,8 @@ object OmiParser extends Parser[OmiParseResult] {
         PollRequest(
           ttl,
           uriToStringOption(read.callback),
-          read.requestID.map { id => id.value.toInt })))
+          read.requestID map parseRequestID
+        )))
       case false =>
       read.msg match {
         case Some(msg) =>
@@ -139,7 +142,7 @@ object OmiParser extends Parser[OmiParseResult] {
     Right(Iterable(
       CancelRequest(
         ttl,
-        cancel.requestID.map { id => id.value.toInt }.toIterable
+        cancel.requestID.map(parseRequestID).toIterable
       )
     ))
   }
@@ -153,12 +156,7 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              result.requestID match{
-                case Some(rId) =>
-                  asJavaIterable(Iterable(rId.value.toInt))
-                case None =>
-                asJavaIterable(Iterable.empty[Int])
-              },
+              result.requestID.map(parseRequestID).toIterable,
               if (result.msg.isEmpty)
                 None
               else {
