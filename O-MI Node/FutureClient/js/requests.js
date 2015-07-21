@@ -234,9 +234,9 @@
             if (parents == null) {
               console.log("Tried to update requestID, but " + parentXPath + " not found in", doc);
             } else {
-              existingIDs = o.evaluateXPath(doc, "omi:requestID");
+              existingIDs = o.evaluateXPath(doc, "//omi:requestID");
               if (existingIDs.some(function(elem) {
-                return elem.textContent.trim === newVal.toString();
+                return elem.textContent.trim() === newVal.toString();
               })) {
                 return;
               } else if (newVal != null) {
@@ -244,7 +244,7 @@
                   parent = parents[i];
                   for (j = 0, len1 = existingIDs.length; j < len1; j++) {
                     id = existingIDs[j];
-                    id.parent.removeChild(id);
+                    id.parentElement.removeChild(id);
                   }
                   newId = o.createOmi("requestID", doc);
                   idTxt = doc.createTextNode(newVal.toString());
@@ -254,7 +254,7 @@
               } else {
                 for (k = 0, len2 = existingIDs.length; k < len2; k++) {
                   id = existingIDs[k];
-                  id.parent.removeChild(id);
+                  id.parentElement.removeChild(id);
                 }
               }
             }

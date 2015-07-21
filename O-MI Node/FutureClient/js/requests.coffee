@@ -263,19 +263,19 @@ requestsExt = (WebOmi) ->
           if not parents?
             console.log "Tried to update requestID, but #{parentXPath} not found in", doc
           else
-            existingIDs = o.evaluateXPath doc, "omi:requestID"
+            existingIDs = o.evaluateXPath doc, "//omi:requestID"
 
-            if existingIDs.some((elem) -> elem.textContent.trim == newVal.toString())
+            if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
               return # TODO multiple requestIDs
             else if newVal?
               for parent in parents
-                id.parent.removeChild id for id in existingIDs
+                id.parentElement.removeChild id for id in existingIDs
                 newId = o.createOmi "requestID", doc
                 idTxt = doc.createTextNode newVal.toString()
                 newId.appendChild idTxt
                 parent.appendChild newId
             else
-              id.parent.removeChild id for id in existingIDs
+              id.parentElement.removeChild id for id in existingIDs
 
           currentParams[name] = newVal
 
