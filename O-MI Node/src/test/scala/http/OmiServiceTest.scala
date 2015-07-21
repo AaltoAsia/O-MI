@@ -212,7 +212,7 @@ class OmiServiceTest extends Specification
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-        println(printer.format(resp))
+//        println(printer.format(resp))
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
         val description = resp.\("response").\("result").\("return").\@("description")
@@ -266,7 +266,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
@@ -290,7 +290,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
@@ -303,7 +303,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
@@ -319,7 +319,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
@@ -329,7 +329,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
@@ -341,7 +341,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
@@ -354,7 +354,7 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+//          println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
