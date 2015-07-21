@@ -21,7 +21,7 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
  * Actor that handles incoming http messages
  * @param requestHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(reqHandler: RequestHandler, dbobj: DB) extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {
 
   /**
    * the HttpService trait defines only one abstract member, which
@@ -39,7 +39,6 @@ class OmiServiceActor(reqHandler: RequestHandler, dbobj: DB) extends Actor with 
    */
   def receive = runRoute(myRoute)
 
-  implicit val dbobject = dbobj
 
 }
 
@@ -51,7 +50,6 @@ trait OmiService extends HttpService with CORSSupport {
   def log: LoggingAdapter
   val requestHandler: RequestHandler
 
-  implicit val dbobject: DB
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   val staticHtml = getFromDirectory("html")

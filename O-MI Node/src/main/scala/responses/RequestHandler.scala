@@ -405,7 +405,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    * @param orgPath The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-  def generateODFREST(orgPath: Path)(implicit dbConnection: DB): Option[Either[String, xml.Node]] = {
+  def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
 
     // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
     def restNormalizePath(path: Path): (Path, Option[String]) = path.lastOption match {
