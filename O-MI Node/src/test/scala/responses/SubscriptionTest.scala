@@ -488,7 +488,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       }
       dbConnection.getSub(subscriptions.last) must beSome
     }
-
+    
+    
   }
 
 }

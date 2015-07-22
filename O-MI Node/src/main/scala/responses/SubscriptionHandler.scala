@@ -76,7 +76,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
   // load subscriptions at startup
   override def preStart() = {
-    val subs = dbConnection.getAllSubs(Some(true))
+    val subs = dbConnection.getAllSubs(None)
     for (sub <- subs) loadSub(sub)
 
   }
@@ -89,7 +89,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         log.error(s"Tried to load nonexistent subscription: $id")
     }
   }
-  private def loadSub(dbsub: DBSub): Unit = {
+  private def loadSub(dbsub: DBSub): Unit = this.synchronized{
     log.debug(s"Adding sub: $dbsub")
 
     dbsub.hasCallback match {
@@ -122,6 +122,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
                         }
                       } yield last).getOrElse(OdfValue("", "", None))
                     }
+                    
                     eventSubs.get(path.toString) match {
 
                       case Some(ses: List[EventSub]) =>
@@ -184,8 +185,8 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         sub.hasCallback match {
           case true =>
             intervalSubs.find(sub.id == _.id).foreach { intervalSub => intervalSubs -= intervalSub } //intervalSubs.filterNot(sub.id == _.id)
-          case false =>
-           
+          case false => 
+            ttlQueue.remove(PolledSub(sub.id, 404L)) // Long parameter does not matter equality only checks id
         }
     }
     dbConnection.removeSub(sub.id)
@@ -344,7 +345,16 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   /**
    * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
-  case class PolledSub(id: Int, ttlMillis: Long)
+  case class PolledSub(id: Int, ttlMillis: Long) { 
+    override def equals(o:Any): Boolean = {
+      o match{
+        case PolledSub(oid, _) => oid == id
+        case _ => false
+      }
+      
+    }
+    override def hashCode = id.hashCode()
+  }
 
   /**
    * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
@@ -413,7 +423,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         }
 
       } else flag = false
-//      println( flag)
+
     }
 
   }
