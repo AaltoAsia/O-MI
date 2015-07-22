@@ -15,18 +15,22 @@
       return afterWaits.push(fn);
     };
     $(function() {
-      var basicInput, fn, i, len, responseCMSettings, results;
+      var basicInput, fn, i, len, loc, responseCMSettings, results;
       responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
       my.requestCodeMirror = CodeMirror.fromTextArea($("#requestArea")[0], my.codeMirrorSettings);
       my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], responseCMSettings);
+      my.responseDiv = $('.response .CodeMirror');
+      my.responseDiv.hide();
       my.serverUrl = $('#targetService');
       my.odfTreeDom = $('#nodetree');
       my.requestSelDom = $('.requesttree');
       my.readAllBtn = $('#readall');
       my.sendBtn = $('#send');
       my.resetAllBtn = $('#resetall');
+      loc = window.location.href;
+      my.serverUrl.val(loc.substr(0, loc.indexOf("html/")));
       my.odfTreeDom.jstree({
         plugins: ["checkbox", "types"],
         types: {

@@ -241,7 +241,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param newTime Timestamp for the poll time, might be the new start time for the subscription
    * @return Some results or None if something important was not found
    */
-  def getPollData(subId: Int, newTime: Timestamp): Option[OdfObjects] = {
+  def getPollData(subId: Long, newTime: Timestamp): Option[OdfObjects] = {
 
     // lastValues: map from hierarchyId to its lastValue (for this subscription)
     def handleEventPoll(dbsub: DBSub, lastValues: Map[Int, Option[String]], sortedValues: Seq[DBValue]): Seq[DBValue] = {
@@ -775,7 +775,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param id id number that was generated during saving
    *
    */
-  def removeSub(id: Int): Boolean = {
+  def removeSub(id: Long): Boolean = {
 
     val result = for {
       subO <- getSubI(id)
@@ -840,7 +840,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param newTime time value to be set as start time
    * @param newTTL new TTL value to be set
    */
-  def setSubStartTime(id: Int, newTime: Timestamp, newTTL: Double) = {
+  def setSubStartTime(id: Long, newTime: Timestamp, newTTL: Double) = {
     runWait(subs.filter(_.id === id).map(p => (p.startTime, p.ttl)).update((newTime, newTTL)))
   }
 

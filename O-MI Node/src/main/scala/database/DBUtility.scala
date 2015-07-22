@@ -88,14 +88,14 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
 
-  protected def getSubI(id: Int): DBIOro[Option[DBSub]] =
+  protected def getSubI(id: Long): DBIOro[Option[DBSub]] =
     subs.filter(_.id === id).result map {
       _.headOption map {
         case sub: DBSub => sub
         case _ => throw new RuntimeException("got wrong or unknown sub class???")
       }
     }
-  protected def getSubItemHierarchyIdsI(subId: Int) =
+  protected def getSubItemHierarchyIdsI(subId: Long) =
     subItems filter (
       _.subId === subId
     ) map ( _.hierarchyId ) result

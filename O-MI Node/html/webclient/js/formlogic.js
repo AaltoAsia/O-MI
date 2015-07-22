@@ -33,6 +33,12 @@
       str = WebOmi.consts.requestCodeMirror.getValue();
       return o.evaluateXPath(str, '//odf:Objects')[0];
     };
+    my.clearResponse = function() {
+      var mirror;
+      mirror = WebOmi.consts.responseCodeMirror;
+      mirror.setValue("");
+      return WebOmi.consts.responseDiv.slideUp();
+    };
     my.setResponse = function(xml) {
       var mirror;
       mirror = WebOmi.consts.responseCodeMirror;
@@ -41,10 +47,17 @@
       } else {
         mirror.setValue(new XMLSerializer().serializeToString(xml));
       }
-      return mirror.autoFormatAll();
+      mirror.autoFormatAll();
+      WebOmi.consts.responseDiv.slideDown({
+        complete: function() {
+          return mirror.refresh();
+        }
+      });
+      return mirror.refresh();
     };
     my.send = function(callback) {
       var request, server;
+      my.clearResponse();
       server = WebOmi.consts.serverUrl.val();
       request = WebOmi.consts.requestCodeMirror.getValue();
       return $.ajax({
@@ -154,7 +167,15 @@
         return formLogic.send();
       });
       consts.resetAllBtn.on('click', function() {
-        return requests.forceLoadParams(requests.defaults.empty());
+        var child, closetime, i, len, ref;
+        requests.forceLoadParams(requests.defaults.empty());
+        closetime = 1500;
+        ref = consts.odfTree.get_children_dom('Objects');
+        for (i = 0, len = ref.length; i < len; i++) {
+          child = ref[i];
+          consts.odfTree.close_all(child, closetime);
+        }
+        return formLogic.clearResponse();
       });
       consts.ui.odf.ref.on("changed.jstree", function(_, data) {
         var odfTreePath;
@@ -169,7 +190,7 @@
             formLogic.modifyRequest(function() {
               return requests.params.odf.remove(odfTreePath);
             });
-            return $(jqesc(odfTreePath)).children(".jstree-children").children(".jstree-node").each(function(_, node) {
+            return $(jqesc(odfTreePath)).children(".jstree-children").find(".jstree-node").each(function(_, node) {
               return consts.odfTree.deselect_node(node);
             });
         }

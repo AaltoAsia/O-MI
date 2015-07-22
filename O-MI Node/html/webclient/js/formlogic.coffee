@@ -31,6 +31,10 @@ formLogicExt = ($, WebOmi) ->
     str = WebOmi.consts.requestCodeMirror.getValue()
     o.evaluateXPath(str, '//odf:Objects')[0]
 
+  my.clearResponse = ->
+    mirror = WebOmi.consts.responseCodeMirror
+    mirror.setValue ""
+    WebOmi.consts.responseDiv.slideUp()
 
   my.setResponse = (xml) ->
     mirror = WebOmi.consts.responseCodeMirror
@@ -40,9 +44,14 @@ formLogicExt = ($, WebOmi) ->
       mirror.setValue new XMLSerializer().serializeToString xml
     mirror.autoFormatAll()
 
+    # refresh as we "resize" so more text will become visible
+    WebOmi.consts.responseDiv.slideDown complete : -> mirror.refresh()
+    mirror.refresh()
+
 
   # send, callback is called with response text if successful
   my.send = (callback) ->
+    my.clearResponse()
     server  = WebOmi.consts.serverUrl.val()
     request = WebOmi.consts.requestCodeMirror.getValue()
     $.ajax
@@ -134,7 +143,12 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
       .on 'click', -> formLogic.send()
 
     consts.resetAllBtn
-      .on 'click', -> requests.forceLoadParams requests.defaults.empty()
+      .on 'click', ->
+        requests.forceLoadParams requests.defaults.empty()
+        closetime = 1500 # ms to close Objects jstree
+        for child in consts.odfTree.get_children_dom 'Objects'
+          consts.odfTree.close_all child, closetime
+        formLogic.clearResponse()
 
     consts.ui.odf.ref
       .on "changed.jstree", (_, data) ->
@@ -147,7 +161,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             formLogic.modifyRequest -> requests.params.odf.remove odfTreePath
             $ jqesc odfTreePath
               .children ".jstree-children"
-              .children ".jstree-node"
+              .find ".jstree-node"
               .each (_, node) ->
                 consts.odfTree.deselect_node node
 

@@ -397,7 +397,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
   def e200 = {
     val temp = OmiParser.parse(omi_response_test_file)
     temp.isRight === true
-    temp.right.get.iterator().next() should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None,asJavaIterable(Seq.empty[Int]),Some(write_response_odf))))
+    temp.right.get.iterator().next() should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None,Iterable.empty[Long],Some(write_response_odf))))
     //    OmiParser.parse(omi_response_test_file) should be equalTo Right(Iterable(
     //      ResponseRequest(Iterable(OmiResult("","200", None, seqAsJavaList(Seq.empty),Some(write_response_odf))))))
   }
@@ -466,7 +466,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None,asJavaIterable(Iterable.empty[Int]),Some(OdfObjects(asJavaIterable(Iterable.empty[OdfObject]))))))
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None,asJavaIterable(Iterable.empty[Long]),Some(OdfObjects(asJavaIterable(Iterable.empty[OdfObject]))))))
 
   }
 

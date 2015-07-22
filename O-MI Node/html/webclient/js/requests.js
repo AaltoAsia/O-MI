@@ -115,7 +115,7 @@
       return odfObjects;
     };
     my.addPathToOdf = function(odfTreeNode, odfObjects) {
-      var currentOdfNode, i, id, len, maybeChild, node, nodeElems, o, obj, odfDoc;
+      var currentOdfNode, i, id, info, len, maybeChild, node, nodeElems, o, object, odfDoc, odfElem, siblingObject;
       o = WebOmi.omi;
       odfDoc = odfObjects.ownerDocument || odfObjects;
       if ((odfTreeNode[0] == null) || odfTreeNode[0].id === "Objects") {
@@ -132,16 +132,22 @@
         if (maybeChild != null) {
           currentOdfNode = maybeChild;
         } else {
-          obj = (function() {
+          odfElem = (function() {
             switch (WebOmi.consts.odfTree.get_type(node)) {
               case "object":
-                return o.createOdfObject(odfDoc, id);
+                object = o.createOdfObject(odfDoc, id);
+                return currentOdfNode.appendChild(object);
               case "infoitem":
-                return o.createOdfInfoItem(odfDoc, id);
+                info = o.createOdfInfoItem(odfDoc, id);
+                siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
+                if (siblingObject != null) {
+                  return currentOdfNode.insertBefore(info, siblingObject);
+                } else {
+                  return currentOdfNode.appendChild(info);
+                }
             }
           })();
-          currentOdfNode.appendChild(obj);
-          currentOdfNode = obj;
+          currentOdfNode = odfElem;
         }
       }
       return odfObjects;

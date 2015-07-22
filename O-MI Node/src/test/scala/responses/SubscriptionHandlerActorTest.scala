@@ -84,8 +84,8 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
         callback = Some("localhost")
       )
 
-    val testId1 = Promise[Int]
-    val testId2 = Promise[Int]
+    val testId1 = Promise[Long]
+    val testId2 = Promise[Long]
     val testId3 = dbConnection.saveSub(NewDBSub(Duration.apply(-1, "seconds"),newTimestamp(), Duration.apply(2, "seconds"), Some("localhost")), Seq(testPath))
 
     "SubscriptionHandlerActor" should {
@@ -114,9 +114,9 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
       val duration = scala.concurrent.duration.Duration(1000, "ms")
 
       subscriptionActor.getIntervalSubs.exists(_.id == futureId) === false
-      testId1.success(Await.result(subscriptionHandler.ask(NewSubscription(testSub1)).mapTo[Try[Int]], Duration.Inf).get)
+      testId1.success(Await.result(subscriptionHandler.ask(NewSubscription(testSub1)).mapTo[Try[Long]], Duration.Inf).get)
 
-      val futureId: Int = Await.result(testId1.future, duration)
+      val futureId: Long = Await.result(testId1.future, duration)
       Thread.sleep(1000)
       subscriptionActor.getIntervalSubs.exists(_.id == futureId) === true
 
@@ -132,7 +132,7 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
       
       val firstQuery = subscriptionActor.getEventSubs(testPath.toString())//.exists(_.id == 0) === false
 
-      testId2.success(Await.result(subscriptionHandler.ask(NewSubscription(testSub2)).mapTo[Try[Int]], Duration.Inf).get)
+      testId2.success(Await.result(subscriptionHandler.ask(NewSubscription(testSub2)).mapTo[Try[Long]], Duration.Inf).get)
     
       val futureId = Await.result(testId2.future,duration)
       Thread.sleep(1000)
@@ -149,7 +149,7 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
 
-      val futureId: Int = Await.result(testId1.future, scala.concurrent.duration.Duration(1000, "ms"))
+      val futureId: Long = Await.result(testId1.future, scala.concurrent.duration.Duration(1000, "ms"))
       subscriptionActor.getIntervalSubs.exists(_.id == futureId) === true
 
       probe.send(subscriptionHandler, RemoveSubscription(futureId))
@@ -163,7 +163,7 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
       val subscriptionActor = subscriptionHandler.underlyingActor
       val probe = TestProbe()
       val duration = scala.concurrent.duration.Duration(1000, "ms")
-      val futureId: Int = Await.result(testId2.future, duration)
+      val futureId: Long = Await.result(testId2.future, duration)
       subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
       probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
       subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == futureId) === false

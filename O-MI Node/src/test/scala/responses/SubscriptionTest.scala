@@ -263,7 +263,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Return with error when subscription doesn't exist" in {
-      val rid = 1234
+      val rid = 1234L
       val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(rid))))
 
       val correctxml =
@@ -470,7 +470,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       val start = System.currentTimeMillis()
       val subscriptions = ((1 until 100).toList ::: List(10000)).map { a =>
         //        println("saving sub with ttl " + a + " milliseconds")
-        Await.result((subscriptionHandlerRef ? NewSubscription(SubscriptionRequest(a milliseconds, -1 seconds, testOdfObjects.get))).mapTo[Try[Int]], Duration.Inf).get //dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(), a milliseconds, None), Array(testPath))
+        Await.result((subscriptionHandlerRef ? NewSubscription(SubscriptionRequest(a milliseconds, -1 seconds, testOdfObjects.get))).mapTo[Try[Long]], Duration.Inf).get //dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(), a milliseconds, None), Array(testPath))
         //        println(s"got $id")
         //        id
       }

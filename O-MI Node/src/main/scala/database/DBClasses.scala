@@ -40,7 +40,7 @@ trait DBBase{
 
 
 case class SubscriptionItem(
-  val subId: Int,
+  val subId: Long,
   val path: Path,
   val lastValue: Option[String] // for event polling subs
 )
@@ -55,7 +55,7 @@ sealed trait DBSubInternal
  * @param callback optional callback address. use None if no address is needed
  */
 case class DBSub(
-  val id: Int,
+  val id: Long,
   val interval: Duration,
   val startTime: Timestamp,
   val ttl: Duration,
@@ -232,7 +232,7 @@ trait OmiNodeTables extends DBBase {
   class DBSubsTable(tag: Tag)
     extends Table[DBSubInternal](tag, "SUBSCRIPTIONS") {
     /** This is the PrimaryKey */
-    def id        = column[Int]("ID", O.PrimaryKey, O.AutoInc)
+    def id        = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def interval  = column[Double]("INTERVAL")
     def startTime = column[Timestamp]("START")
     def ttl       = column[Double]("TTL")
@@ -240,7 +240,7 @@ trait OmiNodeTables extends DBBase {
 
 
     private def dbsubTupled:
-      ((Option[Int], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
+      ((Option[Long], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
         case (None, interval_, startTime_, ttl_, callback_) =>
           val durationTtl =
             if (ttl_ == -1.0) Duration.Inf else ttl_.seconds
@@ -256,7 +256,7 @@ trait OmiNodeTables extends DBBase {
           DBSub(id_, durationInt, startTime_, durationTtl, callback_)
       }
     private def dbsubUnapply: 
-      DBSubInternal => Option[(Option[Int], Double, Timestamp, Double, Option[String])] = {
+      DBSubInternal => Option[(Option[Long], Double, Timestamp, Double, Option[String])] = {
         case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
           val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0
 
@@ -281,7 +281,7 @@ trait OmiNodeTables extends DBBase {
 
   trait SubFKey[A] extends Table[A] {
     val subfkName: String
-    def subId = column[Int]("SUBID")
+    def subId = column[Long]("SUBID")
     def sub   = foreignKey(subfkName, subId, subs)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade
     )
@@ -292,7 +292,7 @@ trait OmiNodeTables extends DBBase {
 
 
   case class DBSubscriptionItem(
-    val subId: Int,
+    val subId: Long,
     val hierarchyId: Int,
     val lastValue: Option[String] // for event polling subs
   )

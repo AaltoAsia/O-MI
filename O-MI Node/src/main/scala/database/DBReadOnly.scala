@@ -48,7 +48,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     )
 
 
-  protected def getSubItemDataI(subId: Int)(
+  protected def getSubItemDataI(subId: Long)(
   ): DBIO[DBInfoItems] = for {
     subsItems <- (subItems filter (_.subId === subId)).result
     result <- getSubItemDataI(subsItems)
@@ -82,7 +82,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return objects
    */
-  def getSubData(subId: Int): Option[OdfObjects] = {
+  def getSubData(subId: Long): Option[OdfObjects] = {
     val dataI = for {
       items <- getSubItemDataI(subId)
 
@@ -501,13 +501,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   }
 
 
-  def getSubscribedPaths( subId: Int ): Seq[Path] = {
+  def getSubscribedPaths( subId: Long ): Seq[Path] = {
     val pathsQ = for{
       (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
     }yield( hie.path )
     runSync( pathsQ.result )
   }
-  def getSubscribedItems( subId: Int ): Seq[SubscriptionItem] = {
+  def getSubscribedItems( subId: Long ): Seq[SubscriptionItem] = {
     val pathsQ = for{
       (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
     } yield (subI.subId, hie.path, subI.lastValue)
@@ -521,7 +521,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return returns Some(BDSub) if found element with given id None otherwise
    */
-  def getSub(id: Int): Option[DBSub] = runSync(getSubI(id))
+  def getSub(id: Long): Option[DBSub] = runSync(getSubI(id))
 
 
   protected def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 

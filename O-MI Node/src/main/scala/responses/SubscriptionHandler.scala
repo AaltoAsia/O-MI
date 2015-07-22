@@ -30,7 +30,7 @@ case object HandleIntervals
 case object CheckTTL
 case class RegisterRequestHandler(reqHandler: RequestHandler)
 case class NewSubscription(subscription: SubscriptionRequest)
-case class RemoveSubscription(id: Int)
+case class RemoveSubscription(id: Long)
 
 /**
  * Handles interval counting and event checking for subscriptions
@@ -44,7 +44,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
   sealed trait SavedSub {
     val sub: DBSub
-    val id: Int
+    val id: Long
   }
 
   case class TimedSub(sub: DBSub, nextRunTime: Timestamp)
@@ -81,12 +81,12 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
   }
 
-  private def loadSub(id: Int): Unit = {
-    dbConnection.getSub(id) match {
+  private def loadSub(subId: Long): Unit = {
+    dbConnection.getSub(subId) match {
       case Some(dbsub) =>
         loadSub(dbsub)
       case None =>
-        log.error(s"Tried to load nonexistent subscription: $id")
+        log.error(s"Tried to load nonexistent subscription: $subId")
     }
   }
   private def loadSub(dbsub: DBSub): Unit = this.synchronized{
@@ -152,9 +152,9 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param id The id of subscription to remove
    * @return true on success
    */
-  private def removeSub(id: Int): Boolean = {
-    log.debug(s"Removing sub $id...")
-    dbConnection.getSub(id) match {
+  private def removeSub(subId: Long): Boolean = {
+    log.debug(s"Removing sub $subId...")
+    dbConnection.getSub(subId) match {
       case Some(dbsub) => removeSub(dbsub)
       case None        => false
     }
@@ -345,16 +345,18 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   /**
    * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
-  case class PolledSub(id: Int, ttlMillis: Long) { 
+
+  case class PolledSub(subId: Long, ttlMillis: Long) { 
     override def equals(o:Any): Boolean = {
       o match{
-        case PolledSub(oid, _) => oid == id
+        case PolledSub(oid, _) => oid == subId
         case _ => false
       }
       
     }
-    override def hashCode = id.hashCode()
+    override def hashCode = subId.hashCode()
   }
+
 
   /**
    * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
@@ -373,7 +375,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   /**
    * @return Either Failure(exception) or the request (subscription) id as Success(Int)
    */
-  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB): Try[Int] = Try {
+  def setSubscription(subscription: SubscriptionRequest)(implicit dbConnection: DB): Try[Long] = Try {
     require(subscription.ttl > 0.seconds, "Zero time-to-live not supported")
 
     val paths = getPaths(subscription)
@@ -415,7 +417,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
       if (!ttlQueue.isEmpty) {
 
         val firstTTL = ttlQueue.first().ttlMillis
-        flag = if(firstTTL <= currentTime) dbConnection.removeSub(ttlQueue.pollFirst.id)
+        flag = if(firstTTL <= currentTime) dbConnection.removeSub(ttlQueue.pollFirst.subId)
         else {
           val nextRun = firstTTL - currentTime
           system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
