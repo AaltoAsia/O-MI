@@ -89,7 +89,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         log.error(s"Tried to load nonexistent subscription: $subId")
     }
   }
-  private def loadSub(dbsub: DBSub): Unit = this.synchronized{
+  private def loadSub(dbsub: DBSub): Unit = {
     log.debug(s"Adding sub: $dbsub")
 
     dbsub.hasCallback match {
@@ -99,7 +99,6 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
             intervalSubs += TimedSub(
               dbsub,
               new Timestamp(currentTimeMillis()))
-
             // FIXME: schedules many times
             handleIntervals()
 
@@ -128,8 +127,10 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
                       case Some(ses: List[EventSub]) =>
                         eventSubs += path.toString -> (EventSub(dbsub, lastValue) :: ses)
 
+
                       case None =>
                         eventSubs += path.toString -> Seq(EventSub(dbsub, lastValue))
+
                     }
                 }
 
@@ -209,15 +210,22 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param paths Paths of modified InfoItems.
    */
   def checkEventSubs(items: Seq[OdfInfoItem]): Unit = {
-    //log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
-    //log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
-
+    val checkTime = currentTimeMillis()
+//    log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
+//    log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
+    
     val idItemLastVal = items.flatMap { item =>
       val itemPaths = item.path.getParentsAndSelf.map(_.toString)
-      val subItemTuples = eventSubs.collect {
-        case (path, subs) if itemPaths.contains(path) =>
-          subs
-      }.flatten
+      val subItemTuples = itemPaths.flatMap(path => eventSubs.get(path)).flatten.filter { 
+        case EventSub(sub,_) => if(hasTTLEnded(sub, checkTime)){
+          removeSub(sub)
+          false
+        } else true
+        }
+//        eventSubs.collect {
+//        case (path, subs) if itemPaths.contains(path) =>
+//          subs
+//      }.flatten
 
       //log.debug("subItemTuples are nonempty: " + subItemTuples.nonEmpty)
       subItemTuples.map { eventsub => (eventsub.sub, item, eventsub.lastValue) }

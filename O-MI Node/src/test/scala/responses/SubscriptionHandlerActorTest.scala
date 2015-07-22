@@ -36,7 +36,7 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
   implicit val dbConnection = new TestDB("subscriptionHandler-test")
   implicit val timeout = Timeout(5000)
   val testPath = Path("Objects/SubscriptionHandlerTest/testData")
-  dbConnection.set(testPath, new java.sql.Timestamp(1000),  "test")
+  dbConnection.set(testPath, newTimestamp(),  "test")
 
 
 
@@ -44,22 +44,6 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
     dbConnection.destroy()
   }
 
-  
-//    val testPath = Path("Objects/SubscriptionHandlerTest/testData")
-//    val odf = OdfObjects(
-//      Iterable(
-//        OdfObject(
-//          Path(testPath.init),
-//          Iterable(
-//            OdfInfoItem(
-//              testPath,
-//              Iterable.empty[OdfValue]
-//            )
-//          ),
-//          Iterable.empty[OdfObject]
-//        )
-//      )
-//    )
     
     val testSub1 = SubscriptionRequest(
         Duration.apply(60,"seconds"),
@@ -68,15 +52,6 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
         callback = Some("test")
       )
       
-      /*
-       * 
-  case class NewDBSub(
-  val interval: Duration,
-  val startTime: Timestamp,
-  val ttl: Duration,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal
-       */
     val testSub2 = SubscriptionRequest(
         Duration.apply(60, "seconds"),
         Duration.apply(-1, "seconds"),
@@ -86,24 +61,24 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
 
     val testId1 = Promise[Long]
     val testId2 = Promise[Long]
-    val testId3 = dbConnection.saveSub(NewDBSub(Duration.apply(-1, "seconds"),newTimestamp(), Duration.apply(2, "seconds"), Some("localhost")), Seq(testPath))
+    val testId3 = dbConnection.saveSub(NewDBSub(Duration.apply(-1, "seconds"),newTimestamp(), Duration.apply(1, "seconds"), Some("localhost")), Seq(testPath))
 
     "SubscriptionHandlerActor" should {
     
     
-//    "load event sub into memory at startup and remove eventsub from memory if ttl has expired" in new agentSystem.Actorstest(ActorSystem("subsctiptionhandlertest")) {
-//      val subscriptionHandler = TestActorRef[SubscriptionHandler](Props(new SubscriptionHandler()), "Sub Handler")
-//      val subscriptionActor = subscriptionHandler.underlyingActor
-//      val probe = TestProbe()
-//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3.id) === true//_._2.id == testId3) == true
-//      Thread.sleep(2000)
-//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3.id) === true
-//      Future{dbConnection.set(testPath, newTimestamp(), "value")}
-//      Thread.sleep(1000)
-//      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3.id) === false
-//      dbConnection.removeSub(testId3)
-//
-//    }
+    "load event sub into memory at startup and remove eventsub from memory if ttl has expired" in new Actors {
+      val subscriptionHandler = TestActorRef[SubscriptionHandler](Props(new SubscriptionHandler()), "Sub Handler")
+      val subscriptionActor = subscriptionHandler.underlyingActor
+      val probe = TestProbe()
+      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3.id) === true//_._2.id == testId3) == true
+      Thread.sleep(2000)
+      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == testId3.id) === true
+      Future{dbConnection.setMany(List((testPath, OdfValue("new", "", None))))}
+      Thread.sleep(1000)
+      subscriptionActor.getEventSubs.get(testPath.toString()).exists(_.exists(_.id == testId3.id)) === false
+      dbConnection.removeSub(testId3)
+
+    }
     
     "load given interval sub into memory when sent NewSubscription message" in new Actors {
 
@@ -130,14 +105,14 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
       val probe = TestProbe()
       val duration = scala.concurrent.duration.Duration(1000, "ms")
       
-      val firstQuery = subscriptionActor.getEventSubs(testPath.toString())//.exists(_.id == 0) === false
+      val firstQuery = subscriptionActor.getEventSubs.get(testPath.toString())//.exists(_.id == 0) === false
 
       testId2.success(Await.result(subscriptionHandler.ask(NewSubscription(testSub2)).mapTo[Try[Long]], Duration.Inf).get)
     
       val futureId = Await.result(testId2.future,duration)
       Thread.sleep(1000)
-      firstQuery.exists(_.id == futureId) === false
-      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == futureId) === true
+      firstQuery.exists(_.exists(_.id == futureId)) === false
+      subscriptionActor.getEventSubs.get(testPath.toString()).exists(_.exists(_.id == futureId)) === true
       
 
 
@@ -166,7 +141,7 @@ class SubscriptionHandlerActorTest extends Specification with AfterAll{
       val futureId: Long = Await.result(testId2.future, duration)
       subscriptionHandler.tell(RemoveSubscription(futureId), probe.ref)
       probe.expectMsgType[Boolean](Duration.apply(2400, "ms")) === true
-      subscriptionActor.getEventSubs(testPath.toString()).exists(_.id == futureId) === false
+      subscriptionActor.getEventSubs.get(testPath.toString()).exists(_.exists(_.id == futureId)) === false
     }
   }
 }
