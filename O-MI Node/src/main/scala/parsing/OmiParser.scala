@@ -70,7 +70,7 @@ object OmiParser extends Parser[OmiParseResult] {
     case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
   }
 
-  private def parseRequestID(id: xmlTypes.IdType): Int = id.value.trim.toInt
+  private def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
   
   private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
   read.requestID.nonEmpty match {

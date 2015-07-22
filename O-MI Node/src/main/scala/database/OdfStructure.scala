@@ -15,9 +15,9 @@ class OdfStructure(implicit val dbConnection: DB) {
   protected var OdfTree : OdfObjects = OdfObjects()
   protected var PathMap : collection.mutable.Map[String, OdfNode] = HashMap.empty
   protected var PathToHierarchyId : collection.mutable.Map[String, (Int, Int)] = HashMap.empty
-  protected var NormalSubs : collection.mutable.HashMap[Int, Seq[Path]] = HashMap.empty
-  protected var PolledPaths : collection.mutable.HashMap[Int, Seq[Path]] = HashMap.empty
-  case class Poll(id: Int, timestamp: Timestamp)
+  protected var NormalSubs : collection.mutable.HashMap[Long, Seq[Path]] = HashMap.empty
+  protected var PolledPaths : collection.mutable.HashMap[Long, Seq[Path]] = HashMap.empty
+  case class Poll(subId: Long, timestamp: Timestamp)
   protected var HierarchyIdPollQueues : collection.mutable.Map[Int,collection.mutable.PriorityQueue[Poll]] = HashMap.empty
   def PollQueue =new  PriorityQueue[Poll]()(
     Ordering.by{poll : Poll => poll.timestamp.getTime}
@@ -99,7 +99,7 @@ class OdfStructure(implicit val dbConnection: DB) {
     }.collect{ case Some((id,count)) => id }.toSet
   }
 
-  def getNormalSub(id: Int) : Option[OdfObjects] ={
+  def getNormalSub(id: Long) : Option[OdfObjects] ={
     NormalSubs.get(id).map{
       paths =>
       paths.map(path => PathMap.get( path.toString )).collect{ 
@@ -112,12 +112,12 @@ class OdfStructure(implicit val dbConnection: DB) {
     }
   }
   
-  def getPolledPaths(id: Int) ={
-    PolledPaths.get(id)
+  def getPolledPaths(subId: Long) ={
+    PolledPaths.get(subId)
   }
   
-  def getPolledHierarchyIds(id: Int) ={
-    PolledPaths.get(id).map{
+  def getPolledHierarchyIds(subId: Long) ={
+    PolledPaths.get(subId).map{
       paths => getHierarchyIds(
         paths.map{
           path => PathMap.get(path.toString)
@@ -126,9 +126,9 @@ class OdfStructure(implicit val dbConnection: DB) {
     }
   }
 
-  def getPollData(pollId: Int) : Option[OdfObjects]= {
+  def getPollData(pollId: Long) : Option[OdfObjects]= {
     val timestamp = new Timestamp(new Date().getTime)
-    def getPollDataWithHiearachyIds(pollId:Int,hierarchyIds: Set[Int]) = ??? 
+    def getPollDataWithHiearachyIds(pollId:Long,hierarchyIds: Set[Int]) = ??? 
     getPolledHierarchyIds(pollId).map{
       hIds =>
       val result = getPollDataWithHiearachyIds(pollId,hIds) 
@@ -138,11 +138,11 @@ class OdfStructure(implicit val dbConnection: DB) {
           pollQueue => 
           (
             pollQueue.headOption.collect{
-              case headPoll if headPoll.id != pollId => 
+              case headPoll if headPoll.subId != pollId => 
               pollQueue.dequeue
               pollQueue.headOption.map{ poll => poll.timestamp }
             }.collect{ case Some(time) => time},
-            pollQueue.filter{ poll => poll.id != pollId } += Poll(pollId, timestamp)
+            pollQueue.filter{ poll => poll.subId != pollId } += Poll(pollId, timestamp)
           )
         }.collect{
           case (Some(time), newQueue) =>

@@ -284,7 +284,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           case Failure(e: Throwable) =>
             (Result.internalError(s"Internal server error when trying to create subscription: ${e.getMessage}"),
               500)
-          case Success(id: Int) =>
+          case Success(id: Long) =>
             (Result.subscription(id.toString), 200)
         }
     (
