@@ -2,8 +2,8 @@
 (function (Codemirror) {
     CodeMirror.extendMode("xml", {
         newlineAfterToken: function(type, content, textAfter, state) {
-          return ((type == "tag" && />$/.test(content) && state.context) ||
-                             /^</.test(textAfter));
+          return ((type === "tag" && />$/.test(content) && state.context) ||
+                  (type !== null  && /^</.test(textAfter)));
         }
     });
     // CodeMirror autoFormat extension

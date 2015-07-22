@@ -161,7 +161,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             formLogic.modifyRequest -> requests.params.odf.remove odfTreePath
             $ jqesc odfTreePath
               .children ".jstree-children"
-              .children ".jstree-node"
+              .find ".jstree-node"
               .each (_, node) ->
                 consts.odfTree.deselect_node node
 

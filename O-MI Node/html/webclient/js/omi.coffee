@@ -75,6 +75,7 @@ omiExt = (WebOmi) ->
       when "InfoItem"
         nameAttr = xmlNode.attributes.name
         if nameAttr? then nameAttr.value else null
+      when "Objects" then "Objects"
       else null
 
   # Checks if odfNode has odf element child with id or name of odfId

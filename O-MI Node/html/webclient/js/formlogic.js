@@ -190,7 +190,7 @@
             formLogic.modifyRequest(function() {
               return requests.params.odf.remove(odfTreePath);
             });
-            return $(jqesc(odfTreePath)).children(".jstree-children").children(".jstree-node").each(function(_, node) {
+            return $(jqesc(odfTreePath)).children(".jstree-children").find(".jstree-node").each(function(_, node) {
               return consts.odfTree.deselect_node(node);
             });
         }
