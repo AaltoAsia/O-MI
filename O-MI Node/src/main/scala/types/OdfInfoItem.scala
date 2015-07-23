@@ -67,11 +67,10 @@ class  OdfInfoItemImpl(
   }
 
   implicit def asInfoItemType: InfoItemType = {
-    require(this.path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
     InfoItemType(
       description = description.map( des => des.asDescription ),
       MetaData = metaData.map{ odfMetaData => odfMetaData.asMetaData},
-      name = path.last, // require checks
+      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: ${path}")),
       value = values.map{ 
         value : OdfValue =>
         value.asValueType

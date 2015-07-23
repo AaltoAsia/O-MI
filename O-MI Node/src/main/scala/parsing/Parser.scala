@@ -40,7 +40,7 @@ abstract trait Parser[Result] {
           Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
         case e: SAXException =>
           Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
-        case e: Exception =>
+        case e =>
           Seq(ParseError("Unknown exception: " + e.getMessage))
       }
     }

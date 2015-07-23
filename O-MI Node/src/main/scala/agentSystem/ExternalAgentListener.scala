@@ -83,12 +83,9 @@ class ExternalAgentHandler(
         InputPusher.handleObjects(getObjects(parsedEntries))
         if(!metaDataSaved){
           InputPusher.handlePathMetaDataPairs(
-            getInfoItems(getObjects(parsedEntries)).filter{
-              info => info.metaData.nonEmpty 
-            }.map{
-              info  => (info.path, info.metaData.get.data)
-            }   
-
+            getInfoItems(getObjects(parsedEntries)).collect{
+              case OdfInfoItem(path,_,_,Some(metadata)) => (path, metadata.data)
+            }
           )
           metaDataSaved = true
         }

@@ -20,11 +20,10 @@ trait OdfConversions extends OmiNodeTables {
 
   def toDBInfoItems(input: Seq[DBValueTuple]): DBInfoItems =
     SortedMap(input groupBy (_._1) mapValues {values =>
-      val empty = List[DBValue]()
+//      val empty = List[DBValue]()
 
-      values.foldLeft(empty){
-        case (others, (_, Some(dbValue))) => dbValue :: others
-        case (others, (_, None)) => others
+      values.collect{
+        case (_, Some(dbValue)) => dbValue
       }
 
       } toArray : _*
