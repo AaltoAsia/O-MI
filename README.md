@@ -1,8 +1,8 @@
 O-MI Node Server
 ==============
 
-[![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=development)](https://travis-ci.org/AaltoAsia/O-MI)
-[![Coverage Status](https://coveralls.io/repos/AaltoAsia/O-MI/badge.svg?branch=development&service=github)](https://coveralls.io/github/AaltoAsia/O-MI?branch=development)
+[![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=master)](https://travis-ci.org/AaltoAsia/O-MI)
+[![Coverage Status](https://coveralls.io/repos/AaltoAsia/O-MI/badge.svg?branch=master&service=github)](https://coveralls.io/github/AaltoAsia/O-MI?branch=master)
 [![Codacy Badge](https://www.codacy.com/project/badge/9f49209c70e24c67bbc1826fde507518)](https://www.codacy.com/app/tkinnunen/O-MI)
 
 
