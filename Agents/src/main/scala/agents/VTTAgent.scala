@@ -122,7 +122,7 @@ class VTTAgent(configPath : String) extends InternalAgent(configPath) {
             case None => -1000.0
           }
         (
-          OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "" , Some( new Timestamp( date.getTime) ) ))),
+          OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , Some( new Timestamp( date.getTime) ) ))),
           firstValue
         )
       } 
