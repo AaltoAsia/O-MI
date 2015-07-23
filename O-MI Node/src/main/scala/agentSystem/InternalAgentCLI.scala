@@ -34,6 +34,7 @@ class InternalAgentCLI(
           log.debug(s"Got stop command from $sender for $agent")
           context.parent ! StopCmd(agent.dropRight(1))
         case cmd: Array[String] => log.warning(s"Unknown command from $sender: "+ cmd.mkString(" "))
+        case a => log.warning(s"Unknown message from $sender: "+ a) 
       }
     }
   case PeerClosed =>{

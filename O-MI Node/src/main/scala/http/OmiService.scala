@@ -135,11 +135,11 @@ trait OmiService extends HttpService with CORSSupport {
         respondWithMediaType(`text/xml`) {
           eitherOmi match {
             case Right(requests) =>
-              val request = requests.head
+              val request = requests.headOption
 
               val (response, returnCode) = request match {
 
-                case pRequest : PermissiveRequest => 
+                case Some(pRequest : PermissiveRequest) => 
                   if(ip.toOption.exists(hasPermission(_))){//.nonEmpty && hasPermission(ip.toOption.get)) {
                     log.info(s"Authorized: ${ip.toOption} for ${pRequest.toString.take(80)}...")
                     requestHandler.handleRequest(pRequest)
@@ -147,8 +147,9 @@ trait OmiService extends HttpService with CORSSupport {
                     log.warning(s"Unauthorized: ${ip.toOption} tried to use ${pRequest.toString.take(120)}...")
                     (requestHandler.unauthorized, 401)
                   }
-                case req : OmiRequest => 
-                    requestHandler.handleRequest(request)
+                case Some(req : OmiRequest) => 
+                    requestHandler.handleRequest(req)
+                case _ =>  (requestHandler.notImplemented, 501)
               }
 
               complete((returnCode, response))

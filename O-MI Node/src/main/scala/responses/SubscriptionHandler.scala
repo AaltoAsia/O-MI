@@ -76,7 +76,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
   // load subscriptions at startup
   override def preStart() = {
-    val subs = dbConnection.getAllSubs(Some(true))
+    val subs = dbConnection.getAllSubs(None)
     for (sub <- subs) loadSub(sub)
 
   }
@@ -99,7 +99,6 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
             intervalSubs += TimedSub(
               dbsub,
               new Timestamp(currentTimeMillis()))
-
             // FIXME: schedules many times
             handleIntervals()
 
@@ -122,13 +121,16 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
                         }
                       } yield last).getOrElse(OdfValue("", "", None))
                     }
+                    
                     eventSubs.get(path.toString) match {
 
                       case Some(ses: List[EventSub]) =>
                         eventSubs += path.toString -> (EventSub(dbsub, lastValue) :: ses)
 
+
                       case None =>
                         eventSubs += path.toString -> Seq(EventSub(dbsub, lastValue))
+
                     }
                 }
 
@@ -184,8 +186,8 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         sub.hasCallback match {
           case true =>
             intervalSubs.find(sub.id == _.id).foreach { intervalSub => intervalSubs -= intervalSub } //intervalSubs.filterNot(sub.id == _.id)
-          case false =>
-           
+          case false => 
+            ttlQueue.remove(PolledSub(sub.id, 404L)) // Long parameter does not matter equality only checks id
         }
     }
     dbConnection.removeSub(sub.id)
@@ -208,15 +210,22 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param paths Paths of modified InfoItems.
    */
   def checkEventSubs(items: Seq[OdfInfoItem]): Unit = {
-    //log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
-    //log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
-
+    val checkTime = currentTimeMillis()
+//    log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
+//    log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
+    
     val idItemLastVal = items.flatMap { item =>
       val itemPaths = item.path.getParentsAndSelf.map(_.toString)
-      val subItemTuples = eventSubs.collect {
-        case (path, subs) if itemPaths.contains(path) =>
-          subs
-      }.flatten
+      val subItemTuples = itemPaths.flatMap(path => eventSubs.get(path)).flatten.filter { 
+        case EventSub(sub,_) => if(hasTTLEnded(sub, checkTime)){
+          removeSub(sub)
+          false
+        } else true
+        }
+//        eventSubs.collect {
+//        case (path, subs) if itemPaths.contains(path) =>
+//          subs
+//      }.flatten
 
       //log.debug("subItemTuples are nonempty: " + subItemTuples.nonEmpty)
       subItemTuples.map { eventsub => (eventsub.sub, item, eventsub.lastValue) }
@@ -344,7 +353,18 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   /**
    * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
    */
-  case class PolledSub(subId: Long, ttlMillis: Long)
+
+  case class PolledSub(subId: Long, ttlMillis: Long) { 
+    override def equals(o:Any): Boolean = {
+      o match{
+        case PolledSub(oid, _) => oid == subId
+        case _ => false
+      }
+      
+    }
+    override def hashCode = subId.hashCode()
+  }
+
 
   /**
    * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
@@ -413,7 +433,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         }
 
       } else flag = false
-//      println( flag)
+
     }
 
   }

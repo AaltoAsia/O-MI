@@ -29,6 +29,7 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
     case HandleInfoItems(items) => if(items.nonEmpty) handleInfoItems(items)
     case HandlePathValuePairs(pairs) => if(pairs.nonEmpty) handlePathValuePairs(pairs)
     case HandlePathMetaDataPairs(pairs) => if(pairs.nonEmpty) handlePathMetaDataPairs(pairs)
+    case u => 
   }
   override def handleOdf( objects: OdfObjects) : Unit = {
     val data = getLeafs(objects)
@@ -59,8 +60,7 @@ class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPush
     val many = dbobject.setMany(infos) 
     log.debug("Successfully saved InfoItems to DB")
     val meta = infoitems.collect{
-      case info if info.metaData.nonEmpty => 
-        (info.path, info.metaData.get.data) 
+      case OdfInfoItem(path, _, _, Some(metaData)) => (path, metaData.data) 
     }
     if(meta.nonEmpty) handlePathMetaDataPairs(meta)
     val des = infoitems.collect{

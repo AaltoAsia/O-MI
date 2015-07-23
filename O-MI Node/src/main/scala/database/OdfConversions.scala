@@ -55,6 +55,7 @@ trait OdfConversions extends OmiNodeTables {
       objectNode.toOdfObject
     case (objectNode, values) if !objectNode.isInfoItem && objectNode.depth == 1 =>
       objectNode.toOdfObjects
+    case matchError => throw new MatchError
   }
 
   /**
@@ -98,6 +99,8 @@ trait OdfConversions extends OmiNodeTables {
 
       case infoItem @ (infoItemNode, _) if infoItemNode.isInfoItem  =>
         Some(hasPathConversion(infoItem))
+        
+      case matchError => throw new MatchError(matchError)
     }
   }
 
@@ -109,7 +112,7 @@ trait OdfConversions extends OmiNodeTables {
 
     // safe version of reduce
     odfObjectsTrees.headOption map { head =>
-        odfObjectsTrees.reduce(_ combine _)
+        odfObjectsTrees.par.reduce(_ combine _)
     }
   }
 }

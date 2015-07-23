@@ -52,6 +52,7 @@ class ExternalAgentListener extends Actor with ActorLogging {
       } else {
         log.warning(s"Unauthorized " + remote+  " tried to connect as external agent.")
       }
+    case _ =>
   }
 }
 
