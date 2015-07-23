@@ -7,10 +7,10 @@ requestsExt = (WebOmi) ->
     readAll :
       """
       <?xml version="1.0"?>
-      <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
+      <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+          <omi:msg xmlns="odf.xsd">
             <Objects></Objects>
           </omi:msg>
         </omi:read>
@@ -19,10 +19,10 @@ requestsExt = (WebOmi) ->
     templateMsg :
       """
       <?xml version="1.0"?>
-      <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
+      <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+          <omi:msg xmlns="odf.xsd">
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -31,10 +31,10 @@ requestsExt = (WebOmi) ->
     template :
       """
       <?xml version="1.0"?>
-      <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
+      <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+          <omi:msg xmlns="odf.xsd">
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -231,6 +231,7 @@ requestsExt = (WebOmi) ->
               parent.removeAttribute name
 
         currentParams[name] = newVal
+        newVal
 
 
 
@@ -288,6 +289,7 @@ requestsExt = (WebOmi) ->
           else if oldReqName == "write" # change from write
             removeValueFromAll doc
 
+          reqName
 
 
 
@@ -308,8 +310,11 @@ requestsExt = (WebOmi) ->
             existingIDs = o.evaluateXPath doc, "//omi:requestID"
 
             if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
-              return # TODO multiple requestIDs
+              return # exists
+              # TODO multiple requestIDs
+
             else if newVal?
+              # add
               for parent in parents
                 id.parentNode.removeChild id for id in existingIDs
                 newId = o.createOmi "requestID", doc
@@ -317,9 +322,11 @@ requestsExt = (WebOmi) ->
                 newId.appendChild idTxt
                 parent.appendChild newId
             else
+              # remove
               id.parentNode.removeChild id for id in existingIDs
 
           currentParams[name] = newVal
+          newVal
 
     odf      :
       update : (paths) ->
@@ -346,6 +353,7 @@ requestsExt = (WebOmi) ->
           obs.parentNode.removeChild obs for obs in obss
 
         currentParams.odf = paths
+        paths
 
       # path: String "Objects/path/to/node"
       add : (path) ->
@@ -375,6 +383,8 @@ requestsExt = (WebOmi) ->
           currentParams.odf.push path
         else currentParams.odf = [path]
 
+        path
+
       # path: String "Objects/path/to/node"
       remove : (path) ->
         # imports
@@ -393,6 +403,8 @@ requestsExt = (WebOmi) ->
         if currentParams.odf?
           currentParams.odf = currentParams.odf.filter (p) -> p != path
         else currentParams.odf = []
+
+        path
 
     interval : # Maybe Number
       updateSetterForAttr "interval", "omi:omiEnvelope/*"
@@ -436,6 +448,7 @@ requestsExt = (WebOmi) ->
             requestElem.removeAttribute "msgformat"
 
         currentParams.msg = hasMsg
+        hasMsg
 
   # wrapper to update the ui with generated request
   my.generate = ->
@@ -449,8 +462,7 @@ requestsExt = (WebOmi) ->
     o = WebOmi.omi
     cp = currentParams
 
-    for key, newVal of omiRequestObject
-      #currentParams[key] = newVal # confuses the update logic
+    for own key, newVal of omiRequestObject
       uiWidget = WebOmi.consts.ui[key]
       if uiWidget?
         uiWidget.set newVal
@@ -471,7 +483,7 @@ requestsExt = (WebOmi) ->
       # resolve update dependencies manually:
       #my.update
 
-      for key, thing of my.params
+      for own key, thing of my.params
         thing.update newParams[key]
         console.log "updated #{key}:", currentParams[key]
         
