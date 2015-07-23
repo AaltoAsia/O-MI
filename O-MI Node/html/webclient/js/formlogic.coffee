@@ -84,7 +84,7 @@ formLogicExt = ($, WebOmi) ->
       switch xmlNode.nodeName
         when "Objects"
           name = xmlNode.nodeName
-          id   : name
+          id   : idesc name
           text : name
           state : {opened : true}
           type : "objects"
@@ -93,7 +93,7 @@ formLogicExt = ($, WebOmi) ->
         when "Object"
           name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
-          id   : path
+          id   : idesc path
           text : name
           type : "object"
           children :
@@ -101,7 +101,7 @@ formLogicExt = ($, WebOmi) ->
         when "InfoItem"
           name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
-          id   : path
+          id   : idesc path
           text : name
           type : "infoitem"
           children : []

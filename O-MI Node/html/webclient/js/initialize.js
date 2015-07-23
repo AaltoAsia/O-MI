@@ -84,21 +84,22 @@
                 icon: infoItemIcon,
                 _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf("infoitem") === -1,
                 action: function(data) {
-                  var id, name, tree;
+                  var idName, name, path, tree;
                   tree = WebOmi.consts.odfTree;
                   parent = tree.get_node(data.reference);
                   name = window.prompt("Enter a name for the new InfoItem:", "MyInfoItem");
-                  id = parent.id + "/" + name;
-                  if ($(jqesc(id)).length > 0) {
+                  idName = idesc(name);
+                  path = parent.id + "/" + idName;
+                  if ($(jqesc(path)).length > 0) {
                     return;
                   }
                   return tree.create_node(parent.id, {
-                    id: id,
+                    id: path,
                     text: name,
                     type: "infoitem"
                   }, "first", function() {
                     tree.open_node(parent, null, 500);
-                    return tree.select_node(id);
+                    return tree.select_node(path);
                   });
                 }
               },
@@ -107,21 +108,23 @@
                 icon: objectIcon,
                 _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf("object") === -1,
                 action: function(data) {
-                  var id, name, tree;
+                  var idName, name, path, tree;
                   tree = WebOmi.consts.odfTree;
                   parent = tree.get_node(data.reference);
                   name = window.prompt("Enter an identifier for the new Object:", "MyObject");
-                  id = parent.id + "/" + name;
-                  if ($(jqesc(id)).length > 0) {
+                  idName = idesc(name);
+                  path = parent.id + "/" + idName;
+                  if ($(jqesc(path)).length > 0) {
+                    return;
                     return;
                   }
                   return tree.create_node(parent, {
-                    id: id,
+                    id: path,
                     text: name,
                     type: "object"
                   }, "first", function() {
                     tree.open_node(parent, null, 500);
-                    return tree.select_node(id);
+                    return tree.select_node(path);
                   });
                 }
               }
@@ -241,7 +244,11 @@
   window.WebOmi = constsExt($, window.WebOmi || {});
 
   window.jqesc = function(mySel) {
-    return '#' + mySel.replace(/(:|\.|\[|\]|,|\/)/g, "\\$1");
+    return '#' + mySel.replace(/(:|\.|\[|\]|,|\/)/g, "\\$1").replace(/( )/g, "_");
+  };
+
+  window.idesc = function(myId) {
+    return myId.replace(/( )/g, "_");
   };
 
   String.prototype.trim = String.prototype.trim || function() {

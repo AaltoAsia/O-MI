@@ -85,18 +85,19 @@ constsExt = ($, parent) ->
                 tree = WebOmi.consts.odfTree
                 parent = tree.get_node data.reference
                 name = window.prompt "Enter a name for the new InfoItem:", "MyInfoItem"
-                id = "#{parent.id}/#{name}"
+                idName = idesc name
+                path = "#{parent.id}/#{idName}"
 
-                if $(jqesc id).length > 0
+                if $(jqesc path).length > 0
                   return # already exists
 
                 tree.create_node parent.id,
-                  id   : id
+                  id   : path
                   text : name
                   type : "infoitem"
                 , "first", ->
                   tree.open_node parent, null, 500
-                  tree.select_node id
+                  tree.select_node path
             add_obj :
               label : "Add an Object"
               icon  : objectIcon
@@ -105,18 +106,20 @@ constsExt = ($, parent) ->
                 tree = WebOmi.consts.odfTree
                 parent = tree.get_node data.reference
                 name = window.prompt "Enter an identifier for the new Object:", "MyObject"
-                id   = "#{parent.id}/#{name}"
+                idName = idesc name
+                path = "#{parent.id}/#{idName}"
 
-                if $(jqesc id).length > 0
+                if $(jqesc path).length > 0
+                  return # already exists
                   return # already exists
 
                 tree.create_node parent,
-                  id   : id
+                  id   : path
                   text : name
                   type : "object"
                 , "first", ->
                   tree.open_node parent, null, 500
-                  tree.select_node id
+                  tree.select_node path
                 
 
 
@@ -196,8 +199,10 @@ constsExt = ($, parent) ->
 window.WebOmi = constsExt($, window.WebOmi || {})
 
 # escaped jquery identifier
-# adds one # in the beginning and \\ in front of every special symbol
-window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" )
+# adds one # in the beginning and \\ in front of every special symbol and spaces to underscore
+window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" ).replace( /( )/g, "_" )
+# make a valid id, convert space to underscore
+window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 
 # extend String (FIXME)
 String.prototype.trim = String.prototype.trim || ->

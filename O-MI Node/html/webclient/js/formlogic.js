@@ -91,7 +91,7 @@
           case "Objects":
             name = xmlNode.nodeName;
             return {
-              id: name,
+              id: idesc(name),
               text: name,
               state: {
                 opened: true
@@ -112,7 +112,7 @@
             name = WebOmi.omi.getOdfId(xmlNode);
             path = parentPath + "/" + name;
             return {
-              id: path,
+              id: idesc(path),
               text: name,
               type: "object",
               children: (function() {
@@ -130,7 +130,7 @@
             name = WebOmi.omi.getOdfId(xmlNode);
             path = parentPath + "/" + name;
             return {
-              id: path,
+              id: idesc(path),
               text: name,
               type: "infoitem",
               children: []
