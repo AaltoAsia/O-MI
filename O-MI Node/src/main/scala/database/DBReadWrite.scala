@@ -502,6 +502,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         case objs: OdfObjects  => addObjectsI(path, lastIsInfoItem = false)
         case obj: OdfObject    => addObjectsI(path, lastIsInfoItem = false)
         case info: OdfInfoItem => addObjectsI(path, lastIsInfoItem = true)
+        case matcherror        => throw new MatchError(matcherror)
       }
 
       nodeO <- getHierarchyNodeI(path)
@@ -571,11 +572,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val hNode = runSync(hierarchyNodes.filter(_.path === path).result).headOption
     if (hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
 
-    val removedLeft = hNode.get.leftBoundary
-    val removedRight = hNode.get.rightBoundary
+    val removedLeft = hNode.getOrElse(throw new UninitializedError).leftBoundary
+    val removedRight = hNode.getOrElse(throw new UninitializedError).rightBoundary
     val subTreeQ = getSubTreeQ(hNode.get)
     val subTree = runSync(subTreeQ.result)
-    val removedIds = subTree.map { _._1.id.get }
+    val removedIds = subTree.map { _._1.id.getOrElse(throw new UninitializedError) }
     val removeActions = DBIO.seq(
       latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
       subItems.filter { _.hierarchyId.inSet(removedIds) }.delete,
@@ -649,7 +650,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         time = earliest.headOption
 
         sortedVals <- pathQuery.result
-        oldTime = sortedVals.drop(queryLen - historyLen).head.timestamp
+        oldTime = sortedVals.drop(queryLen - historyLen).headOption.getOrElse(throw new UninitializedError).timestamp
 
         cutOffTime = time.fold(oldTime)(subtime => if (subtime.before(oldTime)) subtime else oldTime)
 

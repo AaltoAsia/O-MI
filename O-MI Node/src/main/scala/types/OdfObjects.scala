@@ -21,8 +21,8 @@ class OdfObjectsImpl(
     OdfObjects(
       sharedObjs.map{
         case (path:Path, sobj: Seq[OdfObject]) =>
-        assert(sobj.length == 2)
-        sobj.head.combine(sobj.last) // assert checks
+        sobj.headOption.flatMap{head =>sobj.lastOption.map(last=> 
+          head.combine(last))}.getOrElse(throw new UninitializedError()) // .toList() might also work instead of getOrElse?
       }.toSeq ++ uniqueObjs ++ anotherUniqueObjs,
       (version, another.version) match{
         case (Some(a), Some(b)) => Some(a)
