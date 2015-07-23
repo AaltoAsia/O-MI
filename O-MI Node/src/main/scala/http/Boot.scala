@@ -12,7 +12,9 @@ import java.net.InetSocketAddress
 import agentSystem._
 import responses.{RequestHandler, SubscriptionHandler}
 
-import types._
+import types.Path
+import types.OdfTypes._
+import scala.collection.JavaConversions.asJavaIterable
 import database._
 
 import xml._
@@ -48,23 +50,29 @@ trait Starter {
   def init(dbConnection: DB = new DatabaseConnection): Unit = {
     database.setHistoryLength(settings.numLatestValues)
 
-    // Current time for odf values of the settings
-    val date = new Date();
-    val currentTime = new java.sql.Timestamp(date.getTime)
-
-    // Save settings as sensors values
-    system.log.info(s"Number of latest values (per sensor) that will be saved to the DB: ${settings.numLatestValues}")
-    dbConnection.set(
-      Path(settings.settingsOdfPath + "num-latest-values-stored"), 
-      currentTime, settings.numLatestValues.toString
-    )
-
     // Create input pusher actor
     initInputPusher(dbConnection)
 
+    // Save settings as sensors values
+    saveSettingsOdf()
   }
 
+  def saveSettingsOdf() = {
+    // Same timestamp for all OdfValues of the settings
+    val date = new Date();
+    val currentTime = new java.sql.Timestamp(date.getTime)
 
+    val numDescription =
+      "Number of latest values (per sensor) that will be saved to the DB"
+    system.log.info(s"$numDescription: ${settings.numLatestValues}")
+    InputPusher.handleInfoItems(Iterable(
+      OdfInfoItem(
+        Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+        Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", Some(currentTime))),
+        Some(OdfDescription(numDescription))
+      )
+    ))
+  }
 
 
   /**

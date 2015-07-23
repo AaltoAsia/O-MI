@@ -38,23 +38,90 @@ constsExt = ($, parent) ->
     loc = window.location.href
     my.serverUrl.val loc.substr 0, loc.indexOf "html/"
 
+    objectsIcon  = "glyphicon glyphicon-tree-deciduous"
+    objectIcon   = "glyphicon glyphicon-folder-open"
+    infoItemIcon = "glyphicon glyphicon-apple"
+
     my.odfTreeDom
       .jstree
-        plugins : ["checkbox", "types"]
+        plugins : ["checkbox", "types", "contextmenu"]
+        core :
+          error : (msg) -> console.log msg # TODO: remove debug
+          force_text : true
+          check_callback : true
         types :
           default :
-            icon : "odf-objects glyphicon glyphicon-tree-deciduous"
+            icon : "odf-objects " + objectsIcon
+            valid_children : ["object"]
           object :
-            icon : "odf-object glyphicon glyphicon-folder-open"
+            icon : "odf-object " + objectIcon
+            valid_children : ["object", "infoitem"]
           objects :
-            icon : "odf-objects glyphicon glyphicon-tree-deciduous"
+            icon : "odf-objects " + objectsIcon
+            valid_children : ["object"]
           infoitem :
-            icon : "odf-infoitem glyphicon glyphicon-apple"
+            icon : "odf-infoitem " + infoItemIcon
+            valid_children : []
         checkbox :
           three_state : false
           keep_selected_style : true # Consider false
           cascade : "up+undetermined"
           tie_selection : true
+        contextmenu :
+          show_at_node : true
+          items : (target) ->
+            helptxt :
+              label : "For write request:"
+              icon  : "glyphicon glyphicon-pencil"
+              # _disabled : true
+              action : -> my.ui.request.set "write", false
+              separator_after : true
+            add_info :
+              label : "Add an InfoItem"
+              icon  : infoItemIcon
+              _disabled :
+                my.odfTree.settings.types[target.type].valid_children.indexOf("infoitem") == -1
+              action : (data) -> # element, item, reference
+                tree = WebOmi.consts.odfTree
+                parent = tree.get_node data.reference
+                name = window.prompt "Enter a name for the new InfoItem:", "MyInfoItem"
+                idName = idesc name
+                path = "#{parent.id}/#{idName}"
+
+                if $(jqesc path).length > 0
+                  return # already exists
+
+                tree.create_node parent.id,
+                  id   : path
+                  text : name
+                  type : "infoitem"
+                , "first", ->
+                  tree.open_node parent, null, 500
+                  tree.select_node path
+            add_obj :
+              label : "Add an Object"
+              icon  : objectIcon
+              _disabled : my.odfTree.settings.types[target.type].valid_children.indexOf("object") == -1
+              action : (data) -> # element, item, reference
+                tree = WebOmi.consts.odfTree
+                parent = tree.get_node data.reference
+                name = window.prompt "Enter an identifier for the new Object:", "MyObject"
+                idName = idesc name
+                path = "#{parent.id}/#{idName}"
+
+                if $(jqesc path).length > 0
+                  return # already exists
+                  return # already exists
+
+                tree.create_node parent,
+                  id   : path
+                  text : name
+                  type : "object"
+                , "first", ->
+                  tree.open_node parent, null, 500
+                  tree.select_node path
+                
+
 
     my.odfTree = my.odfTreeDom.jstree()
     my.odfTree.set_type('Objects', 'objects')
@@ -84,11 +151,11 @@ constsExt = ($, parent) ->
     my.ui =
       request  : # String
         ref : my.requestSelDom
-        set : (reqName) -> # Maybe string (request tag name)
+        set : (reqName, preventEvent=true) -> # Maybe string (request tag name)
           tree = @ref.jstree()
           if not tree.is_selected reqName
             tree.deselect_all()
-            tree.select_node reqName, true, false
+            tree.select_node reqName, preventEvent, false
         get : ->
           @ref.jstree().get_selected[0]
 
@@ -101,10 +168,10 @@ constsExt = ($, parent) ->
       odf      : # Array String paths
         ref : my.odfTreeDom
         get :        -> my.odfTree.get_selected()
-        set : (vals) ->
+        set : (vals, preventEvent=true) ->
           my.odfTree.deselect_all true
           if vals? and vals.length > 0
-            my.odfTree.select_node node, true, false for node in vals
+            my.odfTree.select_node node, preventEvent, false for node in vals
       interval : # Maybe number
         basicInput '#interval'
       newest   : # Maybe int
@@ -132,8 +199,10 @@ constsExt = ($, parent) ->
 window.WebOmi = constsExt($, window.WebOmi || {})
 
 # escaped jquery identifier
-# adds one # in the beginning and \\ in front of every special symbol
-window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" )
+# adds one # in the beginning and \\ in front of every special symbol and spaces to underscore
+window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" ).replace( /( )/g, "_" )
+# make a valid id, convert space to underscore
+window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 
 # extend String (FIXME)
 String.prototype.trim = String.prototype.trim || ->

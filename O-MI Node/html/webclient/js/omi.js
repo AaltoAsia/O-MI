@@ -46,6 +46,9 @@
     my.createOmi = function(elem, doc) {
       return doc.createElementNS(my.ns.omi, elem);
     };
+    my.createOdfValue = function(doc) {
+      return createOdf("value", doc);
+    };
     my.createOdfObjects = function(doc) {
       return createOdf("Objects", doc);
     };

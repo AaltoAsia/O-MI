@@ -2,46 +2,19 @@ package agents
 
 import agentSystem._
 import types._
+import types.Path._
 import types.OdfTypes._
 import parsing.OdfParser
-import database._
 
+import java.io.File
 import scala.io.Source
-import akka.actor._
-import akka.event.{Logging, LoggingAdapter}
-import akka.io.{ IO, Tcp }
-import akka.util.{ByteString, Timeout}
-import akka.pattern.ask
-import scala.language.postfixOps
 
 import java.sql.Timestamp
-import java.io.File
-
-/* JSON4s */
-import org.json4s._
-import org.json4s.native.JsonMethods._
-
-// HTTP related imports
-import spray.can.Http
-import spray.http._
-import HttpMethods._
-import spray.client.pipelining._
-
-// Futures related imports
-
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.{ Success, Failure }
-
-import types.Path._
+import scala.util.Random
 
 // Scala XML
-import scala.xml
 import scala.xml._
 
-// Mutable map for sensordata
-import scala.collection.mutable.Map
-import scala.util.Random
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
 
 
@@ -122,7 +95,7 @@ class VTTAgent(configPath : String) extends InternalAgent(configPath) {
             case None => -1000.0
           }
         (
-          OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "" , Some( new Timestamp( date.getTime) ) ))),
+          OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , Some( new Timestamp( date.getTime) ) ))),
           firstValue
         )
       } 

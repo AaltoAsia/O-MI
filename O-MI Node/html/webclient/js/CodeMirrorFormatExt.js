@@ -1,5 +1,5 @@
 
-(function (Codemirror) {
+(function (CodeMirror) {
     CodeMirror.extendMode("xml", {
         newlineAfterToken: function(type, content, textAfter, state) {
           return ((type === "tag" && />$/.test(content) && state.context) ||
@@ -31,17 +31,19 @@
                     atSol = false;
                 }
                 if (!atSol && inner.mode.newlineAfterToken &&
-                    inner.mode.newlineAfterToken(style, cur, stream.string.slice(stream.pos) || text[i+1] || "", inner.state))
+                    inner.mode.newlineAfterToken(style, cur, stream.string.slice(stream.pos) || text[i+1] || "", inner.state)){
                     newline();
+                }
             }
-            if (!stream.pos && outer.blankLine) outer.blankLine(state);
-            if (!atSol) newline();
+            if (!stream.pos && outer.blankLine) {outer.blankLine(state);}
+            if (!atSol) {newline();}
         }
 
         cm.operation(function () {
             cm.replaceRange(out, from, to);
-            for (var cur = from.line + 1, end = from.line + lines; cur <= end; ++cur)
+            for (var cur = from.line + 1, end = from.line + lines; cur <= end; ++cur){
                 cm.indentLine(cur, "smart");
+            }
             //cm.setSelection(from, cm.getCursor(false));
         });
     });

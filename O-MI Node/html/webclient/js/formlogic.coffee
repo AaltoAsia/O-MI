@@ -84,7 +84,7 @@ formLogicExt = ($, WebOmi) ->
       switch xmlNode.nodeName
         when "Objects"
           name = xmlNode.nodeName
-          id   : name
+          id   : idesc name
           text : name
           state : {opened : true}
           type : "objects"
@@ -93,7 +93,7 @@ formLogicExt = ($, WebOmi) ->
         when "Object"
           name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
-          id   : path
+          id   : idesc path
           text : name
           type : "object"
           children :
@@ -101,7 +101,7 @@ formLogicExt = ($, WebOmi) ->
         when "InfoItem"
           name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
-          id   : path
+          id   : idesc path
           text : name
           type : "infoitem"
           children : []
@@ -204,11 +204,13 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             newHasMsg = requests.defaults[reqName]().msg
             requests.params.msg.update newHasMsg
 
-    for inputVar, controls of consts.ui
+    makeRequestUpdater = (input) ->
+      (val) ->
+        formLogic.modifyRequest -> requests.params[input].update val
+
+    for own inputVar, controls of consts.ui
       if controls.bindTo?
-        controls.bindTo ((input) -> (val) ->
-          formLogic.modifyRequest -> requests.params[input].update val
-        ) inputVar
+        controls.bindTo makeRequestUpdater inputVar
 
     null # no return
 
