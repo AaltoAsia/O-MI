@@ -27,10 +27,10 @@ import HttpMethods._
 import spray.client.pipelining._
 
 // Futures related imports
-
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.{ Success, Failure }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{ Try, Success, Failure }
 
 import types.Path._
 
@@ -41,52 +41,55 @@ import scala.xml._
 // Mutable map for sensordata
 import scala.collection.mutable.Map
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 
-/** Agent for the korean server's JSon data
-  * 
+/** Agent for the korean server's JSON data
+  * It is now deprecated as the server is not online any more.
   */
 class SensorAgent(configPath : String) extends InternalAgent(configPath) {
   // Used to inform that database might be busy
-  var loading = false
-  var uri : Option[Uri] = None
+  private var uri : Option[Uri] = None
   // bring the actor system in scope
   // Define formats
-  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system =  ActorSystem("Sensor-Agent")
   implicit val timeout = akka.util.Timeout(10 seconds)
   
   override def init() : Unit = {
-    if(configPath.isEmpty || !(new File(configPath).exists())){
-      InternalAgent.log.warning("ConfigPath's file didn't exist. Shutting down.")
-      shutdown
-      return
+    Try {
+      val configFile = new File(configPath)
+
+      if (configPath.isEmpty || !configFile.exists()){
+        throw new RuntimeException("ConfigPath's file didn't exist. Shutting down.")
+      }
+
+      if (!configFile.canRead){
+        throw new RuntimeException("ConfigPath's file couldn't be read. Shutting down.")
+      }
+
+      val lines = scala.io.Source.fromFile(configFile).getLines().toArray
+      if (lines.isEmpty){
+        throw new RuntimeException("ConfigPath's file was empty. Shutting down.")
+      }
+
+      Uri(lines.head)
+    } match {
+      case Success(res) =>
+        uri = Some(res)
+        
+      case Failure(e) =>
+        system.shutdown
+        InternalAgent.log.warning(e.getMessage)
     }
-    val configFile = new File(configPath)
-    if(!configFile.canRead){
-      InternalAgent.log.warning("ConfigPath's file couldn't be read. Shutting down.")
-      shutdown
-      return
-    }
-    val lines = scala.io.Source.fromFile(configFile).getLines().toArray
-    if(lines.isEmpty){
-      InternalAgent.log.warning("ConfigPath's file was empty. Shutting down.")
-      shutdown
-      return
-    }
-    uri = Some(Uri(lines.head))
-    
   }
   def httpRef = IO(Http) //If problems change to def
 
   def loopOnce(): Unit = {
-      // Set loading to true, 
-      loading = true
 
-      // send GET request with absolute URI (http://121.78.237.160:2100/)
+      // send GET request with absolute URI
       val futureResponse: Future[HttpResponse] =
-        (httpRef ? HttpRequest(GET, uri.get)).mapTo[HttpResponse]
+        (httpRef ? HttpRequest(
+          GET, uri.getOrElse(throw new RuntimeException("Missing uri in configuration")))
+        ).mapTo[HttpResponse]
 
       // wait for Future to complete
       futureResponse onComplete {
@@ -100,12 +103,8 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
             JField(sensor, JString(value)) <- child
           } yield (sensor, value)
           addToDatabase(list)
-          //        
-
-          loading = false
 
         case Failure(error) =>
-          loading = false
       }
       Thread.sleep(300000)
     }
@@ -117,11 +116,10 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
     private def addToDatabase(list: List[(String, String)]): Unit = {
       // Define dateformat for dateTime value
       val date = new java.util.Date()
-      var i = 0
 
       if (!list.isEmpty) {
         // InfoItems filtered out
-        val data = list.filter(_._1.split('_').length > 3).map(item => {
+        val data = list.filter{case (sensorName, _) => sensorName.split('_').length > 3}.map(item => {
           val sensor: String = item._1
           val value: String = item._2 // Currently as string, convert to double?
           // Split name from underlines
@@ -138,6 +136,6 @@ class SensorAgent(configPath : String) extends InternalAgent(configPath) {
     }
     def finish = {
       system.shutdown
-	    InternalAgent.log.info("SensorAgent has died.")
+      InternalAgent.log.info("SensorAgent has died.")
     }
 }

@@ -15,9 +15,8 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
   * @param Path where sensor is.
   */
 class GenericAgent( configPath: String) extends InternalAgent(configPath) {
-  var fileToRead : Option[File] = None 
-  var path : Option[Path] = None 
-  var source : Option[Iterator[String]] = None
+  private var path : Option[Path] = None 
+  private var source : Option[Iterator[String]] = None
   
   
   override def init() : Unit = {
