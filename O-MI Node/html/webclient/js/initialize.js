@@ -15,7 +15,7 @@
       return afterWaits.push(fn);
     };
     $(function() {
-      var basicInput, fn, i, len, loc, responseCMSettings, results;
+      var basicInput, fn, i, infoItemIcon, len, loc, objectIcon, objectsIcon, responseCMSettings, results;
       responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
@@ -31,20 +31,34 @@
       my.resetAllBtn = $('#resetall');
       loc = window.location.href;
       my.serverUrl.val(loc.substr(0, loc.indexOf("html/")));
+      objectsIcon = "glyphicon glyphicon-tree-deciduous";
+      objectIcon = "glyphicon glyphicon-folder-open";
+      infoItemIcon = "glyphicon glyphicon-apple";
       my.odfTreeDom.jstree({
-        plugins: ["checkbox", "types"],
+        plugins: ["checkbox", "types", "contextmenu"],
+        core: {
+          error: function(msg) {
+            return console.log(msg);
+          },
+          force_text: true,
+          check_callback: true
+        },
         types: {
           "default": {
-            icon: "odf-objects glyphicon glyphicon-tree-deciduous"
+            icon: "odf-objects " + objectsIcon,
+            valid_children: ["object"]
           },
           object: {
-            icon: "odf-object glyphicon glyphicon-folder-open"
+            icon: "odf-object " + objectIcon,
+            valid_children: ["object", "infoitem"]
           },
           objects: {
-            icon: "odf-objects glyphicon glyphicon-tree-deciduous"
+            icon: "odf-objects " + objectsIcon,
+            valid_children: ["object"]
           },
           infoitem: {
-            icon: "odf-infoitem glyphicon glyphicon-apple"
+            icon: "odf-infoitem " + infoItemIcon,
+            valid_children: []
           }
         },
         checkbox: {
@@ -52,6 +66,67 @@
           keep_selected_style: true,
           cascade: "up+undetermined",
           tie_selection: true
+        },
+        contextmenu: {
+          show_at_node: true,
+          items: function(target) {
+            return {
+              helptxt: {
+                label: "For write request:",
+                icon: "glyphicon glyphicon-pencil",
+                action: function() {
+                  return my.ui.request.set("write", false);
+                },
+                separator_after: true
+              },
+              add_info: {
+                label: "Add an InfoItem",
+                icon: infoItemIcon,
+                _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf("infoitem") === -1,
+                action: function(data) {
+                  var id, name, tree;
+                  tree = WebOmi.consts.odfTree;
+                  parent = tree.get_node(data.reference);
+                  name = window.prompt("Enter a name for the new InfoItem:", "MyInfoItem");
+                  id = parent.id + "/" + name;
+                  if ($(jqesc(id)).length > 0) {
+                    return;
+                  }
+                  return tree.create_node(parent.id, {
+                    id: id,
+                    text: name,
+                    type: "infoitem"
+                  }, "first", function() {
+                    tree.open_node(parent, null, 500);
+                    return tree.select_node(id);
+                  });
+                }
+              },
+              add_obj: {
+                label: "Add an Object",
+                icon: objectIcon,
+                _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf("object") === -1,
+                action: function(data) {
+                  var id, name, tree;
+                  tree = WebOmi.consts.odfTree;
+                  parent = tree.get_node(data.reference);
+                  name = window.prompt("Enter an identifier for the new Object:", "MyObject");
+                  id = parent.id + "/" + name;
+                  if ($(jqesc(id)).length > 0) {
+                    return;
+                  }
+                  return tree.create_node(parent, {
+                    id: id,
+                    text: name,
+                    type: "object"
+                  }, "first", function() {
+                    tree.open_node(parent, null, 500);
+                    return tree.select_node(id);
+                  });
+                }
+              }
+            };
+          }
         }
       });
       my.odfTree = my.odfTreeDom.jstree();
@@ -96,12 +171,15 @@
       my.ui = {
         request: {
           ref: my.requestSelDom,
-          set: function(reqName) {
+          set: function(reqName, preventEvent) {
             var tree;
+            if (preventEvent == null) {
+              preventEvent = true;
+            }
             tree = this.ref.jstree();
             if (!tree.is_selected(reqName)) {
               tree.deselect_all();
-              return tree.select_node(reqName, true, false);
+              return tree.select_node(reqName, preventEvent, false);
             }
           },
           get: function() {
@@ -116,14 +194,17 @@
           get: function() {
             return my.odfTree.get_selected();
           },
-          set: function(vals) {
+          set: function(vals, preventEvent) {
             var i, len, node, results;
+            if (preventEvent == null) {
+              preventEvent = true;
+            }
             my.odfTree.deselect_all(true);
             if ((vals != null) && vals.length > 0) {
               results = [];
               for (i = 0, len = vals.length; i < len; i++) {
                 node = vals[i];
-                results.push(my.odfTree.select_node(node, true, false));
+                results.push(my.odfTree.select_node(node, preventEvent, false));
               }
               return results;
             }

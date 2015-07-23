@@ -106,11 +106,32 @@ requestsExt = (WebOmi) ->
   currentParams = my.defaults.empty()
   my.getCurrentParams = -> $.extend {}, currentParams
 
-  # true
+  # TODO: not used
   my.confirmOverwrite = (oldVal, newVal) ->
     confirm "You have edited the request manually.\n
       Do you want to overwrite #{oldVal.toString} with #{newVal.toString}"
 
+
+  #private
+  addValueWhenWrite = (odfInfoItem) ->
+    if currentParams.request == 'write'
+      doc = odfInfoItem.ownerDocument
+      val = WebOmi.omi.createOdfValue doc
+
+      # placeholder, otherwise xml is formatted to <value />
+      val.appendChild doc.createTextNode "0"
+
+      odfInfoItem.appendChild val
+
+  #private
+  addValueToAll = (doc) ->
+    infos = WebOmi.omi.evaluateXPath doc, "//odf:InfoItem"
+    addValueWhenWrite info for info in infos
+
+  #private
+  removeValueFromAll = (doc) ->
+    vals = WebOmi.omi.evaluateXPath doc, "//odf:value"
+    val.parentNode.removeChild val for val in vals
 
 
   my.removePathFromOdf = (odfTreeNode, odfObjects) ->
@@ -132,17 +153,16 @@ requestsExt = (WebOmi) ->
       maybeChild
 
     # remove requested
-    lastOdfElem.parentElement.removeChild lastOdfElem
+    lastOdfElem.parentNode.removeChild lastOdfElem
     allOdfElems.pop()
 
     # remove empty parents
     allOdfElems.reverse()
     for elem in allOdfElems
       if not o.hasOdfChildren elem
-        elem.parentElement.removeChild elem
+        elem.parentNode.removeChild elem
 
     odfObjects
-
 
 
 
@@ -179,6 +199,9 @@ requestsExt = (WebOmi) ->
             currentOdfNode.appendChild object
           when "infoitem"
             info = o.createOdfInfoItem odfDoc, id
+
+            # when request is write
+            addValueWhenWrite info
 
             # find the first Object and insert before it
             siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0]
@@ -230,10 +253,12 @@ requestsExt = (WebOmi) ->
     request  :
       # selector: ()
       update  : (reqName) -> # Maybe string (request tag name)
+        oldReqName = currentParams.request
+
         if not currentParams.requestDoc?
           my.forceLoadParams my.defaults[reqName]()
 
-        else if reqName != currentParams.request
+        else if reqName != oldReqName
           doc = currentParams.requestDoc
           currentReq = WebOmi.omi.evaluateXPath(
             doc, "omi:omiEnvelope/*")[0] # FIXME: head
@@ -257,6 +282,13 @@ requestsExt = (WebOmi) ->
           # update internal state
           currentParams.request = reqName
 
+          # special functionality for write request
+          if reqName == "write"
+            addValueToAll doc
+          else if oldReqName == "write" # change from write
+            removeValueFromAll doc
+
+
 
 
     ttl      : # double
@@ -279,13 +311,13 @@ requestsExt = (WebOmi) ->
               return # TODO multiple requestIDs
             else if newVal?
               for parent in parents
-                id.parentElement.removeChild id for id in existingIDs
+                id.parentNode.removeChild id for id in existingIDs
                 newId = o.createOmi "requestID", doc
                 idTxt = doc.createTextNode newVal.toString()
                 newId.appendChild idTxt
                 parent.appendChild newId
             else
-              id.parentElement.removeChild id for id in existingIDs
+              id.parentNode.removeChild id for id in existingIDs
 
           currentParams[name] = newVal
 
@@ -311,7 +343,7 @@ requestsExt = (WebOmi) ->
 
         else
           obss = WebOmi.omi.evaluateXPath(doc, "//odf:Objects")
-          obs.parentElement.removeChild obs for obs in obss
+          obs.parentNode.removeChild obs for obs in obss
 
         currentParams.odf = paths
 
@@ -359,7 +391,7 @@ requestsExt = (WebOmi) ->
 
         # update currentparams
         if currentParams.odf?
-          currentParams.odf.filter (p) -> p != path
+          currentParams.odf = currentParams.odf.filter (p) -> p != path
         else currentParams.odf = []
 
     interval : # Maybe Number
@@ -397,7 +429,7 @@ requestsExt = (WebOmi) ->
         else  # remove
           msg = o.evaluateXPath(doc, "/omi:omiEnvelope/*/omi:msg")
           # extra safe: remove all msgs
-          m.parentElement.removeChild m for m in msg
+          m.parentNode.removeChild m for m in msg
 
           requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?

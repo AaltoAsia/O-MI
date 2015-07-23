@@ -3,7 +3,7 @@
   var requestsExt;
 
   requestsExt = function(WebOmi) {
-    var currentParams, my, updateSetterForAttr;
+    var addValueToAll, addValueWhenWrite, currentParams, my, removeValueFromAll, updateSetterForAttr;
     my = WebOmi.requests = {};
     my.xmls = {
       readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\" xsi:schemaLocation=\"odf.xsd odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
@@ -82,6 +82,35 @@
     my.confirmOverwrite = function(oldVal, newVal) {
       return confirm("You have edited the request manually.\n Do you want to overwrite " + oldVal.toString + " with " + newVal.toString);
     };
+    addValueWhenWrite = function(odfInfoItem) {
+      var doc, val;
+      if (currentParams.request === 'write') {
+        doc = odfInfoItem.ownerDocument;
+        val = WebOmi.omi.createOdfValue(doc);
+        val.appendChild(doc.createTextNode("0"));
+        return odfInfoItem.appendChild(val);
+      }
+    };
+    addValueToAll = function(doc) {
+      var i, info, infos, len, results;
+      infos = WebOmi.omi.evaluateXPath(doc, "//odf:InfoItem");
+      results = [];
+      for (i = 0, len = infos.length; i < len; i++) {
+        info = infos[i];
+        results.push(addValueWhenWrite(info));
+      }
+      return results;
+    };
+    removeValueFromAll = function(doc) {
+      var i, len, results, val, vals;
+      vals = WebOmi.omi.evaluateXPath(doc, "//odf:value");
+      results = [];
+      for (i = 0, len = vals.length; i < len; i++) {
+        val = vals[i];
+        results.push(val.parentNode.removeChild(val));
+      }
+      return results;
+    };
     my.removePathFromOdf = function(odfTreeNode, odfObjects) {
       var allOdfElems, elem, i, id, lastOdfElem, len, maybeChild, node, nodeElems, o;
       o = WebOmi.omi;
@@ -103,13 +132,13 @@
         }
         return results;
       })();
-      lastOdfElem.parentElement.removeChild(lastOdfElem);
+      lastOdfElem.parentNode.removeChild(lastOdfElem);
       allOdfElems.pop();
       allOdfElems.reverse();
       for (i = 0, len = allOdfElems.length; i < len; i++) {
         elem = allOdfElems[i];
         if (!o.hasOdfChildren(elem)) {
-          elem.parentElement.removeChild(elem);
+          elem.parentNode.removeChild(elem);
         }
       }
       return odfObjects;
@@ -139,6 +168,7 @@
                 return currentOdfNode.appendChild(object);
               case "infoitem":
                 info = o.createOdfInfoItem(odfDoc, id);
+                addValueWhenWrite(info);
                 siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
                 if (siblingObject != null) {
                   return currentOdfNode.insertBefore(info, siblingObject);
@@ -204,10 +234,11 @@
       },
       request: {
         update: function(reqName) {
-          var attr, child, currentReq, doc, i, len, newReq, ref;
+          var attr, child, currentReq, doc, i, len, newReq, oldReqName, ref;
+          oldReqName = currentParams.request;
           if (currentParams.requestDoc == null) {
             return my.forceLoadParams(my.defaults[reqName]());
-          } else if (reqName !== currentParams.request) {
+          } else if (reqName !== oldReqName) {
             doc = currentParams.requestDoc;
             currentReq = WebOmi.omi.evaluateXPath(doc, "omi:omiEnvelope/*")[0];
             newReq = WebOmi.omi.createOmi(reqName, doc);
@@ -223,7 +254,12 @@
               }
             }
             currentReq.parentNode.replaceChild(newReq, currentReq);
-            return currentParams.request = reqName;
+            currentParams.request = reqName;
+            if (reqName === "write") {
+              return addValueToAll(doc);
+            } else if (oldReqName === "write") {
+              return removeValueFromAll(doc);
+            }
           }
         }
       },
@@ -250,7 +286,7 @@
                   parent = parents[i];
                   for (j = 0, len1 = existingIDs.length; j < len1; j++) {
                     id = existingIDs[j];
-                    id.parentElement.removeChild(id);
+                    id.parentNode.removeChild(id);
                   }
                   newId = o.createOmi("requestID", doc);
                   idTxt = doc.createTextNode(newVal.toString());
@@ -260,7 +296,7 @@
               } else {
                 for (k = 0, len2 = existingIDs.length; k < len2; k++) {
                   id = existingIDs[k];
-                  id.parentElement.removeChild(id);
+                  id.parentNode.removeChild(id);
                 }
               }
             }
@@ -292,7 +328,7 @@
             obss = WebOmi.omi.evaluateXPath(doc, "//odf:Objects");
             for (j = 0, len1 = obss.length; j < len1; j++) {
               obs = obss[j];
-              obs.parentElement.removeChild(obs);
+              obs.parentNode.removeChild(obs);
             }
           }
           return currentParams.odf = paths;
@@ -337,7 +373,7 @@
             }
           }
           if (currentParams.odf != null) {
-            return currentParams.odf.filter(function(p) {
+            return currentParams.odf = currentParams.odf.filter(function(p) {
               return p !== path;
             });
           } else {
@@ -375,7 +411,7 @@
             msg = o.evaluateXPath(doc, "/omi:omiEnvelope/*/omi:msg");
             for (i = 0, len = msg.length; i < len; i++) {
               m = msg[i];
-              m.parentElement.removeChild(m);
+              m.parentNode.removeChild(m);
             }
             requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
             if (requestElem != null) {
