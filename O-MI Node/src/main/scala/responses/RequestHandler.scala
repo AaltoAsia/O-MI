@@ -119,6 +119,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       Await.result(responseFuture, request.ttl)
     } match {
       case Success((xml: NodeSeq, code: Int)) => (xml, code)
+      case Success(a) => a //TODO does this fix default case not specified problem?
 
       case Failure(e: TimeoutException) =>
         (

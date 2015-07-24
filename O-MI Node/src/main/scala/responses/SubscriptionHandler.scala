@@ -124,9 +124,8 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
                     
                     eventSubs.get(path.toString) match {
 
-                      case Some(ses: List[EventSub]) =>
-                        eventSubs += path.toString -> (EventSub(dbsub, lastValue) :: ses)
-
+                      case Some(eventSubList) =>
+                        eventSubs += path.toString -> (EventSub(dbsub, lastValue) +: eventSubList)
 
                       case None =>
                         eventSubs += path.toString -> Seq(EventSub(dbsub, lastValue))
