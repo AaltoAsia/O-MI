@@ -15,7 +15,10 @@ class  OdfInfoItemImpl(
   description:          Option[OdfDescription] = None,
   metaData:             Option[OdfMetaData] = None
 ){
-  def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = OdfInfoItem(data._1, Iterable( data._2))
+  def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = {
+    val (path, odfValue) = data
+    OdfInfoItem(path, Iterable( odfValue))
+  }
   def apply(path: Path, timestamp: Timestamp, value: String, valueType: String = "") : OdfInfoItem = 
     OdfInfoItem(path, Iterable( OdfValue(value, valueType, Some(timestamp))))
 

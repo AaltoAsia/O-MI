@@ -4,8 +4,8 @@ import scala.language.postfixOps
 
 import slick.driver.H2Driver.api._
 
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.{asJavaIterable,iterableAsScalaIterable}
+//import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.{ SortedMap, breakOut }
 
 import types.OdfTypes._
