@@ -191,6 +191,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
           log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
         case e: Exception =>
           log.warning(s"Classloading failed. $e")
+        case t => throw t
       }
     }
   }
