@@ -17,7 +17,7 @@ See `development` branch for latest progress.
 
 Dependencies
 ------------
-java 
+java 1.7
 
 
 Compiling and packaging

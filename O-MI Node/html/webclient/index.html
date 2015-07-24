@@ -36,37 +36,55 @@
 </head>
 <body>
   <nav class="navbar navbar-default navbar-static-top navbar-inverse" style="margin-bottom:0;">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand">O-MI Node</a>
-    </div>
-    <p id="versionNumber" class="navbar-text">v0.1.4</p>
-    <form class="navbar-form navbar-left" role="search">
-      <div class="form-group">
-        <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/" />
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+          data-target="#navbar-collapse" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">O-MI Node</a>
       </div>
-    </form>
-    <a class="navbar-brand">Requests</a>
-    <ul class="nav navbar-nav navbar-right">
-      <li class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
-        <ul class="dropdown-menu">
-          <li> <a href="#">API</a> </li>
-          <li> <a href="#">Architecture</a> </li>
-          <li> <a href="#">Implementation Details</a> </li>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-left">
+          <li>
+            <p id="versionNumber" class="navbar-text">
+              <b>v0.1.5</b> <small> -- 2015-07-23</small>
+            </p>
+          </li>
+          <li>
+            <form class="navbar-form navbar-left" role="search">
+              <div class="input-group">
+                <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/" />
+                <div class="input-group-addon">URL</div>
+              </div>
+            </form>
+          </li>
+          <li><a class="navbar-brand">WebClient</a></li>
         </ul>
-      </li>
-      <li>
-        <a class="navbar-brand">Subscriptions 
-          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-        </a>
-      </li>
-    </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li> <a href="../ImplementationDetails.html">Example requests and results</a> </li>
+              <li> <a href="https://docs.google.com/document/d/10tdIBaZzR_ebyfrP0sdZoLEF5Ze6kt2HkW2xo9eQnfY/edit?usp=sharing">Implementation Details</a> </li>
+              <li> <a href="https://docs.google.com/document/d/1qEmM89UzOnpbk1Kk1xIi_bDT_05XbyadPAIo9dvAKW0/edit?usp=sharing">Architecture</a> </li>
+              <li> <a href="https://www2.opengroup.org/ogsys/catalog/C14B">Open Messaging Inerface standard</a> </li>
+              <li> <a href="https://www2.opengroup.org/ogsys/catalog/C14A">Open Data Format standard</a> </li>
+            </ul>
+          </li>
+          <li>
+            <a class="navbar-brand" href="#">Subscriptions 
+              <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
+            </a>
+          </li>
+        </ul>
+
+      </div><!-- /.navbar-collapse -->
+    </div> <!-- /.container-fluid -->
   </nav>
   <div class="container-fluid" role="main"><div class="row">
     <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
