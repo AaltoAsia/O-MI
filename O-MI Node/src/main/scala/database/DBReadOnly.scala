@@ -200,6 +200,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case (None, None, _, _)       => timeFrame sortBy (_.timestamp.desc) take 1
       case _                        => timeFrame
     }
+    //old
     //    val query =
     //      if (oldest.nonEmpty) {
     //        timeFrame sortBy (_.timestamp.asc) take (oldest.get) //sortBy (_.timestamp.asc)
@@ -258,21 +259,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     newest: Option[Int],
     oldest: Option[Int],
     timeFrameEmpty: Boolean): Seq[DBValue] => Seq[DBValue] = {
-      (newest, oldest) match{
-        case (_, Some(_oldest)) => _.sortBy(_.timestamp.getTime) take (_oldest)
-        case (Some(_newest), _) => _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take (_newest) reverse
-        case _ if(timeFrameEmpty) => _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take 1
-        case _ => _.sortBy(_.timestamp.getTime)
-      }
-//    if (oldest.nonEmpty) {
-//      _.sortBy(_.timestamp.getTime) take (oldest.get)
-//    } else if (newest.nonEmpty) {
-//      _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take (newest.get) reverse
-//    } else if (timeFrameEmpty) {
-//      _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take 1
-//    } else {
-//      _.sortBy(_.timestamp.getTime)
-//    }
+    (newest, oldest) match {
+      case (_, Some(_oldest))    => _.sortBy(_.timestamp.getTime) take (_oldest)
+      case (Some(_newest), _)    => _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take (_newest) reverse
+      case _ if (timeFrameEmpty) => _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take 1
+      case _                     => _.sortBy(_.timestamp.getTime)
+    }
   }
 
   /**

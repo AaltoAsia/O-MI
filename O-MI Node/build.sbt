@@ -12,6 +12,9 @@ scalaVersion := scalaBuildVersion
 // build options
 scalacOptions := Seq("-unchecked", "-feature", "-encoding", "utf8", "-Xlint")
 
+//JVM max heap size
+//javaOptions += "-Xmx512m"
+
 // build api options
 scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8")
 
