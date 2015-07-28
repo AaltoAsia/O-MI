@@ -166,10 +166,17 @@ constsExt = ($, parent) ->
       bindTo : (callback) ->
         @ref.on "input", =>
           val = @get()
+          validationContainer = @ref.closest ".form-group"
           if validator val
             callback val
+            validationContainer
+              .removeClass "has-error"
+              .addClass "has-success"
           else
             callback null
+            validationContainer
+              .removeClass "has-success"
+              .addClass "has-error"
       
 
     # refs, setters, getters

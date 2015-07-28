@@ -176,12 +176,15 @@
           bindTo: function(callback) {
             return this.ref.on("input", (function(_this) {
               return function() {
-                var val;
+                var val, validationContainer;
                 val = _this.get();
+                validationContainer = _this.ref.closest(".form-group");
                 if (validator(val)) {
-                  return callback(val);
+                  callback(val);
+                  return validationContainer.removeClass("has-error").addClass("has-success");
                 } else {
-                  return callback(null);
+                  callback(null);
+                  return validationContainer.removeClass("has-success").addClass("has-error");
                 }
               };
             })(this));
