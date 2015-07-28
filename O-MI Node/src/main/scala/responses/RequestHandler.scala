@@ -40,73 +40,75 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    * @param request request is O-MI request to be handled
    */
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    //TODO refactor this method to for comprehension
-    request.callback.foreach {
-      address =>
-        Try {
-          val url = new URL(address)
-          val addr = InetAddress.getByName(url.getHost)
-          val protocol = url.getProtocol()
-          if (protocol != "http" && protocol != "https")
-            throw new java.net.ProtocolException(s"Unsupported protocol: $protocol")
 
-          address
+    def checkCallback(address: String) = Try {
+      val url = new URL(address)
+      val addr = InetAddress.getByName(url.getHost)
+      val protocol = url.getProtocol()
+      if (protocol != "http" && protocol != "https")
+        throw new java.net.ProtocolException(s"Unsupported protocol: $protocol")
 
-        } match {
-          case Success(callbackAddr) =>
-            // TODO: save the validity of the url somehow
+    }
 
-          case Failure(e) =>
-            val errorMessage = e match {
-              case e: java.net.MalformedURLException => e.getMessage
-              case e: UnknownHostException           => "Unknown host: " +e.getMessage 
-              case e: SecurityException              => "Unauthorized " +e.getMessage
-              case e: java.net.ProtocolException     => e.getMessage
+    def handleSubDataRequest(subdata: SubDataRequest, address: String) = {
+      val sub = subdata.sub
+      val interval = sub.interval
+      val callbackAddr = address
+      val (xmlMsg, returnCode) = runGeneration(subdata)
+      log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
+
+      def failed(reason: String) =
+        log.warning(
+          s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
+
+      sendCallback(callbackAddr, xmlMsg) onComplete {
+        case Success(CallbackSuccess) =>
+          log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
+
+        case Success(fail: CallbackFailure) =>
+          failed(fail.toString)
+        case Failure(e) =>
+          failed(e.getMessage)
+      }
+      (success, 200) //DUMMY
+    }
+
+    request.callback match {
+      
+      case Some(address) => {
+        checkCallback(address).map { x =>
+          request match {
+            case sub: SubscriptionRequest => runGeneration(sub)
+            case subdata: SubDataRequest => {
+              handleSubDataRequest(subdata, address)
             }
-            return (invalidCallback(errorMessage), 400)
+            case _ => {
+              // TODO: Can't cancel this callback
+              Future { runGeneration(request) } map {
+                case (xml: NodeSeq, code: Int) =>
+                  sendCallback(address, xml)
+              }
+              (
+                xmlFromResults(
+                  1.0,
+                  Result.simple("200", Some("OK, callback job started"))),
+                  200)
+            }
+          }
+        } match {
+          case Success(res)                               => res
+          case Failure(e: java.net.MalformedURLException) => (invalidCallback(e.getMessage), 200)
+          case Failure(e: UnknownHostException)           => (invalidCallback("Unknown host: " + e.getMessage), 200)
+          case Failure(e: SecurityException)              => (invalidCallback("Unauthorized " + e.getMessage), 200)
+          case Failure(e: java.net.ProtocolException)     => (invalidCallback(e.getMessage), 200)
+          case Failure(t)                                 => throw t
         }
-    } 
-    request match {
-      case sub: SubscriptionRequest =>
-        runGeneration(sub)
 
-      case subdata: SubDataRequest => {
-        val sub = subdata.sub
-        val interval = sub.interval
-        val callbackAddr = sub.callback.getOrElse(return (invalidCallback("callback missing from SubDataRequest"), 200))
-        val (xmlMsg, returnCode) = runGeneration(subdata)
-        log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
-
-        def failed(reason: String) =
-          log.warning(
-            s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
-
-        sendCallback(callbackAddr, xmlMsg) onComplete {
-          case Success(CallbackSuccess) =>
-            log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
-
-          case Success(fail: CallbackFailure) =>
-            failed(fail.toString)
-          case Failure(e) =>
-            failed(e.getMessage)
-        }
-        (success, 200) //DUMMY
       }
-      case _ if (request.callback.nonEmpty) => {
-        // TODO: Can't cancel this callback
-
-        Future { runGeneration(request) } map {
-          case (xml: NodeSeq, code: Int) =>
-            sendCallback(request.callback.get.toString, xml)
+      case None => {
+        request match {
+          case _ => runGeneration(request)
         }
-        (
-          xmlFromResults(
-            1.0,
-            Result.simple("200", Some("OK, callback job started"))),
-            200)
-      }
-      case _ => {
-        runGeneration(request)
       }
     }
   }
@@ -123,7 +125,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       Await.result(responseFuture, request.ttl)
     } match {
       case Success((xml: NodeSeq, code: Int)) => (xml, code)
-      case Success(a) => a //TODO does this fix default case not specified problem?
+      case Success(a)                         => a //TODO does this fix default case not specified problem?
 
       case Failure(e: TimeoutException) =>
         (
