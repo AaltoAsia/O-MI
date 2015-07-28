@@ -39,73 +39,79 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     **/
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
     request.callback match {
-      case Some(callback) =>
-        var error = ""
-        try{
-          val url = new URL(callback)
+      case Some(address) =>
+        Try {
+          val url = new URL(address)
           val addr = InetAddress.getByName(url.getHost)
           val protocol = url.getProtocol()
           if( protocol != "http" &&  protocol != "https" ) 
-            error = "Unsupported protocol."
+            throw ProtocolNotSupported
           
-        } catch {
-          case e:  java.net.MalformedURLException =>
-          error = e.getMessage
-          case e : UnknownHostException =>  
-          error = "Unknown host: " +e.getMessage 
-          case e : SecurityException =>
-          error = "Unauthorized " +e.getMessage
+          address
+
+        } match {
+          case Success(callbackAddr) =>
+            // TODO: save the validity of the url somehow
+
+          case Failure(e) =>
+            val errorMessage = e match {
+              case (e:  java.net.MalformedURLException) =>
+                e.getMessage
+              case (e : UnknownHostException) =>  
+                "Unknown host: " +e.getMessage 
+              case (e : SecurityException) =>
+                "Unauthorized " +e.getMessage
+            }
+            return (invalidCallback(errorMessage), 400)
         }
-        if( error.nonEmpty )
-          return (invalidCallback(error), 200)
       case None => //noop
     } 
-      request match {
-        case sub : SubscriptionRequest =>
-          runGeneration(sub)
+    request match {
+      case sub : SubscriptionRequest =>
+        runGeneration(sub)
 
-        case subdata : SubDataRequest =>  {
-          val sub = subdata.sub
-          val interval = sub.interval
-          val callbackAddr = sub.callback.get
-          val (xmlMsg, returnCode) = runGeneration(subdata) 
-          log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
+      case subdata : SubDataRequest =>  {
+        val sub = subdata.sub
+        val interval = sub.interval
+        val callbackAddr = sub.callback.get
+        val (xmlMsg, returnCode) = runGeneration(subdata) 
+        log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
 
-          def failed(reason: String) =
-            log.warning(
-              s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
+        def failed(reason: String) =
+          log.warning(
+            s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
 
 
-          sendCallback(callbackAddr, xmlMsg) onComplete {
-              case Success(CallbackSuccess) =>
-                log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
+        sendCallback(callbackAddr, xmlMsg) onComplete {
+            case Success(CallbackSuccess) =>
+              log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
 
-              case Success(fail: CallbackFailure) =>
-                failed(fail.toString)
-              case Failure(e) =>
-                failed(e.getMessage)
-            }
-          (success, 200)//DUMMY
-        }
-        case _ if (request.callback.nonEmpty) => {
-          // TODO: Can't cancel this callback
-
-          Future{ runGeneration(request) } map {
-            case (xml : NodeSeq, code: Int) =>
-              sendCallback(request.callback.get.toString, xml)
+            case Success(fail: CallbackFailure) =>
+              failed(fail.toString)
+            case Failure(e) =>
+              failed(e.getMessage)
           }
-          (
-            xmlFromResults(
-              1.0,
-              Result.simple("200", Some("OK, callback job started"))
-            ),
-            200
-          )
-        }
-        case _ =>{
-          runGeneration(request)
-        } 
+        (success, 200)//DUMMY
       }
+      case _ if (request.callback.nonEmpty) => {
+        // TODO: Can't cancel this callback
+
+        Future{ runGeneration(request) } map {
+          case (xml : NodeSeq, code: Int) =>
+            sendCallback(request.callback.get.toString, xml)
+        }
+        (
+          xmlFromResults(
+            1.0,
+            Result.simple("200", Some("OK, callback job started"))
+          ),
+          200
+        )
+      }
+      case _ =>{
+        runGeneration(request)
+      } 
+    }
   }
 
   /** Method for runnig response generation. Handles tiemout etc. upper level failures.
