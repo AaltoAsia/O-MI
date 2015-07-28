@@ -142,6 +142,7 @@
           multiple: false
         }
       });
+      $('[data-toggle="tooltip"]').tooltip();
       basicInput = function(selector, validator) {
         if (validator == null) {
           validator = function(a) {

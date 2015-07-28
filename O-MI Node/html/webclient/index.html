@@ -173,10 +173,12 @@
               ttl:
             </label>
             <div class="col-md-8 col-lg-9">
-              <div class="input-group">
-                <input type="number" required class="form-control" id="ttl"/>
-                <div class="input-group-addon">sec</div>
-              </div>
+              <a href="#" data-toggle="tooltip" title="Time To Live in the server. Use ttl -1 for infinity and ttl 0 for the duration of current connection.">
+                <div class="input-group">
+                  <input type="number" required class="form-control" id="ttl"/>
+                  <div class="input-group-addon">sec</div>
+                </div>
+              </a>
             </div>
           </div>
           <div class="form-group">
@@ -185,10 +187,12 @@
               interval:
             </label>
             <div class="col-md-8 col-lg-9">
-              <div class="input-group">
-                <input type="number" required class="form-control" id="interval"/>
-                <div class="input-group-addon">sec</div>
-              </div>
+              <a href="#" data-toggle="tooltip" title="The time between data responses. Use interval -1 to subscribe for updates only.">
+                <div class="input-group">
+                  <input type="number" required class="form-control" id="interval"/>
+                  <div class="input-group-addon">sec</div>
+                </div>
+              </a>
             </div>
           </div>
           <div class="form-group">
@@ -197,7 +201,9 @@
               requestID:
             </label>
             <div class="col-md-8 col-lg-9">
-              <input type="number" required class="form-control" id="requestID"/>
+              <a href="#" data-toggle="tooltip" title="Enter a requestID as given by some subscription response.">
+                <input type="number" required class="form-control" id="requestID"/>
+              </a>
             </div>
           </div>
         </div>
@@ -219,10 +225,12 @@
                 callback:
               </label>
               <div class="col-md-8 col-lg-9">
-                <div class="input-group">
-                  <input type="url" class="form-control" id="callback"/>
-                  <div class="input-group-addon">URL</div>
-                </div>
+                <a href="#" data-toggle="tooltip" title="Url for server which receives responses with http POST methods.">
+                  <div class="input-group">
+                    <input type="url" class="form-control" id="callback"/>
+                    <div class="input-group-addon">URL</div>
+                  </div>
+                </a>
               </div>
             </div>
             <div class="form-group">
@@ -233,13 +241,17 @@
                 <div class="form-group">
                   <label for="newest" class="control-label text-nowrap col-md-4 col-lg-3">Newest:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="number" class="form-control" id="newest"/>
+                    <a href="#" data-toggle="tooltip" title="Number of the top newest values to request.">
+                      <input type="number" class="form-control" id="newest"/>
+                    </a>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="oldest" class="control-label text-nowrap col-md-4 col-lg-3">Oldest:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="number" class="form-control" id="oldest"/>
+                    <a href="#" data-toggle="tooltip" title="Number of the top oldest values to request.">
+                      <input type="number" class="form-control" id="oldest"/>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -253,13 +265,17 @@
                 <div class="form-group">
                   <label for="begin" class="control-label text-nowrap col-md-4 col-lg-3">begin:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="datetime-local" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    <a href="#" data-toggle="tooltip" title="Request values older than this.">
+                      <input type="datetime-local" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    </a>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="end" class="control-label text-nowrap col-md-4 col-lg-3">end:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="datetime-local" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    <a href="#" data-toggle="tooltip" title="Request values newer than this.">
+                      <input type="datetime-local" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    </a>
                   </div>
                 </div>
               </div>

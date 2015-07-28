@@ -133,6 +133,8 @@ constsExt = ($, parent) ->
             icons : false
           multiple : false
 
+    # tooltips & popovers
+    $('[data-toggle="tooltip"]').tooltip()
     
     basicInput = (selector, validator= (a) -> a != "") ->
       ref : $ selector
