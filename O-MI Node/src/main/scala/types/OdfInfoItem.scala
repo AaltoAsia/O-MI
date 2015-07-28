@@ -15,7 +15,10 @@ class  OdfInfoItemImpl(
   description:          Option[OdfDescription] = None,
   metaData:             Option[OdfMetaData] = None
 ){
-  def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = OdfInfoItem(data._1, Iterable( data._2))
+  def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = {
+    val (path, odfValue) = data
+    OdfInfoItem(path, Iterable( odfValue))
+  }
   def apply(path: Path, timestamp: Timestamp, value: String, valueType: String = "") : OdfInfoItem = 
     OdfInfoItem(path, Iterable( OdfValue(value, valueType, Some(timestamp))))
 
@@ -67,11 +70,10 @@ class  OdfInfoItemImpl(
   }
 
   implicit def asInfoItemType: InfoItemType = {
-    require(this.path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
     InfoItemType(
       description = description.map( des => des.asDescription ),
       MetaData = metaData.map{ odfMetaData => odfMetaData.asMetaData},
-      name = path.last, // require checks
+      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: ${path}")),
       value = values.map{ 
         value : OdfValue =>
         value.asValueType

@@ -8,12 +8,11 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable }
+import scala.collection.JavaConversions.{ asJavaIterable, iterableAsScalaIterable }
 import scala.collection.SortedMap
 
 import types._
 import types.OdfTypes._
-
 
 /**
  * Read only restricted interface methods for db tables
@@ -25,8 +24,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
-      hierarchyNodes filter (_.path === Path(childPath.init))
-  )
+      hierarchyNodes filter (_.path === Path(childPath.init)))
 
   /**
    * Used to get metadata from database for given path
@@ -39,38 +37,31 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   protected def getMetaDataI(path: Path): DBIOro[Option[OdfMetaData]] = {
     val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
     queryResult map (
-      _.headOption map (_.toOdf)
-    )
+      _.headOption map (_.toOdf))
   }
   protected def getMetaDataI(id: Int): DBIO[Option[OdfMetaData]] =
     (metadatas filter (_.hierarchyId === id)).result map (
-      _.headOption map (_.toOdf)
-    )
+      _.headOption map (_.toOdf))
 
-
-  protected def getSubItemDataI(subId: Long)(
-  ): DBIO[DBInfoItems] = for {
+  protected def getSubItemDataI(subId: Long)(): DBIO[DBInfoItems] = for {
     subsItems <- (subItems filter (_.subId === subId)).result
     result <- getSubItemDataI(subsItems)
   } yield result
 
-  protected def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])(
-  ): DBIO[DBInfoItems] = for {
+  protected def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])(): DBIO[DBInfoItems] = for {
     subItemNodes <- hierarchyNodes.filter(
-      _.id.inSet( forSubItems map (_.hierarchyId) )
-    ).result
+      _.id.inSet(forSubItems map (_.hierarchyId))).result
 
     subTreeDatas = subItemNodes map { node =>
       for {
         rawData <- getSubTreeQ(node).result
-        infoItems = toDBInfoItems( rawData )
+        infoItems = toDBInfoItems(rawData)
       } yield infoItems
     }
 
     subTreeData <- dbioDBInfoItemsSum(subTreeDatas)
 
   } yield subTreeData
-
 
   /**
    * Get data for Interval subscription with callback.
@@ -95,8 +86,6 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     runSync(dataI)
   }
 
-  
-
   /*
   def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
     values.filter( value =>
@@ -110,8 +99,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   }
   */
 
-
-  /** 
+  /**
    * Get values for each interval
    * @param values input values
    * @param beginTime of the subscription
@@ -119,30 +107,28 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param interval of the subscription
    * @return the poll result for these parameters
    */
-  protected def getByIntervalBetween(values: Seq[DBValue] , beginTime: Timestamp, endTime: Timestamp, interval: Duration ) = {
+  protected def getByIntervalBetween(values: Seq[DBValue], beginTime: Timestamp, endTime: Timestamp, interval: Duration) = {
     val timeFrameLengthMs = endTime.getTime - beginTime.getTime
     // last interval time before the poll
     val lastIntervalTime = endTime.getTime - (timeFrameLengthMs % interval.toMillis)
 
-    val sortedVals  = values.sortBy(
-        value =>
-        value.timestamp.getTime
-      ) //ascending
-   
+    val sortedVals = values.sortBy(
+      value =>
+        value.timestamp.getTime) //ascending
+
     var intervalTime = lastIntervalTime
-    var intervalValues : Seq[DBValue] = Seq.empty
+    var intervalValues: Seq[DBValue] = Seq.empty
     var index = 1
 
-    while( index > -1 && intervalTime >= beginTime.getTime ){
-      index = sortedVals.lastIndexWhere( value => value.timestamp.getTime <= intervalTime )
-      if( index > -1) {
-        intervalValues = intervalValues :+ sortedVals( index )
+    while (index > -1 && intervalTime >= beginTime.getTime) {
+      index = sortedVals.lastIndexWhere(value => value.timestamp.getTime <= intervalTime)
+      if (index > -1) {
+        intervalValues = intervalValues :+ sortedVals(index)
         intervalTime -= interval.toMillis
       }
-    }   
+    }
     intervalValues.reverse
   }
-
 
   /**
    * Used to get data from database based on given path.
@@ -155,19 +141,18 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return either Some(OdfInfoItem),Some(OdfObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[ OdfNode ] = runSync(getQ(path))
+  def get(path: Path): Option[OdfNode] = runSync(getQ(path))
 
   //def getQ(single: OdfElement): OdfElement = ???
   def getQ(path: Path): DBIOro[Option[OdfNode]] = for {
 
-    subTreeData <- getSubTreeI(path, depth=Some(1))
+    subTreeData <- getSubTreeI(path, depth = Some(1))
 
-    dbInfoItems  = toDBInfoItems(subTreeData)
+    dbInfoItems = toDBInfoItems(subTreeData)
 
     result = singleObjectConversion(dbInfoItems)
 
   } yield result
-
 
   /**
    * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
@@ -190,10 +175,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]
-  ): Query[DBValuesTable,DBValue,Seq] =
+    oldest: Option[Int]): Query[DBValuesTable, DBValue, Seq] =
     nBetweenLogicQ(getValuesQ(id), begin, end, newest, oldest)
-
 
   /**
    * Makes a Query which filters, limits and sorts as limited by the parameters.
@@ -201,33 +184,39 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param getter Gets DBValue from some ValueType for filtering and sorting
    */
   protected def nBetweenLogicQ(
-    values: Query[DBValuesTable,DBValue,Seq],
+    values: Query[DBValuesTable, DBValue, Seq],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]
-  ): Query[DBValuesTable,DBValue,Seq] = {
+    oldest: Option[Int]): Query[DBValuesTable, DBValue, Seq] = {
+
+    //are these values already sorted?
     val timeFrame = values filter betweenLogicR(begin, end)
 
     // NOTE: duplicate code: takeLogic
-    val query = 
-      if ( oldest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.asc ) take (oldest.get) //sortBy (_.timestamp.asc)
-      } else if ( newest.nonEmpty ) {
-        timeFrame sortBy ( _.timestamp.desc ) take (newest.get) sortBy (_.timestamp.asc)
-      } else if ( begin.isEmpty && end.isEmpty ){
-        timeFrame sortBy ( _.timestamp.desc ) take 1
-      } else {
-        timeFrame
-      }
+    val query = (begin, end, oldest, newest) match {
+      case (_, _, Some(_oldest), _) => timeFrame sortBy (_.timestamp.asc) take (oldest.get)
+      case (_, _, _, Some(_newest)) => timeFrame sortBy (_.timestamp.desc) take (_newest) sortBy (_.timestamp.asc)
+      case (None, None, _, _)       => timeFrame sortBy (_.timestamp.desc) take 1
+      case _                        => timeFrame
+    }
+    //    val query =
+    //      if (oldest.nonEmpty) {
+    //        timeFrame sortBy (_.timestamp.asc) take (oldest.get) //sortBy (_.timestamp.asc)
+    //      } else if (newest.nonEmpty) {
+    //        timeFrame sortBy (_.timestamp.desc) take (newest.get) sortBy (_.timestamp.asc)
+    //      } else if (begin.isEmpty && end.isEmpty) {
+    //        timeFrame sortBy (_.timestamp.desc) take 1
+    //      } else {
+    //        timeFrame
+    //      }
     query
   }
 
   protected def betweenLogicR(
     begin: Option[Timestamp],
-    end: Option[Timestamp]
-  ): DBValuesTable => Rep[Boolean] =
-    ( end, begin ) match {
+    end: Option[Timestamp]): DBValuesTable => Rep[Boolean] =
+    (end, begin) match {
       case (None, Some(startTime)) =>
         { value =>
           value.timestamp >= startTime
@@ -239,7 +228,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case (Some(endTime), Some(startTime)) =>
         { value =>
           value.timestamp >= startTime &&
-          value.timestamp <= endTime
+            value.timestamp <= endTime
         }
       case (None, None) =>
         { value =>
@@ -248,40 +237,43 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     }
   protected def betweenLogic(
     begin: Option[Timestamp],
-    end: Option[Timestamp]
-  ): DBValue => Boolean =
-    ( end, begin ) match {
+    end: Option[Timestamp]): DBValue => Boolean =
+    (end, begin) match {
       case (None, Some(startTime)) =>
-        { _.timestamp.getTime >= startTime.getTime}
+        { _.timestamp.getTime >= startTime.getTime }
 
       case (Some(endTime), None) =>
         { _.timestamp.getTime <= endTime.getTime }
 
       case (Some(endTime), Some(startTime)) =>
         { value =>
-        value.timestamp.getTime >= startTime.getTime && value.timestamp.getTime <= endTime.getTime 
+          value.timestamp.getTime >= startTime.getTime && value.timestamp.getTime <= endTime.getTime
         }
       case (None, None) =>
         { value => true }
     }
 
-    // NOTE: duplicate code: nBetweenLogicQ
-    protected def takeLogic(
-      newest: Option[Int],
-      oldest: Option[Int],
-      timeFrameEmpty: Boolean
-    ): Seq[DBValue] => Seq[DBValue] = {
-      if ( oldest.nonEmpty ) {
-        _.sortBy( _.timestamp.getTime ) take (oldest.get)
-      } else if ( newest.nonEmpty ) {
-        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take (newest.get) reverse
-      } else if ( timeFrameEmpty ) {
-        _.sortBy( _.timestamp.getTime )(Ordering.Long.reverse) take 1
-      } else {
-        _.sortBy( _.timestamp.getTime )
+  // NOTE: duplicate code: nBetweenLogicQ
+  protected def takeLogic(
+    newest: Option[Int],
+    oldest: Option[Int],
+    timeFrameEmpty: Boolean): Seq[DBValue] => Seq[DBValue] = {
+      (newest, oldest) match{
+        case (_, Some(_oldest)) => _.sortBy(_.timestamp.getTime) take (_oldest)
+        case (Some(_newest), _) => _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take (_newest) reverse
+        case _ if(timeFrameEmpty) => _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take 1
+        case _ => _.sortBy(_.timestamp.getTime)
       }
-    }
-
+//    if (oldest.nonEmpty) {
+//      _.sortBy(_.timestamp.getTime) take (oldest.get)
+//    } else if (newest.nonEmpty) {
+//      _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take (newest.get) reverse
+//    } else if (timeFrameEmpty) {
+//      _.sortBy(_.timestamp.getTime)(Ordering.Long.reverse) take 1
+//    } else {
+//      _.sortBy(_.timestamp.getTime)
+//    }
+  }
 
   /**
    * Used to get result values with given constrains in parallel if possible.
@@ -305,76 +297,71 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]
-  ): Option[OdfObjects] = {
+    oldest: Option[Int]): Option[OdfObjects] = {
 
-    require( ! (newest.isDefined && oldest.isDefined),
+    require(!(newest.isDefined && oldest.isDefined),
       "Both newest and oldest at the same time not supported!")
 
     val requestsSeq = requests.toSeq
 
-    require( requestsSeq.size >= 1,
+    require(requestsSeq.size >= 1,
       "getNBetween should be called with at least one request thing")
 
     def processObjectI(path: Path): DBIO[Option[OdfObjects]] = {
-        getHierarchyNodeI(path) flatMap {
-          case Some(rootNode) => for {
-            subTreeData <- getSubTreeI(rootNode.path)
+      getHierarchyNodeI(path) flatMap {
+        case Some(rootNode) => for {
+          subTreeData <- getSubTreeI(rootNode.path)
 
-            // NOTE: We can only apply "between" logic here because of the subtree query
-            // basicly we fetch too much data if "newest" or "oldest" is set
-           
-            timeframedTreeData =
-              subTreeData filter {
-                case (node, Some(value)) => betweenLogic(begin, end)(value)
-                case (node, None) => true // keep objects for their description etc.
-              }
+          // NOTE: We can only apply "between" logic here because of the subtree query
+          // basicly we fetch too much data if "newest" or "oldest" is set
 
-            dbInfoItems: DBInfoItems =
-              toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
+          timeframedTreeData = subTreeData filter {
+            case (node, Some(value)) => betweenLogic(begin, end)(value)
+            case (node, None)        => true // keep objects for their description etc.
+          }
 
-            results = odfConversion(dbInfoItems)
+          dbInfoItems: DBInfoItems = toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
 
-            } yield results
+          results = odfConversion(dbInfoItems)
 
-          case None =>  // Requested object was not found, TODO: think about error handling
-            DBIO.successful(None)
-        }
+        } yield results
+
+        case None => // Requested object was not found, TODO: think about error handling
+          DBIO.successful(None)
+      }
 
     }
-    
+
     val allResults = requestsSeq map { // par
 
-      case obj @ OdfObjects(objects,_) =>
+      case obj @ OdfObjects(objects, _) =>
         require(objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-        runSync( processObjectI(obj.path) )
+        runSync(processObjectI(obj.path))
 
-
-      case obj @ OdfObject(path,items,objects,_,_) =>
+      case obj @ OdfObject(path, items, objects, _, _) =>
         require(items.isEmpty && objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-        runSync( processObjectI(path) )
+        runSync(processObjectI(path))
 
       case OdfInfoItem(path, rvalues, _, metadataQuery) =>
 
-        val odfInfoItemI = getHierarchyNodeI(path) flatMap {nodeO =>
+        val odfInfoItemI = getHierarchyNodeI(path) flatMap { nodeO =>
 
           nodeO match {
-            case Some(node @ DBNode(Some(nodeId),_,_,_,_,_,_,true)) => for {
+            case Some(node @ DBNode(Some(nodeId), _, _, _, _, _, _, true)) => for {
 
+              odfInfoItem <- processObjectI(path)
 
-              odfInfoItem <-  processObjectI( path )
-              
               metaData <- metadataQuery match {
-                case Some(_) => getMetaDataI(nodeId)  // fetch metadata
+                case Some(_) => getMetaDataI(nodeId) // fetch metadata
                 case None    => DBIO.successful(None)
               }
 
-              metaInfoItem = OdfInfoItem(path, Iterable(), None, metaData) 
-              result = odfInfoItem.map{
+              metaInfoItem = OdfInfoItem(path, Iterable(), None, metaData)
+              result = odfInfoItem.map {
                 infoItem => fromPath(infoItem) combine fromPath(metaInfoItem)
               }
 
@@ -382,55 +369,49 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
             case n =>
               println(s"Requested '$path' as InfoItem, found '$n'")
-              DBIO.successful(None)  // Requested object was not found or not infoitem, TODO: think about error handling
+              DBIO.successful(None) // Requested object was not found or not infoitem, TODO: think about error handling
           }
         }
 
         runSync(odfInfoItemI)
 
-
       //case odf: OdfElement =>
       //  throw new RuntimeException(s"Non-supported query parameter: $odf")
-        //case OdfObjects(_, _) =>
-        //case OdfDesctription(_, _) =>
-        //case OdfValue(_, _, _) =>
+      //case OdfObjects(_, _) =>
+      //case OdfDesctription(_, _) =>
+      //case OdfValue(_, _, _) =>
     }
 
     // Combine some Options
-    allResults.fold(None){
+    allResults.fold(None) {
       case (Some(results), Some(otherResults)) => Some(results combine otherResults)
-      case (None, Some(results)) => Some(results)
-      case (Some(results), None) => Some(results)
-      case (None, None) => None
+      case (None, Some(results))               => Some(results)
+      case (Some(results), None)               => Some(results)
+      case (None, None)                        => None
     }
-
 
   }
 
   def getNBetweenWithHierarchyIds(
-    infoItemIdTuples: Seq[(Int,OdfInfoItem)],
+    infoItemIdTuples: Seq[(Int, OdfInfoItem)],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]
-  ): OdfObjects =
-  {
-    val ids = infoItemIdTuples.map{case (id, info) => id}
-    val betweenValues = runSync( 
-      nBetweenLogicQ(
-        latestValues.filter{_.hierarchyId.inSet(ids)},
-        begin,
-        end,
-        newest,
-        oldest
-      ).result
-    )
-    infoItemIdTuples.map{
-      case (id, info) => 
-      fromPath( info.copy( values = betweenValues.collect{ case dbval if dbval.hierarchyId == id => dbval.toOdf} ) )
-    }.foldLeft(OdfObjects())(_.combine(_))
-  }
-
+    oldest: Option[Int]): OdfObjects =
+    {
+      val ids = infoItemIdTuples.map { case (id, info) => id }
+      val betweenValues = runSync(
+        nBetweenLogicQ(
+          latestValues.filter { _.hierarchyId.inSet(ids) },
+          begin,
+          end,
+          newest,
+          oldest).result)
+      infoItemIdTuples.map {
+        case (id, info) =>
+          fromPath(info.copy(values = betweenValues.collect { case dbval if dbval.hierarchyId == id => dbval.toOdf }))
+      }.foldLeft(OdfObjects())(_.combine(_))
+    }
 
   /**
    * @param root Root of the tree
@@ -438,8 +419,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   protected def getSubTreeQ(
     root: DBNode,
-    depth: Option[Int] = None
-  ): Query[(DBNodesTable, Rep[Option[DBValuesTable]]), (DBNode, Option[DBValue]), Seq] = {
+    depth: Option[Int] = None): Query[(DBNodesTable, Rep[Option[DBValuesTable]]), (DBNode, Option[DBValue]), Seq] = {
 
     val depthConstraint: DBNodesTable => Rep[Boolean] = node =>
       depth match {
@@ -450,8 +430,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       }
     val nodesQ = hierarchyNodes filter { node =>
       node.leftBoundary >= root.leftBoundary &&
-      node.rightBoundary <= root.rightBoundary &&
-      depthConstraint(node)
+        node.rightBoundary <= root.rightBoundary &&
+        depthConstraint(node)
     }
 
     val nodesWithValuesQ =
@@ -460,11 +440,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     nodesWithValuesQ sortBy (_._1.leftBoundary.asc)
   }
 
-
   protected def getSubTreeI(
     path: Path,
-    depth: Option[Int] = None
-  ): DBIOro[Seq[(DBNode, Option[DBValue])]] = {
+    depth: Option[Int] = None): DBIOro[Seq[(DBNode, Option[DBValue])]] = {
 
     val subTreeRoot = getHierarchyNodeI(path)
 
@@ -476,8 +454,6 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case None => DBIO.successful(Seq()) // TODO: What if not found?
     }
   }
-
-
 
   /**
    * getAllSubs is used to search the database for subscription information
@@ -491,27 +467,26 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @return DBSub objects for the query as Seq
    */
   def getAllSubs(hasCallBack: Option[Boolean]): Seq[DBSub] = {
-    val all = runSync(hasCallBack match{
-      case Some(true)   => subs.filter(!_.callback.isEmpty).result
-      case Some(false)  => subs.filter(_.callback.isEmpty).result
-      case None         => subs.result
+    val all = runSync(hasCallBack match {
+      case Some(true)  => subs.filter(!_.callback.isEmpty).result
+      case Some(false) => subs.filter(_.callback.isEmpty).result
+      case None        => subs.result
     })
-    all.collect({case x: DBSub =>x})
+    all.collect({ case x: DBSub => x })
 
   }
 
-
-  def getSubscribedPaths( subId: Long ): Seq[Path] = {
-    val pathsQ = for{
-      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
-    }yield( hie.path )
-    runSync( pathsQ.result )
+  def getSubscribedPaths(subId: Long): Seq[Path] = {
+    val pathsQ = for {
+      (subI, hie) <- subItems.filter(_.subId === subId) join hierarchyNodes on (_.hierarchyId === _.id)
+    } yield (hie.path)
+    runSync(pathsQ.result)
   }
-  def getSubscribedItems( subId: Long ): Seq[SubscriptionItem] = {
-    val pathsQ = for{
-      (subI, hie) <- subItems.filter( _.subId === subId ) join hierarchyNodes on ( _.hierarchyId === _.id )
+  def getSubscribedItems(subId: Long): Seq[SubscriptionItem] = {
+    val pathsQ = for {
+      (subI, hie) <- subItems.filter(_.subId === subId) join hierarchyNodes on (_.hierarchyId === _.id)
     } yield (subI.subId, hie.path, subI.lastValue)
-    runSync( pathsQ.result ) map SubscriptionItem.tupled
+    runSync(pathsQ.result) map SubscriptionItem.tupled
   }
 
   /**
@@ -523,22 +498,18 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   def getSub(id: Long): Option[DBSub] = runSync(getSubI(id))
 
-
-  protected def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] = 
+  protected def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] =
     dbioDBInfoItemsSum(
       hNodes map { hNode =>
         for {
-          subTreeData <- getSubTreeI( hNode.path )
+          subTreeData <- getSubTreeI(hNode.path)
 
-          infoItems: DBInfoItems = toDBInfoItems( subTreeData )
+          infoItems: DBInfoItems = toDBInfoItems(subTreeData)
 
           result: DBInfoItems = infoItems collect {
             case (node, seqVals) if seqVals.nonEmpty =>
-              ( node
-              , seqVals sortBy ( _.timestamp.getTime ) take 1
-              ) 
-          } 
+              (node, seqVals sortBy (_.timestamp.getTime) take 1)
+          }
         } yield result
-      } 
-    )
+      })
 }
