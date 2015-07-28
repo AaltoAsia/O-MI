@@ -16,7 +16,7 @@ object PermissionCheck {
   val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
-    log.debug("IPv" + ip.length + ": " + ip.mkString(".")) 
+    log.debug("IPv" + ip.length + ": " + ip.mkString("."))  // TODO: bytes should be printed as unsigned
     ip
   }.toVector
 
@@ -28,7 +28,7 @@ object PermissionCheck {
   val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
-    log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) 
+    log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
     (ip, bits.toString.toInt )
   }.toMap 
   log.debug("Totally " + whiteMasks.keys.size + "masks")
@@ -62,7 +62,11 @@ object PermissionCheck {
     **/
   private def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
     if( subnet.length == ip.length){
-      log.debug("Whitelist check for IPv" + ip.length + " address: " + ip.map{b => b.toHexString}.mkString(":") + " against " + subnet.map{b => b.toHexString}.mkString(":"))
+      // TODO: bytes should be printed as unsigned
+      log.debug("Whitelist check for IPv" + ip.length +
+        " address: " + ip.map{b => b.toHexString}.mkString(":") +
+        " against " + subnet.map{b => b.toHexString}.mkString(":")
+      )
       ip.length match{
         case 4 =>{
           val mask = -1 << (32 - bits)  
