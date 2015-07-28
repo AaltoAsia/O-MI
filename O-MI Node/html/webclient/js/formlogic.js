@@ -57,10 +57,12 @@
       return mirror.refresh();
     };
     my.send = function(callback) {
-      var request, server;
+      var consts, request, server;
+      consts = WebOmi.consts;
       my.clearResponse();
-      server = WebOmi.consts.serverUrl.val();
-      request = WebOmi.consts.requestCodeMirror.getValue();
+      server = consts.serverUrl.val();
+      request = consts.requestCodeMirror.getValue();
+      consts.progressBar.css("width", "95%");
       return $.ajax({
         type: "POST",
         url: server,
@@ -69,10 +71,22 @@
         processData: false,
         dataType: "text",
         error: function(response) {
-          return my.setResponse(response.responseText);
+          consts.progressBar.css("width", "100%");
+          my.setResponse(response.responseText);
+          consts.progressBar.css("width", "0%");
+          consts.progressBar.hide();
+          return window.setTimeout((function() {
+            return consts.progressBar.show();
+          }), 2000);
         },
         success: function(response) {
+          consts.progressBar.css("width", "100%");
           my.setResponse(response);
+          consts.progressBar.css("width", "0%");
+          consts.progressBar.hide();
+          window.setTimeout((function() {
+            return consts.progressBar.show();
+          }), 2000);
           if ((callback != null)) {
             return callback(response);
           }

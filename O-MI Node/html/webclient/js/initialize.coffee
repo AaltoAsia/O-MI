@@ -34,6 +34,7 @@ constsExt = ($, parent) ->
     my.readAllBtn   = $ '#readall'
     my.sendBtn      = $ '#send'
     my.resetAllBtn  = $ '#resetall'
+    my.progressBar  = $ '.response .progress-bar'
 
     loc = window.location.href
     my.serverUrl.val loc.substr 0, loc.indexOf "html/"
@@ -152,7 +153,7 @@ constsExt = ($, parent) ->
     
     requestTip "#readReq", "Requests that can be used to get data from server. Use one of the below cases."
     requestTip "#read", "Single request for latest or old data with various parameters."
-    requestTip "#subscription", "Create a subscription for data with given interval."
+    requestTip "#subscription", "Create a subscription for data with given interval. Returns requestID which can be used to poll or cancel"
     requestTip "#poll", "Request and empty buffered data for callbackless subscription."
     requestTip "#cancel", "Cancel and remove an active subscription."
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."

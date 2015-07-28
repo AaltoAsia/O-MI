@@ -51,9 +51,12 @@ formLogicExt = ($, WebOmi) ->
 
   # send, callback is called with response text if successful
   my.send = (callback) ->
+    consts = WebOmi.consts
     my.clearResponse()
-    server  = WebOmi.consts.serverUrl.val()
-    request = WebOmi.consts.requestCodeMirror.getValue()
+    server  = consts.serverUrl.val()
+    request = consts.requestCodeMirror.getValue()
+
+    consts.progressBar.css "width", "95%"
     $.ajax
       type: "POST"
       url: server
@@ -63,11 +66,19 @@ formLogicExt = ($, WebOmi) ->
       dataType: "text"
       #complete: -> true
       error: (response) ->
+        consts.progressBar.css "width", "100%"
         my.setResponse response.responseText
+        consts.progressBar.css "width", "0%"
+        consts.progressBar.hide()
+        window.setTimeout (-> consts.progressBar.show()), 2000
         # TODO: Tell somewhere the "Bad Request" etc
         # response.statusText
       success: (response) ->
+        consts.progressBar.css "width", "100%"
         my.setResponse response
+        consts.progressBar.css "width", "0%"
+        consts.progressBar.hide()
+        window.setTimeout (-> consts.progressBar.show()), 2000
         callback(response) if (callback?)
 
   # recursively build odf jstree from the Objects xml node
