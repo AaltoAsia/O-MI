@@ -144,20 +144,20 @@
       });
       my.requestSel = my.requestSelDom.jstree();
       $('[data-toggle="tooltip"]').tooltip();
-      requestTip = function(text) {
-        return {
+      requestTip = function(selector, text) {
+        return my.requestSelDom.find(selector).children("a").tooltip({
           title: text,
           placement: "right",
           container: "body",
           trigger: "hover"
-        };
+        });
       };
-      my.requestSelDom.find("#readReq").children("a").tooltip(requestTip("Requests that can be used to get data from server. Use one of the below cases."));
-      my.requestSelDom.find("#read").children("a").tooltip(requestTip("Single request for latest or old data with various parameters."));
-      my.requestSelDom.find("#subscription").children("a").tooltip(requestTip("Create a subscription for data with given interval."));
-      my.requestSelDom.find("#poll").children("a").tooltip(requestTip("Request and empty buffered data for callbackless subscription."));
-      my.requestSelDom.find("#cancel").children("a").tooltip(requestTip("Cancel and remove an active subscription."));
-      my.requestSelDom.find("#write").children("a").tooltip(requestTip("Write new data to the server. NOTE: Right click the above odf tree for new element creation."));
+      requestTip("#readReq", "Requests that can be used to get data from server. Use one of the below cases.");
+      requestTip("#read", "Single request for latest or old data with various parameters.");
+      requestTip("#subscription", "Create a subscription for data with given interval.");
+      requestTip("#poll", "Request and empty buffered data for callbackless subscription.");
+      requestTip("#cancel", "Cancel and remove an active subscription.");
+      requestTip("#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements.");
       basicInput = function(selector, validator) {
         if (validator == null) {
           validator = function(a) {
