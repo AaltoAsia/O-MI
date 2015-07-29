@@ -173,9 +173,9 @@
       validators.number = function(s) {
         var a;
         if (s == null) {
-          return null;
+          return s;
         }
-        a = s.replace(/ */g, '').replace(/,/g, '.');
+        a = s.replace(',', '.');
         if ($.isNumeric(a)) {
           return parseFloat(a);
         } else {

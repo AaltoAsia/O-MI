@@ -171,10 +171,10 @@ constsExt = ($, parent) ->
 
     # in: string, out: number
     validators.number   = (s) ->
-      if not s? then return null
+      if not s? then return s
       # special user experience enchancement:
-      # remove spaces, convert ',' -> '.'
-      a = s.replace(/ */g, '').replace(/,/g, '.')
+      # convert ',' -> '.'
+      a = s.replace(',', '.')
       if $.isNumeric a then parseFloat a else null
 
     # in: number, out: number
