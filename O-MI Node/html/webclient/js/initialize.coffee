@@ -138,7 +138,8 @@ constsExt = ($, parent) ->
 
 
     # tooltips & popovers
-    $('[data-toggle="tooltip"]').tooltip()
+    $('[data-toggle="tooltip"]').tooltip
+      container : 'body'
 
     # private
     requestTip = (selector, text) ->
@@ -158,25 +159,78 @@ constsExt = ($, parent) ->
     requestTip "#cancel", "Cancel and remove an active subscription."
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
 
+    # private, (could be public too)
+    validators = {}
 
-    basicInput = (selector, validator= (a) -> a != "") ->
+    # validators, minimal Maybe/Option operations
+    # return null if invalid else the extracted value
+
+    # in: string, out: string
+    validators.nonEmpty = (s) ->
+      if s != "" then s else null
+
+    # in: string, out: number
+    validators.number   = (s) ->
+      if not s? then return null
+      # special user experience enchancement:
+      # remove spaces, convert ',' -> '.'
+      a = s.replace(/ */g, '').replace(/,/g, '.')
+      if $.isNumeric a then parseFloat a else null
+
+    # in: number, out: number
+    validators.integer  = (x) ->
+      if x? and x % 1 == 0 then x else null
+
+    # in: number, out: number
+    validators.greaterThan = (y) -> (x) ->
+      if x? and x > y then x else null
+
+    # in: number, out: number
+    validators.greaterThanEq = (y) -> (x) ->
+      if x? and x >= y then x else null
+
+    # in: any, out: any
+    validators.equals = (y) -> (x) ->
+      if x? and x == y then x else null
+
+    # in: t->t, t->t, ... ; out: t->t
+    # returns function that tests its input with all the arguments given to this function
+    validators.or = (vs...) -> (c) ->
+      if vs.length == 0 then return null
+      for v in vs
+        res = v c
+        if res? then return res
+      null
+
+    validators.url = (s) ->
+      if /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(s)
+        s
+      else null
+
+    v = validators
+
+
+    basicInput = (selector, validator=validators.nonEmpty) ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
       bindTo : (callback) ->
-        @ref.on "input", =>
+        @ref.on "input", =>  #preserving this
           val = @get()
           validationContainer = @ref.closest ".form-group"
-          if validator val
-            callback val
+
+          validatedVal = validator val #:: null or the result
+
+          if validatedVal?
             validationContainer
               .removeClass "has-error"
               .addClass "has-success"
           else
-            callback null
             validationContainer
               .removeClass "has-success"
               .addClass "has-error"
+
+          callback validatedVal
       
 
     # refs, setters, getters
@@ -192,28 +246,45 @@ constsExt = ($, parent) ->
           @ref.jstree().get_selected[0]
 
       ttl      : # double
-        basicInput '#ttl'
+        basicInput '#ttl', (a) ->
+          console.log typeof v.greaterThanEq
+          (v.or (v.greaterThanEq 0), (v.equals -1)) v.number v.nonEmpty a
+
       callback : # Maybe string
-        basicInput '#callback'
+        basicInput '#callback', v.url
+
       requestID: # Maybe int
-        basicInput '#requestID'
+        basicInput '#requestID', (a) ->
+          v.integer v.number v.nonEmpty a
+
       odf      : # Array String paths
         ref : my.odfTreeDom
-        get :        -> my.odfTree.get_selected()
+        get : -> my.odfTree.get_selected()
         set : (vals, preventEvent=true) ->
           my.odfTree.deselect_all true
           if vals? and vals.length > 0
             my.odfTree.select_node node, preventEvent, false for node in vals
+
       interval : # Maybe number
-        basicInput '#interval'
+        basicInput '#interval', (a) ->
+          (v.or (v.greaterThanEq 0), (v.equals -1), (v.equals -2)) v.number v.nonEmpty a
+
       newest   : # Maybe int
-        basicInput '#newest'
+        basicInput '#newest', (a) ->
+          console.log typeof v.greaterThan
+          (v.greaterThan 0) v.integer v.number v.nonEmpty a
+
       oldest   : # Maybe int
-        basicInput '#oldest'
+        basicInput '#oldest', (a) ->
+          console.log typeof v.greaterThan
+          (v.greaterThan 0) v.integer v.number v.nonEmpty a
+
       begin    : # Maybe Date
-        basicInput '#begin'
+        basicInput '#begin', v.nonEmpty
+
       end      : # Maybe Date
-        basicInput '#end'
+        basicInput '#end', v.nonEmpty
+
       requestDoc: # Maybe xml dom document
         ref : my.requestCodeMirror
         get :       -> WebOmi.formLogic.getRequest()
