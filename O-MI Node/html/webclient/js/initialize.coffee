@@ -159,6 +159,7 @@ constsExt = ($, parent) ->
     requestTip "#cancel", "Cancel and remove an active subscription."
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
 
+
     # private, (could be public too)
     validators = {}
 
@@ -214,8 +215,7 @@ constsExt = ($, parent) ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
-      bindTo : (callback) ->
-        @ref.on "input", =>  #preserving this
+      validate : ->
           val = @get()
           validationContainer = @ref.closest ".form-group"
 
@@ -230,7 +230,10 @@ constsExt = ($, parent) ->
               .removeClass "has-success"
               .addClass "has-error"
 
-          callback validatedVal
+          validatedVal
+      bindTo : (callback) ->
+        @ref.on "input", =>  #preserving this
+          callback @validate()
       
 
     # refs, setters, getters
@@ -279,16 +282,52 @@ constsExt = ($, parent) ->
           console.log typeof v.greaterThan
           (v.greaterThan 0) v.integer v.number v.nonEmpty a
 
-      begin    : # Maybe Date
-        basicInput '#begin', v.nonEmpty
+      begin    : # Maybe Date # TODO: merge duplicate datepicker code with the "end" below
+        $.extend (basicInput '#begin'),
+          set    : (val) ->
+            @ref.data "DateTimePicker"
+              .date(val)
+          get    : ->
+            mementoTime = @ref.data "DateTimePicker"
+              .date()
+            if mementoTime? then mementoTime.toISOString() else null
+          bindTo : (callback) ->
+            @ref.on "dp.change", =>
+              callback @validate()
 
       end      : # Maybe Date
-        basicInput '#end', v.nonEmpty
+        $.extend (basicInput '#end'),
+          set    : (val) ->
+            @ref.data "DateTimePicker"
+              .date(val)
+          get    : ->
+            mementoTime = @ref.data "DateTimePicker"
+              .date()
+            if mementoTime? then mementoTime.toISOString() else null
+          bindTo : (callback) ->
+            @ref.on "dp.change", =>
+              callback @validate()
 
       requestDoc: # Maybe xml dom document
         ref : my.requestCodeMirror
         get :       -> WebOmi.formLogic.getRequest()
         set : (val) -> WebOmi.formLogic.setRequest val
+
+    language = window.navigator.userLanguage || window.navigator.language
+    if !moment.localeData(language)
+      language = "en"
+    
+    my.ui.end.ref.datetimepicker
+      locale: language
+    my.ui.begin.ref.datetimepicker
+      locale: language
+
+    my.ui.begin.ref.on "dp.change", (e) ->
+      my.ui.end.ref.data "DateTimePicker"
+        .minDate e.date
+    my.ui.end.ref.on "dp.change", (e) ->
+      my.ui.begin.ref.data "DateTimePicker"
+        .maxDate e.date
 
 
     # callbacks

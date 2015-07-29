@@ -269,13 +269,11 @@
                   <label for="begin" class="control-label text-nowrap col-md-4 col-lg-3">begin:</label>
                   <div class="col-md-8 col-lg-9">
                     <a data-toggle="tooltip" title="Request values older than this." data-placement="right">
-                      <div class="form-group">
-                        <div class='input-group date' id='beginpicker'>
-                          <input id="begin" type='text' class="form-control" />
-                          <span class="input-group-addon">
-                            <span class="glyphicon glyphicon-calendar"></span>
-                          </span>
-                        </div>
+                      <div class='input-group date' id='beginpicker'>
+                        <input id="begin" type='text' class="form-control" />
+                        <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
                       </div>
                     </a>
                   </div>
@@ -284,34 +282,15 @@
                   <label for="end" class="control-label text-nowrap col-md-4 col-lg-3">end:</label>
                   <div class="col-md-8 col-lg-9">
                     <a data-toggle="tooltip" title="Request values newer than this." data-placement="right">
-                      <div class="form-group">
-                        <div class='input-group date' id='endpicker'>
-                          <input id="end" type='text' class="form-control" />
-                          <span class="input-group-addon">
-                            <span class="glyphicon glyphicon-calendar"></span>
-                          </span>
-                        </div>
+                      <div class='input-group date' id='endpicker'>
+                        <input id="end" type='text' class="form-control" />
+                        <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
                       </div>
                     </a>
                   </div>
                 </div>
-                <script type="text/javascript">
-                  $(function() {
-                    var language = window.navigator.userLanguage || window.navigator.language;
-                    if (!moment.localeData(language)){
-                      language = "en";
-                    }
-                    $('#beginpicker, #endpicker').datetimepicker({
-                      locale: language
-                    });
-                    $("#beginpicker").on("dp.change", function (e) {
-                      $('#endpicker').data("DateTimePicker").minDate(e.date);
-                    });
-                    $("#endpicker").on("dp.change", function (e) {
-                      $('#beginpicker').data("DateTimePicker").maxDate(e.date);
-                    });
-                  });
-                </script>
               </div>
             </div>
             <div class="form-group">

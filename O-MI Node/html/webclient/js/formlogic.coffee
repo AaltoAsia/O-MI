@@ -215,6 +215,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             newHasMsg = requests.defaults[reqName]().msg
             requests.params.msg.update newHasMsg
 
+
     makeRequestUpdater = (input) ->
       (val) ->
         formLogic.modifyRequest -> requests.params[input].update val

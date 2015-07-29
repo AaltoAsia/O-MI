@@ -16,7 +16,7 @@
       return afterWaits.push(fn);
     };
     $(function() {
-      var basicInput, fn, i, infoItemIcon, len, loc, objectIcon, objectsIcon, requestTip, responseCMSettings, results, v, validators;
+      var basicInput, fn, i, infoItemIcon, language, len, loc, objectIcon, objectsIcon, requestTip, responseCMSettings, results, v, validators;
       responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
@@ -254,19 +254,22 @@
           set: function(val) {
             return this.ref.val(val);
           },
+          validate: function() {
+            var val, validatedVal, validationContainer;
+            val = this.get();
+            validationContainer = this.ref.closest(".form-group");
+            validatedVal = validator(val);
+            if (validatedVal != null) {
+              validationContainer.removeClass("has-error").addClass("has-success");
+            } else {
+              validationContainer.removeClass("has-success").addClass("has-error");
+            }
+            return validatedVal;
+          },
           bindTo: function(callback) {
             return this.ref.on("input", (function(_this) {
               return function() {
-                var val, validatedVal, validationContainer;
-                val = _this.get();
-                validationContainer = _this.ref.closest(".form-group");
-                validatedVal = validator(val);
-                if (validatedVal != null) {
-                  validationContainer.removeClass("has-error").addClass("has-success");
-                } else {
-                  validationContainer.removeClass("has-success").addClass("has-error");
-                }
-                return callback(validatedVal);
+                return callback(_this.validate());
               };
             })(this));
           }
@@ -330,8 +333,48 @@
           console.log(typeof v.greaterThan);
           return (v.greaterThan(0))(v.integer(v.number(v.nonEmpty(a))));
         }),
-        begin: basicInput('#begin', v.nonEmpty),
-        end: basicInput('#end', v.nonEmpty),
+        begin: $.extend(basicInput('#begin'), {
+          set: function(val) {
+            return this.ref.data("DateTimePicker").date(val);
+          },
+          get: function() {
+            var mementoTime;
+            mementoTime = this.ref.data("DateTimePicker").date();
+            if (mementoTime != null) {
+              return mementoTime.toISOString();
+            } else {
+              return null;
+            }
+          },
+          bindTo: function(callback) {
+            return this.ref.on("dp.change", (function(_this) {
+              return function() {
+                return callback(_this.validate());
+              };
+            })(this));
+          }
+        }),
+        end: $.extend(basicInput('#end'), {
+          set: function(val) {
+            return this.ref.data("DateTimePicker").date(val);
+          },
+          get: function() {
+            var mementoTime;
+            mementoTime = this.ref.data("DateTimePicker").date();
+            if (mementoTime != null) {
+              return mementoTime.toISOString();
+            } else {
+              return null;
+            }
+          },
+          bindTo: function(callback) {
+            return this.ref.on("dp.change", (function(_this) {
+              return function() {
+                return callback(_this.validate());
+              };
+            })(this));
+          }
+        }),
         requestDoc: {
           ref: my.requestCodeMirror,
           get: function() {
@@ -342,6 +385,22 @@
           }
         }
       };
+      language = window.navigator.userLanguage || window.navigator.language;
+      if (!moment.localeData(language)) {
+        language = "en";
+      }
+      my.ui.end.ref.datetimepicker({
+        locale: language
+      });
+      my.ui.begin.ref.datetimepicker({
+        locale: language
+      });
+      my.ui.begin.ref.on("dp.change", function(e) {
+        return my.ui.end.ref.data("DateTimePicker").minDate(e.date);
+      });
+      my.ui.end.ref.on("dp.change", function(e) {
+        return my.ui.begin.ref.data("DateTimePicker").maxDate(e.date);
+      });
       my.afterJquery = function(fn) {
         return fn();
       };
