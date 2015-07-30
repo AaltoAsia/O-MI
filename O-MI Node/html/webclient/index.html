@@ -59,14 +59,17 @@
             </p>
           </li>
           <li>
-            <form class="navbar-form navbar-left" role="search">
-              <div class="input-group">
-                <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/" />
-                <div class="input-group-addon">URL</div>
-              </div>
+            <form class="navbar-form navbar-left" role="search" style="width: 400px">
+              <a data-toggle="tooltip" title="Enter O-MI node url. Can be used to test any O-MI Node that has CORS support." data-placement="bottom">
+                <div class="input-group input-group-sm" style="width:100%;">
+                  <div class="input-group-addon">Server</div>
+                  <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/" />
+                  <div class="input-group-addon">URL</div>
+                </div>
+              </a>
             </form>
           </li>
-          <li><a class="navbar-brand">WebClient</a></li>
+          <!-- <li><a class="navbar-brand">WebClient</a></li> -->
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
