@@ -57,10 +57,12 @@
       return mirror.refresh();
     };
     my.send = function(callback) {
-      var request, server;
+      var consts, request, server;
+      consts = WebOmi.consts;
       my.clearResponse();
-      server = WebOmi.consts.serverUrl.val();
-      request = WebOmi.consts.requestCodeMirror.getValue();
+      server = consts.serverUrl.val();
+      request = consts.requestCodeMirror.getValue();
+      consts.progressBar.css("width", "95%");
       return $.ajax({
         type: "POST",
         url: server,
@@ -69,10 +71,22 @@
         processData: false,
         dataType: "text",
         error: function(response) {
-          return my.setResponse(response.responseText);
+          consts.progressBar.css("width", "100%");
+          my.setResponse(response.responseText);
+          consts.progressBar.css("width", "0%");
+          consts.progressBar.hide();
+          return window.setTimeout((function() {
+            return consts.progressBar.show();
+          }), 2000);
         },
         success: function(response) {
+          consts.progressBar.css("width", "100%");
           my.setResponse(response);
+          consts.progressBar.css("width", "0%");
+          consts.progressBar.hide();
+          window.setTimeout((function() {
+            return consts.progressBar.show();
+          }), 2000);
           if ((callback != null)) {
             return callback(response);
           }
@@ -199,7 +213,7 @@
       consts.ui.request.ref.on("select_node.jstree", function(_, data) {
         var i, input, isReadReq, isRequestIdReq, len, readReqWidgets, reqName, ui;
         reqName = data.node.id;
-        console.log(reqName);
+        WebOmi.debug(reqName);
         if (reqName === "readReq") {
           return consts.ui.request.set("read");
         } else {
@@ -227,14 +241,16 @@
           for (i = 0, len = readReqWidgets.length; i < len; i++) {
             input = readReqWidgets[i];
             input.ref.attr('disabled', !isReadReq);
-            input.set("");
+            input.set(null);
             input.ref.trigger("input");
           }
           ui.requestID.ref.attr('disabled', !isRequestIdReq);
-          ui.requestID.set("");
-          ui.requestID.ref.trigger("input");
+          if (!isRequestIdReq) {
+            ui.requestID.set(null);
+            ui.requestID.ref.trigger("input");
+          }
           ui.interval.ref.attr('disabled', reqName !== 'subscription');
-          ui.interval.set("");
+          ui.interval.set(null);
           ui.interval.ref.trigger("input");
           return formLogic.modifyRequest(function() {
             var newHasMsg;

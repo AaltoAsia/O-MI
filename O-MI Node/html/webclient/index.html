@@ -11,6 +11,7 @@
 	<link href="css/lib/bootstrap.css" rel="stylesheet" />
 	<link href="themes/default/style.min.css" rel="stylesheet" />
 	<link href="css/lib/codemirror.css" rel="stylesheet" />
+  <link href="css/lib/bootstrap-datetimepicker.min.css" rel="stylesheet" />
 
 	<link href="css/mystyle.css" rel="stylesheet" />
 
@@ -23,6 +24,8 @@
 	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.js"></script>
 	<script type="text/javascript" src="js/lib/bootstrap.js"></script>
+	<script type="text/javascript" src="js/lib/moment-with-locales.min.js"></script>
+	<script type="text/javascript" src="js/lib/bootstrap-datetimepicker.min.js"></script>
 	<script type="text/javascript" src="js/lib/jstree.js"></script>
 	<script type="text/javascript" src="js/lib/codemirror.js"></script>
 	<script type="text/javascript" src="js/lib/xml.js"></script>
@@ -52,18 +55,21 @@
         <ul class="nav navbar-nav navbar-left">
           <li>
             <p id="versionNumber" class="navbar-text">
-              <b>v0.1.5</b> <small> -- 2015-07-23</small>
+              <b>v0.1.6</b> <small> -- 2015-07-30</small>
             </p>
           </li>
           <li>
-            <form class="navbar-form navbar-left" role="search">
-              <div class="input-group">
-                <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/" />
-                <div class="input-group-addon">URL</div>
-              </div>
+            <form class="navbar-form navbar-left" role="search" style="width: 400px">
+              <a data-toggle="tooltip" title="Enter O-MI node url. Can be used to test any O-MI Node that has CORS support." data-placement="bottom">
+                <div class="input-group input-group-sm" style="width:100%;">
+                  <div class="input-group-addon">Server</div>
+                  <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/" />
+                  <div class="input-group-addon">URL</div>
+                </div>
+              </a>
             </form>
           </li>
-          <li><a class="navbar-brand">WebClient</a></li>
+          <!-- <li><a class="navbar-brand">WebClient</a></li> -->
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
@@ -130,7 +136,9 @@
         <div class="panel-body">
           <div class="requesttree">
             <ul>
-              <li id="readReq" data-jstree='{"opened":true}'>Read
+              <li id="readReq" data-jstree='{"opened":true}'>
+                <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                Read
                 <ul>
                   <li id="read">
                     <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
@@ -173,10 +181,12 @@
               ttl:
             </label>
             <div class="col-md-8 col-lg-9">
-              <div class="input-group">
-                <input type="number" required class="form-control" id="ttl"/>
-                <div class="input-group-addon">sec</div>
-              </div>
+              <a data-toggle="tooltip" title="Time To Live of the request in the server. Use ttl -1 for infinity and ttl 0 for the duration of socket connection.">
+                <div class="input-group">
+                  <input type="number" required class="form-control" id="ttl"/>
+                  <div class="input-group-addon">sec</div>
+                </div>
+              </a>
             </div>
           </div>
           <div class="form-group">
@@ -185,10 +195,12 @@
               interval:
             </label>
             <div class="col-md-8 col-lg-9">
-              <div class="input-group">
-                <input type="number" required class="form-control" id="interval"/>
-                <div class="input-group-addon">sec</div>
-              </div>
+              <a data-toggle="tooltip" title="The time between data responses. Use interval -1 to subscribe for updates only.">
+                <div class="input-group">
+                  <input type="number" required class="form-control" id="interval"/>
+                  <div class="input-group-addon">sec</div>
+                </div>
+              </a>
             </div>
           </div>
           <div class="form-group">
@@ -197,7 +209,9 @@
               requestID:
             </label>
             <div class="col-md-8 col-lg-9">
-              <input type="number" required class="form-control" id="requestID"/>
+              <a data-toggle="tooltip" title="Enter a requestID as given by some subscription response.">
+                <input type="number" required class="form-control" id="requestID"/>
+              </a>
             </div>
           </div>
         </div>
@@ -219,10 +233,12 @@
                 callback:
               </label>
               <div class="col-md-8 col-lg-9">
-                <div class="input-group">
-                  <input type="url" class="form-control" id="callback"/>
-                  <div class="input-group-addon">URL</div>
-                </div>
+                <a data-toggle="tooltip" title="Url for server which receives responses with http POST methods.">
+                  <div class="input-group">
+                    <input type="url" class="form-control" id="callback"/>
+                    <div class="input-group-addon">URL</div>
+                  </div>
+                </a>
               </div>
             </div>
             <div class="form-group">
@@ -233,13 +249,17 @@
                 <div class="form-group">
                   <label for="newest" class="control-label text-nowrap col-md-4 col-lg-3">Newest:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="number" class="form-control" id="newest"/>
+                    <a data-toggle="tooltip" title="Number of the top newest values to request.">
+                      <input type="number" class="form-control" id="newest"/>
+                    </a>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="oldest" class="control-label text-nowrap col-md-4 col-lg-3">Oldest:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="number" class="form-control" id="oldest"/>
+                    <a data-toggle="tooltip" title="Number of the top oldest values to request.">
+                      <input type="number" class="form-control" id="oldest"/>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -253,13 +273,27 @@
                 <div class="form-group">
                   <label for="begin" class="control-label text-nowrap col-md-4 col-lg-3">begin:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="datetime-local" class="form-control" id="begin" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    <a data-toggle="tooltip" title="Request values older than this." data-placement="right">
+                      <div class='input-group date' id='beginpicker'>
+                        <input id="begin" type='text' class="form-control" />
+                        <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                      </div>
+                    </a>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="end" class="control-label text-nowrap col-md-4 col-lg-3">end:</label>
                   <div class="col-md-8 col-lg-9">
-                    <input type="datetime-local" class="form-control" id="end" placeholder="YYYY-MM-DDTHH:MM:SS"/>
+                    <a data-toggle="tooltip" title="Request values newer than this." data-placement="right">
+                      <div class='input-group date' id='endpicker'>
+                        <input id="end" type='text' class="form-control" />
+                        <span class="input-group-addon">
+                          <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                      </div>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -312,6 +346,11 @@
                 Response:
               </h4>
               <div class="well response">
+                <div class="progress">
+                  <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                    <span class="sr-only">[A silly progress bar]</span>
+                  </div>
+                </div>
                 <textarea id="responseArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>
               </div>
             </div>

@@ -7,9 +7,9 @@
     var addValueToAll, addValueWhenWrite, currentParams, my, removeValueFromAll, updateSetterForAttr;
     my = WebOmi.requests = {};
     my.xmls = {
-      readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\">\n      <Objects></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
-      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n",
-      template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg xmlns=\"odf.xsd\">\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n"
+      readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n      <Objects xmlns=\"odf.xsd\"></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
+      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n",
+      template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n"
     };
     my.defaults = {};
     my.defaults.empty = function() {
@@ -192,7 +192,7 @@
           if (currentParams[name] !== newVal) {
             attrParents = o.evaluateXPath(doc, attrParentXPath);
             if (attrParents == null) {
-              console.log("Tried to update " + name + ", but " + attrParentXPath + " was not found in", doc);
+              WebOmi.error("Tried to update " + name + ", but " + attrParentXPath + " was not found in", doc);
             } else {
               for (i = 0, len = attrParents.length; i < len; i++) {
                 parent = attrParents[i];
@@ -277,24 +277,26 @@
           if (currentParams.requestID !== newVal) {
             parents = o.evaluateXPath(doc, parentXPath);
             if (parents == null) {
-              console.log("Tried to update requestID, but " + parentXPath + " not found in", doc);
+              WebOmi.error("Tried to update requestID, but " + parentXPath + " not found in", doc);
             } else {
               existingIDs = o.evaluateXPath(doc, "//omi:requestID");
-              if (existingIDs.some(function(elem) {
-                return elem.textContent.trim() === newVal.toString();
-              })) {
-                return;
-              } else if (newVal != null) {
-                for (i = 0, len = parents.length; i < len; i++) {
-                  parent = parents[i];
-                  for (j = 0, len1 = existingIDs.length; j < len1; j++) {
-                    id = existingIDs[j];
-                    id.parentNode.removeChild(id);
+              if (newVal != null) {
+                if (existingIDs.some(function(elem) {
+                  return elem.textContent.trim() === newVal.toString();
+                })) {
+                  return;
+                } else {
+                  for (i = 0, len = parents.length; i < len; i++) {
+                    parent = parents[i];
+                    for (j = 0, len1 = existingIDs.length; j < len1; j++) {
+                      id = existingIDs[j];
+                      id.parentNode.removeChild(id);
+                    }
+                    newId = o.createOmi("requestID", doc);
+                    idTxt = doc.createTextNode(newVal.toString());
+                    newId.appendChild(idTxt);
+                    parent.appendChild(newId);
                   }
-                  newId = o.createOmi("requestID", doc);
-                  idTxt = doc.createTextNode(newVal.toString());
-                  newId.appendChild(idTxt);
-                  parent.appendChild(newId);
                 }
               } else {
                 for (k = 0, len2 = existingIDs.length; k < len2; k++) {
@@ -303,9 +305,9 @@
                 }
               }
             }
-            currentParams[name] = newVal;
-            return newVal;
+            currentParams.requestID = newVal;
           }
+          return newVal;
         }
       },
       odf: {
@@ -355,7 +357,7 @@
               if (msg != null) {
                 msg.appendChild(objects);
               } else {
-                console.log("error msg = " + msg);
+                WebOmi.error("error, msg not found: " + msg);
               }
             }
           }
@@ -403,7 +405,6 @@
           }
           if (hasMsg) {
             msg = o.createOmi("msg", doc);
-            msg.setAttribute("xmlns", "odf.xsd");
             requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
             if (requestElem != null) {
               requestElem.appendChild(msg);
@@ -411,7 +412,7 @@
               currentParams.msg = hasMsg;
               my.params.odf.update(currentParams.odf);
             } else {
-              console.log("ERROR: No request found");
+              WebOmi.error("ERROR: No request found");
               return;
             }
           } else {
@@ -459,11 +460,11 @@
           if (!hasProp.call(ref, key)) continue;
           thing = ref[key];
           thing.update(newParams[key]);
-          console.log("updated " + key + ":", currentParams[key]);
+          WebOmi.debug("updated " + key + ":", currentParams[key]);
         }
         return my.generate();
       } else {
-        console.log("tried to generate request, but missing a required parameter (name, ttl)", newParams);
+        WebOmi.error("tried to generate request, but missing a required parameter (name, ttl)", newParams);
       }
     };
     my.readAll = function(fastForward) {

@@ -10,8 +10,8 @@ requestsExt = (WebOmi) ->
       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd">
-            <Objects></Objects>
+          <omi:msg>
+            <Objects xmlns="odf.xsd"></Objects>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -22,7 +22,7 @@ requestsExt = (WebOmi) ->
       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd">
+          <omi:msg>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -34,7 +34,7 @@ requestsExt = (WebOmi) ->
       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd">
+          <omi:msg>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -222,7 +222,7 @@ requestsExt = (WebOmi) ->
       if currentParams[name] != newVal
         attrParents = o.evaluateXPath doc, attrParentXPath
         if not attrParents?
-          console.log "Tried to update #{name}, but #{attrParentXPath} was not found in", doc
+          WebOmi.error "Tried to update #{name}, but #{attrParentXPath} was not found in", doc
         else
           for parent in attrParents
             if newVal?
@@ -305,28 +305,26 @@ requestsExt = (WebOmi) ->
         if currentParams.requestID != newVal
           parents = o.evaluateXPath doc, parentXPath
           if not parents?
-            console.log "Tried to update requestID, but #{parentXPath} not found in", doc
+            WebOmi.error "Tried to update requestID, but #{parentXPath} not found in", doc
           else
             existingIDs = o.evaluateXPath doc, "//omi:requestID"
-
-            if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
-              return # exists
-              # TODO multiple requestIDs
-
-            else if newVal?
-              # add
-              for parent in parents
-                id.parentNode.removeChild id for id in existingIDs
-                newId = o.createOmi "requestID", doc
-                idTxt = doc.createTextNode newVal.toString()
-                newId.appendChild idTxt
-                parent.appendChild newId
+            if newVal?
+              if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
+                return # exists
+                # TODO multiple requestIDs
+              else # add
+                for parent in parents
+                  id.parentNode.removeChild id for id in existingIDs
+                  newId = o.createOmi "requestID", doc
+                  idTxt = doc.createTextNode newVal.toString()
+                  newId.appendChild idTxt
+                  parent.appendChild newId
             else
               # remove
               id.parentNode.removeChild id for id in existingIDs
 
-          currentParams[name] = newVal
-          newVal
+          currentParams.requestID = newVal
+        newVal
 
     odf      :
       update : (paths) ->
@@ -376,7 +374,7 @@ requestsExt = (WebOmi) ->
             if msg?
               msg.appendChild objects
             else
-              console.log "error msg = #{msg}"
+              WebOmi.error "error, msg not found: #{msg}"
 
         # update currentparams
         if currentParams.odf?
@@ -426,7 +424,10 @@ requestsExt = (WebOmi) ->
         if hasMsg  # add
           #msgExists = o.evaluateXPath(currentParams.requestDoc, "")
           msg = o.createOmi "msg", doc
-          msg.setAttribute "xmlns", "odf.xsd"
+
+          # namespaces already set by createOmi and createOdf
+          # msg.setAttribute "xmlns", "odf.xsd"
+
           requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.appendChild msg
@@ -435,7 +436,7 @@ requestsExt = (WebOmi) ->
             my.params.odf.update currentParams.odf
             # FIXME dependency
           else
-            console.log "ERROR: No request found"
+            WebOmi.error "ERROR: No request found"
             return # TODO: what
 
         else  # remove
@@ -480,17 +481,16 @@ requestsExt = (WebOmi) ->
     # essential parameters
     if newParams.request? && newParams.request.length > 0 && newParams.ttl?
 
-      # resolve update dependencies manually:
-      #my.update
-
+      # resolve update dependencies manually?
+      # - No, currently they are handled directly from the relevant update functions
       for own key, thing of my.params
         thing.update newParams[key]
-        console.log "updated #{key}:", currentParams[key]
+        WebOmi.debug "updated #{key}:", currentParams[key]
         
       my.generate()
 
     else
-      console.log(
+      WebOmi.error(
         "tried to generate request, but missing a required parameter (name, ttl)", newParams
       )
       return

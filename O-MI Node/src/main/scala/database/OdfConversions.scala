@@ -4,37 +4,35 @@ import scala.language.postfixOps
 
 import slick.driver.H2Driver.api._
 
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.SortedMap
+import scala.collection.JavaConversions.{asJavaIterable,iterableAsScalaIterable}
+//import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.{ SortedMap, breakOut }
 
 import types.OdfTypes._
 
-
-
 trait OdfConversions extends OmiNodeTables {
-  type DBValueTuple= (DBNode, Option[DBValue])
-  type DBInfoItem  = (DBNode, Seq[DBValue])
+  type DBValueTuple = (DBNode, Option[DBValue])
+  type DBInfoItem = (DBNode, Seq[DBValue])
   type DBInfoItems = SortedMap[DBNode, Seq[DBValue]]
 
+  def toDBInfoItems(input: Seq[DBValueTuple]): DBInfoItems = {
+    SortedMap {
+      input.groupBy(_._1).map {
+        case (node, valuetuple) =>
 
-  def toDBInfoItems(input: Seq[DBValueTuple]): DBInfoItems =
-    SortedMap(input groupBy (_._1) mapValues {values =>
-      val empty = List[DBValue]()
+          val dbValues = valuetuple.collect {
+            case (_, Some(dbValue)) => dbValue
+          }.reverse //maybe foldLeft so reverse is not needed?
 
-      values.foldLeft(empty){
-        case (others, (_, Some(dbValue))) => dbValue :: others
-        case (others, (_, None)) => others
-      }
-
-      } toArray : _*
-    )(DBNodeOrdering)
-
+          (node, dbValues)
+      }(breakOut): _*
+    }(DBNodeOrdering)
+  }
   def toDBInfoItem(tupleData: Seq[DBValueTuple]): Option[DBInfoItem] = {
-      val items = toDBInfoItems(tupleData)
-      assert(items.size <= 1, "Asked one infoitem, should contain max one infoitem")
-      items.headOption
-    }  
+    val items = toDBInfoItems(tupleData)
+    assert(items.size <= 1, "Asked one infoitem, should contain max one infoitem")
+    items.headOption
+  }
 
   /**
    * Conversion for a (sub)tree of hierarchy with value data.
@@ -47,9 +45,9 @@ trait OdfConversions extends OmiNodeTables {
   }
 
   protected def hasPathConversion: DBInfoItem => OdfNode = {
-    case (infoItemNode, values) if infoItemNode.isInfoItem  =>
-      val odfValues      = values map (_.toOdf) toIterable
-      val odfInfoItem    = infoItemNode.toOdfInfoItem(odfValues)
+    case (infoItemNode, values) if infoItemNode.isInfoItem =>
+      val odfValues = values map (_.toOdf) toIterable
+      val odfInfoItem = infoItemNode.toOdfInfoItem(odfValues)
       odfInfoItem
     case (objectNode, values) if !objectNode.isInfoItem && objectNode.depth > 1 =>
       objectNode.toOdfObject
@@ -77,19 +75,17 @@ trait OdfConversions extends OmiNodeTables {
       case (objectNode, _) if !objectNode.isInfoItem =>
         val allChildren =
           nodes filter (item =>
-              item.leftBoundary > objectNode.leftBoundary &&
-              item.leftBoundary < objectNode.rightBoundary
-              )
+            item.leftBoundary > objectNode.leftBoundary &&
+              item.leftBoundary < objectNode.rightBoundary)
 
         val (infoItemChildren, objectChildren) = allChildren partition (_.isInfoItem)
 
         val odfInfoItemChildren = infoItemChildren map (_.toOdfInfoItem)
-        val odfObjectChildren   = objectChildren   map (_.toOdfObject)
-
+        val odfObjectChildren = objectChildren map (_.toOdfObject)
 
         require(allChildren.nonEmpty, s"should have children, has $items")
 
-        if (objectNode.depth == 1){
+        if (objectNode.depth == 1) {
           val odfObjects = OdfObjects(odfObjectChildren)
           Some(odfObjects)
         } else {
@@ -97,9 +93,9 @@ trait OdfConversions extends OmiNodeTables {
           Some(odfObject)
         }
 
-      case infoItem @ (infoItemNode, _) if infoItemNode.isInfoItem  =>
+      case infoItem @ (infoItemNode, _) if infoItemNode.isInfoItem =>
         Some(hasPathConversion(infoItem))
-        
+
       case matchError => throw new MatchError(matchError)
     }
   }
@@ -112,7 +108,7 @@ trait OdfConversions extends OmiNodeTables {
 
     // safe version of reduce
     odfObjectsTrees.headOption map { head =>
-        odfObjectsTrees.par.reduce(_ combine _)
+      odfObjectsTrees.par.reduce(_ combine _)
     }
   }
 }

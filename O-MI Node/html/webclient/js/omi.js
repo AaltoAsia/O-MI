@@ -12,11 +12,12 @@
       } catch (_error) {
         ex = _error;
         xmlTree = null;
+        WebOmi.debug("DOMParser xml parsererror or not supported!");
       }
       if (xmlTree.firstElementChild.nodeName === "parsererror" || (xmlTree == null)) {
-        console.log("PARSE ERROR:");
-        console.log("in:", responseString);
-        console.log("out:", xmlTree);
+        WebOmi.debug("PARSE ERROR:");
+        WebOmi.debug("in:", responseString);
+        WebOmi.debug("out:", xmlTree);
         xmlTree = null;
       }
       return xmlTree;

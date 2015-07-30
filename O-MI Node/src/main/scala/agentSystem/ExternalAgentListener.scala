@@ -1,8 +1,7 @@
 package agentSystem
 
-import akka.actor.{ Actor, Props  }
+import akka.actor.{ Actor, Props, ActorLogging }
 import akka.io.{ IO, Tcp  }
-import akka.actor.ActorLogging
 import java.net.InetSocketAddress
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -14,8 +13,7 @@ import types._
 import types.Path._ //Useless?
 import types.OdfTypes._
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 
 /** AgentListener handles connections from agents.
   */
@@ -83,12 +81,9 @@ class ExternalAgentHandler(
         InputPusher.handleObjects(getObjects(parsedEntries))
         if(!metaDataSaved){
           InputPusher.handlePathMetaDataPairs(
-            getInfoItems(getObjects(parsedEntries)).filter{
-              info => info.metaData.nonEmpty 
-            }.map{
-              info  => (info.path, info.metaData.get.data)
-            }   
-
+            getInfoItems(getObjects(parsedEntries)).collect{
+              case OdfInfoItem(path,_,_,Some(metadata)) => (path, metadata.data)
+            }
           )
           metaDataSaved = true
         }

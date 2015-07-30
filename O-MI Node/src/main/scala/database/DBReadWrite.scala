@@ -150,7 +150,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield (fullpath, insertId) ).transactionally
 
     val addingAction = DBIO.sequence(
-      odfNodes.sortBy(_.path.length).map{
+      odfNodes.sortBy(_.path.length).collect{
         case objs : OdfObjects=> 
           addNode(false)(objs.path)
         case obj : OdfObject=> 
@@ -174,7 +174,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
   private def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) = {
 
-    val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get).toSeq
+    val infoitems = paths.keySet.collect{
+      case DBNode(Some(id),_,_,_,_,_,_,isInfoItem) if (isInfoItem)=> id
+    }.toSeq
+    
     val historyLen = database.historyLength
 
     val removeBeforeActions = infoitems.map { iItem =>
@@ -553,9 +556,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
   def RemoveMetaData(path: Path): Unit = {
     // TODO: Is this needed at all?
-    val node = runSync(hierarchyNodes.filter(_.path === path).result.headOption)
-    if (node.nonEmpty) {
-      val qry = metadatas.filter(_.hierarchyId === node.get.id)
+    val firstNode: Option[DBNode] = runSync(hierarchyNodes.filter(_.path === path).result.headOption)
+    firstNode.foreach { node => 
+      val qry = metadatas.filter(_.hierarchyId === node.id)
       runSync(qry.delete)
     }
   }

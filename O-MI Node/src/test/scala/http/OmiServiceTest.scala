@@ -53,6 +53,7 @@ class OmiServiceTest extends Specification
 
   def beforeAll() = {
     Boot.init(dbConnection)
+    Thread.sleep(1000)
     // clear if some other tests have left data
     //    dbConnection.clearDB()
 

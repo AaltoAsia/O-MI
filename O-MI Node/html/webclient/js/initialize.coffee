@@ -34,6 +34,7 @@ constsExt = ($, parent) ->
     my.readAllBtn   = $ '#readall'
     my.sendBtn      = $ '#send'
     my.resetAllBtn  = $ '#resetall'
+    my.progressBar  = $ '.response .progress-bar'
 
     loc = window.location.href
     my.serverUrl.val loc.substr 0, loc.indexOf "html/"
@@ -46,7 +47,7 @@ constsExt = ($, parent) ->
       .jstree
         plugins : ["checkbox", "types", "contextmenu"]
         core :
-          error : (msg) -> console.log msg # TODO: remove debug
+          error : (msg) -> WebOmi.debug msg
           force_text : true
           check_callback : true
         types :
@@ -133,18 +134,106 @@ constsExt = ($, parent) ->
             icons : false
           multiple : false
 
+    my.requestSel = my.requestSelDom.jstree()
+
+
+    # tooltips & popovers
+    $('[data-toggle="tooltip"]').tooltip
+      container : 'body'
+
+    # private
+    requestTip = (selector, text) ->
+      my.requestSelDom.find selector
+        .children "a"
+        .tooltip
+          title : text
+          placement : "right"
+          container : "body"
+          trigger : "hover"
+
     
-    basicInput = (selector, validator= (a) -> a != "") ->
+    requestTip "#readReq", "Requests that can be used to get data from server. Use one of the below cases."
+    requestTip "#read", "Single request for latest or old data with various parameters."
+    requestTip "#subscription", "Create a subscription for data with given interval. Returns requestID which can be used to poll or cancel"
+    requestTip "#poll", "Request and empty buffered data for callbackless subscription."
+    requestTip "#cancel", "Cancel and remove an active subscription."
+    requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
+
+
+    # private, (could be public too)
+    validators = {}
+
+    # validators, minimal Maybe/Option operations
+    # return null if invalid else the extracted value
+
+    # in: string, out: string
+    validators.nonEmpty = (s) ->
+      if s != "" then s else null
+
+    # in: string, out: number
+    validators.number   = (s) ->
+      if not s? then return s
+      # special user experience enchancement:
+      # convert ',' -> '.'
+      a = s.replace(',', '.')
+      if $.isNumeric a then parseFloat a else null
+
+    # in: number, out: number
+    validators.integer  = (x) ->
+      if x? and x % 1 == 0 then x else null
+
+    # in: number, out: number
+    validators.greaterThan = (y) -> (x) ->
+      if x? and x > y then x else null
+
+    # in: number, out: number
+    validators.greaterThanEq = (y) -> (x) ->
+      if x? and x >= y then x else null
+
+    # in: any, out: any
+    validators.equals = (y) -> (x) ->
+      if x? and x == y then x else null
+
+    # in: t->t, t->t, ... ; out: t->t
+    # returns function that tests its input with all the arguments given to this function
+    validators.or = (vs...) -> (c) ->
+      if vs.length == 0 then return null
+      for v in vs
+        res = v c
+        if res? then return res
+      null
+
+    validators.url = (s) ->
+      if /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(s)
+        s
+      else null
+
+    v = validators
+
+
+    basicInput = (selector, validator=validators.nonEmpty) ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
-      bindTo : (callback) ->
-        @ref.on "input", =>
+      validate : ->
           val = @get()
-          if validator val
-            callback val
+          validationContainer = @ref.closest ".form-group"
+
+          validatedVal = validator val #:: null or the result
+
+          if validatedVal?
+            validationContainer
+              .removeClass "has-error"
+              .addClass "has-success"
           else
-            callback null
+            validationContainer
+              .removeClass "has-success"
+              .addClass "has-error"
+
+          validatedVal
+      bindTo : (callback) ->
+        @ref.on "input", =>  #preserving this
+          callback @validate()
       
 
     # refs, setters, getters
@@ -160,33 +249,94 @@ constsExt = ($, parent) ->
           @ref.jstree().get_selected[0]
 
       ttl      : # double
-        basicInput '#ttl'
+        basicInput '#ttl', (a) ->
+          (v.or (v.greaterThanEq 0), (v.equals -1)) v.number v.nonEmpty a
+
       callback : # Maybe string
-        basicInput '#callback'
+        basicInput '#callback', v.url
+
       requestID: # Maybe int
-        basicInput '#requestID'
+        basicInput '#requestID', (a) ->
+          v.integer v.number v.nonEmpty a
+
       odf      : # Array String paths
         ref : my.odfTreeDom
-        get :        -> my.odfTree.get_selected()
+        get : -> my.odfTree.get_selected()
         set : (vals, preventEvent=true) ->
           my.odfTree.deselect_all true
           if vals? and vals.length > 0
             my.odfTree.select_node node, preventEvent, false for node in vals
+
       interval : # Maybe number
-        basicInput '#interval'
+        basicInput '#interval', (a) ->
+          (v.or (v.greaterThanEq 0), (v.equals -1), (v.equals -2)) v.number v.nonEmpty a
+
       newest   : # Maybe int
-        basicInput '#newest'
+        basicInput '#newest', (a) ->
+          (v.greaterThan 0) v.integer v.number v.nonEmpty a
+
       oldest   : # Maybe int
-        basicInput '#oldest'
-      begin    : # Maybe Date
-        basicInput '#begin'
+        basicInput '#oldest', (a) ->
+          (v.greaterThan 0) v.integer v.number v.nonEmpty a
+
+      begin    : # Maybe Date # TODO: merge duplicate datepicker code with the "end" below
+        $.extend (basicInput '#begin'),
+          set    : (val) ->
+            @ref.data "DateTimePicker"
+              .date(val)
+          get    : ->
+            mementoTime = @ref.data "DateTimePicker"
+              .date()
+            if mementoTime? then mementoTime.toISOString() else null
+          bindTo : (callback) ->
+            @ref.on "dp.change", =>
+              callback @validate()
+
       end      : # Maybe Date
-        basicInput '#end'
+        $.extend (basicInput '#end'),
+          set    : (val) ->
+            @ref.data "DateTimePicker"
+              .date(val)
+          get    : ->
+            mementoTime = @ref.data "DateTimePicker"
+              .date()
+            if mementoTime? then mementoTime.toISOString() else null
+          bindTo : (callback) ->
+            @ref.on "dp.change", =>
+              callback @validate()
+
       requestDoc: # Maybe xml dom document
         ref : my.requestCodeMirror
         get :       -> WebOmi.formLogic.getRequest()
         set : (val) -> WebOmi.formLogic.setRequest val
 
+    language = window.navigator.userLanguage || window.navigator.language
+    if !moment.localeData(language)
+      language = "en"
+
+    
+    # TODO: Cleanup some duplicate code:
+    my.ui.end.ref.datetimepicker
+      locale: language
+    my.ui.begin.ref.datetimepicker
+      locale: language
+
+    my.ui.begin.ref.on "dp.change", (e) ->
+      my.ui.end.ref.data "DateTimePicker"
+        .minDate e.date
+    my.ui.end.ref.on "dp.change", (e) ->
+      my.ui.begin.ref.data "DateTimePicker"
+        .maxDate e.date
+
+    # FIXME: doesn't work (clicking on the input-addon calendar icon)
+    my.ui.begin.ref.closest "a.tooltip"
+      .on 'click', ->
+        my.ui.begin.ref.data "DateTimePicker"
+          .toggle()
+    my.ui.end.ref.closest "a.tooltip"
+      .on 'click', ->
+        my.ui.end.ref.data "DateTimePicker"
+          .toggle()
 
     # callbacks
     my.afterJquery = (fn) -> fn()
@@ -197,6 +347,8 @@ constsExt = ($, parent) ->
 
 # extend WebOmi
 window.WebOmi = constsExt($, window.WebOmi || {})
+window.WebOmi.error = (msgs...) -> alert msgs.join ", "
+window.WebOmi.debug = (msgs...) -> console.log msgs... # TODO: remove console.log
 
 # escaped jquery identifier
 # adds one # in the beginning and \\ in front of every special symbol and spaces to underscore

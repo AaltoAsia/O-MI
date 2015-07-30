@@ -51,9 +51,12 @@ formLogicExt = ($, WebOmi) ->
 
   # send, callback is called with response text if successful
   my.send = (callback) ->
+    consts = WebOmi.consts
     my.clearResponse()
-    server  = WebOmi.consts.serverUrl.val()
-    request = WebOmi.consts.requestCodeMirror.getValue()
+    server  = consts.serverUrl.val()
+    request = consts.requestCodeMirror.getValue()
+
+    consts.progressBar.css "width", "95%"
     $.ajax
       type: "POST"
       url: server
@@ -63,11 +66,19 @@ formLogicExt = ($, WebOmi) ->
       dataType: "text"
       #complete: -> true
       error: (response) ->
+        consts.progressBar.css "width", "100%"
         my.setResponse response.responseText
+        consts.progressBar.css "width", "0%"
+        consts.progressBar.hide()
+        window.setTimeout (-> consts.progressBar.show()), 2000
         # TODO: Tell somewhere the "Bad Request" etc
         # response.statusText
       success: (response) ->
+        consts.progressBar.css "width", "100%"
         my.setResponse response
+        consts.progressBar.css "width", "0%"
+        consts.progressBar.hide()
+        window.setTimeout (-> consts.progressBar.show()), 2000
         callback(response) if (callback?)
 
   # recursively build odf jstree from the Objects xml node
@@ -134,7 +145,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
 ##########################
-# Intialize, connect events, import
+# Intialize widgets: connect events, import
 ((consts, requests, formLogic) ->
   consts.afterJquery ->
     consts.readAllBtn
@@ -150,6 +161,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           consts.odfTree.close_all child, closetime
         formLogic.clearResponse()
 
+    # TODO: maybe move these to centralized place consts.ui._.something
+    # These widgets have a special functionality, others are in consts.ui._
     consts.ui.odf.ref
       .on "changed.jstree", (_, data) ->
         switch data.action
@@ -165,10 +178,14 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
               .each (_, node) ->
                 consts.odfTree.deselect_node node
 
+
     consts.ui.request.ref
       .on "select_node.jstree", (_, data) ->
+        # TODO: should ^ this ^ be changed "changed.jstree" event because it can be prevented easily
+        # if data.action != "select_node" then return
+
         reqName = data.node.id
-        console.log reqName
+        WebOmi.debug reqName
 
         # force selection to readOnce
         if reqName == "readReq"
@@ -187,15 +204,16 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
           for input in readReqWidgets
             input.ref.attr('disabled', not isReadReq)
-            input.set ""
+            input.set null
             input.ref.trigger "input"
 
           # TODO: better way of removing the disabled settings from the request xml
           ui.requestID.ref.attr('disabled', not isRequestIdReq)
-          ui.requestID.set ""
-          ui.requestID.ref.trigger "input"
+          if not isRequestIdReq
+            ui.requestID.set null
+            ui.requestID.ref.trigger "input"
           ui.interval.ref.attr('disabled', reqName != 'subscription')
-          ui.interval.set ""
+          ui.interval.set null
           ui.interval.ref.trigger "input"
 
           formLogic.modifyRequest ->
@@ -203,6 +221,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             # update msg status
             newHasMsg = requests.defaults[reqName]().msg
             requests.params.msg.update newHasMsg
+
+    # for basic input fields
 
     makeRequestUpdater = (input) ->
       (val) ->
