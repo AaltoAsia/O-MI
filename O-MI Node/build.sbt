@@ -5,7 +5,7 @@ val scalaBuildVersion = "2.11.7"
 //lazy val root = (project in file(".")).
 name := "O-MI-Node"
 
-version := "0.1.5-SNAPSHOT"
+version := "0.1.6-SNAPSHOT"
 
 scalaVersion := scalaBuildVersion
 

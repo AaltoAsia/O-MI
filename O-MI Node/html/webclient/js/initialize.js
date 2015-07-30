@@ -398,6 +398,12 @@
       my.ui.end.ref.on("dp.change", function(e) {
         return my.ui.begin.ref.data("DateTimePicker").maxDate(e.date);
       });
+      my.ui.begin.ref.closest("a.tooltip").on('click', function() {
+        return my.ui.begin.ref.data("DateTimePicker").toggle();
+      });
+      my.ui.end.ref.closest("a.tooltip").on('click', function() {
+        return my.ui.end.ref.data("DateTimePicker").toggle();
+      });
       my.afterJquery = function(fn) {
         return fn();
       };

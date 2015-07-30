@@ -313,7 +313,9 @@ constsExt = ($, parent) ->
     language = window.navigator.userLanguage || window.navigator.language
     if !moment.localeData(language)
       language = "en"
+
     
+    # TODO: Cleanup some duplicate code:
     my.ui.end.ref.datetimepicker
       locale: language
     my.ui.begin.ref.datetimepicker
@@ -326,6 +328,15 @@ constsExt = ($, parent) ->
       my.ui.begin.ref.data "DateTimePicker"
         .maxDate e.date
 
+    # FIXME: doesn't work (clicking on the input-addon calendar icon)
+    my.ui.begin.ref.closest "a.tooltip"
+      .on 'click', ->
+        my.ui.begin.ref.data "DateTimePicker"
+          .toggle()
+    my.ui.end.ref.closest "a.tooltip"
+      .on 'click', ->
+        my.ui.end.ref.data "DateTimePicker"
+          .toggle()
 
     # callbacks
     my.afterJquery = (fn) -> fn()
