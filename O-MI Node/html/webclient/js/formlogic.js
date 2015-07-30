@@ -213,7 +213,7 @@
       consts.ui.request.ref.on("select_node.jstree", function(_, data) {
         var i, input, isReadReq, isRequestIdReq, len, readReqWidgets, reqName, ui;
         reqName = data.node.id;
-        console.log(reqName);
+        WebOmi.debug(reqName);
         if (reqName === "readReq") {
           return consts.ui.request.set("read");
         } else {

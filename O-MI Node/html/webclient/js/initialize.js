@@ -416,6 +416,18 @@
 
   window.WebOmi = constsExt($, window.WebOmi || {});
 
+  window.WebOmi.error = function() {
+    var msgs;
+    msgs = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    return alert(msgs.join(", "));
+  };
+
+  window.WebOmi.debug = function() {
+    var msgs;
+    msgs = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    return console.log.apply(console, msgs);
+  };
+
   window.jqesc = function(mySel) {
     return '#' + mySel.replace(/(:|\.|\[|\]|,|\/)/g, "\\$1").replace(/( )/g, "_");
   };

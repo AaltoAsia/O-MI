@@ -9,12 +9,13 @@ omiExt = (WebOmi) ->
     catch ex
       # parsererror or FIXME: unsupported?
       xmlTree = null
+      WebOmi.debug "DOMParser xml parsererror or not supported!"
   
     # mozilla parsererror
     if xmlTree.firstElementChild.nodeName == "parsererror" or not xmlTree?
-      console.log "PARSE ERROR:"
-      console.log "in:", responseString
-      console.log "out:", xmlTree # TODO: remove these debuglines
+      WebOmi.debug "PARSE ERROR:"
+      WebOmi.debug "in:", responseString
+      WebOmi.debug "out:", xmlTree
       xmlTree = null
 
     xmlTree

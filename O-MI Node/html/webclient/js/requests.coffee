@@ -222,7 +222,7 @@ requestsExt = (WebOmi) ->
       if currentParams[name] != newVal
         attrParents = o.evaluateXPath doc, attrParentXPath
         if not attrParents?
-          console.log "Tried to update #{name}, but #{attrParentXPath} was not found in", doc
+          WebOmi.error "Tried to update #{name}, but #{attrParentXPath} was not found in", doc
         else
           for parent in attrParents
             if newVal?
@@ -305,7 +305,7 @@ requestsExt = (WebOmi) ->
         if currentParams.requestID != newVal
           parents = o.evaluateXPath doc, parentXPath
           if not parents?
-            console.log "Tried to update requestID, but #{parentXPath} not found in", doc
+            WebOmi.error "Tried to update requestID, but #{parentXPath} not found in", doc
           else
             existingIDs = o.evaluateXPath doc, "//omi:requestID"
 
@@ -376,7 +376,7 @@ requestsExt = (WebOmi) ->
             if msg?
               msg.appendChild objects
             else
-              console.log "error msg = #{msg}"
+              WebOmi.error "error, msg not found: #{msg}"
 
         # update currentparams
         if currentParams.odf?
@@ -438,7 +438,7 @@ requestsExt = (WebOmi) ->
             my.params.odf.update currentParams.odf
             # FIXME dependency
           else
-            console.log "ERROR: No request found"
+            WebOmi.error "ERROR: No request found"
             return # TODO: what
 
         else  # remove
@@ -483,17 +483,16 @@ requestsExt = (WebOmi) ->
     # essential parameters
     if newParams.request? && newParams.request.length > 0 && newParams.ttl?
 
-      # resolve update dependencies manually:
-      #my.update
-
+      # resolve update dependencies manually?
+      # - No, currently they are handled directly from the relevant update functions
       for own key, thing of my.params
         thing.update newParams[key]
-        console.log "updated #{key}:", currentParams[key]
+        WebOmi.debug "updated #{key}:", currentParams[key]
         
       my.generate()
 
     else
-      console.log(
+      WebOmi.error(
         "tried to generate request, but missing a required parameter (name, ttl)", newParams
       )
       return

@@ -179,7 +179,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
     consts.ui.request.ref
       .on "select_node.jstree", (_, data) ->
         reqName = data.node.id
-        console.log reqName
+        WebOmi.debug reqName
 
         # force selection to readOnce
         if reqName == "readReq"

@@ -192,7 +192,7 @@
           if (currentParams[name] !== newVal) {
             attrParents = o.evaluateXPath(doc, attrParentXPath);
             if (attrParents == null) {
-              console.log("Tried to update " + name + ", but " + attrParentXPath + " was not found in", doc);
+              WebOmi.error("Tried to update " + name + ", but " + attrParentXPath + " was not found in", doc);
             } else {
               for (i = 0, len = attrParents.length; i < len; i++) {
                 parent = attrParents[i];
@@ -277,7 +277,7 @@
           if (currentParams.requestID !== newVal) {
             parents = o.evaluateXPath(doc, parentXPath);
             if (parents == null) {
-              console.log("Tried to update requestID, but " + parentXPath + " not found in", doc);
+              WebOmi.error("Tried to update requestID, but " + parentXPath + " not found in", doc);
             } else {
               existingIDs = o.evaluateXPath(doc, "//omi:requestID");
               if (existingIDs.some(function(elem) {
@@ -355,7 +355,7 @@
               if (msg != null) {
                 msg.appendChild(objects);
               } else {
-                console.log("error msg = " + msg);
+                WebOmi.error("error, msg not found: " + msg);
               }
             }
           }
@@ -410,7 +410,7 @@
               currentParams.msg = hasMsg;
               my.params.odf.update(currentParams.odf);
             } else {
-              console.log("ERROR: No request found");
+              WebOmi.error("ERROR: No request found");
               return;
             }
           } else {
@@ -458,11 +458,11 @@
           if (!hasProp.call(ref, key)) continue;
           thing = ref[key];
           thing.update(newParams[key]);
-          console.log("updated " + key + ":", currentParams[key]);
+          WebOmi.debug("updated " + key + ":", currentParams[key]);
         }
         return my.generate();
       } else {
-        console.log("tried to generate request, but missing a required parameter (name, ttl)", newParams);
+        WebOmi.error("tried to generate request, but missing a required parameter (name, ttl)", newParams);
       }
     };
     my.readAll = function(fastForward) {

@@ -339,6 +339,8 @@ constsExt = ($, parent) ->
 
 # extend WebOmi
 window.WebOmi = constsExt($, window.WebOmi || {})
+window.WebOmi.error = (msgs...) -> alert msgs.join ", "
+window.WebOmi.debug = (msgs...) -> console.log msgs...
 
 # escaped jquery identifier
 # adds one # in the beginning and \\ in front of every special symbol and spaces to underscore
