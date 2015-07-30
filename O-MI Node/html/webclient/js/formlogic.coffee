@@ -145,7 +145,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
 ##########################
-# Intialize, connect events, import
+# Intialize widgets: connect events, import
 ((consts, requests, formLogic) ->
   consts.afterJquery ->
     consts.readAllBtn
@@ -198,7 +198,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
           for input in readReqWidgets
             input.ref.attr('disabled', not isReadReq)
-            input.set ""
+            input.set null
             input.ref.trigger "input"
 
           # TODO: better way of removing the disabled settings from the request xml

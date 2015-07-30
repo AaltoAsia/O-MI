@@ -241,7 +241,7 @@
           for (i = 0, len = readReqWidgets.length; i < len; i++) {
             input = readReqWidgets[i];
             input.ref.attr('disabled', !isReadReq);
-            input.set("");
+            input.set(null);
             input.ref.trigger("input");
           }
           ui.requestID.ref.attr('disabled', !isRequestIdReq);
