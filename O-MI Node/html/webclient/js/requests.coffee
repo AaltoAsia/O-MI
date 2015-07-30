@@ -10,8 +10,8 @@ requestsExt = (WebOmi) ->
       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd">
-            <Objects></Objects>
+          <omi:msg>
+            <Objects xmlns="odf.xsd"></Objects>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -22,7 +22,7 @@ requestsExt = (WebOmi) ->
       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd">
+          <omi:msg>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -34,7 +34,7 @@ requestsExt = (WebOmi) ->
       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
           version="1.0" ttl="0">
         <omi:read msgformat="odf">
-          <omi:msg xmlns="odf.xsd">
+          <omi:msg>
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
@@ -426,7 +426,10 @@ requestsExt = (WebOmi) ->
         if hasMsg  # add
           #msgExists = o.evaluateXPath(currentParams.requestDoc, "")
           msg = o.createOmi "msg", doc
-          msg.setAttribute "xmlns", "odf.xsd"
+
+          # namespaces already set by createOmi and createOdf
+          # msg.setAttribute "xmlns", "odf.xsd"
+
           requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.appendChild msg
