@@ -40,7 +40,7 @@
         plugins: ["checkbox", "types", "contextmenu"],
         core: {
           error: function(msg) {
-            return console.log(msg);
+            return WebOmi.debug(msg);
           },
           force_text: true,
           check_callback: true
@@ -294,7 +294,6 @@
           }
         },
         ttl: basicInput('#ttl', function(a) {
-          console.log(typeof v.greaterThanEq);
           return (v.or(v.greaterThanEq(0), v.equals(-1)))(v.number(v.nonEmpty(a)));
         }),
         callback: basicInput('#callback', v.url),
@@ -326,11 +325,9 @@
           return (v.or(v.greaterThanEq(0), v.equals(-1), v.equals(-2)))(v.number(v.nonEmpty(a)));
         }),
         newest: basicInput('#newest', function(a) {
-          console.log(typeof v.greaterThan);
           return (v.greaterThan(0))(v.integer(v.number(v.nonEmpty(a))));
         }),
         oldest: basicInput('#oldest', function(a) {
-          console.log(typeof v.greaterThan);
           return (v.greaterThan(0))(v.integer(v.number(v.nonEmpty(a))));
         }),
         begin: $.extend(basicInput('#begin'), {

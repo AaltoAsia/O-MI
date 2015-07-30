@@ -161,6 +161,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           consts.odfTree.close_all child, closetime
         formLogic.clearResponse()
 
+    # TODO: maybe move these to centralized place consts.ui._.something
+    # These widgets have a special functionality, others are in consts.ui._
     consts.ui.odf.ref
       .on "changed.jstree", (_, data) ->
         switch data.action
@@ -176,8 +178,12 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
               .each (_, node) ->
                 consts.odfTree.deselect_node node
 
+
     consts.ui.request.ref
       .on "select_node.jstree", (_, data) ->
+        # TODO: should ^ this ^ be changed "changed.jstree" event because it can be prevented easily
+        # if data.action != "select_node" then return
+
         reqName = data.node.id
         WebOmi.debug reqName
 
@@ -203,10 +209,11 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
           # TODO: better way of removing the disabled settings from the request xml
           ui.requestID.ref.attr('disabled', not isRequestIdReq)
-          ui.requestID.set ""
-          ui.requestID.ref.trigger "input"
+          if not isRequestIdReq
+            ui.requestID.set null
+            ui.requestID.ref.trigger "input"
           ui.interval.ref.attr('disabled', reqName != 'subscription')
-          ui.interval.set ""
+          ui.interval.set null
           ui.interval.ref.trigger "input"
 
           formLogic.modifyRequest ->
@@ -215,6 +222,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             newHasMsg = requests.defaults[reqName]().msg
             requests.params.msg.update newHasMsg
 
+    # for basic input fields
 
     makeRequestUpdater = (input) ->
       (val) ->

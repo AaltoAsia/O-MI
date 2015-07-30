@@ -308,25 +308,23 @@ requestsExt = (WebOmi) ->
             WebOmi.error "Tried to update requestID, but #{parentXPath} not found in", doc
           else
             existingIDs = o.evaluateXPath doc, "//omi:requestID"
-
-            if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
-              return # exists
-              # TODO multiple requestIDs
-
-            else if newVal?
-              # add
-              for parent in parents
-                id.parentNode.removeChild id for id in existingIDs
-                newId = o.createOmi "requestID", doc
-                idTxt = doc.createTextNode newVal.toString()
-                newId.appendChild idTxt
-                parent.appendChild newId
+            if newVal?
+              if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
+                return # exists
+                # TODO multiple requestIDs
+              else # add
+                for parent in parents
+                  id.parentNode.removeChild id for id in existingIDs
+                  newId = o.createOmi "requestID", doc
+                  idTxt = doc.createTextNode newVal.toString()
+                  newId.appendChild idTxt
+                  parent.appendChild newId
             else
               # remove
               id.parentNode.removeChild id for id in existingIDs
 
-          currentParams[name] = newVal
-          newVal
+          currentParams.requestID = newVal
+        newVal
 
     odf      :
       update : (paths) ->

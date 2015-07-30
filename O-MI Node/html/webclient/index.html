@@ -133,7 +133,9 @@
         <div class="panel-body">
           <div class="requesttree">
             <ul>
-              <li id="readReq" data-jstree='{"opened":true}'>Read
+              <li id="readReq" data-jstree='{"opened":true}'>
+                <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                Read
                 <ul>
                   <li id="read">
                     <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
@@ -176,7 +178,7 @@
               ttl:
             </label>
             <div class="col-md-8 col-lg-9">
-              <a data-toggle="tooltip" title="Time To Live in the server. Use ttl -1 for infinity and ttl 0 for the duration of current connection.">
+              <a data-toggle="tooltip" title="Time To Live of the request in the server. Use ttl -1 for infinity and ttl 0 for the duration of socket connection.">
                 <div class="input-group">
                   <input type="number" required class="form-control" id="ttl"/>
                   <div class="input-group-addon">sec</div>

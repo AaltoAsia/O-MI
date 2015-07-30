@@ -47,7 +47,7 @@ constsExt = ($, parent) ->
       .jstree
         plugins : ["checkbox", "types", "contextmenu"]
         core :
-          error : (msg) -> console.log msg # TODO: remove debug
+          error : (msg) -> WebOmi.debug msg
           force_text : true
           check_callback : true
         types :
@@ -250,7 +250,6 @@ constsExt = ($, parent) ->
 
       ttl      : # double
         basicInput '#ttl', (a) ->
-          console.log typeof v.greaterThanEq
           (v.or (v.greaterThanEq 0), (v.equals -1)) v.number v.nonEmpty a
 
       callback : # Maybe string
@@ -274,12 +273,10 @@ constsExt = ($, parent) ->
 
       newest   : # Maybe int
         basicInput '#newest', (a) ->
-          console.log typeof v.greaterThan
           (v.greaterThan 0) v.integer v.number v.nonEmpty a
 
       oldest   : # Maybe int
         basicInput '#oldest', (a) ->
-          console.log typeof v.greaterThan
           (v.greaterThan 0) v.integer v.number v.nonEmpty a
 
       begin    : # Maybe Date # TODO: merge duplicate datepicker code with the "end" below
@@ -340,7 +337,7 @@ constsExt = ($, parent) ->
 # extend WebOmi
 window.WebOmi = constsExt($, window.WebOmi || {})
 window.WebOmi.error = (msgs...) -> alert msgs.join ", "
-window.WebOmi.debug = (msgs...) -> console.log msgs...
+window.WebOmi.debug = (msgs...) -> console.log msgs... # TODO: remove console.log
 
 # escaped jquery identifier
 # adds one # in the beginning and \\ in front of every special symbol and spaces to underscore

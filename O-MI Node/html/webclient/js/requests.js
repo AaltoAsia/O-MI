@@ -280,21 +280,23 @@
               WebOmi.error("Tried to update requestID, but " + parentXPath + " not found in", doc);
             } else {
               existingIDs = o.evaluateXPath(doc, "//omi:requestID");
-              if (existingIDs.some(function(elem) {
-                return elem.textContent.trim() === newVal.toString();
-              })) {
-                return;
-              } else if (newVal != null) {
-                for (i = 0, len = parents.length; i < len; i++) {
-                  parent = parents[i];
-                  for (j = 0, len1 = existingIDs.length; j < len1; j++) {
-                    id = existingIDs[j];
-                    id.parentNode.removeChild(id);
+              if (newVal != null) {
+                if (existingIDs.some(function(elem) {
+                  return elem.textContent.trim() === newVal.toString();
+                })) {
+                  return;
+                } else {
+                  for (i = 0, len = parents.length; i < len; i++) {
+                    parent = parents[i];
+                    for (j = 0, len1 = existingIDs.length; j < len1; j++) {
+                      id = existingIDs[j];
+                      id.parentNode.removeChild(id);
+                    }
+                    newId = o.createOmi("requestID", doc);
+                    idTxt = doc.createTextNode(newVal.toString());
+                    newId.appendChild(idTxt);
+                    parent.appendChild(newId);
                   }
-                  newId = o.createOmi("requestID", doc);
-                  idTxt = doc.createTextNode(newVal.toString());
-                  newId.appendChild(idTxt);
-                  parent.appendChild(newId);
                 }
               } else {
                 for (k = 0, len2 = existingIDs.length; k < len2; k++) {
@@ -303,9 +305,9 @@
                 }
               }
             }
-            currentParams[name] = newVal;
-            return newVal;
+            currentParams.requestID = newVal;
           }
+          return newVal;
         }
       },
       odf: {

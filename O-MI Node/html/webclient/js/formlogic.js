@@ -245,10 +245,12 @@
             input.ref.trigger("input");
           }
           ui.requestID.ref.attr('disabled', !isRequestIdReq);
-          ui.requestID.set("");
-          ui.requestID.ref.trigger("input");
+          if (!isRequestIdReq) {
+            ui.requestID.set(null);
+            ui.requestID.ref.trigger("input");
+          }
           ui.interval.ref.attr('disabled', reqName !== 'subscription');
-          ui.interval.set("");
+          ui.interval.set(null);
           ui.interval.ref.trigger("input");
           return formLogic.modifyRequest(function() {
             var newHasMsg;
