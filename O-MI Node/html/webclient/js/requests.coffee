@@ -194,6 +194,9 @@ requestsExt = (WebOmi) ->
           when "object"
             object = o.createOdfObject odfDoc, id
             currentOdfNode.appendChild object
+          when "metadata"
+            node = o.createOdfMetaData odfDoc
+            currentOdfNode.appendChild node
           when "infoitem"
             info = o.createOdfInfoItem odfDoc, id
 

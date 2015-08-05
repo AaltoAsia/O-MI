@@ -120,6 +120,13 @@ formLogicExt = ($, WebOmi) ->
           id   : idesc path
           text : name
           type : "infoitem"
+          children :
+            [genData {nodeName:"MetaData"}, path]
+        when "MetaData"
+          path = "#{parentPath}/MetaData"
+          id   : idesc path
+          text : "MetaData"
+          type : "metadata"
           children : []
 
     treeData = genData objectsNode

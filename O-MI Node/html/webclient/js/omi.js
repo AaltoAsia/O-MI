@@ -50,6 +50,9 @@
     my.createOdfValue = function(doc) {
       return createOdf("value", doc);
     };
+    my.createOdfMetaData = function(doc) {
+      return createOdf("MetaData", doc);
+    };
     my.createOdfObjects = function(doc) {
       return createOdf("Objects", doc);
     };
@@ -89,6 +92,8 @@
           break;
         case "Objects":
           return "Objects";
+        case "MetaData":
+          return "MetaData";
         default:
           return null;
       }

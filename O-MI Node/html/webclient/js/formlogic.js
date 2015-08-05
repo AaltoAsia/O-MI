@@ -149,6 +149,18 @@
               id: idesc(path),
               text: name,
               type: "infoitem",
+              children: [
+                genData({
+                  nodeName: "MetaData"
+                }, path)
+              ]
+            };
+          case "MetaData":
+            path = parentPath + "/MetaData";
+            return {
+              id: idesc(path),
+              text: "MetaData",
+              type: "metadata",
               children: []
             };
         }

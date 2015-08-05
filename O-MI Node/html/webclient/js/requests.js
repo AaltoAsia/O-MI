@@ -166,6 +166,9 @@
               case "object":
                 object = o.createOdfObject(odfDoc, id);
                 return currentOdfNode.appendChild(object);
+              case "metadata":
+                node = o.createOdfMetaData(odfDoc);
+                return currentOdfNode.appendChild(node);
               case "infoitem":
                 info = o.createOdfInfoItem(odfDoc, id);
                 addValueWhenWrite(info);

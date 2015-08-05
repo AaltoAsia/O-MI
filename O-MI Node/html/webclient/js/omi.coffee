@@ -56,6 +56,9 @@ omiExt = (WebOmi) ->
   my.createOdfValue = (doc) ->
     createOdf "value", doc
 
+  my.createOdfMetaData = (doc) ->
+    createOdf "MetaData", doc
+
   my.createOdfObjects = (doc) ->
     createOdf "Objects", doc
 
@@ -87,7 +90,8 @@ omiExt = (WebOmi) ->
       when "InfoItem"
         nameAttr = xmlNode.attributes.name
         if nameAttr? then nameAttr.value else null
-      when "Objects" then "Objects"
+      when "Objects"  then "Objects"
+      when "MetaData" then "MetaData"
       else null
 
   # Checks if odfNode has odf element child with id or name of odfId
