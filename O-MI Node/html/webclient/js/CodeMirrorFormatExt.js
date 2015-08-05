@@ -1,12 +1,16 @@
 
+// CodeMirror Extensions for O-MI Webclient
 (function (CodeMirror) {
+
+    // Fix automatic newline to work better with (short) values and ids
     CodeMirror.extendMode("xml", {
         newlineAfterToken: function(type, content, textAfter, state) {
           return ((type === "tag" && />$/.test(content) && state.context) ||
                   (type !== null  && /^</.test(textAfter)));
         }
     });
-    // CodeMirror autoFormat extension
+    // CodeMirror autoFormat extension, inserts newlines and identation according to settings
+    // formats a range given from: {line, ch}, to: {line, ch}
     CodeMirror.defineExtension("autoFormatRange", function (from, to) {
         var cm = this;
         var outer = cm.getMode(), text = cm.getRange(from, to).split("\n");
@@ -61,6 +65,7 @@
         };
     });
 
+    // Extension to use autoFormatRange for the whole document
     CodeMirror.defineExtension("autoFormatAll", function () {
         var cm = this;
         var range = cm.getFullRange();

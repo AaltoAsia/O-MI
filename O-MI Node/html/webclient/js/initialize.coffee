@@ -16,6 +16,7 @@ constsExt = ($, parent) ->
   # use afterJquery for things that depend on const module
   my.afterJquery = (fn) -> afterWaits.push fn
 
+  # All of jquery initiliazation code is here
   $ ->
     responseCMSettings = $.extend(
       readOnly : true
@@ -43,6 +44,7 @@ constsExt = ($, parent) ->
     objectIcon   = "glyphicon glyphicon-folder-open"
     infoItemIcon = "glyphicon glyphicon-apple"
 
+    # Odf tree is using jstree; The requested odf nodes are selected from this tree
     my.odfTreeDom
       .jstree
         plugins : ["checkbox", "types", "contextmenu"]
@@ -163,7 +165,8 @@ constsExt = ($, parent) ->
     # private, (could be public too)
     validators = {}
 
-    # validators, minimal Maybe/Option operations
+    # Validators,
+    # minimal Maybe/Option operations
     # return null if invalid else the extracted value
 
     # in: string, out: string
@@ -208,14 +211,16 @@ constsExt = ($, parent) ->
         s
       else null
 
+    # shortcut
     v = validators
 
 
+    # private; Constructs some functions for basic input fields (see my.ui below)
     basicInput = (selector, validator=validators.nonEmpty) ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
-      validate : ->
+      validate : ->  # returns value if successfully validated, null otherwise
           val = @get()
           validationContainer = @ref.closest ".form-group"
 
@@ -231,12 +236,12 @@ constsExt = ($, parent) ->
               .addClass "has-error"
 
           validatedVal
-      bindTo : (callback) ->
-        @ref.on "input", =>  #preserving this
+      bindTo : (callback) -> # bind function on input(change) event + validation
+        @ref.on "input", =>  # =>: preserving this
           callback @validate()
       
 
-    # refs, setters, getters
+    # refs, setters, getters for the parameters
     my.ui =
       request  : # String
         ref : my.requestSelDom
@@ -356,7 +361,8 @@ window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" ).re
 # make a valid id, convert space to underscore
 window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 
-# extend String (FIXME)
+# extend String (FIXME), this is fairly safe because
+# some future trim possibly is similar
 String.prototype.trim = String.prototype.trim || ->
   String(this).replace /^\s+|\s+$/g, ''
 

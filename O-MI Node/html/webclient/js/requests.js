@@ -8,7 +8,6 @@
     my = WebOmi.requests = {};
     my.xmls = {
       readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n      <Objects xmlns=\"odf.xsd\"></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
-      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n",
       template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n"
     };
     my.defaults = {};

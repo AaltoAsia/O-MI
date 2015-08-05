@@ -1,8 +1,12 @@
+
 # import WebOmi, add submodule
 omiExt = (WebOmi) ->
+
   # Sub module for handling omi xml
   my = WebOmi.omi = {}
 
+
+  # Generic xml string parser
   my.parseXml = (responseString) ->
     try
       xmlTree = new DOMParser().parseFromString responseString, 'application/xml'
@@ -20,7 +24,9 @@ omiExt = (WebOmi) ->
 
     xmlTree
 
+
   # XML Namespace URIs used in the client
+  # (needed because of the use of default namespaces with XPaths)
   my.ns =
     omi : "omi.xsd"
     odf : "odf.xsd"
@@ -31,6 +37,7 @@ omiExt = (WebOmi) ->
   my.nsResolver = (name) ->
     my.ns[name] || my.ns.odf
 
+  # Generic Xpath evaluator
   my.evaluateXPath = (elem, xpath) ->
     xpe = elem.ownerDocument || elem
     iter = xpe.evaluate(xpath, elem, my.nsResolver, 0, null)
@@ -62,6 +69,7 @@ omiExt = (WebOmi) ->
     createdElem.appendChild idElem
     createdElem
 
+  # Create omi element with the right namespace
   my.createOdfInfoItem = (doc, name) ->
     createdElem = createOdf "InfoItem", doc
     createdElem.setAttribute "name", name

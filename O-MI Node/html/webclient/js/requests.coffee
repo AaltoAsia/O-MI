@@ -3,6 +3,10 @@ requestsExt = (WebOmi) ->
   # Sub module for containing all request type templates
   my = WebOmi.requests = {}
 
+  # These are loaded if theres no request yet,
+  # otherwise the current request is just modified, never loaded again if it exists.
+  # So in practice the only the omiEnvelope comes from one of these,
+  # others can be created from updaters
   my.xmls =
     readAll :
       """
@@ -15,18 +19,6 @@ requestsExt = (WebOmi) ->
           </omi:msg>
         </omi:read>
       </omi:omiEnvelope>
-      """
-    templateMsg :
-      """
-      <?xml version="1.0"?>
-      <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd"
-          version="1.0" ttl="0">
-        <omi:read msgformat="odf">
-          <omi:msg>
-          </omi:msg>
-        </omi:read>
-      </omi:omiEnvelope>
-
       """
     template :
       """
@@ -41,6 +33,9 @@ requestsExt = (WebOmi) ->
 
       """
 
+  # Usage of these defaults is a bit sparse,
+  # they are used when the first request is selected
+  # and can be used to check some parameter like request tag name
   my.defaults = {}
   my.defaults.empty = ->
     name     : "empty"
@@ -102,7 +97,8 @@ requestsExt = (WebOmi) ->
       msg     : false
 
 
-  # private
+  # private; holds current params that should be also set in resulting CodeMirror
+  # This is used to check if the parameter exists or not and is it the same as new
   currentParams = my.defaults.empty()
   my.getCurrentParams = -> $.extend {}, currentParams
 
@@ -112,7 +108,7 @@ requestsExt = (WebOmi) ->
       Do you want to overwrite #{oldVal.toString} with #{newVal.toString}"
 
 
-  #private
+  #private; Used to add value tag when in write request
   addValueWhenWrite = (odfInfoItem) ->
     if currentParams.request == 'write'
       doc = odfInfoItem.ownerDocument
@@ -123,17 +119,18 @@ requestsExt = (WebOmi) ->
 
       odfInfoItem.appendChild val
 
-  #private
+  #private; Used to add value tags to all info items when in write request
   addValueToAll = (doc) ->
     infos = WebOmi.omi.evaluateXPath doc, "//odf:InfoItem"
     addValueWhenWrite info for info in infos
 
-  #private
+  #private; Used to remove value tags when not in write request
   removeValueFromAll = (doc) ->
     vals = WebOmi.omi.evaluateXPath doc, "//odf:value"
     val.parentNode.removeChild val for val in vals
 
-
+  # removes the given path from odf xml,
+  # removes also parents if there is no other children
   my.removePathFromOdf = (odfTreeNode, odfObjects) ->
     # imports
     o = WebOmi.omi
@@ -166,7 +163,7 @@ requestsExt = (WebOmi) ->
 
 
 
-  # Adds odf elems to given Objects node from the path using the odfTree
+  # Adds odf elems to given Objects node from the path using the odfTree, creating parents also
   # odfTreeNode: jquery object; some li object from the tree containing the path in the id
   # odfObjects: XML Dom; the odf Objects node, will be updated in-place accordingly
   my.addPathToOdf = (odfTreeNode, odfObjects) ->
@@ -214,7 +211,9 @@ requestsExt = (WebOmi) ->
 
     odfObjects
 
-  # private
+  # private; Creates update setter for simple omi xml attributes
+  # name:            String; Attribute name
+  # attrParentXPath: String(Xpath); Selector for the parent of the attribute
   updateSetterForAttr = (name, attrParentXPath) ->
     update : (newVal) ->
       o = WebOmi.omi
@@ -236,7 +235,7 @@ requestsExt = (WebOmi) ->
 
 
   # Req generation setters that check if user has written some own value
-  # Modify request checking the current vs internal, if disagree ask user, set internal
+  # Modify request checking if its a new value, set internal
   # Saves the result in currentParams.requestDoc
   my.params =
     name :
