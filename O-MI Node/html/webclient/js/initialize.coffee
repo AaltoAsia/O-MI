@@ -28,6 +28,12 @@ constsExt = ($, parent) ->
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
+    my.responseCodeMirror.on("viewportChange",  -> 
+      responsearea = document.getElementsByClassName("well response").item(0)
+      lines = responsearea.getElementsByClassName("CodeMirror-code").item(0)
+      lines.innerHTML = lines.innerHTML.replace /<span class="cm-string">"(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))"<\/span>/g, "<a href=$1>\"$1\"</a>"
+    )
+
     my.serverUrl    = $ '#targetService'
     my.odfTreeDom   = $ '#nodetree'
     my.requestSelDom= $ '.requesttree'
