@@ -4,19 +4,109 @@
     slice = [].slice;
 
   constsExt = function($, parent) {
-    var afterWaits, my;
+    var afterWaits, my, openOdfContextmenu;
     my = parent.consts = {};
     my.codeMirrorSettings = {
       mode: "text/xml",
       lineNumbers: true,
       lineWrapping: true
     };
+    my.icon = {
+      objects: "glyphicon glyphicon-tree-deciduous",
+      object: "glyphicon glyphicon-folder-open",
+      infoitem: "glyphicon glyphicon-apple",
+      metadata: "glyphicon glyphicon-info-sign"
+    };
+    openOdfContextmenu = function(target) {
+      var createNode;
+      createNode = function(particle, odfName, treeTypeName, defaultId) {
+        return {
+          label: "Add " + particle + " " + odfName,
+          icon: my.icon[treeTypeName],
+          _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf(treeTypeName) === -1,
+          action: function(data) {
+            var idName, name, path, tree;
+            tree = WebOmi.consts.odfTree;
+            parent = tree.get_node(data.reference);
+            name = defaultId != null ? window.prompt("Enter a name for the new " + odfName + ":", defaultId) : odfName;
+            idName = idesc(name);
+            path = parent.id + "/" + idName;
+            if ($(jqesc(path)).length > 0) {
+              return;
+            }
+            return tree.create_node(parent, {
+              id: path,
+              text: name,
+              type: treeTypeName
+            }, "first", function() {
+              tree.open_node(parent, null, 500);
+              return tree.select_node(path);
+            });
+          }
+        };
+      };
+      return {
+        helptxt: {
+          label: "For write request:",
+          icon: "glyphicon glyphicon-pencil",
+          action: function() {
+            return my.ui.request.set("write", false);
+          },
+          separator_after: true
+        },
+        add_info: createNode("an", "InfoItem", "infoitem", "MyInfoItem"),
+        add_obj: createNode("an", "Object", "object", "MyObject"),
+        add_metadata: createNode("a", "MetaData", "metadata", null)
+      };
+    };
+    my.odfTreeSettings = {
+      plugins: ["checkbox", "types", "contextmenu"],
+      core: {
+        error: function(msg) {
+          return WebOmi.debug(msg);
+        },
+        force_text: true,
+        check_callback: true
+      },
+      types: {
+        "default": {
+          icon: "odf-objects " + my.icon.objects,
+          valid_children: ["object"]
+        },
+        object: {
+          icon: "odf-object " + my.icon.object,
+          valid_children: ["object", "infoitem"]
+        },
+        objects: {
+          icon: "odf-objects " + my.icon.objects,
+          valid_children: ["object"]
+        },
+        infoitem: {
+          icon: "odf-infoitem " + my.icon.infoitem,
+          valid_children: ["metadata"]
+        },
+        metadata: {
+          icon: "odf-metadata " + my.icon.metadata,
+          valid_children: []
+        }
+      },
+      checkbox: {
+        three_state: false,
+        keep_selected_style: true,
+        cascade: "up+undetermined",
+        tie_selection: true
+      },
+      contextmenu: {
+        show_at_node: true,
+        items: openOdfContextmenu
+      }
+    };
     afterWaits = [];
     my.afterJquery = function(fn) {
       return afterWaits.push(fn);
     };
     $(function() {
-      var basicInput, fn, i, infoItemIcon, language, len, loc, objectIcon, objectsIcon, requestTip, responseCMSettings, results, v, validators;
+      var basicInput, fn, i, language, len, loc, requestTip, responseCMSettings, results, v, validators;
       responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
@@ -39,107 +129,7 @@
       my.progressBar = $('.response .progress-bar');
       loc = window.location.href;
       my.serverUrl.val(loc.substr(0, loc.indexOf("html/")));
-      objectsIcon = "glyphicon glyphicon-tree-deciduous";
-      objectIcon = "glyphicon glyphicon-folder-open";
-      infoItemIcon = "glyphicon glyphicon-apple";
-      my.odfTreeDom.jstree({
-        plugins: ["checkbox", "types", "contextmenu"],
-        core: {
-          error: function(msg) {
-            return WebOmi.debug(msg);
-          },
-          force_text: true,
-          check_callback: true
-        },
-        types: {
-          "default": {
-            icon: "odf-objects " + objectsIcon,
-            valid_children: ["object"]
-          },
-          object: {
-            icon: "odf-object " + objectIcon,
-            valid_children: ["object", "infoitem"]
-          },
-          objects: {
-            icon: "odf-objects " + objectsIcon,
-            valid_children: ["object"]
-          },
-          infoitem: {
-            icon: "odf-infoitem " + infoItemIcon,
-            valid_children: []
-          }
-        },
-        checkbox: {
-          three_state: false,
-          keep_selected_style: true,
-          cascade: "up+undetermined",
-          tie_selection: true
-        },
-        contextmenu: {
-          show_at_node: true,
-          items: function(target) {
-            return {
-              helptxt: {
-                label: "For write request:",
-                icon: "glyphicon glyphicon-pencil",
-                action: function() {
-                  return my.ui.request.set("write", false);
-                },
-                separator_after: true
-              },
-              add_info: {
-                label: "Add an InfoItem",
-                icon: infoItemIcon,
-                _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf("infoitem") === -1,
-                action: function(data) {
-                  var idName, name, path, tree;
-                  tree = WebOmi.consts.odfTree;
-                  parent = tree.get_node(data.reference);
-                  name = window.prompt("Enter a name for the new InfoItem:", "MyInfoItem");
-                  idName = idesc(name);
-                  path = parent.id + "/" + idName;
-                  if ($(jqesc(path)).length > 0) {
-                    return;
-                  }
-                  return tree.create_node(parent.id, {
-                    id: path,
-                    text: name,
-                    type: "infoitem"
-                  }, "first", function() {
-                    tree.open_node(parent, null, 500);
-                    return tree.select_node(path);
-                  });
-                }
-              },
-              add_obj: {
-                label: "Add an Object",
-                icon: objectIcon,
-                _disabled: my.odfTree.settings.types[target.type].valid_children.indexOf("object") === -1,
-                action: function(data) {
-                  var idName, name, path, tree;
-                  tree = WebOmi.consts.odfTree;
-                  parent = tree.get_node(data.reference);
-                  name = window.prompt("Enter an identifier for the new Object:", "MyObject");
-                  idName = idesc(name);
-                  path = parent.id + "/" + idName;
-                  if ($(jqesc(path)).length > 0) {
-                    return;
-                    return;
-                  }
-                  return tree.create_node(parent, {
-                    id: path,
-                    text: name,
-                    type: "object"
-                  }, "first", function() {
-                    tree.open_node(parent, null, 500);
-                    return tree.select_node(path);
-                  });
-                }
-              }
-            };
-          }
-        }
-      });
+      my.odfTreeDom.jstree(my.odfTreeSettings);
       my.odfTree = my.odfTreeDom.jstree();
       my.odfTree.set_type('Objects', 'objects');
       my.requestSelDom.jstree({

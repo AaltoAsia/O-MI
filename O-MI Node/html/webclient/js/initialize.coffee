@@ -10,6 +10,89 @@ constsExt = ($, parent) ->
     lineNumbers: true
     lineWrapping: true
 
+
+  my.icon =
+    objects  : "glyphicon glyphicon-tree-deciduous"
+    object   : "glyphicon glyphicon-folder-open"
+    infoitem : "glyphicon glyphicon-apple"
+    metadata : "glyphicon glyphicon-info-sign"
+
+  # private
+  openOdfContextmenu = (target) ->
+    createNode = (particle, odfName, treeTypeName, defaultId) ->
+      label : "Add #{particle} #{odfName}"
+      icon  : my.icon[treeTypeName]
+
+      _disabled : # if not exists in valid_children 
+        my.odfTree.settings.types[target.type].valid_children.indexOf(treeTypeName) == -1
+
+      action : (data) -> # element, item, reference
+        tree = WebOmi.consts.odfTree
+        parent = tree.get_node data.reference
+        name =
+          if defaultId?
+            window.prompt "Enter a name for the new #{odfName}:", defaultId
+          else
+            odfName
+        idName = idesc name
+        path = "#{parent.id}/#{idName}"
+
+        if $(jqesc path).length > 0
+          return # already exists
+
+        tree.create_node parent,
+          id   : path
+          text : name
+          type : treeTypeName
+        , "first", ->
+          tree.open_node parent, null, 500
+          tree.select_node path
+
+    helptxt :
+      label : "For write request:"
+      icon  : "glyphicon glyphicon-pencil"
+      # _disabled : true
+      action : -> my.ui.request.set "write", false
+      separator_after : true
+    add_info :
+      createNode "an", "InfoItem", "infoitem", "MyInfoItem"
+    add_obj :
+      createNode "an", "Object", "object", "MyObject"
+    add_metadata :
+      createNode "a", "MetaData", "metadata", null
+
+  my.odfTreeSettings =
+    plugins : ["checkbox", "types", "contextmenu"]
+    core :
+      error : (msg) -> WebOmi.debug msg
+      force_text : true
+      check_callback : true
+    types :
+      default :
+        icon : "odf-objects " + my.icon.objects
+        valid_children : ["object"]
+      object :
+        icon : "odf-object " + my.icon.object
+        valid_children : ["object", "infoitem"]
+      objects :
+        icon : "odf-objects " + my.icon.objects
+        valid_children : ["object"]
+      infoitem :
+        icon : "odf-infoitem " + my.icon.infoitem
+        valid_children : ["metadata"]
+      metadata :
+        icon : "odf-metadata " + my.icon.metadata
+        valid_children : []
+
+    checkbox :
+      three_state : false
+      keep_selected_style : true # Consider false
+      cascade : "up+undetermined"
+      tie_selection : true
+    contextmenu :
+      show_at_node : true
+      items : openOdfContextmenu
+
   # private, [functions]
   afterWaits = []
 
@@ -29,7 +112,7 @@ constsExt = ($, parent) ->
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
-    my.responseCodeMirror.on("viewportChange",  -> 
+    my.responseCodeMirror.on("viewportChange",  ->
       responsearea = document.getElementsByClassName("well response").item(0)
       lines = responsearea.getElementsByClassName("CodeMirror-code").item(0)
       lines.innerHTML = lines.innerHTML.replace /<span class="cm-string">"(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))"<\/span>/g, "<a href=$1>\"$1\"</a>"
@@ -46,89 +129,10 @@ constsExt = ($, parent) ->
     loc = window.location.href
     my.serverUrl.val loc.substr 0, loc.indexOf "html/"
 
-    objectsIcon  = "glyphicon glyphicon-tree-deciduous"
-    objectIcon   = "glyphicon glyphicon-folder-open"
-    infoItemIcon = "glyphicon glyphicon-apple"
 
     # Odf tree is using jstree; The requested odf nodes are selected from this tree
     my.odfTreeDom
-      .jstree
-        plugins : ["checkbox", "types", "contextmenu"]
-        core :
-          error : (msg) -> WebOmi.debug msg
-          force_text : true
-          check_callback : true
-        types :
-          default :
-            icon : "odf-objects " + objectsIcon
-            valid_children : ["object"]
-          object :
-            icon : "odf-object " + objectIcon
-            valid_children : ["object", "infoitem"]
-          objects :
-            icon : "odf-objects " + objectsIcon
-            valid_children : ["object"]
-          infoitem :
-            icon : "odf-infoitem " + infoItemIcon
-            valid_children : []
-        checkbox :
-          three_state : false
-          keep_selected_style : true # Consider false
-          cascade : "up+undetermined"
-          tie_selection : true
-        contextmenu :
-          show_at_node : true
-          items : (target) ->
-            helptxt :
-              label : "For write request:"
-              icon  : "glyphicon glyphicon-pencil"
-              # _disabled : true
-              action : -> my.ui.request.set "write", false
-              separator_after : true
-            add_info :
-              label : "Add an InfoItem"
-              icon  : infoItemIcon
-              _disabled :
-                my.odfTree.settings.types[target.type].valid_children.indexOf("infoitem") == -1
-              action : (data) -> # element, item, reference
-                tree = WebOmi.consts.odfTree
-                parent = tree.get_node data.reference
-                name = window.prompt "Enter a name for the new InfoItem:", "MyInfoItem"
-                idName = idesc name
-                path = "#{parent.id}/#{idName}"
-
-                if $(jqesc path).length > 0
-                  return # already exists
-
-                tree.create_node parent.id,
-                  id   : path
-                  text : name
-                  type : "infoitem"
-                , "first", ->
-                  tree.open_node parent, null, 500
-                  tree.select_node path
-            add_obj :
-              label : "Add an Object"
-              icon  : objectIcon
-              _disabled : my.odfTree.settings.types[target.type].valid_children.indexOf("object") == -1
-              action : (data) -> # element, item, reference
-                tree = WebOmi.consts.odfTree
-                parent = tree.get_node data.reference
-                name = window.prompt "Enter an identifier for the new Object:", "MyObject"
-                idName = idesc name
-                path = "#{parent.id}/#{idName}"
-
-                if $(jqesc path).length > 0
-                  return # already exists
-                  return # already exists
-
-                tree.create_node parent,
-                  id   : path
-                  text : name
-                  type : "object"
-                , "first", ->
-                  tree.open_node parent, null, 500
-                  tree.select_node path
+      .jstree my.odfTreeSettings
                 
 
 
