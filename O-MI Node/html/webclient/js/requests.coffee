@@ -162,6 +162,13 @@ requestsExt = (WebOmi) ->
     odfObjects
 
 
+  # TODO: better place for this, e.g. WebOmi.util?
+  maybeInsertBefore = (parent, beforeTarget, insertElem) ->
+    if beforeTarget?
+      parent.insertBefore insertElem, beforeTarget
+    else
+      parent.appendChild insertElem
+
 
   # Adds odf elems to given Objects node from the path using the odfTree, creating parents also
   # odfTreeNode: jquery object; some li object from the tree containing the path in the id
@@ -195,20 +202,21 @@ requestsExt = (WebOmi) ->
             object = o.createOdfObject odfDoc, id
             currentOdfNode.appendChild object
           when "metadata"
-            node = o.createOdfMetaData odfDoc
-            currentOdfNode.appendChild node
+            meta = o.createOdfMetaData odfDoc
+
+            # find the first value and insert before it (schema restriction)
+            siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0]
+            maybeInsertBefore currentOdfNode, siblingValue, meta
+
           when "infoitem"
             info = o.createOdfInfoItem odfDoc, id
 
             # when request is write
             addValueWhenWrite info
 
-            # find the first Object and insert before it
+            # find the first Object and insert before it (schema restriction)
             siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0]
-            if siblingObject?
-              currentOdfNode.insertBefore info, siblingObject
-            else
-              currentOdfNode.appendChild info
+            maybeInsertBefore currentOdfNode, siblingObject, info
 
         currentOdfNode = odfElem
 
