@@ -486,7 +486,7 @@ requestsExt = (WebOmi) ->
 
     newParams = $.extend {}, cp, omiRequestObject
 
-    cp = my.defaults.empty()
+    #currentParams = my.defaults.empty()
 
     # essential parameters
     if newParams.request? && newParams.request.length > 0 && newParams.ttl?
@@ -499,11 +499,15 @@ requestsExt = (WebOmi) ->
         
       my.generate()
 
+    else if newParams.name == "empty"
+      currentParams = omiRequestObject
+      my.generate()
     else
       WebOmi.error(
         "tried to generate request, but missing a required parameter (name, ttl)", newParams
       )
-      return
+
+    return null
 
 
   # @param fastforward: Boolean Whether to also send the request and update odfTree also

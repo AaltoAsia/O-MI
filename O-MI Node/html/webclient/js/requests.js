@@ -459,7 +459,6 @@
         cp.requestDoc = o.parseXml(my.xmls.template);
       }
       newParams = $.extend({}, cp, omiRequestObject);
-      cp = my.defaults.empty();
       if ((newParams.request != null) && newParams.request.length > 0 && (newParams.ttl != null)) {
         ref = my.params;
         for (key in ref) {
@@ -468,10 +467,14 @@
           thing.update(newParams[key]);
           WebOmi.debug("updated " + key + ":", currentParams[key]);
         }
-        return my.generate();
+        my.generate();
+      } else if (newParams.name === "empty") {
+        currentParams = omiRequestObject;
+        my.generate();
       } else {
         WebOmi.error("tried to generate request, but missing a required parameter (name, ttl)", newParams);
       }
+      return null;
     };
     my.readAll = function(fastForward) {
       my.forceLoadParams(my.defaults.readAll());
