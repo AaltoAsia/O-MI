@@ -111,7 +111,7 @@
         if (stream.match(urlmatch)) {
           return "link";
         }
-        while (stream.next() !== null && !stream.match(urlmatch, false)) {
+        while ((stream.next() != null) && !stream.match(urlmatch, false)) {
           ({});
         }
         return null;
@@ -126,7 +126,12 @@
       my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], responseCMSettings);
       my.responseDiv = $('.response .CodeMirror');
       my.responseDiv.hide();
-      my.requestCodeMirror.addOverlay(URLHighlightOverlay);
+      my.responseCodeMirror.addOverlay(URLHighlightOverlay);
+      $('.well.response').delegate(".cm-link", "click", function(event) {
+        var url;
+        url = $(event.target).text();
+        return window.open(url, '_blank');
+      });
       my.serverUrl = $('#targetService');
       my.odfTreeDom = $('#nodetree');
       my.requestSelDom = $('.requesttree');

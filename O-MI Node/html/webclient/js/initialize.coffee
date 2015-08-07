@@ -107,7 +107,7 @@ constsExt = ($, parent) ->
       if stream.match(urlmatch)
         return "link"
       
-      {}while stream.next() isnt null and not stream.match(urlmatch,false)   
+      {}while stream.next()? and not stream.match(urlmatch,false)   
       return null
 
   }  
@@ -126,8 +126,12 @@ constsExt = ($, parent) ->
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
-    my.requestCodeMirror.addOverlay(URLHighlightOverlay)
-    
+    my.responseCodeMirror.addOverlay(URLHighlightOverlay)
+
+    $('.well.response').delegate ".cm-link", "click", (event) ->
+      url = $(event.target).text()
+      window.open url, '_blank'
+     
 
     my.serverUrl    = $ '#targetService'
     my.odfTreeDom   = $ '#nodetree'
