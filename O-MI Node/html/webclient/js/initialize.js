@@ -4,7 +4,7 @@
     slice = [].slice;
 
   constsExt = function($, parent) {
-    var afterWaits, my, openOdfContextmenu;
+    var URLHighlightOverlay, afterWaits, my, openOdfContextmenu, urlmatch;
     my = parent.consts = {};
     my.codeMirrorSettings = {
       mode: "text/xml",
@@ -105,6 +105,18 @@
     my.afterJquery = function(fn) {
       return afterWaits.push(fn);
     };
+    urlmatch = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/;
+    URLHighlightOverlay = {
+      token: function(stream, state) {
+        if (stream.match(urlmatch)) {
+          return "link";
+        }
+        while ((stream.next() != null) && !stream.match(urlmatch, false)) {
+          ({});
+        }
+        return null;
+      }
+    };
     $(function() {
       var basicInput, fn, i, language, len, loc, requestTip, responseCMSettings, results, v, validators;
       responseCMSettings = $.extend({
@@ -114,11 +126,11 @@
       my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], responseCMSettings);
       my.responseDiv = $('.response .CodeMirror');
       my.responseDiv.hide();
-      my.responseCodeMirror.on("viewportChange", function() {
-        var lines, responsearea;
-        responsearea = document.getElementsByClassName("well response").item(0);
-        lines = responsearea.getElementsByClassName("CodeMirror-code").item(0);
-        return lines.innerHTML = lines.innerHTML.replace(/<span class="cm-string">"(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*))"<\/span>/g, "<a href=$1>\"$1\"</a>");
+      my.responseCodeMirror.addOverlay(URLHighlightOverlay);
+      $('.well.response').delegate(".cm-link", "click", function(event) {
+        var url;
+        url = $(event.target).text();
+        return window.open(url, '_blank');
       });
       my.serverUrl = $('#targetService');
       my.odfTreeDom = $('#nodetree');
