@@ -21,7 +21,7 @@ class ExternalAgentListener extends Actor with ActorLogging {
   
   import Tcp._
   //Orginally a hack for getting different names for actors.
-  private var agentCounter : Int = 0 
+  private[this] var agentCounter : Int = 0 
   /** Get function for count of all ever connected agents.
     * Check that can't be modified via this.
     */
@@ -64,7 +64,7 @@ class ExternalAgentHandler(
 
   import Tcp._
 
-  private var metaDataSaved: Boolean = false
+  private[this] var metaDataSaved: Boolean = false
   /** Partial function for handling received messages.
     */
   def receive = {

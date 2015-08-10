@@ -42,7 +42,7 @@ trait BeforeAll extends Specification {
     Step(beforeAll) ^ fs
   }
 
-  protected def beforeAll()
+  protected[this] def beforeAll()
 }
 
 trait AfterAll extends Specification {
@@ -50,15 +50,15 @@ trait AfterAll extends Specification {
     fs ^ Step(afterAll)
   }
 
-  protected def afterAll()
+  protected[this] def afterAll()
 }
 
 trait BeforeAfterAll extends Specification {
   override def map(fs: => Fragments) = {
     Step(beforeAll) ^ fs ^ Step(afterAll)
   }
-  protected def beforeAll()
-  protected def afterAll()
+  protected[this] def beforeAll()
+  protected[this] def afterAll()
 }
 
 abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""

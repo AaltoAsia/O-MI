@@ -62,7 +62,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path whose hierarchy is to be stored to database
    * @return Inserted (path, id) tuples
    */
-  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[(Path, Int)]] = {
+  protected[this] def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[(Path, Int)]] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {
@@ -172,7 +172,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    * @param timestamp that tells how old data will be removed, exclusive.
    */
-  private def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) = {
+  private[this] def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) = {
 
     val infoitems = paths.keySet.collect{
       case DBNode(Some(id),_,_,_,_,_,_,isInfoItem) if (isInfoItem)=> id
@@ -602,7 +602,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcessI(pathId: Int): DBIO[Int] = {
+  private[this] def removeExcessI(pathId: Int): DBIO[Int] = {
     val pathQuery = 
       latestValues filter (_.hierarchyId === pathId) sortBy (_.timestamp.asc)
 
@@ -635,7 +635,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param pathId pathId to the node that needs cleaning
    *
    */
-  private def removeExcessI(pathId: Int): DBIO[Int] = {
+  private[this] def removeExcessI(pathId: Int): DBIO[Int] = {
     val pathQuery =
       latestValues filter (_.hierarchyId === pathId) sortBy (_.timestamp.asc)
 
@@ -702,7 +702,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   
   }
 
-  //  private def removeBefodre(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
+  //  private[this] def removeBefodre(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
   //
   //     val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get).toSeq
   //     val historyLen = database.historyLength
@@ -769,7 +769,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to sensor as Path object
    *
    */
-  private def removeExcess(pathId: Int) = {
+  private[this] def removeExcess(pathId: Int) = {
     runSync(removeExcessI(pathId))
   }
 

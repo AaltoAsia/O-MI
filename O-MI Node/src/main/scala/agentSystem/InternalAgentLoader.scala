@@ -40,15 +40,15 @@ class InternalAgentLoader extends Actor with ActorLogging {
 
   case class AgentInfo(name: String, configPath: String, agent: Option[InternalAgent], timestamp: Timestamp)
   //Container for bootables
-  protected val agents: scala.collection.mutable.Map[String, AgentInfo] = Map.empty
+  protected[this] val agents: scala.collection.mutable.Map[String, AgentInfo] = Map.empty
   //getter method to allow testing
   private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.
-  private val classLoader = createClassLoader()
+  private[this] val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
 
   //Settings for getting list of Bootables and configs from application.conf
-  private val settings = Settings(context.system)
+  private[this] val settings = Settings(context.system)
   InternalAgent.setLoader(self)
   InternalAgent.setLog(log)
   start()
@@ -200,7 +200,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
    * Creates classloader for loading classes from jars in deploy directory.
    *
    */
-  private def createClassLoader(): ClassLoader = {
+  private[this] def createClassLoader(): ClassLoader = {
     val deploy = new File("deploy")
     if (deploy.exists) {
       loadDeployJars(deploy)
@@ -215,7 +215,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
    * Jars should contain class files of agents and their bootables.
    *
    */
-  private def loadDeployJars(deploy: File): ClassLoader = {
+  private[this] def loadDeployJars(deploy: File): ClassLoader = {
     val jars = deploy.listFiles.filter(_.getName.endsWith(".jar"))
 
     val nestedJars = jars flatMap { jar =>

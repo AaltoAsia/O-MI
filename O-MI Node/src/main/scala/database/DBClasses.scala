@@ -17,10 +17,10 @@ import database._
 
 
 /**
- * Base trait for databases. Has basic private interface.
+ * Base trait for databases. Has basic private[this] interface.
  */
 trait DBBase{
-  protected val db: Database
+  protected[this] val db: Database
 
 
   def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
@@ -147,8 +147,8 @@ trait OmiNodeTables extends DBBase {
       DBNode.unapply
     )
   }
-  protected val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
-  protected val hierarchyWithInsertId = hierarchyNodes returning hierarchyNodes.map(_.id)
+  protected[this] val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
+  protected[this] val hierarchyWithInsertId = hierarchyNodes returning hierarchyNodes.map(_.id)
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
@@ -191,7 +191,7 @@ trait OmiNodeTables extends DBBase {
     def * = (hierarchyId, timestamp, value, valueType) <> (DBValue.tupled, DBValue.unapply)
   }
 
-  protected val latestValues = TableQuery[DBValuesTable] //table for sensor data
+  protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data
 
 
 
@@ -218,7 +218,7 @@ trait OmiNodeTables extends DBBase {
 
     def * = (hierarchyId, metadata) <> (DBMetaData.tupled, DBMetaData.unapply)
   }
-  protected val metadatas = TableQuery[DBMetaDatasTable]//table for metadata information
+  protected[this] val metadatas = TableQuery[DBMetaDatasTable]//table for metadata information
 
 
 
@@ -239,7 +239,7 @@ trait OmiNodeTables extends DBBase {
     def callback  = column[Option[String]]("CALLBACK")
 
 
-    private def dbsubTupled:
+    private[this] def dbsubTupled:
       ((Option[Long], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
         case (None, interval_, startTime_, ttl_, callback_) =>
           val durationTtl =
@@ -255,7 +255,7 @@ trait OmiNodeTables extends DBBase {
           val durationInt = parsing.OmiParser.parseInterval(interval_)
           DBSub(id_, durationInt, startTime_, durationTtl, callback_)
       }
-    private def dbsubUnapply: 
+    private[this] def dbsubUnapply: 
       DBSubInternal => Option[(Option[Long], Double, Timestamp, Double, Option[String])] = {
         case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
           val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0
@@ -276,8 +276,8 @@ trait OmiNodeTables extends DBBase {
     )
   }
 
-  protected val subs = TableQuery[DBSubsTable]
-  protected val subsWithInsertId = subs returning subs.map(_.id)
+  protected[this] val subs = TableQuery[DBSubsTable]
+  protected[this] val subsWithInsertId = subs returning subs.map(_.id)
 
   trait SubFKey[A] extends Table[A] {
     val subfkName: String
@@ -313,9 +313,9 @@ trait OmiNodeTables extends DBBase {
     def * = (subId, hierarchyId, lastValue) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
   }
 
-  protected val subItems = TableQuery[DBSubscribedItemsTable]
+  protected[this] val subItems = TableQuery[DBSubscribedItemsTable]
 
-  protected val allTables =
+  protected[this] val allTables =
     Seq( hierarchyNodes
        , latestValues
        , metadatas
@@ -323,7 +323,7 @@ trait OmiNodeTables extends DBBase {
        , subItems
        )
 
-  protected val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)
+  protected[this] val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)
 
   /**
    * Empties all the data from the database

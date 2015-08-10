@@ -70,7 +70,7 @@ class OdfObjectsImpl(
       anotherUniqueObjsOut).toSeq
     )
   }
-  private def sharedAndUniques[A]( another: OdfObjects )( constructor: (
+  private[this] def sharedAndUniques[A]( another: OdfObjects )( constructor: (
     Seq[OdfObject],
     Seq[OdfObject],
     Map[Path,Seq[OdfObject]]) => A) = {

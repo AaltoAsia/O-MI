@@ -11,7 +11,7 @@ import java.io.File
 
 package object database {
 
-  private var setEventHooks: List[Seq[OdfInfoItem] => Unit] = List()
+  private[this] var setEventHooks: List[Seq[OdfInfoItem] => Unit] = List()
 
   /**
    * Set hooks are run when new data is saved to database.
@@ -21,7 +21,7 @@ package object database {
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
-  private var histLength = 10
+  private[this] var histLength = 10
   /**
    * Sets the historylength to desired length
    * default is 10

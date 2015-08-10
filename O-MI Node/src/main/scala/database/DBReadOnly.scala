@@ -18,9 +18,9 @@ import types.OdfTypes._
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
-  protected def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
+  protected[this] def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
 
-  protected def findParentQ(childPath: Path) = (
+  protected[this] def findParentQ(childPath: Path) = (
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
@@ -34,21 +34,21 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
 
-  protected def getMetaDataI(path: Path): DBIOro[Option[OdfMetaData]] = {
+  protected[this] def getMetaDataI(path: Path): DBIOro[Option[OdfMetaData]] = {
     val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
     queryResult map (
       _.headOption map (_.toOdf))
   }
-  protected def getMetaDataI(id: Int): DBIO[Option[OdfMetaData]] =
+  protected[this] def getMetaDataI(id: Int): DBIO[Option[OdfMetaData]] =
     (metadatas filter (_.hierarchyId === id)).result map (
       _.headOption map (_.toOdf))
 
-  protected def getSubItemDataI(subId: Long)(): DBIO[DBInfoItems] = for {
+  protected[this] def getSubItemDataI(subId: Long)(): DBIO[DBInfoItems] = for {
     subsItems <- (subItems filter (_.subId === subId)).result
     result <- getSubItemDataI(subsItems)
   } yield result
 
-  protected def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])(): DBIO[DBInfoItems] = for {
+  protected[this] def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])(): DBIO[DBInfoItems] = for {
     subItemNodes <- hierarchyNodes.filter(
       _.id.inSet(forSubItems map (_.hierarchyId))).result
 
@@ -107,7 +107,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param interval of the subscription
    * @return the poll result for these parameters
    */
-  protected def getByIntervalBetween(values: Seq[DBValue], beginTime: Timestamp, endTime: Timestamp, interval: Duration) = {
+  protected[this] def getByIntervalBetween(values: Seq[DBValue], beginTime: Timestamp, endTime: Timestamp, interval: Duration) = {
     val timeFrameLengthMs = endTime.getTime - beginTime.getTime
     // last interval time before the poll
     val lastIntervalTime = endTime.getTime - (timeFrameLengthMs % interval.toMillis)
@@ -170,7 +170,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param fromEnd number of values to be returned from end
    * @return query for the requested values
    */
-  protected def getNBetweenDBInfoItemQ(
+  protected[this] def getNBetweenDBInfoItemQ(
     id: Int,
     begin: Option[Timestamp],
     end: Option[Timestamp],
@@ -183,7 +183,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * See [[getNBetween]].
    * @param getter Gets DBValue from some ValueType for filtering and sorting
    */
-  protected def nBetweenLogicQ(
+  protected[this] def nBetweenLogicQ(
     values: Query[DBValuesTable, DBValue, Seq],
     begin: Option[Timestamp],
     end: Option[Timestamp],
@@ -214,7 +214,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     query
   }
 
-  protected def betweenLogicR(
+  protected[this] def betweenLogicR(
     begin: Option[Timestamp],
     end: Option[Timestamp]): DBValuesTable => Rep[Boolean] =
     (end, begin) match {
@@ -236,7 +236,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           true: Rep[Boolean]
         }
     }
-  protected def betweenLogic(
+  protected[this] def betweenLogic(
     begin: Option[Timestamp],
     end: Option[Timestamp]): DBValue => Boolean =
     (end, begin) match {
@@ -255,7 +255,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     }
 
   // NOTE: duplicate code: nBetweenLogicQ
-  protected def takeLogic(
+  protected[this] def takeLogic(
     newest: Option[Int],
     oldest: Option[Int],
     timeFrameEmpty: Boolean): Seq[DBValue] => Seq[DBValue] = {
@@ -409,7 +409,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param root Root of the tree
    * @param depth Maximum traverse depth relative to root
    */
-  protected def getSubTreeQ(
+  protected[this] def getSubTreeQ(
     root: DBNode,
     depth: Option[Int] = None): Query[(DBNodesTable, Rep[Option[DBValuesTable]]), (DBNode, Option[DBValue]), Seq] = {
 
@@ -432,7 +432,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     nodesWithValuesQ sortBy (_._1.leftBoundary.asc)
   }
 
-  protected def getSubTreeI(
+  protected[this] def getSubTreeI(
     path: Path,
     depth: Option[Int] = None): DBIOro[Seq[(DBNode, Option[DBValue])]] = {
 
@@ -490,7 +490,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   def getSub(id: Long): Option[DBSub] = runSync(getSubI(id))
 
-  protected def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] =
+  protected[this] def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] =
     dbioDBInfoItemsSum(
       hNodes map { hNode =>
         for {
