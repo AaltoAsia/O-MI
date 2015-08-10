@@ -18,7 +18,7 @@ import javax.xml.validation.{Schema, SchemaFactory, Validator}
 abstract trait Parser[Result] {
 
   def parse(xml_msg: String) : Result
-  protected def schemaPath : javax.xml.transform.Source
+  protected[this] def schemaPath : javax.xml.transform.Source
   
   /**
    * function for checking does given string confort a schema

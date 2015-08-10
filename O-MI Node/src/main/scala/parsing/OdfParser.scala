@@ -18,7 +18,7 @@ import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
 
-  protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
 

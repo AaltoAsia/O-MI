@@ -717,7 +717,7 @@ class ElemNameSeqReader(seq: Seq[ElemName],
 
 class ElemNameSeqPosition(val source: Seq[ElemName], val offset: Int) extends
     scala.util.parsing.input.Position {
-  protected def lineContents =
+  protected[this] def lineContents =
     source.mkString
 
   override def line = 1

@@ -62,7 +62,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path whose hierarchy is to be stored to database
    * @return Inserted (path, id) tuples
    */
-  protected def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[(Path, Int)]] = {
+  protected[this] def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[(Path, Int)]] = {
 
     /** Query: Increase right and left values after value */
     def increaseAfterQ(value: Int) = {

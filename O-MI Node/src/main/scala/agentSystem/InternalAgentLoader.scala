@@ -40,7 +40,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
 
   case class AgentInfo(name: String, configPath: String, agent: Option[InternalAgent], timestamp: Timestamp)
   //Container for bootables
-  protected val agents: scala.collection.mutable.Map[String, AgentInfo] = Map.empty
+  protected[this] val agents: scala.collection.mutable.Map[String, AgentInfo] = Map.empty
   //getter method to allow testing
   private[agentSystem] def getAgents = agents
   //Classloader for loading classes in jars.

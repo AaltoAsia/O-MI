@@ -18,7 +18,7 @@ import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
-   protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
+   protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
   /**
    * Public method for parsing the xml string into OmiParseResults.
