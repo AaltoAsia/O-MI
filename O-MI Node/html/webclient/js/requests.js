@@ -4,11 +4,10 @@
     hasProp = {}.hasOwnProperty;
 
   requestsExt = function(WebOmi) {
-    var addValueToAll, addValueWhenWrite, currentParams, my, removeValueFromAll, updateSetterForAttr;
+    var addValueToAll, addValueWhenWrite, currentParams, maybeInsertBefore, my, removeValueFromAll, updateSetterForAttr;
     my = WebOmi.requests = {};
     my.xmls = {
       readAll: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n      <Objects xmlns=\"odf.xsd\"></Objects>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>",
-      templateMsg: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n",
       template: "<?xml version=\"1.0\"?>\n<omi:omiEnvelope xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:omi=\"omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <omi:read msgformat=\"odf\">\n    <omi:msg>\n    </omi:msg>\n  </omi:read>\n</omi:omiEnvelope>\n"
     };
     my.defaults = {};
@@ -144,8 +143,15 @@
       }
       return odfObjects;
     };
+    maybeInsertBefore = function(parent, beforeTarget, insertElem) {
+      if (beforeTarget != null) {
+        return parent.insertBefore(insertElem, beforeTarget);
+      } else {
+        return parent.appendChild(insertElem);
+      }
+    };
     my.addPathToOdf = function(odfTreeNode, odfObjects) {
-      var currentOdfNode, i, id, info, len, maybeChild, node, nodeElems, o, object, odfDoc, odfElem, siblingObject;
+      var currentOdfNode, i, id, info, len, maybeChild, meta, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
       o = WebOmi.omi;
       odfDoc = odfObjects.ownerDocument || odfObjects;
       if ((odfTreeNode[0] == null) || odfTreeNode[0].id === "Objects") {
@@ -167,15 +173,15 @@
               case "object":
                 object = o.createOdfObject(odfDoc, id);
                 return currentOdfNode.appendChild(object);
+              case "metadata":
+                meta = o.createOdfMetaData(odfDoc);
+                siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0];
+                return maybeInsertBefore(currentOdfNode, siblingValue, meta);
               case "infoitem":
                 info = o.createOdfInfoItem(odfDoc, id);
                 addValueWhenWrite(info);
                 siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
-                if (siblingObject != null) {
-                  return currentOdfNode.insertBefore(info, siblingObject);
-                } else {
-                  return currentOdfNode.appendChild(info);
-                }
+                return maybeInsertBefore(currentOdfNode, siblingObject, info);
             }
           })();
           currentOdfNode = odfElem;
@@ -453,7 +459,6 @@
         cp.requestDoc = o.parseXml(my.xmls.template);
       }
       newParams = $.extend({}, cp, omiRequestObject);
-      cp = my.defaults.empty();
       if ((newParams.request != null) && newParams.request.length > 0 && (newParams.ttl != null)) {
         ref = my.params;
         for (key in ref) {
@@ -462,10 +467,14 @@
           thing.update(newParams[key]);
           WebOmi.debug("updated " + key + ":", currentParams[key]);
         }
-        return my.generate();
+        my.generate();
+      } else if (newParams.name === "empty") {
+        currentParams = omiRequestObject;
+        my.generate();
       } else {
         WebOmi.error("tried to generate request, but missing a required parameter (name, ttl)", newParams);
       }
+      return null;
     };
     my.readAll = function(fastForward) {
       my.forceLoadParams(my.defaults.readAll());

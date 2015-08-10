@@ -13,8 +13,8 @@ import spray.routing._
 trait CORSSupport {
   this: HttpService =>
   
-  private val allowOriginHeader = `Access-Control-Allow-Origin`(AllOrigins)
-  private val optionsCorsHeaders = List(
+  private[this] val allowOriginHeader = `Access-Control-Allow-Origin`(AllOrigins)
+  private[this] val optionsCorsHeaders = List(
     `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent"),
     `Access-Control-Max-Age`(1728000))
  

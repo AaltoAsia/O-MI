@@ -10,17 +10,116 @@ constsExt = ($, parent) ->
     lineNumbers: true
     lineWrapping: true
 
+
+  my.icon =
+    objects  : "glyphicon glyphicon-tree-deciduous"
+    object   : "glyphicon glyphicon-folder-open"
+    infoitem : "glyphicon glyphicon-apple"
+    metadata : "glyphicon glyphicon-info-sign"
+
+  # private
+  openOdfContextmenu = (target) ->
+    createNode = (particle, odfName, treeTypeName, defaultId) ->
+      label : "Add #{particle} #{odfName}"
+      icon  : my.icon[treeTypeName]
+
+      _disabled : # if not exists in valid_children 
+        my.odfTree.settings.types[target.type].valid_children.indexOf(treeTypeName) == -1
+
+      action : (data) -> # element, item, reference
+        tree = WebOmi.consts.odfTree
+        parent = tree.get_node data.reference
+        name =
+          if defaultId?
+            window.prompt "Enter a name for the new #{odfName}:", defaultId
+          else
+            odfName
+        idName = idesc name
+        path = "#{parent.id}/#{idName}"
+
+        if $(jqesc path).length > 0
+          return # already exists
+
+        tree.create_node parent,
+          id   : path
+          text : name
+          type : treeTypeName
+        , "first", ->
+          tree.open_node parent, null, 500
+          tree.select_node path
+
+    helptxt :
+      label : "For write request:"
+      icon  : "glyphicon glyphicon-pencil"
+      # _disabled : true
+      action : -> my.ui.request.set "write", false
+      separator_after : true
+    add_info :
+      createNode "an", "InfoItem", "infoitem", "MyInfoItem"
+    add_obj :
+      createNode "an", "Object", "object", "MyObject"
+    add_metadata :
+      createNode "a", "MetaData", "metadata", null
+
+  my.odfTreeSettings =
+    plugins : ["checkbox", "types", "contextmenu"]
+    core :
+      error : (msg) -> WebOmi.debug msg
+      force_text : true
+      check_callback : true
+    types :
+      default :
+        icon : "odf-objects " + my.icon.objects
+        valid_children : ["object"]
+      object :
+        icon : "odf-object " + my.icon.object
+        valid_children : ["object", "infoitem"]
+      objects :
+        icon : "odf-objects " + my.icon.objects
+        valid_children : ["object"]
+      infoitem :
+        icon : "odf-infoitem " + my.icon.infoitem
+        valid_children : ["metadata"]
+      metadata :
+        icon : "odf-metadata " + my.icon.metadata
+        valid_children : []
+
+    checkbox :
+      three_state : false
+      keep_selected_style : true # Consider false
+      cascade : "up+undetermined"
+      tie_selection : true
+    contextmenu :
+      show_at_node : true
+      items : openOdfContextmenu
+
   # private, [functions]
   afterWaits = []
 
   # use afterJquery for things that depend on const module
   my.afterJquery = (fn) -> afterWaits.push fn
 
+  urlmatch = /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s)/i
+
+  # url matcher
+  URLHighlightOverlay = {
+    token: (stream, state) ->
+      if stream.match(urlmatch)
+        stream.backUp(1)
+        return "link"
+      
+      {}while stream.next()? and not stream.match(urlmatch,false)   
+      return null
+
+  }  
+
+  # All of jquery initiliazation code is here
   $ ->
     responseCMSettings = $.extend(
       readOnly : true
       , my.codeMirrorSettings
     )
+   
     
     # initialize UI
     my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
@@ -28,6 +127,13 @@ constsExt = ($, parent) ->
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
+    my.responseCodeMirror.addOverlay(URLHighlightOverlay)
+
+    $('.well.response').delegate ".cm-link", "click", (event) ->
+      url = $(event.target).text()
+      window.open url, '_blank'
+     
+
     my.serverUrl    = $ '#targetService'
     my.odfTreeDom   = $ '#nodetree'
     my.requestSelDom= $ '.requesttree'
@@ -39,88 +145,10 @@ constsExt = ($, parent) ->
     loc = window.location.href
     my.serverUrl.val loc.substr 0, loc.indexOf "html/"
 
-    objectsIcon  = "glyphicon glyphicon-tree-deciduous"
-    objectIcon   = "glyphicon glyphicon-folder-open"
-    infoItemIcon = "glyphicon glyphicon-apple"
 
+    # Odf tree is using jstree; The requested odf nodes are selected from this tree
     my.odfTreeDom
-      .jstree
-        plugins : ["checkbox", "types", "contextmenu"]
-        core :
-          error : (msg) -> WebOmi.debug msg
-          force_text : true
-          check_callback : true
-        types :
-          default :
-            icon : "odf-objects " + objectsIcon
-            valid_children : ["object"]
-          object :
-            icon : "odf-object " + objectIcon
-            valid_children : ["object", "infoitem"]
-          objects :
-            icon : "odf-objects " + objectsIcon
-            valid_children : ["object"]
-          infoitem :
-            icon : "odf-infoitem " + infoItemIcon
-            valid_children : []
-        checkbox :
-          three_state : false
-          keep_selected_style : true # Consider false
-          cascade : "up+undetermined"
-          tie_selection : true
-        contextmenu :
-          show_at_node : true
-          items : (target) ->
-            helptxt :
-              label : "For write request:"
-              icon  : "glyphicon glyphicon-pencil"
-              # _disabled : true
-              action : -> my.ui.request.set "write", false
-              separator_after : true
-            add_info :
-              label : "Add an InfoItem"
-              icon  : infoItemIcon
-              _disabled :
-                my.odfTree.settings.types[target.type].valid_children.indexOf("infoitem") == -1
-              action : (data) -> # element, item, reference
-                tree = WebOmi.consts.odfTree
-                parent = tree.get_node data.reference
-                name = window.prompt "Enter a name for the new InfoItem:", "MyInfoItem"
-                idName = idesc name
-                path = "#{parent.id}/#{idName}"
-
-                if $(jqesc path).length > 0
-                  return # already exists
-
-                tree.create_node parent.id,
-                  id   : path
-                  text : name
-                  type : "infoitem"
-                , "first", ->
-                  tree.open_node parent, null, 500
-                  tree.select_node path
-            add_obj :
-              label : "Add an Object"
-              icon  : objectIcon
-              _disabled : my.odfTree.settings.types[target.type].valid_children.indexOf("object") == -1
-              action : (data) -> # element, item, reference
-                tree = WebOmi.consts.odfTree
-                parent = tree.get_node data.reference
-                name = window.prompt "Enter an identifier for the new Object:", "MyObject"
-                idName = idesc name
-                path = "#{parent.id}/#{idName}"
-
-                if $(jqesc path).length > 0
-                  return # already exists
-                  return # already exists
-
-                tree.create_node parent,
-                  id   : path
-                  text : name
-                  type : "object"
-                , "first", ->
-                  tree.open_node parent, null, 500
-                  tree.select_node path
+      .jstree my.odfTreeSettings
                 
 
 
@@ -163,7 +191,8 @@ constsExt = ($, parent) ->
     # private, (could be public too)
     validators = {}
 
-    # validators, minimal Maybe/Option operations
+    # Validators,
+    # minimal Maybe/Option operations
     # return null if invalid else the extracted value
 
     # in: string, out: string
@@ -208,14 +237,16 @@ constsExt = ($, parent) ->
         s
       else null
 
+    # shortcut
     v = validators
 
 
+    # private; Constructs some functions for basic input fields (see my.ui below)
     basicInput = (selector, validator=validators.nonEmpty) ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
-      validate : ->
+      validate : ->  # returns value if successfully validated, null otherwise
           val = @get()
           validationContainer = @ref.closest ".form-group"
 
@@ -231,12 +262,12 @@ constsExt = ($, parent) ->
               .addClass "has-error"
 
           validatedVal
-      bindTo : (callback) ->
-        @ref.on "input", =>  #preserving this
+      bindTo : (callback) -> # bind function on input(change) event + validation
+        @ref.on "input", =>  # =>: preserving this
           callback @validate()
       
 
-    # refs, setters, getters
+    # refs, setters, getters for the parameters
     my.ui =
       request  : # String
         ref : my.requestSelDom
@@ -356,7 +387,8 @@ window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" ).re
 # make a valid id, convert space to underscore
 window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 
-# extend String (FIXME)
+# extend String (FIXME), this is fairly safe because
+# some future trim possibly is similar
 String.prototype.trim = String.prototype.trim || ->
   String(this).replace /^\s+|\s+$/g, ''
 

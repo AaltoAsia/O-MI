@@ -32,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
   import http.Boot.system.log
-  private def date = new Date()
+  private[this] def date = new Date()
 
   /**
    * Main interface for hanling O-MI request
@@ -199,7 +199,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
   }
 
-  private val scope = scalaxb.toScope(
+  private[this] val scope = scalaxb.toScope(
     None -> "odf.xsd",
     Some("omi") -> "omi.xsd",
     Some("xs") -> "http://www.w3.org/2001/XMLSchema",

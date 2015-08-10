@@ -18,7 +18,7 @@ import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable
 /** Object for parsing data in O-DF format into sequence of ParseResults. */
 object OdfParser extends Parser[OdfParseResult] {
 
-  protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
 
@@ -67,7 +67,7 @@ object OdfParser extends Parser[OdfParseResult] {
     }
   }
 
-  private def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
+  private[this] def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
     val npath = path / obj.id.headOption.getOrElse(throw new Exception("head method call on an empty Seq")).value.trim
       OdfObject(
         npath, 
@@ -78,7 +78,7 @@ object OdfParser extends Parser[OdfParseResult] {
       ) 
   }
   
-  private def parseInfoItem(item: InfoItemType, path: Path) : OdfInfoItem  = { 
+  private[this] def parseInfoItem(item: InfoItemType, path: Path) : OdfInfoItem  = { 
     val npath = path / item.name
       OdfInfoItem(
         npath,
@@ -102,7 +102,7 @@ object OdfParser extends Parser[OdfParseResult] {
   }
 
   def timer = new Timestamp( new Date().getTime ) 
-  private def timeSolver(value: ValueType ) = value.dateTime match {
+  private[this] def timeSolver(value: ValueType ) = value.dateTime match {
     case None => value.unixTime match {
       case None => Some(timer)
       case Some(seconds) => Some( new Timestamp(seconds.toLong * 1000))

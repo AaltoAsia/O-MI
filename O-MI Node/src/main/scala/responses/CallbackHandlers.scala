@@ -24,9 +24,9 @@ object CallbackHandlers {
   implicit val system = ActorSystem()
   import system.dispatcher // execution context for futures
 
-  private val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
+  private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
 
-  private def sendHttp(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
+  private[this] def sendHttp(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
 
       val request = Post(address, data)
       val responseFuture = httpHandler(request)

@@ -125,6 +125,11 @@ agent-system {
 For internal agents, configuration has classname and
 configuration filepath of the agents in pairs.
 
+`timeout-on-threadexception = 300000`
+
+Defines the time in milliseconds that internal-agent has to at least run
+before trying to restart it automatically.
+
 NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
 
 Library Config

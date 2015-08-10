@@ -55,7 +55,7 @@
         <ul class="nav navbar-nav navbar-left">
           <li>
             <p id="versionNumber" class="navbar-text">
-              <b>v0.1.6</b> <small> -- 2015-07-30</small>
+              <b>v0.1.7</b> <small> -- 2015-08-10</small>
             </p>
           </li>
           <li>
@@ -73,17 +73,17 @@
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Links<span class="caret"></span></a>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li> <a href="../ImplementationDetails.html">Example requests and results</a> </li>
-              <li> <a href="https://docs.google.com/document/d/10tdIBaZzR_ebyfrP0sdZoLEF5Ze6kt2HkW2xo9eQnfY/edit?usp=sharing">Implementation Details</a> </li>
-              <li> <a href="https://docs.google.com/document/d/1qEmM89UzOnpbk1Kk1xIi_bDT_05XbyadPAIo9dvAKW0/edit?usp=sharing">Architecture</a> </li>
-              <li> <a href="https://www2.opengroup.org/ogsys/catalog/C14B">Open Messaging Inerface standard</a> </li>
-              <li> <a href="https://www2.opengroup.org/ogsys/catalog/C14A">Open Data Format standard</a> </li>
+              <li> <a target="_blank" href="../ImplementationDetails.html">Example requests and results</a> </li>
+              <li> <a target="_blank" href="https://docs.google.com/document/d/10tdIBaZzR_ebyfrP0sdZoLEF5Ze6kt2HkW2xo9eQnfY/edit?usp=sharing">Implementation Details</a> </li>
+              <li> <a target="_blank" href="https://docs.google.com/document/d/1qEmM89UzOnpbk1Kk1xIi_bDT_05XbyadPAIo9dvAKW0/edit?usp=sharing">Architecture</a> </li>
+              <li> <a target="_blank" href="https://www2.opengroup.org/ogsys/catalog/C14B">Open Messaging Inerface standard</a> </li>
+              <li> <a target="_blank" href="https://www2.opengroup.org/ogsys/catalog/C14A">Open Data Format standard</a> </li>
             </ul>
           </li>
           <li>
-            <a class="navbar-brand" href="#">Subscriptions 
+            <a class="navbar-brand" href="#" style="display:none;">Subscriptions 
               <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
             </a>
           </li>
@@ -98,17 +98,8 @@
         <div class="panel-heading">
           <h4 class="panel-title">
             <b>
-              <div>
-                <span style="display: inline-block; width: 69%;">
-                  <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-                  O-DF Structure
-                </span>
-                <span style="display: inline-block; width: 29%; text-align:right;">
-                  <button id="resetall" class="btn btn-sm btn-danger" type="button">
-                    Reset All
-                  </button>
-                </span>
-              </div>
+              <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+              O-DF Structure
               <small>1. Select nodes that you want in the request</small>
             </b>
           </h4>
@@ -304,7 +295,7 @@
                   <input type="checkbox" id="MetaData" disabled/> Request MetaData
                 </label>
               </div>
-              <div class="checkbox text-nowrap col-md-offset-4 col-lg-offset-0 col-lg-6">
+              <div class="checkbox text-nowrap col-md-offset-4 col-lg-offset-0 col-lg-6" style="display:none;">
                 <label style="font-weight:bold;">
                   <input type="checkbox" id="description" disabled/> Request description
                 </label>
@@ -329,6 +320,10 @@
               <h4>
                 <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
                 Request:
+                <button id="resetall" class="btn btn-sm btn-default" type="button">
+                  <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+                  Reset All
+                </button>
                 <button id="send" type="button" class="btn btn-md btn-primary">
                   Send
                   <span class="glyphicon glyphicon-send" aria-hidden="true"></span>

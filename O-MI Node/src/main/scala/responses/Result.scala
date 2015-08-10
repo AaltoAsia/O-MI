@@ -11,7 +11,7 @@ import OmiGenerator.{omiResult, omiReturn, odfMsg}
   *
   **/
 object Result{
-  private val scope = scalaxb.toScope(
+  private[this] val scope = scalaxb.toScope(
     None -> "",
     Some("omi") -> "omi.xsd",
     Some("xs") -> "http://www.w3.org/2001/XMLSchema",

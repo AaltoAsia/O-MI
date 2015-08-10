@@ -31,6 +31,7 @@
     };
     my.getRequestOdf = function() {
       var str;
+      WebOmi.error("getRequestOdf is deprecated");
       str = WebOmi.consts.requestCodeMirror.getValue();
       return o.evaluateXPath(str, '//odf:Objects')[0];
     };
@@ -148,6 +149,18 @@
               id: idesc(path),
               text: name,
               type: "infoitem",
+              children: [
+                genData({
+                  nodeName: "MetaData"
+                }, path)
+              ]
+            };
+          case "MetaData":
+            path = parentPath + "/MetaData";
+            return {
+              id: idesc(path),
+              text: "MetaData",
+              type: "metadata",
               children: []
             };
         }
@@ -240,16 +253,16 @@
           })();
           for (i = 0, len = readReqWidgets.length; i < len; i++) {
             input = readReqWidgets[i];
-            input.ref.attr('disabled', !isReadReq);
+            input.ref.prop('disabled', !isReadReq);
             input.set(null);
             input.ref.trigger("input");
           }
-          ui.requestID.ref.attr('disabled', !isRequestIdReq);
+          ui.requestID.ref.prop('disabled', !isRequestIdReq);
           if (!isRequestIdReq) {
             ui.requestID.set(null);
             ui.requestID.ref.trigger("input");
           }
-          ui.interval.ref.attr('disabled', reqName !== 'subscription');
+          ui.interval.ref.prop('disabled', reqName !== 'subscription');
           ui.interval.set(null);
           ui.interval.ref.trigger("input");
           return formLogic.modifyRequest(function() {
