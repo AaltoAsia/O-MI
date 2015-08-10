@@ -378,7 +378,7 @@ trait DataRecord[+A] {
 }
 
 object DataRecord extends XMLStandardTypes {
-  private case class DataWriter[+A](
+  private[this] case class DataWriter[+A](
     namespace: Option[String],
     key: Option[String],
     xstypeNamespace: Option[String],
@@ -674,11 +674,11 @@ trait ElemNameParser[A] extends AnyElemNameParser with XMLFormat[A] with CanWrit
     case _ => Left("seq must be scala.xml.Node")
   }
 
-  private def parserErrorMsg(msg: String, next: scala.util.parsing.input.Reader[Elem], stack: List[ElemName]): String =
+  private[this] def parserErrorMsg(msg: String, next: scala.util.parsing.input.Reader[Elem], stack: List[ElemName]): String =
     if (msg contains "paser error ") msg
     else "parser error \"" + msg + "\" while parsing " + stack.reverse.mkString("/", "/", "/") + next.pos.longString
 
-  private def parserErrorMsg(msg: String, node: scala.xml.Node): String =
+  private[this] def parserErrorMsg(msg: String, node: scala.xml.Node): String =
     if (msg contains "paser error ") msg
     else "parser error \"" + msg + "\" while parsing " + node.toString
 

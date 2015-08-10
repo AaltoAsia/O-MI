@@ -17,7 +17,7 @@ import database._
 
 
 /**
- * Base trait for databases. Has basic private interface.
+ * Base trait for databases. Has basic private[this] interface.
  */
 trait DBBase{
   protected val db: Database
@@ -239,7 +239,7 @@ trait OmiNodeTables extends DBBase {
     def callback  = column[Option[String]]("CALLBACK")
 
 
-    private def dbsubTupled:
+    private[this] def dbsubTupled:
       ((Option[Long], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
         case (None, interval_, startTime_, ttl_, callback_) =>
           val durationTtl =
@@ -255,7 +255,7 @@ trait OmiNodeTables extends DBBase {
           val durationInt = parsing.OmiParser.parseInterval(interval_)
           DBSub(id_, durationInt, startTime_, durationTtl, callback_)
       }
-    private def dbsubUnapply: 
+    private[this] def dbsubUnapply: 
       DBSubInternal => Option[(Option[Long], Double, Timestamp, Double, Option[String])] = {
         case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
           val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0

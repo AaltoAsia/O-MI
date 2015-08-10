@@ -93,7 +93,7 @@ class OdfStructure(implicit val dbConnection: DB) {
     }
   }
 
-  private def getHierarchyIds( odfNodes: Seq[OdfNode] ) : Set[Int] = {
+  private[this] def getHierarchyIds( odfNodes: Seq[OdfNode] ) : Set[Int] = {
     getLeafs(get(odfNodes)).map{
       leaf => PathToHierarchyId.get(leaf.path.toString)
     }.collect{ case Some((id,count)) => id }.toSet

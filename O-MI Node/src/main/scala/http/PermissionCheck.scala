@@ -51,7 +51,7 @@ object PermissionCheck {
     * @param addr addr is InetAddress of connector.
     * @return sequence of bytes.
     **/
-  private def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {
+  private[this] def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {
     addr.getAddress().toList
   }
   
@@ -60,7 +60,7 @@ object PermissionCheck {
     * @param addr addr is InetAddress of connector.
     * @return Boolean, true if connection is in allowed suybnet.
     **/
-  private def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
+  private[this] def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
     if( subnet.length == ip.length){
       // TODO: bytes should be printed as unsigned
       log.debug("Whitelist check for IPv" + ip.length +
@@ -102,7 +102,7 @@ object PermissionCheck {
     * @param bytes bytes to be converted.
     * @return Int, bytes presented as Int.
     **/
-  private def bytesToInt(bytes: Seq[Byte]) : Int = {
+  private[this] def bytesToInt(bytes: Seq[Byte]) : Int = {
     val ip : Int = ((bytes(0) & 0xFF) << 24) |
       ((bytes(1) & 0xFF) << 16) |
       ((bytes(2) & 0xFF) << 8)  |
