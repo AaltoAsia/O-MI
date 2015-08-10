@@ -124,6 +124,8 @@
       display.lineDiv.style.textRendering = "auto";
   }
 
+
+
   // DISPLAY CONSTRUCTOR
 
   // The display handles the DOM integration, both for input reading

@@ -59,3 +59,7 @@ html {
 .odf-metadata {
     color:#1E90FF; /* dodgerblue */
 }
+/*Change cursor on CodeMirror links*/
+.cm-link{
+    cursor: pointer;
+}
