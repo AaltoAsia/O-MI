@@ -1,78 +1,14 @@
-import com.github.retronym.SbtOneJar
+//import com.github.retronym.SbtOneJar
+//import Dependencies._
 
-val scalaBuildVersion = "2.11.7"
-
-//lazy val root = (project in file(".")).
 name := "O-MI-Node"
 
-version := "0.1.7-SNAPSHOT"
-
-scalaVersion := scalaBuildVersion
-
-// build options
-scalacOptions := Seq("-unchecked", "-feature", "-encoding", "utf8", "-Xlint")
-
-//JVM max heap size
-//javaOptions += "-Xmx512m"
-
-// build api options
-scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8")
-
-autoAPIMappings := true 
-
-// STM
-//libraryDependencies += ("org.scala-stm" %% "scala-stm" % "0.7")
-
-// SPRAY
-libraryDependencies ++= {
-  val akkaV = "2.3.6"
-  val sprayV = "1.3.2"
-  Seq(
-    "io.spray"            %%  "spray-can"     % sprayV,
-    "io.spray"            %%  "spray-routing" % sprayV,
-    "io.spray"            %%  "spray-testkit" % sprayV  % "test",
-    "io.spray"			      %%  "spray-client"  % sprayV,
-    "io.spray"			      %%  "spray-servlet" % sprayV,
-    "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
-    "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
-    "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
-    "org.json4s" 		      %%  "json4s-native" % "3.2.11"
-    )
-}
-
-libraryDependencies += "com.beachape.filemanagement" %% "schwatcher" % "0.1.8"
-
-libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
-
-//slick
-libraryDependencies ++= Seq(
-"com.typesafe.slick"  %%  "slick" % "3.0.0",
-"com.typesafe.slick" %% "slick-codegen" % "3.0.0",
-"org.slf4j" % "slf4j-nop" % "1.6.4",
-"org.xerial" % "sqlite-jdbc" % "3.7.2",
-"com.zaxxer" % "HikariCP-java6" % "2.3.3", // XXX: manually updated dependency, slick had 2.0.1
-"com.h2database" % "h2" % "1.4.187"
-)
-
-//html5parser for systemtest
-libraryDependencies += "nu.validator.htmlparser" % "htmlparser" % "1.4"
-
-//scala xml
-libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
-
-//remove database files
 cleanFiles <++= baseDirectory {_ * "*.db" get}
 
 oneJarSettings
 
 Revolver.settings
 
-
-// Eclipse
-EclipseKeys.withSource := true
-
-// We have common database in some tests
-parallelExecution in Test := false
 
 
 ////////////////////////////
