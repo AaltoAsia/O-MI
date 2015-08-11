@@ -18,7 +18,7 @@ import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable
 /** Parsing object for parsing messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
-   protected override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
+   protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
 
   /**
    * Public method for parsing the xml string into OmiParseResults.
@@ -70,9 +70,9 @@ object OmiParser extends Parser[OmiParseResult] {
     case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
   }
 
-  private def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
+  private[this] def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
   
-  private def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
+  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
   read.requestID.nonEmpty match {
       case true =>
       Right(Iterable(
@@ -124,7 +124,7 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
-  private def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
+  private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
     val odf = parseMsg(write.msg, write.msgformat)
     val errors = OdfTypes.getErrors(odf)
 
@@ -138,7 +138,7 @@ object OmiParser extends Parser[OmiParseResult] {
           uriToStringOption(write.callback))))
   }
 
-  private def parseCancel(cancel: xmlTypes.CancelRequest, ttl: Duration): OmiParseResult = {
+  private[this] def parseCancel(cancel: xmlTypes.CancelRequest, ttl: Duration): OmiParseResult = {
     Right(Iterable(
       CancelRequest(
         ttl,
@@ -146,7 +146,7 @@ object OmiParser extends Parser[OmiParseResult] {
       )
     ))
   }
-  private def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = {
+  private[this] def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = {
     Right(Iterable(
       ResponseRequest(
         response.result.map {
@@ -172,7 +172,7 @@ object OmiParser extends Parser[OmiParseResult] {
     ))
   }
 
-  private def parseMsg(msgO: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = msgO match{
+  private[this] def parseMsg(msgO: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = msgO match{
       case None =>
         Left(Iterable(ParseError("OmiParser: No msg element found in write request.")))
       case Some(msg) =>
@@ -193,12 +193,12 @@ object OmiParser extends Parser[OmiParseResult] {
         Left(Iterable(ParseError("Unknown msgformat attribute")))
     }
   }
-  private def parseOdf(node: Node): OdfParseResult = OdfParser.parse(node)
-  private def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
+  private[this] def parseOdf(node: Node): OdfParseResult = OdfParser.parse(node)
+  private[this] def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
     case None => None
     case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
   }
-  private def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {
+  private[this] def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {
     case None => None
     case Some(uri) => Some(uri.toString)
   }

@@ -37,10 +37,10 @@ case class RemoveSubscription(id: Long)
  */
 class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLogging {
 
-  private def date = new Date()
+  private[this] def date = new Date()
   implicit val timeout = Timeout(5.seconds)
 
-  private var requestHandler = new RequestHandler(self)
+  private[this] var requestHandler = new RequestHandler(self)
 
   sealed trait SavedSub {
     val sub: DBSub
@@ -62,13 +62,13 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
       a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
 
-  private var intervalSubs: SortedSet[TimedSub] = {
+  private[this] var intervalSubs: SortedSet[TimedSub] = {
     SortedSet()(TimedSubOrdering.reverse)
   }
   def getIntervalSubs = intervalSubs
 
   //var eventSubs: Map[Path, EventSub] = HashMap()
-  private var eventSubs: HashMap[String, Seq[EventSub]] = HashMap()
+  private[this] var eventSubs: HashMap[String, Seq[EventSub]] = HashMap()
   def getEventSubs = eventSubs
 
   // Attach to db events
@@ -81,7 +81,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
   }
 
-  private def loadSub(subId: Long): Unit = {
+  private[this] def loadSub(subId: Long): Unit = {
     dbConnection.getSub(subId) match {
       case Some(dbsub) =>
         loadSub(dbsub)
@@ -89,7 +89,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         log.error(s"Tried to load nonexistent subscription: $subId")
     }
   }
-  private def loadSub(dbsub: DBSub): Unit = {
+  private[this] def loadSub(dbsub: DBSub): Unit = {
     log.debug(s"Adding sub: $dbsub")
 
     dbsub.hasCallback match {
@@ -152,7 +152,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param id The id of subscription to remove
    * @return true on success
    */
-  private def removeSub(subId: Long): Boolean = {
+  private[this] def removeSub(subId: Long): Boolean = {
     log.debug(s"Removing sub $subId...")
     dbConnection.getSub(subId) match {
       case Some(dbsub) => removeSub(dbsub)
@@ -164,7 +164,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param sub The subscription to remove
    * @return true on success
    */
-  private def removeSub(sub: DBSub): Boolean = {
+  private[this] def removeSub(sub: DBSub): Boolean = {
     sub.isEventBased match {
       case true =>
         val removedPaths = dbConnection.getSubscribedPaths(sub.id)
@@ -292,7 +292,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     }
   }
 
-  private def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
+  private[this] def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
     val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
     if (removeTime <= timeMillis && !sub.isImmortal) {
@@ -376,7 +376,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    *
    * This queue contains only subs that have no callback address defined and have ttl > 0.
    */
-  private var ttlQueue: ConcurrentSkipListSet[PolledSub] = new ConcurrentSkipListSet(subOrder)
+  private[this] var ttlQueue: ConcurrentSkipListSet[PolledSub] = new ConcurrentSkipListSet(subOrder)
   var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
 
   /**

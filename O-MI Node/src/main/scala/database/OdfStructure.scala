@@ -12,17 +12,17 @@ import java.sql.Timestamp
 import java.util.Date
 
 class OdfStructure(implicit val dbConnection: DB) { 
-  protected var OdfTree : OdfObjects = OdfObjects()
-  protected var PathMap : collection.mutable.Map[String, OdfNode] = HashMap.empty
-  protected var PathToHierarchyId : collection.mutable.Map[String, (Int, Int)] = HashMap.empty
-  protected var NormalSubs : collection.mutable.HashMap[Long, Seq[Path]] = HashMap.empty
-  protected var PolledPaths : collection.mutable.HashMap[Long, Seq[Path]] = HashMap.empty
+  protected[this] var OdfTree : OdfObjects = OdfObjects()
+  protected[this] var PathMap : collection.mutable.Map[String, OdfNode] = HashMap.empty
+  protected[this] var PathToHierarchyId : collection.mutable.Map[String, (Int, Int)] = HashMap.empty
+  protected[this] var NormalSubs : collection.mutable.HashMap[Long, Seq[Path]] = HashMap.empty
+  protected[this] var PolledPaths : collection.mutable.HashMap[Long, Seq[Path]] = HashMap.empty
   case class Poll(subId: Long, timestamp: Timestamp)
-  protected var HierarchyIdPollQueues : collection.mutable.Map[Int,collection.mutable.PriorityQueue[Poll]] = HashMap.empty
+  protected[this] var HierarchyIdPollQueues : collection.mutable.Map[Int,collection.mutable.PriorityQueue[Poll]] = HashMap.empty
   def PollQueue =new  PriorityQueue[Poll]()(
     Ordering.by{poll : Poll => poll.timestamp.getTime}
   )
-  protected var EventSubs : collection.mutable.HashMap[Path, Seq[Int]] = HashMap.empty
+  protected[this] var EventSubs : collection.mutable.HashMap[Path, Seq[Int]] = HashMap.empty
 
   def addOrUpdate( odfNodes: Seq[OdfNode] ) ={
     val tmpUpdates : (OdfObjects, Seq[(Path, OdfNode)])= odfNodes.map(fromPath(_)).foldLeft((OdfObjects(), Seq[(Path,OdfNode)]())){
@@ -93,7 +93,7 @@ class OdfStructure(implicit val dbConnection: DB) {
     }
   }
 
-  private def getHierarchyIds( odfNodes: Seq[OdfNode] ) : Set[Int] = {
+  private[this] def getHierarchyIds( odfNodes: Seq[OdfNode] ) : Set[Int] = {
     getLeafs(get(odfNodes)).map{
       leaf => PathToHierarchyId.get(leaf.path.toString)
     }.collect{ case Some((id,count)) => id }.toSet

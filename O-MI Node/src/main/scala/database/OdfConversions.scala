@@ -38,13 +38,13 @@ trait OdfConversions extends OmiNodeTables {
    * Conversion for a (sub)tree of hierarchy with value data.
    * @param treeData Hierarchy and value data joined, so contains InfoItem DBNodes and its values.
    */
-  protected def odfConversion(treeData: Seq[DBValueTuple]): Option[OdfObjects] = {
+  protected[this] def odfConversion(treeData: Seq[DBValueTuple]): Option[OdfObjects] = {
     // Convert: Map DBNode -> Seq[DBValue]
     val nodeMap = toDBInfoItems(treeData)
     odfConversion(nodeMap)
   }
 
-  protected def hasPathConversion: DBInfoItem => OdfNode = {
+  protected[this] def hasPathConversion: DBInfoItem => OdfNode = {
     case (infoItemNode, values) if infoItemNode.isInfoItem =>
       val odfValues = values map (_.toOdf) toIterable
       val odfInfoItem = infoItemNode.toOdfInfoItem(odfValues)
@@ -62,7 +62,7 @@ trait OdfConversions extends OmiNodeTables {
    * @param items input data for single object (objects and infoitems for the first level of children)
    * @return Single object or infoItem extracted from items
    */
-  protected def singleObjectConversion(items: DBInfoItems): Option[OdfNode] = {
+  protected[this] def singleObjectConversion(items: DBInfoItems): Option[OdfNode] = {
     //require(items.size > 0, "singleObjectConversion requires data!")
     if (items.size == 0) return None
 
@@ -100,10 +100,10 @@ trait OdfConversions extends OmiNodeTables {
     }
   }
 
-  protected def odfConversion: DBInfoItem => OdfObjects =
+  protected[this] def odfConversion: DBInfoItem => OdfObjects =
     fromPath _ compose hasPathConversion
 
-  protected def odfConversion(treeData: DBInfoItems): Option[OdfObjects] = {
+  protected[this] def odfConversion(treeData: DBInfoItems): Option[OdfObjects] = {
     val odfObjectsTrees = treeData map odfConversion
 
     // safe version of reduce

@@ -15,10 +15,10 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
 
-  protected def dbioDBInfoItemsSum(actions: Seq[DBIO[DBInfoItems]]): DBIO[DBInfoItems] =
+  protected[this] def dbioDBInfoItemsSum(actions: Seq[DBIO[DBInfoItems]]): DBIO[DBInfoItems] =
     DBIO.fold(actions, SortedMap.empty[DBNode,Seq[DBValue]])(_ ++ _)
 
-  protected def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
+  protected[this] def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {
     seqIO =>
       def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {
         listA <- a
@@ -31,31 +31,31 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
   trait Hole // TODO: RemoveMe!
 
   //Helper for getting values with path
-  protected def getValuesQ(path: Path) =
+  protected[this] def getValuesQ(path: Path) =
     getWithHierarchyQ[DBValue, DBValuesTable](path, latestValues)
 
-  protected def getValuesQ(id: Int) =
+  protected[this] def getValuesQ(id: Int) =
     latestValues filter (_.hierarchyId === id)
 
-  protected def getValueI(path: Path) =
+  protected[this] def getValueI(path: Path) =
     getValuesQ(path).sortBy(
       _.timestamp.desc
     ).result.map(_.headOption)
 
-  protected def getDBInfoItemI(path: Path): DBIOro[Option[DBInfoItem]] = {
+  protected[this] def getDBInfoItemI(path: Path): DBIOro[Option[DBInfoItem]] = {
 
     val tupleDataI = joinWithHierarchyQ[DBValue, DBValuesTable](path, latestValues).result
 
     tupleDataI map toDBInfoItem
   }
 
-  protected def getWithExprI[ItemT, TableT <: HierarchyFKey[ItemT]](
+  protected[this] def getWithExprI[ItemT, TableT <: HierarchyFKey[ItemT]](
     expr: Rep[ItemT] => Rep[Boolean],
     table: TableQuery[TableT]
   ): DBIOro[Option[ItemT]] =
     table.filter(expr).result.map(_.headOption)
 
-  protected def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
+  protected[this] def getWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
     path: Path,
     table: TableQuery[TableT]
   ): Query[TableT,ItemT,Seq] = // NOTE: Does the Query table need (DBNodesTable, TableT) ?
@@ -63,39 +63,39 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
       (hie, value) <- getHierarchyNodeQ(path) join table on (_.id === _.hierarchyId )
     } yield(value)
 
-  protected def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
+  protected[this] def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]](
     path: Path,
     table: TableQuery[TableT]
   ): Query[(DBNodesTable, Rep[Option[TableT]]),(DBNode, Option[ItemT]),Seq] =
     hierarchyNodes.filter(_.path === path) joinLeft table on (_.id === _.hierarchyId )
 
-  protected def getHierarchyNodeQ(path: Path) : Query[DBNodesTable, DBNode, Seq] =
+  protected[this] def getHierarchyNodeQ(path: Path) : Query[DBNodesTable, DBNode, Seq] =
     hierarchyNodes.filter(_.path === path)
 
-  protected def getHierarchyNodeQ(id: Int) : Query[DBNodesTable, DBNode, Seq] =
+  protected[this] def getHierarchyNodeQ(id: Int) : Query[DBNodesTable, DBNode, Seq] =
     hierarchyNodes.filter(_.id === id)
 
-  protected def getHierarchyNodeI(path: Path): DBIOro[Option[DBNode]] =
+  protected[this] def getHierarchyNodeI(path: Path): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.path === path).result.map(_.headOption)
 
-  protected def getHierarchyNodesI(paths: Seq[Path]): DBIOro[Seq[DBNode]] =
+  protected[this] def getHierarchyNodesI(paths: Seq[Path]): DBIOro[Seq[DBNode]] =
   hierarchyNodes.filter(node => node.path.inSet( paths) ).result
    
-  protected def getHierarchyNodesQ(paths: Seq[Path]) :Query[DBNodesTable,DBNode,Seq]=
+  protected[this] def getHierarchyNodesQ(paths: Seq[Path]) :Query[DBNodesTable,DBNode,Seq]=
   hierarchyNodes.filter(node => node.path.inSet( paths) )
 
-  protected def getHierarchyNodeI(id: Int): DBIOro[Option[DBNode]] =
+  protected[this] def getHierarchyNodeI(id: Int): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
 
-  protected def getSubI(id: Long): DBIOro[Option[DBSub]] =
+  protected[this] def getSubI(id: Long): DBIOro[Option[DBSub]] =
     subs.filter(_.id === id).result map {
       _.headOption map {
         case sub: DBSub => sub
         case _ => throw new RuntimeException("got wrong or unknown sub class???")
       }
     }
-  protected def getSubItemHierarchyIdsI(subId: Long) =
+  protected[this] def getSubItemHierarchyIdsI(subId: Long) =
     subItems filter (
       _.subId === subId
     ) map ( _.hierarchyId ) result

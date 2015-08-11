@@ -151,7 +151,7 @@ require(path.length > 1,
     )
   }
 
-  private def sharedAndUniques[A]( another: OdfObject )( 
+  private[this] def sharedAndUniques[A]( another: OdfObject )( 
     constructor: (
       Seq[OdfInfoItem],
       Seq[OdfInfoItem],
