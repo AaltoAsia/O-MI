@@ -22,7 +22,7 @@
      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
      <![endif]-->
 	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.js"></script>
+	<script type="text/javascript" src="js/lib/jquery.js"></script>
 	<script type="text/javascript" src="js/lib/bootstrap.js"></script>
 	<script type="text/javascript" src="js/lib/moment-with-locales.min.js"></script>
 	<script type="text/javascript" src="js/lib/bootstrap-datetimepicker.min.js"></script>
@@ -35,6 +35,7 @@
 	<script type="text/javascript" src="js/requests.js"></script>
 	<script type="text/javascript" src="js/formlogic.js"></script>
 	<script type="text/javascript" src="js/omi.js"></script>
+	<script type="text/javascript" src="js/newInfoItemForm.js"></script>
 
 </head>
 <body>
@@ -93,7 +94,7 @@
     </div> <!-- /.container-fluid -->
   </nav>
   <div class="container-fluid" role="main"><div class="row">
-    <div class="col-md-4 panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+    <div class="col-md-4 panel-group" role="tablist">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h4 class="panel-title">
@@ -365,7 +366,7 @@
         <div class="modal-body">
           <form>
             <div class="form-group">
-              <label for="infoItemName" class="control-label">Name*</label>
+              <label for="infoItemName" class="control-label ">Name*</label>
               <input type="text" class="form-control" id="infoItemName">
             </div>
             <div class="form-group">
@@ -373,30 +374,143 @@
               <input type="text" class="form-control" id="infoItemDescription">
             </div>
 
-            <label class="control-label">Values*</label>
-            <div class="form-group">
-              <div class="well">
-                <label class="control-label" for="time1">Time</label>
-                <input type="text" class="form-control" id="time1">
-                <label class="control-label" for="value1">Value*</label>
-                <input type="text" class="form-control" id="value1">
-                <label class="control-label" for="type1">Type</label>
-                <input type="text" class="form-control" id="type1">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <b>Values*</b>
+                </h4>
               </div>
-              <button class="btn btn-info form-control"><b>+</b></button>
+              <div id="newValues" class="panel-body">
+                <div class="well value-group form-group container-fluid">
+                  <div class="row">
+                  <label class="control-label col-md-12">Value*
+                    <input type="text" class="form-control">
+                  </label>
+                  </div>
+                  <div class="row">
+                    <label class="control-label col-md-6">Type
+                      <select class="form-control">
+                        <option>int</option>               
+                        <option>byte</option>              
+                        <option>short</option>             
+                        <option>long</option>              
+                        <option>float</option>             
+                        <option>double</option>            
+                        <option>integer</option>           
+                        <option>nonPositiveInteger</option>
+                        <option>negativeInteger</option>   
+                        <option>nonNegativeInteger</option>
+                        <option>positiveInteger</option>   
+                        <option>unsignedLong</option>      
+                        <option>unsignedInt</option>       
+                        <option>unsignedShort</option>     
+                        <option>unsignedByte</option>      
+                        <option>decimal</option>           
+                        <option>boolean</option>           
+                        <option selected>string</option>            
+                        <option>normalizedString</option>  
+                        <option>token</option>             
+                        <option>language</option>          
+                        <option>Name</option>              
+                        <option>NCName</option>            
+                        <option>NMTOKEN</option>           
+                        <option>NMTOKENS</option>          
+                        <option>ID</option>                
+                        <option>IDREF</option>             
+                        <option>IDREFS</option>            
+                        <option>ENTITY</option>            
+                        <option>ENTITIES</option>          
+                        <option>hexBinary</option>         
+                        <option>base64Binary</option>      
+                        <option>anyURI</option>            
+                        <option>QName</option>             
+                        <option>NOTATION</option>          
+                        <option>duration</option>          
+                        <option>dateTime</option>          
+                        <option>time</option>              
+                        <option>gYearMonth</option>        
+                        <option>gYear</option>             
+                        <option>gMonthDay</option>         
+                        <option>gDay</option>              
+                        <option>gMonth</option>            
+                      </select>
+                    </label>
+                    <label class="control-label col-md-6">Time
+                      <input type="text" class="form-control">
+                    </label>
+                  </div>
+                </div>
+                <button class="btn btn-info form-control btn-clone-above"><b>+</b></button>
+              </div>
             </div>
 
-            <label class="control-label">MetaData</label>
-            <div class="form-group">
-              <div class="well">
-                <label class="control-label" for="">Name</label>
-                <input type="text" class="form-control" id="metaName1">
-                <label class="control-label" for="">Value</label>
-                <input type="text" class="form-control" id="metaValue1">
-                <label class="control-label" for="">Type</label>
-                <input type="text" class="form-control" id="metaType1">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <b>MetaData</b>
+                </h4>
               </div>
-              <button class="btn btn-info form-control"><b>+</b></button>
+              <div class="panel-body">
+                <div class="well metadata-group form-group container-fluid">
+                  <label class="control-label col-md-12">Name
+                    <input type="text" class="form-control">
+                  </label>
+                  <label class="control-label col-md-12">Value
+                    <input type="text" class="form-control">
+                  </label>
+                  <label class="control-label col-md-12">Type
+                    <select class="form-control">
+                      <option>int</option>               
+                      <option>byte</option>              
+                      <option>short</option>             
+                      <option>long</option>              
+                      <option>float</option>             
+                      <option>double</option>            
+                      <option>integer</option>           
+                      <option>nonPositiveInteger</option>
+                      <option>negativeInteger</option>   
+                      <option>nonNegativeInteger</option>
+                      <option>positiveInteger</option>   
+                      <option>unsignedLong</option>      
+                      <option>unsignedInt</option>       
+                      <option>unsignedShort</option>     
+                      <option>unsignedByte</option>      
+                      <option>decimal</option>           
+                      <option>boolean</option>           
+                      <option selected>string</option>            
+                      <option>normalizedString</option>  
+                      <option>token</option>             
+                      <option>language</option>          
+                      <option>Name</option>              
+                      <option>NCName</option>            
+                      <option>NMTOKEN</option>           
+                      <option>NMTOKENS</option>          
+                      <option>ID</option>                
+                      <option>IDREF</option>             
+                      <option>IDREFS</option>            
+                      <option>ENTITY</option>            
+                      <option>ENTITIES</option>          
+                      <option>hexBinary</option>         
+                      <option>base64Binary</option>      
+                      <option>anyURI</option>            
+                      <option>QName</option>             
+                      <option>NOTATION</option>          
+                      <option>duration</option>          
+                      <option>dateTime</option>          
+                      <option>time</option>              
+                      <option>gYearMonth</option>        
+                      <option>gYear</option>             
+                      <option>gMonthDay</option>         
+                      <option>gDay</option>              
+                      <option>gMonth</option>            
+                    </select>
+                  </label>
+                  <label class="control-label col-md-12">description
+                    <input type="text" class="form-control">
+                  </label>
+                </div>
+                <button class="btn btn-info form-control btn-clone-above"><b>+</b></button>
+              </div>
             </div>
           </form>
         </div>

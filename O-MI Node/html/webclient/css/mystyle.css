@@ -1,30 +1,9 @@
+
+/* prevent horizontal scrollbar */
 html {
     overflow-x: hidden;
 }
-.siderbar{
-    position: relative;
-    min-height: 50px;
-    margin-bottom: 20px;
-    border: 1px solid transparent;
-    border-color: #E7E7E7;
-    background-color: #F8F8F8;
-}
 
-.sidebar-brand{
-    color: #777;
-    font-size: 18px;
-    line-height: 20px;
-    float: left;
-    padding: 15px;
-
-}
-
-.sidebar-fixed-top {
-    left: 0;
-    position: fixed;
-    right: 0;
-    z-index: 1030;
-}
 
 .CodeMirror {
     font-size: 12px
@@ -34,6 +13,11 @@ html {
 .response .CodeMirror {
     height: 30em;
 }
+/* Change cursor on response CodeMirror links*/
+.cm-link{
+    cursor: pointer;
+}
+
 
 .requesttree .jstree-anchor {
     border: 1px solid;
@@ -47,6 +31,8 @@ html {
     font-weight: bold;
 }
 
+
+/* odfTree icons */
 .odf-objects {
     color:green;
 }
@@ -59,7 +45,4 @@ html {
 .odf-metadata {
     color:#1E90FF; /* dodgerblue */
 }
-/*Change cursor on CodeMirror links*/
-.cm-link{
-    cursor: pointer;
-}
+
