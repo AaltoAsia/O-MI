@@ -3,11 +3,11 @@
   (function(consts) {
     var cloneAbove;
     cloneAbove = function() {
-      var model, that;
-      that = $(this);
-      model = that.prev().clone();
+      var model, target;
+      target = $(this).prev();
+      model = target.clone();
       model.find("input").val("");
-      return that.prev().after(model);
+      return target.after(model);
     };
     return consts.afterJquery(function() {
       return $('.btn-clone-above').on('click', cloneAbove);
