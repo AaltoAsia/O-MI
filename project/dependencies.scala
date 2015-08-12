@@ -39,6 +39,9 @@ object Dependencies{
 //Scala XML
   val scalaXML = "org.scala-lang.modules" %% "scala-xml" % "1.0.4" //
   
+//STM
+  val stm = "org.scala-stm" %% "scala-stm" % "0.7"
+
   val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
 	sprayCan,
@@ -57,7 +60,8 @@ object Dependencies{
 	)
   
   val servletDependencies: Seq[ModuleID] = Seq(
-    sprayServlet
+    sprayServlet,
+	stm
 	)
   
   val testDependencies: Seq[ModuleID] = Seq(

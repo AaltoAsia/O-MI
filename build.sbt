@@ -7,22 +7,29 @@ val commonSettings = Seq(
   scalacOptions := Seq("-unchecked", "-feature", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
   autoAPIMappings := true,
-  //Eclipse
-  EclipseKeys.withSource := true
+  exportJars := true,
+  Revolver.settings,
+  EclipseKeys.withSource := true,
+  ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   )
 
 lazy val omiNode = (project in file("O-MI Node")).
   settings(
     (commonSettings ++ Seq(
-	parallelExecution in Test := false)
-	):_*
+	name := "O-MI-Node",
+	parallelExecution in Test := false,
+	cleanFiles <++= baseDirectory {_ * "*.db" get}
+	)):_*
   ).
   settings(
     libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies
   )
   
 lazy val agents = (project in file("Agents")).
-  settings(commonSettings: _*).
+  settings((commonSettings ++ Seq(
+  name := "Agents"
+  )): _*
+  ).
   settings(
     libraryDependencies ++= commonDependencies
   ).
@@ -30,4 +37,4 @@ lazy val agents = (project in file("Agents")).
   
 //  enablePlugins(JavaAppPackaging)
   
-  Revolver.settings
+// Revolver.settings
