@@ -1,36 +1,28 @@
 import com.github.retronym.SbtOneJar
 import Dependencies._
 
-val commonSettings = Seq[sbt.Def.SettingsDefinition](
+val commonSettings = Seq(
   version := "0.1.7-SNAPSHOT",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-feature", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
   autoAPIMappings := true,
-  exportJars := true,
-  Revolver.settings,
+  //Eclipse
   EclipseKeys.withSource := true
   )
-  //oneJarSettings
-  
 
 lazy val omiNode = (project in file("O-MI Node")).
   settings(
-    (commonSettings ++ Seq[sbt.Def.SettingsDefinition](
-	name := "O-MI-Node",
-	parallelExecution in Test := false,
-	cleanFiles <++= baseDirectory {_ * "*.db" get}
-	)):_*
+    (commonSettings ++ Seq(
+	parallelExecution in Test := false)
+	):_*
   ).
   settings(
     libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies
   )
   
 lazy val agents = (project in file("Agents")).
-  settings((commonSettings ++ Seq[sbt.Def.SettingsDefinition](
-  name := "Agents"
-  )): _*
-  ).
+  settings(commonSettings: _*).
   settings(
     libraryDependencies ++= commonDependencies
   ).
@@ -38,4 +30,4 @@ lazy val agents = (project in file("Agents")).
   
 //  enablePlugins(JavaAppPackaging)
   
- // Revolver.settings
+  Revolver.settings
