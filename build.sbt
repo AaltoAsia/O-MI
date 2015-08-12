@@ -7,8 +7,7 @@ val commonSettings = Seq(
   scalacOptions := Seq("-unchecked", "-feature", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
   autoAPIMappings := true,
-  exportJars := true,
-  Revolver.settings,
+  //exportJars := true,
   EclipseKeys.withSource := true,
   ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   )
@@ -18,6 +17,7 @@ lazy val omiNode = (project in file("O-MI Node")).
     (commonSettings ++ Seq(
 	name := "O-MI-Node",
 	parallelExecution in Test := false,
+	Revolver.settings,
 	cleanFiles <++= baseDirectory {_ * "*.db" get}
 	)):_*
   ).
@@ -35,6 +35,6 @@ lazy val agents = (project in file("Agents")).
   ).
   dependsOn(omiNode)
   
-//  enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging)
   
 // Revolver.settings
