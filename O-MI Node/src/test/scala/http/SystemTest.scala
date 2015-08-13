@@ -69,8 +69,6 @@ class SystemTest extends Specification with Starter with AfterAll {
   val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
   val printer = new scala.xml.PrettyPrinter(80, 2)
   val parser = new HTML5Parser
-  println("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-  println(java.nio.file.Files.exists(java.nio.file.Paths.get("O-MI Node/html/ImplementationDetails.html")))
   val sourceFile = if(java.nio.file.Files.exists(java.nio.file.Paths.get("O-MI Node/html/ImplementationDetails.html"))){
     Source.fromFile("O-MI Node/html/ImplementationDetails.html")
   }else Source.fromFile("html/ImplementationDetails.html")
