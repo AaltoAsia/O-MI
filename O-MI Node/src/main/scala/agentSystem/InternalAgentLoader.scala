@@ -96,8 +96,8 @@ class InternalAgentLoader extends Actor with ActorLogging {
           case agent: InternalAgent if agent.isAlive =>
             log.warning(s"Re-Starting: " + agentInfo.name)
             agents -= agentInfo.name
-            agent.shutdown();
-            Thread.sleep(3000)
+            agent.interrupt()
+            agent.join()
             loadAndStart(agentInfo.name, agentInfo.configPath)
         }
       }
@@ -109,12 +109,15 @@ class InternalAgentLoader extends Actor with ActorLogging {
           case agent: InternalAgent if agent.isAlive =>
             log.warning(s"Stopping: " + agentInfo.name)
             agents -= agentInfo.name
-            agent.shutdown()
+            agent.interrupt();
+            agent.join()
             agents += agentInfo.name -> AgentInfo(agentInfo.name, agentInfo.configPath, None, agentInfo.timestamp)
         }
       }
     }
 
+    case ThreadException(sender: InternalAgent, exception: InterruptedException) =>
+      log.info(s"$sender.name was succesfully terminated.")
     case ThreadException(sender: InternalAgent, exception: Exception) =>
       log.warning(s"InternalAgent caugth exception: $exception")
       var date = new Date()
@@ -177,10 +180,11 @@ class InternalAgentLoader extends Actor with ActorLogging {
     Try {
       log.info("Instantitating agent: " + classname)
       val clazz = classLoader.loadClass(classname)
-      val const = clazz.getConstructors()(0)
-      val agent: InternalAgent = const.newInstance(configPath).asInstanceOf[InternalAgent]
+      val const = clazz.getConstructor()
+      val agent: InternalAgent = const.newInstance().asInstanceOf[InternalAgent]
       val date = new Date()
       agents += classname -> AgentInfo(classname, configPath, Some(agent), new Timestamp(date.getTime))
+      agent.init(configPath)
       agent.start()
     } match {
       case Success(_) => ()
