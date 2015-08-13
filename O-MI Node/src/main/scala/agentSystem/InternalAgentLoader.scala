@@ -201,10 +201,13 @@ class InternalAgentLoader extends Actor with ActorLogging {
    *
    */
   private[this] def createClassLoader(): ClassLoader = {
-    val deploy = new File("deploy")
+    val deploy = new File("O-MI Node/deploy")
+    lazy val ideDeploy = new File("deploy")
     if (deploy.exists) {
       loadDeployJars(deploy)
-    } else {
+    } else if (ideDeploy.exists()) {
+      loadDeployJars(ideDeploy)
+    }else {
       log.warning("No deploy dir found at " + deploy)
       Thread.currentThread.getContextClassLoader
     }
