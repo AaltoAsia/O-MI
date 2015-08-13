@@ -8,6 +8,8 @@ omiExt = (WebOmi) ->
 
   # Generic xml string parser
   my.parseXml = (responseString) ->
+    if responseString < 2
+      return null
     try
       xmlTree = new DOMParser().parseFromString responseString, 'application/xml'
     catch ex
@@ -53,11 +55,25 @@ omiExt = (WebOmi) ->
   my.createOmi = (elem, doc) ->
     doc.createElementNS(my.ns.omi, elem)
 
-  my.createOdfValue = (doc) ->
-    createOdf "value", doc
+  my.createOdfValue = (doc, value=null, valueType=null, valueTime=null) ->
+    odfVal = createOdf "value", doc
+    if value?
+      odfVal.appendChild doc.createTextNode value
+    if valueType?
+      odfVal.setAttribute "type", "xs:"+valueType
+    if valueTime?
+      odfVal.setAttribute "unixTime", valueTime
+    odfVal
+
 
   my.createOdfMetaData = (doc) ->
     createOdf "MetaData", doc
+
+  my.createOdfDescription = (doc, text) ->
+    descElem = createOdf "description", doc
+    textElem = doc.createTextNode text
+    descElem.appendChild textElem
+    descElem
 
   my.createOdfObjects = (doc) ->
     createOdf "Objects", doc
@@ -66,16 +82,24 @@ omiExt = (WebOmi) ->
     createdElem = createOdf "Object", doc
 
     idElem      = createOdf "id", doc
-    textElem    = doc.createTextNode(id)
+    textElem    = doc.createTextNode id
 
     idElem.appendChild textElem
     createdElem.appendChild idElem
     createdElem
 
   # Create omi element with the right namespace
-  my.createOdfInfoItem = (doc, name) ->
+  # values have structure [{ value:String, valuetime:String unix-time, valuetype:String }]
+  my.createOdfInfoItem = (doc, name, values=[], description=null) ->
     createdElem = createOdf "InfoItem", doc
     createdElem.setAttribute "name", name
+    for value in values
+      val = my.createOdfValue doc, value.value, value.valuetype, value.valuetime
+      createdElem.appendChild val
+    if description?
+      # prepend as first
+      createdElem.insertBefore my.createOdfDescription(doc, description), createdElem.firstChild
+      
     createdElem
 
 

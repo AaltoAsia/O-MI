@@ -17,6 +17,24 @@
       infoitem: "glyphicon glyphicon-apple",
       metadata: "glyphicon glyphicon-info-sign"
     };
+    my.addOdfTreeNode = function(parent, path, name, treeTypeName, callback) {
+      var tree;
+      if (callback == null) {
+        callback = null;
+      }
+      tree = WebOmi.consts.odfTree;
+      return tree.create_node(parent, {
+        id: path,
+        text: name,
+        type: treeTypeName
+      }, "first", function(node) {
+        tree.open_node(parent, null, 500);
+        if (callback != null) {
+          callback(node);
+        }
+        return tree.select_node(node);
+      });
+    };
     openOdfContextmenu = function(target) {
       var createNode;
       createNode = function(particle, odfName, treeTypeName, defaultId) {
@@ -32,16 +50,10 @@
             idName = idesc(name);
             path = parent.id + "/" + idName;
             if ($(jqesc(path)).length > 0) {
-              return;
+              tree.select_node(path);
+            } else {
+              return my.addOdfTreeNode(parent, path, name, treeTypeName);
             }
-            return tree.create_node(parent, {
-              id: path,
-              text: name,
-              type: treeTypeName
-            }, "first", function() {
-              tree.open_node(parent, null, 500);
-              return tree.select_node(path);
-            });
           }
         };
       };
@@ -54,7 +66,15 @@
           },
           separator_after: true
         },
-        add_info: createNode("an", "InfoItem", "infoitem", "MyInfoItem"),
+        add_info: $.extend(createNode("an", "InfoItem", "infoitem", "MyInfoItem"), {
+          action: function(data) {
+            var tree;
+            tree = WebOmi.consts.odfTree;
+            parent = tree.get_node(data.reference);
+            $('#infoItemParent').val(parent.id);
+            return WebOmi.consts.infoitemDialog.modal("show");
+          }
+        }),
         add_obj: createNode("an", "Object", "object", "MyObject"),
         add_metadata: createNode("a", "MetaData", "metadata", null)
       };

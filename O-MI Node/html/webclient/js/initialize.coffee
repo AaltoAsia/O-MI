@@ -17,6 +17,18 @@ constsExt = ($, parent) ->
     infoitem : "glyphicon glyphicon-apple"
     metadata : "glyphicon glyphicon-info-sign"
 
+  my.addOdfTreeNode = (parent, path, name, treeTypeName, callback=null) ->
+    tree = WebOmi.consts.odfTree
+    tree.create_node parent,
+      id   : path
+      text : name
+      type : treeTypeName
+    , "first", (node) ->
+      tree.open_node parent, null, 500
+      if callback? then callback(node)
+      tree.select_node node
+
+
   # private
   openOdfContextmenu = (target) ->
     createNode = (particle, odfName, treeTypeName, defaultId) ->
@@ -38,15 +50,12 @@ constsExt = ($, parent) ->
         path = "#{parent.id}/#{idName}"
 
         if $(jqesc path).length > 0
-          return # already exists
-
-        tree.create_node parent,
-          id   : path
-          text : name
-          type : treeTypeName
-        , "first", ->
-          tree.open_node parent, null, 500
           tree.select_node path
+          return # already exists
+        else
+          my.addOdfTreeNode parent, path, name, treeTypeName
+
+
 
     helptxt :
       label : "For write request:"
@@ -55,7 +64,14 @@ constsExt = ($, parent) ->
       action : -> my.ui.request.set "write", false
       separator_after : true
     add_info :
-      createNode "an", "InfoItem", "infoitem", "MyInfoItem"
+      $.extend (createNode "an", "InfoItem", "infoitem", "MyInfoItem"),
+        action : (data) -> # override action
+          tree = WebOmi.consts.odfTree
+          parent = tree.get_node data.reference
+          $ '#infoItemParent'
+            .val parent.id
+          WebOmi.consts.infoitemDialog.modal "show"
+
     add_obj :
       createNode "an", "Object", "object", "MyObject"
     add_metadata :

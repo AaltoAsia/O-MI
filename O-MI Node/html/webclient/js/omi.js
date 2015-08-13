@@ -7,6 +7,9 @@
     my = WebOmi.omi = {};
     my.parseXml = function(responseString) {
       var ex, xmlTree;
+      if (responseString < 2) {
+        return null;
+      }
       try {
         xmlTree = new DOMParser().parseFromString(responseString, 'application/xml');
       } catch (_error) {
@@ -47,11 +50,38 @@
     my.createOmi = function(elem, doc) {
       return doc.createElementNS(my.ns.omi, elem);
     };
-    my.createOdfValue = function(doc) {
-      return createOdf("value", doc);
+    my.createOdfValue = function(doc, value, valueType, valueTime) {
+      var odfVal;
+      if (value == null) {
+        value = null;
+      }
+      if (valueType == null) {
+        valueType = null;
+      }
+      if (valueTime == null) {
+        valueTime = null;
+      }
+      odfVal = createOdf("value", doc);
+      if (value != null) {
+        odfVal.appendChild(doc.createTextNode(value));
+      }
+      if (valueType != null) {
+        odfVal.setAttribute("type", "xs:" + valueType);
+      }
+      if (valueTime != null) {
+        odfVal.setAttribute("unixTime", valueTime);
+      }
+      return odfVal;
     };
     my.createOdfMetaData = function(doc) {
       return createOdf("MetaData", doc);
+    };
+    my.createOdfDescription = function(doc, text) {
+      var descElem, textElem;
+      descElem = createOdf("description", doc);
+      textElem = doc.createTextNode(text);
+      descElem.appendChild(textElem);
+      return descElem;
     };
     my.createOdfObjects = function(doc) {
       return createOdf("Objects", doc);
@@ -65,10 +95,24 @@
       createdElem.appendChild(idElem);
       return createdElem;
     };
-    my.createOdfInfoItem = function(doc, name) {
-      var createdElem;
+    my.createOdfInfoItem = function(doc, name, values, description) {
+      var createdElem, i, len, val, value;
+      if (values == null) {
+        values = [];
+      }
+      if (description == null) {
+        description = null;
+      }
       createdElem = createOdf("InfoItem", doc);
       createdElem.setAttribute("name", name);
+      for (i = 0, len = values.length; i < len; i++) {
+        value = values[i];
+        val = my.createOdfValue(doc, value.value, value.valuetype, value.valuetime);
+        createdElem.appendChild(val);
+      }
+      if (description != null) {
+        createdElem.insertBefore(my.createOdfDescription(doc, description), createdElem.firstChild);
+      }
       return createdElem;
     };
     my.getOdfId = function(xmlNode) {
