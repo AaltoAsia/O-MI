@@ -38,7 +38,7 @@ static public methods:
 - `handlePathValuePairs` that takes `Iterable` of `(Path, OdfValue)` pairs as parameter,
 - `handlePathMetaDataPairs` that takes `Iterable` of `(Path, OdfMetaData)` pairs as parameter,
 
-<b>To use o-mi-node.jar as libarary add it to classpath.</b>
+**To use o-mi-node.jar as libarary add it to classpath.**
 
 JavaAgent and ScalaAgent both take O-DF path as config
 parameter and start pushing random generated values to that path.
