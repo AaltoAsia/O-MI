@@ -123,12 +123,12 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter {
-  def main(args: Array[String]) = {
+object Boot extends Starter with App{
+//def main(args: Array[String]) = {
     init()
     val serviceActor = start()
     bindHttp(serviceActor)
-  }
+  //}
 }
 
 

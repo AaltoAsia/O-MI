@@ -32,22 +32,7 @@ lazy val agents = (project in file("Agents")).
     libraryDependencies ++= commonDependencies
   ).
   dependsOn(omiNode)
-//  
-//  lazy val root = Project(
-//    id = "root",
-//    base = file("."),
-//    // configure your native packaging settings here
-//	enablePlugins(JavaServerAppPackaging),
-//    settings = Seq(
-//	  maintainer := "John Smith <john.smith@example.com>",
-//      packageDescription := "Fullstack Application",
-//      packageSummary := "Fullstack Application",
-//      // entrypoint
-//      mainClass in Compile := Some("http.boot")
-//      ),
-//    // always run all commands on each sub project
-//    aggregate(agents, omiNode)
-//    ) dependsOn(agents, omiNode)
+
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
@@ -56,7 +41,7 @@ lazy val root = (project in file(".")).
    // packageDescription := "TempName",
    // packageSummary := "TempName",
    // entrypoint
-    mainClass in Compile := Some("omi.ProductionServer")
+    mainClass in Compile := Some("http.Boot")
 	)):_*).
   aggregate(omiNode,agents).
   dependsOn(omiNode,agents)
