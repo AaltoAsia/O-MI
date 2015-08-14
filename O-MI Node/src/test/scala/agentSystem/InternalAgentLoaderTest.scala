@@ -44,7 +44,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       val agents = actor.getAgents
       agents must haveKey("agents.VTTAgent")
       agents must haveKey("agents.SmartHouseAgent")
-      agents must haveKey("agents.CoffeeMaker")
+      agents must haveKey("agents.JavaAgent")
     }
 
     "be able to start and stop agents with start and stop messages" in new Actorstest(
@@ -54,17 +54,17 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
             """
             akka.loggers = ["akka.testkit.TestEventListener"]
             """).withFallback(ConfigFactory.load())))) {
-      val agentName = "agents.CoffeeMaker"
+      val agentName = "agents.JavaAgent"
       val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
       val actor = actorRef.underlyingActor
       val agents = actor.getAgents
       agents must haveKey(agentName)
       val eActor = agents(agentName).agent
-      eActor must beSome.which { agent => agent.isRunning must beTrue }
+      eActor must beSome.which { agent => agent.isAlive must beTrue }
       EventFilter.warning(message = ("Stopping: " + agentName), occurrences = 1) intercept {
         actorRef.receive(StopCmd(agentName))
       }
-      eActor must beSome.which { _.isRunning must beFalse }
+      eActor must beSome.which { _.isAlive must beFalse }
       //agent still there but agent in AgentInfo is None
       actor.getAgents must haveKey(agentName)
       actor.getAgents(agentName).agent must beNone
@@ -73,7 +73,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
         actorRef.receive(StartCmd(agentName))
       }
 
-      Future { actor.getAgents(agentName).agent must beSome.which { agent => agent.isRunning must beTrue } }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
+      Future { actor.getAgents(agentName).agent must beSome.which { agent => agent.isAlive must beTrue } }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
 
     }
 
@@ -94,9 +94,9 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
         actorRef.receive(ReStartCmd(agentName))
       }
 
-      eActor must beSome.which { _.isRunning must beFalse }
+      eActor must beSome.which { _.isAlive must beFalse }
 
-      Future { actor.getAgents(agentName).agent must beSome.which(_.isRunning must beTrue) }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
+      Future { actor.getAgents(agentName).agent must beSome.which(_.isAlive must beTrue) }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
     }
 
     "handle exceptions if trying to load non-existing agents" in new Actorstest(
@@ -129,7 +129,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       val agents = actor.getAgents
       agents must haveKey(agentName)
       val eActor = agents(agentName).agent
-      eActor must beSome.which { agent => agent.isRunning must beTrue }
+      eActor must beSome.which { agent => agent.isAlive must beTrue }
       EventFilter.warning(pattern=
           """InternalAgent caugth exception: java\.lang\.Exception: test|Trying to relaunch: agents\.SmartHouseAgent"""
           , occurrences = 2) intercept{
@@ -137,8 +137,8 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       }
       val agents2 = actor.getAgents
       agents2 must haveKey(agentName)
-      agents2(agentName).agent must beSome.which(_.isRunning must beTrue) 
-//      eActor(agentName) must beSome.which { agent => agent.isRunning must beTrue }
+      agents2(agentName).agent must beSome.which(_.isAlive must beTrue) 
+//      eActor(agentName) must beSome.which { agent => agent.isAlive must beTrue }
     }*/
     
     
