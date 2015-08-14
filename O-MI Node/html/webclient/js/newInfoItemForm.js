@@ -23,10 +23,13 @@
       consts.infoitemForm.submit(function(event) {
         return event.preventDefault();
       });
-      return $('.newInfoSubmit').on('click', function() {
+      $('.newInfoSubmit').on('click', function() {
         var infoitemData;
         infoitemData = readValues();
         return updateOdf(infoitemData);
+      });
+      return consts.infoitemDialog.on('hide.bs.modal', function() {
+        return resetInfoItemForm();
       });
     });
     getGroups = function(ofWhat, requiredField) {

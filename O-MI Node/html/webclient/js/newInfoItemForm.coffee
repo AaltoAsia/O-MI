@@ -42,7 +42,10 @@
         infoitemData = readValues()
         updateOdf infoitemData
         
-
+    # Reset on cancel or close
+    consts.infoitemDialog
+      .on 'hide.bs.modal', ->
+        resetInfoItemForm()
 
   # 2. Reading of values
   
