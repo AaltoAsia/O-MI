@@ -47,6 +47,8 @@
       .on 'hide.bs.modal', ->
         resetInfoItemForm()
 
+    return
+
   # 2. Reading of values
   
   # return an Array of objects extracted from inputs of given selector (:String)
@@ -88,11 +90,27 @@
 
     path   = "#{parent}/#{idName}"
 
-    if $(jqesc path).length > 0
+    if $(jqesc path).length > 0 # already exists, 
       tree.select_node path
-      return # already exists, FIXME: inform the user, don't close
+
+      # Inform the user
+      $ '#infoItemName'
+        .tooltip
+          placement: "top"
+          title: "InfoItem with this name already exists"
+        .focus() # triggers the tooltip also
+        .on 'input', ->
+          $(this)
+            .tooltip 'destroy'
+            .closest '.form-group'
+              .removeClass 'has-error'
+        .closest '.form-group'
+          .addClass 'has-error'
+
+      return # don't close
     else
 
+      # TODO: User friendlier time input
 
       # NOTE: This also selects the node which triggers an event which modifies the request 
       consts.addOdfTreeNode parent, path, name, "infoitem", ->
@@ -109,13 +127,13 @@
       consts.infoitemDialog.modal 'hide'
       # reset
       resetInfoItemForm()
-      
+      return
 
   # 4. Resetting
   resetInfoItemForm = ->
     consts.infoitemForm.replaceWith consts.originalInfoItemForm.clone()
     consts.infoitemForm = $ consts.infoitemDialog.find 'form'
-    null
+    return
 
 
 )(WebOmi.consts, WebOmi.requests, WebOmi.omi)

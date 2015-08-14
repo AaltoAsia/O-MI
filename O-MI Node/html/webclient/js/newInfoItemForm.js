@@ -28,7 +28,7 @@
         infoitemData = readValues();
         return updateOdf(infoitemData);
       });
-      return consts.infoitemDialog.on('hide.bs.modal', function() {
+      consts.infoitemDialog.on('hide.bs.modal', function() {
         return resetInfoItemForm();
       });
     });
@@ -67,6 +67,12 @@
       path = parent + "/" + idName;
       if ($(jqesc(path)).length > 0) {
         tree.select_node(path);
+        $('#infoItemName').tooltip({
+          placement: "top",
+          title: "InfoItem with this name already exists"
+        }).focus().on('input', function() {
+          return $(this).tooltip('destroy').closest('.form-group').removeClass('has-error');
+        }).closest('.form-group').addClass('has-error');
       } else {
         consts.addOdfTreeNode(parent, path, name, "infoitem", function() {
           return $(jqesc(path)).data("values", newInfoItem.values).data("description", newInfoItem.description);
@@ -77,13 +83,12 @@
           });
         }
         consts.infoitemDialog.modal('hide');
-        return resetInfoItemForm();
+        resetInfoItemForm();
       }
     };
     return resetInfoItemForm = function() {
       consts.infoitemForm.replaceWith(consts.originalInfoItemForm.clone());
       consts.infoitemForm = $(consts.infoitemDialog.find('form'));
-      return null;
     };
   })(WebOmi.consts, WebOmi.requests, WebOmi.omi);
 

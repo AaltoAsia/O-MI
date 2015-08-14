@@ -66,6 +66,9 @@ constsExt = ($, parent) ->
     add_info :
       $.extend (createNode "an", "InfoItem", "infoitem", "MyInfoItem"),
         action : (data) -> # override action
+          # Prevent accidental loss of data due to wrong request
+          #my.ui.request.set "write", false
+
           tree = WebOmi.consts.odfTree
           parent = tree.get_node data.reference
           $ '#infoItemParent'
