@@ -26,16 +26,16 @@ contain anything, like path to a config file. After this InternalAgents start me
 called. This causes run method to be run in  another thread. 
 
 InternalAgent have also two other members: 
-LoggingAdapter log for logging and 
-ActorRef loader for cummincation with InternalAgentLoader. 
+* LoggingAdapter log for logging and 
+* ActorRef loader for cummincation with InternalAgentLoader. 
 
 For pushing data to database InputPusher's interface is used. It have five
 static public methods:
-handleOdf that takes a OdfObjects as parameter,
-handleObjects that takes Iterable of OdfObject as parameter,
-handleInfoItems that takes Iterable of OdfInfoItem as parameter,
-handlePathValuePairs that takes Iterable of (Path, OdfValue) pairs as parameter,
-handlePathMetaDataPairs that takes Iterable of (Path, OdfMetaData) pairs as parameter,
+* handleOdf that takes a OdfObjects as parameter,
+* handleObjects that takes Iterable of OdfObject as parameter,
+* handleInfoItems that takes Iterable of OdfInfoItem as parameter,
+* handlePathValuePairs that takes Iterable of (Path, OdfValue) pairs as parameter,
+* handlePathMetaDataPairs that takes Iterable of (Path, OdfMetaData) pairs as parameter,
 
 <b>To use o-mi-node.jar as libarary add it to classpath.</b>
 
