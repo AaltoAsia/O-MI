@@ -16,29 +16,32 @@ External Agent
 --------------
 All you need to do is to write a program that pushes O-DF formated data to the TCP
 port defined by `application.conf`'s omi-service.external-agent-port parameter.
-Program can be writen with any programming language. See [the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
+Program can be writen with any programming language. See
+[the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
+Starting and stopping of external agents are the user's responsibility.
 
 Internal Agent
 ----------------
-*InternalAgent* is a abstract class extending Thread class. They have two
-abstract methods: `init` and `run`. After `InternalAgent` is instatieted its `init`
+*InternalAgent* is an abstract class extending `Thread` class. They have two
+abstract methods: `init` and `run`. After an `InternalAgent` is created its `init`
 method is called with the string given for agent in `application.conf`. This string can
-contain anything, like path to a config file. After this `InternalAgent`'s `start` method is
-called. This causes the `run` method to be run in  another thread. 
+contain anything, like a path to a config file. After this `InternalAgent`'s `start` method is
+called. This causes the `run` method to be run in an another thread. 
 
 InternalAgent have also two other members: 
 * `LoggingAdapter log` for logging and 
-* `ActorRef loader` for cummincation with InternalAgentLoader. 
+* `ActorRef loader` for communication with the `InternalAgentLoader`. 
 
-For pushing data to database `InputPusher`'s interface is used. It have five
+For pushing data to database `InputPusher`'s interface is used. It has five
 static public methods:
-- `handleOdf` that takes a `OdfObjects` as parameter,
-- `handleObjects` that takes `Iterable` of `OdfObject` as parameter,
-- `handleInfoItems` that takes `Iterable` of `OdfInfoItem` as parameter,
-- `handlePathValuePairs` that takes `Iterable` of `(Path, OdfValue)` pairs as parameter,
-- `handlePathMetaDataPairs` that takes `Iterable` of `(Path, OdfMetaData)` pairs as parameter,
+- `handleOdf` that takes an `OdfObjects` as parameter,
+- `handleObjects` that takes an `Iterable` of `OdfObject` as parameter,
+- `handleInfoItems` that takes an `Iterable` of `OdfInfoItem` as parameter,
+- `handlePathValuePairs` that takes an `Iterable` of `(Path, OdfValue)` pairs as parameter,
+- `handlePathMetaDataPairs` that takes an `Iterable` of `(Path, OdfMetaData)` pairs as parameter,
 
-**To use o-mi-node.jar as libarary add it to classpath.**
+To make internal agents you need to have 
+**o-mi-node.jar as a libarary and added to your classpath**.
 
 `JavaAgent` and `ScalaAgent` both take an O-DF path as `config`
 parameter and start pushing random generated values to that path.
