@@ -40,7 +40,7 @@ static public methods:
 
 **To use o-mi-node.jar as libarary add it to classpath.**
 
-JavaAgent and ScalaAgent both take O-DF path as config
+`JavaAgent` and `ScalaAgent` both take an O-DF path as `config`
 parameter and start pushing random generated values to that path.
 
 Lets look at JavaAgent.java:
@@ -95,7 +95,7 @@ public class JavaAgent extends InternalAgent{
 }
 ```
 
-In init mehtod we initialise rnd for random value generation and save config
+In the `init` mehtod we initialise `rnd` for random value generation and save the `config`
 as O-DF.
 
 ```java
@@ -113,7 +113,7 @@ as O-DF.
     }
 ```
 
-In run method we generate new value and push it to path every ten seconds.
+In the `run` method we generate a new value and push it to the `path` every ten seconds.
 ```java
     public void run(){
         try{
