@@ -40,7 +40,7 @@ To use o-mi-node.jar as libarary add it to classpath.
 JavaAgent and ScalaAgent both random generate both take O-DF path as config
 parameter and start pushing random values to that path.
 Lets look at JavaAgent.java:
-'''java
+```java
 public class JavaAgent extends InternalAgent{
     public JavaAgent() { 
     }
@@ -89,12 +89,12 @@ public class JavaAgent extends InternalAgent{
         }
     }
 }
-'''
+```
 
 In init mehtod we initialise rnd for random value generation and save config
 as O-DF.
 
-'''java
+```java
     public void init( String config ){
 	try{
 	    rnd = new Random();
@@ -107,10 +107,10 @@ as O-DF.
             InternalAgent.log.warning( "JavaAgent has died." );
         }
     }
-'''
+```
 
 In run method we generate new value and push it to path every ten seconds.
-''̈́'java
+```java
     public void run(){
         try{
             while( !interrupted() && !path.toString().isEmpty() ){
@@ -140,7 +140,7 @@ In run method we generate new value and push it to path every ten seconds.
             InternalAgent.log.warning( "JavaAgent has died." );
         }
     }
-'''
+```
 
 Because O-MI Node has been writen with Scala, you may need to call Scala
 code from Java. Also notice that agent need to handle interruption of thread
