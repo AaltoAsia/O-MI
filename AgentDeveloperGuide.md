@@ -16,7 +16,7 @@ External Agent
 --------------
 All you need to do is to write a program that pushes O-DF formated data to the TCP
 port defined by `application.conf`'s omi-service.external-agent-port parameter.
-Program can be writen with any programming language.
+Program can be writen with any programming language. See [the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
 
 Internal Agent
 ----------------
@@ -147,13 +147,13 @@ In run method we generate new value and push it to path every ten seconds.
 ```
 
 Because O-MI Node has been writen with Scala, you may need to call Scala
-code from Java. Also notice that agent need to handle interruption of thread
-by themself and terminate itself when interrupt happens.
+code from Java. Also notice that agents need to [handle the interruption of thread
+by themself and terminate itself when interrupt happens](https://docs.oracle.com/javase/tutorial/essential/concurrency/interrupt.html).
 
-Now we have a internal agent, but to get O-MI Node to run it, we need to
-compile it to .jar file and put it to deploy directory. After this we have
-final step, look at application.conf and add new line to
-agent-system.internal-agents: 
+Now we have an internal agent, but to get O-MI Node to run it, we need to
+compile it to a .jar file and put it to `deploy` directory. After this we have
+the final step, open the `application.conf` and add new line to
+`agent-system.internal-agents`: 
 ```
 "<classname of agent>" = "<config string>"
 "agents.JavaAgent" = "Objects/JavaAgent/sensor"
