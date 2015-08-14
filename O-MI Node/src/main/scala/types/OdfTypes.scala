@@ -49,6 +49,9 @@ object `package` {
     }.toSeq
   }
 
+  def getInfoItems( objects: OdfObjects ) : JavaIterable[OdfInfoItem] = {
+    getLeafs(objects).collect{ case info: OdfInfoItem => info}
+  }
   /**
    * Generates odf tree containing the ancestors of given object.
    */

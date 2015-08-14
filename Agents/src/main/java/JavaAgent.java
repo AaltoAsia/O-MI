@@ -1,6 +1,7 @@
 package agents;
 
 import agentSystem.InternalAgent;
+import agentSystem.ThreadInitialisationException;
 import agentSystem.ThreadException;
 import agentSystem.InputPusher;
 import java.io.File;
@@ -20,8 +21,10 @@ public class JavaAgent extends InternalAgent{
     }
     private Path path;
     private Random rnd;
+    private boolean initialised = false;
     public void init(String config){
 	path = new Path(config);
+        initialised = true;
     }
     public void run(){
         try{
@@ -39,7 +42,7 @@ public class JavaAgent extends InternalAgent{
             loader.tell(new ThreadException( this, e), null);
             return;
         }finally{
-            InternalAgent.log.warning("ScalaAgent has died.");
+            InternalAgent.log.warning("JavaAgent has died.");
         }
     }
 }

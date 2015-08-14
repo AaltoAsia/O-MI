@@ -7,6 +7,7 @@ import xmlGen._
 import xmlGen.xmlTypes._
 import scala.util.{Try, Success, Failure}
 import java.util.Date
+import java.io.File
 import scala.util.control.NonFatal
 import scala.xml.XML
 import java.sql.Timestamp
@@ -21,6 +22,21 @@ object OdfParser extends Parser[OdfParseResult] {
   protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
+  /**
+   * Public method for parsing the xml file into OdfParseResults.
+   *
+   *  @param xml_msg XML formatted file to be parsed. Should be in O-DF format.
+   *  @return OdfParseResults
+   */
+  def parse(file: File): OdfParseResult = {
+    val root = Try(
+      XML.loadFile(file)
+    ).getOrElse(
+      return  Left( Iterable( ParseError("Invalid XML") ) ) 
+    )
+
+    parse(root)
+  }
 
   /**
    * Public method for parsing the xml string into OdfParseResults.
