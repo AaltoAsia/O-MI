@@ -2,7 +2,7 @@ Agent Developer Guide
 =====================
 
 What are Agents?
-===============
+----------------
 Agents are small programs that connect to sensors and push received data to
 O-MI Node. 
 There are two kind of Agents ussing different interfaces: 
@@ -13,12 +13,12 @@ inside same JVM as O-MI Node. These will us internal interface to push data to
 database.
 
 External Agent
-==============
+--------------
 All you need to do is to write a program that push O-DF formated data to TCP
 port defined by application.conf's omi-service.external-agent-port parameter.
 
 Internal Agent
-==============
+----------------
 InternalAgent is a abstract class extending Thread class. They have two
 abstract methods: init and run. After InternalAgent is instatieted its init
 method is called with string given for agent in application.conf. This string can
