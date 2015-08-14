@@ -146,4 +146,11 @@ Because O-MI Node has been writen with Scala, you may need to call Scala
 code from Java. Also notice that agent need to handle interruption of thread
 by themself and terminate itself when interrupt happens.
 
+Now we have a internal agent, but to get O-MI Node to run it, we need to
+compile it to .jar file and put it to deploy directory. After this we have
+final step, look at application.conf and add new line to
+agent-system.internal-agents: 
+"<classname of agent>" = "<config string>"
+"agents.JavaAgent" = "Objects/JavaAgent/sensor"
+
 
