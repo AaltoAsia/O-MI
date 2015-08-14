@@ -37,8 +37,8 @@ handlePathMetaDataPairs that takes Iterable of (Path, OdfMetaData) pairs as para
 
 To use o-mi-node.jar as libarary add it to classpath.
 
-JavaAgent and ScalaAgent both random generate both take O-DF path as config
-parameter and start pushing random values to that path.
+JavaAgent and ScalaAgent both take O-DF path as config
+parameter and start pushing random generated values to that path.
 Lets look at JavaAgent.java:
 ```java
 public class JavaAgent extends InternalAgent{
@@ -150,7 +150,7 @@ Now we have a internal agent, but to get O-MI Node to run it, we need to
 compile it to .jar file and put it to deploy directory. After this we have
 final step, look at application.conf and add new line to
 agent-system.internal-agents: 
-"<classname of agent>" = "<config string>"
+
 "agents.JavaAgent" = "Objects/JavaAgent/sensor"
 
 
