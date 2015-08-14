@@ -41,7 +41,29 @@ lazy val root = (project in file(".")).
    // packageDescription := "TempName",
    // packageSummary := "TempName",
    // entrypoint
-    mainClass in Compile := Some("http.Boot")
+      mainClass in Compile := Some("http.Boot"),
+	mappings in Universal := {
+	  val universalMappings = (mappings in Universal).value
+	  val resourceDir = (resourceDirectory in Compile).value
+	  val directories = Seq("configs", "deploy", "html")
+	  val nodeBase = (baseDirectory in omiNode).value
+	  var fileList = Seq(
+	    resourceDir / "application.conf" -> "application.conf",
+        nodeBase / "start.sh" -> "start.sh",
+        nodeBase / "start.bat" -> "start.bat",
+        baseDirectory / "callbackTestServer.py" -> "callbackTestServer.py",
+        nodeBase / "SmartHouse.xml" -> "SmartHouse.xml",
+        nodeBase / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
+        nodeBase / "README-release.md" -> "README.md"
+	  )
+	  directories foreach { dir =>
+        val paths = Path.allSubpaths(nodeBase / dir)
+        val pathsWithoutVimBac = paths filter {_._1.toString.last != '~'}
+        fileList ++=
+        pathsWithoutVimBac map {case (path, relative) => path -> (dir + "/" + relative)}
+      }
+	  universalMappings ++ fileList
+	  }
 	)):_*).
   aggregate(omiNode,agents).
   dependsOn(omiNode,agents)
