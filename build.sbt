@@ -52,9 +52,9 @@ lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
     (commonSettings("root") ++ Seq(
-	maintainer := "John Smith <john.smith@example.com>",
-    packageDescription := "TempName",
-    packageSummary := "TempName",
+   //maintainer := "John Smith <john.smith@example.com>",
+   // packageDescription := "TempName",
+   // packageSummary := "TempName",
    // entrypoint
     mainClass in Compile := Some("omi.ProductionServer")
 	)):_*).
