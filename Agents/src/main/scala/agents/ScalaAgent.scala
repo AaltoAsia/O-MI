@@ -2,6 +2,7 @@ package agents
 
 import agentSystem.InternalAgent
 import agentSystem.ThreadException
+import agentSystem.ThreadInitialisationException
 import agentSystem.InputPusher
 import types._
 import types.OdfTypes._
@@ -14,13 +15,23 @@ class ScalaAgent  extends InternalAgent{
 	val rnd: Random = new Random()
 	var pathO: Option[Path] = None
   def date = new java.util.Date();
+  var initialised = false
   override def init( config: String){
-    pathO = Some( new Path(config))
-  
+    try{
+      pathO = Some( new Path(config))
+      initialised = true
+      InternalAgent.log.warning("ScalaAgent has been initialised.");
+    }catch{
+      case e : Exception =>
+      InternalAgent.log.warning("ScalaAgent has caucth exception turing initialisation.");
+      InternalAgent.loader ! ThreadInitialisationException(this,e) 
+      InternalAgent.log.warning("ScalaAgent has died.");
+    }finally{
+    }
   }
   override def run(): Unit = {
     try{
-      while(!Thread.interrupted() && pathO.nonEmpty){
+      while(!Thread.interrupted() && pathO.nonEmpty && initialised){
 
         val tuple = pathO.map{
           path => 
