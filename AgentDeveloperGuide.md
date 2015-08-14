@@ -17,6 +17,10 @@ All you need to do is to write a program that push O-DF formated data to TCP
 port defined by application.conf's omi-service.external-agent-port parameter.
 Program can be writen with any programming language.
 
+If your program is run in different computer, you need to add its ip to 
+o-mi-service.input-whitelist-ips. You can also accept input from subnets by adding 
+their masks to o-mi-service.input-whitelist-subnets.
+
 Internal Agent
 ----------------
 InternalAgent is a abstract class extending Thread class. They have two
@@ -149,10 +153,19 @@ code from Java. Also notice that agent need to handle interruption of thread
 by themself and terminate itself when interrupt happens.
 
 Now we have a internal agent, but to get O-MI Node to run it, we need to
-compile it to .jar file and put it to deploy directory. After this we have
-final step, look at application.conf and add new line to
+compile it to .jar file and put it to deploy directory. O-MI Node will run only agents mentioned in application.conf.
+To mention agent in it you need to add next line under
 agent-system.internal-agents: 
 
 "agents.JavaAgent" = "Objects/JavaAgent/sensor"
 
+First one is agents classname and second is config string.
+
+Now you need to restart O-MI Node to update its configuration.
+
+SmartHouseAgent
+---------------
+SmartHouseAgent is also very simple agent that get path to config file as config string.
+Config file has path to .xml file containing SmartHouse O-DF structure.
+SmartHouseAgent parses xml file for O-DF, and start random generating values for OdfInfoItems.
 

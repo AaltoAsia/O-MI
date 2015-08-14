@@ -25,11 +25,15 @@ object PermissionCheck {
   /** Contains masks of white listed subnets.
     *
     **/
-  val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
-    case (s: String, bits: Object ) => 
-    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
+  val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ 
+    case (str: String) => 
+    val parts = str.split("/")
+    require(parts.length == 2)
+    val mask = parts.head
+    val bits = parts.last
+    val ip = inetAddrToBytes(InetAddress.getByName(mask)) 
     log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
-    (ip, bits.toString.toInt )
+    (ip, bits.toInt )
   }.toMap 
   log.debug("Totally " + whiteMasks.keys.size + "masks")
 
