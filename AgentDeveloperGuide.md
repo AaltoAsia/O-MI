@@ -6,26 +6,28 @@ What are Agents?
 Agents are small programs that connect to sensors and push received data to
 O-MI Node. 
 There are two kind of Agents ussing different interfaces: 
-*External agents that push O-DF foramated sensor data to a TCP port of O-MI
+* External agents that push O-DF foramated sensor data to a TCP port of O-MI
 Node.
-*Internal agents that can be loaded from .jar file and instatiated to be run
-inside same JVM as O-MI Node. These will us internal interface to push data to
-database.
+* Internal agents that can be loaded from .jar file and instatiated to be run
+inside same JVM as O-MI Node. 
 
 External Agent
 --------------
 All you need to do is to write a program that push O-DF formated data to TCP
 port defined by application.conf's omi-service.external-agent-port parameter.
+Program can be writen with any programming language.
 
 Internal Agent
 ----------------
 InternalAgent is a abstract class extending Thread class. They have two
-abstract methods: init and run. After InternalAgent is instatieted its init
+abstract methods: init and run. After InternalAgent is created its init
 method is called with string given for agent in application.conf. This string can
 contain anything, like path to a config file. After this InternalAgents start method is
-called and Thread runs run method in another thread. InternalAgent have also
-two other members: log for logging and loader for cummincation with
-InternalAgentLoader. 
+called. This causes run method to be run in  another thread. 
+
+InternalAgent have also two other members: 
+LoggingAdapter log for logging and 
+ActorRef loader for cummincation with InternalAgentLoader. 
 
 For pushing data to database InputPusher's interface is used. It have five
 static public methods:
@@ -35,7 +37,7 @@ handleInfoItems that takes Iterable of OdfInfoItem as parameter,
 handlePathValuePairs that takes Iterable of (Path, OdfValue) pairs as parameter,
 handlePathMetaDataPairs that takes Iterable of (Path, OdfMetaData) pairs as parameter,
 
-To use o-mi-node.jar as libarary add it to classpath.
+<b>To use o-mi-node.jar as libarary add it to classpath.</b>
 
 JavaAgent and ScalaAgent both take O-DF path as config
 parameter and start pushing random generated values to that path.
