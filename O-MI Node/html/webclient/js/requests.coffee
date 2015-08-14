@@ -207,9 +207,10 @@ requestsExt = (WebOmi) ->
             metas = $(node).data "metadatas"
             if metas?
               for metadata in metas
-                metainfo = o.createOdfInfoItem doc, metadata.metadataname,
+                metainfo = o.createOdfInfoItem odfDoc, metadata.metadataname, [
                   value:     metadata.metadatavalue
-                  valuetype: metadata.metadatatype
+                  vAluetype: metadata.metadatatype
+                ], metadata.metadatadescription
                 meta.appendChild metainfo
 
             # find the first value and insert before it (schema restriction)

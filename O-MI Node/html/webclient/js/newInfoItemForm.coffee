@@ -22,30 +22,23 @@
 
   # 1. Input helpers to fill the form
   consts.afterJquery ->
-    $ '.btn-clone-above'
-      .on 'click', cloneAbove
-      # the form somehow submits itself (on firefox) when clicking fast
-      .on 'click', (e) -> e.preventDefault()
-
     consts.infoitemDialog = $ '#newInfoItem'
     consts.infoitemForm   = consts.infoitemDialog.find 'form'
 
     consts.originalInfoItemForm = consts.infoitemForm.clone()
   
-    # prevent any submitting fix (maybe not needed)
-    consts.infoitemForm
-      .submit (event) ->
-        event.preventDefault()
-
-    $ '.newInfoSubmit'
-      .on 'click', ->
-        infoitemData = readValues()
-        updateOdf infoitemData
-        
     # Reset on cancel or close
     consts.infoitemDialog
       .on 'hide.bs.modal', ->
         resetInfoItemForm()
+
+    # For binding of events
+    resetInfoItemForm()
+
+    consts.infoitemDialog.find '.newInfoSubmit'
+      .on 'click', ->
+        infoitemData = readValues()
+        updateOdf infoitemData
 
     return
 
@@ -111,17 +104,26 @@
     else
 
       # TODO: User friendlier time input
+      # TODO: use validators on higher level and set gui indicators (has-success/has-error)
+      v = WebOmi.consts.validators
 
+      values =
+        for valueObj in newInfoItem.values
+          value: valueObj.value
+          time:  v.nonEmpty valueObj.valuetime
+          type:  valueObj.valuetype
+
+        
       # NOTE: This also selects the node which triggers an event which modifies the request 
       consts.addOdfTreeNode parent, path, name, "infoitem", ->
         # save parameters
         $ jqesc path
           .data "values",      newInfoItem.values
-          .data "description", newInfoItem.description
+          .data "description", v.nonEmpty newInfoItem.description
 
       if newInfoItem.metadatas.length > 0
         consts.addOdfTreeNode path, path+"/MetaData", "MetaData", "metadata", (node) ->
-          $(node).data "metadatas", newInfoItem.metadatas
+          $(jqesc node.id).data "metadatas", newInfoItem.metadatas
 
       # close the dialog
       consts.infoitemDialog.modal 'hide'
@@ -133,6 +135,17 @@
   resetInfoItemForm = ->
     consts.infoitemForm.replaceWith consts.originalInfoItemForm.clone()
     consts.infoitemForm = $ consts.infoitemDialog.find 'form'
+
+    # Re-bind events
+
+    # prevent any submitting fix (maybe not needed)
+    consts.infoitemForm
+      .submit (event) ->
+        event.preventDefault()
+
+    consts.infoitemForm.find '.btn-clone-above'
+      .on 'click', cloneAbove
+
     return
 
 

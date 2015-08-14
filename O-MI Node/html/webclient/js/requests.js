@@ -191,10 +191,12 @@
                 if (metas != null) {
                   for (j = 0, len1 = metas.length; j < len1; j++) {
                     metadata = metas[j];
-                    metainfo = o.createOdfInfoItem(doc, metadata.metadataname, {
-                      value: metadata.metadatavalue,
-                      valuetype: metadata.metadatatype
-                    });
+                    metainfo = o.createOdfInfoItem(odfDoc, metadata.metadataname, [
+                      {
+                        value: metadata.metadatavalue,
+                        vAluetype: metadata.metadatatype
+                      }
+                    ], metadata.metadatadescription);
                     meta.appendChild(metainfo);
                   }
                 }

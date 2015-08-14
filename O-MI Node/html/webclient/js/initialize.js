@@ -139,7 +139,7 @@
       }
     };
     $(function() {
-      var basicInput, fn, i, language, len, loc, requestTip, responseCMSettings, results, v, validators;
+      var basicInput, fn, i, language, len, loc, requestTip, responseCMSettings, results, v;
       responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
@@ -191,7 +191,7 @@
       requestTip("#poll", "Request and empty buffered data for callbackless subscription.");
       requestTip("#cancel", "Cancel and remove an active subscription.");
       requestTip("#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements.");
-      validators = {};
+      my.validators = {};
       validators.nonEmpty = function(s) {
         if (s !== "") {
           return s;

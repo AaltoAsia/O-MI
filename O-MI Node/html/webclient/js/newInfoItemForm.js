@@ -14,22 +14,17 @@
       });
     };
     consts.afterJquery(function() {
-      $('.btn-clone-above').on('click', cloneAbove).on('click', function(e) {
-        return e.preventDefault();
-      });
       consts.infoitemDialog = $('#newInfoItem');
       consts.infoitemForm = consts.infoitemDialog.find('form');
       consts.originalInfoItemForm = consts.infoitemForm.clone();
-      consts.infoitemForm.submit(function(event) {
-        return event.preventDefault();
+      consts.infoitemDialog.on('hide.bs.modal', function() {
+        return resetInfoItemForm();
       });
-      $('.newInfoSubmit').on('click', function() {
+      resetInfoItemForm();
+      consts.infoitemDialog.find('.newInfoSubmit').on('click', function() {
         var infoitemData;
         infoitemData = readValues();
         return updateOdf(infoitemData);
-      });
-      consts.infoitemDialog.on('hide.bs.modal', function() {
-        return resetInfoItemForm();
       });
     });
     getGroups = function(ofWhat, requiredField) {
@@ -59,7 +54,7 @@
       return results;
     };
     updateOdf = function(newInfoItem) {
-      var idName, name, parent, path, tree;
+      var idName, name, parent, path, tree, v, valueObj, values;
       tree = WebOmi.consts.odfTree;
       parent = newInfoItem.parent;
       name = newInfoItem.name;
@@ -74,12 +69,27 @@
           return $(this).tooltip('destroy').closest('.form-group').removeClass('has-error');
         }).closest('.form-group').addClass('has-error');
       } else {
+        v = WebOmi.consts.validators;
+        values = (function() {
+          var i, len, ref, results1;
+          ref = newInfoItem.values;
+          results1 = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            valueObj = ref[i];
+            results1.push({
+              value: valueObj.value,
+              time: v.nonEmpty(valueObj.valuetime),
+              type: valueObj.valuetype
+            });
+          }
+          return results1;
+        })();
         consts.addOdfTreeNode(parent, path, name, "infoitem", function() {
-          return $(jqesc(path)).data("values", newInfoItem.values).data("description", newInfoItem.description);
+          return $(jqesc(path)).data("values", newInfoItem.values).data("description", v.nonEmpty(newInfoItem.description));
         });
         if (newInfoItem.metadatas.length > 0) {
           consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata", function(node) {
-            return $(node).data("metadatas", newInfoItem.metadatas);
+            return $(jqesc(node.id)).data("metadatas", newInfoItem.metadatas);
           });
         }
         consts.infoitemDialog.modal('hide');
@@ -89,6 +99,10 @@
     return resetInfoItemForm = function() {
       consts.infoitemForm.replaceWith(consts.originalInfoItemForm.clone());
       consts.infoitemForm = $(consts.infoitemDialog.find('form'));
+      consts.infoitemForm.submit(function(event) {
+        return event.preventDefault();
+      });
+      consts.infoitemForm.find('.btn-clone-above').on('click', cloneAbove);
     };
   })(WebOmi.consts, WebOmi.requests, WebOmi.omi);
 

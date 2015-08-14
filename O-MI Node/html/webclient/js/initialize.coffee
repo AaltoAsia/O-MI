@@ -66,8 +66,8 @@ constsExt = ($, parent) ->
     add_info :
       $.extend (createNode "an", "InfoItem", "infoitem", "MyInfoItem"),
         action : (data) -> # override action
-          # Prevent accidental loss of data due to wrong request
-          #my.ui.request.set "write", false
+          # TODO: inform about wrong request type (should be write)
+          # the data is stored for switching but might confuse the user
 
           tree = WebOmi.consts.odfTree
           parent = tree.get_node data.reference
@@ -208,8 +208,8 @@ constsExt = ($, parent) ->
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
 
 
-    # private, (could be public too)
-    validators = {}
+    # TODO: move to some WebOmi.util etc.
+    my.validators = {}
 
     # Validators,
     # minimal Maybe/Option operations
