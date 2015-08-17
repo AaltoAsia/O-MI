@@ -207,10 +207,10 @@ requestsExt = (WebOmi) ->
             metas = $(node).data "metadatas"
             if metas?
               for metadata in metas
-                metainfo = o.createOdfInfoItem odfDoc, metadata.metadataname, [
-                  value:     metadata.metadatavalue
-                  vAluetype: metadata.metadatatype
-                ], metadata.metadatadescription
+                metainfo = o.createOdfInfoItem odfDoc, metadata.name, [
+                  value:     metadata.value
+                  vAluetype: metadata.type
+                ], metadata.description
                 meta.appendChild metainfo
 
             # find the first value and insert before it (schema restriction)
@@ -309,9 +309,11 @@ requestsExt = (WebOmi) ->
 
           # special functionality for write request
           if reqName == "write"
-            addValueToAll doc
+            odf.update currentParams.odf
+            #addValueToAll doc
           else if oldReqName == "write" # change from write
-            removeValueFromAll doc
+            #removeValueFromAll doc
+            odf.update currentParams.odf
 
           reqName
 
@@ -365,8 +367,12 @@ requestsExt = (WebOmi) ->
             msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0]
             if not msg?
               my.params.msg.update currentParams.msg # calls odf update again
-              # FIXME dependency
+              # NOTE: dependency?, msg.update calls odf update
               return
+            
+            # remove old (safeguard)
+            while msg.firstChild
+              msg.removeChild msg.firstChild
 
             msg.appendChild obs
 

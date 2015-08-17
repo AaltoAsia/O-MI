@@ -191,12 +191,12 @@
                 if (metas != null) {
                   for (j = 0, len1 = metas.length; j < len1; j++) {
                     metadata = metas[j];
-                    metainfo = o.createOdfInfoItem(odfDoc, metadata.metadataname, [
+                    metainfo = o.createOdfInfoItem(odfDoc, metadata.name, [
                       {
-                        value: metadata.metadatavalue,
-                        vAluetype: metadata.metadatatype
+                        value: metadata.value,
+                        vAluetype: metadata.type
                       }
-                    ], metadata.metadatadescription);
+                    ], metadata.description);
                     meta.appendChild(metainfo);
                   }
                 }
@@ -288,9 +288,9 @@
             currentReq.parentNode.replaceChild(newReq, currentReq);
             currentParams.request = reqName;
             if (reqName === "write") {
-              addValueToAll(doc);
+              odf.update(currentParams.odf);
             } else if (oldReqName === "write") {
-              removeValueFromAll(doc);
+              odf.update(currentParams.odf);
             }
             return reqName;
           }
@@ -357,6 +357,9 @@
               if (msg == null) {
                 my.params.msg.update(currentParams.msg);
                 return;
+              }
+              while (msg.firstChild) {
+                msg.removeChild(msg.firstChild);
               }
               msg.appendChild(obs);
             }

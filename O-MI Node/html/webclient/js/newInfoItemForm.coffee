@@ -110,13 +110,14 @@
       values =
         for valueObj in newInfoItem.values
           value: valueObj.value
-          time:  v.nonEmpty valueObj.valuetime
-          type:  valueObj.valuetype
+          type : valueObj.valuetype
+          time : v.nonEmpty valueObj.valuetime
       metas =
-        for valueObj in newInfoItem.values
-          value: valueObj.value
-          time:  v.nonEmpty valueObj.valuetime
-          type:  valueObj.valuetype
+        for metaObj in newInfoItem.metadatas
+          name       : metaObj.metadataname
+          value      : metaObj.metadatavalue
+          type       : v.nonEmpty metaObj.metadatatype
+          description: v.nonEmpty metaObj.metadatadescription
 
         
       # NOTE: This also selects the node which triggers an event which modifies the request 
