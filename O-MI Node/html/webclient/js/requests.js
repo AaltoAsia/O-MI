@@ -148,7 +148,7 @@
       allOdfElems.reverse();
       for (i = 0, len = allOdfElems.length; i < len; i++) {
         elem = allOdfElems[i];
-        if (!o.hasOdfChildren(elem)) {
+        if ((elem != null) && !o.hasOdfChildren(elem)) {
           elem.parentNode.removeChild(elem);
         }
       }
@@ -188,7 +188,7 @@
               case "metadata":
                 meta = o.createOdfMetaData(odfDoc);
                 metas = $(node).data("metadatas");
-                if (metas != null) {
+                if ((metas != null) && currentParams.request === "write") {
                   for (j = 0, len1 = metas.length; j < len1; j++) {
                     metadata = metas[j];
                     metainfo = o.createOdfInfoItem(odfDoc, metadata.name, [
@@ -288,9 +288,9 @@
             currentReq.parentNode.replaceChild(newReq, currentReq);
             currentParams.request = reqName;
             if (reqName === "write") {
-              odf.update(currentParams.odf);
+              my.params.odf.update(currentParams.odf);
             } else if (oldReqName === "write") {
-              odf.update(currentParams.odf);
+              my.params.odf.update(currentParams.odf);
             }
             return reqName;
           }

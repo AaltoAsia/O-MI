@@ -94,7 +94,7 @@ omiExt = (WebOmi) ->
     createdElem = createOdf "InfoItem", doc
     createdElem.setAttribute "name", name
     for value in values
-      val = my.createOdfValue doc, value.value, value.valuetype, value.valuetime
+      val = my.createOdfValue doc, value.value, value.type, value.time
       createdElem.appendChild val
     if description?
       # prepend as first

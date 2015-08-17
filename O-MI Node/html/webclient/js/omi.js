@@ -107,7 +107,7 @@
       createdElem.setAttribute("name", name);
       for (i = 0, len = values.length; i < len; i++) {
         value = values[i];
-        val = my.createOdfValue(doc, value.value, value.valuetype, value.valuetime);
+        val = my.createOdfValue(doc, value.value, value.type, value.time);
         createdElem.appendChild(val);
       }
       if (description != null) {

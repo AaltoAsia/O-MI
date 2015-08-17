@@ -56,7 +56,7 @@
 
         if value[requiredField]? and value[requiredField].length > 0
           arr.push value
-        null
+        return
     arr
 
   readValues = ->

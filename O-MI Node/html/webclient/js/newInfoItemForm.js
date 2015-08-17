@@ -39,7 +39,6 @@
         if ((value[requiredField] != null) && value[requiredField].length > 0) {
           arr.push(value);
         }
-        return null;
       });
       return arr;
     };

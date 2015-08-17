@@ -135,6 +135,7 @@ requestsExt = (WebOmi) ->
     # imports
     o = WebOmi.omi
 
+    # get ancestors
     nodeElems = $.makeArray odfTreeNode.parentsUntil "#Objects", "li"
     nodeElems.reverse()
     nodeElems.push odfTreeNode
@@ -156,7 +157,7 @@ requestsExt = (WebOmi) ->
     # remove empty parents
     allOdfElems.reverse()
     for elem in allOdfElems
-      if not o.hasOdfChildren elem
+      if elem? and not o.hasOdfChildren elem
         elem.parentNode.removeChild elem
 
     odfObjects
@@ -205,7 +206,7 @@ requestsExt = (WebOmi) ->
             meta = o.createOdfMetaData odfDoc
 
             metas = $(node).data "metadatas"
-            if metas?
+            if metas? and currentParams.request == "write"
               for metadata in metas
                 metainfo = o.createOdfInfoItem odfDoc, metadata.name, [
                   value:     metadata.value
@@ -309,11 +310,11 @@ requestsExt = (WebOmi) ->
 
           # special functionality for write request
           if reqName == "write"
-            odf.update currentParams.odf
+            my.params.odf.update currentParams.odf
             #addValueToAll doc
           else if oldReqName == "write" # change from write
             #removeValueFromAll doc
-            odf.update currentParams.odf
+            my.params.odf.update currentParams.odf
 
           reqName
 
