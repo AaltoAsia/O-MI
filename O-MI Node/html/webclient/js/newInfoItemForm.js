@@ -54,7 +54,7 @@
       return results;
     };
     updateOdf = function(newInfoItem) {
-      var idName, name, parent, path, tree, v, valueObj, values;
+      var idName, metas, name, parent, path, tree, v, valueObj, values;
       tree = WebOmi.consts.odfTree;
       parent = newInfoItem.parent;
       name = newInfoItem.name;
@@ -84,12 +84,26 @@
           }
           return results1;
         })();
+        metas = (function() {
+          var i, len, ref, results1;
+          ref = newInfoItem.values;
+          results1 = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            valueObj = ref[i];
+            results1.push({
+              value: valueObj.value,
+              time: v.nonEmpty(valueObj.valuetime),
+              type: valueObj.valuetype
+            });
+          }
+          return results1;
+        })();
         consts.addOdfTreeNode(parent, path, name, "infoitem", function() {
-          return $(jqesc(path)).data("values", newInfoItem.values).data("description", v.nonEmpty(newInfoItem.description));
+          return $(jqesc(path)).data("values", values).data("description", v.nonEmpty(newInfoItem.description));
         });
         if (newInfoItem.metadatas.length > 0) {
           consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata", function(node) {
-            return $(jqesc(node.id)).data("metadatas", newInfoItem.metadatas);
+            return $(jqesc(node.id)).data("metadatas", metas);
           });
         }
         consts.infoitemDialog.modal('hide');

@@ -209,7 +209,7 @@ constsExt = ($, parent) ->
 
 
     # TODO: move to some WebOmi.util etc.
-    my.validators = {}
+    my.validators = validators = {}
 
     # Validators,
     # minimal Maybe/Option operations

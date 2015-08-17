@@ -112,18 +112,23 @@
           value: valueObj.value
           time:  v.nonEmpty valueObj.valuetime
           type:  valueObj.valuetype
+      metas =
+        for valueObj in newInfoItem.values
+          value: valueObj.value
+          time:  v.nonEmpty valueObj.valuetime
+          type:  valueObj.valuetype
 
         
       # NOTE: This also selects the node which triggers an event which modifies the request 
       consts.addOdfTreeNode parent, path, name, "infoitem", ->
         # save parameters
         $ jqesc path
-          .data "values",      newInfoItem.values
+          .data "values",      values
           .data "description", v.nonEmpty newInfoItem.description
 
       if newInfoItem.metadatas.length > 0
         consts.addOdfTreeNode path, path+"/MetaData", "MetaData", "metadata", (node) ->
-          $(jqesc node.id).data "metadatas", newInfoItem.metadatas
+          $(jqesc node.id).data "metadatas", metas
 
       # close the dialog
       consts.infoitemDialog.modal 'hide'
