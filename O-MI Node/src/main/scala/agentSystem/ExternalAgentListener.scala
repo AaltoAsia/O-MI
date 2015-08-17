@@ -6,7 +6,7 @@ import java.net.InetSocketAddress
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import http.Settings
-import http.PermissionCheck._
+import http.IpAuthorization
 import parsing.OdfParser
 
 import types._
@@ -17,7 +17,7 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 
 /** AgentListener handles connections from agents.
   */
-class ExternalAgentListener extends Actor with ActorLogging {
+class ExternalAgentListener extends Actor with ActorLogging with IpAuthorization {
   
   import Tcp._
   //Orginally a hack for getting different names for actors.

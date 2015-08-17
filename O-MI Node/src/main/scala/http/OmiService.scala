@@ -9,7 +9,6 @@ import MediaTypes._
 
 import responses.RequestHandler
 import parsing.OmiParser
-import PermissionCheck._
 import types.{Path, OmiTypes}
 import OmiTypes._
 import database.DB
@@ -45,7 +44,7 @@ class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLoggin
 /**
  * this trait defines our service behavior independently from the service actor
  */
-trait OmiService extends HttpService with CORSSupport {
+trait OmiService extends HttpService with CORSSupport with Authorization {
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
   val requestHandler: RequestHandler
@@ -127,10 +126,9 @@ trait OmiService extends HttpService with CORSSupport {
 
   /* Receives HTTP-POST directed to root */
   val postXMLRequest = post { // Handle POST requests from the client
-    clientIP { ip => // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
+    extractUserData { user =>
       entity(as[NodeSeq]) { xml =>
         val eitherOmi = OmiParser.parse(xml.toString)
-        //lazy val ip: RemoteAddress = ???
 
         respondWithMediaType(`text/xml`) {
           eitherOmi match {
@@ -140,11 +138,11 @@ trait OmiService extends HttpService with CORSSupport {
               val (response, returnCode) = request match {
 
                 case Some(pRequest : PermissiveRequest) => 
-                  if(ip.toOption.exists(hasPermission(_))){//.nonEmpty && hasPermission(ip.toOption.get)) {
-                    log.info(s"Authorized: ${ip.toOption} for ${pRequest.toString.take(80)}...")
+                  if (hasPermission(user)) {
+                    log.info(s"Authorized: ${userToString(user)} for ${pRequest.toString.take(80)}...")
                     requestHandler.handleRequest(pRequest)
                   } else {
-                    log.warning(s"Unauthorized: ${ip.toOption} tried to use ${pRequest.toString.take(120)}...")
+                    log.warning(s"Unauthorized: ${userToString(user)} tried to use ${pRequest.toString.take(120)}...")
                     (requestHandler.unauthorized, 401)
                   }
                 case Some(req : OmiRequest) => 

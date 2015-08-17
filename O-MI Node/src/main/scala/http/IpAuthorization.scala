@@ -2,18 +2,20 @@ package http
 
 import scala.collection.JavaConverters._
 import java.net.InetAddress
+import spray.routing.Directives.clientIP
 
-/** Helper object for checking, is connected IP permitted to do input actions, a ExternalAgent or using Write request.
-  *
-  **/
-object PermissionCheck {
+/** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
+  * 
+  */
+trait IpAuthorization extends Authorization[RemoteAddress] {
 
   import Boot.settings
   import Boot.system.log
+
   /** Contains white listed IPs
     *
     **/
-  val whiteIPs = settings.inputWhiteListIps.asScala.map{
+  private[this] val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("IPv" + ip.length + ": " + ip.mkString("."))  // TODO: bytes should be printed as unsigned
@@ -25,7 +27,7 @@ object PermissionCheck {
   /** Contains masks of white listed subnets.
     *
     **/
-  val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
+  private[this] val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
@@ -33,17 +35,26 @@ object PermissionCheck {
   }.toMap 
   log.debug("Totally " + whiteMasks.keys.size + "masks")
 
+
+  // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
+  def extractUserData = clientIP map
+
+  def userToString = ip => ip.toOption.toString
+
+
   /** Main method for checkking connections permission
     *
     * @param addr addr is InetAddress of connector.
     * @return Boolean, true if connection is permited to do input.
     **/
-  def hasPermission(addr: InetAddress) : Boolean = {
-    whiteIPs.contains( inetAddrToBytes( addr ) ) ||
-    whiteMasks.exists{
-      case (subnet : Seq[Byte], bits : Int) =>
-      isInSubnet(subnet, bits, inetAddrToBytes( addr ))
-    }
+  def hasPermission = user => {
+    user.toOption.exists( addr =>
+      whiteIPs.contains( inetAddrToBytes( addr ) ) ||
+      whiteMasks.exists{
+        case (subnet : Seq[Byte], bits : Int) =>
+        isInSubnet(subnet, bits, inetAddrToBytes( addr ))
+      }
+    )
   }
   
   /** Helper method for converting InetAddress to sequence of Bytes.
