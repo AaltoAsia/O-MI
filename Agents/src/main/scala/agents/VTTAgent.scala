@@ -131,7 +131,7 @@ class VTTAgent extends InternalAgent {
       case "light" => between(100, oldval + Random.nextGaussian, 2500)
       case "co2" => between(400, oldval + 20 * Random.nextGaussian, 1200)
       case "humidity" => between(40, oldval + Random.nextGaussian, 60)
-      case "pir" => between(0, oldval + 10*Random.nextGaussian, 40)
+      case "pir" => Random.nextInt % 2
     })
     f"$newval%.1f".replace(',', '.')
   }
