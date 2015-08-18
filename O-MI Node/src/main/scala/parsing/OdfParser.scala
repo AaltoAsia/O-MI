@@ -67,18 +67,18 @@ object OdfParser extends Parser[OdfParseResult] {
   }
 
   private[this] def validateId(stringId: String): Option[String] = {
-    val trimmedName = stringId.name.trim
+    val trimmedName = stringId.trim
     if (trimmedName.nonEmpty) None
     else Some(trimmedName)
   }
   private[this] def validateId(optionId: Option[String]): Option[String] = for {
-      head <- optionId
-      validated <- validateId(head)
-    } yield validated
+    head <- optionId
+    validated <- validateId(head)
+  } yield validated
 
   private[this] def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
 
-    val npath = path / validateId(obj.id.headOption).getOrElse(
+    val npath = path / validateId(obj.id.headOption.map(_.value)).getOrElse(
       throw new IllegalArgumentException("No <id> on object")
     )
 
@@ -94,7 +94,7 @@ object OdfParser extends Parser[OdfParseResult] {
   private[this] def parseInfoItem(item: InfoItemType, path: Path) : OdfInfoItem  = { 
 
     val npath = path / validateId(item.name).getOrElse(
-      throw new IllegalArgumentException("No <id> on infoItem")
+      throw new IllegalArgumentException("No name on infoItem")
     )
 
     OdfInfoItem(
