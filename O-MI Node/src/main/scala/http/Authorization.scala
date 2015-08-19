@@ -90,9 +90,13 @@ trait AuthorizationExtension[T] extends AuthorizationExtSupport with Authorizati
 trait AllowAllAuthorization extends AuthorizationExtension[Unit] {
   def extractUserData = provide(())
   def hasPermission   = _ => _ => true
-  def userToString    = _ => "TEST-USER"
+  override def userToString    = _ => "TEST-USER"
 }
 
+
+/** Allows non [[PermissiveRequest]] to all users (currently read, subs, cancel,
+ *  but not write and response). Intended to be used as a last catch-all test (due to logging).
+ */
 trait AllowNonPermissiveToAll extends AuthorizationExtension[Unit] {
   def extractUserData = provide(())
   def hasPermission   = _ => {
@@ -102,6 +106,6 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension[Unit] {
     case _ =>
       true
   }
-  def userToString    = _ => "[Read+Subs+Cancel Allowed]"
+  override def userToString    = _ => "[Read+Subs+Cancel Allowed]"
 }
 

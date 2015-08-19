@@ -24,6 +24,8 @@ class OmiServiceActor(reqHandler: RequestHandler)
   extends Actor
      with ActorLogging
      with OmiService
+     with IpAuthorization
+     with AllowNonPermissiveToAll
      {
 
   /**
@@ -52,7 +54,6 @@ trait OmiService
   extends HttpService
      with CORSSupport
      with ExtensibleAuthorization
-     with IpAuthorization
      {
 
   import scala.concurrent.ExecutionContext.Implicits.global
