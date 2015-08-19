@@ -3,14 +3,17 @@ package http
 import scala.collection.JavaConverters._
 import java.net.InetAddress
 import spray.routing.Directives.clientIP
+import spray.routing._
+
+import types.OmiTypes._
+
+import Boot.settings
+import Boot.system.log
 
 /** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
   * 
   */
-trait IpAuthorization extends Authorization[RemoteAddress] {
-
-  import Boot.settings
-  import Boot.system.log
+trait IpAuthorization extends AuthorizationExtension[Option[InetAddress]] {
 
   /** Contains white listed IPs
     *
@@ -37,25 +40,30 @@ trait IpAuthorization extends Authorization[RemoteAddress] {
 
 
   // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
-  def extractUserData = clientIP map
+  def extractUserData: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
 
-  def userToString = ip => ip.toOption.toString
+  def userToString = _.toString
 
 
-  /** Main method for checkking connections permission
-    *
-    * @param addr addr is InetAddress of connector.
-    * @return Boolean, true if connection is permited to do input.
-    **/
   def hasPermission = user => {
-    user.toOption.exists( addr =>
-      whiteIPs.contains( inetAddrToBytes( addr ) ) ||
-      whiteMasks.exists{
-        case (subnet : Seq[Byte], bits : Int) =>
-        isInSubnet(subnet, bits, inetAddrToBytes( addr ))
-      }
-    )
-  }
+    // Write and Response are currently PermissiveRequests
+    case r : PermissiveRequest =>
+      val result = user.exists( addr =>
+        whiteIPs.contains( inetAddrToBytes( addr ) ) ||
+        whiteMasks.exists{
+          case (subnet : Seq[Byte], bits : Int) =>
+          isInSubnet(subnet, bits, inetAddrToBytes( addr ))
+        }
+      )
+      if (result)
+        log.info(s"Authorized IP: ${userToString(user)} for ${r.toString.take(80)}...")
+      else
+        log.warning(s"Unauthorized IP: ${userToString(user)} tried to use ${r.toString.take(120)}...")
+      
+      result
+    // Read and Subscriptions are allowed for all
+    case _ => true
+   }
   
   /** Helper method for converting InetAddress to sequence of Bytes.
     *
