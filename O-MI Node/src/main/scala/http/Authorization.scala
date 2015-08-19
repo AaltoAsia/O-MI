@@ -5,6 +5,7 @@ import spray.routing._
 import Directives._
 
 import types.OmiTypes._
+import Boot.system.log
 
 
 /**
@@ -27,7 +28,7 @@ sealed trait Authorization[UserData] {
    */
   def hasPermission: UserData => OmiRequest => Boolean
 
-  def userToString: UserData => String
+  def userToString: UserData => String = _.toString
 
 }
 
@@ -46,7 +47,7 @@ trait AuthorizationExtSupport {
 /** 
  *  Core trait for authorization support in Stackable trait pattern.
  *  One of these need to be extended before stackable extension traits.
- *  Grants all permissions for all users.
+ *  Doesn't grant any permissions to anyone.
  */
 trait ExtensibleAuthorization extends AuthorizationExtSupport {
   /**
@@ -60,8 +61,7 @@ trait ExtensibleAuthorization extends AuthorizationExtSupport {
    * working properly otherwise.
    */
   def makePermissionTestFunction =
-    provide(_ => true)
-    //extractUserData map hasPermission
+    provide(_ => false)
 }
 
 
@@ -78,7 +78,7 @@ trait AuthorizationExtension[T] extends AuthorizationExtSupport with Authorizati
       ourTest   <- extractUserData map hasPermission
 
       combinedTest = (request: OmiRequest) =>
-        otherTest(request) || ourTest(request)
+        otherTest(request) || ourTest(request) // If any authentication method succeeds
 
     } yield combinedTest
 }
@@ -92,3 +92,16 @@ trait AllowAllAuthorization extends AuthorizationExtension[Unit] {
   def hasPermission   = _ => _ => true
   def userToString    = _ => "TEST-USER"
 }
+
+trait AllowNonPermissiveToAll extends AuthorizationExtension[Unit] {
+  def extractUserData = provide(())
+  def hasPermission   = _ => {
+    case r: PermissiveRequest =>
+      log.warning(s"Unauthorized user: tried to use ${r.toString.take(130)}...")
+      false
+    case _ =>
+      true
+  }
+  def userToString    = _ => "[Read+Subs+Cancel Allowed]"
+}
+

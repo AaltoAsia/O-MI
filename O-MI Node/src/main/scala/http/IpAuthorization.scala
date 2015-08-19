@@ -42,9 +42,6 @@ trait IpAuthorization extends AuthorizationExtension[Option[InetAddress]] {
   // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
   def extractUserData: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
 
-  def userToString = _.toString
-
-
   def hasPermission = user => {
     // Write and Response are currently PermissiveRequests
     case r : PermissiveRequest =>
@@ -55,14 +52,15 @@ trait IpAuthorization extends AuthorizationExtension[Option[InetAddress]] {
           isInSubnet(subnet, bits, inetAddrToBytes( addr ))
         }
       )
-      if (result)
+      if (result) {
         log.info(s"Authorized IP: ${userToString(user)} for ${r.toString.take(80)}...")
-      else
-        log.warning(s"Unauthorized IP: ${userToString(user)} tried to use ${r.toString.take(120)}...")
+      } else {
+        log.warning(s"Unauthorized IP: ${userToString(user)}")
+      }
       
       result
-    // Read and Subscriptions are allowed for all
-    case _ => true
+    // Read and Subscriptions should be allowed elsewhere
+    case _ => false
    }
   
   /** Helper method for converting InetAddress to sequence of Bytes.
