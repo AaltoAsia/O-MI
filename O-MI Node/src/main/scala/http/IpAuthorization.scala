@@ -11,8 +11,10 @@ import Boot.settings
 import Boot.system.log
 import Authorization.AuthorizationExtension
 
+// TODO: maybe move to Authorization package
+
 /** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
-  * 
+  * Tests against whitelisted ips and ip masks in configuration.
   */
 trait IpAuthorization extends AuthorizationExtension {
   private type UserData = Option[InetAddress]

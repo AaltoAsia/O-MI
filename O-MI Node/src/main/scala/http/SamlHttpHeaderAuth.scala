@@ -9,8 +9,19 @@ import Boot.settings
 import Boot.system.log
 import Authorization.AuthorizationExtension
 
+// TODO: maybe move to Authorization package
+
+
+/** EduPersonPrincipalName */
 case class Eppn(user: String)
 
+
+/**
+ * SAML authorization using http headers got from some reverse-proxying server (e.g. nginx, apache)
+ * preferrably running on the same computer (for security reasons).
+ * Authorize [[PermissiveRequest]]s for all users who are specified by EPPN in config whitelist
+ * EPPNs are usually in format "username@organizationdomain"
+ */
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
 
@@ -27,7 +38,6 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private def hasPermission: User => OmiRequest => Boolean = {
     case u @ Some(Eppn(user)) => {
 
-      // all requests are allowed
       case r : PermissiveRequest =>
 
         val result = whitelistedUsers contains user
@@ -35,7 +45,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
         if (result) {
           log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
         } else {
-          log.info(s"Unauthorized user: $u")
+          log.warning(s"Unauthorized user: $u")
         }
 
         result
