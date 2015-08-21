@@ -12,6 +12,7 @@ import parsing.OmiParser
 import types.{Path, OmiTypes}
 import OmiTypes._
 import database.DB
+import Authorization._
 
 import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -137,7 +138,7 @@ trait OmiService
 
   /* Receives HTTP-POST directed to root */
   val postXMLRequest = post { // Handle POST requests from the client
-    makePermissionTestFunction { hasPermissionTest =>
+    makePermissionTestFunction() { hasPermissionTest =>
       entity(as[NodeSeq]) { xml =>
         val eitherOmi = OmiParser.parse(xml.toString)
 

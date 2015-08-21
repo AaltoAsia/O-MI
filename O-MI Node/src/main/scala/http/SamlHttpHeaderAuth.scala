@@ -1,18 +1,22 @@
 package http
 
 import spray.routing.Directives.optionalHeaderValue
+import spray.routing.Directive1
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import types.OmiTypes._
 import Boot.settings
 import Boot.system.log
+import Authorization.AuthorizationExtension
 
 case class Eppn(user: String)
 
-trait SamlHttpHeaderAuth extends AuthorizationExtension[Option[Eppn]] {
+trait SamlHttpHeaderAuth extends AuthorizationExtension {
+  private type User = Option[Eppn]
+
   private[this] val whitelistedUsers: Vector[String] = settings.inputWhiteListUsers.toVector
 
-  def extractUserData = optionalHeaderValue( header =>
+  private def extractUserData: Directive1[User] = optionalHeaderValue( header =>
      // Is it uppercase? Docs say it depends on tool.
     if (header.name == "HTTP_eppn" || header.name == "HTTP_EPPN")
       Some(Eppn(header.value))
@@ -20,7 +24,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension[Option[Eppn]] {
       None
   )
 
-  def hasPermission = {
+  private def hasPermission: User => OmiRequest => Boolean = {
     case u @ Some(Eppn(user)) => {
 
       // all requests are allowed
@@ -29,9 +33,9 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension[Option[Eppn]] {
         val result = whitelistedUsers contains user
 
         if (result) {
-          log.info(s"Authorized user: ${userToString(u)} for ${r.toString.take(80)}...")
+          log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
         } else {
-          log.info(s"Unauthorized user: ${userToString(u)}")
+          log.info(s"Unauthorized user: $u")
         }
 
         result
@@ -42,5 +46,10 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension[Option[Eppn]] {
     case _ =>
       {_ =>  false}
   }
+
+  abstract override def makePermissionTestFunction =
+    combineWithPrevious(
+      super.makePermissionTestFunction,
+      extractUserData map hasPermission)
 
 }

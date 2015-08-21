@@ -3,17 +3,19 @@ package http
 import scala.collection.JavaConverters._
 import java.net.InetAddress
 import spray.routing.Directives.clientIP
-import spray.routing._
+import spray.routing.Directive1
 
 import types.OmiTypes._
 
 import Boot.settings
 import Boot.system.log
+import Authorization.AuthorizationExtension
 
 /** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
   * 
   */
-trait IpAuthorization extends AuthorizationExtension[Option[InetAddress]] {
+trait IpAuthorization extends AuthorizationExtension {
+  private type UserData = Option[InetAddress]
 
   /** Contains white listed IPs
     *
@@ -40,9 +42,9 @@ trait IpAuthorization extends AuthorizationExtension[Option[InetAddress]] {
 
 
   // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
-  def extractUserData: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
+  private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
 
-  def hasPermission = user => {
+  def ipHasPermission: UserData => OmiRequest => Boolean = user => {
     // Write and Response are currently PermissiveRequests
     case r : PermissiveRequest =>
       val result = user.exists( addr =>
@@ -53,15 +55,20 @@ trait IpAuthorization extends AuthorizationExtension[Option[InetAddress]] {
         }
       )
       if (result) {
-        log.info(s"Authorized IP: ${userToString(user)} for ${r.toString.take(80)}...")
+        log.info(s"Authorized IP: $user for ${r.toString.take(80)}...")
       } else {
-        log.warning(s"Unauthorized IP: ${userToString(user)}")
+        log.warning(s"Unauthorized IP: $user")
       }
       
       result
     // Read and Subscriptions should be allowed elsewhere
     case _ => false
    }
+
+  abstract override def makePermissionTestFunction =
+    combineWithPrevious(
+      super.makePermissionTestFunction,
+      extractIp map ipHasPermission)
   
   /** Helper method for converting InetAddress to sequence of Bytes.
     *

@@ -7,8 +7,8 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-import http.Settings
-import http.{ExtensibleAuthorization, IpAuthorization}
+import http.Authorization.ExtensibleAuthorization
+import http.IpAuthorization
 import parsing.OdfParser
 import types._
 import types.Path._ //Useless?
@@ -49,7 +49,7 @@ class ExternalAgentListener
       val user = Some(remote.getAddress())
       val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
 
-      if( hasPermission(user)(requestForPermissionCheck) ){
+      if( ipHasPermission(user)(requestForPermissionCheck) ){
         log.info(s"Agent connected from $remote to $local")
 
         val handler = context.actorOf(
