@@ -8,18 +8,40 @@ import akka.actor.ExtendedActorSystem
 import com.typesafe.config.Config
  
 class OmiConfigExtension(config: Config) extends Extension {
+  // Node special settings
+
+  /** Save at least this much data per InfoItem */
   val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
+
+  /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
+
+
+  // Listen interfaces and ports
+
+  val interface: String = config.getString("omi-service.interface")
   val port: Int = config.getInt("omi-service.port")
   val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
   val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
   val cliPort: Int = config.getInt("omi-service.agent-cli-port")
-  val interface: String = config.getString("omi-service.interface")
+
+
+  // Agents
+
   val internalAgents = config.getObject("agent-system.internal-agents") 
-  val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
-  val inputWhiteListUsers = config.getStringList("omi-service.input-whitelist-users") 
-  val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") 
+
+  /**
+   * Time in milliseconds how long an actor has to at least run before trying
+   * to restart in case of ThreadException */
   val timeoutOnThreadException: Int = config.getInt("agent-system.timeout-on-threadexception")
+
+
+  // Authorization
+  
+  val inputWhiteListUsers = config.getStringList("omi-service.input-whitelist-users") 
+
+  val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
+  val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") 
 }
 
 

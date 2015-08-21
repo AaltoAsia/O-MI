@@ -2,6 +2,7 @@ package http
 
 import spray.routing.Directives.optionalHeaderValue
 import spray.routing.Directive1
+import spray.http.HttpHeader
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import types.OmiTypes._
@@ -25,11 +26,19 @@ case class Eppn(user: String)
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
 
-  private[this] val whitelistedUsers: Vector[String] = settings.inputWhiteListUsers.toVector
+  private[this] val whitelistedUsers: Vector[Eppn] =
+    settings.inputWhiteListUsers.map(Eppn(_)).toVector
+
+  /** 
+   * Select header with the right data in it.
+   * EduPersonPrincipalName
+   * Is it uppercase? Docs say it depends on tool.
+   */
+  def headerSelector(header: HttpHeader): Boolean =
+    header.name == "HTTP_eppn" || header.name == "HTTP_EPPN"
 
   private def extractUserData: Directive1[User] = optionalHeaderValue( header =>
-     // Is it uppercase? Docs say it depends on tool.
-    if (header.name == "HTTP_eppn" || header.name == "HTTP_EPPN")
+    if (headerSelector(header))
       Some(Eppn(header.value))
     else
       None
