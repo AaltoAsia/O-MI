@@ -1,3 +1,16 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package agentSystem
 
 import akka.actor.{ Actor, Props, ActorLogging }
@@ -5,10 +18,11 @@ import akka.io.{ IO, Tcp  }
 import java.net.InetSocketAddress
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import http.Settings
-import http.PermissionCheck._
-import parsing.OdfParser
+import scala.concurrent.duration._
 
+import http.Authorization.ExtensibleAuthorization
+import http.IpAuthorization
+import parsing.OdfParser
 import types._
 import types.Path._ //Useless?
 import types.OdfTypes._
@@ -17,7 +31,11 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 
 /** AgentListener handles connections from agents.
   */
-class ExternalAgentListener extends Actor with ActorLogging {
+class ExternalAgentListener
+  extends Actor with ActorLogging
+  with ExtensibleAuthorization with IpAuthorization
+  // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
+  {
   
   import Tcp._
   //Orginally a hack for getting different names for actors.
@@ -39,14 +57,21 @@ class ExternalAgentListener extends Actor with ActorLogging {
    
     case Connected(remote, local) =>
       val connection = sender()
-      if( hasPermission( remote.getAddress() )){
+
+      // Code for ip address authorization check
+      val user = Some(remote.getAddress())
+      val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
+
+      if( ipHasPermission(user)(requestForPermissionCheck) ){
         log.info(s"Agent connected from $remote to $local")
+
         val handler = context.actorOf(
           Props(classOf[ExternalAgentHandler], remote),
           "agent-handler-"+agentCounter
         )
         agentCounter += 1
         connection ! Register(handler)
+
       } else {
         log.warning(s"Unauthorized " + remote+  " tried to connect as external agent.")
       }
