@@ -34,6 +34,7 @@ lazy val agents = (project in file("Agents")).
     libraryDependencies ++= commonDependencies
   ).
   dependsOn(omiNode)
+  
 //TODO omiNode should depend on agent jar
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
@@ -43,6 +44,7 @@ lazy val root = (project in file(".")).
    // packageDescription := "TempName",
    // packageSummary := "TempName",
    // entrypoint
+   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       mainClass in Compile := Some("http.Boot"),
 	  //TODO configs and deploy directories need to be on the same path from where you run the start script as well as the SmartHouse.xml and otaniemi3d-data.xml
 	  //to get stuff working atm you have to move files from stage directory to bin directory (after running 'sbt stage')
@@ -51,7 +53,7 @@ lazy val root = (project in file(".")).
 	  mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "deploy")),
 	  mappings in Universal <+=  (packageBin in Compile, sourceDirectory in omiNode) map { (_,src) =>
 	    val conf = src / "main" / "resources" / "application.conf"
-		conf -> "conf/application.conf"
+	    conf -> "conf/application.conf"
       },
 	  mappings in Universal <++= (baseDirectory in omiNode) map { base => 
 	    val smarthouse = base / "SmartHouse.xml"
