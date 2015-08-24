@@ -1,19 +1,43 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package http
 
 import scala.collection.JavaConverters._
 import java.net.InetAddress
+import spray.routing.Directives.clientIP
+import spray.routing.Directive1
 
-/** Helper object for checking, is connected IP permitted to do input actions, a ExternalAgent or using Write request.
-  *
-  **/
-object PermissionCheck {
+import types.OmiTypes._
 
-  import Boot.settings
-  import Boot.system.log
+import Boot.settings
+import Boot.system.log
+import Authorization.AuthorizationExtension
+
+// TODO: maybe move to Authorization package
+
+/** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
+  * Tests against whitelisted ips and ip masks in configuration.
+  */
+trait IpAuthorization extends AuthorizationExtension {
+  private type UserData = Option[InetAddress]
+
   /** Contains white listed IPs
     *
     **/
-  val whiteIPs = settings.inputWhiteListIps.asScala.map{
+  private[this] val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("IPv" + ip.length + ": " + ip.mkString("."))  // TODO: bytes should be printed as unsigned
@@ -25,7 +49,7 @@ object PermissionCheck {
   /** Contains masks of white listed subnets.
     *
     **/
-  val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
+  private[this] val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
     case (s: String, bits: Object ) => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
@@ -33,18 +57,35 @@ object PermissionCheck {
   }.toMap 
   log.debug("Totally " + whiteMasks.keys.size + "masks")
 
-  /** Main method for checkking connections permission
-    *
-    * @param addr addr is InetAddress of connector.
-    * @return Boolean, true if connection is permited to do input.
-    **/
-  def hasPermission(addr: InetAddress) : Boolean = {
-    whiteIPs.contains( inetAddrToBytes( addr ) ) ||
-    whiteMasks.exists{
-      case (subnet : Seq[Byte], bits : Int) =>
-      isInSubnet(subnet, bits, inetAddrToBytes( addr ))
-    }
-  }
+
+  // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
+  private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
+
+  def ipHasPermission: UserData => OmiRequest => Boolean = user => {
+    // Write and Response are currently PermissiveRequests
+    case r : PermissiveRequest =>
+      val result = user.exists( addr =>
+        whiteIPs.contains( inetAddrToBytes( addr ) ) ||
+        whiteMasks.exists{
+          case (subnet : Seq[Byte], bits : Int) =>
+          isInSubnet(subnet, bits, inetAddrToBytes( addr ))
+        }
+      )
+      if (result) {
+        log.info(s"Authorized IP: $user for ${r.toString.take(80)}...")
+      } else {
+        log.warning(s"Unauthorized IP: $user")
+      }
+      
+      result
+    // Read and Subscriptions should be allowed elsewhere
+    case _ => false
+   }
+
+  abstract override def makePermissionTestFunction =
+    combineWithPrevious(
+      super.makePermissionTestFunction,
+      extractIp map ipHasPermission)
   
   /** Helper method for converting InetAddress to sequence of Bytes.
     *

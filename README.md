@@ -17,7 +17,7 @@ See `development` branch for latest progress.
 
 Dependencies
 ------------
-java 1.7
+java-1.7
 
 
 Compiling and packaging
@@ -32,13 +32,13 @@ Compiling a jar
 
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. `sbt one-jar`
-3. Result can be found in ./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar
+3. Result can be found in `./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar`
 
 
 Setup development environment
 -----------------------------
 
-1. git clone
+1. `git clone`
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI Node/` project directory
@@ -66,7 +66,7 @@ To run O-MI Node run the corresponding startup script for your OS:
 
 This will run O-MI Node with configuration in application.conf.
 By default it has some example and demo agents.
-More Information in next section.
+More Information in the next section.
 
 Configuration
 =============
@@ -74,66 +74,14 @@ Configuration
 Basic configuration
 -------------------
 
-File application.conf is the main connfiguration file that is read 
-at start. 
+See [application.conf](https://github.com/AaltoAsia/O-MI/blob/master/O-MI%20Node/src/main/resources/application.conf)
+for the defaults and configuration documentation.
 
-`omi-service` configuration options:
-
-
-`interface = "0.0.0.0"`
-
-Defines at which interface ip or hostname to bind the O-MI Node. 
-O-MI Node accepts O-MI messages only for this address.
-Use `"0.0.0.0"` for binding to all interfaces.
-
-
-`port = 8080`
-
-Defines which port O-IM Node listens for HTTP requests.
-
-  
-`external-agent-interface = "localhost"`
-
-Defines interface used for listening sensor updates of external agents.
-Should be restricted to localhost or LAN ip, otherwise anyone could
-send sensor data from the internet.
-
-
-`external-agent-port = 8181`
-
-Defines port used for listening sensor updates of external agents.
-
-
-`num-latest-values-stored = 10`
-
-Defines how many latest values are stored for each sensor.
-
-
-`settings-read-odfpath = "Objects/OMI-Service/Settings/"`
-
-Defines path in O-DF hierarchy where values of the settings can be found.
-
-
-```
-agent-system {
-   agents {
-       "agents.SensorBoot" = "configs/SensorConfig"
-       "agents.GenericBoot" = "configs/GenericConfig"
-    }     
-}
-```
-For internal agents, configuration has classname and
-configuration filepath of the agents in pairs.
-
-`timeout-on-threadexception = 300000`
-
-Defines the time in milliseconds that internal-agent has to at least run
-before trying to restart it automatically.
-
-NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
 
 Library Config
 --------------
+
+NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
 
 - [Akka Actors](http://doc.akka.io/docs/akka/2.3.9/general/configuration.html)
 - [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)

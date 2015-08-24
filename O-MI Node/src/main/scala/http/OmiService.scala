@@ -1,3 +1,18 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package http
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
@@ -9,10 +24,10 @@ import MediaTypes._
 
 import responses.RequestHandler
 import parsing.OmiParser
-import PermissionCheck._
 import types.{Path, OmiTypes}
 import OmiTypes._
 import database.DB
+import Authorization._
 
 import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -21,7 +36,11 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
  * Actor that handles incoming http messages
  * @param requestHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {
+class OmiServiceActor(reqHandler: RequestHandler)
+  extends Actor
+     with ActorLogging
+     with OmiService
+     {
 
   /**
    * the HttpService trait defines only one abstract member, which
@@ -45,7 +64,15 @@ class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLoggin
 /**
  * this trait defines our service behavior independently from the service actor
  */
-trait OmiService extends HttpService with CORSSupport {
+trait OmiService
+  extends HttpService
+     with CORSSupport
+     with ExtensibleAuthorization
+     with IpAuthorization         // Write and Response requests
+     with SamlHttpHeaderAuth      // Write and Response requests
+     with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+     {
+
   import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
   val requestHandler: RequestHandler
@@ -127,10 +154,9 @@ trait OmiService extends HttpService with CORSSupport {
 
   /* Receives HTTP-POST directed to root */
   val postXMLRequest = post { // Handle POST requests from the client
-    clientIP { ip => // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
+    makePermissionTestFunction() { hasPermissionTest =>
       entity(as[NodeSeq]) { xml =>
         val eitherOmi = OmiParser.parse(xml.toString)
-        //lazy val ip: RemoteAddress = ???
 
         respondWithMediaType(`text/xml`) {
           eitherOmi match {
@@ -140,11 +166,9 @@ trait OmiService extends HttpService with CORSSupport {
               val (response, returnCode) = request match {
 
                 case Some(pRequest : PermissiveRequest) => 
-                  if(ip.toOption.exists(hasPermission(_))){//.nonEmpty && hasPermission(ip.toOption.get)) {
-                    log.info(s"Authorized: ${ip.toOption} for ${pRequest.toString.take(80)}...")
+                  if ( hasPermissionTest(pRequest) ) {
                     requestHandler.handleRequest(pRequest)
                   } else {
-                    log.warning(s"Unauthorized: ${ip.toOption} tried to use ${pRequest.toString.take(120)}...")
                     (requestHandler.unauthorized, 401)
                   }
                 case Some(req : OmiRequest) => 
