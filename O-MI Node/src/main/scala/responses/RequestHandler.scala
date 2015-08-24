@@ -196,10 +196,21 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
     case write: WriteRequest => {
       InputPusher.handleObjects(write.odf.objects)
+      //XXX:
       (success, 200)
     }
     case response: ResponseRequest => {
-      (notImplemented, 505)
+      log.debug("Response received.")
+      response.results.foreach{
+        result => 
+        result.odf match {
+          case Some(odf) =>
+            InputPusher.handleObjects(odf.objects)
+          case None =>//noop?
+        }
+      }
+      //XXX:
+      (success, 200)
     }
     case cancel: CancelRequest => {
       handleCancel(cancel)
