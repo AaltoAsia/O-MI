@@ -3,9 +3,7 @@
 
   Licensed under the 4-clause BSD (the "License");
   you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+  You may obtain a copy of the License at top most directory of project.
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,7 +39,7 @@ case class Eppn(user: String)
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
 
-  private[this] val whitelistedUsers: Vector[Eppn] =
+  private[this] def whitelistedUsers: Vector[Eppn] =
     settings.inputWhiteListUsers.map(Eppn(_)).toVector
 
   log.info(s"O-MI node is configured to allow SAML users: $whitelistedUsers")

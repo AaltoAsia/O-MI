@@ -3,9 +3,7 @@
 
   Licensed under the 4-clause BSD (the "License");
   you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+  You may obtain a copy of the License at top most directory of project.
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,60 +18,31 @@ import agentSystem.ThreadException;
 import types.OdfTypes.OdfObject;
 import akka.actor.ActorRef;
 import akka.event.LoggingAdapter;
-
+/** Abstract base class for internal agents.
+ *
+ */
 public abstract class InternalAgent extends Thread {
-    protected String configPath;
-    private Boolean running = true;
-    private static ActorRef loader = null;
+    //ActorRef to InternalAgentLoader for communincation.
+    protected static ActorRef loader = null;
+    //Lo for logging agents, actions.
     protected static LoggingAdapter log = null;
+    //One-tiem setters
     public static final void setLoader(ActorRef aloader) {
-	if(loader == null)
+	if(loader == null && aloader != null)
 	    loader = aloader;
     }
     public static final void setLog(LoggingAdapter logger) {
-	if(log == null)
+	if(log == null && logger != null)
 	    log = logger;
     }
-    abstract public void loopOnce();
-    abstract public void finish();
-    abstract public void init();
-    public InternalAgent(String configPath) {
-	this.configPath =configPath; 
+    //Constructor
+    public InternalAgent() {
+        //noop?
     }
-    public final void run(){
-	try{
-	    init();
-	} catch(Exception e) {
-	    if(loader != null)
-		loader.tell( new ThreadInitialisationException(this, e), null);
-	    
-	    shutdown();
-	    finish();
-	    return;
-	}
-	try{
-	    while(isRunning()){
-		loopOnce();
-	    }
-
-	} catch(Exception e) {
-	    if(loader != null)
-		loader.tell( new ThreadException(this, e), null);
-	    
-	    shutdown();
-	} finally {
-	    finish();
-	}
-    }
-
-    public final boolean isRunning(){
-	synchronized(running){
-	    return running;
-	} 
-    }
-    public final void shutdown(){
-	synchronized(running){
-	    running = false;	
-	}
-    }
+    //Abstract methods that need to be implemented for internal agent.
+    //Intercafe for initialisation and passing config to agent.
+    public abstract void init( String config );
+    //Main method of internal agent, run in different thread after, Thread's start method is called
+    public abstract void run();
+    //Note: Interruption need to be handled by agent.
 }

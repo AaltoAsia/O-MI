@@ -3,9 +3,7 @@
 
   Licensed under the 4-clause BSD (the "License");
   you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+  You may obtain a copy of the License at top most directory of project.
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,7 +54,7 @@ class OmiConfigExtension(config: Config) extends Extension {
   val inputWhiteListUsers = config.getStringList("omi-service.input-whitelist-users") 
 
   val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
-  val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") 
+  val inputWhiteListSubnets = config.getStringList("omi-service.input-whitelist-subnets") 
 }
 
 

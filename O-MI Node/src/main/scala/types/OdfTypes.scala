@@ -3,9 +3,7 @@
 
   Licensed under the 4-clause BSD (the "License");
   you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+  You may obtain a copy of the License at top most directory of project.
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -64,6 +62,9 @@ object `package` {
     }.toSeq
   }
 
+  def getInfoItems( objects: OdfObjects ) : JavaIterable[OdfInfoItem] = {
+    getLeafs(objects).collect{ case info: OdfInfoItem => info}
+  }
   /**
    * Generates odf tree containing the ancestors of given object.
    */
