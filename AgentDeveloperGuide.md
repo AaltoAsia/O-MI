@@ -20,9 +20,13 @@ Program can be writen with any programming language. See
 [the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
 Starting and stopping of external agents are the user's responsibility.
 
-If your program is run in different computer, you need to add its ip to 
-o-mi-service.input-whitelist-ips. You can also accept input from subnets by adding 
-their masks to o-mi-service.input-whitelist-subnets.
+Another option for writing data from outside of O-MI Node is to send O-MI write request to it. 
+
+If your external agent is run in different computer, you need to add its ip to 
+`o-mi-service.input-whitelist-ips`. You can also accept input from subnets by adding 
+their masks to `o-mi-service.input-whitelist-subnets`.
+
+There is also possibility to use Shibboleth authentication to get permission for writing.
 
 Internal Agent
 ----------------
