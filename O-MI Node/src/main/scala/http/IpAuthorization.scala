@@ -3,9 +3,7 @@
 
   Licensed under the 4-clause BSD (the "License");
   you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  https://github.com/AaltoAsia/O-MI/blob/master/LICENSE.txt
+  You may obtain a copy of the License at top most directory of project.
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,11 +47,15 @@ trait IpAuthorization extends AuthorizationExtension {
   /** Contains masks of white listed subnets.
     *
     **/
-  private[this] val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ 
-    case (s: String, bits: Object ) => 
-    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
+  private[this] val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ 
+    case (str: String) => 
+    val parts = str.split("/")
+    require(parts.length == 2)
+    val mask = parts.head
+    val bits = parts.last
+    val ip = inetAddrToBytes(InetAddress.getByName(mask)) 
     log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
-    (ip, bits.toString.toInt )
+    (ip, bits.toInt )
   }.toMap 
   log.debug("Totally " + whiteMasks.keys.size + "masks")
 
