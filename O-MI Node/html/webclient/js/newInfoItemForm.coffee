@@ -152,6 +152,10 @@
     consts.infoitemForm.find '.btn-clone-above'
       .on 'click', cloneAbove
 
+    # tooltips & popovers also lose some event handlers
+    consts.infoitemForm.find('[data-toggle="tooltip"]').tooltip
+      container : 'body'
+
     return
 
 

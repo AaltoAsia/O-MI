@@ -117,6 +117,9 @@
         return event.preventDefault();
       });
       consts.infoitemForm.find('.btn-clone-above').on('click', cloneAbove);
+      consts.infoitemForm.find('[data-toggle="tooltip"]').tooltip({
+        container: 'body'
+      });
     };
   })(WebOmi.consts, WebOmi.requests, WebOmi.omi);
 
