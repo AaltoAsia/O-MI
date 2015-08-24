@@ -32,6 +32,18 @@ constsExt = ($, parent) ->
     infoitem : "glyphicon glyphicon-apple"
     metadata : "glyphicon glyphicon-info-sign"
 
+  my.addOdfTreeNode = (parent, path, name, treeTypeName, callback=null) ->
+    tree = WebOmi.consts.odfTree
+    tree.create_node parent,
+      id   : path
+      text : name
+      type : treeTypeName
+    , "first", (node) ->
+      tree.open_node parent, null, 500
+      if callback? then callback(node)
+      tree.select_node node
+
+
   # private
   openOdfContextmenu = (target) ->
     createNode = (particle, odfName, treeTypeName, defaultId) ->
@@ -53,15 +65,12 @@ constsExt = ($, parent) ->
         path = "#{parent.id}/#{idName}"
 
         if $(jqesc path).length > 0
-          return # already exists
-
-        tree.create_node parent,
-          id   : path
-          text : name
-          type : treeTypeName
-        , "first", ->
-          tree.open_node parent, null, 500
           tree.select_node path
+          return # already exists
+        else
+          my.addOdfTreeNode parent, path, name, treeTypeName
+
+
 
     helptxt :
       label : "For write request:"
@@ -70,7 +79,17 @@ constsExt = ($, parent) ->
       action : -> my.ui.request.set "write", false
       separator_after : true
     add_info :
-      createNode "an", "InfoItem", "infoitem", "MyInfoItem"
+      $.extend (createNode "an", "InfoItem", "infoitem", "MyInfoItem"),
+        action : (data) -> # override action
+          # TODO: inform about wrong request type (should be write)
+          # the data is stored for switching but might confuse the user
+
+          tree = WebOmi.consts.odfTree
+          parent = tree.get_node data.reference
+          $ '#infoItemParent'
+            .val parent.id
+          WebOmi.consts.infoitemDialog.modal "show"
+
     add_obj :
       createNode "an", "Object", "object", "MyObject"
     add_metadata :
@@ -110,23 +129,22 @@ constsExt = ($, parent) ->
 
   # private, [functions]
   afterWaits = []
-
-  # use afterJquery for things that depend on const module
+  # use afterJquery(<callback>) for things that depend on const module
   my.afterJquery = (fn) -> afterWaits.push fn
 
-  urlmatch = /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s)/i
+  #private
+  urlmatch = /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s|$)/i
 
-  # url matcher
-  URLHighlightOverlay = {
+  # private; url matcher for response codemirror links
+  URLHighlightOverlay =
     token: (stream, state) ->
       if stream.match(urlmatch)
         stream.backUp(1)
         return "link"
       
-      {}while stream.next()? and not stream.match(urlmatch,false)   
+      while stream.next()? and not stream.match(urlmatch,false)   
+        null
       return null
-
-  }  
 
   # All of jquery initiliazation code is here
   $ ->
@@ -142,11 +160,13 @@ constsExt = ($, parent) ->
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
-    my.responseCodeMirror.addOverlay(URLHighlightOverlay)
+    my.responseCodeMirror.addOverlay URLHighlightOverlay
 
-    $('.well.response').delegate ".cm-link", "click", (event) ->
-      url = $(event.target).text()
-      window.open url, '_blank'
+    # click events for codemirror url links
+    $ '.well.response'
+      .delegate ".cm-link", "click", (event) ->
+        url = $(event.target).text()
+        window.open url, '_blank' # new tab
      
 
     my.serverUrl    = $ '#targetService'
@@ -203,8 +223,8 @@ constsExt = ($, parent) ->
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
 
 
-    # private, (could be public too)
-    validators = {}
+    # TODO: move to some WebOmi.util etc.
+    my.validators = validators = {}
 
     # Validators,
     # minimal Maybe/Option operations
@@ -248,7 +268,7 @@ constsExt = ($, parent) ->
       null
 
     validators.url = (s) ->
-      if /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(s)
+      if urlmatch.test s
         s
       else null
 

@@ -38,7 +38,7 @@ formLogicExt = ($, WebOmi) ->
   # Do stuff with RequestDocument and automatically write it back
   # callback: Function () -> ()
   my.modifyRequest = (callback) ->
-    req = my.getRequest()
+    req = my.getRequest() # RemoveMe
     callback()
     #my.setRequest _
     WebOmi.requests.generate()

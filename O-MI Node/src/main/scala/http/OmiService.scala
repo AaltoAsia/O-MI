@@ -32,6 +32,12 @@ import Authorization._
 import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
+trait OmiServiceAuthorization
+  extends ExtensibleAuthorization
+     with IpAuthorization         // Write and Response requests
+     with SamlHttpHeaderAuth      // Write and Response requests
+     with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+
 /**
  * Actor that handles incoming http messages
  * @param requestHandler ActorRef that is used in subscription handling
@@ -67,10 +73,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
 trait OmiService
   extends HttpService
      with CORSSupport
-     with ExtensibleAuthorization
-     with IpAuthorization         // Write and Response requests
-     with SamlHttpHeaderAuth      // Write and Response requests
-     with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+     with OmiServiceAuthorization
      {
 
   import scala.concurrent.ExecutionContext.Implicits.global

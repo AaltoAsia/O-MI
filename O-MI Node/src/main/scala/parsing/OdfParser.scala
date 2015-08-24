@@ -22,7 +22,6 @@ import xmlGen._
 import xmlGen.xmlTypes._
 import scala.util.{Try, Success, Failure}
 import java.util.Date
-import scala.util.control.NonFatal
 import scala.xml.XML
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
@@ -82,41 +81,62 @@ object OdfParser extends Parser[OdfParseResult] {
     }
   }
 
+  private[this] def validateId(stringId: String): Option[String] = {
+    val trimmedName = stringId.trim
+    if (trimmedName.isEmpty) None
+    else Some(trimmedName)
+  }
+  private[this] def validateId(optionId: Option[String]): Option[String] = for {
+    head <- optionId
+    validated <- validateId(head)
+  } yield validated
+
   private[this] def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
-    val npath = path / obj.id.headOption.getOrElse(throw new Exception("head method call on an empty Seq")).value.trim
-      OdfObject(
-        npath, 
-        obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
-        obj.Object.map{ child => parseObject( child, npath ) }.toIterable,
-        obj.description.map{ des => OdfDescription( des.value, des.lang )
-        }
-      ) 
+
+    val npath = path / validateId(obj.id.headOption.map(_.value)).getOrElse(
+      throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
+    )
+
+    OdfObject(
+      npath, 
+      obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
+      obj.Object.map{ child => parseObject( child, npath ) }.toIterable,
+      obj.description.map{ des => OdfDescription( des.value, des.lang )
+      }
+    ) 
   }
   
   private[this] def parseInfoItem(item: InfoItemType, path: Path) : OdfInfoItem  = { 
-    val npath = path / item.name
-      OdfInfoItem(
-        npath,
-        item.value.map{
-          value => 
-          OdfValue(
-            value.value,
-            value.typeValue,
-            timeSolver(value)
-          )
-        },
-        item.description.map{ des =>
-          OdfDescription( des.value, des.lang ) 
-        },
-        if(item.MetaData.isEmpty){
-          None
-        } else {
-          Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString) )
-        }
-      ) 
+
+    val npath = path / validateId(item.name).getOrElse(
+      throw new IllegalArgumentException("No name on infoItem")
+    )
+
+    OdfInfoItem(
+      npath,
+      item.value.map{
+        value => 
+        OdfValue(
+          value.value,
+          value.typeValue,
+          timeSolver(value)
+        )
+      },
+      item.description.map{ des =>
+        OdfDescription( des.value, des.lang ) 
+      },
+      if(item.MetaData.isEmpty){
+        None
+      } else {
+        Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString) )
+      }
+    ) 
   }
 
   def timer = new Timestamp( new Date().getTime ) 
+
+  /** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
+   */
   private[this] def timeSolver(value: ValueType ) = value.dateTime match {
     case None => value.unixTime match {
       case None => Some(timer)

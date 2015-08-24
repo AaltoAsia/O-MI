@@ -124,15 +124,15 @@ requestsExt = (WebOmi) ->
 
 
   #private; Used to add value tag when in write request
-  addValueWhenWrite = (odfInfoItem) ->
+  # "0" placeholder, otherwise xml is formatted to <value />
+  # values have structure [{ value:String, valuetime:String unix-time, valuetype:String }]
+  addValueWhenWrite = (odfInfoItem, values=[{value:"0"}]) ->
     if currentParams.request == 'write'
       doc = odfInfoItem.ownerDocument
-      val = WebOmi.omi.createOdfValue doc
 
-      # placeholder, otherwise xml is formatted to <value />
-      val.appendChild doc.createTextNode "0"
-
-      odfInfoItem.appendChild val
+      for value in values
+        val = WebOmi.omi.createOdfValue doc, value.value, value.valuetype, value.valuetime
+        odfInfoItem.appendChild val
 
   #private; Used to add value tags to all info items when in write request
   addValueToAll = (doc) ->
@@ -150,6 +150,7 @@ requestsExt = (WebOmi) ->
     # imports
     o = WebOmi.omi
 
+    # get ancestors
     nodeElems = $.makeArray odfTreeNode.parentsUntil "#Objects", "li"
     nodeElems.reverse()
     nodeElems.push odfTreeNode
@@ -171,7 +172,7 @@ requestsExt = (WebOmi) ->
     # remove empty parents
     allOdfElems.reverse()
     for elem in allOdfElems
-      if not o.hasOdfChildren elem
+      if elem? and not o.hasOdfChildren elem
         elem.parentNode.removeChild elem
 
     odfObjects
@@ -208,7 +209,7 @@ requestsExt = (WebOmi) ->
       maybeChild = o.getOdfChild(id, currentOdfNode)
       if maybeChild?
         # object exists: TODO: what happens now, murder the children or no-op
-        currentOdfNode = maybeChild
+        currentOdfNode = maybeChild  # no-op
 
       else
         # create new info or object, infos must be before objects but after <id>s
@@ -219,15 +220,29 @@ requestsExt = (WebOmi) ->
           when "metadata"
             meta = o.createOdfMetaData odfDoc
 
+            metas = $(node).data "metadatas"
+            if metas? and currentParams.request == "write"
+              for metadata in metas
+                metainfo = o.createOdfInfoItem odfDoc, metadata.name, [
+                  value:     metadata.value
+                  vAluetype: metadata.type
+                ], metadata.description
+                meta.appendChild metainfo
+
             # find the first value and insert before it (schema restriction)
             siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0]
             maybeInsertBefore currentOdfNode, siblingValue, meta
 
           when "infoitem"
-            info = o.createOdfInfoItem odfDoc, id
+            info =
+              if currentParams.request == "write"
+                # when request is write
+                maybeValues = $(node).data "values"
+                maybeDesc   = $(node).data "description"
+                o.createOdfInfoItem odfDoc, id, maybeValues, maybeDesc
+              else
+                o.createOdfInfoItem odfDoc, id
 
-            # when request is write
-            addValueWhenWrite info
 
             # find the first Object and insert before it (schema restriction)
             siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0]
@@ -310,9 +325,11 @@ requestsExt = (WebOmi) ->
 
           # special functionality for write request
           if reqName == "write"
-            addValueToAll doc
+            my.params.odf.update currentParams.odf
+            #addValueToAll doc
           else if oldReqName == "write" # change from write
-            removeValueFromAll doc
+            #removeValueFromAll doc
+            my.params.odf.update currentParams.odf
 
           reqName
 
@@ -366,8 +383,12 @@ requestsExt = (WebOmi) ->
             msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0]
             if not msg?
               my.params.msg.update currentParams.msg # calls odf update again
-              # FIXME dependency
+              # NOTE: dependency?, msg.update calls odf update
               return
+            
+            # remove old (safeguard)
+            while msg.firstChild
+              msg.removeChild msg.firstChild
 
             msg.appendChild obs
 

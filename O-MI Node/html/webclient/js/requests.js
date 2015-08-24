@@ -97,13 +97,24 @@
     my.confirmOverwrite = function(oldVal, newVal) {
       return confirm("You have edited the request manually.\n Do you want to overwrite " + oldVal.toString + " with " + newVal.toString);
     };
-    addValueWhenWrite = function(odfInfoItem) {
-      var doc, val;
+    addValueWhenWrite = function(odfInfoItem, values) {
+      var doc, i, len, results, val, value;
+      if (values == null) {
+        values = [
+          {
+            value: "0"
+          }
+        ];
+      }
       if (currentParams.request === 'write') {
         doc = odfInfoItem.ownerDocument;
-        val = WebOmi.omi.createOdfValue(doc);
-        val.appendChild(doc.createTextNode("0"));
-        return odfInfoItem.appendChild(val);
+        results = [];
+        for (i = 0, len = values.length; i < len; i++) {
+          value = values[i];
+          val = WebOmi.omi.createOdfValue(doc, value.value, value.valuetype, value.valuetime);
+          results.push(odfInfoItem.appendChild(val));
+        }
+        return results;
       }
     };
     addValueToAll = function(doc) {
@@ -152,7 +163,7 @@
       allOdfElems.reverse();
       for (i = 0, len = allOdfElems.length; i < len; i++) {
         elem = allOdfElems[i];
-        if (!o.hasOdfChildren(elem)) {
+        if ((elem != null) && !o.hasOdfChildren(elem)) {
           elem.parentNode.removeChild(elem);
         }
       }
@@ -166,7 +177,7 @@
       }
     };
     my.addPathToOdf = function(odfTreeNode, odfObjects) {
-      var currentOdfNode, i, id, info, len, maybeChild, meta, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
+      var currentOdfNode, i, id, info, len, maybeChild, maybeDesc, maybeValues, meta, metadata, metainfo, metas, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
       o = WebOmi.omi;
       odfDoc = odfObjects.ownerDocument || odfObjects;
       if ((odfTreeNode[0] == null) || odfTreeNode[0].id === "Objects") {
@@ -184,17 +195,30 @@
           currentOdfNode = maybeChild;
         } else {
           odfElem = (function() {
+            var j, len1;
             switch (WebOmi.consts.odfTree.get_type(node)) {
               case "object":
                 object = o.createOdfObject(odfDoc, id);
                 return currentOdfNode.appendChild(object);
               case "metadata":
                 meta = o.createOdfMetaData(odfDoc);
+                metas = $(node).data("metadatas");
+                if ((metas != null) && currentParams.request === "write") {
+                  for (j = 0, len1 = metas.length; j < len1; j++) {
+                    metadata = metas[j];
+                    metainfo = o.createOdfInfoItem(odfDoc, metadata.name, [
+                      {
+                        value: metadata.value,
+                        vAluetype: metadata.type
+                      }
+                    ], metadata.description);
+                    meta.appendChild(metainfo);
+                  }
+                }
                 siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingValue, meta);
               case "infoitem":
-                info = o.createOdfInfoItem(odfDoc, id);
-                addValueWhenWrite(info);
+                info = currentParams.request === "write" ? (maybeValues = $(node).data("values"), maybeDesc = $(node).data("description"), o.createOdfInfoItem(odfDoc, id, maybeValues, maybeDesc)) : o.createOdfInfoItem(odfDoc, id);
                 siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingObject, info);
             }
@@ -279,9 +303,9 @@
             currentReq.parentNode.replaceChild(newReq, currentReq);
             currentParams.request = reqName;
             if (reqName === "write") {
-              addValueToAll(doc);
+              my.params.odf.update(currentParams.odf);
             } else if (oldReqName === "write") {
-              removeValueFromAll(doc);
+              my.params.odf.update(currentParams.odf);
             }
             return reqName;
           }
@@ -348,6 +372,9 @@
               if (msg == null) {
                 my.params.msg.update(currentParams.msg);
                 return;
+              }
+              while (msg.firstChild) {
+                msg.removeChild(msg.firstChild);
               }
               msg.appendChild(obs);
             }
