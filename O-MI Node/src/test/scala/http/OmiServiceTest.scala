@@ -23,7 +23,7 @@ import akka.actor._
 import responses.SubscriptionHandler
 
 import database._
-import http.PermissionCheck._
+import http.Authorization._
 
 import scala.collection.JavaConverters._
 import java.net.InetAddress
