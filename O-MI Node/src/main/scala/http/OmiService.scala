@@ -164,18 +164,16 @@ trait OmiService
         respondWithMediaType(`text/xml`) {
           eitherOmi match {
             case Right(requests) =>
-              val request = requests.headOption
-
+              val request = requests.headOption  // TODO: Only one request per xml is supported currently
+                                                 // O-MI supports multiple requests
               val (response, returnCode) = request match {
 
-                case Some(pRequest : PermissiveRequest) => 
-                  if ( hasPermissionTest(pRequest) ) {
-                    requestHandler.handleRequest(pRequest)
+                case Some(req : OmiRequest) => 
+                  if ( hasPermissionTest(req) ) {
+                    requestHandler.handleRequest(req)
                   } else {
                     (requestHandler.unauthorized, 401)
                   }
-                case Some(req : OmiRequest) => 
-                    requestHandler.handleRequest(req)
                 case _ =>  (requestHandler.notImplemented, 501)
               }
 
