@@ -19,6 +19,7 @@ import OdfTypes._
 
 import xmlGen.xmlTypes
 import java.sql.Timestamp
+import java.io.File
 
 import scala.concurrent.duration._
 
@@ -28,10 +29,27 @@ import javax.xml.transform.stream.StreamSource
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 
-/** Parsing object for parsing messages with O-MI protocol*/
+/** Parser for messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
    protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
+
+  /**
+   * Public method for parsing the xml file into OmiParseResults.
+   *
+   *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
+   *  @return OmiParseResults
+   */
+  def parse(file: File): OmiParseResult = {
+    val root = Try(
+      XML.loadFile(file)
+    ).getOrElse(
+      return  Left( Iterable( ParseError("Invalid XML") ) ) 
+    )
+
+    parse( root )
+  }
+
 
   /**
    * Public method for parsing the xml string into OmiParseResults.
@@ -47,10 +65,19 @@ object OmiParser extends Parser[OmiParseResult] {
         return Left(Iterable(ParseError("OmiParser: Invalid XML")))
     )
 
+    parse( root )
+  }
+
+  /**
+   * Public method for parsing the xml root node into OmiParseResults.
+   *
+   *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
+   *  @return OmiParseResults
+   */
+  def parse(root: xml.Node ): OmiParseResult = {
     val schema_err = schemaValitation(root)
     if (schema_err.nonEmpty)
       return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
-
     Try{
       val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
       envelope.omienvelopeoption.value match {

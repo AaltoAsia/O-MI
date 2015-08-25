@@ -29,7 +29,7 @@ import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 
-/** Object for parsing data in O-DF format into sequence of ParseResults. */
+/** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
 
   protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
@@ -66,6 +66,7 @@ object OdfParser extends Parser[OdfParseResult] {
 
     parse(root)
   }
+
   /**
    * Public method for parsing the xml structure into OdfParseResults.
    *
@@ -148,7 +149,6 @@ object OdfParser extends Parser[OdfParseResult] {
     ) 
   }
 
-  def timer = new Timestamp( new Date().getTime ) 
 
   /** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
    */
