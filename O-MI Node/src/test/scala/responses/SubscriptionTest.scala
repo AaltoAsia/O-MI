@@ -47,12 +47,12 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class SubscriptionTest extends Specification with BeforeAfterAll with DeactivatedTimeConversions {
   sequential
-
+//change akka.loglevel to DEBUG  and to see more info
   implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
             akka.stdout-loglevel = INFO
-            akka.loglevel = DEBUG
+            akka.loglevel = WARNING
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
             """))
