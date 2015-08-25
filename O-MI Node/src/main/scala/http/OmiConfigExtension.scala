@@ -19,6 +19,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
 import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit
  
 class OmiConfigExtension(config: Config) extends Extension {
   // Node special settings
@@ -46,7 +47,7 @@ class OmiConfigExtension(config: Config) extends Extension {
   /**
    * Time in milliseconds how long an actor has to at least run before trying
    * to restart in case of ThreadException */
-  val timeoutOnThreadException: Int = config.getInt("agent-system.timeout-on-threadexception")
+  val timeoutOnThreadException: Int = config.getDuration("agent-system.timeout-on-threadexception", TimeUnit.MILLISECONDS).toInt
 
 
   // Authorization
