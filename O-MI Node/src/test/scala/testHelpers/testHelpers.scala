@@ -2,14 +2,19 @@ package testHelpers
 import org.specs2.mutable._
 import org.specs2.specification.{ Step, Fragments }
 import org.xml.sax.InputSource
-import akka.testkit.TestKit
 import akka.actor.ActorSystem
+import akka.testkit.{ TestKit, TestActorRef, TestProbe, ImplicitSender, EventFilter }
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.Scope
 import akka.actor._
 import responses.RemoveSubscription
 import scala.xml._
 import parsing._
+
+class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
+
+  def after = TestKit.shutdownActorSystem(system)
+}
 
 class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
   import akka.io.IO

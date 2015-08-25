@@ -9,10 +9,12 @@ Actorstest	src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^class Acto
 AfterAll	src/test/scala/testHelpers/testHelpers.scala	/^trait AfterAll extends Specification {$/;"	t
 AgentInfo	src/main/scala/agentSystem/InternalAgentLoader.scala	/^  case class AgentInfo(name: String, configPath: String, agent: Option[InternalAgent], timestamp: Timestamp)$/;"	C
 AgentListenerTest	src/test/scala/agentSystem/AgentListenerTest.scala	/^class AgentListenerTest extends Specification {$/;"	c
-AllAllowedAuthorization	src/main/scala/http/Authorization.scala	/^trait AllAllowedAuthorization extends Authorization[Unit] {$/;"	t
+AllowAllAuthorization	src/main/scala/http/Authorization.scala	/^trait AllowAllAuthorization extends AuthorizationExtension {$/;"	t
+AllowNonPermissiveToAll	src/main/scala/http/Authorization.scala	/^trait AllowNonPermissiveToAll extends AuthorizationExtension {$/;"	t
 AnyElemNameParser	src/main/scala/parsing/xmlGen/scalaxb.scala	/^trait AnyElemNameParser extends scala.util.parsing.combinator.Parsers {$/;"	t
 AttributeGroupFormat	src/main/scala/parsing/xmlGen/scalaxb.scala	/^trait AttributeGroupFormat[A] extends scalaxb.XMLFormat[A] {$/;"	t
-Authorization	src/main/scala/http/Authorization.scala	/^trait Authorization[UserData] {$/;"	t
+Authorization	src/main/scala/http/Authorization.scala	/^object Authorization {$/;"	o
+AuthorizationExtension	src/main/scala/http/Authorization.scala	/^  trait AuthorizationExtension {$/;"	t
 Base64Binary	src/main/scala/parsing/xmlGen/scalaxb.scala	/^class Base64Binary(_vector: Vector[Byte]) extends scala.collection.IndexedSeq[Byte] {$/;"	c
 Base64Binary	src/main/scala/parsing/xmlGen/scalaxb.scala	/^object Base64Binary {$/;"	o
 BeEqualFormatted	src/test/scala/testHelpers/testHelpers.scala	/^class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {$/;"	c
@@ -32,6 +34,7 @@ CancelRequest	src/main/scala/types/OmiTypes.scala	/^case class CancelRequest($/;
 CancelRequestFormat	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val CancelRequestFormat: scalaxb.XMLFormat[CancelRequest] = new DefaultCancelRequestFormat {}$/;"	V
 CancelTest	src/test/scala/responses/CancelTest.scala	/^class CancelTest extends Specification with BeforeAfterAll {$/;"	c
 CheckTTL	src/main/scala/responses/SubscriptionHandler.scala	/^case object CheckTTL$/;"	O
+CombinedTest	src/main/scala/http/Authorization.scala	/^  class CombinedTest private[Authorization] (test: Directive1[PermissionTest]) {$/;"	c
 DB	src/main/scala/database/DBInterface.scala	/^trait DB extends DBReadWrite with DBBase {$/;"	t
 DBBase	src/main/scala/database/DBClasses.scala	/^trait DBBase{$/;"	t
 DBIOro	src/main/scala/database/DBUtility.scala	/^  type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]$/;"	T
@@ -91,9 +94,11 @@ ElemName	src/main/scala/parsing/xmlGen/scalaxb.scala	/^object ElemName {$/;"	o
 ElemNameParser	src/main/scala/parsing/xmlGen/scalaxb.scala	/^trait ElemNameParser[A] extends AnyElemNameParser with XMLFormat[A] with CanWriteChildNodes[A] {$/;"	t
 ElemNameSeqPosition	src/main/scala/parsing/xmlGen/scalaxb.scala	/^class ElemNameSeqPosition(val source: Seq[ElemName], val offset: Int) extends$/;"	c
 ElemNameSeqReader	src/main/scala/parsing/xmlGen/scalaxb.scala	/^class ElemNameSeqReader(seq: Seq[ElemName],$/;"	c
+Eppn	src/main/scala/http/SamlHttpHeaderAuth.scala	/^case class Eppn(user: String)$/;"	C
 EventSub	src/main/scala/responses/SubscriptionHandler.scala	/^  case class EventSub(sub: DBSub, lastValue: OdfValue)$/;"	C
+ExtensibleAuthorization	src/main/scala/http/Authorization.scala	/^  trait ExtensibleAuthorization extends AuthorizationExtension {$/;"	t
 ExternalAgentHandler	src/main/scala/agentSystem/ExternalAgentListener.scala	/^class ExternalAgentHandler($/;"	c
-ExternalAgentListener	src/main/scala/agentSystem/ExternalAgentListener.scala	/^class ExternalAgentListener extends Actor with ActorLogging {$/;"	c
+ExternalAgentListener	src/main/scala/agentSystem/ExternalAgentListener.scala	/^class ExternalAgentListener$/;"	c
 HTML5Parser	src/test/scala/testHelpers/testHelpers.scala	/^class HTML5Parser extends NoBindingFactoryAdapter {$/;"	c
 HandleInfoItems	src/main/scala/agentSystem/DBPusher.scala	/^  case class HandleInfoItems(items: Iterable[OdfInfoItem])$/;"	C
 HandleIntervals	src/main/scala/responses/SubscriptionHandler.scala	/^case object HandleIntervals$/;"	O
@@ -121,6 +126,7 @@ InternalAgentCLICmds	src/main/scala/agentSystem/InternalAgentCLI.scala	/^object 
 InternalAgentLoader	src/main/scala/agentSystem/InternalAgentLoader.scala	/^class InternalAgentLoader extends Actor with ActorLogging {$/;"	c
 InternalAgentLoader	src/main/scala/agentSystem/InternalAgentLoader.scala	/^object InternalAgentLoader {$/;"	o
 InternalAgentLoaderTest	src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^class InternalAgentLoaderTest extends Specification { \/\/ with AfterAll {$/;"	c
+IpAuthorization	src/main/scala/http/IpAuthorization.scala	/^trait IpAuthorization extends AuthorizationExtension {$/;"	t
 MetaData	src/main/scala/parsing/xmlGen/odf.scala	/^case class MetaData(InfoItem: InfoItemType*)$/;"	C
 MetaDataFormat	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val MetaDataFormat: scalaxb.XMLFormat[MetaData] = new DefaultMetaDataFormat {}$/;"	V
 NewDBSub	src/main/scala/database/DBClasses.scala	/^case class NewDBSub($/;"	C
@@ -164,8 +170,9 @@ OmiParseResult	src/main/scala/types/OmiTypes.scala	/^  type  OmiParseResult = Ei
 OmiParser	src/main/scala/parsing/OmiParser.scala	/^object OmiParser extends Parser[OmiParseResult] {$/;"	o
 OmiRequest	src/main/scala/types/OmiTypes.scala	/^  sealed trait OmiRequest {$/;"	t
 OmiResult	src/main/scala/types/OmiTypes.scala	/^case class OmiResult($/;"	C
-OmiService	src/main/scala/http/OmiService.scala	/^trait OmiService extends HttpService with CORSSupport {$/;"	t
-OmiServiceActor	src/main/scala/http/OmiService.scala	/^class OmiServiceActor(reqHandler: RequestHandler) extends Actor with ActorLogging with OmiService {$/;"	c
+OmiService	src/main/scala/http/OmiService.scala	/^trait OmiService$/;"	t
+OmiServiceActor	src/main/scala/http/OmiService.scala	/^class OmiServiceActor(reqHandler: RequestHandler)$/;"	c
+OmiServiceAuthorization	src/main/scala/http/OmiService.scala	/^trait OmiServiceAuthorization$/;"	t
 OmiServiceTest	src/test/scala/http/OmiServiceTest.scala	/^class OmiServiceTest extends Specification$/;"	c
 OmiTypes	src/main/scala/types/OmiTypes.scala	/^object OmiTypes{$/;"	o
 ParseError	src/main/scala/types/Types.scala	/^  case class ParseError(msg: String) $/;"	C
@@ -175,7 +182,7 @@ ParserTest	src/test/scala/parsing/ParserTest.scala	/^class ParserTest extends Sp
 Path	src/main/scala/types/Types.scala	/^  class Path(pathSeq: Vector[String]){$/;"	c
 Path	src/main/scala/types/Types.scala	/^  object Path {$/;"	o
 PathAsSeq	src/main/scala/types/Types.scala	/^    implicit def PathAsSeq(p: Path): Seq[String] = p.toSeq$/;"	m
-PermissionCheck	src/main/scala/http/PermissionCheck.scala	/^object PermissionCheck {$/;"	o
+PermissionTest	src/main/scala/http/Authorization.scala	/^  type PermissionTest = OmiRequest => Boolean$/;"	T
 PermissiveRequest	src/main/scala/types/OmiTypes.scala	/^  sealed trait PermissiveRequest$/;"	t
 Poll	src/main/scala/database/OdfStructure.scala	/^  case class Poll(subId: Long, timestamp: Timestamp)$/;"	C
 PollQueue	src/main/scala/database/OdfStructure.scala	/^  def PollQueue =new  PriorityQueue[Poll]()($/;"	m
@@ -212,6 +219,7 @@ ResponseRequest	src/main/scala/types/OmiTypes.scala	/^case class ResponseRequest
 Result	src/main/scala/responses/Result.scala	/^object Result{$/;"	o
 ReturnType	src/main/scala/parsing/xmlGen/omi.scala	/^case class ReturnType($/;"	C
 ReturnTypeFormat	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val ReturnTypeFormat: scalaxb.XMLFormat[ReturnType] = new DefaultReturnTypeFormat {}$/;"	V
+SamlHttpHeaderAuth	src/main/scala/http/SamlHttpHeaderAuth.scala	/^trait SamlHttpHeaderAuth extends AuthorizationExtension {$/;"	t
 SavedSub	src/main/scala/responses/SubscriptionHandler.scala	/^  sealed trait SavedSub {$/;"	t
 SeqAsPath	src/main/scala/types/Types.scala	/^    implicit def SeqAsPath(s: Seq[String]): Path = Path(s.toVector)$/;"	m
 ServletBoot	src/main/scala/http/Boot.scala	/^class ServletBoot extends Starter with WebBoot {$/;"	c
@@ -337,6 +345,7 @@ anotherUniqueObjs	src/main/scala/types/OdfObjects.scala	/^     val anotherUnique
 anotherUniqueObjsOut	src/main/scala/types/OdfObject.scala	/^    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) }$/;"	V
 anotherUniqueObjsOut	src/main/scala/types/OdfObjects.scala	/^    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) } $/;"	V
 any	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def any(f: ElemName => Boolean): Parser[ElemName] =$/;"	m
+apply	src/main/scala/http/Authorization.scala	/^    def apply(): Directive1[PermissionTest] = test$/;"	m
 apply	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def apply(elemName: ElemName): DataRecord[Any] = fromAny(elemName.node)$/;"	m
 apply	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def apply(idx: Int): Byte = vector(idx)$/;"	m
 apply	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def apply(namespace: Option[String], key: Option[String], value: None.type): DataRecord[Option[Nothing]] =$/;"	m
@@ -381,7 +390,7 @@ bind	src/test/scala/agentSystem/AgentListenerTest.scala	/^      val bind = new B
 bindHttp	src/main/scala/http/Boot.scala	/^  def bindHttp(service: ActorRef): Unit = {$/;"	m
 buildTargetTypeFormat	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  def buildTargetTypeFormat = new DefaultTargetTypeFormat {}$/;"	m
 buildTargetTypeTypeFormat	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  def buildTargetTypeTypeFormat = new DefaultTargetTypeTypeFormat {}$/;"	m
-bytesToInt	src/main/scala/http/PermissionCheck.scala	/^  private[this] def bytesToInt(bytes: Seq[Byte]) : Int = {$/;"	m
+bytesToInt	src/main/scala/http/IpAuthorization.scala	/^  private[this] def bytesToInt(bytes: Seq[Byte]) : Int = {$/;"	m
 calendar	src/test/scala/responses/CancelTest.scala	/^    val calendar = Calendar.getInstance()$/;"	V
 calendar	src/test/scala/responses/ReadTest.scala	/^    val calendar = Calendar.getInstance()$/;"	V
 calendar	src/test/scala/responses/SubscriptionTest.scala	/^  val calendar = Calendar.getInstance()$/;"	V
@@ -408,6 +417,7 @@ column	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  override def column = off
 combine	src/main/scala/types/OdfInfoItem.scala	/^  def combine(another: OdfInfoItem) : OdfInfoItem ={$/;"	m
 combine	src/main/scala/types/OdfObject.scala	/^  def combine( another: OdfObject ) : OdfObject =  sharedAndUniques[OdfObject](another){($/;"	m
 combine	src/main/scala/types/OdfObjects.scala	/^  def combine( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){$/;"	m
+combineWithPrevious	src/main/scala/http/Authorization.scala	/^    protected def combineWithPrevious($/;"	m
 compare	src/main/scala/responses/SubscriptionHandler.scala	/^    def compare(a: TimedSub, b: TimedSub) =$/;"	m
 confUrl	src/main/scala/database/DBInterface.scala	/^     val confUrl = slick.util.GlobalConfig.driverConfig(dbConfigName).getString("url")$/;"	V
 configPath	src/main/java/agentSystem/InternalAgent.java	/^    protected String configPath;$/;"	f	class:InternalAgent
@@ -586,8 +596,8 @@ existed	src/main/scala/database/DBReadWrite.scala	/^    val existed = runSync(ex
 existingTables	src/main/scala/database/DBReadWrite.scala	/^    val existingTables = MTable.getTables$/;"	V
 externalAgentInterface	src/main/scala/http/OmiConfigExtension.scala	/^  val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")$/;"	V
 externalAgentPort	src/main/scala/http/OmiConfigExtension.scala	/^  val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")$/;"	V
-extractUserData	src/main/scala/http/Authorization.scala	/^  def extractUserData = provide(())$/;"	m
-extractUserData	src/main/scala/http/Authorization.scala	/^  def extractUserData: Directive1[UserData]$/;"	m
+extractIp	src/main/scala/http/IpAuthorization.scala	/^  private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)$/;"	m
+extractUserData	src/main/scala/http/SamlHttpHeaderAuth.scala	/^  private def extractUserData: Directive1[User] = optionalHeaderValue( header =>$/;"	m
 factory	src/main/scala/parsing/Parser.scala	/^    val factory : SchemaFactory =$/;"	V
 failed	src/main/scala/responses/RequestHandler.scala	/^      def failed(reason: String) =$/;"	m
 failed	src/main/scala/responses/SubscriptionHandler.scala	/^        def failed(reason: String) =$/;"	m
@@ -703,14 +713,13 @@ handleSubscription	src/main/scala/responses/RequestHandler.scala	/^  def handleS
 handler	src/main/scala/agentSystem/ExternalAgentListener.scala	/^        val handler = context.actorOf($/;"	V
 hasCallback	src/main/scala/types/OmiTypes.scala	/^    def hasCallback = callback.isDefined && callback.getOrElse("").nonEmpty$/;"	m
 hasPaths	src/main/scala/agentSystem/DBPusher.scala	/^      val hasPaths = getOdfNodes(objects.objects.toSeq: _*).toSet$/;"	V
-hasPermission	src/main/scala/http/Authorization.scala	/^  def hasPermission   = _ => true$/;"	m
-hasPermission	src/main/scala/http/Authorization.scala	/^  def hasPermission: UserData => Boolean$/;"	m
-hasPermission	src/main/scala/http/PermissionCheck.scala	/^  def hasPermission(addr: InetAddress) : Boolean = {$/;"	m
+hasPermission	src/main/scala/http/SamlHttpHeaderAuth.scala	/^  private def hasPermission: User => OmiRequest => Boolean = {$/;"	m
 hasTTLEnded	src/main/scala/responses/SubscriptionHandler.scala	/^  private[this] def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {$/;"	m
 hashCode	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    override def hashCode: Int = {$/;"	m
 hashCode	src/main/scala/responses/SubscriptionHandler.scala	/^    override def hashCode = subId.hashCode()$/;"	m
 hashCode	src/main/scala/types/Types.scala	/^    override def hashCode(): Int = this.toSeq.hashCode$/;"	m
 haspaths	src/main/scala/types/OdfObject.scala	/^    val haspaths = infoItems.toSeq.map{ item => item : OdfNode} ++ objects.toSeq.map{ item => item : OdfNode}$/;"	V
+headerSelector	src/main/scala/http/SamlHttpHeaderAuth.scala	/^  def headerSelector(header: HttpHeader): Boolean =$/;"	m
 helloWorld	src/main/scala/http/OmiService.scala	/^  val helloWorld = get {$/;"	V
 hierarchy	src/main/scala/database/DBClasses.scala	/^    def hierarchy = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)($/;"	m
 hierarchyId	src/main/scala/database/DBClasses.scala	/^    def hierarchyId = column[Int]("HIERARCHYID")$/;"	m
@@ -726,9 +735,10 @@ historyLength	src/main/scala/database/DBInterface.scala	/^  def historyLength = 
 http	src/main/scala/http/Authorization.scala	/^package http$/;"	p
 http	src/main/scala/http/Boot.scala	/^package http$/;"	p
 http	src/main/scala/http/CORSSupport.scala	/^package http$/;"	p
+http	src/main/scala/http/IpAuthorization.scala	/^package http$/;"	p
 http	src/main/scala/http/OmiConfigExtension.scala	/^package http$/;"	p
 http	src/main/scala/http/OmiService.scala	/^package http$/;"	p
-http	src/main/scala/http/PermissionCheck.scala	/^package http$/;"	p
+http	src/main/scala/http/SamlHttpHeaderAuth.scala	/^package http$/;"	p
 http	src/test/scala/http/OmiServiceTest.scala	/^package http$/;"	p
 http	src/test/scala/http/SystemTest.scala	/^package http$/;"	p
 httpHandler	src/main/scala/responses/CallbackHandlers.scala	/^  private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive$/;"	V
@@ -751,13 +761,12 @@ id7	src/test/scala/database/DatabaseTest.scala	/^        val id7 = db.saveSub(ne
 id8	src/test/scala/database/DatabaseTest.scala	/^        val id8 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr4")), Array[Path]())$/;"	V
 id9	src/test/scala/database/DatabaseTest.scala	/^        val id9 = db.saveSub(new NewDBSub(1.seconds, newTs, 0.seconds, Some("addr5")), Array[Path]())$/;"	V
 idItemLastVal	src/main/scala/responses/SubscriptionHandler.scala	/^    val idItemLastVal = items.flatMap { item =>$/;"	V
-idOption	src/main/scala/parsing/OdfParser.scala	/^    val idOption = for {$/;"	V
 idToItems	src/main/scala/responses/SubscriptionHandler.scala	/^    val idToItems = idItemLastVal.groupBy {$/;"	V
 ids	src/main/scala/database/DBReadOnly.scala	/^      val ids = infoItemIdTuples.map { case (id, info) => id }$/;"	V
 increaseAfterQ	src/main/scala/database/DBReadWrite.scala	/^    def increaseAfterQ(value: Int) = {$/;"	m
 index	src/main/scala/database/DBReadOnly.scala	/^    var index = 1$/;"	v
 indx	src/test/scala/http/SystemTest.scala	/^          val indx: Int = res.lastIndexWhere { x => x.head.\\@("class") == "request" }$/;"	V
-inetAddrToBytes	src/main/scala/http/PermissionCheck.scala	/^  private[this] def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {$/;"	m
+inetAddrToBytes	src/main/scala/http/IpAuthorization.scala	/^  private[this] def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {$/;"	m
 infoIdTuples	src/main/scala/database/OdfStructure.scala	/^    val infoIdTuples = getLeafs(get(odfNodes)).collect{$/;"	V
 infoitem	src/main/scala/database/DBReadWrite.scala	/^    val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, Some(timestamp) ) ) ) $/;"	V
 infoitems	src/main/scala/database/DBReadWrite.scala	/^    val infoitems = paths.keySet.collect{$/;"	V
@@ -771,6 +780,7 @@ initInputPusher	src/main/scala/http/Boot.scala	/^  def initInputPusher(dbConnect
 initialize	src/main/scala/database/DBReadWrite.scala	/^  def initialize() = this.synchronized {$/;"	m
 inputWhiteListIps	src/main/scala/http/OmiConfigExtension.scala	/^  val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") $/;"	V
 inputWhiteListSubnets	src/main/scala/http/OmiConfigExtension.scala	/^  val inputWhiteListSubnets = config.getObject("omi-service.input-whitelist-subnets") $/;"	V
+inputWhiteListUsers	src/main/scala/http/OmiConfigExtension.scala	/^  val inputWhiteListUsers = config.getStringList("omi-service.input-whitelist-users") $/;"	V
 instanceType	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def instanceType(node: scala.xml.Node): (Option[String], Option[String]) = {$/;"	m
 intToRichLong	src/test/scala/testHelpers/testHelpers.scala	/^  override def intToRichLong(v: Int) = super.intToRichLong(v)$/;"	m
 interface	src/main/scala/http/OmiConfigExtension.scala	/^  val interface: String = config.getString("omi-service.interface")$/;"	V
@@ -794,15 +804,16 @@ invalidCallback	src/main/scala/responses/RequestHandler.scala	/^  def invalidCal
 invalidRequest	src/main/scala/responses/RequestHandler.scala	/^  def invalidRequest(msg: String = "") = xmlFromResults($/;"	m
 invalidRequest	src/main/scala/responses/Result.scala	/^  def invalidRequest(msg: String = ""): RequestResultType = simple( "400", Some("Bad request: " + msg) )$/;"	m
 iosumlist	src/main/scala/database/DBUtility.scala	/^      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {$/;"	m
-ip	src/main/scala/http/PermissionCheck.scala	/^    val ip : Int = ((bytes(0) & 0xFF) << 24) |$/;"	V
-ip	src/main/scala/http/PermissionCheck.scala	/^    val ip = inetAddrToBytes(InetAddress.getByName(s)) $/;"	V
-ipArea	src/main/scala/http/PermissionCheck.scala	/^          val ipArea = bytesToInt( List( ip(4), ip(5), ip(6), ip(7) ) )$/;"	V
+ip	src/main/scala/http/IpAuthorization.scala	/^    val ip : Int = ((bytes(0) & 0xFF) << 24) |$/;"	V
+ip	src/main/scala/http/IpAuthorization.scala	/^    val ip = inetAddrToBytes(InetAddress.getByName(s)) $/;"	V
+ipArea	src/main/scala/http/IpAuthorization.scala	/^          val ipArea = bytesToInt( List( ip(4), ip(5), ip(6), ip(7) ) )$/;"	V
+ipHasPermission	src/main/scala/http/IpAuthorization.scala	/^  def ipHasPermission: UserData => OmiRequest => Boolean = user => {$/;"	m
 ipdb	src/main/java/agentSystem/InputPusher.java	/^    public static ActorRef ipdb = null; $/;"	f	class:InputPusher
 is	src/test/scala/parsing/ParserTest.scala	/^  def is = s2"""$/;"	m
 is	src/test/scala/parsing/TypesTest.scala	/^  def is = s2"""$/;"	m
 isEventBased	src/main/scala/types/OmiTypes.scala	/^    def isEventBased = interval == -1.seconds$/;"	m
 isImmortal	src/main/scala/types/OmiTypes.scala	/^    def isImmortal = ! ttl.isFinite$/;"	m
-isInSubnet	src/main/scala/http/PermissionCheck.scala	/^  private[this] def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {$/;"	m
+isInSubnet	src/main/scala/http/IpAuthorization.scala	/^  private[this] def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {$/;"	m
 isInfoItem	src/main/scala/database/DBClasses.scala	/^    def isInfoItem    = column[Boolean]("ISINFOITEM")$/;"	m
 isIntervalBased	src/main/scala/types/OmiTypes.scala	/^    def isIntervalBased  = interval >= 0.milliseconds$/;"	m
 isMixed	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def isMixed: Boolean = false$/;"	m
@@ -846,10 +857,16 @@ lookup	src/main/scala/http/OmiConfigExtension.scala	/^  override def lookup = Se
 lookupRef	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    def lookupRef(id: String): Seq[Node] =$/;"	m
 loopOnce	src/main/java/agentSystem/InternalAgent.java	/^    abstract public void loopOnce();$/;"	m	class:InternalAgent
 main	src/main/scala/http/Boot.scala	/^  def main(args: Array[String]) = {$/;"	m
+makePermissionTestFunction	src/main/scala/http/Authorization.scala	/^    def makePermissionTestFunction = new CombinedTest($/;"	m
+makePermissionTestFunction	src/main/scala/http/Authorization.scala	/^    def makePermissionTestFunction: CombinedTest \/\/ Directive1[PermissionTest]$/;"	m
+makePermissionTestFunction	src/main/scala/http/Authorization.scala	/^  abstract override def makePermissionTestFunction = $/;"	m
+makePermissionTestFunction	src/main/scala/http/Authorization.scala	/^  abstract override def makePermissionTestFunction = combineWithPrevious($/;"	m
+makePermissionTestFunction	src/main/scala/http/IpAuthorization.scala	/^  abstract override def makePermissionTestFunction =$/;"	m
+makePermissionTestFunction	src/main/scala/http/SamlHttpHeaderAuth.scala	/^  abstract override def makePermissionTestFunction =$/;"	m
 many	src/main/scala/agentSystem/DBPusher.scala	/^    val many = dbobject.setMany(infos)$/;"	V
 map	src/test/scala/testHelpers/testHelpers.scala	/^  override def map(fs: => Fragments) = {$/;"	m
-mask	src/main/scala/http/PermissionCheck.scala	/^          val mask = -1 << (32 - bits)  $/;"	V
-mask	src/main/scala/http/PermissionCheck.scala	/^          val mask = -1 << (64 - bits)$/;"	V
+mask	src/main/scala/http/IpAuthorization.scala	/^          val mask = -1 << (32 - bits)  $/;"	V
+mask	src/main/scala/http/IpAuthorization.scala	/^          val mask = -1 << (64 - bits)$/;"	V
 mergeNodeScope	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def mergeNodeScope(node: Node, outer: NamespaceBinding): Node =$/;"	m
 mergeNodeSeqScope	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def mergeNodeSeqScope(nodeseq: NodeSeq, outer: NamespaceBinding): NodeSeq =$/;"	m
 messageOption	src/test/scala/http/SystemTest.scala	/^                val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))$/;"	V
@@ -904,8 +921,8 @@ notFoundSub	src/main/scala/responses/Result.scala	/^  def notFoundSub(requestID:
 notFoundSub	src/main/scala/responses/Result.scala	/^  def notFoundSub: RequestResultType = simple( "404", Some("A subscription with this id has expired or doesn't exist"))$/;"	m
 notImplemented	src/main/scala/responses/RequestHandler.scala	/^  def notImplemented = xmlFromResults($/;"	m
 notImplemented	src/main/scala/responses/Result.scala	/^  def notImplemented : RequestResultType = simple( "501", Some("Not implemented") )$/;"	m
-npath	src/main/scala/parsing/OdfParser.scala	/^    val npath = path \/ idOption.getOrElse($/;"	V
 npath	src/main/scala/parsing/OdfParser.scala	/^    val npath = path \/ validateId(item.name).getOrElse($/;"	V
+npath	src/main/scala/parsing/OdfParser.scala	/^    val npath = path \/ validateId(obj.id.headOption.map(_.value)).getOrElse($/;"	V
 ns	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val ns = scalaxb.Helper.nullOrEmpty(elem.scope.getURI(elem.prefix))$/;"	V
 ns	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val ns = scalaxb.Helper.nullOrEmpty(elem.scope.getURI(elem.prefix))$/;"	V
 ns	src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^                val ns = elem.scope.getURI(pre)$/;"	V
@@ -1147,14 +1164,16 @@ renamePrefix	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    def renamePrefix(
 renamed	src/main/scala/parsing/xmlGen/scalaxb.scala	/^        val renamed = renamePrefix(prefix, 2)$/;"	V
 replaced	src/test/scala/http/SystemTest.scala	/^    val replaced = date replaceAllIn (in, _ match {$/;"	V
 reqrespCombined	src/test/scala/http/SystemTest.scala	/^    val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>$/;"	V
-request	src/main/scala/http/OmiService.scala	/^              val request = requests.headOption$/;"	V
+request	src/main/scala/http/OmiService.scala	/^              val request = requests.headOption  \/\/ TODO: Only one request per xml is supported currently$/;"	V
 request	src/main/scala/responses/CallbackHandlers.scala	/^      val request = Post(address, data)$/;"	V
+request	src/test/scala/http/OmiServiceTest.scala	/^        val request: String = """$/;"	V
 request	src/test/scala/http/OmiServiceTest.scala	/^      val request: NodeSeq =$/;"	V
 request	src/test/scala/http/OmiServiceTest.scala	/^      val request: String = """$/;"	V
 request	src/test/scala/http/SystemTest.scala	/^                val request = getCallbackRequest(j)$/;"	V
 request	src/test/scala/http/SystemTest.scala	/^      val request: Try[Elem] = getSingleRequest(reqresp)$/;"	V
 request	src/test/scala/http/SystemTest.scala	/^      val request: Try[Elem] = getSingleRequest(testCase)$/;"	V
 request	src/test/scala/http/SystemTest.scala	/^    val request: Try[Elem] = getSingleRequest(textAreas)$/;"	V
+requestForPermissionCheck	src/main/scala/agentSystem/ExternalAgentListener.scala	/^      val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())$/;"	V
 requestHandler	src/main/scala/http/OmiService.scala	/^  val requestHandler = reqHandler$/;"	V
 requestHandler	src/main/scala/http/OmiService.scala	/^  val requestHandler: RequestHandler$/;"	V
 requestHandler	src/main/scala/responses/SubscriptionHandler.scala	/^  private[this] var requestHandler = new RequestHandler(self)$/;"	v
@@ -1205,6 +1224,8 @@ rest	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def rest: ElemNameSeqReader
 restNormalizePath	src/main/scala/responses/RequestHandler.scala	/^    def restNormalizePath(path: Path): (Path, Option[String]) = path.lastOption match {$/;"	m
 result	src/main/scala/database/DBReadWrite.scala	/^    val result = for {$/;"	V
 result	src/main/scala/database/OdfStructure.scala	/^      val result = getPollDataWithHiearachyIds(pollId,hIds) $/;"	V
+result	src/main/scala/http/IpAuthorization.scala	/^      val result = user.exists( addr =>$/;"	V
+result	src/main/scala/http/SamlHttpHeaderAuth.scala	/^        val result = whitelistedUsers contains user$/;"	V
 result	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      var result = 17$/;"	v
 resultOption	src/test/scala/responses/CancelTest.scala	/^      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)$/;"	V
 resultOption	src/test/scala/responses/ReadTest.scala	/^      val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))$/;"	V
@@ -1340,7 +1361,7 @@ subTreeQ	src/main/scala/database/DBReadWrite.scala	/^    val subTreeQ = getSubTr
 subTreeRoot	src/main/scala/database/DBReadOnly.scala	/^    val subTreeRoot = getHierarchyNodeI(path)$/;"	V
 subfkName	src/main/scala/database/DBClasses.scala	/^    val subfkName = "SUBITEMSSUB_FK"$/;"	V
 subfkName	src/main/scala/database/DBClasses.scala	/^    val subfkName: String$/;"	V
-subnetArea	src/main/scala/http/PermissionCheck.scala	/^          val subnetArea = bytesToInt( List( subnet(4), subnet(5), subnet(6), subnet(7) ) )$/;"	V
+subnetArea	src/main/scala/http/IpAuthorization.scala	/^          val subnetArea = bytesToInt( List( subnet(4), subnet(5), subnet(6), subnet(7) ) )$/;"	V
 subs	src/main/scala/responses/SubscriptionHandler.scala	/^    val subs = dbConnection.getAllSubs(None)$/;"	V
 subsNoCallback	src/test/scala/http/SystemTest.scala	/^  lazy val subsNoCallback = tests("request-response test").map { node =>$/;"	V
 subscription	src/main/scala/responses/Result.scala	/^  def subscription( requestID: String): RequestResultType ={$/;"	m
@@ -1513,7 +1534,7 @@ toXML	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toXML[A](obj: A, names
 toXML	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toXML[A](obj: A, namespace: Option[String], elementLabel: String, scope: NamespaceBinding)$/;"	m
 toXML	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toXML[A](obj: DataRecord[A], namespace: Option[String], elementLabel: Option[String],$/;"	m
 transform	src/main/scala/parsing/xmlGen/scalaxb.scala	/^      override def transform(n: Node): Seq[Node] = n match {$/;"	m
-trimmedName	src/main/scala/parsing/OdfParser.scala	/^    val trimmedName = stringId.name.trim$/;"	V
+trimmedName	src/main/scala/parsing/OdfParser.scala	/^    val trimmedName = stringId.trim$/;"	V
 ttl	src/main/scala/database/DBClasses.scala	/^    def ttl       = column[Double]("TTL")$/;"	m
 ttl	src/main/scala/database/DBClasses.scala	/^  val ttl: Duration,$/;"	V
 ttl	src/main/scala/responses/SubscriptionHandler.scala	/^    val ttl = subscription.ttl$/;"	V
@@ -1569,8 +1590,8 @@ updatedSharedObjs	src/main/scala/types/OdfObjects.scala	/^    val updatedSharedO
 uriToStringOption	src/main/scala/parsing/OmiParser.scala	/^  private[this] def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {$/;"	m
 url	src/main/scala/responses/RequestHandler.scala	/^      val url = new URL(address)$/;"	V
 urls	src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val urls = (jars ++ nestedJars) map { _.toURI.toURL }$/;"	V
-userToString	src/main/scala/http/Authorization.scala	/^  def userToString    = _ => "TEST-USER"$/;"	m
-userToString	src/main/scala/http/Authorization.scala	/^  def userToString: UserData => String$/;"	m
+user	src/main/scala/agentSystem/ExternalAgentListener.scala	/^      val user = Some(remote.getAddress())$/;"	V
+validateId	src/main/scala/parsing/OdfParser.scala	/^  private[this] def validateId(optionId: Option[String]): Option[String] = for {$/;"	m
 validateId	src/main/scala/parsing/OdfParser.scala	/^  private[this] def validateId(stringId: String): Option[String] = {$/;"	m
 validator	src/main/scala/parsing/Parser.scala	/^    val validator: Validator = schema.newValidator()$/;"	V
 value	src/main/scala/database/DBClasses.scala	/^    def value = column[String]("VALUE")$/;"	m
@@ -1583,8 +1604,9 @@ values2	src/test/scala/database/DatabaseTest.scala	/^      val values2 = temp2.m
 values2	src/test/scala/database/DatabaseTest.scala	/^      val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }$/;"	V
 vector	src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val vector: Vector[Byte] = (xs.toIndexedSeq map {x: Byte => x})(breakOut)$/;"	V
 vector	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  val vector = _vector$/;"	V
-whiteIPs	src/main/scala/http/PermissionCheck.scala	/^  val whiteIPs = settings.inputWhiteListIps.asScala.map{$/;"	V
-whiteMasks	src/main/scala/http/PermissionCheck.scala	/^  val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ $/;"	V
+whiteIPs	src/main/scala/http/IpAuthorization.scala	/^  private[this] val whiteIPs = settings.inputWhiteListIps.asScala.map{$/;"	V
+whiteMasks	src/main/scala/http/IpAuthorization.scala	/^  private[this] val whiteMasks = settings.inputWhiteListSubnets.unwrapped().asScala.map{ $/;"	V
+whitelistedUsers	src/main/scala/http/SamlHttpHeaderAuth.scala	/^  private[this] val whitelistedUsers: Vector[Eppn] =$/;"	V
 withInnerScope	src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def withInnerScope[A](scope: NamespaceBinding, outer: NamespaceBinding)$/;"	m
 wrapResultsToResponseAndEnvelope	src/main/scala/responses/RequestHandler.scala	/^  def wrapResultsToResponseAndEnvelope(ttl: Double, results: xmlTypes.RequestResultType*) = {$/;"	m
 writeAction	src/main/scala/database/DBReadWrite.scala	/^    val writeAction = for {$/;"	V

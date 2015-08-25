@@ -20,6 +20,11 @@ import akka.actor._
 import java.lang.Iterable
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 import scala.collection.JavaConversions.asJavaIterable
+import akka.dispatch.RequiresMessageQueue
+import akka.dispatch.BoundedMessageQueueSemantics
+     
+
+
 
 /** Object that contains all commands of InputPusher.
  */
@@ -35,7 +40,11 @@ import InputPusherCmds._
 /**
  * Actor for pushing data to db.
  */
-class DBPusher(val dbobject: DB) extends Actor with ActorLogging{
+class DBPusher(val dbobject: DB)
+  extends Actor
+  with ActorLogging
+  with RequiresMessageQueue[BoundedMessageQueueSemantics]
+  {
 
   /**
    * Function for handling InputPusherCmds.

@@ -4,7 +4,7 @@ import org.specs2.mutable._
 import org.specs2.specification.Scope
 import akka.actor.{ Props, ActorRef, ActorSystem }
 
-import testHelpers.{ AfterAll }
+import testHelpers.{ AfterAll, Actorstest }
 import database._
 import java.net.InetSocketAddress
 import responses.{ SubscriptionHandler, RequestHandler }
@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import agentSystem.InternalAgentCLICmds._
 
-import akka.testkit.{ TestKit, TestActorRef, TestProbe, ImplicitSender, EventFilter }
+import akka.testkit.{ TestKit, TestActorRef, TestProbe, EventFilter }
 import com.typesafe.config.ConfigFactory
 
 import akka.util.Timeout
@@ -24,10 +24,6 @@ import akka.pattern.ask
 import scala.xml
 import scala.xml._
 
-class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
-
-  def after = TestKit.shutdownActorSystem(system)
-}
 
 
 import org.junit.runner.RunWith
@@ -79,7 +75,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
 
     "be able to restart agents with restart command" in new Actorstest(
       ActorSystem("restart",
-        ConfigFactory.load(
+        ConfigFactory.load(  // Override default configuration for these tests
           ConfigFactory.parseString(
             """
             akka.loggers = ["akka.testkit.TestEventListener"]

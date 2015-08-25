@@ -30,17 +30,26 @@ import database._
 
 
 /**
- * Base trait for databases. Has basic private[this] interface.
+ * Base trait for databases. Has basic protected interface.
  */
 trait DBBase{
   protected[this] val db: Database
 
+  //private[this] val dbtimeout = http.Boot.Settings
 
-  def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
-    io => Await.result(db.run(io), Duration.Inf)
+  /**
+   * We use a more synchronized api for db using these two functions.
+   * Takes a DBIO as parameter and runs it returning the result.
+   */
+  protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
+    io => Await.result(db.run(io), 5.minutes)
+    // db operations shouldn't last longer than 5 minutes TODO: make a config option
 
-  def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
-    io => Await.ready(db.run(io), Duration.Inf)
+  /**
+   * Takes a DBIO as parameter and runs it waiting for it to finish.
+   */
+  protected def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
+    io => Await.ready(db.run(io), 5.minutes) // db operations shouldn't last longer than 5 minutes
 
 }
 

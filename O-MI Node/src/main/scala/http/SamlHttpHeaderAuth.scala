@@ -39,8 +39,12 @@ case class Eppn(user: String)
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
 
-  private[this] val whitelistedUsers: Vector[Eppn] =
+  private[this] def whitelistedUsers: Vector[Eppn] =
     settings.inputWhiteListUsers.map(Eppn(_)).toVector
+
+  log.info(s"O-MI node is configured to allow SAML users: $whitelistedUsers")
+  if (whitelistedUsers.nonEmpty)
+    log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
 
   /** 
    * Select header with the right data in it.
@@ -58,7 +62,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
   )
 
   private def hasPermission: User => OmiRequest => Boolean = {
-    case u @ Some(Eppn(user)) => {
+    case u @ Some(user) => {
 
       case r : PermissiveRequest =>
 

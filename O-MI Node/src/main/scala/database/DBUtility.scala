@@ -28,6 +28,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
 
+  // Used for compiler type trickery by causing type errors
+  //trait Hole // TODO: RemoveMe!
+
   protected[this] def dbioDBInfoItemsSum(actions: Seq[DBIO[DBInfoItems]]): DBIO[DBInfoItems] =
     DBIO.fold(actions, SortedMap.empty[DBNode,Seq[DBValue]])(_ ++ _)
 
@@ -39,9 +42,6 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
       } yield (listA++listB)
       seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
   }
-
-  // Used for compiler type trickery by causing type errors
-  trait Hole // TODO: RemoveMe!
 
   //Helper for getting values with path
   protected[this] def getValuesQ(path: Path) =
