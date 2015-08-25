@@ -18,6 +18,8 @@ import akka.io.{ IO, Tcp  }
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
 
+/** Object that contains all commands of InternalAgentCLI.
+ */
 object InternalAgentCLICmds
 {
   case class ReStartCmd(agent: String)
@@ -26,6 +28,9 @@ object InternalAgentCLICmds
 }
 
 import InternalAgentCLICmds._
+/** Command Line Interface for internal agent management. 
+  *
+  */
 class InternalAgentCLI(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
@@ -50,9 +55,9 @@ class InternalAgentCLI(
         case a => log.warning(s"Unknown message from $sender: "+ a) 
       }
     }
-  case PeerClosed =>{
-    log.info(s"InternalAgent CLI disconnected from $sourceAddress")
-    context stop self
-  }
+    case PeerClosed =>{
+      log.info(s"InternalAgent CLI disconnected from $sourceAddress")
+      context stop self
+    }
   }
 }

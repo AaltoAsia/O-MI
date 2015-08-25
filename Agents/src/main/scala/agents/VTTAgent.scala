@@ -16,6 +16,7 @@ import scala.util.Random
 import scala.xml._
 
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
+import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 
 
 /** Agent for the VTT
@@ -119,7 +120,10 @@ class VTTAgent extends InternalAgent {
     }catch{
       case e : InterruptedException =>
       InternalAgent.log.warning("VTTAgent has been interrupted.");
-      InternalAgent.loader ! ThreadException(this,e) 
+      InternalAgent.loader ! AgentInterruption(this,e) 
+      case e : Exception =>
+      InternalAgent.log.warning("VTTAgent has caught an exception.");
+      InternalAgent.loader ! AgentException(this,e) 
     }finally{
       InternalAgent.log.warning("VTTAgent has died.");
     }

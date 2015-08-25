@@ -1,8 +1,9 @@
 package agents;
 
 import agentSystem.InternalAgent;
-import agentSystem.ThreadInitialisationException;
-import agentSystem.ThreadException;
+import agentSystem.InternalAgentExceptions.AgentException;
+import agentSystem.InternalAgentExceptions.AgentInitializationException;
+import agentSystem.InternalAgentExceptions.AgentInterruption;
 import agentSystem.InputPusher;
 import java.io.File;
 import types.OdfTypes.OdfValue;
@@ -28,8 +29,8 @@ public class JavaAgent extends InternalAgent{
             initialised = true;
             log.warning( "JavaAgent has been initialised." );
         }catch( Exception e ){
-            log.warning( "JavaAgent has caucth exception turing initialisation." );
-            loader.tell( new ThreadInitialisationException( this, e ), null );
+            log.warning( "JavaAgent has caucth an  exception turing initialisation." );
+            loader.tell( new AgentInitializationException( this, e ), null );
             InternalAgent.log.warning( "JavaAgent has died." );
         }
     }
@@ -57,7 +58,10 @@ public class JavaAgent extends InternalAgent{
             }
         }catch( InterruptedException e ){
             log.warning( "JavaAgent has been interrupted." );
-            loader.tell( new ThreadException( this, e), null );
+            loader.tell( new AgentInterruption( this, e), null );
+        }catch( Exception e ){
+            log.warning( "JavaAgent has caugth an exception." );
+            loader.tell( new AgentException( this, e), null );
         }finally{
             InternalAgent.log.warning( "JavaAgent has died." );
         }

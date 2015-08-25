@@ -1,8 +1,7 @@
 package agents
 
 import agentSystem.InternalAgent
-import agentSystem.ThreadException
-import agentSystem.ThreadInitialisationException
+import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import agentSystem.InputPusher
 import types._
 import types.OdfTypes._
@@ -24,7 +23,7 @@ class ScalaAgent  extends InternalAgent{
     }catch{
       case e : Exception =>
       InternalAgent.log.warning("ScalaAgent has caucth exception turing initialisation.");
-      InternalAgent.loader ! ThreadInitialisationException(this,e) 
+      InternalAgent.loader ! AgentInitializationException(this,e) 
       InternalAgent.log.warning("ScalaAgent has died.");
     }finally{
     }
@@ -52,7 +51,10 @@ class ScalaAgent  extends InternalAgent{
     }catch{
       case e : InterruptedException =>
       InternalAgent.log.warning("ScalaAgent has been interrupted.");
-      InternalAgent.loader ! ThreadException(this,e) 
+      InternalAgent.loader ! AgentInterruption(this,e) 
+      case e : Exception =>
+      InternalAgent.log.warning("ScalaAgent has caught an exception");
+      InternalAgent.loader ! AgentException(this,e) 
     }finally{
       InternalAgent.log.warning("ScalaAgent has died.");
     }
