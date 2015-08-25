@@ -113,10 +113,10 @@ case class WriteRequest(
   *
   **/
 case class ResponseRequest(
-  results: Iterable[OmiResult]  
+  results: Iterable[OmiResult],
+  ttl: Duration = Duration.Inf
 ) extends OmiRequest with PermissiveRequest{
-      def callback = None
-      def ttl = 0.seconds
+      val callback = None
    } 
 
 /** Cancel request, for cancelling subscription.
