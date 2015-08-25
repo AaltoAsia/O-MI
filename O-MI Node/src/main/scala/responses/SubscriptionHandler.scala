@@ -305,11 +305,11 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     }
   }
 
-  private[this] def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
-    val removeTime = sub.startTime.getTime + sub.ttlToMillis
+  private[this] def hasTTLEnded(sub: DBSub, currentTimeMillis: Long): Boolean = {
+    lazy val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
-    if (removeTime <= timeMillis && !sub.isImmortal) {
-      log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${timeMillis - removeTime}ms")
+    if (!sub.isImmortal && removeTime <= currentTimeMillis) {
+      log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${currentTimeMillis - removeTime}ms")
       true
     } else
       false
