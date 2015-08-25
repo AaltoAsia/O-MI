@@ -41,9 +41,16 @@ object InternalAgentLoader {
 }
 
 object InternalAgentExceptions {
+
+  /** Agent was succesfully interrupted. */
   case class AgentInterruption(agent: InternalAgent, exception: InterruptedException)
+/** InternalAgent has caught an exception. 
+  * Restart will be attempted if exception was not received too fast after last.
+  */
   case class AgentException(agent: InternalAgent, exception: Exception)
-  case class AgentFatalException(agent: InternalAgent, exception: Exception)
+  /** InternalAgent has caught an exception, that is considered to be unrecoverable. Restart will not be attempted. */
+  case class AgentUnrecoverableException(agent: InternalAgent, exception: Exception)
+  /** InternalAgent initialisation failed. Exception was caught. Restart will not be attempted. */
   case class AgentInitializationException(agent: InternalAgent, exception: Exception)
 }
 import InternalAgentExceptions._
@@ -137,8 +144,6 @@ class InternalAgentLoader extends Actor with ActorLogging {
       }
     }
 
-    case AgentInterruption(sender: InternalAgent, exception: InterruptedException) =>
-      log.info(s"$sender.name was succesfully interrupted.")
 
     case AgentException(sender: InternalAgent, exception: Exception) =>
       log.warning(s"InternalAgent caugth exception: $exception")
@@ -164,10 +169,13 @@ class InternalAgentLoader extends Actor with ActorLogging {
       }
 
     case AgentInitializationException(agent: InternalAgent, exception: Exception) =>
-      log.warning(s"InternalAgent $agent initialisation failed. $exception was caught. Restart will not be attempted.")
+      log.warning(s"InternalAgent $agent.name initialisation failed. $exception was caught. Restart will not be attempted.")
 
-    case AgentFatalException(agent: InternalAgent, exception: Exception) =>
-      log.warning(s"InternalAgent $agent has caught $exception, that is considered to be fatal. Restart will not be attempted.")
+    case AgentUnrecoverableException(agent: InternalAgent, exception: Exception) =>
+      log.warning(s"InternalAgent $agent.name has caught $exception, that is considered to be unrecoverable. Restart will not be attempted.")
+
+    case AgentInterruption(sender: InternalAgent, exception: InterruptedException) =>
+      log.info(s"InternalAgent $sender.name was succesfully interrupted.")
 
     case Bound(localAddress) =>
     // TODO: do something?
