@@ -43,19 +43,19 @@ lazy val root = (project in file(".")).
    //maintainer := "John Smith <john.smith@example.com>",
    // packageDescription := "TempName",
    // packageSummary := "TempName",
-   // entrypoint
    bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+   // entrypoint
       mainClass in Compile := Some("http.Boot"),
 	  //TODO configs and deploy directories need to be on the same path from where you run the start script as well as the SmartHouse.xml and otaniemi3d-data.xml
 	  //to get stuff working atm you have to move files from stage directory to bin directory (after running 'sbt stage')
-      //mappings in Universal <++= (sourceDirectory in omiNode) map (src => directory(src / "main" / "resources" / "html")),
-	  mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "configs")),
+      mappings in Universal <++= baseDirectory map (src => directory(src / "html")),
+	  mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
 	  mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "deploy")),
 	  mappings in Universal <+=  (packageBin in Compile, sourceDirectory in omiNode) map { (_,src) =>
 	    val conf = src / "main" / "resources" / "application.conf"
 	    conf -> "conf/application.conf"
       },
-	  mappings in Universal <++= (baseDirectory in omiNode) map { base => 
+	  mappings in Universal <++= baseDirectory map { base => 
 	    val smarthouse = base / "SmartHouse.xml"
 		val otaniemi3d = base / "otaniemi3d-data.xml"
 		Seq(

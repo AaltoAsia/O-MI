@@ -52,7 +52,8 @@ trait OmiService extends HttpService with CORSSupport {
 
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
-  val staticHtml = getFromResourceDirectory("html")
+  val staticHtml = getFromDirectory("../html")
+  //val staticHtml = getFromResourceDirectory("html")
 
 
   /** Some trickery to extract the _decoded_ uri path in current version of spray: */
