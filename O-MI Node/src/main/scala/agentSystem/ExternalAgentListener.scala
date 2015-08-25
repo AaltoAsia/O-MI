@@ -82,52 +82,33 @@ class ExternalAgentListener
 /** A handler for data received from a agent.
   * @param sourceAddress Agent's adress 
   */
-
 class ExternalAgentHandler(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
 
   import Tcp._
 
-  private[this] var metaDataSaved: Boolean = false
   /** Partial function for handling received messages.
     */
   def receive = {
-    case Received(data) =>{ 
+    case Received(data) =>
+    { 
       val dataString = data.decodeString("UTF-8")
 
       log.debug(s"Got data from $sender")
       val parsedEntries = OdfParser.parse(dataString)
-      val errors = getErrors(parsedEntries)
-      if(errors.nonEmpty){
-        log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
-        
-      } else {
-        InputPusher.handleObjects(getObjects(parsedEntries))
-        if(!metaDataSaved){
-          InputPusher.handlePathMetaDataPairs(
-            getInfoItems(getObjects(parsedEntries)).collect{
-              case OdfInfoItem(path,_,_,Some(metadata)) => (path, metadata.data)
-            }
-          )
-          metaDataSaved = true
-        }
+      parsedEntries match {
+        case Left(errors) =>
+          log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
+        case Right(odf) => 
+          InputPusher.handleOdf(odf)
       }
-  }
-  case PeerClosed =>{
-    log.info(s"Agent disconnected from $sourceAddress")
-    context stop self
-  }
+    }
+    case PeerClosed =>
+    {
+      log.info(s"Agent disconnected from $sourceAddress")
+      context stop self
+    }
   }
   
-  /**
-   * Recursively gets all sensors from given objects
-   * @param o Sequence of OdfObjects to process
-   * @return Sequence of OdfInfoitems(sensors)
-   */
-  def getInfoItems(o:Iterable[OdfObject]) : Iterable[OdfInfoItem] = { 
-    o.flatten{ o =>
-    o.infoItems ++ getInfoItems(o.objects)
-  }   
-}
 }

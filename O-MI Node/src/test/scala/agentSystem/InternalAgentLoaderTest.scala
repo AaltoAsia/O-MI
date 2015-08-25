@@ -80,7 +80,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
             """
             akka.loggers = ["akka.testkit.TestEventListener"]
             """).withFallback(ConfigFactory.load())))) {
-      val agentName = "agents.VTTAgent"
+      val agentName = "agents.JavaAgent"
       val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
       val actor = actorRef.underlyingActor
 

@@ -13,36 +13,55 @@
 **/
 package agentSystem;
 
-import agentSystem.ThreadInitialisationException;
-import agentSystem.ThreadException;
 import types.OdfTypes.OdfObject;
 import akka.actor.ActorRef;
 import akka.event.LoggingAdapter;
-/** Abstract base class for internal agents.
- *
+
+/** Abstract base class for internal agents that extends Thread.
+ * Work same way than a Thread. When start() method is called run() method will be processed in a different thread.
+ * Simplessness of this interface gives freedom in implementation, but also make responsible for handling interruptions and exceptions.
+ * Loader will only try to restart agent when exception is given outside of initialization. If exception occurs too often Loader will consider
+ * internal agent unrestartable.
+ *  
  */
 public abstract class InternalAgent extends Thread {
-    //ActorRef to InternalAgentLoader for communincation.
+    
+    /** ActorRef to InternalAgentLoader for communincation.
+     *
+     */
     protected static ActorRef loader = null;
-    //Lo for logging agents, actions.
+    
+    /**Log for logging agents, actions.
+     */
     protected static LoggingAdapter log = null;
-    //One-tiem setters
+    
+    /**One-time setter for loader
+     */
     public static final void setLoader(ActorRef aloader) {
 	if(loader == null && aloader != null)
 	    loader = aloader;
     }
+    
+    /**One-time setter for log
+     */
     public static final void setLog(LoggingAdapter logger) {
 	if(log == null && logger != null)
 	    log = logger;
     }
-    //Constructor
+    
+    /**Base conscrutcor
+     */
     public InternalAgent() {
         //noop?
     }
-    //Abstract methods that need to be implemented for internal agent.
-    //Intercafe for initialisation and passing config to agent.
+
+    /**Absctract method for initialisation and passing config to agent. Implement for your internal agents.
+     * @param config Config string given in application.conf.
+     */
     public abstract void init( String config );
-    //Main method of internal agent, run in different thread after, Thread's start method is called
+
+    /**Absctract method that is called when agent is started.
+     * 
+     */
     public abstract void run();
-    //Note: Interruption need to be handled by agent.
 }

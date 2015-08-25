@@ -40,33 +40,55 @@ object InternalAgentLoader {
   def props(): Props = Props(new InternalAgentLoader())
 }
 
-case class ThreadException(agent: InternalAgent, exception: Exception)
-case class ThreadInitialisationException(agent: InternalAgent, exception: Exception)
+object InternalAgentExceptions {
+
+  /** Agent was succesfully interrupted. */
+  case class AgentInterruption(agent: InternalAgent, exception: InterruptedException)
+/** InternalAgent has caught an exception. 
+  * Restart will be attempted if exception was not received too fast after last.
+  */
+  case class AgentException(agent: InternalAgent, exception: Exception)
+  /** InternalAgent has caught an exception, that is considered to be unrecoverable. Restart will not be attempted. */
+  case class AgentUnrecoverableException(agent: InternalAgent, exception: Exception)
+  /** InternalAgent initialisation failed. Exception was caught. Restart will not be attempted. */
+  case class AgentInitializationException(agent: InternalAgent, exception: Exception)
+}
+import InternalAgentExceptions._
+
 /**
- * AgentLoader loads agents from jars in deploy directory.
- * Supervise agents and startups bootables.
+ * AgentLoader loads agents from jars and creates them. Also listens for InternalAgentCLI connections.
+ * Manages and starts internal agents. 
  *
  */
 class InternalAgentLoader extends Actor with ActorLogging {
 
   import Tcp._
+  /** Simple immutable  class for containing information about a internal agent*/
+  case class AgentInfo(name: String, config: String, agent: Option[InternalAgent], timestamp: Timestamp)
 
-  case class AgentInfo(name: String, configPath: String, agent: Option[InternalAgent], timestamp: Timestamp)
-  //Container for bootables
+  /** Container for internal agents */
   protected[this] val agents: scala.collection.mutable.Map[String, AgentInfo] = Map.empty
-  //getter method to allow testing
+
+  /** Getter for internal agents */
   private[agentSystem] def getAgents = agents
-  //Classloader for loading classes in jars.
+
+  /** Classloader for loading classes in jars. */
   private[this] val classLoader = createClassLoader()
   Thread.currentThread.setContextClassLoader(classLoader)
 
-  //Settings for getting list of Bootables and configs from application.conf
+  /** Settings for getting list of internal agents and their configs from application.conf */
   private[this] val settings = Settings(context.system)
+
+  //Set static variables of internal agents.
   InternalAgent.setLoader(self)
   InternalAgent.setLog(log)
+
   start()
 
-  def handleAgentCmd(agent: String)(handle: AgentInfo => Unit): Unit = {
+  /** Helper method for checking is agent even stored. If was handle will be processed.
+    *
+    */
+  private def handleAgentCmd(agent: String)(handle: AgentInfo => Unit): Unit = {
     val agentInfoO = agents.get(agent)
     agentInfoO match {
       case None =>
@@ -75,6 +97,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
         handle(agentInfo)
     }
   }
+
   /**
    * Method for handling received messages.
    * Should handle:
@@ -88,18 +111,10 @@ class InternalAgentLoader extends Actor with ActorLogging {
         agentInfo.agent.fold {
           log.warning(s"Starting: " + agentInfo.name)
           agents -= agentInfo.name
-          //          Thread.sleep(3000)
-          loadAndStart(agentInfo.name, agentInfo.configPath)
+          loadAndStart(agentInfo.name, agentInfo.config)
         } { n=>
           log.warning(s"Agent $agentname was already Running. 're-start' should be used to restart running Agents")
         }
-        //        agentInfo.agent.collect{ 
-        //          case agent : InternalAgent =>
-        //            log.warning(s"Starting: " + agentInfo.name)
-        //            agents -= agentInfo.name
-        //            Thread.sleep(3000)
-        //            loadAndStart(agentInfo.name, agentInfo.configPath)
-        //        }
       }
     }
 
@@ -111,7 +126,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
             agents -= agentInfo.name
             agent.interrupt()
             agent.join()
-            loadAndStart(agentInfo.name, agentInfo.configPath)
+            loadAndStart(agentInfo.name, agentInfo.config)
         }
       }
     }
@@ -124,14 +139,13 @@ class InternalAgentLoader extends Actor with ActorLogging {
             agents -= agentInfo.name
             agent.interrupt();
             agent.join()
-            agents += agentInfo.name -> AgentInfo(agentInfo.name, agentInfo.configPath, None, agentInfo.timestamp)
+            agents += agentInfo.name -> AgentInfo(agentInfo.name, agentInfo.config, None, agentInfo.timestamp)
         }
       }
     }
 
-    case ThreadException(sender: InternalAgent, exception: InterruptedException) =>
-      log.info(s"$sender.name was succesfully terminated.")
-    case ThreadException(sender: InternalAgent, exception: Exception) =>
+
+    case AgentException(sender: InternalAgent, exception: Exception) =>
       log.warning(s"InternalAgent caugth exception: $exception")
       var date = new Date()
       val agentInfoO = agents.find {
@@ -143,14 +157,25 @@ class InternalAgentLoader extends Actor with ActorLogging {
           log.warning("Exception from not stored agent!: " + sender)
         case Some(Tuple2(name, agentInfo)) =>
           agentInfo.agent.collect {
-            case agent: InternalAgent if date.getTime - agentInfo.timestamp.getTime > settings.timeoutOnThreadException =>
-              log.warning(s"Trying to relaunch: " + agentInfo.name)
-              agents -= agentInfo.name
-              loadAndStart(agentInfo.name, agentInfo.configPath)
+            case agent: InternalAgent =>
+              if(date.getTime - agentInfo.timestamp.getTime > settings.timeoutOnThreadException){
+                log.warning(s"Trying to restart: $agentInfo.name")
+                agents -= agentInfo.name
+                loadAndStart(agentInfo.name, agentInfo.config)
+              }else{
+                log.warning(s"$agentInfo.name has caught an Exception too often, will not attempt restart.")
+              }
           }
       }
-    case ThreadInitialisationException(agent: InternalAgent, exception: Exception) =>
-      log.warning(s"InternalAgent $agent initialisation failed. $exception")
+
+    case AgentInitializationException(agent: InternalAgent, exception: Exception) =>
+      log.warning(s"InternalAgent $agent.name initialisation failed. $exception was caught. Restart will not be attempted.")
+
+    case AgentUnrecoverableException(agent: InternalAgent, exception: Exception) =>
+      log.warning(s"InternalAgent $agent.name has caught $exception, that is considered to be unrecoverable. Restart will not be attempted.")
+
+    case AgentInterruption(sender: InternalAgent, exception: InterruptedException) =>
+      log.info(s"InternalAgent $sender.name was succesfully interrupted.")
 
     case Bound(localAddress) =>
     // TODO: do something?
@@ -178,26 +203,26 @@ class InternalAgentLoader extends Actor with ActorLogging {
   def start() = {
     val classnames = getClassnamesWithConfigPath
     classnames.foreach {
-      case (classname: String, configPath: String) =>
+      case (classname: String, config: String) =>
         if (!agents.exists {
           case (agentname: String, _) => classname == agentname
         }) {
-          loadAndStart(classname, configPath)
+          loadAndStart(classname, config)
         } else {
           log.warning("Agent allready running: " + classname)
         }
     }
   }
 
-  def loadAndStart(classname: String, configPath: String) = {
+  def loadAndStart(classname: String, config: String) = {
     Try {
       log.info("Instantitating agent: " + classname)
       val clazz = classLoader.loadClass(classname)
       val const = clazz.getConstructor()
       val agent: InternalAgent = const.newInstance().asInstanceOf[InternalAgent]
       val date = new Date()
-      agents += classname -> AgentInfo(classname, configPath, Some(agent), new Timestamp(date.getTime))
-      agent.init(configPath)
+      agents += classname -> AgentInfo(classname, config, Some(agent), new Timestamp(date.getTime))
+      agent.init(config)
       agent.start()
     } match {
       case Success(_) => ()
@@ -258,6 +283,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
   private[agentSystem] def getClassnamesWithConfigPath: Array[(String, String)] = {
     settings.internalAgents.unwrapped().asScala.map { case (s: String, o: Object) => (s, o.toString) }.toArray
   }
+
   /**
    * Supervison strategy for supervising AgentActors.
    *

@@ -1,6 +1,7 @@
 package agents
 
 import agentSystem._
+import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import types._
 import types.Path._
 import types.OdfTypes._
@@ -105,7 +106,10 @@ class SmartHouseAgent extends InternalAgent {
     }catch{
       case e : InterruptedException =>
       InternalAgent.log.warning("SmartHouseAgent has been interrupted.");
-      InternalAgent.loader ! ThreadException(this,e) 
+      InternalAgent.loader ! AgentInterruption(this,e) 
+      case e : Exception =>
+      InternalAgent.log.warning("SmartHouseAgent has caught an exception.");
+      InternalAgent.loader ! AgentException(this,e) 
     }finally{
       InternalAgent.log.warning("SmartHouseAgent has died.");
     }

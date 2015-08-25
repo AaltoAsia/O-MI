@@ -26,14 +26,8 @@ import types.Path;
 import akka.actor.ActorRef;
 import scala.Tuple2;
 
-interface IInputPusher {
-    public abstract void handleOdf( OdfObjects objs);
-    public abstract void handleObjects( Iterable<OdfObject> objs);
-    public abstract void handleInfoItems( Iterable<OdfInfoItem> items);
-    public abstract void handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs);
-    public abstract void handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs); 
-}
-
+/** Interface for pushing data to InputPusher actor. 
+ */
 public class InputPusher {
     public static ActorRef ipdb = null; 
      public static void handleOdf( OdfObjects objs) { 

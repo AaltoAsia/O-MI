@@ -37,6 +37,11 @@ object `package` {
       case Left(pes: JavaIterable[ParseError]) => pes
       case _                                   => Iterable()
     }
+  def getOdf(odf: OdfParseResult): Option[OdfObjects] =
+    odf match {
+      case Right(objs: OdfObjects) => Some(objs)
+      case _                       => None
+    }
 
   def getLeafs(objects: OdfObjects): JavaIterable[OdfNode] = {
     def getLeafs(obj: OdfObject): JavaIterable[OdfNode] = {
