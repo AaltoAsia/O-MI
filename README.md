@@ -25,27 +25,32 @@ Compiling and packaging
 
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. `sbt release`
-3. Result can be found in ./release/o-mi-node-0.1-SNAPSHOT.zip
+3. Result can be found in ./target/universal/o-mi-Node-version.zip
 
+see [Universal Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/universal.html)
+for more packaging methods
+
+<!---
+Currently not supported
 Compiling a jar
 ---------------
 
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. `sbt one-jar`
 3. Result can be found in `./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar`
-
-
+-->
 Setup development environment
 -----------------------------
 
 1. `git clone`
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
-4. Open a cmd or shell to the `O-MI Node/` project directory
+4. Open a cmd or shell to the `O-MI` project directory
 5. You can (_optional step_)
     - `sbt compile`: compile the project
     - `sbt test`: run tests
     - `sbt run`: run the project or better:
+	- `sbt systemTest`: run only integration tests
     - `sbt re-start`:  run the project in background
     - `sbt re-stop`: close the background process
     - `sbt clean coverage test`: generate test coverage

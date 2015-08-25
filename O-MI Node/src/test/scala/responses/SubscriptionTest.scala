@@ -113,12 +113,12 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       count = count + 1000
     }
 
-    //  lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
+    //  lazy val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines.mkString("\n")
     //  val parserlist = OmiParser.parse(simpletestfile)
 
     //  val (requestID, xmlreturn) = OMISubscription.setSubscription(parserlist.head.asInstanceOf[SubscriptionRequest])
 
-    //  lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequestWithCallback.xml").getLines.mkString("\n")
+    //  lazy val simpletestfilecallback = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequestWithCallback.xml")).getLines.mkString("\n")
     //  val parserlistcallback = OmiParser.parse(simpletestfilecallback)
 
     //  val (requestIDcallback, xmlreturncallback) = OMISubscription.setSubscription(parserlistcallback.head.asInstanceOf[SubscriptionRequest])
@@ -130,8 +130,12 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
   "Subscription response" should {
     "Return with just a requestID when subscribed" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
+//      println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW\n"* 4)
+//      println(System.getProperty("user.dir"))
+//      println(getClass.getClassLoader.getResource("SubscriptionRequest.xml"))
+//      println(getClass.getClassLoader.getResourceAsStream("SubscriptionRequest.xml"))
+//      lazy val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines().mkString("\n")//.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines.mkString("\n")
+      val parserlist = OmiParser.parse(subscriptionRequest)
       //      parserlist.isRight === true
       val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
@@ -154,8 +158,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Return a value when interval is larger than time elapsed and no callback given" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequestWithLargeInterval.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
+//      lazy val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequestWithLargeInterval.xml")).getLines.mkString("\n")
+      val parserlist = OmiParser.parse(subscriptionRequestWithLargeInterval)
       parserlist.isRight === true
       val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
@@ -194,8 +198,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Return with right values and requestID in subscription generation" in {
-      lazy val simpletestfilecallback = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n")
-      val parserlistcallback = OmiParser.parse(simpletestfilecallback)
+//      lazy val simpletestfilecallback = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines.mkString("\n")
+      val parserlistcallback = OmiParser.parse(subscriptionRequest)
       parserlistcallback.isRight === true
       val requestOption = parserlistcallback.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
@@ -238,8 +242,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Return error code when asked for nonexisting infoitem" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/BuggyRequest.xml").getLines.mkString("\n")
-      val parserlist = OmiParser.parse(simpletestfile)
+//      lazy val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("BuggyRequest.xml")).getLines.mkString("\n")
+      val parserlist = OmiParser.parse(buggyRequest)
       parserlist.isRight === true
       val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))
       val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))
@@ -435,8 +439,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     }
 
     "Subscriptions should be removed from database when their ttl expires" in {
-      val simpletestfile = Source.fromFile("src/test/resources/responses/subscription/SubscriptionRequest.xml").getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
-      val parserlist = OmiParser.parse(simpletestfile)
+//      val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
+      val parserlist = OmiParser.parse(subscriptionRequest.replaceAll("""ttl="10.0"""", """ttl="1.0""""))
       parserlist.isRight === true
       val requestReturn = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])._1
       val testSub = requestReturn.\\("requestID").text.toInt
@@ -491,6 +495,61 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
     
     
   }
+  
+  val subscriptionRequest = """<?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+  <omi:read msgformat="odf" interval="1">
+    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+      <Objects>
+        <Object>
+          <id>ReadTest</id>
+          <Object>
+            <id>Refrigerator123</id>
+              <InfoItem name="PowerConsumption">
+              </InfoItem>
+          </Object>
+        </Object>
+       </Objects>
+    </omi:msg>
+  </omi:read>
+</omi:omiEnvelope>
+"""
+  
+  val subscriptionRequestWithLargeInterval = """<?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+  <omi:read msgformat="odf" interval="5">
+    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+      <Objects>
+        <Object>
+          <id>ReadTest</id>
+          <Object>
+            <id>Refrigerator123</id>
+              <InfoItem name="PowerConsumption">
+              </InfoItem>
+          </Object>
+        </Object>
+       </Objects>
+    </omi:msg>
+  </omi:read>
+</omi:omiEnvelope>
+"""
+  
+  val buggyRequest = """<?xml version="1.0" encoding="UTF-8" ?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+  <omi:read msgformat="odf" interval="2">
+    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+      <Objects>
+        <Object>
+          <id>OMI-Service</id>
+          <InfoItem name="NonexistingInfoItem">
+          </InfoItem>
+        </Object>
+      </Objects>
+    </omi:msg>
+  </omi:read>
+</omi:omiEnvelope>
+"""
+
 
 }
 

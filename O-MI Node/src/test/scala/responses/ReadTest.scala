@@ -43,9 +43,9 @@ class ReadTest extends Specification with BeforeAfterAll {
   def beforeAll = {
     val calendar = Calendar.getInstance()
     val timeZone = TimeZone.getTimeZone("UTC")
-   
-  calendar.setTimeZone(timeZone)
-  calendar.setTime(new Date(1421775723))
+
+    calendar.setTimeZone(timeZone)
+    calendar.setTime(new Date(1421775723))
     calendar.set(Calendar.HOUR_OF_DAY, 12)
     val date = calendar.getTime
     val testtime = new java.sql.Timestamp(date.getTime)
@@ -82,7 +82,7 @@ class ReadTest extends Specification with BeforeAfterAll {
     }
 
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
-//    dbConnection.remove(Path("Objects/Metatest/Temperature"))
+    //    dbConnection.remove(Path("Objects/Metatest/Temperature"))
     dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
     dbConnection.setMetaData(Path("Objects/Metatest/Temperature"),
       """<MetaData xmlns="odf.xsd"><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
@@ -99,8 +99,64 @@ class ReadTest extends Specification with BeforeAfterAll {
     sequential
 
     "Give correct XML when asked for multiple values" in {
-      lazy val simpletestfile = Source.fromFile("src/test/resources/responses/read/SimpleXMLReadRequest.xml").getLines.mkString("\n")
-      lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/correctXMLfirsttest.xml")
+      val simpletestfile =
+        """<?xml version="1.0" encoding="UTF-8"?>
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+          <omi:read msgformat="odf">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>ReadTest</id>
+                  <Object>
+                    <id>Refrigerator123</id>
+                    <InfoItem name="PowerConsumption">
+                    </InfoItem>
+                  </Object>
+                  <Object>
+                    <id>RoomSensors1</id>
+                    <Object>
+                      <id>Temperature</id>
+                      <InfoItem name="Inside">
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>"""
+
+      val correctxmlreturn =
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+          <omi:response>
+            <omi:result msgformat="odf">
+              <omi:return returnCode="200"></omi:return>
+              <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+                <Objects>
+                  <Object>
+                    <id>ReadTest</id>
+                    <Object>
+                      <id>Refrigerator123</id>
+                      <InfoItem name="PowerConsumption">
+                        <value unixTime="1428975">0.123</value>
+                      </InfoItem>
+                    </Object>
+                    <Object>
+                      <id>RoomSensors1</id>
+                      <Object>
+                        <id>Temperature</id>
+                        <InfoItem name="Inside">
+                          <value unixTime="1428975">21.2</value>
+                        </InfoItem>
+                      </Object>
+                    </Object>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
       val parserlist = OmiParser.parse(simpletestfile)
       parserlist.isRight === true
 
@@ -109,16 +165,60 @@ class ReadTest extends Specification with BeforeAfterAll {
 
       resultOption must beSome.which(_._2 === 200)
       val node = resultOption.get._1
-      node must \ ("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
-      
-      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      node must \("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
+
+      resultOption must beSome.which(n => (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
 
     "Give a history of values when begin and end is used" in {
-      lazy val intervaltestfile = Source.fromFile("src/test/resources/responses/read/IntervalXMLTest.xml").getLines.mkString("\n")
-      lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/CorrectIntervalXML.xml")
+      val intervaltestfile =
+        """<?xml version="1.0" encoding="UTF-8"?>
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+          <omi:read msgformat="odf" begin="1970-01-17T10:00:10" end="1970-01-17T23:56:25">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>ReadTest</id>
+                  <Object>
+                    <id>SmartOven</id>
+                    <InfoItem name="Temperature">
+                    </InfoItem>
+                  </Object>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>"""
+
+      val correctxmlreturn =
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="0.0" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd">
+          <omi:response>
+            <omi:result msgformat="odf">
+              <omi:return returnCode="200"/>
+              <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+                <Objects>
+                  <Object>
+                    <id>ReadTest</id>
+                    <Object>
+                      <id>SmartOven</id>
+                      <InfoItem name="Temperature">
+                        <value unixTime="1428975">100</value>
+                        <value unixTime="1428976">102</value>
+                        <value unixTime="1428977">105</value>
+                        <value unixTime="1428978">109</value>
+                        <value unixTime="1428979">115</value>
+                        <value unixTime="1428980">117</value>
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
       val parserlist = OmiParser.parse(intervaltestfile)
       parserlist.isRight === true
 
@@ -126,17 +226,84 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      resultOption must beSome.which(n => (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
       val node = resultOption.get._1
 
-      node must \ ("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
- 
+      node must \("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
+
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
     "Give object and its children when asked for" in {
-      lazy val plainxml = Source.fromFile("src/test/resources/responses/read/PlainRequest.xml").getLines.mkString("\n")
-      lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/PlainRightRequest.xml")
+      val plainxml =
+        """<?xml version="1.0" encoding="UTF-8"?>
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+          <omi:read msgformat="odf">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>ReadTest</id>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>"""
+
+      val correctxmlreturn =
+        <omi:omiEnvelope xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd">
+          <omi:response>
+            <omi:result msgformat="odf">
+              <omi:return returnCode="200"/>
+              <omi:msg xsi:schemaLocation="odf.xsd odf.xsd" xmlns="odf.xsd">
+                <Objects>
+                  <Object>
+                    <id>ReadTest</id>
+                    <Object>
+                      <id>SmartOven</id>
+                      <InfoItem name="Temperature">
+                        <value unixTime="1428980">117</value>
+                      </InfoItem>
+                    </Object>
+                    <Object>
+                      <id>SmartCar</id>
+                      <InfoItem name="Fuel">
+                        <value unixTime="1428975">30</value>
+                      </InfoItem>
+                    </Object>
+                    <Object>
+                      <id>RoomSensors1</id>
+                      <InfoItem name="CarbonDioxide">
+                        <value unixTime="1428975">too much</value>
+                      </InfoItem>
+                      <Object>
+                        <id>Temperature</id>
+                        <InfoItem name="Inside">
+                          <value unixTime="1428975">21.2</value>
+                        </InfoItem>
+                        <InfoItem name="Outside">
+                          <value unixTime="1428975">12.2</value>
+                        </InfoItem>
+                      </Object>
+                    </Object>
+                    <Object>
+                      <id>Refrigerator123</id>
+                      <InfoItem name="RefrigeratorDoorOpenWarning">
+                        <value unixTime="1428975">door closed</value>
+                      </InfoItem>
+                      <InfoItem name="PowerConsumption">
+                        <value unixTime="1428975">0.123</value>
+                      </InfoItem>
+                      <InfoItem name="RefrigeratorProbeFault">
+                        <value unixTime="1428975">Nothing wrong with probe</value>
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
       val parserlist = OmiParser.parse(plainxml)
       parserlist.isRight === true
 
@@ -144,26 +311,55 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-//      println("test3:")
-//      println(printer.format(resultOption.get._1.head))
-//      println("correct:")
-//      println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(n=> (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
+      //      println("test3:")
+      //      println(printer.format(resultOption.get._1.head))
+      //      println("correct:")
+      //      println(printer.format(correctxmlreturn.head))
+      resultOption must beSome.which(n => (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
       resultOption must beSome.which(
         result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
-      lazy val erroneousxml = Source.fromFile("src/test/resources/responses/read/ErroneousXMLReadRequest.xml").getLines.mkString("\n")
-      lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/WrongRequestReturn.xml")
+      val erroneousxml =
+        """<?xml version="1.0" encoding="UTF-8"?>
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+          <omi:read msgformat="odf">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>ReadTest</id>
+                  <Object>
+                    <id>NonexistingObject</id>
+                  </Object>
+                  <Object>
+                    <id>Roomsensors1</id>
+                    <InfoItem name="wrong"></InfoItem>
+                    <InfoItem name="Temperature"></InfoItem>
+                  </Object>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>"""
+
+      lazy val correctxmlreturn =
+        <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <omi:response>
+            <omi:result>
+              <omi:return description="Such item/s not found." returnCode="404"></omi:return>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+
       val parserlist = OmiParser.parse(erroneousxml)
       parserlist.isRight === true
       val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 !== 200)
-      resultOption must beSome.which(n=> (n._1) must beEqualToIgnoringSpace(correctxmlreturn))
+      resultOption must beSome.which(n => (n._1) must beEqualToIgnoringSpace(correctxmlreturn))
 
     }
 
@@ -193,7 +389,7 @@ class ReadTest extends Specification with BeforeAfterAll {
             </omi:msg>
           </omi:read>
         </omi:omiEnvelope>
-      val partialresult = 
+      val partialresult =
         <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <omi:response>
             <omi:result msgformat="odf">
@@ -213,18 +409,19 @@ class ReadTest extends Specification with BeforeAfterAll {
               </omi:msg>
             </omi:result>
             <omi:result>
-              <omi:return description={ "Could not find the following elements from the database:" +
+              <omi:return description={
+                "Could not find the following elements from the database:" +
                   "\nObjects/ReadTest/NonexistingObject" +
                   "\nObjects/ReadTest/Roomsensors1/CarbonDioxide" +
                   "\nObjects/ReadTest/Roomsensors1/wrong" +
-                  "\nObjects/ReadTest/Roomsensors1/Temperature" } returnCode="404">
+                  "\nObjects/ReadTest/Roomsensors1/Temperature"
+              } returnCode="404">
               </omi:return>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
-                                                                                                                                                                                                      
-        
-      val parserlist= OmiParser.parse(partialxml.toString())
+
+      val parserlist = OmiParser.parse(partialxml.toString())
       parserlist.isRight === true
       val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       readRequestOption must beSome
@@ -233,25 +430,63 @@ class ReadTest extends Specification with BeforeAfterAll {
       //resultOption must beSome.which(_._2 !== 200)
 
       resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(partialresult))
-        
 
     }
 
     "Return with correct metadata" in {
-      lazy val metarequestxml = Source.fromFile("src/test/resources/responses/read/MetadataRequest.xml").getLines.mkString("\n")
-      lazy val correctxmlreturn = XML.loadFile("src/test/resources/responses/read/MetadataCorrectReturn.xml")
+      val metarequestxml =
+        """<?xml version="1.0" encoding="UTF-8"?>
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10.0">
+          <omi:read msgformat="odf">
+            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+              <Objects>
+                <Object>
+                  <id>Metatest</id>
+                  <InfoItem name="Temperature">
+                    <MetaData/>
+                  </InfoItem>
+                </Object>
+              </Objects>
+            </omi:msg>
+          </omi:read>
+        </omi:omiEnvelope>"""
+
+      val correctxmlreturn =
+        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+          <omi:response>
+            <omi:result msgformat="odf">
+              <omi:return returnCode="200"/>
+              <omi:msg>
+                <Objects>
+                  <Object>
+                    <id>Metatest</id>
+                    <InfoItem name="Temperature">
+                      <MetaData>
+                        <InfoItem name="TemperatureFormat">
+                          <value dateTime="1970-01-17T12:56:15.723" type="xs:string">Celsius</value>
+                        </InfoItem>
+                      </MetaData>
+                      <value unixTime="1428975">asd</value>
+                    </InfoItem>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:result>
+          </omi:response>
+        </omi:omiEnvelope>
+      
       val parserlist = OmiParser.parse(metarequestxml)
-      if(parserlist.isLeft) println(parserlist.left.get.toSeq)
+      if (parserlist.isLeft) println(parserlist.left.get.toSeq)
       parserlist.isRight === true
 
       val readRequestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: ReadRequest => y }))
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-//      println("test5:")
-//      println(printer.format(resultOption.get._1.head))
-//      println("correct:")
-//      println(printer.format(correctxmlreturn.head))
+      //      println("test5:")
+      //      println(printer.format(resultOption.get._1.head))
+      //      println("correct:")
+      //      println(printer.format(correctxmlreturn.head))
       resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
 
     }

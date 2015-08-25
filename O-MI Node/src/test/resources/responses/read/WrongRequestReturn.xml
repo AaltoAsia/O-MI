@@ -1,7 +1,0 @@
-<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <omi:response>
-        <omi:result>
-            <omi:return description="Such item/s not found." returnCode="404"></omi:return>
-        </omi:result>
-    </omi:response>
-</omi:omiEnvelope>

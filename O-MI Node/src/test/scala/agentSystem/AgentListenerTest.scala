@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 import akka.io.Tcp._
 import scala.io.Source
 import database._
-import testHelpers.{BeforeAll, Actors}
+import testHelpers.{ BeforeAll, Actors }
 import parsing._
 import types._
 import types.Path._
@@ -17,20 +17,37 @@ import types.Path._
 import http.Boot
 
 class AgentListenerTest extends Specification {
-//  sequential
-  
+  //  sequential
+
   implicit val dbConnection = new TestDB("agent-listener")
   Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
   import Boot.system
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("127.0.0.1", 4321)
-  lazy val testOdf = Source.fromFile("src/test/resources/agentSystemInterface/testOdf.xml").getLines().mkString("\n")
+  lazy val testOdf =
+    """<?xml version="1.0" encoding="UTF-8"?>
+    <Objects xmlns="odf.xsd">
+      <Object>
+        <id>AgentTest</id>
+        <Object>
+          <id>SmartHouse</id>
+          <InfoItem name="Moisture">
+            <MetaData>
+              <InfoItem name="Units">
+                <value type="xs:String">Litre</value>
+              </InfoItem>
+            </MetaData>
+            <value dateTime="2014-12-18T15:34:52">0.20</value>
+          </InfoItem>
+        </Object>
+      </Object>
+    </Objects>"""
 
-  def beforeAll() ={
+  def beforeAll() = {
     dbConnection.clearDB()
   }
-  
-//  println("External Listener Test Started")
+
+  //  println("External Listener Test Started")
   "ExternalAgentListener" should {
     sequential
     "reply with Register message when it receives Connected message" in new Actors {
@@ -99,51 +116,51 @@ class AgentListenerTest extends Specification {
       val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
       val testPath = Path("Objects/AgentTest/SmartHouse/Moisture")
-      
+
       dbConnection.remove(testPath)
       dbConnection.get(testPath) must beNone
-      
+
       actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
       //dbConnection.get("Objects/SmartHouse/Moisture") must not be equalTo(None)      
-      awaitCond({dbConnection.get(testPath).nonEmpty}, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
-      dbConnection.getMetaData(testPath) must beSome 
+      awaitCond({ dbConnection.get(testPath).nonEmpty }, scala.concurrent.duration.Duration.apply(2500, "ms"), scala.concurrent.duration.Duration.apply(500, "ms"))
+      dbConnection.getMetaData(testPath) must beSome
     }
-    
+
     "receive sended data" in new Actors {
       val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
-      
+
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
       dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) must beNone
-      
+
       EventFilter.debug(message = "Got data \n" + testOdf.replaceAll("AgentTest", "AgentTest123")) intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("AgentTest", "AgentTest123"))), probe.ref)
       }
-      
+
     }
 
-// Doesn't work as intended    
-//
-//    "log warning when it encounters node with no information" in new Actors {
-//      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
-//      val probe = TestProbe()
-//      
-//      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
-//      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
-//      
-//      EventFilter.warning(start = "Throwing away node: ") intercept {
-//        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
-//      }
-//      
-//    }
+    // Doesn't work as intended    
+    //
+    //    "log warning when it encounters node with no information" in new Actors {
+    //      val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
+    //      val probe = TestProbe()
+    //      
+    //      dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
+    //      dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) === None
+    //      
+    //      EventFilter.warning(start = "Throwing away node: ") intercept {
+    //        actor.tell(Received(akka.util.ByteString(testOdf)), probe.ref)
+    //      }
+    //      
+    //    }
 
     "log warning when sending malformed data" in new Actors {
       val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
-      
+
       dbConnection.remove(Path("Objects/AgentTest/SmartHouse/Moisture"))
       dbConnection.get(Path("Objects/AgentTest/SmartHouse/Moisture")) must beNone
-      
+
       EventFilter.warning(message = s"Malformed odf received from agent ${probe.ref}: Invalid XML") intercept {
         actor.tell(Received(akka.util.ByteString(testOdf.replaceAll("Objects", ""))), probe.ref)
       }

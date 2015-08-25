@@ -17,3 +17,5 @@ addSbtPlugin("com.codacy" % "sbt-codacy-coverage" % "1.0.3")
 resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
 
 addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "1.1.0")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.3")
