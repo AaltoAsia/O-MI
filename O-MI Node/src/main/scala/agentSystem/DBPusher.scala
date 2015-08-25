@@ -20,6 +20,11 @@ import akka.actor._
 import java.lang.Iterable
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 import scala.collection.JavaConversions.asJavaIterable
+import akka.dispatch.RequiresMessageQueue
+import akka.dispatch.BoundedMessageQueueSemantics
+     
+
+
 
 object InputPusherCmds {
   case class HandleOdf(objects: OdfObjects)
@@ -34,7 +39,12 @@ import InputPusherCmds._
  * Creates an object for pushing data from internal agents to db.
  *
  */
-class DBPusher(val dbobject: DB) extends Actor with ActorLogging with IInputPusher {
+class DBPusher(val dbobject: DB)
+  extends Actor
+  with ActorLogging
+  with IInputPusher
+  with RequiresMessageQueue[BoundedMessageQueueSemantics]
+  {
 
   override def receive = {
     case HandleOdf(objects)             => handleOdf(objects)
