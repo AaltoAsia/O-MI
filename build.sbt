@@ -50,17 +50,20 @@ lazy val root = (project in file(".")).
 	  //to get stuff working atm you have to move files from stage directory to bin directory (after running 'sbt stage')
       mappings in Universal <++= baseDirectory map (src => directory(src / "html")),
 	  mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
-	  mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "deploy")),
+	  //mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "deploy")),
 	  mappings in Universal <+=  (packageBin in Compile, sourceDirectory in omiNode) map { (_,src) =>
 	    val conf = src / "main" / "resources" / "application.conf"
 	    conf -> "conf/application.conf"
       },
+	  mappings in Universal <++= (packageBin in Compile, target in omiNode) map {(_,target) =>
+	    directory(target / "scala-2.11" / "api")
+      },
 	  mappings in Universal <++= baseDirectory map { base => 
-	    val smarthouse = base / "SmartHouse.xml"
-		val otaniemi3d = base / "otaniemi3d-data.xml"
 		Seq(
-		  smarthouse -> "SmartHouse.xml",
-		  otaniemi3d -> "otaniemi3d-data.xml"
+          base / "SmartHouse.xml" -> "SmartHouse.xml",
+          base / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
+          base / "callbackTestServer.py" -> "callbackTestServer.py",
+          base / "README.md" -> "README.md"
 		)
 	  }
 	)):_*).
