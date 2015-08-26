@@ -65,10 +65,10 @@ Setup development environment
 
 Running
 -------
-To run O-MI Node run the corresponding startup script for your OS:
+To run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
-1. `start.bat` for Windows
-2. `bash start.sh` for Unix and Mac
+1. `o-mi-node.bat` for Windows
+2. `bash o-mi-node` for Unix and Mac
 
 This will run O-MI Node with configuration in application.conf.
 By default it has some example and demo agents.
