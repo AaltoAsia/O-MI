@@ -51,7 +51,7 @@ lazy val root = (project in file(".")).
 	    val conf = src / "main" / "resources" / "application.conf"
 	    conf -> "conf/application.conf"
       },
-	  mappings in Universal <++= (packageBin in Compile, packageDoc in Compile, target in omiNode) map {(_, _, target) =>
+	  mappings in Universal <++= (packageDoc in Compile in omiNode, target in omiNode) map {(_, target) =>
 	    directory(target / "scala-2.11" / "api")
       },
 	  mappings in Universal <++= baseDirectory map { base => 
