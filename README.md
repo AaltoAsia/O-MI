@@ -65,7 +65,7 @@ Setup development environment
 
 Running
 -------
-To run O-MI Node run the corresponding startup script for your OS:
+To run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
 1. `o-mi-node.bat` for Windows
 2. `bash o-mi-node` for Unix and Mac

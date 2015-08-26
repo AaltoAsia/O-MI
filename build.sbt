@@ -27,6 +27,8 @@ lazy val omiNode = (project in file("O-MI Node")).
 	libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies
 	)):_*
   )
+
+
   
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*
@@ -40,9 +42,14 @@ lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
     (commonSettings("Node") ++ Seq(
-   // maintainer := "John Smith <john.smith@example.com>",
-   // packageDescription := "TempName",
-   // packageSummary := "TempName",
+    //maintainer := "John Smith <john.smith@example.com>",
+    //packageDescription := "TempName",
+    //packageSummary := "TempName",
+	  resourceGenerators in Compile <+= (baseDirectory in Compile, version) map{ (dir, currentVersion) =>
+	    val file = dir / "html" / "VERSION"
+		IO.write(file, s"${currentVersion}")
+		Seq(file)
+	  },
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       mainClass in Compile := Some("http.Boot"),
       mappings in Universal <++= baseDirectory map (src => directory(src / "html")),
@@ -65,4 +72,10 @@ lazy val root = (project in file(".")).
 	)):_*).
   aggregate(omiNode,agents).
   dependsOn(omiNode,agents)
+
+  
+  // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
+  tomcat()
+// jetty()
+
   
