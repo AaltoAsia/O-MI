@@ -81,7 +81,12 @@ object OmiParser extends Parser[OmiParseResult] {
     Try{
       val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
 
-      if (envelope.nodeList.isDefined) throw NotImplementedError("nodeList attribute functionality is not supported")
+      // Try to recognize unsupported features
+      envelope.omienvelopeoption.value match {
+        case request: xmlTypes.RequestBaseTypable if request.nodeList.isDefined =>
+          throw new NotImplementedError("nodeList attribute functionality is not supported")
+        case _ => //noop
+      }
 
       envelope.omienvelopeoption.value match {
         case read: xmlTypes.ReadRequest => parseRead(read, parseTTL(envelope.ttl))
