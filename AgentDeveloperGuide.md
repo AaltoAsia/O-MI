@@ -6,23 +6,23 @@ What are Agents?
 Agents are small programs that connect to sensors and push received data to
 O-MI Node. 
 
-There are two kind of Agents ussing different interfaces: 
-* *External agents* that push O-DF foramated sensor data to a TCP port of O-MI
+There are two kind of Agents using different interfaces: 
+* *External agents* that push O-DF formatted sensor data to a TCP port of O-MI
 Node.
-* *Internal agents* that can be loaded from .jar file and instatiated to be run
+* *Internal agents* that can be loaded from .jar file and instantiated to be run
 inside same JVM as O-MI Node.
 
 External Agent
 --------------
-All you need to do is to write a program that pushes O-DF formated data to the TCP
+All you need to do is to write a program that pushes O-DF formatted data to the TCP
 port defined by `application.conf`'s omi-service.external-agent-port parameter.
-Program can be writen with any programming language. See
+Program can be written with any programming language. See
 [the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
 Starting and stopping of external agents are the user's responsibility.
 
 Another option for writing data from outside of O-MI Node is to send O-MI write request to it. 
 
-If your external agent is run in different computer, you need to add its ip to 
+If your external agent is run on a different computer, you will need to add its IP-address to 
 `o-mi-service.input-whitelist-ips`. You can also accept input from subnets by adding 
 their masks to `o-mi-service.input-whitelist-subnets`.
 
@@ -49,7 +49,7 @@ static public methods:
 - `handlePathMetaDataPairs` that takes an `Iterable` of `(Path, OdfMetaData)` pairs as parameter,
 
 To make internal agents you need to have 
-**o-mi-node.jar as a libarary and added to your classpath**.
+**o-mi-node.jar as a library and added to your classpath**.
 
 `JavaAgent` and `ScalaAgent` both take an O-DF path as `config`
 parameter and start pushing random generated values to that path.
@@ -63,14 +63,14 @@ public class JavaAgent extends InternalAgent{
     private Random rnd;
     private boolean initialised = false;
     public void init( String config ){
-        try{
-            rnd = new Random();
+	try{
+	    rnd = new Random();
             path = new Path( config );
             initialised = true;
             log.warning( "JavaAgent has been initialised." );
         }catch( Exception e ){
-            log.warning( "JavaAgent has caucth exception turing initialisation." );
-            loader.tell( new ThreadInitialisationException( this, e ), null );
+            log.warning( "JavaAgent has caught an exception during initialisation." );
+            loader.tell( new AgentInitializationException( this, e ), null );
             InternalAgent.log.warning( "JavaAgent has died." );
         }
     }
@@ -98,7 +98,10 @@ public class JavaAgent extends InternalAgent{
             }
         }catch( InterruptedException e ){
             log.warning( "JavaAgent has been interrupted." );
-            loader.tell( new ThreadException( this, e), null );
+            loader.tell( new AgentInterruption( this, e), null );
+        }catch( Exception e ){
+            log.warning( "JavaAgent has caught an exception." );
+            loader.tell( new AgentException( this, e), null );
         }finally{
             InternalAgent.log.warning( "JavaAgent has died." );
         }

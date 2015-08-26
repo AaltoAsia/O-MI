@@ -29,7 +29,7 @@ public class JavaAgent extends InternalAgent{
             initialised = true;
             log.warning( "JavaAgent has been initialised." );
         }catch( Exception e ){
-            log.warning( "JavaAgent has caucth an  exception turing initialisation." );
+            log.warning( "JavaAgent has caught an exception during initialisation." );
             loader.tell( new AgentInitializationException( this, e ), null );
             InternalAgent.log.warning( "JavaAgent has died." );
         }
@@ -60,7 +60,7 @@ public class JavaAgent extends InternalAgent{
             log.warning( "JavaAgent has been interrupted." );
             loader.tell( new AgentInterruption( this, e), null );
         }catch( Exception e ){
-            log.warning( "JavaAgent has caugth an exception." );
+            log.warning( "JavaAgent has caught an exception." );
             loader.tell( new AgentException( this, e), null );
         }finally{
             InternalAgent.log.warning( "JavaAgent has died." );
