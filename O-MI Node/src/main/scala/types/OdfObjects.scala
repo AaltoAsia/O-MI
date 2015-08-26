@@ -21,6 +21,7 @@ import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 
+/** Class implementing OdfObjects. */
 class OdfObjectsImpl(
   objects:              JavaIterable[OdfObject] = Iterable(),
   version:              Option[String] = None
@@ -29,6 +30,7 @@ class OdfObjectsImpl(
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
   
+  /** Method for combining two OdfObjectss with same path */
   def combine( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){
     (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
     OdfObjects(
@@ -45,44 +47,7 @@ class OdfObjectsImpl(
       }
     )
   }
-  def update( another: OdfObjects ): (OdfObjects, Seq[(Path,OdfNode)]) =sharedAndUniques[(OdfObjects,Seq[(Path,OdfNode)])]( another ){
-    (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
-    val sharedObjsTuples = sharedObjs.map{
-        case (path:Path, sobj: Seq[OdfObject]) =>
-        assert(sobj.length == 2)
-        sobj.headOption match{
-          case Some( head ) =>
-            sobj.lastOption match{
-              case Some(last) => 
-                head.update(last)
-              case None =>
-                throw new Exception("No last found when updating OdfObject")
-            }
-            case None =>
-              throw new Exception("No head found when updating OdfObject")
-          }
-      }
-    val updatedSharedObjs = sharedObjsTuples.map(_._1).toSeq
-    val sharedObjsOut  = sharedObjsTuples.flatMap(_._2).toSeq
-    val anotherUniqueObjsOut = getOdfNodes(anotherUniqueObjs : _*).map{ node => (node.path, node) } 
-    val newObjs = OdfObjects(
-      updatedSharedObjs  ++ 
-      uniqueObjs ++ 
-      anotherUniqueObjs,
-      (version, another.version) match{
-        case (Some(a), Some(b)) => Some(b)
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
-      }
-    )
-    (
-      newObjs,
-      (Seq((Path("Objects"),newObjs)) ++
-      sharedObjsOut ++
-      anotherUniqueObjsOut).toSeq
-    )
-  }
+
   private[this] def sharedAndUniques[A]( another: OdfObjects )( constructor: (
     Seq[OdfObject],
     Seq[OdfObject],
@@ -106,20 +71,8 @@ class OdfObjectsImpl(
     constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
   }
 
-  def get(path: Path) : Option[OdfNode] = {
-    //HeadOption is because of values being Iterable of OdfObject
-    val grouped = objects.groupBy(_.path).mapValues{_.headOption.getOrElse(throw new Exception("Pathless Object was grouped."))}
-    grouped.get(path) match {
-      case None => 
-        grouped.get(path.take(2)) match{
-          case None => 
-            None
-          case Some(obj: OdfObject) =>
-            obj.get(path)
-       }
-      case Some(obj) => Some(obj)
-    }
-  }
+
+  /** Method to convert to scalaxb generated class. */
   implicit def asObjectsType : ObjectsType ={
     ObjectsType(
       Object = objects.map{

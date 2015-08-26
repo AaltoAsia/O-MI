@@ -132,18 +132,16 @@ object OmiParser extends Parser[OmiParseResult] {
       case false =>
       read.msg match {
         case Some(msg) =>
-        val odf = parseMsg(read.msg, read.msgformat)
-        val errors = OdfTypes.getErrors(odf)
-
-        if (errors.nonEmpty)
-          return Left(errors)
-
-        read.interval match {
-          case None =>
+        val odfParseResult = parseMsg(read.msg, read.msgformat)
+        odfParseResult match {
+          case Left(errors)  => Left(errors)
+          case Right(odf) => 
+          read.interval match {
+            case None =>
             Right(Iterable(
               ReadRequest(
                 ttl,
-                odf.right.get,
+                odf,
                 gcalendarToTimestampOption(read.begin),
                 gcalendarToTimestampOption(read.end),
                 read.newest,
@@ -151,18 +149,20 @@ object OmiParser extends Parser[OmiParseResult] {
                 uriToStringOption(read.callback)
               )
             ))
-          case Some(interval) =>
+            case Some(interval) =>
             Right(Iterable(
               SubscriptionRequest(
                 ttl,
                 parseInterval(interval),
-                odf.right.get,
+                odf,
                 read.newest,
                 read.oldest,
                 uriToStringOption(read.callback)
               )
-            ))
+          ))
+      }
         }
+
       case None =>
         Left(
           Iterable(
@@ -173,17 +173,16 @@ object OmiParser extends Parser[OmiParseResult] {
   }
 
   private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
-    val odf = parseMsg(write.msg, write.msgformat)
-    val errors = OdfTypes.getErrors(odf)
-
-    if (errors.nonEmpty)
-      return Left(errors)
-    else
+    val odfParseResult = parseMsg(write.msg, write.msgformat)
+    odfParseResult match {
+      case Left(errors)  => Left(errors)
+      case Right(odf) =>
       Right(Iterable(
         WriteRequest(
           ttl,
-          odf.right.get,
+          odf,
           uriToStringOption(write.callback))))
+      }
   }
 
   private[this] def parseCancel(cancel: xmlTypes.CancelRequest, ttl: Duration): OmiParseResult = {
@@ -199,7 +198,6 @@ object OmiParser extends Parser[OmiParseResult] {
       ResponseRequest(
         response.result.map {
           case result =>
-
             OmiResult(
               result.returnValue.value,
               result.returnValue.returnCode,
@@ -208,13 +206,13 @@ object OmiParser extends Parser[OmiParseResult] {
               if (result.msg.isEmpty)
                 None
               else {
-                val odf = parseMsg(result.msg, result.msgformat)
-                val errors = OdfTypes.getErrors(odf)
-                if (errors.nonEmpty)
-                  return Left(errors)
-                else
-                  Some(odf.right.get)
-              })
+                val odfParseResult = parseMsg(result.msg, result.msgformat)
+                odfParseResult match {
+                  case Left(errors)  => return Left(errors)
+                  case Right(odf) => Some(odf)
+                }
+              }
+          )
         }.toIterable
       , ttl)
     ))

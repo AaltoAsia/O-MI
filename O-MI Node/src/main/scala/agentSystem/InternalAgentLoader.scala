@@ -221,9 +221,9 @@ class InternalAgentLoader extends Actor with ActorLogging {
       val const = clazz.getConstructor()
       val agent: InternalAgent = const.newInstance().asInstanceOf[InternalAgent]
       val date = new Date()
-      agents += classname -> AgentInfo(classname, config, Some(agent), new Timestamp(date.getTime))
       agent.init(config)
       agent.start()
+      agents += classname -> AgentInfo(classname, config, Some(agent), new Timestamp(date.getTime))
     } match {
       case Success(_) => ()
       case Failure(e) => e match {
@@ -232,7 +232,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
         case e: ClassNotFoundException =>
           log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
         case e: Exception =>
-          log.warning(s"Classloading failed. $e")
+          log.warning(s"Class $classname could not be loaded, created, initialized or started. Because received $e.")
         case t => throw t
       }
     }
