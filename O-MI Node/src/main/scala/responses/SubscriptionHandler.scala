@@ -314,21 +314,18 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    */
   def checkEventSubs(items: Seq[OdfInfoItem]): Unit = {
     val checkTime = currentTimeMillis()
-//    log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
-//    log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
+    // log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
+    // log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
     
     val idItemLastVal = items.flatMap { item =>
       val itemPaths = item.path.getParentsAndSelf.map(_.toString)
       val subItemTuples = itemPaths.flatMap(path => eventSubs.get(path)).flatten.filter { 
-        case EventSub(sub,_) => if(hasTTLEnded(sub, checkTime)){
-          removeSubscription(sub)
-          false
-        } else true
-        }
-//        eventSubs.collect {
-//        case (path, subs) if itemPaths.contains(path) =>
-//          subs
-//      }.flatten
+        case EventSub(sub,_) =>
+          if(hasTTLEnded(sub, checkTime)){
+            removeSubscription(sub)
+            false
+          } else true
+      }
 
       //log.debug("subItemTuples are nonempty: " + subItemTuples.nonEmpty)
       subItemTuples.map { eventsub => (eventsub.sub, item, eventsub.lastValue) }

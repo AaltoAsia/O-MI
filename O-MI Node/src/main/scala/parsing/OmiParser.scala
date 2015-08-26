@@ -80,6 +80,9 @@ object OmiParser extends Parser[OmiParseResult] {
       return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
     Try{
       val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
+
+      if (envelope.nodeList.isDefined) throw NotImplementedError("nodeList attribute functionality is not supported")
+
       envelope.omienvelopeoption.value match {
         case read: xmlTypes.ReadRequest => parseRead(read, parseTTL(envelope.ttl))
         case write: xmlTypes.WriteRequest => parseWrite(write, parseTTL(envelope.ttl))
