@@ -465,7 +465,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None, asJavaIterable(Iterable.empty[Long]), Some(OdfObjects(asJavaIterable(Iterable.empty[OdfObject]))))))
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None, asJavaIterable(Iterable.empty[Long]), Some(OdfObjects(asJavaIterable(Iterable.empty[OdfObject]))))), 10 seconds)
 
   }
 
@@ -934,7 +934,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
 
   lazy val omiResponseTest =
     """<?xml version="1.0" encoding="UTF-8"?>
-    <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+    <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
       <omi:response>
         <omi:result msgformat="odf">
           <omi:return returnCode="200"/>
