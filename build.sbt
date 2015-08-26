@@ -23,11 +23,9 @@ lazy val omiNode = (project in file("O-MI Node")).
     (commonSettings("Backend") ++ Seq(
 	parallelExecution in Test := false,
 	Revolver.settings,
-	cleanFiles <++= baseDirectory {_ * "*.db" get}
+	cleanFiles <++= baseDirectory {_ * "*.db" get},
+	libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies
 	)):_*
-  ).
-  settings(
-    libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies
   )
   
 lazy val agents = (project in file("Agents")).
@@ -38,27 +36,22 @@ lazy val agents = (project in file("Agents")).
   ).
   dependsOn(omiNode)
   
-//TODO omiNode should depend on agent jar
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
     (commonSettings("Node") ++ Seq(
-   //maintainer := "John Smith <john.smith@example.com>",
+   // maintainer := "John Smith <john.smith@example.com>",
    // packageDescription := "TempName",
    // packageSummary := "TempName",
-   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
-   // entrypoint
+      bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       mainClass in Compile := Some("http.Boot"),
-	  //TODO configs and deploy directories need to be on the same path from where you run the start script as well as the SmartHouse.xml and otaniemi3d-data.xml
-	  //to get stuff working atm you have to move files from stage directory to bin directory (after running 'sbt stage')
       mappings in Universal <++= baseDirectory map (src => directory(src / "html")),
 	  mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
-	  //mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "deploy")),
 	  mappings in Universal <+=  (packageBin in Compile, sourceDirectory in omiNode) map { (_,src) =>
 	    val conf = src / "main" / "resources" / "application.conf"
 	    conf -> "conf/application.conf"
       },
-	  mappings in Universal <++= (packageBin in Compile, target in omiNode) map {(_,target) =>
+	  mappings in Universal <++= (packageBin in Compile, packageDoc in Compile, target in omiNode) map {(_, _, target) =>
 	    directory(target / "scala-2.11" / "api")
       },
 	  mappings in Universal <++= baseDirectory map { base => 

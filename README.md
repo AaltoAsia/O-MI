@@ -48,6 +48,7 @@ Setup development environment
 4. Open a cmd or shell to the `O-MI` project directory
 5. You can (_optional step_)
     - `sbt compile`: compile the project
+	- `sbt doc`: compile api documentation
     - `sbt test`: run tests
     - `sbt run`: run the project or better:
 	- `sbt systemTest`: run only integration tests
