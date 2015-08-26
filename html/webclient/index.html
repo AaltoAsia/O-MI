@@ -185,13 +185,11 @@
               <span class="glyphicon glyphicon-hourglass" aria-hidden="true"></span>
               ttl:
             </label>
-            <div class="col-md-8 col-lg-9">
-              <a data-toggle="tooltip" title="Time To Live of the request in the server. Use ttl -1 for infinity and ttl 0 for the duration of socket connection.">
-                <div class="input-group">
-                  <input type="number" required class="form-control" id="ttl"/>
-                  <div class="input-group-addon">sec</div>
-                </div>
-              </a>
+            <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Time To Live of the request in the server. Use ttl -1 for infinity and ttl 0 for the duration of socket connection.">
+              <div class="input-group">
+                <input type="number" required class="form-control" id="ttl"/>
+                <div class="input-group-addon">sec</div>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -199,13 +197,11 @@
               <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
               interval:
             </label>
-            <div class="col-md-8 col-lg-9">
-              <a data-toggle="tooltip" title="The time between data responses. Use interval -1 to subscribe for updates only.">
-                <div class="input-group">
-                  <input type="number" required class="form-control" id="interval"/>
-                  <div class="input-group-addon">sec</div>
-                </div>
-              </a>
+            <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="The time between data responses. Use interval -1 to subscribe for updates only.">
+              <div class="input-group">
+                <input type="number" required class="form-control" id="interval"/>
+                <div class="input-group-addon">sec</div>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -213,10 +209,8 @@
               <span class="glyphicon glyphicon-tag" aria-hidden="true"></span>
               requestID:
             </label>
-            <div class="col-md-8 col-lg-9">
-              <a data-toggle="tooltip" title="Enter a requestID as given by some subscription response.">
-                <input type="number" required class="form-control" id="requestID"/>
-              </a>
+            <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Enter a requestID as given by some subscription response.">
+              <input type="number" required class="form-control" id="requestID"/>
             </div>
           </div>
         </div>
@@ -237,13 +231,11 @@
                 <span class="glyphicon glyphicon-credit-card" aria-hidden="true"></span>
                 callback:
               </label>
-              <div class="col-md-8 col-lg-9">
-                <a data-toggle="tooltip" title="Url for server which receives responses with http POST methods.">
-                  <div class="input-group">
-                    <input type="url" class="form-control" id="callback"/>
-                    <div class="input-group-addon">URL</div>
-                  </div>
-                </a>
+              <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Url for server which receives responses with http POST methods.">
+                <div class="input-group">
+                  <input type="url" class="form-control" id="callback"/>
+                  <div class="input-group-addon">URL</div>
+                </div>
               </div>
             </div>
             <div class="form-group">
@@ -253,18 +245,14 @@
                 </div>
                 <div class="form-group">
                   <label for="newest" class="control-label text-nowrap col-md-4 col-lg-3">Newest:</label>
-                  <div class="col-md-8 col-lg-9">
-                    <a data-toggle="tooltip" title="Number of the top newest values to request.">
-                      <input type="number" class="form-control" id="newest"/>
-                    </a>
+                  <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Number of the top newest values to request.">
+                    <input type="number" class="form-control" id="newest"/>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="oldest" class="control-label text-nowrap col-md-4 col-lg-3">Oldest:</label>
-                  <div class="col-md-8 col-lg-9">
-                    <a data-toggle="tooltip" title="Number of the top oldest values to request.">
-                      <input type="number" class="form-control" id="oldest"/>
-                    </a>
+                  <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Number of the top oldest values to request.">
+                    <input type="number" class="form-control" id="oldest"/>
                   </div>
                 </div>
               </div>
@@ -277,42 +265,26 @@
                 </div>
                 <div class="form-group">
                   <label for="begin" class="control-label text-nowrap col-md-4 col-lg-3">begin:</label>
-                  <div class="col-md-8 col-lg-9">
-                    <a data-toggle="tooltip" title="Request values older than this." data-placement="right">
-                      <div class='input-group date' id='beginpicker'>
-                        <input id="begin" type='text' class="form-control" />
-                        <span class="input-group-addon">
-                          <span class="glyphicon glyphicon-calendar"></span>
-                        </span>
-                      </div>
-                    </a>
+                  <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Request values older than this." data-placement="right">
+                    <div class='input-group date' id='beginpicker'>
+                      <input id="begin" type='text' class="form-control" />
+                      <span class="input-group-addon" onclick="javascript: $(this).closest('.date').find('input').focus()">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="end" class="control-label text-nowrap col-md-4 col-lg-3">end:</label>
-                  <div class="col-md-8 col-lg-9">
-                    <a data-toggle="tooltip" title="Request values newer than this." data-placement="right">
-                      <div class='input-group date' id='endpicker'>
-                        <input id="end" type='text' class="form-control" />
-                        <span class="input-group-addon">
-                          <span class="glyphicon glyphicon-calendar"></span>
-                        </span>
-                      </div>
-                    </a>
+                  <div class="col-md-8 col-lg-9" data-toggle="tooltip" title="Request values newer than this." data-placement="right">
+                    <div class='input-group date' id='endpicker'>
+                      <input id="end" type='text' class="form-control" />
+                      <span class="input-group-addon" onclick="javascript: $(this).closest('.date').find('input').focus()">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="form-group">
-              <div class="checkbox text-nowrap col-md-offset-4 col-lg-offset-0 col-lg-6">
-                <label style="font-weight:bold;">
-                  <input type="checkbox" id="MetaData" disabled/> Request MetaData
-                </label>
-              </div>
-              <div class="checkbox text-nowrap col-md-offset-4 col-lg-offset-0 col-lg-6" style="display:none;">
-                <label style="font-weight:bold;">
-                  <input type="checkbox" id="description" disabled/> Request description
-                </label>
               </div>
             </div>
           </div>
