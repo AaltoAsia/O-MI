@@ -12,20 +12,26 @@
   limitations under the License.
 **/
 package types
+package OmiTypes
 
 import OdfTypes._
 
 import java.sql.Timestamp
 import java.lang.Iterable
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
+import scala.language.existentials
 
 import scala.concurrent.duration._
 
-/** Object containing internal types used to represent O-MI request.
-  *
-  **/
-object OmiTypes{
+/**
+ * Package containing classes presenting O-MI request interanlly. 
+ *
+ */
+object `package` {
 
+  type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
+  def getPaths(request: OdfRequest) = getLeafs(request.odf).map{ _.path }.toSeq
+}
 
   /**
    * Trait that represents any Omi request. Provides some data that are common
@@ -140,16 +146,3 @@ case class OmiResult(
   odf: Option[OdfTypes.OdfObjects] = None
 ) 
 
-  type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
-  def getRequests( omi: OmiParseResult ) : Iterable[OmiRequest] = 
-    omi match{
-      case Right(requests: Iterable[OmiRequest]) => requests
-      case _ => asJavaIterable(Seq.empty[OmiRequest])
-    }
-  def getErrors( omi: OmiParseResult ) : Iterable[ParseError] = 
-    omi match{
-      case Left( pes: Iterable[ParseError]) => pes
-      case _ => asJavaIterable(Seq.empty[ParseError])
-    }
-  def getPaths(request: OdfRequest) = getLeafs(request.odf).map{ _.path }.toSeq
-}
