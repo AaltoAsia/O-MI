@@ -68,9 +68,10 @@
       <div class="collapse navbar-collapse" id="navbar-collapse">
         <ul class="nav navbar-nav navbar-left">
           <li>
-            <p id="versionNumber" class="navbar-text">
-              <b>v0.1.7</b> <small> -- 2015-08-10</small>
+            <p class="navbar-text">
+              <b id="versionNumber">Version [insert here]</b>
             </p>
+            <script type="text/javascript">$.get("../VERSION", function(data) {$("#versionNumber").text(data)})</script>
           </li>
           <li>
             <form class="navbar-form navbar-left" role="search" style="width: 400px">
