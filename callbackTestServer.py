@@ -23,10 +23,10 @@ def seperator():
     Fore.BLUE + "=" * 20 + Style.RESET_ALL
 
 import re
-emptyLinePattern = re.compile(u'(?imu)^\s*\n')
+emptyLinePattern = re.compile("(?imu)^\s*\n")
 def prettyXml(string):
     xml = parseString(string).toprettyxml("  ")
-    return emptyLinePattern.sub(u'', xml)
+    return emptyLinePattern.sub('', xml)
            
 
 
