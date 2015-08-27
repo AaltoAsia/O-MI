@@ -18,37 +18,64 @@
 ((consts, requests, omi) ->
   
   # Utility function; Clone the element above and empty its input fields 
-  cloneAbove = ->
-    target = $ this
+  # callback type: (clonedDom) -> void
+  cloneAbove = (target, callback) ->
+    target = target
       .prev()
 
-    model = target.clone()
-    model.find("input").val ""  # empty all cloned inputs
-    model.hide()  # make unvisible for animation
+    cloned = target.clone()
+    cloned.find("input").val ""  # empty all cloned inputs
+    cloned.hide()  # make unvisible for animation
 
-    target.after model  # insert after the cloned one
+    target.after cloned  # insert after the target
 
-    model.slideDown null, ->  # animation, default duration
-      # readjusts the position (see modal docs)
-      consts.infoitemDialog.modal 'handleUpdate'
+    if callback? then callback cloned
 
+    cloned.slideDown null, ->  # animation, default duration
+      # readjusts the position because of size change (see modal docs)
+      consts.infoItemDialog.modal 'handleUpdate'
+
+  # Utility; create timestamp picker gui
+  createTimestampPicker = (dom) ->
+    dom.find '.timestamp'
+      .datetimepicker
+        format: 'X' # NOTE: Current version of datetimepicker does not support unixtime
+                    # (thinks that month, year and time is not enabled)
+                    # the required change is to add the following line to isEnabled private function:
+                    # if (actualFormat.toLowerCase().indexOf('x') !== -1) return true;
+        sideBySide: true
+
+
+  notifyErrorOn = (jqElement, errorMsg) ->
+    jqElement
+      .tooltip
+        placement: "top"
+        title: errorMsg
+      .focus() # triggers the tooltip also
+      .on 'input', ->
+        $(this)
+          .tooltip 'destroy'
+          .closest '.form-group'
+            .removeClass 'has-error'
+      .closest '.form-group'
+        .addClass 'has-error'
 
   # 1. Input helpers to fill the form
   consts.afterJquery ->
-    consts.infoitemDialog = $ '#newInfoItem'
-    consts.infoitemForm   = consts.infoitemDialog.find 'form'
+    consts.infoItemDialog = $ '#newInfoItem'
+    consts.infoItemForm   = consts.infoItemDialog.find 'form'
 
-    consts.originalInfoItemForm = consts.infoitemForm.clone()
+    consts.originalInfoItemForm = consts.infoItemForm.clone()
   
     # Reset on cancel or close
-    consts.infoitemDialog
+    consts.infoItemDialog
       .on 'hide.bs.modal', ->
         resetInfoItemForm()
 
     # For binding of events
     resetInfoItemForm()
 
-    consts.infoitemDialog.find '.newInfoSubmit'
+    consts.infoItemDialog.find '.newInfoSubmit'
       .on 'click', ->
         infoitemData = readValues()
         updateOdf infoitemData
@@ -60,7 +87,7 @@
   # return an Array of objects extracted from inputs of given selector (:String)
   getGroups = (ofWhat, requiredField) ->
     arr = []
-    consts.infoitemForm.find ofWhat
+    consts.infoItemForm.find ofWhat
       .each ->
         value = {}
         $(this).find ":input"
@@ -75,7 +102,7 @@
   readValues = ->
     results = {}
 
-    consts.infoitemForm.find "#infoItemName, #infoItemDescription, #infoItemParent"
+    consts.infoItemForm.find "#infoItemName, #infoItemDescription, #infoItemParent"
       .each ->
         results[this.name] = $(this).val()
 
@@ -84,6 +111,15 @@
 
     results
 
+
+  findDuplicate = (arr) ->
+    set = {}
+    for item in arr
+      if set[item]?
+        return item
+      else
+        set[item] = true
+    return null
 
   # 3. Generate the odf and update the state
   # takes input in the form which readValues returns
@@ -96,35 +132,31 @@
 
     path   = "#{parent}/#{idName}"
 
-    if $(jqesc path).length > 0 # already exists, 
+    if $(jqesc path).length > 0 # name already exists, 
       tree.select_node path
 
       # Inform the user
-      $ '#infoItemName'
-        .tooltip
-          placement: "top"
-          title: "InfoItem with this name already exists"
-        .focus() # triggers the tooltip also
-        .on 'input', ->
-          $(this)
-            .tooltip 'destroy'
-            .closest '.form-group'
-              .removeClass 'has-error'
-        .closest '.form-group'
-          .addClass 'has-error'
+      notifyErrorOn $('#infoItemName') "InfoItem with this name already exists"
 
       return # don't close
     else
 
-      # TODO: User friendlier time input
       # TODO: use validators on higher level and set gui indicators (has-success/has-error)
       v = WebOmi.consts.validators
+
 
       values =
         for valueObj in newInfoItem.values
           value: valueObj.value
           type : valueObj.valuetype
           time : v.nonEmpty valueObj.valuetime
+
+      duplicateTime = findDuplicate(values.map((val) -> val.time))
+      if duplicateTime?
+        duplicateInputs = $("input[name='valuetime']").filter((_, e) -> $(e).val() == duplicateTime)
+        notifyErrorOn duplicateInputs, "Server doesn't accept multiple values with same timestamp."
+        return # don't close
+
       metas =
         for metaObj in newInfoItem.metadatas
           name       : metaObj.metadataname
@@ -145,29 +177,32 @@
           $(jqesc node.id).data "metadatas", metas
 
       # close the dialog
-      consts.infoitemDialog.modal 'hide'
+      consts.infoItemDialog.modal 'hide'
       # reset
       resetInfoItemForm()
       return
 
   # 4. Resetting
   resetInfoItemForm = ->
-    consts.infoitemForm.replaceWith consts.originalInfoItemForm.clone()
-    consts.infoitemForm = $ consts.infoitemDialog.find 'form'
+    consts.infoItemForm.replaceWith consts.originalInfoItemForm.clone()
+    consts.infoItemForm = $ consts.infoItemDialog.find 'form'
 
     # Re-bind events
 
     # prevent any submitting fix (maybe not needed)
-    consts.infoitemForm
+    consts.infoItemForm
       .submit (event) ->
         event.preventDefault()
 
-    consts.infoitemForm.find '.btn-clone-above'
-      .on 'click', cloneAbove
+    consts.infoItemForm.find '.btn-clone-above'
+      .on 'click', -> cloneAbove $(this), createTimestampPicker # creates if there is class .timestamp
 
     # tooltips & popovers also lose some event handlers
-    consts.infoitemForm.find('[data-toggle="tooltip"]').tooltip
+    consts.infoItemForm.find('[data-toggle="tooltip"]').tooltip
       container : 'body'
+
+    # recreate complex ui widgets
+    createTimestampPicker consts.infoItemForm
 
     return
 

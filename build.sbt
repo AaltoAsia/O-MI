@@ -2,6 +2,7 @@ import com.github.retronym.SbtOneJar
 import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
+import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 
 addCommandAlias("release", "universal:package-bin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
@@ -15,67 +16,58 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
-  )
+  ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;")
 
 lazy val omiNode = (project in file("O-MI Node")).
   settings(
     (commonSettings("Backend") ++ Seq(
-	parallelExecution in Test := false,
-	Revolver.settings,
-	cleanFiles <++= baseDirectory {_ * "*.db" get},
-	libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies
-	)):_*
-  )
+      parallelExecution in Test := false,
+      Revolver.settings,
+      cleanFiles <++= baseDirectory { _ * "*.db" get },
+      libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
 
-
-  
 lazy val agents = (project in file("Agents")).
-  settings(commonSettings("Agents"): _*
-  ).
+  settings(commonSettings("Agents"): _*).
   settings(
-    libraryDependencies ++= commonDependencies
-  ).
-  dependsOn(omiNode)
-  
+    libraryDependencies ++= commonDependencies).
+    dependsOn(omiNode)
+
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
     (commonSettings("Node") ++ Seq(
-      maintainer := "John Smith <john.smith@example.com>",
-      packageDescription := "TempName",
-      packageSummary := "TempName",
-	  resourceGenerators in Compile <+= (baseDirectory in Compile, version) map{ (dir, currentVersion) =>
-	    val file = dir / "html" / "VERSION"
-		IO.write(file, s"${currentVersion}")
-		Seq(file)
-	  },
+      maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
+      packageDescription := "Internet of Things data server",
+      packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
+      serverLoading in Debian := SystemV,
+      resourceGenerators in Compile <+= (baseDirectory in Compile, version) map { (dir, currentVersion) =>
+        val file = dir / "html" / "VERSION"
+        IO.write(file, s"${currentVersion}")
+        Seq(file)
+      },
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       mainClass in Compile := Some("http.Boot"),
       mappings in Universal <++= baseDirectory map (src => directory(src / "html")),
-	  mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
-	  mappings in Universal <+=  (packageBin in Compile, sourceDirectory in omiNode) map { (_,src) =>
-	    val conf = src / "main" / "resources" / "application.conf"
-	    conf -> "conf/application.conf"
+      mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
+      mappings in Universal <+= (packageBin in Compile, sourceDirectory in omiNode) map { (_, src) =>
+        val conf = src / "main" / "resources" / "application.conf"
+        conf -> "conf/application.conf"
       },
-	  mappings in Universal <++= (packageDoc in Compile in omiNode, target in omiNode) map {(_, target) =>
-	    directory(target / "scala-2.11" / "api")
+      mappings in Universal <++= (packageDoc in Compile in omiNode, target in omiNode) map { (_, target) =>
+        directory(target / "scala-2.11" / "api")
       },
-	  mappings in Universal <++= baseDirectory map { base => 
-		Seq(
+      mappings in Universal <++= baseDirectory map { base =>
+        Seq(
           base / "SmartHouse.xml" -> "SmartHouse.xml",
           base / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
           base / "callbackTestServer.py" -> "callbackTestServer.py",
-          base / "README.md" -> "README.md"
-		)
-	  }
-	)):_*).
-  aggregate(omiNode,agents).
-  dependsOn(omiNode,agents)
+          base / "README-release.md" -> "README.md")
+      })): _*).
+    aggregate(omiNode, agents).
+    dependsOn(omiNode, agents)
 
-  
-  // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
-  tomcat()
+// Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
+tomcat()
 // jetty()
 
   

@@ -21,6 +21,7 @@ import spray.http.HttpHeaders.RawHeader
 import MediaTypes._
 
 import responses.RequestHandler
+import responses.OmiGenerator._
 import parsing.OmiParser
 import types.{Path, OmiTypes}
 import OmiTypes._
@@ -171,9 +172,9 @@ trait OmiService
                   if ( hasPermissionTest(req) ) {
                     requestHandler.handleRequest(req)
                   } else {
-                    (requestHandler.unauthorized, 401)
+                    (unauthorized, 401)
                   }
-                case _ =>  (requestHandler.notImplemented, 501)
+                case _ =>  (notImplemented, 501)
               }
 
               complete((returnCode, response))
@@ -182,7 +183,7 @@ trait OmiService
 
               log.warning("Parse Errors: {}", errors.mkString(", "))
 
-              val errorResponse = requestHandler.parseError(errors.toSeq:_*)
+              val errorResponse = parseError(errors.toSeq:_*)
 
               complete((400, errorResponse))
           }
