@@ -151,13 +151,6 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case Failure(e: IllegalArgumentException) =>
         (invalidRequest(e.getMessage), 400)
 
-      case Failure(e: RequestHandlingException) =>
-        actionOnInternalError(e)
-        (
-          xmlFromResults(
-            1.0,
-            Results.simple(e.errorCode.toString, Some(e.getMessage()))),
-            501)
       case Failure(e) =>
         actionOnInternalError(e)
         (
@@ -343,14 +336,17 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
                 returnCode = 501
                 Results.internalError()
               }
+              case true => Results.success
+              case false =>
+                returnCode = 404
+                Results.notFoundSub
+              case _ => // shouldn't be possible but type is Any
+                returnCode = 501
+                Results.internalError()
             }
           case Failure(n: NumberFormatException) => {
             returnCode = 400
             Results.simple(returnCode.toString, Some("Invalid requestID"))
-          }
-          case Failure(e: RequestHandlingException) => {
-            returnCode = e.errorCode
-            Results.simple(returnCode.toString, Some(e.msg))
           }
           case Failure(e) => {
             returnCode = 501
@@ -433,5 +429,4 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case None => None
     }
   }
-  case class RequestHandlingException(errorCode: Int, msg: String) extends Exception(msg)
 }

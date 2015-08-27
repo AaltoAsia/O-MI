@@ -13,11 +13,7 @@
 **/
 package http
 
-import akka.actor.ActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ActorSystem, Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem}
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
  

@@ -30,15 +30,6 @@ class  OdfInfoItemImpl(
   metaData:             Option[OdfMetaData] = None
 ){
 
-  /** Constructor for (Path, OdfValue) pair */
-  def apply( data: ( Path, OdfValue ) ) : OdfInfoItem = {
-    val (path, odfValue) = data
-    OdfInfoItem(path, Iterable( odfValue))
-  }
-  /** Constructor for Path and parameters for a OdfValue*/
-  def apply(path: Path, timestamp: Timestamp, value: String, valueType: String = "") : OdfInfoItem = 
-    OdfInfoItem(path, Iterable( OdfValue(value, valueType, Some(timestamp))))
-
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfInfoItem) : OdfInfoItem ={
     require(path == another.path, "Should have same paths")

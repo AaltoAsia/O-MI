@@ -86,7 +86,7 @@ constsExt = ($, parent) ->
           parent = tree.get_node data.reference
           $ '#infoItemParent'
             .val parent.id
-          WebOmi.consts.infoitemDialog.modal "show"
+          WebOmi.consts.infoItemDialog.modal "show"
 
     add_obj :
       createNode "an", "Object", "object", "MyObject"
