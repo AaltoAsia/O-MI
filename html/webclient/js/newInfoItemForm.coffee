@@ -46,6 +46,20 @@
         sideBySide: true
 
 
+  notifyErrorOn = (jqElement, errorMsg) ->
+    jqElement
+      .tooltip
+        placement: "top"
+        title: errorMsg
+      .focus() # triggers the tooltip also
+      .on 'input', ->
+        $(this)
+          .tooltip 'destroy'
+          .closest '.form-group'
+            .removeClass 'has-error'
+      .closest '.form-group'
+        .addClass 'has-error'
+
   # 1. Input helpers to fill the form
   consts.afterJquery ->
     consts.infoItemDialog = $ '#newInfoItem'
@@ -98,6 +112,15 @@
     results
 
 
+  findDuplicate = (arr) ->
+    set = {}
+    for item in arr
+      if set[item]?
+        return item
+      else
+        set[item] = true
+    return null
+
   # 3. Generate the odf and update the state
   # takes input in the form which readValues returns
   updateOdf = (newInfoItem) ->
@@ -109,35 +132,31 @@
 
     path   = "#{parent}/#{idName}"
 
-    if $(jqesc path).length > 0 # already exists, 
+    if $(jqesc path).length > 0 # name already exists, 
       tree.select_node path
 
       # Inform the user
-      $ '#infoItemName'
-        .tooltip
-          placement: "top"
-          title: "InfoItem with this name already exists"
-        .focus() # triggers the tooltip also
-        .on 'input', ->
-          $(this)
-            .tooltip 'destroy'
-            .closest '.form-group'
-              .removeClass 'has-error'
-        .closest '.form-group'
-          .addClass 'has-error'
+      notifyErrorOn $('#infoItemName') "InfoItem with this name already exists"
 
       return # don't close
     else
 
-      # TODO: User friendlier time input
       # TODO: use validators on higher level and set gui indicators (has-success/has-error)
       v = WebOmi.consts.validators
+
 
       values =
         for valueObj in newInfoItem.values
           value: valueObj.value
           type : valueObj.valuetype
           time : v.nonEmpty valueObj.valuetime
+
+      duplicateTime = findDuplicate(values.map((val) -> val.time))
+      if duplicateTime?
+        duplicateInputs = $("input[name='valuetime']").filter((_, e) -> $(e).val() == duplicateTime)
+        notifyErrorOn duplicateInputs, "Server doesn't accept multiple values with same timestamp."
+        return # don't close
+
       metas =
         for metaObj in newInfoItem.metadatas
           name       : metaObj.metadataname
