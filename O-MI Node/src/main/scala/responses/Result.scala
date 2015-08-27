@@ -12,7 +12,6 @@
   limitations under the License.
 **/
 package responses
-package Results
 
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.scalaxb
@@ -22,10 +21,11 @@ import scala.language.existentials
 import OmiGenerator.{omiResult, omiReturn, odfMsg}
 import parsing.xmlGen.defaultScope
 
-/** Package containing helper mehtods for generating RequestResultTypes. Used to generate results  for requests.
+/** 
+  * Object containing helper mehtods for generating RequestResultTypes. Used to generate results  for requests.
   *
   **/
-object `package`{
+object Results{
 
   /** O-MI result for request that caused internal server error. 
     * @return O-MI result tag.
@@ -146,3 +146,5 @@ object `package`{
 
 }
 import Results._
+    /** Package needs one class to have documentation, sbt doc fails*/
+    case class DocumentationForcer()
