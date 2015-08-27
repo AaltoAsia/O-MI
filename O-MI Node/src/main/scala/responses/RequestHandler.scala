@@ -149,13 +149,6 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case Failure(e: IllegalArgumentException) =>
         (invalidRequest(e.getMessage), 400)
 
-      case Failure(e: RequestHandlingException) =>
-        actionOnInternalError(e)
-        (
-          xmlFromResults(
-            1.0,
-            Result.simple(e.errorCode.toString, Some(e.getMessage()))),
-            501)
       case Failure(e) =>
         actionOnInternalError(e)
         (
@@ -340,22 +333,16 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             // NOTE: ttl will timeout from OmiService
             Await.result(removeFuture, Duration.Inf) match {
               case true => Result.success
-              case false => {
+              case false =>
                 returnCode = 404
                 Result.notFoundSub
-              }
-              case _ => {
+              case _ => // shouldn't be possible but type is Any
                 returnCode = 501
                 Result.internalError()
-              }
             }
           case Failure(n: NumberFormatException) => {
             returnCode = 400
             Result.simple(returnCode.toString, Some("Invalid requestID"))
-          }
-          case Failure(e: RequestHandlingException) => {
-            returnCode = e.errorCode
-            Result.simple(returnCode.toString, Some(e.msg))
           }
           case Failure(e) => {
             returnCode = 501
@@ -380,9 +367,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
   }
 
-  def notFound = xmlFromResults(
-    1.0,
-    Result.notFound)
+  /** TODO: Move these to somewhere else */
   def success = xmlFromResults(
     1.0,
     Result.success)
@@ -405,13 +390,8 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       1.0,
       Result.simple("400",
         Some("Invalid callback address: " + err)))
-  def internalError(e: Throwable) =
-    xmlFromResults(
-      1.0,
-      Result.simple("501", Some("Internal server error: " + e.getMessage())))
-  def timeOutError = xmlFromResults(
-    1.0,
-    Result.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?")))
+
+
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
@@ -470,5 +450,4 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case None => None
     }
   }
-  case class RequestHandlingException(errorCode: Int, msg: String) extends Exception(msg)
 }

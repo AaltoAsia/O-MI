@@ -102,6 +102,7 @@ class ExternalAgentHandler(
           log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
         case Right(odf) => 
           InputPusher.handleOdf(odf)
+        case _ => // not possible
       }
     }
     case PeerClosed =>
