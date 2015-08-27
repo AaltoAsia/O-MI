@@ -382,87 +382,8 @@
                   </div>
                   <div class="row">
                     <label class="control-label col-md-6">Type
-                      <a data-toggle="tooltip" title="Optionally select xml type to be saved as a metadata for this value." data-placement="top">
-                        <select name="valuetype" class="form-control">
-                          <option value="">[no type]</option>               
-                          <option>int</option>               
-                          <option>byte</option>              
-                          <option>short</option>             
-                          <option>long</option>              
-                          <option>float</option>             
-                          <option>double</option>            
-                          <option>integer</option>           
-                          <option>nonPositiveInteger</option>
-                          <option>negativeInteger</option>   
-                          <option>nonNegativeInteger</option>
-                          <option>positiveInteger</option>   
-                          <option>unsignedLong</option>      
-                          <option>unsignedInt</option>       
-                          <option>unsignedShort</option>     
-                          <option>unsignedByte</option>      
-                          <option>decimal</option>           
-                          <option>boolean</option>           
-                          <option selected>string</option>            
-                          <option>normalizedString</option>  
-                          <option>token</option>             
-                          <option>language</option>          
-                          <option>Name</option>              
-                          <option>NCName</option>            
-                          <option>NMTOKEN</option>           
-                          <option>NMTOKENS</option>          
-                          <option>ID</option>                
-                          <option>IDREF</option>             
-                          <option>IDREFS</option>            
-                          <option>ENTITY</option>            
-                          <option>ENTITIES</option>          
-                          <option>hexBinary</option>         
-                          <option>base64Binary</option>      
-                          <option>anyURI</option>            
-                          <option>QName</option>             
-                          <option>NOTATION</option>          
-                          <option>duration</option>          
-                          <option>dateTime</option>          
-                          <option>time</option>              
-                          <option>gYearMonth</option>        
-                          <option>gYear</option>             
-                          <option>gMonthDay</option>         
-                          <option>gDay</option>              
-                          <option>gMonth</option>            
-                        </select>
-                      </a>
-                    </label>
-                    <label class="control-label col-md-6">Unix Time
-                      <a data-toggle="tooltip" title="Optionally input timestamp for the value. If omitted, server will fill in the current time. NOTE: There cannot be two values with same time." data-placement="top">
-                        <input name="valuetime" type="number" class="form-control">
-                      </a>
-                    </label>
-                  </div>
-                </div>
-                <button type="button" class="btn btn-info form-control btn-clone-above"><b>+</b></button>
-              </div>
-            </div>
-
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h4 class="panel-title">
-                  <b>MetaData</b>
-                </h4>
-              </div>
-              <div class="panel-body">
-                <div class="well metadata-group form-group container-fluid" style="display:none;">
-                  <label class="control-label col-md-12">Name*
-                    <a data-toggle="tooltip" title="Optionally input some metadata. The name could be some descriptive title, e.g. 'Sensor manufacturer' or 'Max value'" data-placement="top">
-                      <input name="metadataname" type="text" class="form-control">
-                    </a>
-                  </label>
-                  <label class="control-label col-md-12">Value*
-                    <a data-toggle="tooltip" title="Enter a value for this metadata. This can be anything." data-placement="top">
-                      <input name="metadatavalue" type="text" class="form-control">
-                    </a>
-                  </label>
-                  <label class="control-label col-md-12">Type
-                    <a data-toggle="tooltip" title="Optionally select a type for metadata value. It will just be extra metadata." data-placement="top">
-                      <select name="metadatatype" class="form-control">
+                      <select name="valuetype" class="form-control"
+                        data-toggle="tooltip" title="Optionally select xml type to be saved as a metadata for this value." data-placement="top">
                         <option value="">[no type]</option>               
                         <option>int</option>               
                         <option>byte</option>              
@@ -508,7 +429,90 @@
                         <option>gDay</option>              
                         <option>gMonth</option>            
                       </select>
+                    </label>
+                    <div class="col-md-6">
+                      <label class="control-label" style="margin-bottom:0;">Unix Time</label>
+                      <div data-toggle="tooltip" title="Optionally input timestamp for the value. If omitted, server will fill in the current time. NOTE: There cannot be two values with same time." data-placement="top">
+                        <div class='input-group date timestamp'>
+                          <input name="valuetime" type="text" class="form-control">
+                          <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-time"></span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-info form-control btn-clone-above"><b>+</b></button>
+              </div>
+            </div>
+
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <b>MetaData</b>
+                </h4>
+              </div>
+              <div class="panel-body">
+                <div class="well metadata-group form-group container-fluid" style="display:none;">
+                  <label class="control-label col-md-12">Name*
+                    <a data-toggle="tooltip" title="Optionally input some metadata. The name could be some descriptive title, e.g. 'Sensor manufacturer' or 'Max value'" data-placement="top">
+                      <input name="metadataname" type="text" class="form-control">
                     </a>
+                  </label>
+                  <label class="control-label col-md-12">Value*
+                    <a data-toggle="tooltip" title="Enter a value for this metadata. This can be anything." data-placement="top">
+                      <input name="metadatavalue" type="text" class="form-control">
+                    </a>
+                  </label>
+                  <label class="control-label col-md-12">Type
+                    <select name="metadatatype" class="form-control"
+                      data-toggle="tooltip" title="Optionally select a type for metadata value. It will just be extra metadata." data-placement="top">
+                      <option value="">[no type]</option>               
+                      <option>int</option>               
+                      <option>byte</option>              
+                      <option>short</option>             
+                      <option>long</option>              
+                      <option>float</option>             
+                      <option>double</option>            
+                      <option>integer</option>           
+                      <option>nonPositiveInteger</option>
+                      <option>negativeInteger</option>   
+                      <option>nonNegativeInteger</option>
+                      <option>positiveInteger</option>   
+                      <option>unsignedLong</option>      
+                      <option>unsignedInt</option>       
+                      <option>unsignedShort</option>     
+                      <option>unsignedByte</option>      
+                      <option>decimal</option>           
+                      <option>boolean</option>           
+                      <option selected>string</option>            
+                      <option>normalizedString</option>  
+                      <option>token</option>             
+                      <option>language</option>          
+                      <option>Name</option>              
+                      <option>NCName</option>            
+                      <option>NMTOKEN</option>           
+                      <option>NMTOKENS</option>          
+                      <option>ID</option>                
+                      <option>IDREF</option>             
+                      <option>IDREFS</option>            
+                      <option>ENTITY</option>            
+                      <option>ENTITIES</option>          
+                      <option>hexBinary</option>         
+                      <option>base64Binary</option>      
+                      <option>anyURI</option>            
+                      <option>QName</option>             
+                      <option>NOTATION</option>          
+                      <option>duration</option>          
+                      <option>dateTime</option>          
+                      <option>time</option>              
+                      <option>gYearMonth</option>        
+                      <option>gYear</option>             
+                      <option>gMonthDay</option>         
+                      <option>gDay</option>              
+                      <option>gMonth</option>            
+                    </select>
                   </label>
                   <label class="control-label col-md-12">description
                     <a data-toggle="tooltip" title="Optionally enter some extra description for this metadata." data-placement="top">

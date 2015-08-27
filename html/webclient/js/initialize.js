@@ -72,7 +72,7 @@
             tree = WebOmi.consts.odfTree;
             parent = tree.get_node(data.reference);
             $('#infoItemParent').val(parent.id);
-            return WebOmi.consts.infoitemDialog.modal("show");
+            return WebOmi.consts.infoItemDialog.modal("show");
           }
         }),
         add_obj: createNode("an", "Object", "object", "MyObject"),
