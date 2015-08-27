@@ -42,9 +42,9 @@ lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
     (commonSettings("Node") ++ Seq(
-    //maintainer := "John Smith <john.smith@example.com>",
-    //packageDescription := "TempName",
-    //packageSummary := "TempName",
+      maintainer := "John Smith <john.smith@example.com>",
+      packageDescription := "TempName",
+      packageSummary := "TempName",
 	  resourceGenerators in Compile <+= (baseDirectory in Compile, version) map{ (dir, currentVersion) =>
 	    val file = dir / "html" / "VERSION"
 		IO.write(file, s"${currentVersion}")
