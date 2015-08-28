@@ -38,6 +38,7 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import ExecutionContext.Implicits.global
 
 import database._
+import OmiGenerator._
 
 
 // MESSAGES
@@ -371,9 +372,9 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         val id = sub.id
         log.debug(s"Sending data to event sub: $id.")
         val callbackAddr = sub.callback.getOrElse("")
-        val xmlMsg = requestHandler.xmlFromResults(
+        val xmlMsg = xmlFromResults(
           1.0,
-          Result.poll(id.toString, odf))
+          Results.poll(id.toString, odf))
         log.info(s"Sending in progress; Subscription subId:${id} addr:$callbackAddr interval:-1")
         //log.debug("Send msg:\n" + xmlMsg)
 

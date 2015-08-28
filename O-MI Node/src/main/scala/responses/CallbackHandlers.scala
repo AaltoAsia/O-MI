@@ -46,7 +46,7 @@ object CallbackHandlers {
       
       responseFuture map { response =>
 
-        if (response.status.isSuccess)
+        if (response.status.isSuccess)//Content of response will not be handled.
           CallbackSuccess
         else
           HttpError(response.status)

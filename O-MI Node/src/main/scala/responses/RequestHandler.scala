@@ -38,8 +38,10 @@ import java.net.{ URL, InetAddress, UnknownHostException }
 import scala.xml.{ NodeSeq, XML }
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import OmiGenerator._
+import parsing.xmlGen.defaultScope
 /**
- * Class for handling all request.
+ * Actor for handling all request.
  *
  */
 class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
@@ -104,7 +106,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               (
                 xmlFromResults(
                   1.0,
-                  Result.simple("200", Some("OK, callback job started"))),
+                  Results.simple("200", Some("OK, callback job started"))),
                   200)
             }
           }
@@ -144,7 +146,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         (
           xmlFromResults(
             1.0,
-            Result.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))),
+            Results.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))),
             500)
       case Failure(e: IllegalArgumentException) =>
         (invalidRequest(e.getMessage), 400)
@@ -154,7 +156,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         (
           xmlFromResults(
             1.0,
-            Result.simple("501", Some("Internal server error: " + e.getMessage()))),
+            Results.simple("501", Some("Internal server error: " + e.getMessage()))),
             501)
     }
   }
@@ -203,7 +205,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               InputPusher.handleObjects(odf.objects)
             case None =>//noop?
           }
-          Result.success
+          Results.success
         }.toSeq:_*
       ),
       200
@@ -216,45 +218,26 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleSubData(subdata)
     }
     case _ => {
-      (xmlFromResults(1.0, Result.simple("500", Some("Unknown request."))), 500)
+      (xmlFromResults(1.0, Results.simple("500", Some("Unknown request."))), 500)
     }
   }
 
-  private[this] val scope = scalaxb.toScope(
-    None -> "odf.xsd",
-    Some("omi") -> "omi.xsd",
-    Some("xs") -> "http://www.w3.org/2001/XMLSchema",
-    Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance")
-  def wrapResultsToResponseAndEnvelope(ttl: Double, results: xmlTypes.RequestResultType*) = {
-    OmiGenerator.omiEnvelope(ttl, "response", OmiGenerator.omiResponse(results: _*))
-  }
-
-  def xmlFromResults(ttl: Double, results: xmlTypes.RequestResultType*) = {
-    xmlMsg(wrapResultsToResponseAndEnvelope(ttl, results: _*))
-  }
-
-  /**
-   * Generates xml from xmlTypes
-   *
-   * @param envelope xmlType for OmiEnvelope containing response
-   * @return xml.NodeSeq containing response
-   */
-  def xmlMsg(envelope: xmlTypes.OmiEnvelope) = {
-    scalaxb.toXML[xmlTypes.OmiEnvelope](envelope, Some("omi.xsd"), Some("omiEnvelope"), scope)
-  }
-
+  /** Method for handling ReadRequest.
+    * @param read request
+    * @return (xml response, HTTP status code)
+    */
   def handleRead(read: ReadRequest): (NodeSeq, Int) = {
     val objectsO: Option[OdfObjects] = dbConnection.getNBetween(getLeafs(read.odf), read.begin, read.end, read.newest, read.oldest)
 
     objectsO match {
       case Some(objects) =>
-        val found = Result.read(objects)
+        val found = Results.read(objects)
         val requestsPaths = getLeafs(read.odf).map { _.path }
         val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
         val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
         var results = Seq(found)
         if (notFound.nonEmpty)
-          results ++= Seq(Result.simple("404",
+          results ++= Seq(Results.simple("404",
             Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
 
         (
@@ -264,10 +247,14 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             200)
       case None =>
         (xmlFromResults(
-          1.0, Result.notFound), 404)
+          1.0, Results.notFound), 404)
     }
   }
 
+  /** Method for handling PollRequest.
+    * @param poll request
+    * @return (xml response, HTTP status code)
+    */
   def handlePoll(poll: PollRequest): (NodeSeq, Int) = {
     val time = date.getTime
     val results =
@@ -277,9 +264,9 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
         objectsO match {
           case Some(objects) =>
-            Result.poll(id.toString, objects)
+            Results.poll(id.toString, objects)
           case None =>
-            Result.notFoundSub(id.toString)
+            Results.notFoundSub(id.toString)
         }
       }
     val returnTuple = (
@@ -291,21 +278,25 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     returnTuple
   }
 
+  /** Method for handling SubscriptionRequest.
+    * @param subscription request
+    * @return (xml response, HTTP status code)
+    */
   def handleSubscription(subscription: SubscriptionRequest): (NodeSeq, Int) = {
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
     val (response, returnCode) =
       Await.result(subFuture, Duration.Inf) match {
         case Failure(e: IllegalArgumentException) =>
-          (Result.invalidRequest(e.getMessage), 400)
+          (Results.invalidRequest(e.getMessage), 400)
         case Failure(t) =>
-          (Result.internalError(
+          (Results.internalError(
             s"Internal server error when trying to create subscription: ${t.getMessage}"),
             500)
         case Success(id: Long) =>
-          (Result.subscription(id.toString), 200)
+          (Results.subscription(id.toString), 200)
         case Success(received) =>
-          (Result.internalError(
+          (Results.internalError(
             s"Internal server error: Invalid response type from SubscriptionHandler: ${received.getClass().getName}"),
             500)
       }
@@ -316,6 +307,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         returnCode)
   }
 
+  /** Method for handling CancelRequest.
+    * @param cancel request
+    * @return (xml response, HTTP status code)
+    */
   def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
@@ -332,21 +327,30 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           case Success(removeFuture) =>
             // NOTE: ttl will timeout from OmiService
             Await.result(removeFuture, Duration.Inf) match {
-              case true => Result.success
+              case true => Results.success
+              case false => {
+                returnCode = 404
+                Results.notFoundSub
+              }
+              case _ => {
+                returnCode = 501
+                Results.internalError()
+              }
+              case true => Results.success
               case false =>
                 returnCode = 404
-                Result.notFoundSub
+                Results.notFoundSub
               case _ => // shouldn't be possible but type is Any
                 returnCode = 501
-                Result.internalError()
+                Results.internalError()
             }
           case Failure(n: NumberFormatException) => {
             returnCode = 400
-            Result.simple(returnCode.toString, Some("Invalid requestID"))
+            Results.simple(returnCode.toString, Some("Invalid requestID"))
           }
           case Failure(e) => {
             returnCode = 501
-            Result.internalError("Internal server error, when trying to cancel subscription: " + e.toString)
+            Results.internalError("Internal server error, when trying to cancel subscription: " + e.toString)
           }
         }(breakOut): _*),
         returnCode)
@@ -358,39 +362,14 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     objectsO match {
       case Some(objects) =>
         (xmlFromResults(
-          1.0, Result.poll(subdata.sub.id.toString, objects)), 200)
+          1.0, Results.poll(subdata.sub.id.toString, objects)), 200)
 
       case None =>
         (xmlFromResults(
-          1.0, Result.notFound), 404)
+          1.0, Results.notFound), 404)
     }
 
   }
-
-  /** TODO: Move these to somewhere else */
-  def success = xmlFromResults(
-    1.0,
-    Result.success)
-  def unauthorized = xmlFromResults(
-    1.0,
-    Result.unauthorized)
-  def notImplemented = xmlFromResults(
-    1.0,
-    Result.notImplemented)
-  def invalidRequest(msg: String = "") = xmlFromResults(
-    1.0,
-    Result.invalidRequest(msg))
-  def parseError(err: ParseError*) =
-    xmlFromResults(
-      1.0,
-      Result.simple("400",
-        Some(err.map { e => e.msg }.mkString("\n"))))
-  def invalidCallback(err: String) =
-    xmlFromResults(
-      1.0,
-      Result.simple("400",
-        Some("Invalid callback address: " + err)))
-
 
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
@@ -434,16 +413,16 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
           case _ =>
             return Some(Right(
-              scalaxb.toXML[xmlTypes.InfoItemType](infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), scope).headOption.getOrElse(
+              scalaxb.toXML[xmlTypes.InfoItemType](infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), defaultScope).headOption.getOrElse(
                 <error>Could not create from OdfInfoItem </error>)))
         }
       case Some(odfObj: OdfObject) =>
-        val xmlReturn = scalaxb.toXML[xmlTypes.ObjectType](odfObj.asObjectType, Some("odf"), Some("Object"), scope).headOption.getOrElse(
+        val xmlReturn = scalaxb.toXML[xmlTypes.ObjectType](odfObj.asObjectType, Some("odf"), Some("Object"), defaultScope).headOption.getOrElse(
           <error>Could not create from OdfObject </error>)
         Some(Right(xmlReturn))
 
       case Some(odfObj: OdfObjects) =>
-        val xmlReturn = scalaxb.toXML[xmlTypes.ObjectsType](odfObj.asObjectsType, Some("odf"), Some("Objects"), scope).headOption.getOrElse(
+        val xmlReturn = scalaxb.toXML[xmlTypes.ObjectsType](odfObj.asObjectsType, Some("odf"), Some("Objects"), defaultScope).headOption.getOrElse(
           <error>Could not create from OdfObjects </error>)
         Some(Right(xmlReturn))
 

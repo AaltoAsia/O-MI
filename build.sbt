@@ -2,6 +2,7 @@ import com.github.retronym.SbtOneJar
 import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
+import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 
 addCommandAlias("release", "universal:package-bin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
@@ -35,9 +36,10 @@ lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   settings(
     (commonSettings("Node") ++ Seq(
-      //maintainer := "John Smith <john.smith@example.com>",
-      //packageDescription := "TempName",
-      //packageSummary := "TempName",
+      maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
+      packageDescription := "Internet of Things data server",
+      packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
+      serverLoading in Debian := SystemV,
       resourceGenerators in Compile <+= (baseDirectory in Compile, version) map { (dir, currentVersion) =>
         val file = dir / "html" / "VERSION"
         IO.write(file, s"${currentVersion}")

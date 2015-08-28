@@ -6,6 +6,7 @@ object Dependencies {
   //Akka 
   val akkaV = "2.3.6"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
+  val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
 
   //Spray
   val sprayV = "1.3.2"
@@ -31,6 +32,9 @@ object Dependencies {
   val json4s       = "org.json4s"         %% "json4s-native"  % "3.2.11" //common
 
   //etc
+  val logback = "ch.qos.logback" % "logback-classic" % "1.0.13"
+
+
 
   val schwatcher   = "com.beachape.filemanagement" %% "schwatcher"   % "0.1.8" //common
   val commonsLang  = "commons-lang"                 % "commons-lang" % "2.6" //common
@@ -43,6 +47,8 @@ object Dependencies {
 
   val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
+    akkaSlf4j,
+    logback,
     sprayCan,
     sprayRouting,
     sprayClient,

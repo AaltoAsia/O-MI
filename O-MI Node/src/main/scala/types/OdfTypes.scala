@@ -21,6 +21,7 @@ import java.sql.Timestamp
 import java.lang.{ Iterable => JavaIterable }
 import scala.collection.JavaConversions.{ asJavaIterable, iterableAsScalaIterable }
 import scala.language.existentials
+
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
  *
