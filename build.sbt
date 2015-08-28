@@ -22,6 +22,8 @@ lazy val omiNode = (project in file("O-MI Node")).
   settings(
     (commonSettings("Backend") ++ Seq(
       parallelExecution in Test := false,
+      //packageDoc in Compile += (baseDirectory).map( _ / html
+      target in (Compile, doc) := baseDirectory.value / ".." / "html" / "api",
       Revolver.settings,
       cleanFiles <++= baseDirectory { _ * "*.db" get },
       libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
@@ -40,6 +42,8 @@ lazy val root = (project in file(".")).
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
       serverLoading in Debian := SystemV,
+      //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
+      //  n / "html" / "api"},
       resourceGenerators in Compile <+= (baseDirectory in Compile, version) map { (dir, currentVersion) =>
         val file = dir / "html" / "VERSION"
         IO.write(file, s"${currentVersion}")
@@ -54,7 +58,7 @@ lazy val root = (project in file(".")).
         conf -> "conf/application.conf"
       },
       mappings in Universal <++= (packageDoc in Compile in omiNode, target in omiNode) map { (_, target) =>
-        directory(target / "scala-2.11" / "api")
+        directory(target / "scala-2.11" / "api").map(n => (n._1, "html/" + n._2))
       },
       mappings in Universal <++= baseDirectory map { base =>
         Seq(
