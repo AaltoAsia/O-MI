@@ -12,7 +12,7 @@ Exract the package. Now you should have something like this in the directory:
 * `README.md`
 * `SmartHouse.xml`
 
-Now go to `bin/` directory with your console and run script depending on your OS:
+Now go to `bin/` directory with your console and run the start script depending on your OS:
 1. `o-mi-node.bat` for Windows
 2. `o-mi-node` for Unix and MAC
 
@@ -62,7 +62,9 @@ three white lists, one for each: IPs, subnets and Shibboleth users. These can be
 
 Agents
 ======
-
+See AgentDeveloperGuide.md for information on agents. 
+Adding custom jar file for agents is possible in bin/deploy this file is prioritized over the agents file in the lib folder.
 
 Configuration
 =============
+Configuration settings for the program are read from application.conf.

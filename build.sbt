@@ -7,9 +7,10 @@ import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 addCommandAlias("release", "universal:package-bin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
+
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.1.7-SNAPSHOT",
+  version := "0.1.8",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -25,7 +26,6 @@ lazy val omiNode = (project in file("O-MI Node")).
       //packageDoc in Compile += (baseDirectory).map( _ / html
       target in (Compile, doc) := baseDirectory.value / ".." / "html" / "api",
       Revolver.settings,
-      cleanFiles <++= baseDirectory { _ * "*.db" get },
       libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
 
 lazy val agents = (project in file("Agents")).
@@ -41,6 +41,10 @@ lazy val root = (project in file(".")).
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
+      cleanFiles <++= baseDirectory {base => Seq(
+        base / "html" / "api",
+        base / "database")
+      },
       serverLoading in Debian := SystemV,
       //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
       //  n / "html" / "api"},
@@ -57,7 +61,7 @@ lazy val root = (project in file(".")).
         val conf = src / "main" / "resources" / "application.conf"
         conf -> "conf/application.conf"
       },
-      mappings in Universal <++= (packageDoc in Compile in omiNode, target in omiNode) map { (_, target) =>
+      mappings in Universal <++= (doc in Compile in omiNode, target in omiNode) map { (_, target) =>
         directory(target / "scala-2.11" / "api").map(n => (n._1, "html/" + n._2))
       },
       mappings in Universal <++= baseDirectory map { base =>
