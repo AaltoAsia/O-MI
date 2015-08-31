@@ -67,7 +67,9 @@ lazy val root = (project in file(".")).
           base / "SmartHouse.xml" -> "SmartHouse.xml",
           base / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
           base / "callbackTestServer.py" -> "callbackTestServer.py",
-          base / "README-release.md" -> "README.md")
+          base / "README-release.md" -> "README.md",
+          base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md,
+          base / "GettingStartedGuide.md" -> "GettingStartedGuide.md")
       })): _*).
     aggregate(omiNode, agents).
     dependsOn(omiNode, agents)
