@@ -1,3 +1,16 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package database
 
 import scala.language.postfixOps
@@ -117,124 +130,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     addingAction.transactionally
   }
 
-  def addNodes(odfNodes: Seq[OdfNode] ) :Seq[(Path,Int)] = {
-    /** Query: Increase right and left values after value */
-    def increaseAfterQ(value: Int) = {
 
-      // NOTE: Slick 3.0.0 doesn't allow this query with its types, use sql instead
-      //val rightValsQ = hierarchyNodes map (_.rightBoundary) filter (_ > value) 
-      //val leftValsQ  = hierarchyNodes map (_.leftBoundary) filter (_ > value)
-      //val rightUpdateQ = rightValsQ.map(_ + 2).update(rightValsQ)
-      //val leftUpdateQ  =  leftValsQ.map(_ + 2).update(leftValsQ)
-
-      DBIO.seq(
-        sqlu"UPDATE HIERARCHYNODES SET RIGHTBOUNDARY = RIGHTBOUNDARY + 2 WHERE RIGHTBOUNDARY >= ${value}",
-        sqlu"UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY + 2 WHERE LEFTBOUNDARY > ${value}")
-    }
-
-    // @return insertId
-    def addNode(isInfoItem: Boolean)(fullpath: Path): DBIOrw[(Path, Int)] = (for {
-
-      parentO <- findParentI(fullpath)
-      parent = parentO getOrElse {
-        throw new RuntimeException(s"Didn't find root parent when creating objects, for path: $fullpath")
-      }
-
-      parentRight = parent.rightBoundary
-      left = parentRight
-      right = left + 1
-
-      _ <- increaseAfterQ(parentRight)
-      
-      insertId <- hierarchyWithInsertId += DBNode(None, fullpath, left, right, fullpath.length, "", 0, isInfoItem)
-    } yield (fullpath, insertId) ).transactionally
-
-    val addingAction = DBIO.sequence(
-      odfNodes.sortBy(_.path.length).collect{
-        case objs : OdfObjects=> 
-          addNode(false)(objs.path)
-        case obj : OdfObject=> 
-          addNode(false)(obj.path)
-        case info : OdfInfoItem=> 
-          addNode(true)(info.path)
-      }
-    ) 
-
-    // NOTE: transaction level probably could be reduced to increaseAfter + DBNode insert
-    runSync( addingAction.transactionally )
-  
-  }
-
-
-
-  /**
-   * Used to remove data before given timestamp
-   * @param path path to sensor as Path object
-   * @param timestamp that tells how old data will be removed, exclusive.
-   */
-  private[this] def removeBefore(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) = {
-
-    val infoitems = paths.keySet.collect{
-      case DBNode(Some(id),_,_,_,_,_,_,isInfoItem) if (isInfoItem)=> id
-    }.toSeq
-    
-    val historyLen = database.historyLength
-
-    val removeBeforeActions = infoitems.map { iItem =>
-      val items = for {
-        subscriptionitems <- subItems filter (subItem => subItem.hierarchyId === iItem) result
-
-        earliest <- subs.filter { sub => sub.id.inSet(subscriptionitems.map(_.subId)) }.map(_.startTime).sorted.result
-
-        time = earliest.headOption
-
-        pathQuery = latestValues filter (_.hierarchyId === iItem) sortBy (_.timestamp.asc)
-
-        qLen <- pathQuery.length.result
-
-        removeAction <- if (qLen > historyLen) for {
-
-          sortedVals <- pathQuery.result
-          oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
-
-          cutOffTime = time.fold(oldTime)(subtime => if (subtime.before(oldTime)) subtime else oldTime)
-
-          result <- latestValues.filter(value =>
-            value.hierarchyId === iItem && value.timestamp < cutOffTime).delete
-
-          asd <- latestValues.filter(value =>
-            value.hierarchyId === iItem).map(_.value).result
-
-          //           debug={
-          ////            println("removedebug:vvvvvvvvvvvvvvv")
-          ////            asd.foreach(println(_))
-          //         }
-
-          } yield result
-        else DBIO.successful((0))
-
-        //       debug = {
-        //         println(s"""
-        //earliest: $earliest
-        //time:     $time
-        //pathQuery:$pathQuery
-        //qLen:     $qLen
-        //removeAction: $removeAction
-        //timestamp:$timestamp
-        //
-        //""")
-        //       }
-
-      } yield (removeAction)
-      //     println(iItem)
-      //     println("\n" + runSync(items))
-      items
-
-    }
-
-    DBIO.sequence(removeBeforeActions)
-
-  }
 
   /**
    * Get poll data for subscription without a callback.
@@ -353,12 +249,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       removeOld <- DBIO.sequence(subData.keys.map(key => removeExcessI(key.id.get)))
 
       //      removeOld <- removeBefore(dataSorted, newTime)
-
-      //      debug = {
-      //        println(dataSorted)
-      //        println(removeOld)
-      //        println("AAAAAAAAAAAAAAAAAAAAAAAAAA")
-      //      }
 
     } yield data
     odfConversion(
@@ -554,7 +444,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } transactionally
   }
 
-  def RemoveMetaData(path: Path): Unit = {
+  /* Not used currently
+  def removeMetaData(path: Path): Unit = {
     // TODO: Is this needed at all?
     val firstNode: Option[DBNode] = runSync(hierarchyNodes.filter(_.path === path).result.headOption)
     firstNode.foreach { node => 
@@ -562,6 +453,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       runSync(qry.delete)
     }
   }
+  */
 
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
@@ -657,25 +549,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
         cutOffTime = time.fold(oldTime)(subtime => if (subtime.before(oldTime)) subtime else oldTime)
 
-//        debug = {
-//          println(s"""
-//sortedvals: $sortedVals
-//earliest: $earliest
-//time: $time
-//oldTime: $oldTime
-//cutOffTime: $cutOffTime
-//
-//""")
-//        }
         result <- 
           latestValues.filter(value =>
             value.hierarchyId === pathId && value.timestamp < cutOffTime).delete
-        
-//       debug = {
-//          println(s"""
-//result: $result
-//""")
-//}
 
       } yield result
       else DBIO.successful(0)
@@ -684,6 +560,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     removeAction.transactionally
   }
+  /* NotUsed
   def removeN(idNTuples: Seq[(Int,Int)])={
     val removes = DBIO.sequence(
     idNTuples.map{
@@ -701,67 +578,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runSync(removes.transactionally)
   
   }
+  */
 
-  //  private[this] def removeBefodre(paths: SortedMap[DBNode, Seq[DBValue]], timestamp: Timestamp) ={
-  //
-  //     val infoitems = paths.keySet.filter(_.isInfoItem).map(_.id.get).toSeq
-  //     val historyLen = database.historyLength
-  //
-  //     val removeBeforeActions = infoitems.map { iItem => 
-  //     val items = for {
-  //       subscriptionitems <- subItems filter (subItem => subItem.hierarchyId === iItem) result
-  //       
-  //       earliest <- subs.filter { sub => sub.id.inSet(subscriptionitems.map(_.subId)) }.map(_.startTime).sorted.result
-  //       
-  //       time = earliest.headOption
-  //       
-  //       pathQuery = latestValues filter (_.hierarchyId === iItem) sortBy (_.timestamp.asc)
-  //       
-  //       qLen <- pathQuery.length.result
-  //       
-  //       removeAction <- if( qLen > historyLen) for {
-  //         
-  //         sortedVals <- pathQuery.result
-  //         oldTime = sortedVals.drop(qLen - historyLen).head.timestamp
-  //         
-  //         cutOffTime = time.fold(oldTime)(subtime => if( subtime.before(oldTime) ) subtime else oldTime)
-  //         
-  //         result <- latestValues.filter(value => 
-  //           value.hierarchyId === iItem && value.timestamp < cutOffTime).delete
-  //           
-  //         asd <- latestValues.filter(value => 
-  //           value.hierarchyId === iItem).map(_.value).result
-  //           
-  //           debug={
-  //            println("removedebug:vvvvvvvvvvvvvvv")
-  //            asd.foreach(println(_))
-  //         }
-  //           
-  //       } yield result
-  //       else DBIO.successful((0))
-  //       
-  //       debug = {
-  //         println(s"""
-  //earliest: $earliest
-  //time:     $time
-  //pathQuery:$pathQuery
-  //qLen:     $qLen
-  //removeAction: $removeAction
-  //timestamp:$timestamp
-  //
-  //""")
-  //       }
-  //       
-  //     } yield (removeAction) 
-  ////     println(iItem)
-  ////     println("\n" + runSync(items))
-  //     items
-  //     
-  //     }
-  //
-  //     DBIO.sequence(removeBeforeActions)
-  //
-  //  }
   /**
    * Used to clear excess data from database for given path
    * for example after stopping buffering we want to revert to using
@@ -804,7 +622,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           _ <- subQ.delete
           
           _ <- if (!sub.hasCallback) {
-//            DBIO.sequence(subItemNodeIds.map { x => removeExcessI(x) })
+            // DBIO.sequence(subItemNodeIds.map { x => removeExcessI(x) })
             val subItemRefCountUpdates = subItemNodes map {
               case node @ DBNode(Some(nodeId),_,_,_,_,_,_,_) =>
                 val newRefCount = node.pollRefCount - 1 
@@ -814,13 +632,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                 
                 removeExcessI(nodeId)
                 
-//                if ( newRefCount == 0 ) {
-//                  removeExcessI(nodeId)
-//                }else {
-//                  val updatedNode = node.copy( pollRefCount = newRefCount )
-//
-//                  getHierarchyNodeQ(nodeId) update updatedNode
-//                }
+                // if ( newRefCount == 0 ) {
+                //   removeExcessI(nodeId)
+                // }else {
+                //   val updatedNode = node.copy( pollRefCount = newRefCount )
+                //
+                //   getHierarchyNodeQ(nodeId) update updatedNode
+                // }
             }
             DBIO.sequence(subItemRefCountUpdates)
           } else {

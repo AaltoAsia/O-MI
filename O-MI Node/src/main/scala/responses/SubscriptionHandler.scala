@@ -1,10 +1,22 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package responses
 
 import akka.actor.{ Actor, ActorLogging }
 
 import akka.util.Timeout
 
-import database._
 
 import CallbackHandlers._
 import types.OmiTypes.{ SubscriptionRequest, getPaths, SubDataRequest }
@@ -25,6 +37,10 @@ import duration._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import ExecutionContext.Implicits.global
 
+import database._
+import OmiGenerator._
+
+
 // MESSAGES
 case object HandleIntervals
 case object CheckTTL
@@ -32,10 +48,99 @@ case class RegisterRequestHandler(reqHandler: RequestHandler)
 case class NewSubscription(subscription: SubscriptionRequest)
 case class RemoveSubscription(id: Long)
 
+/** 
+ *  System for removing expired subscriptions on the background.
+ *  Requires some host Actor that has receive: case CheckTTL => checkTTL()
+ *  TODO: Currently in use for polled subs only, take this into use with all subs
+ */
+trait TTLQueue extends Actor with ActorLogging {
+  protected def currentTimestamp = new Timestamp(new Date().getTime)
+
+  /**
+   * typedef for (Long,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
+   */
+  private case class TTLTimeout(subid: Long, endTimeMillis: Long) { 
+    override def equals(o:Any): Boolean = {
+      o match{
+        case TTLTimeout(oid, _) => oid == subid
+        case _ => false
+      }
+      
+    }
+    override def hashCode = subid.hashCode()
+  }
+
+
+
+  /**
+   * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
+   */
+  private val subOrder: Ordering[TTLTimeout] = Ordering.by(_.endTimeMillis)
+
+
+  /**
+   * PriorityQueue with subOrder ordering. value with earliest timeout is first.
+   * This val is lazy and is computed when needed for the first time
+   *
+   * This queue contains only subs that have no callback address defined and have ttl > 0.
+   */
+  private val ttlQueue: ConcurrentSkipListSet[TTLTimeout] = new ConcurrentSkipListSet(subOrder)
+
+  //var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
+
+  protected def addToTTLQueue(sub: DBSub): Unit = {
+    ttlQueue.add(TTLTimeout(sub.id, (sub.ttlToMillis + sub.startTime.getTime)))
+  }
+
+  protected def removeFromTTLQueue(requestID: Long): Unit = {
+    ttlQueue.remove(TTLTimeout(requestID, 0L)) // time parameter does not matter equality only checks id
+  }
+
+
+  /**
+   * This method is called by scheduler and when new sub is added to subQueue.
+   *
+   * This method removes all subscriptions that have expired from the priority queue and
+   * schedules new checkSub method call.
+   */
+  protected def checkTTL()(implicit dbConnection: DB): Unit = {
+
+    val currentTime = currentTimestamp.getTime
+    /*
+     * this to be bit more thread safe //TODO
+     */
+    var flag = true
+    while (flag) {
+      if (!ttlQueue.isEmpty) {
+
+        val firstTTL = ttlQueue.first()
+        flag =
+          if(firstTTL.endTimeMillis <= currentTime) {
+            log.debug(s"TTL ended for sub: id:${firstTTL.subid} delay:${currentTimeMillis - firstTTL.endTimeMillis}ms")
+            removeSubscription(ttlQueue.pollFirst.subid)
+            // dbConnection.removeSub(ttlQueue.pollFirst.subId)
+          } else {
+            val nextRun = firstTTL.endTimeMillis - currentTime
+            system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
+            false
+          }
+
+      } else flag = false
+
+    }
+  }
+  protected def removeSubscription(requestID: Long) : Boolean
+}
+
+
+
+
+
+
 /**
  * Handles interval counting and event checking for subscriptions
  */
-class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLogging {
+class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLogging with TTLQueue {
 
   private[this] def date = new Date()
   implicit val timeout = Timeout(5.seconds)
@@ -141,7 +246,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         dbsub.isImmortal match {
           case false =>
             log.debug(s"Added sub as polled sub: $dbsub")
-            ttlQueue.add(PolledSub(dbsub.id, (dbsub.ttlToMillis + dbsub.startTime.getTime)))
+            addToTTLQueue(dbsub)
             self ! CheckTTL
           case true => //noop
         }
@@ -152,10 +257,10 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param id The id of subscription to remove
    * @return true on success
    */
-  private[this] def removeSub(subId: Long): Boolean = {
+  protected def removeSubscription(subId: Long): Boolean = {
     log.debug(s"Removing sub $subId...")
     dbConnection.getSub(subId) match {
-      case Some(dbsub) => removeSub(dbsub)
+      case Some(dbsub) => removeSubscription(dbsub)
       case None        => false
     }
   }
@@ -164,7 +269,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    * @param sub The subscription to remove
    * @return true on success
    */
-  private[this] def removeSub(sub: DBSub): Boolean = {
+  protected def removeSubscription(sub: DBSub): Boolean = {
     sub.isEventBased match {
       case true =>
         val removedPaths = dbConnection.getSubscribedPaths(sub.id)
@@ -186,7 +291,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           case true =>
             intervalSubs.find(sub.id == _.id).foreach { intervalSub => intervalSubs -= intervalSub } //intervalSubs.filterNot(sub.id == _.id)
           case false => 
-            ttlQueue.remove(PolledSub(sub.id, 404L)) // Long parameter does not matter equality only checks id
+            removeFromTTLQueue(sub.id)
         }
     }
     dbConnection.removeSub(sub.id)
@@ -200,7 +305,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
 
-    case RemoveSubscription(requestID) => sender() ! removeSub(requestID)
+    case RemoveSubscription(requestID) => sender() ! removeSubscription(requestID)
 
     case RegisterRequestHandler(reqHandler: RequestHandler) => requestHandler = reqHandler
   }
@@ -210,21 +315,18 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
    */
   def checkEventSubs(items: Seq[OdfInfoItem]): Unit = {
     val checkTime = currentTimeMillis()
-//    log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
-//    log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
+    // log.debug("EventCheck for:\n" + items.map(_.path.toString).mkString("\n"))
+    // log.debug("EventCheck against:\n" + eventSubs.keys.mkString("\n"))
     
     val idItemLastVal = items.flatMap { item =>
       val itemPaths = item.path.getParentsAndSelf.map(_.toString)
       val subItemTuples = itemPaths.flatMap(path => eventSubs.get(path)).flatten.filter { 
-        case EventSub(sub,_) => if(hasTTLEnded(sub, checkTime)){
-          removeSub(sub)
-          false
-        } else true
-        }
-//        eventSubs.collect {
-//        case (path, subs) if itemPaths.contains(path) =>
-//          subs
-//      }.flatten
+        case EventSub(sub,_) =>
+          if(hasTTLEnded(sub, checkTime)){
+            removeSubscription(sub)
+            false
+          } else true
+      }
 
       //log.debug("subItemTuples are nonempty: " + subItemTuples.nonEmpty)
       subItemTuples.map { eventsub => (eventsub.sub, item, eventsub.lastValue) }
@@ -252,7 +354,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
               odfvalue.value == lastValue.value
           }
           if (newVals.isEmpty)
-            return Seq.empty
+            return // Early exit
 
           val eventSubsO = eventSubs.get(item.path.toString)
           eventSubsO match {
@@ -270,9 +372,9 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         val id = sub.id
         log.debug(s"Sending data to event sub: $id.")
         val callbackAddr = sub.callback.getOrElse("")
-        val xmlMsg = requestHandler.xmlFromResults(
+        val xmlMsg = xmlFromResults(
           1.0,
-          Result.poll(id.toString, odf))
+          Results.poll(id.toString, odf))
         log.info(s"Sending in progress; Subscription subId:${id} addr:$callbackAddr interval:-1")
         //log.debug("Send msg:\n" + xmlMsg)
 
@@ -292,11 +394,11 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     }
   }
 
-  private[this] def hasTTLEnded(sub: DBSub, timeMillis: Long): Boolean = {
-    val removeTime = sub.startTime.getTime + sub.ttlToMillis
+  private[this] def hasTTLEnded(sub: DBSub, currentTimeMillis: Long): Boolean = {
+    lazy val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
-    if (removeTime <= timeMillis && !sub.isImmortal) {
-      log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${timeMillis - removeTime}ms")
+    if (!sub.isImmortal && removeTime <= currentTimeMillis) {
+      log.debug(s"TTL ended for sub: id:${sub.id} ttl:${sub.ttlToMillis} delay:${currentTimeMillis - removeTime}ms")
       true
     } else
       false
@@ -325,6 +427,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
       if (hasTTLEnded(sub, checkTime)) {
 
         dbConnection.removeSub(sub.id)
+        // sub is not re-added
 
       } else {
         val numOfCalls = ((checkTime - sub.startTime.getTime) / sub.intervalToMillis).toInt
@@ -332,6 +435,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         val newTime = new Timestamp(sub.startTime.getTime.toLong + sub.intervalToMillis * (numOfCalls + 1))
         //val newTime = new Timestamp(time.getTime + sub.intervalToMillis) // OLD VERSION
 
+        // sub is re-added
         intervalSubs += TimedSub(sub, newTime)
 
         log.debug(s"generateOmi for subId:${sub.id}")
@@ -348,36 +452,6 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
       log.debug(s"Next subcription handling scheluded after ${nextRun}ms")
     }
   }
-
-  /**
-   * typedef for (Int,Long) tuple where values are (subID,ttlInMilliseconds + startTime).
-   */
-
-  case class PolledSub(subId: Long, ttlMillis: Long) { 
-    override def equals(o:Any): Boolean = {
-      o match{
-        case PolledSub(oid, _) => oid == subId
-        case _ => false
-      }
-      
-    }
-    override def hashCode = subId.hashCode()
-  }
-
-
-  /**
-   * define ordering for priorityQueue this needs to be reversed when used, so that sub with earliest timeout is first.
-   */
-  val subOrder: Ordering[PolledSub] = Ordering.by(_.ttlMillis)
-
-  /**
-   * PriorityQueue with subOrder ordering. value with earliest timeout is first.
-   * This val is lazy and is computed when needed for the first time
-   *
-   * This queue contains only subs that have no callback address defined and have ttl > 0.
-   */
-  private[this] var ttlQueue: ConcurrentSkipListSet[PolledSub] = new ConcurrentSkipListSet(subOrder)
-  var scheduledTimes: Option[(akka.actor.Cancellable, Long)] = None
 
   /**
    * @return Either Failure(exception) or the request (subscription) id as Success(Int)
@@ -407,33 +481,5 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
     requestID
   }
 
-  /**
-   * This method is called by scheduler and when new sub is added to subQueue.
-   *
-   * This method removes all subscriptions that have expired from the priority queue and
-   * schedules new checkSub method call.
-   */
-  def checkTTL()(implicit dbConnection: DB): Unit = {
 
-    val currentTime = date.getTime
-/*
- * this to be bit more safe //TODO
- */
-    var flag = true
-    while (flag) {
-      if (!ttlQueue.isEmpty) {
-
-        val firstTTL = ttlQueue.first().ttlMillis
-        flag = if(firstTTL <= currentTime) dbConnection.removeSub(ttlQueue.pollFirst.subId)
-        else {
-          val nextRun = firstTTL - currentTime
-          system.scheduler.scheduleOnce(nextRun.milliseconds, self, CheckTTL)
-          false
-        }
-
-      } else flag = false
-
-    }
-
-  }
 }

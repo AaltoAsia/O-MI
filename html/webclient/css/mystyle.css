@@ -1,0 +1,48 @@
+
+/* prevent horizontal scrollbar */
+html {
+    overflow-x: hidden;
+}
+
+
+.CodeMirror {
+    font-size: 12px
+}
+
+.request .CodeMirror,
+.response .CodeMirror {
+    height: 30em;
+}
+/* Change cursor on response CodeMirror links*/
+.cm-link{
+    cursor: pointer;
+}
+
+
+.requesttree .jstree-anchor {
+    border: 1px solid;
+    border-radius: 2px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    min-width: 7.5em;
+    text-align: left;
+}
+.requesttree .jstree-clicked {
+    font-weight: bold;
+}
+
+
+/* odfTree icons */
+.odf-objects {
+    color:green;
+}
+.odf-object {
+    color: #AAAA00;
+}
+.odf-infoitem {
+    color:red;
+}
+.odf-metadata {
+    color:#1E90FF; /* dodgerblue */
+}
+

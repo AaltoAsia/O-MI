@@ -1,3 +1,16 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package agentSystem
 
 import akka.actor.{ Actor, Props  }
@@ -5,6 +18,8 @@ import akka.io.{ IO, Tcp  }
 import akka.actor.ActorLogging
 import java.net.InetSocketAddress
 
+/** Object that contains all commands of InternalAgentCLI.
+ */
 object InternalAgentCLICmds
 {
   case class ReStartCmd(agent: String)
@@ -13,6 +28,9 @@ object InternalAgentCLICmds
 }
 
 import InternalAgentCLICmds._
+/** Command Line Interface for internal agent management. 
+  *
+  */
 class InternalAgentCLI(
     sourceAddress: InetSocketAddress
   ) extends Actor with ActorLogging {
@@ -37,9 +55,9 @@ class InternalAgentCLI(
         case a => log.warning(s"Unknown message from $sender: "+ a) 
       }
     }
-  case PeerClosed =>{
-    log.info(s"InternalAgent CLI disconnected from $sourceAddress")
-    context stop self
-  }
+    case PeerClosed =>{
+      log.info(s"InternalAgent CLI disconnected from $sourceAddress")
+      context stop self
+    }
   }
 }

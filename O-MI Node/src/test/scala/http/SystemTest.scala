@@ -24,6 +24,7 @@ import akka.testkit.{TestProbe, EventFilter}
 import akka.testkit.TestEvent.{Mute, UnMute}
 import spray.can.Http
 import com.typesafe.config.ConfigFactory
+import org.xml.sax.InputSource
 
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
@@ -67,11 +68,11 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
   val printer = new scala.xml.PrettyPrinter(80, 2)
-
   val parser = new HTML5Parser
-  val sourceFile = Source.fromFile("html/ImplementationDetails.html")
+  val sourceFile = if(java.nio.file.Files.exists(java.nio.file.Paths.get("O-MI Node/html/ImplementationDetails.html"))){
+    Source.fromFile("O-MI Node/html/ImplementationDetails.html")
+  }else Source.fromFile("html/ImplementationDetails.html")
   val sourceXML: Node = parser.loadXML(sourceFile)
-
   val testArticles = sourceXML \\ ("article")
   val tests = testArticles.groupBy(x => x.\@("class"))
 

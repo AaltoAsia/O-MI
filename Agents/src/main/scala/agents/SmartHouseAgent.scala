@@ -1,6 +1,7 @@
 package agents
 
 import agentSystem._
+import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import types._
 import types.Path._
 import types.OdfTypes._
@@ -21,31 +22,34 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 /** Agent for the SmartHouse
   * 
   */
-class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
+class SmartHouseAgent extends InternalAgent {
   
   private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
+  private var initialized = false
   
-  override def init() : Unit = {
+  override def init(configPath : String) : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
       InternalAgent.log.warning("ConfigPath was empty or didn't exist, SmartHouseAgent shutting down.")
-      shutdown
+       
+        return;     
     } else {
       val lines = scala.io.Source.fromFile(configPath).getLines().toSeq
       if(lines.isEmpty){
         InternalAgent.log.warning("Config file was empty, SmartHouseAgent shutting down.")
-        shutdown
+        return;     
+         
       } else {
         val file =  new File(lines.head)
         if(!file.exists() || !file.canRead){
           InternalAgent.log.warning("File "+ lines.head + " doesn't exist or can't be read, SmartHouseAgent shutting down.")
-          shutdown
+           
         } else {
           val xml = XML.loadFile(file)
           OdfParser.parse( xml) match {
             case Left( errors ) =>
               InternalAgent.log.warning("Odf has errors, SmartHouseAgent shutting down.")
               InternalAgent.log.warning("SmartHouse: "+errors.mkString("\n"))
-              shutdown
+               
             case Right(odfObjects) =>
               odfInfoItems = Some(
                 getLeafs(odfObjects).collect{
@@ -64,7 +68,7 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
     odfInfoItems match {
       case None =>
         InternalAgent.log.warning("Odf was empty, SmartHouseAgent shutting down.")
-        shutdown
+        return;     
       case Some(infoItems) =>
         InputPusher.handlePathMetaDataPairs( 
           odfInfoItems.getOrElse(Iterable.empty).collect{ 
@@ -73,31 +77,42 @@ class SmartHouseAgent(configPath : String) extends InternalAgent(configPath) {
           }
         )
     }
+    initialized = true
   }
   
-  def loopOnce(): Unit = {
-    val date = new java.util.Date()
-    odfInfoItems =  odfInfoItems.map{ 
-      _.map{ case ((info: OdfInfoItem, firstValue:String )) =>
-          val newVal = info.values.headOption match {
-            case Some(value)  => value.value.toDouble  + firstValue.toDouble/ 10 *Random.nextGaussian
-            case None => Random.nextInt
-          }
-        (
-          OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , Some( new Timestamp( date.getTime) ) ))),
-          firstValue
+  private def date = new java.util.Date()
+  override def run(): Unit = {
+    try{
+      while( !Thread.interrupted && initialized ){
+        odfInfoItems =  odfInfoItems.map{ 
+          _.map{
+            case ((info: OdfInfoItem, firstValue:String )) =>
+            val newVal = info.values.headOption match {
+              case Some(value)  => value.value.toDouble  + firstValue.toDouble/ 10 *Random.nextGaussian
+              case None => Random.nextInt
+            }
+            (
+            OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , Some( new Timestamp( date.getTime) ) ))),
+            firstValue
+            )
+          } 
+        }
+        InternalAgent.log.info("SmartHouseAgent pushed data to DB.")
+        InputPusher.handleInfoItems(
+          odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info} 
         )
-      } 
+        Thread.sleep(10000)
+      }
+    }catch{
+      case e : InterruptedException =>
+      InternalAgent.log.warning("SmartHouseAgent has been interrupted.");
+      InternalAgent.loader ! AgentInterruption(this,e) 
+      case e : Exception =>
+      InternalAgent.log.warning("SmartHouseAgent has caught an exception.");
+      InternalAgent.loader ! AgentException(this,e) 
+    }finally{
+      InternalAgent.log.warning("SmartHouseAgent has died.");
     }
-    
-    InternalAgent.log.info("SmartHouseAgent pushed data to DB.")
-    InputPusher.handleInfoItems(
-      odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info} 
-    )
-    Thread.sleep(10000)
   }
 
-  def finish(): Unit = {
-	    println("SmartHouseAgent has died.")
-  }
 }

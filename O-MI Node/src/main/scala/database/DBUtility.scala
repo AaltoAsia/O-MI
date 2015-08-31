@@ -1,3 +1,16 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
 package database
 
 import scala.language.postfixOps
@@ -15,6 +28,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
 
+  // Used for compiler type trickery by causing type errors
+  //trait Hole // TODO: RemoveMe!
+
   protected[this] def dbioDBInfoItemsSum(actions: Seq[DBIO[DBInfoItems]]): DBIO[DBInfoItems] =
     DBIO.fold(actions, SortedMap.empty[DBNode,Seq[DBValue]])(_ ++ _)
 
@@ -26,9 +42,6 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
       } yield (listA++listB)
       seqIO.foldRight(DBIO.successful(Seq.empty[A]):DBIO[Seq[A]])(iosumlist _)
   }
-
-  // Used for compiler type trickery by causing type errors
-  trait Hole // TODO: RemoveMe!
 
   //Helper for getting values with path
   protected[this] def getValuesQ(path: Path) =

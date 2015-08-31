@@ -3,7 +3,7 @@
 from http.server import *
 from xml.dom.minidom import parseString
 
-# Use colors if available
+# Use colors if available (install module colorama)
 try:
     from colorama import init, Fore, Style
     init()
@@ -14,19 +14,22 @@ except ImportError:
     Fore = Noop()
     Style = Noop()
 
+# Count responses for convenience
 responseNum = 1
 
+# Seperate responses with this line
 def seperator():
     return Style.BRIGHT +\
     Fore.BLUE + "=" * 20 +\
     Fore.YELLOW + " # {:02} # ".format(responseNum) +\
     Fore.BLUE + "=" * 20 + Style.RESET_ALL
 
+# Format the incoming xml and remove empty lines
 import re
-emptyLinePattern = re.compile(u'(?imu)^\s*\n')
+emptyLinePattern = re.compile("(?imu)^\s*\n")
 def prettyXml(string):
     xml = parseString(string).toprettyxml("  ")
-    return emptyLinePattern.sub(u'', xml)
+    return emptyLinePattern.sub('', xml)
            
 
 
@@ -39,13 +42,16 @@ def prettyXml(string):
 #
 class CallbackHandler(BaseHTTPRequestHandler):
     def do_POST(s):
+        # We should tell the O-MI node that we received the message
         s.send_response(200)
         s.end_headers()
 
+        # Read all content
         content_len = int(s.headers['content-length'])
         post_body = s.rfile.read(content_len)
         msg = post_body.decode("UTF-8")
 
+        # Print to terminal applying all modifications and add a seperator
         print(seperator())
         print(prettyXml(msg))
         print(seperator() + "\n")

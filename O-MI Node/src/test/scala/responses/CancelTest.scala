@@ -159,5 +159,97 @@ class CancelTest extends Specification with BeforeAfterAll {
         OmiParser.parse(x.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
     }
   }
+  val errorCancelRequest = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+  <omi:cancel>
+    <omi:requestID>9001</omi:requestID>
+  </omi:cancel>
+</omi:omiEnvelope>
+
+val errorCancelReturn = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+   <omi:response>
+      <omi:result>
+         <omi:return description="A subscription with this id has expired or doesn't exist" returnCode="404" />
+      </omi:result>
+   </omi:response>
+</omi:omiEnvelope>
+  
+  val mixedCancelRequest = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+  <omi:cancel>
+    <omi:requestID>5</omi:requestID>
+    <omi:requestID>12345</omi:requestID>
+  </omi:cancel>
+</omi:omiEnvelope>
+
+  val mixedCancelReturn = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+   <omi:response>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+      <omi:result>
+         <omi:return description="A subscription with this id has expired or doesn't exist" returnCode="404" />
+      </omi:result>
+   </omi:response>
+</omi:omiEnvelope>
+
+  val multipleCancelRequest = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+  <omi:cancel>
+    <omi:requestID>1</omi:requestID>
+    <omi:requestID>2</omi:requestID>
+  </omi:cancel>
+</omi:omiEnvelope>
+
+  val multipleCancelReturn = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+   <omi:response>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+   </omi:response>
+</omi:omiEnvelope>
+
+  val multiplePathsRequest = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+  <omi:cancel>
+    <omi:requestID>3</omi:requestID>
+    <omi:requestID>4</omi:requestID>
+  </omi:cancel>
+</omi:omiEnvelope>
+
+  val multiplePathsReturn = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+   <omi:response>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+   </omi:response>
+</omi:omiEnvelope>
+
+  val simpleXMLCancelRequest = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
+  <omi:cancel>
+    <omi:requestID>0</omi:requestID>
+  </omi:cancel>
+</omi:omiEnvelope>
+
+  val simpleXMLCancelReturn = <?xml version="1.0" encoding="UTF-8"?>
+<omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
+   <omi:response>
+      <omi:result>
+         <omi:return returnCode="200" />
+      </omi:result>
+   </omi:response>
+</omi:omiEnvelope>
+
 }
 */

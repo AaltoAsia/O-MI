@@ -23,7 +23,7 @@ import akka.actor._
 import responses.SubscriptionHandler
 
 import database._
-import http.PermissionCheck._
+import http.Authorization._
 
 import scala.collection.JavaConverters._
 import java.net.InetAddress
@@ -295,7 +295,7 @@ class OmiServiceTest extends Specification
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
-          description === "Unauthorized"
+          description startsWith("Unauthorized")
         }
 
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor3"))).withHeaders(`Remote-Address`("128.0.0.1")) ~> myRoute ~> check {
@@ -308,7 +308,7 @@ class OmiServiceTest extends Specification
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
-          description === "Unauthorized"
+          description startsWith("Unauthorized")
         }
 
       }
@@ -346,7 +346,7 @@ class OmiServiceTest extends Specification
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
-          description === "Unauthorized"
+          description startsWith("Unauthorized")
         }
 
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("2001:DB80:ABBA:BABB:A:0:FF:FF")) ~> myRoute ~> check {
@@ -355,11 +355,62 @@ class OmiServiceTest extends Specification
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-//          println(printer.format(resp))
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          val description = resp.\("response").\("result").\("return").\@("description")
+          description startsWith("Unauthorized")
+        }
+      }
+      "respond correctly to normal read with non-whitelisted address and user" in {
+        val request: String = """
+          <omi:omiEnvelope xmlns:omi="omi.xsd" version="1.0" ttl="0">
+            <omi:read msgformat="odf">
+              <omi:msg xmlns="odf.xsd">
+                <Objects xmlns="odf.xsd">
+                </Objects>
+              </omi:msg>
+            </omi:read>
+          </omi:omiEnvelope>"""
+        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("192.65.127.80")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
+        }
+        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("187.42.74.1"), RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
+        }
+      }
+      "respond correctly to write request with non-whitelisted user" in {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor7"))).withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
           val description = resp.\("response").\("result").\("return").\@("description")
-          description === "Unauthorized"
+          description startsWith("Unauthorized")
+        }
+      }
+      "respond correctly to write request with whitelisted saml user" in {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor8"))).withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
+          mediaType === `text/xml`
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+//          println(printer.format(resp))
+
+          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
       }
     }
