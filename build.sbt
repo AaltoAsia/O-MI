@@ -24,6 +24,7 @@ lazy val omiNode = (project in file("O-MI Node")).
     (commonSettings("Backend") ++ Seq(
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
+      cleanFiles <++= baseDirectory {_ * "*.db" get},
       target in (Compile, doc) := baseDirectory.value / ".." / "html" / "api",
       Revolver.settings,
       libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
@@ -41,10 +42,7 @@ lazy val root = (project in file(".")).
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
-      cleanFiles <++= baseDirectory {base => Seq(
-        base / "html" / "api",
-        base / "database")
-      },
+      cleanFiles <+= baseDirectory {base => base / "html" / "api"},
       serverLoading in Debian := SystemV,
       //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
       //  n / "html" / "api"},
