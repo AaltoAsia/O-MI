@@ -62,9 +62,9 @@ three white lists, one for each: IPs, subnets and Shibboleth users. These can be
 
 Agents
 ======
-See AgentDeveloperGuide.md for information on agents. 
+See [AgentDeveloperGuide](AgentDeveloperGuide.md) for information on agents. 
 Adding custom jar file for agents is possible in bin/deploy this file is prioritized over the agents file in the lib folder.
 
 Configuration
 =============
-Configuration settings for the program are read from application.conf.
+Configuration settings for the program are read from [application.conf](O-MI Node/src/main/resources/application.conf).
