@@ -22,7 +22,7 @@ java-1.7
 
 Compiling and packaging
 -----------------------
-0. (_optional step_) you can download packaged version from git releases: [zip](https://github.com/AaltoAsia/O-MI/releases/download/0.1.7-SNAPSHOT/o-mi-node-0.1.7-SNAPSHOT.zip) [tar](https://github.com/AaltoAsia/O-MI/releases/download/0.1.7-SNAPSHOT/o-mi-node-0.1.7-SNAPSHOT.tgz)
+0. (_optional step_) you can download packaged version from git releases: [zip](https://github.com/AaltoAsia/O-MI/releases/download/0.1.8/o-mi-node-0.1.8.zip) [tar](https://github.com/AaltoAsia/O-MI/releases/download/0.1.8/o-mi-node-0.1.8.tgz)
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. `sbt release`
 3. Result can be found in ./target/universal/o-mi-Node-version.zip
