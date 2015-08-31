@@ -4,7 +4,7 @@ import NativePackagerHelper._
 import Path.relativeTo
 import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 
-addCommandAlias("release", "universal:package-bin")
+addCommandAlias("release", ";doc;universal:package-bin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 
@@ -68,7 +68,7 @@ lazy val root = (project in file(".")).
           base / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
           base / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
-          base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md,
+          base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
           base / "GettingStartedGuide.md" -> "GettingStartedGuide.md")
       })): _*).
     aggregate(omiNode, agents).
