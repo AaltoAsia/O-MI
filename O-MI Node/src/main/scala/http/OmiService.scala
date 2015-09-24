@@ -81,7 +81,7 @@ trait OmiService
 
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
-  val staticHtml = getFromDirectory("../html")
+  val staticHtml = getFromDirectory("./html")
   //val staticHtml = getFromResourceDirectory("html")
 
 
