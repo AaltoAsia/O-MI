@@ -461,7 +461,7 @@
   };
 
   window.jqesc = function(mySel) {
-    return '#' + mySel.replace(/(\[|\]|!|"|#|\$|%|\'|\(|\)|\*|\+|\,|\.|\/|\:|\;|\?|@)" /g, "\\$1").replace(/( )/g, "_");
+    return '#' + mySel.replace(/(\[|\]|!|"|#|\$|%|\'|\(|\)|\*|\+|\,|\.|\/|\:|\;|\?|@)/g, "\\$1").replace(/( )/g, "_");
   };
 
   window.idesc = function(myId) {
