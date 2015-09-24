@@ -9,14 +9,14 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/omi.log</file>
+        <file>omilogs/omi.log</file>
         <append>true</append>
         <encoder>
             <pattern>%date{yyyy-MM-dd} %X{akkaTimestamp} %-5level[%thread] %logger{1} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="omi" level="INFO" />
+    <logger name="akka" level="INFO" />
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
