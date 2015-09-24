@@ -416,7 +416,7 @@ window.WebOmi.debug = (msgs...) -> console.log msgs... # TODO: remove console.lo
 
 # escaped jquery identifier
 # adds one # in the beginning and \\ in front of every special symbol and spaces to underscore
-window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/)/g, "\\$1" ).replace( /( )/g, "_" )
+window.jqesc = (mySel) -> '#' + mySel.replace( /(:|\.|\[|\]|,|\/|#)/g, "\\$1" ).replace( /( )/g, "_" )
 # make a valid id, convert space to underscore
 window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 
