@@ -51,13 +51,14 @@ lazy val root = (project in file(".")).
         IO.write(file, s"${currentVersion}")
         Seq(file)
       },
-      bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
+      bashScriptExtraDefines += """cd  ${app_home}/..""",
       mainClass in Compile := Some("http.Boot"),
       mappings in Universal <++= baseDirectory map (src => directory(src / "html")),
       mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
       mappings in Universal <+= (packageBin in Compile, sourceDirectory in omiNode) map { (_, src) =>
         val conf = src / "main" / "resources" / "application.conf"
-        conf -> "conf/application.conf"
+        conf -> "configs/application.conf"
       },
       mappings in Universal <++= (doc in Compile in omiNode, target in omiNode) map { (_, target) =>
         directory(target / "scala-2.11" / "api").map(n => (n._1, "html/" + n._2))
