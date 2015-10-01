@@ -144,6 +144,9 @@ class InternalAgentLoader extends Actor with ActorLogging {
       }
     }
 
+    case ListCmd() => {
+      sender() ! agents.keys.toSeq
+    }
 
     case AgentException(sender: InternalAgent, exception: Exception) =>
       log.warning(s"InternalAgent caugth exception: $exception")
@@ -177,22 +180,6 @@ class InternalAgentLoader extends Actor with ActorLogging {
     case AgentInterruption(sender: InternalAgent, exception: InterruptedException) =>
       log.info(s"InternalAgent $sender.name was succesfully interrupted.")
 
-    case Bound(localAddress) =>
-    // TODO: do something?
-    // It seems that this branch was not executed?
-
-    case CommandFailed(b: Bind) =>
-      log.warning(s"CLI connection failed: $b")
-      context stop self
-
-    case Connected(remote, local) =>
-      val connection = sender()
-      log.info(s"CLI connected from $remote to $local")
-
-      val cli = context.actorOf(
-        Props(classOf[InternalAgentCLI], remote),
-        "cli-" + remote.toString.tail)
-      connection ! Register(cli)
     case _ => //noop?
   }
 
