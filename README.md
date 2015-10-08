@@ -21,7 +21,7 @@ java-1.7
 
 Running
 -------
-Download the pre-compiled package from git releases: [zip](https://github.com/AaltoAsia/O-MI/releases/download/0.1.8/o-mi-node-0.1.8.zip) [tar](https://github.com/AaltoAsia/O-MI/releases/download/0.1.8/o-mi-node-0.1.8.tgz)
+Download the pre-compiled zip or tgz package from latest git releases [here](https://github.com/AaltoAsia/O-MI/releases/latest).
 
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
