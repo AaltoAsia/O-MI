@@ -107,7 +107,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
    */
   def receive = {
     case StartAgentCmd(agentname: String) => {
-      handleAgentCmd(agentname) { agentInfo: AgentInfo =>
+      sender() ! handleAgentCmd(agentname) { agentInfo: AgentInfo =>
         
         agentInfo.agent.fold {
           log.warning(s"Starting: " + agentInfo.name)
@@ -121,7 +121,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
     }
 
     case ReStartAgentCmd(agentname: String) => {
-      handleAgentCmd(agentname) { agentInfo: AgentInfo =>
+      sender() ! handleAgentCmd(agentname) { agentInfo: AgentInfo =>
         agentInfo.agent.collect {
           case agent: InternalAgent if agent.isAlive =>
             log.warning(s"Re-Starting: " + agentInfo.name)
@@ -135,7 +135,7 @@ class InternalAgentLoader extends Actor with ActorLogging {
     }
 
     case StopAgentCmd(agent: String) => {
-      handleAgentCmd(agent) { agentInfo: AgentInfo =>
+      sender() ! handleAgentCmd(agent) { agentInfo: AgentInfo =>
         agentInfo.agent.collect {
           case agent: InternalAgent if agent.isAlive =>
             log.warning(s"Stopping: " + agentInfo.name)

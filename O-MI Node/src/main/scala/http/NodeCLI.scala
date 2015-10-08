@@ -102,18 +102,18 @@ remove path <path> -- NOT IMPLEMENTED
           log.info(s"Got start command from $ip for $agent")
           (agentLoader ? StartAgentCmd(agent)).onComplete{
             case Success( msg:String ) =>
-            trueSender ! Write(ByteString(msg))
+            trueSender ! Write(ByteString(msg +"\n"))
             case Failure(a) =>
-              trueSender ! Write(ByteString("Command failure unknown."))
+              trueSender ! Write(ByteString("Command failure unknown.\n"))
           }
         case Array("stop", agent) => 
           val trueSender = sender()
           log.info(s"Got stop command from $ip for $agent")
           (agentLoader ? StopAgentCmd(agent)).onComplete{
             case Success( msg:String ) => 
-              trueSender ! Write(ByteString(msg))
+              trueSender ! Write(ByteString(msg +"\n"))
             case Failure(a) =>
-              trueSender ! Write(ByteString("Command failure unknown."))
+              trueSender ! Write(ByteString("Command failure unknown.\n"))
           }
         case cmd: Array[String] => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
