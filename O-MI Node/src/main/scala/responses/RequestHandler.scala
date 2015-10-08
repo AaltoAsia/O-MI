@@ -79,7 +79,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       sendCallback(
         callbackAddr,
         xmlMsg, 
-        new Timestamp(sub.startTime.getTime + sub.ttl.toMillis)
+        sub.ttl
       ) onComplete {
         case Success(CallbackSuccess) =>
           log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
@@ -108,7 +108,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
                   sendCallback(
                     address,
                     xml,
-                    new Timestamp(date.getTime + request.ttl.toMillis)
+                    request.ttl
                   )
               }
               (

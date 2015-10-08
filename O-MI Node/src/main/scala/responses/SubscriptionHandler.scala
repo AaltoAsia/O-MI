@@ -391,7 +391,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
         sendCallback(
           callbackAddr,
           xmlMsg,
-          new Timestamp(sub.startTime.getTime + sub.ttl.toMillis)
+          sub.ttl
         ) onComplete {
           case Success(CallbackSuccess) =>
             log.info(s"Callback sent; subscription id:${id} addr:$callbackAddr interval:-1")
