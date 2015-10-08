@@ -22,27 +22,38 @@ import java.net.InetSocketAddress
 import concurrent.duration._
 import concurrent.ExecutionContext.Implicits.global
 import akka.util.{ByteString,  Timeout}
+import database.DBSub
 
 /** Object that contains all commands of InternalAgentCLI.
  */
-object InternalAgentCLICmds
+object CLICmds
 {
-  case class ReStartCmd(agent: String)
-  case class StartCmd(agent: String)
-  case class StopCmd(agent: String)
-  case class ListCmd()
+  case class ReStartAgentCmd(agent: String)
+  case class StartAgentCmd(agent: String)
+  case class StopAgentCmd(agent: String)
+  case class ListAgentsCmd()
+  case class ListSubsCmd()
 }
 
-import InternalAgentCLICmds._
+import CLICmds._
 /** Command Line Interface for internal agent management. 
   *
   */
 class OmiNodeCLI(
     sourceAddress: InetSocketAddress,
-    agentLoader: ActorRef
+    agentLoader: ActorRef,
+    subscriptionHandler: ActorRef
   ) extends Actor with ActorLogging {
 
-      val ip = sourceAddress.toString.tail
+  val commands = """Current commands:
+start <agent classname>
+stop  <agent classname> 
+list agents 
+list subs 
+remove sub <subsription id> -- NOT IMPLEMENTED
+remove path <path> -- NOT IMPLEMENTED
+"""
+  val ip = sourceAddress.toString.tail
   implicit val timeout : Timeout = 5.seconds
   import Tcp._
   def receive = {
@@ -53,19 +64,11 @@ class OmiNodeCLI(
       args match {
         case Array("help") =>
           log.info(s"Got help command from $ip")
-          sender ! Write(ByteString(
-"""Current commands:
-> start <agent classname>
-> stop  <agent classname> 
-> list agents -- NOT IMPLEMENTED
-> list subs -- NOT IMPLEMENTED 
-> remove sub <subsription id> -- NOT IMPLEMENTED
-> remove path <path> -- NOT IMPLEMENTED
-"""))
-        case Array("list") =>
-          log.info(s"Got list command from $ip")
+          sender ! Write(ByteString( commands )) 
+        case Array("list", "agents") =>
+          log.info(s"Got list agents command from $ip")
           val trueSender = sender()
-          val agents = (agentLoader ? ListCmd()).onComplete{
+          (agentLoader ? ListAgentsCmd()).onComplete{
             case Success(agents : Seq[String]) => 
               log.info("Received list of Agents. Sending ...")
               trueSender ! Write(ByteString("Agents:\n"+ agents.mkString("\n") + "\n"))
@@ -75,13 +78,48 @@ class OmiNodeCLI(
 
           }
 
+        case Array("list", "subs") =>
+          log.info(s"Got list subs command from $ip")
+          val trueSender = sender()
+          (subscriptionHandler ? ListSubsCmd()).onComplete{
+            case Success( Tuple2(intervals: Set[DBSub], events: Set[DBSub]) ) => 
+              log.info("Received list of Subscriptions. Sending ...")
+              val intMsg= "Interval subscriptions:\n" ++ intervals.map{ sub=>
+                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | ttl: ${sub.ttl} | callback: ${ sub.callback }"
+              }.mkString("\n")
+              val eventMsg = "Event subscriptions:\n" ++ events.map{ sub=>
+                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | ttl: ${sub.ttl} | callback: ${ sub.callback }"
+              }.mkString("\n")
+              val pollMsg = "Polls currently not available for CLI.\n"
+              trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
+            case Failure(a) =>
+              log.info("Failed to get list of Subscriptions.\n Sending ...")
+              trueSender ! Write(ByteString("Failed to get list of subscriptions.\n"))
+
+          }
         case Array("start", agent) =>
+          val trueSender = sender()
           log.info(s"Got start command from $ip for $agent")
-          agentLoader ! StartCmd(agent)
+          (agentLoader ? StartAgentCmd(agent)).onComplete{
+            case Success( msg:String ) =>
+            trueSender ! Write(ByteString(msg))
+            case Failure(a) =>
+              trueSender ! Write(ByteString("Command failure unknown."))
+          }
         case Array("stop", agent) => 
+          val trueSender = sender()
           log.info(s"Got stop command from $ip for $agent")
-          agentLoader ! StopCmd(agent)
-        case cmd: Array[String] => log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
+          (agentLoader ? StopAgentCmd(agent)).onComplete{
+            case Success( msg:String ) => 
+              trueSender ! Write(ByteString(msg))
+            case Failure(a) =>
+              trueSender ! Write(ByteString("Command failure unknown."))
+          }
+        case cmd: Array[String] => 
+          log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
+          sender() ! Write(ByteString(
+            "Unknown command. Use help to get information of current commands.\n" 
+          ))
         case a => log.warning(s"Unknown message from $ip: "+ a) 
       }
     }
@@ -92,7 +130,7 @@ class OmiNodeCLI(
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef)  extends Actor with ActorLogging{
 
   import Tcp._
 
@@ -110,7 +148,7 @@ class OmiNodeCLIListener(agentLoader: ActorRef)  extends Actor with ActorLogging
       log.info(s"CLI connected from $remote to $local")
 
       val cli = context.system.actorOf(
-        Props(new OmiNodeCLI( remote, agentLoader )),
+        Props(new OmiNodeCLI( remote, agentLoader, subscriptionHandler )),
         "cli-" + remote.toString.tail)
       connection ! Register(cli)
     case _ => //noop?

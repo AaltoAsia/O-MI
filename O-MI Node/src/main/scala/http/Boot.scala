@@ -108,7 +108,7 @@ trait Starter {
     )
 
     val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentLoader)),
+      Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
       "omi-node-cli-listener"
     )
     // create omi service actor
