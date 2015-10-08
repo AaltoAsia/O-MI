@@ -388,7 +388,11 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           log.warning(
             s"Callback failed; subscription id:${id} interval:-1  reason: $reason")
 
-        sendCallback(callbackAddr, xmlMsg) onComplete {
+        sendCallback(
+          callbackAddr,
+          xmlMsg,
+          new Timestamp(sub.startTime.getTime + sub.ttl.toMillis)
+        ) onComplete {
           case Success(CallbackSuccess) =>
             log.info(s"Callback sent; subscription id:${id} addr:$callbackAddr interval:-1")
 
