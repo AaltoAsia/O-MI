@@ -54,6 +54,7 @@ lazy val root = (project in file(".")).
       },
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
       //batScriptExtraDefines += 
       mainClass in Compile := Some("http.Boot"),
       mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "html")),
