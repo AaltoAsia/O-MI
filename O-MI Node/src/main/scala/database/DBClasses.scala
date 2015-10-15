@@ -92,6 +92,17 @@ case class NewDBSub(
 ) extends SubLike with DBSubInternal
 
 
+/**
+ * Represents one sensor value
+ */
+case class DBValue(
+  hierarchyId: Int,
+  timestamp: Timestamp,
+  value: String,
+  valueType: String
+) {
+  def toOdf = OdfValue(value, valueType, Some(timestamp))
+}
 
 
 
@@ -183,17 +194,6 @@ trait OmiNodeTables extends DBBase {
 
 
 
-  /**
-   * Represents one sensor value
-   */
-  case class DBValue(
-    hierarchyId: Int,
-    timestamp: Timestamp,
-    value: String,
-    valueType: String
-  ) {
-    def toOdf = OdfValue(value, valueType, Some(timestamp))
-  }
 
   /**
    * (Boilerplate) Table for storing latest sensor data to database
