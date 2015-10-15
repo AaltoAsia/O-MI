@@ -22,12 +22,12 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import java.util.Date
 import java.net.InetSocketAddress
+import scala.collection.JavaConversions.asJavaIterable
+
 import agentSystem._
 import responses.{RequestHandler, SubscriptionHandler}
-
 import types.Path
 import types.OdfTypes._
-import scala.collection.JavaConversions.asJavaIterable
 import database._
 
 import xml._
@@ -111,8 +111,17 @@ trait Starter {
       Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
       "omi-node-cli-listener"
     )
+
+    // Latest values stored
+    //val latestValues = org.prevayler.PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
+
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
+    val omiService = system.actorOf(Props(
+      new OmiServiceActor(
+        //new RequestHandler(subHandler, latestValues)(dbConnection)
+        new RequestHandler(subHandler)(dbConnection)
+      )
+    ), "omi-service")
 
 
 

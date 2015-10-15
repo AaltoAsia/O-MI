@@ -26,6 +26,8 @@ class OmiConfigExtension(config: Config) extends Extension {
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
 
+  /** fast journal databases paths */
+  val journalsDirectory: String = config.getString("journalDBs.directory")
 
   // Listen interfaces and ports
 

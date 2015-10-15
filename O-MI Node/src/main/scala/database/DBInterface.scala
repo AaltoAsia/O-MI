@@ -20,8 +20,6 @@ import java.io.File
 
 
 
-
-
 package object database {
 
   private[this] var setEventHooks: List[Seq[OdfInfoItem] => Unit] = List()

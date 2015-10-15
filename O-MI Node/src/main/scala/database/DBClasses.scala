@@ -35,6 +35,7 @@ import database._
 trait DBBase{
   protected[this] val db: Database
 
+
   //private[this] val dbtimeout = http.Boot.Settings
 
   /**
