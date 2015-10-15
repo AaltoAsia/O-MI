@@ -39,6 +39,7 @@ import ExecutionContext.Implicits.global
 
 import database._
 import OmiGenerator._
+import http.CLICmds._
 
 
 // MESSAGES
@@ -298,7 +299,12 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   }
 
   override def receive = {
-
+    case ListSubsCmd() =>
+      val events :Set[DBSub] = getEventSubs.values.flatten.groupBy(_.id).mapValues{ 
+        seq => seq.head.sub 
+      }.values.toSet
+      val intervals : Set[DBSub]= getIntervalSubs.map(_.sub).toSet
+      sender() ! Tuple2(intervals, events) 
     case HandleIntervals => handleIntervals()
 
     case CheckTTL => checkTTL()
@@ -382,7 +388,11 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
           log.warning(
             s"Callback failed; subscription id:${id} interval:-1  reason: $reason")
 
-        sendCallback(callbackAddr, xmlMsg) onComplete {
+        sendCallback(
+          callbackAddr,
+          xmlMsg,
+          sub.ttl
+        ) onComplete {
           case Success(CallbackSuccess) =>
             log.info(s"Callback sent; subscription id:${id} addr:$callbackAddr interval:-1")
 

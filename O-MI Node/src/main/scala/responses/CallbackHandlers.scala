@@ -14,10 +14,15 @@
 package responses
 
 import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.{Try, Success, Failure}
 
 import akka.actor.ActorSystem
 import spray.http.{StatusCode, HttpResponse, HttpRequest, Uri}
 import spray.client.pipelining._
+import java.sql.Timestamp
+import java.util.Date
+import java.lang.Exception
 
 
 /**
@@ -39,19 +44,60 @@ object CallbackHandlers {
 
   private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
 
-  private[this] def sendHttp(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
+  private[this] def sendHttp(
+    address: Uri,
+    data: xml.NodeSeq,
+    ttl: Duration): Future[CallbackResult] = Future{
 
+      val tryUntil =  new Timestamp( new Date().getTime + ttl.toMillis)
+      def currentTimestamp =  new Timestamp( new Date().getTime ) 
+      def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
       val request = Post(address, data)
-      val responseFuture = httpHandler(request)
-      
-      responseFuture map { response =>
+      var attemps = 1
+      try{
+        var keepTrying = true
+        var result : CallbackResult = new CallbackFailure
+        while( keepTrying && tryUntil.after( currentTimestamp ) ){
+          system.log.info(
+            s"Trying to send POST reqeust to $address, attemp: $attemps , will keep trying until $tryUntil."
+          ) 
+          val responseFuture = httpHandler(request)
+          Await.ready[HttpResponse](
+            responseFuture,
+            newTTL
+          )
+          responseFuture.value match{
+            case Some( Success( response ) )  =>
+            if (response.status.isSuccess)//Content of response will not be handled.
+              result = CallbackSuccess
+            else
+              result = HttpError(response.status)
+            case Some( Failure(response) ) =>
+            case None => result = new CallbackFailure
+          }
 
-        if (response.status.isSuccess)//Content of response will not be handled.
-          CallbackSuccess
-        else
-          HttpError(response.status)
+
+          result match{
+            case cs: CallbackSuccess.type =>
+              //system.log.info(s"Successfully send POST request to $address")
+              keepTrying = false
+            case _ =>
+              attemps += 1 
+              Thread.sleep(5000)
+              //system.log.info(s"Need to retry sending POST reqeust to $address, will keep trying until $tryUntil.") 
+          } 
+          
+        }
+        result
+      } catch {
+        case e: Exception =>
+        system.log.warning(
+          "Exception turing sendeing request to callback. $e"
+        )
+        e.printStackTrace()
+        new CallbackFailure          
       }
-  }
+    }
 
   /**
    * Send callback xml message containing `data` to `address`
@@ -59,15 +105,19 @@ object CallbackHandlers {
    * @param data xml data to send as a callback
    * @return future for the result of the callback is returned without blocking the calling thread
    */
-  def sendCallback(address: Uri, data: xml.NodeSeq): Future[CallbackResult] = {
+  def sendCallback(
+    address: Uri,
+    data: xml.NodeSeq,
+    ttl: Duration
+  ): Future[CallbackResult] = {
 
     address.scheme match {
 
       case "http" =>
-        sendHttp(address, data)
+        sendHttp(address, data, ttl)
 
       case "https" =>
-        sendHttp(address, data)
+        sendHttp(address, data, ttl)
 
       case _ =>
         Future{ ProtocolNotSupported }

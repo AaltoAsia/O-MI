@@ -12,7 +12,7 @@ import parsing._
 import http._
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import agentSystem.InternalAgentCLICmds._
+import http.CLICmds._
 
 import akka.testkit.{ TestKit, TestActorRef, TestProbe, EventFilter }
 import com.typesafe.config.ConfigFactory
@@ -42,7 +42,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       agents must haveKey("agents.SmartHouseAgent")
       agents must haveKey("agents.JavaAgent")
       val actors= actor.getAgents.keys
-      actors.foreach(n=> actorRef.receive(StopCmd(n)))
+      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
     }
 
     "be able to start and stop agents with start and stop messages" in new Actorstest(
@@ -61,7 +61,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       val eActor = agents(agentName).agent
       eActor must beSome.which { agent => agent.isAlive must beTrue }
       EventFilter.warning(message = ("Stopping: " + agentName), occurrences = 1) intercept {
-        actorRef.receive(StopCmd(agentName))
+        actorRef.receive(StopAgentCmd(agentName))
       }
       eActor must beSome.which { _.isAlive must beFalse }
       //agent still there but agent in AgentInfo is None
@@ -69,11 +69,11 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       actor.getAgents(agentName).agent must beNone
 
       EventFilter.warning(message = ("Starting: " + agentName), occurrences = 1) intercept {
-        actorRef.receive(StartCmd(agentName))
+        actorRef.receive(StartAgentCmd(agentName))
       }
 
       Future { actor.getAgents(agentName).agent must beSome.which { agent => agent.isAlive must beTrue } }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
-      actors.foreach(n=> actorRef.receive(StopCmd(n)))
+      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
     }
 
     "be able to restart agents with restart command" in new Actorstest(
@@ -91,13 +91,13 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       val eActor = actor.getAgents(agentName).agent
       actor.getAgents must haveKey(agentName)
       EventFilter.warning("Re-Starting: " + agentName, occurrences = 1) intercept {
-        actorRef.receive(ReStartCmd(agentName))
+        actorRef.receive(ReStartAgentCmd(agentName))
       }
 
       eActor must beSome.which { _.isAlive must beFalse }
 
       Future { actor.getAgents(agentName).agent must beSome.which(_.isAlive must beTrue) }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
-      actors.foreach(n=> actorRef.receive(StopCmd(n)))
+      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
     }
 
     "handle exceptions if trying to load non-existing agents" in new Actorstest(
@@ -114,7 +114,7 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       EventFilter.warning(start = "Classloading failed. Could not load: " + agentName, occurrences = 1) intercept {
         actor.loadAndStart(agentName, s"configs/$agentName")
       }
-      actors.foreach(n=> actorRef.receive(StopCmd(n)))
+      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
     }
 //Test below works but gives primary key error on database
     /*"be able to handle ThreadExceptions from agents" in new Actorstest(

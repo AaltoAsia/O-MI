@@ -76,7 +76,11 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         log.warning(
           s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
 
-      sendCallback(callbackAddr, xmlMsg) onComplete {
+      sendCallback(
+        callbackAddr,
+        xmlMsg, 
+        sub.ttl
+      ) onComplete {
         case Success(CallbackSuccess) =>
           log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
 
@@ -101,7 +105,11 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               // TODO: Can't cancel this callback
               Future { runGeneration(request) } map {
                 case (xml: NodeSeq, code: Int) =>
-                  sendCallback(address, xml)
+                  sendCallback(
+                    address,
+                    xml,
+                    request.ttl
+                  )
               }
               (
                 xmlFromResults(

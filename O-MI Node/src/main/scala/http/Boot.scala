@@ -102,8 +102,15 @@ trait Starter {
     // TODO: Maybe refactor to an internal agent!
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
-    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
+    val agentLoader = system.actorOf(
+      InternalAgentLoader.props(),
+      "agent-loader"
+    )
 
+    val omiNodeCLIListener =system.actorOf(
+      Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
+      "omi-node-cli-listener"
+    )
     // create omi service actor
     val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
 
@@ -113,7 +120,7 @@ trait Starter {
 
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,
       new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
-    IO(Tcp)  ? Tcp.Bind(agentLoader,
+    IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
       new InetSocketAddress("localhost", settings.cliPort))
 
     return omiService

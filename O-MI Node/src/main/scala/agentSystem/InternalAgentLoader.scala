@@ -31,7 +31,7 @@ import java.sql.Timestamp
 
 import ExecutionContext.Implicits.global
 
-import InternalAgentCLICmds._
+import http.CLICmds._
 /**
  * Helper Object for creating AgentLoader.
  *
@@ -88,11 +88,12 @@ class InternalAgentLoader extends Actor with ActorLogging {
   /** Helper method for checking is agent even stored. If was handle will be processed.
     *
     */
-  private def handleAgentCmd(agent: String)(handle: AgentInfo => Unit): Unit = {
+  private def handleAgentCmd(agent: String)(handle: AgentInfo => String): String = {
     val agentInfoO = agents.get(agent)
     agentInfoO match {
       case None =>
         log.warning("Command for not stored agent!: " + agent)
+        "Could not find agent: " + agent
       case Some(agentInfo) =>
         handle(agentInfo)
     }
@@ -105,8 +106,8 @@ class InternalAgentLoader extends Actor with ActorLogging {
    *   -- Terminated with trying to restart AgentActor.
    */
   def receive = {
-    case StartCmd(agentname: String) => {
-      handleAgentCmd(agentname) { agentInfo: AgentInfo =>
+    case StartAgentCmd(agentname: String) => {
+      sender() ! handleAgentCmd(agentname) { agentInfo: AgentInfo =>
         
         agentInfo.agent.fold {
           log.warning(s"Starting: " + agentInfo.name)
@@ -115,11 +116,12 @@ class InternalAgentLoader extends Actor with ActorLogging {
         } { n=>
           log.warning(s"Agent $agentname was already Running. 're-start' should be used to restart running Agents")
         }
+        "Agent successfully started. Check logs"
       }
     }
 
-    case ReStartCmd(agentname: String) => {
-      handleAgentCmd(agentname) { agentInfo: AgentInfo =>
+    case ReStartAgentCmd(agentname: String) => {
+      sender() ! handleAgentCmd(agentname) { agentInfo: AgentInfo =>
         agentInfo.agent.collect {
           case agent: InternalAgent if agent.isAlive =>
             log.warning(s"Re-Starting: " + agentInfo.name)
@@ -128,11 +130,12 @@ class InternalAgentLoader extends Actor with ActorLogging {
             agent.join()
             loadAndStart(agentInfo.name, agentInfo.config)
         }
+        "Restart cmd temp response."
       }
     }
 
-    case StopCmd(agent: String) => {
-      handleAgentCmd(agent) { agentInfo: AgentInfo =>
+    case StopAgentCmd(agent: String) => {
+      sender() ! handleAgentCmd(agent) { agentInfo: AgentInfo =>
         agentInfo.agent.collect {
           case agent: InternalAgent if agent.isAlive =>
             log.warning(s"Stopping: " + agentInfo.name)
@@ -141,9 +144,13 @@ class InternalAgentLoader extends Actor with ActorLogging {
             agent.join()
             agents += agentInfo.name -> AgentInfo(agentInfo.name, agentInfo.config, None, agentInfo.timestamp)
         }
+        "Agent successfully stopped."
       }
     }
 
+    case ListAgentsCmd() => {
+      sender() ! agents.keys.toSeq
+    }
 
     case AgentException(sender: InternalAgent, exception: Exception) =>
       log.warning(s"InternalAgent caugth exception: $exception")
@@ -177,22 +184,6 @@ class InternalAgentLoader extends Actor with ActorLogging {
     case AgentInterruption(sender: InternalAgent, exception: InterruptedException) =>
       log.info(s"InternalAgent $sender.name was succesfully interrupted.")
 
-    case Bound(localAddress) =>
-    // TODO: do something?
-    // It seems that this branch was not executed?
-
-    case CommandFailed(b: Bind) =>
-      log.warning(s"CLI connection failed: $b")
-      context stop self
-
-    case Connected(remote, local) =>
-      val connection = sender()
-      log.info(s"CLI connected from $remote to $local")
-
-      val cli = context.actorOf(
-        Props(classOf[InternalAgentCLI], remote),
-        "cli-" + remote.toString.tail)
-      connection ! Register(cli)
     case _ => //noop?
   }
 
