@@ -15,9 +15,12 @@ package database
 
 import types.OdfTypes.OdfInfoItem
 import slick.driver.H2Driver.api._
+import org.prevayler.PrevaylerFactory
 
 import java.io.File
 
+import LatestValues.LatestStore
+import http.Boot.settings
 
 
 package object database {
@@ -49,28 +52,20 @@ package object database {
 import database._
 
 
-
 /**
- * Old way of using single connection
+ * Contains all stores that requires only one instance for interfacing
  */
-object singleConnection extends DB {
-  val db = Database.forConfig(dbConfigName)
-  initialize()
-
-  def destroy() = {
-    println("[WARN] Destroying db connection, to drop the database: remove db file!")
-    db.close()
-  }
+object SingleStores {
+    // Latest values stored
+    val latestStore = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
 }
 
 
-
 /**
- * Database class for sqlite. Actually uses config parameters through forConfig in singleConnection.
+ * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
 class DatabaseConnection extends DB {
-  //override val db = singleConnection.db
   val db = Database.forConfig(dbConfigName)
   initialize()
 
@@ -121,6 +116,15 @@ class TestDB(val name:String = "") extends DB
  * Contains a public high level read-write interface for the database tables.
  */
 trait DB extends DBReadWrite with DBBase {
+  /**
+   * These are old ideas about reducing access to read only
+   */
   def asReadOnly: DBReadOnly = this
   def asReadWrite: DBReadWrite = this
+
+  /**
+   * Fast latest values storage interface
+   */
+  val latestStore: LatestStore = SingleStores.latestStore
+
 }

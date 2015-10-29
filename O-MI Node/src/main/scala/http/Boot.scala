@@ -112,13 +112,10 @@ trait Starter {
       "omi-node-cli-listener"
     )
 
-    // Latest values stored
-    val latestStore = org.prevayler.PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
-
     // create omi service actor
     val omiService = system.actorOf(Props(
       new OmiServiceActor(
-        new RequestHandler(subHandler, latestStore)(dbConnection)
+        new RequestHandler(subHandler)(dbConnection)
       )
     ), "omi-service")
 
@@ -151,12 +148,12 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter with App{
-//def main(args: Array[String]) = {
+object Boot extends Starter { // with App{
+  def main(args: Array[String]) = {
     init()
     val serviceActor = start()
     bindHttp(serviceActor)
-  //}
+  }
 }
 
 
