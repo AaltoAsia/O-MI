@@ -146,7 +146,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   private[this] def date = new Date()
   implicit val timeout = Timeout(5.seconds)
 
-  private[this] var requestHandler = new RequestHandler(self)
+  private[this] var requestHandler: RequestHandler = null // XXX new RequestHandler(self)
 
   sealed trait SavedSub {
     val sub: DBSub

@@ -113,13 +113,12 @@ trait Starter {
     )
 
     // Latest values stored
-    //val latestValues = org.prevayler.PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
+    val latestStore = org.prevayler.PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
 
     // create omi service actor
     val omiService = system.actorOf(Props(
       new OmiServiceActor(
-        //new RequestHandler(subHandler, latestValues)(dbConnection)
-        new RequestHandler(subHandler)(dbConnection)
+        new RequestHandler(subHandler, latestStore)(dbConnection)
       )
     ), "omi-service")
 
