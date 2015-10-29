@@ -17,7 +17,8 @@ import types._
 import OmiTypes._
 import OdfTypes._
 import parsing.xmlGen.{ xmlTypes, scalaxb }
-import database.DB
+import database.{DB, LatestValues}
+import LatestValues.LatestStore
 import agentSystem.InputPusher
 import CallbackHandlers._
 
@@ -44,7 +45,7 @@ import parsing.xmlGen.defaultScope
  * Actor for handling all request.
  *
  */
-class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
+class RequestHandler(val subscriptionHandler: ActorRef, val latestStore: LatestStore)(implicit val dbConnection: DB) {
 
   import http.Boot.system.log
   private[this] def date = new Date()
