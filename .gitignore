@@ -17,6 +17,9 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 
+#IDEA
+.idea/
+
 #Vim
 [._]*.s[a-w][a-z]
 [._]s[a-w][a-z]
