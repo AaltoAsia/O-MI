@@ -17,8 +17,7 @@ import types._
 import OmiTypes._
 import OdfTypes._
 import parsing.xmlGen.{ xmlTypes, scalaxb }
-import database.{DB, LatestValues}
-import LatestValues.LatestStore
+import database.DB
 import agentSystem.InputPusher
 import CallbackHandlers._
 
@@ -45,7 +44,7 @@ import parsing.xmlGen.defaultScope
  * Actor for handling all request.
  *
  */
-class RequestHandler(val subscriptionHandler: ActorRef, val latestStore: LatestStore)(implicit val dbConnection: DB) {
+class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
 
   import http.Boot.system.log
   private[this] def date = new Date()
@@ -341,18 +340,10 @@ class RequestHandler(val subscriptionHandler: ActorRef, val latestStore: LatestS
                 returnCode = 404
                 Results.notFoundSub
               }
-              case _ => {
-                returnCode = 501
-                Results.internalError()
-              }
-              case true => Results.success
-              case false =>
-                returnCode = 404
-                Results.notFoundSub
               case _ => // shouldn't be possible but type is Any
                 returnCode = 501
                 Results.internalError()
-            }
+              }
           case Failure(n: NumberFormatException) => {
             returnCode = 400
             Results.simple(returnCode.toString, Some("Invalid requestID"))
