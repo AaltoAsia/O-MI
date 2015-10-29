@@ -1,6 +1,13 @@
 package responses
 
 import java.sql.Timestamp
+import java.util.Date
+
+import types.Path
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.stm.Ref
+
 //import java.util.concurrent.ConcurrentSkipListSet
 
 import akka.actor.{ActorLogging, Actor}
@@ -14,9 +21,13 @@ import scala.collection.SortedSet
 import scala.collection.mutable.HashMap
 
 case object HandleIntervals
+
 case object CheckTTL
+
 case class RegisterRequestHandler(reqHandler: RequestHandler)
+
 case class NewSubscription(subscription: SubscriptionRequest)
+
 case class RemoveSubscription(id: Long)
 
 //private val subOrder: Ordering[TTLTimeout] = Ordering.by(_.endTimeMillis)
@@ -30,47 +41,63 @@ case class RemoveSubscription(id: Long)
 // */
 //private val ttlQueue: ConcurrentSkipListSet[TTLTimeout] = new ConcurrentSkipListSet(subOrder)
 
+case class PrevaylerSub(
+                         val ttl: Duration,
+                         val interval: Duration,
+                         val callback: Option[String],
+                       val paths: Seq[Path]
 
-class SubPrevayler(implicit dbConnection: DB) extends Actor with ActorLogging{
+                         )
+
+//TODO remove initial value
+class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L), implicit val dbConnection: DB) extends Actor with ActorLogging {
+
+  val subID:Ref[Long] = Ref(0L)
+
   val scheduler = system.scheduler
+
   case class EventSubs(var eventSubs: HashMap[String, Seq[EventSub]])
 
   case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
 
 
-//  case class SetName(newName: String) extends Transaction[MyStore] {
-//    def executeOn(store: MyStore, d: Date) =
-//      store.data = store.data.copy(name = newName)
+  case class AddEventSub(newName: String) extends Transaction[EventSubs] {
+    def executeOn(store: EventSubs, d: Date) =
+???
+    //      store.data = store.data.copy(name = newName)
   }
-//  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
+
+  //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
   object TimedSubOrdering extends Ordering[TimedSub] {
     def compare(a: TimedSub, b: TimedSub) =
       a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
-  case class TimedSub(sub: DBSub, nextRunTime: Timestamp)
-    extends SavedSub {
-    val id = sub.id
-  }
+
+  case class TimedSub(id: Long, ttl: Duration, paths: Seq[Path], interval: Duration, nextRunTime: Timestamp)
+    extends SavedSub
 
   sealed trait SavedSub {
-    val sub: DBSub
     val id: Long
+    val ttl: Duration
+    val paths: Seq[Path]
+
   }
 
-  case class EventSub(sub: DBSub, lastValue: OdfValue)
-    extends SavedSub {
-    val id = sub.id
-  }
+  case class IntervalSub(id: Long, ttl: Duration, paths: Seq[Path], interval: Duration) extends SavedSub
+  case class EventSub(id: Long, ttl: Duration, paths: Seq[Path], lastValue: OdfValue)
+    extends SavedSub
+
   /*
   re schedule when starting in new subscription transactions
   */
   val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs(HashMap()))
   val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs(SortedSet()(TimedSubOrdering.reverse)))
-//  val pollPrevayler = PrevaylerFactory.createPrevayler()
+
+  //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
     case NewSubscription(id) =>
-    _ =>
+      temp: Any => Unit
   }
 
 }

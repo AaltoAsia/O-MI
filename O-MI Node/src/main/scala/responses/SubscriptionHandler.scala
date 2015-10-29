@@ -1,4 +1,4 @@
-/**
+/*/**
   Copyright (c) 2015 Aalto University.
 
   Licensed under the 4-clause BSD (the "License");
@@ -493,3 +493,4 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
 
 }
+*/
