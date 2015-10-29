@@ -93,7 +93,7 @@ case class PollRequest(
   requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 ) extends OmiRequest
 
-/** Subscription request for startting subscription
+/** Subscription request for starting subscription
   *
   **/
 case class SubscriptionRequest(
