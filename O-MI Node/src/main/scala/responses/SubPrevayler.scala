@@ -50,7 +50,7 @@ case class PrevaylerSub(
                          )
 
 //TODO remove initial value
-class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L), implicit val dbConnection: DB) extends Actor with ActorLogging {
+class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
   val subID:Ref[Long] = Ref(0L)
 
