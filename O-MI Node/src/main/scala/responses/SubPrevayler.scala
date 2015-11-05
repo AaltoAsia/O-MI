@@ -1,8 +1,10 @@
 package responses
 
+import java.sql.Timestamp
 import java.util.Date
 
 import org.prevayler.{Transaction, TransactionWithQuery}
+import types.OdfTypes.OdfValue
 
 import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,7 +12,7 @@ import scala.concurrent.duration
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.stm.Ref
 import scala.util.Try
-
+import scala.collection.JavaConversions.asScalaIterator
 
 
 //import java.util.concurrent.ConcurrentSkipListSet
@@ -111,18 +113,38 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
 
   def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
-    Try(
-    subscription.callback match {
-        case Some(callback) => subscription.interval match{
-          case dur @ Duration(-1, duration.SECONDS) => { ???
+    Try {
+      val newId = SingleStores.idPrevayler execute getAndUpdateId
+
+      subscription.callback match {
+        case cb@Some(callback) => subscription.interval match {
+          case dur@Duration(-1, duration.SECONDS) => {
+            val newTime: Timestamp = {
+              if (subscription.ttl.isFinite()) {
+               new Timestamp(System.currentTimeMillis() + subscription.ttlToMillis)
+              } else {
+               new Timestamp(Long.MaxValue)
+              }
+            }
+
+            SingleStores.eventPrevayler execute AddEventSub(
+              EventSub(
+                newId,
+                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                newTime,
+                cb,
+                OdfValue("", "", None)
+              )
+            )
+            newId
           }
-          case dur @ Duration(-2, duration.SECONDS) => ???
+          case dur@Duration(-2, duration.SECONDS) => ???
           case dur: FiniteDuration => ???
           case dur => ??? //log.error(Exception("unsupported Duration for subscription"), s"Duration $dur is unsupported")
         }
         case None => ??? //PollSub
       }
-    )
+    }
   }
 
 }
