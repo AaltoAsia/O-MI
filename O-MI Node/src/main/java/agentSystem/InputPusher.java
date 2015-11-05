@@ -24,30 +24,39 @@ import types.OdfTypes.OdfInfoItem;
 import types.OdfTypes.OdfValue;
 import types.Path;
 import akka.actor.ActorRef;
+import static akka.pattern.Patterns.ask;
+import static akka.pattern.Patterns.pipe;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
+import akka.util.Timeout;
+
+
 import scala.Tuple2;
 
 /** Interface for pushing data to InputPusher actor. 
  */
 public class InputPusher {
     public static ActorRef ipdb = null; 
-     public static void handleOdf( OdfObjects objs) { 
+     public static void handleOdf( OdfObjects objs, Timeout t) { 
     	if(ipdb != null)
-		ipdb.tell(new HandleOdf(objs),null); 
+		ask(ipdb,new HandleOdf(objs), t); 
     }
-    public static void handleObjects( Iterable<OdfObject> objs) { 
+    public static void handleObjects( Iterable<OdfObject> objs, Timeout t ) { 
     	if(ipdb != null)
-		ipdb.tell(new HandleObjects(objs),null); 
+		ask(ipdb,new HandleObjects(objs), t); 
     }
-    public static void handleInfoItems( Iterable<OdfInfoItem> items) { 
+    public static void handleInfoItems( Iterable<OdfInfoItem> items,Timeout t) { 
     	if(ipdb != null)
-		ipdb.tell(new HandleInfoItems(items),null); 
+		ask(ipdb,new HandleInfoItems(items), t ); 
     }
-    public static void handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs) { 
+    public static void handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs,Timeout t) { 
     	if(ipdb != null)
-		ipdb.tell(new HandlePathValuePairs(pairs),null);
+		ask(ipdb,new HandlePathValuePairs(pairs),t);
     }
-    public static void handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs) { 
+    public static void handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs, Timeout t) { 
     	if(ipdb != null)
-		ipdb.tell(new HandlePathMetaDataPairs(pairs),null); 
+		ask(ipdb,new HandlePathMetaDataPairs(pairs), t); 
     }
 }

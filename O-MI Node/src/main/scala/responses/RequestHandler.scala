@@ -198,7 +198,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleSubscription(subscription)
     }
     case write: WriteRequest => {
-      InputPusher.handleObjects(write.odf.objects)
+      if(write.ttl.isFinite)
+        InputPusher.handleObjects(write.odf.objects, new Timeout(write.ttl.toSeconds, SECONDS))
+      else
+        InputPusher.handleObjects(write.odf.objects, new Timeout(Long.MaxValue,SECONDS))
       //XXX:
       (success, 200)
     }
@@ -210,7 +213,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           result => 
           result.odf match {
             case Some(odf) =>
-              InputPusher.handleObjects(odf.objects)
+            if(response.ttl.isFinite)
+              InputPusher.handleObjects(odf.objects, new Timeout(response.ttl.toSeconds, SECONDS))
+            else
+              InputPusher.handleObjects(odf.objects, new Timeout(Long.MaxValue,SECONDS))
             case None =>//noop?
           }
           Results.success

@@ -16,6 +16,8 @@ import scala.util.Random
 // Scala XML
 import scala.xml._
 
+import scala.concurrent.duration._
+import akka.util.Timeout
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
 
 
@@ -26,6 +28,7 @@ class SmartHouseAgent extends InternalAgent {
   
   private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
   private var initialized = false
+  val t : FiniteDuration = Duration(5, SECONDS) 
   
   override def init(configPath : String) : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
@@ -74,7 +77,8 @@ class SmartHouseAgent extends InternalAgent {
           odfInfoItems.getOrElse(Iterable.empty).collect{ 
             case ((info @ OdfInfoItem(_,_,_, Some(metaData)), firstValue:String )) => 
               (info.path, metaData.data)
-          }
+          },
+          new Timeout(t)
         )
     }
     initialized = true
@@ -99,7 +103,8 @@ class SmartHouseAgent extends InternalAgent {
         }
         InternalAgent.log.info("SmartHouseAgent pushed data to DB.")
         InputPusher.handleInfoItems(
-          odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info} 
+          odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info},
+          new Timeout(t)
         )
         Thread.sleep(10000)
       }
