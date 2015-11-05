@@ -6,26 +6,22 @@ import java.util.Date
 import types.Path
 
 import scala.collection.immutable.HashMap
-import scala.concurrent.duration.{FiniteDuration, Duration}
-import scala.concurrent.stm.Ref
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.stm.Ref
 import scala.util.Try
 
 //import java.util.concurrent.ConcurrentSkipListSet
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{Actor, ActorLogging}
 import database._
-import org.prevayler.{Transaction, PrevaylerFactory}
+import org.prevayler.{TransactionWithQuery, PrevaylerFactory, Transaction}
+import responses.CallbackHandlers._
 import types.OdfTypes.OdfValue
-import CallbackHandlers._
 import types.OmiTypes.SubscriptionRequest
 
-import types._
-
 import scala.collection.SortedSet
-
-import scala.collection.JavaConversions.asScalaIterator
 
 case object HandleIntervals
 
@@ -67,40 +63,21 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
 
 //TODO EventSub
-  case class AddEventSub(eventSub: SubscriptionRequest, sId: Long) extends Transaction[EventSubs] {
+  case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {
     def executeOn(store: EventSubs, d: Date) = {
       //val sId = subIDCounter.single.getAndTransform(_+1)
       val currentTime = System.currentTimeMillis()
 
-      val expiredSub: Boolean = eventSub.ttl match{
-        case finite: FiniteDuration => {
-          val finiteDuration = finite - Duration( currentTime - d.getTime(), "milliseconds")
-          if(finiteDuration < Duration(0, "seconds")){
-            true
-          } else {
-            //TODO scheduler is optimized for short durations, might fail with long durations find better solution
-            scheduler.scheduleOnce(finiteDuration, self, RemoveSubscription(sId)) //possible to tell also where to remove
-            finiteDuration
-            false
-          }
-        }
-        case other => false//infinite
-      }
+      val expiredSub: Boolean = eventSub.endTime.before(d) // eventSub.ttl match
+
       if(!expiredSub){
-        val paths: Seq[Path] = OdfTypes.getLeafs(eventSub.odf).iterator().map(_.path).toSeq
-        val newSub: EventSub = EventSub(
-          sId,
-          paths,
-          ???,
-          eventSub.callback,
-          OdfValue("", "", None) //TODO do we store subscription values here or in database?
-        )
-        val newSubs: HashMap[String, Seq[EventSub]] = paths.map(path => (path.toString, Seq(newSub)))(collection.breakOut)
-        //store.eventSubs = (store.eventSubs.toSeq ++ newSubs).groupBy(_._1).mapValues(n => n.map(_._2).flatten)(collection.breakOut)
+        if(eventSub.endTime.before(new Date(Long.MaxValue))){
+          scheduler.scheduleOnce(Duration(eventSub.endTime.getTime - d.getTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
+        }
+        val newSubs: HashMap[String, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n.toString() -> Seq(eventSub)))(collection.breakOut)
         store.eventSubs = store.eventSubs.merged(newSubs)((a, b) => (a._1, a._2 ++ b._2))
       }
     }
-    //      store.data = store.data.copy(name = newName)
   }
 
   case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {
@@ -141,29 +118,41 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   /*
   re schedule when starting in new subscription transactions
   */
+
+  case class SubIds(var id: Long)
+
+  case object getAndUpdateId extends TransactionWithQuery[SubIds, Long]{
+    override def executeAndQuery(p: SubIds, date: Date): Long = {
+      p.id = p.id + 1
+      p.id
+    }
+  }
+
   val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs(HashMap()))
   val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs(SortedSet()(TimedSubOrdering.reverse)))
+  val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(1))
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
-    case NewSubscription(subscription) => {
-      subscription.callback match {
+    case NewSubscription(subscription) => sender() ! setSubscription(subscription)
+
+    }
+      //temp: Any => Unit
+
+
+  def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
+    Try(
+    subscription.callback match {
         case Some(callback) => subscription.interval match{
-          //case dur @ Duration(-1, "seconds") => ??? //eventPrevayler execute AddEventSub()
-          //case dur @ Duration(-2, "seconds") => ???
+          case dur @ Duration(-1, duration.SECONDS) => { ???
+          }
+          case dur @ Duration(-2, duration.SECONDS) => ???
           case dur: FiniteDuration => ???
           case dur => ??? //log.error(Exception("unsupported Duration for subscription"), s"Duration $dur is unsupported")
         }
         case None => ??? //PollSub
       }
-
-    }
-      //temp: Any => Unit
-  }
-
-  def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
-    Try()
-    ???
+    )
   }
 
 }
