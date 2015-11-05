@@ -101,7 +101,9 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   }
 
   case class AddIntervalSub(intervalSub: SubscriptionRequest) extends Transaction[IntervalSubs] {
-    def executeOn(store: IntervalSubs, d: Date)
+    def executeOn(store: IntervalSubs, d: Date) = {
+      ???
+    }
   }
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
