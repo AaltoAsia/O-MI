@@ -10,6 +10,8 @@ import scala.concurrent.duration.{FiniteDuration, Duration}
 import scala.concurrent.stm.Ref
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Try
+
 //import java.util.concurrent.ConcurrentSkipListSet
 
 import akka.actor.{ActorLogging, Actor}
@@ -65,9 +67,9 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
 
 //TODO EventSub
-  case class AddEventSub(eventSub: SubscriptionRequest) extends Transaction[EventSubs] {
+  case class AddEventSub(eventSub: SubscriptionRequest, sId: Long) extends Transaction[EventSubs] {
     def executeOn(store: EventSubs, d: Date) = {
-      val sId = subIDCounter.single.getAndTransform(_+1)
+      //val sId = subIDCounter.single.getAndTransform(_+1)
       val currentTime = System.currentTimeMillis()
 
       val expiredSub: Boolean = eventSub.ttl match{
@@ -89,6 +91,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
         val newSub: EventSub = EventSub(
           sId,
           paths,
+          ???,
           eventSub.callback,
           OdfValue("", "", None) //TODO do we store subscription values here or in database?
         )
@@ -100,8 +103,13 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
     //      store.data = store.data.copy(name = newName)
   }
 
-  case class AddIntervalSub(intervalSub: SubscriptionRequest) extends Transaction[IntervalSubs] {
+  case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {
     def executeOn(store: IntervalSubs, d: Date) = {
+      //val sId = subIDCounter.single.getAndTransform(_+1)
+      if(d.after(intervalSub.endTime)){
+???
+      }
+      val currentTime = System.currentTimeMillis()
 
     }
   }
@@ -112,22 +120,23 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
       a.nextRunTime.getTime compare b.nextRunTime.getTime
   }
 
-  case class TimedSub(id: Long, ttl: Duration, paths: Seq[Path], interval: Duration, startTime: Duration, nextRunTime: Timestamp)
+  case class TimedSub(id: Long, ttl: Duration, endTime: Date, callback: Option[String], paths: Seq[Path], interval: Duration, startTime: Duration, nextRunTime: Timestamp)
     extends SavedSub
 
   sealed trait SavedSub {
     val id: Long
-    //val ttl: Duration
+    val endTime: Date
     val callback: Option[String]
     val paths: Seq[Path]
-   // val startTime: Duration
+    //va: Duration
 
   }
 
-  case class IntervalSub(id: Long, paths: Seq[Path], callback: Option[String], interval: Duration) extends SavedSub//, startTime: Duration) extends SavedSub
+  case class IntervalSub(id: Long, paths: Seq[Path], endTime: Date, callback: Option[String], interval: Duration) extends SavedSub//, startTime: Duration) extends SavedSub
 
-  case class EventSub(id: Long, paths: Seq[Path], callback: Option[String], lastValue: OdfValue) //startTime: Duration)
+  case class EventSub(id: Long, paths: Seq[Path], endTime:Date, callback: Option[String], lastValue: OdfValue) //startTime: Duration)
     extends SavedSub
+
 
   /*
   re schedule when starting in new subscription transactions
@@ -137,8 +146,24 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
-    case NewSubscription(id) =>
-      temp: Any => Unit
+    case NewSubscription(subscription) => {
+      subscription.callback match {
+        case Some(callback) => subscription.interval match{
+          //case dur @ Duration(-1, "seconds") => ??? //eventPrevayler execute AddEventSub()
+          //case dur @ Duration(-2, "seconds") => ???
+          case dur: FiniteDuration => ???
+          case dur => ??? //log.error(Exception("unsupported Duration for subscription"), s"Duration $dur is unsupported")
+        }
+        case None => ??? //PollSub
+      }
+
+    }
+      //temp: Any => Unit
+  }
+
+  def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
+    Try()
+    ???
   }
 
 }
