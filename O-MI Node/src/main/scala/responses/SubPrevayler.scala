@@ -5,9 +5,11 @@ import java.util.Date
 
 import types.Path
 
-import scala.concurrent.duration.Duration
+import scala.collection.immutable.HashMap
+import scala.concurrent.duration.{FiniteDuration, Duration}
 import scala.concurrent.stm.Ref
 
+import scala.concurrent.ExecutionContext.Implicits.global
 //import java.util.concurrent.ConcurrentSkipListSet
 
 import akka.actor.{ActorLogging, Actor}
@@ -20,7 +22,6 @@ import types.OmiTypes.SubscriptionRequest
 import types._
 
 import scala.collection.SortedSet
-import scala.collection.mutable.HashMap
 
 import scala.collection.JavaConversions.asScalaIterator
 
@@ -46,10 +47,11 @@ case class RemoveSubscription(id: Long)
 //private val ttlQueue: ConcurrentSkipListSet[TTLTimeout] = new ConcurrentSkipListSet(subOrder)
 
 case class PrevaylerSub(
+                         val id: Long,
                          val ttl: Duration,
                          val interval: Duration,
                          val callback: Option[String],
-                       val paths: Seq[Path]
+                         val paths: Seq[Path]
 
                          )
 
@@ -66,25 +68,41 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   case class AddEventSub(eventSub: SubscriptionRequest) extends Transaction[EventSubs] {
     def executeOn(store: EventSubs, d: Date) = {
       val sId = subIDCounter.single.getAndTransform(_+1)
-      if(!eventSub.ttl.isFinite()){
-        val ttl = eventSub.ttl - Duration(System.currentTimeMillis() - d.getTime(), "milliseconds")
-        scheduler.scheduleOnce(ttl.,self,RemoveSubscription(sId))
-
-      }
-      val paths: Seq[Path] = OdfTypes.getLeafs(eventSub.odf).iterator().map(_.path).toSeq
       val currentTime = System.currentTimeMillis()
-      val newSub: EventSub = EventSub(
-      sId,
-      eventSub.ttl,
-      paths,
-      ???,
-      eventSub.ttl
-      )
-      store.eventSubs = ???
+
+      val expiredSub: Boolean = eventSub.ttl match{
+        case finite: FiniteDuration => {
+          val finiteDuration = finite - Duration( currentTime - d.getTime(), "milliseconds")
+          if(finiteDuration < Duration(0, "seconds")){
+            true
+          } else {
+            //TODO scheduler is optimized for short durations, might fail with long durations find better solution
+            scheduler.scheduleOnce(finiteDuration, self, RemoveSubscription(sId)) //possible to tell also where to remove
+            finiteDuration
+            false
+          }
+        }
+        case other => false//infinite
+      }
+      if(!expiredSub){
+        val paths: Seq[Path] = OdfTypes.getLeafs(eventSub.odf).iterator().map(_.path).toSeq
+        val newSub: EventSub = EventSub(
+          sId,
+          eventSub.ttl,
+          paths,
+          OdfValue("", "", None) //TODO do we store subscription values here or in database?
+        )
+        val newSubs: HashMap[String, Seq[EventSub]] = paths.map(path => (path.toString, Seq(newSub)))(collection.breakOut)
+        //store.eventSubs = (store.eventSubs.toSeq ++ newSubs).groupBy(_._1).mapValues(n => n.map(_._2).flatten)(collection.breakOut)
+        store.eventSubs = store.eventSubs.merged(newSubs)((a, b) => (a._1, a._2 ++ b._2))
+      }
     }
     //      store.data = store.data.copy(name = newName)
   }
 
+  case class AddIntervalSub(intervalSub: SubscriptionRequest) extends Transaction[IntervalSubs] {
+    def executeOn(store: IntervalSubs, d: Date)
+  }
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
   object TimedSubOrdering extends Ordering[TimedSub] {
@@ -97,14 +115,15 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
   sealed trait SavedSub {
     val id: Long
+    val ttl: Duration
     val paths: Seq[Path]
-    val startTime: Duration
+   // val startTime: Duration
 
   }
 
   case class IntervalSub(id: Long, ttl: Duration, paths: Seq[Path], interval: Duration, startTime: Duration) extends SavedSub
 
-  case class EventSub(id: Long, ttl: Duration, paths: Seq[Path], lastValue: OdfValue, startTime: Duration)
+  case class EventSub(id: Long, ttl: Duration, paths: Seq[Path], lastValue: OdfValue) //startTime: Duration)
     extends SavedSub
 
   /*
