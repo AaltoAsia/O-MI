@@ -88,8 +88,8 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
         val paths: Seq[Path] = OdfTypes.getLeafs(eventSub.odf).iterator().map(_.path).toSeq
         val newSub: EventSub = EventSub(
           sId,
-          eventSub.ttl,
           paths,
+          eventSub.callback,
           OdfValue("", "", None) //TODO do we store subscription values here or in database?
         )
         val newSubs: HashMap[String, Seq[EventSub]] = paths.map(path => (path.toString, Seq(newSub)))(collection.breakOut)
@@ -102,7 +102,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
   case class AddIntervalSub(intervalSub: SubscriptionRequest) extends Transaction[IntervalSubs] {
     def executeOn(store: IntervalSubs, d: Date) = {
-      ???
+
     }
   }
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
@@ -117,15 +117,16 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
   sealed trait SavedSub {
     val id: Long
-    val ttl: Duration
+    //val ttl: Duration
+    val callback: Option[String]
     val paths: Seq[Path]
    // val startTime: Duration
 
   }
 
-  case class IntervalSub(id: Long, ttl: Duration, paths: Seq[Path], interval: Duration, startTime: Duration) extends SavedSub
+  case class IntervalSub(id: Long, paths: Seq[Path], callback: Option[String], interval: Duration) extends SavedSub//, startTime: Duration) extends SavedSub
 
-  case class EventSub(id: Long, ttl: Duration, paths: Seq[Path], lastValue: OdfValue) //startTime: Duration)
+  case class EventSub(id: Long, paths: Seq[Path], callback: Option[String], lastValue: OdfValue) //startTime: Duration)
     extends SavedSub
 
   /*
