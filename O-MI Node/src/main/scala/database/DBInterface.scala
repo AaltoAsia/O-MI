@@ -58,6 +58,9 @@ import database._
 object SingleStores {
     // Latest values stored
     val latestStore = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
+    val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs.empty, settings.journalsDirectory)
+    val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
+    val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(0), settings.journalsDirectory)
 }
 
 

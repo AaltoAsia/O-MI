@@ -1,9 +1,8 @@
 package responses
 
-import java.sql.Timestamp
 import java.util.Date
 
-import types.Path
+import org.prevayler.{Transaction, TransactionWithQuery}
 
 import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,16 +11,14 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.stm.Ref
 import scala.util.Try
 
-//import java.util.concurrent.ConcurrentSkipListSet
 
+
+//import java.util.concurrent.ConcurrentSkipListSet
 import akka.actor.{Actor, ActorLogging}
 import database._
-import org.prevayler.{TransactionWithQuery, PrevaylerFactory, Transaction}
-import responses.CallbackHandlers._
-import types.OdfTypes.OdfValue
 import types.OmiTypes.SubscriptionRequest
+import types._
 
-import scala.collection.SortedSet
 
 case object HandleIntervals
 
@@ -56,11 +53,8 @@ case class PrevaylerSub(
 //TODO remove initial value
 class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
-  val scheduler = system.scheduler
+  val scheduler = context.system.scheduler
 
-  case class EventSubs(var eventSubs: HashMap[String, Seq[EventSub]])
-
-  case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
 
 //TODO EventSub
   case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {
@@ -92,34 +86,13 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   }
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
-  object TimedSubOrdering extends Ordering[TimedSub] {
-    def compare(a: TimedSub, b: TimedSub) =
-      a.nextRunTime.getTime compare b.nextRunTime.getTime
-  }
 
-  case class TimedSub(id: Long, ttl: Duration, endTime: Date, callback: Option[String], paths: Seq[Path], interval: Duration, startTime: Duration, nextRunTime: Timestamp)
-    extends SavedSub
 
-  sealed trait SavedSub {
-    val id: Long
-    val endTime: Date
-    val callback: Option[String]
-    val paths: Seq[Path]
-    //va: Duration
-
-  }
-
-  case class IntervalSub(id: Long, paths: Seq[Path], endTime: Date, callback: Option[String], interval: Duration) extends SavedSub//, startTime: Duration) extends SavedSub
-
-  case class EventSub(id: Long, paths: Seq[Path], endTime:Date, callback: Option[String], lastValue: OdfValue) //startTime: Duration)
-    extends SavedSub
 
 
   /*
   re schedule when starting in new subscription transactions
   */
-
-  case class SubIds(var id: Long)
 
   case object getAndUpdateId extends TransactionWithQuery[SubIds, Long]{
     override def executeAndQuery(p: SubIds, date: Date): Long = {
@@ -128,9 +101,6 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
     }
   }
 
-  val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs(HashMap()))
-  val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs(SortedSet()(TimedSubOrdering.reverse)))
-  val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(1))
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {

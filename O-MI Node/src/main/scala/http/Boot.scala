@@ -50,7 +50,7 @@ trait Starter {
    * This is called in [[init]]. Create input pusher actor for handling agent input.
    * @param dbConnection Use a specific db connection for all agents, intended for testing
    */
-  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-pusher-for-db") = {
+  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-db-pusher") = {
     InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),actorname)
   }
 

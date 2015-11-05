@@ -92,9 +92,10 @@ class DBPusher(val dbobject: DB)
     val pairs = infoitems.map { info =>
       info.values.map { tv => (info.path, tv) }
     }.flatten[(Path, OdfValue)].toList
-    dbobject.setMany(pairs)
 
-    log.debug("Successfully saved InfoItems to DB")
+    handlePathValuePairs(pairs)
+
+    //log.debug("Successfully saved InfoItems to DB")
     val meta = infoitems.collect {
       case OdfInfoItem(path, _, _, Some(metaData)) => (path, metaData.data)
     }
@@ -111,6 +112,8 @@ class DBPusher(val dbobject: DB)
    *
    */
   private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Unit = {
+    // save first to latest values and then db
+    pairs foreach (data => dbobject.latestStore execute (SetSensorData.apply _).tupled(data))
     dbobject.setMany(pairs.toList)
     log.debug("Successfully saved Path-TimedValue pairs to DB")
   }
