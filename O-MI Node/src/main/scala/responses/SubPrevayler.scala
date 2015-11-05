@@ -1,15 +1,10 @@
 package responses
 
-import java.sql.Timestamp
 import java.util.Date
-
-import types.Path
-
-import scala.collection.immutable.HashMap
 import scala.concurrent.duration.{FiniteDuration, Duration}
 import scala.concurrent.stm.Ref
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.immutable.HashMap
 import scala.util.Try
 
 //import java.util.concurrent.ConcurrentSkipListSet
@@ -17,13 +12,12 @@ import scala.util.Try
 import akka.actor.{ActorLogging, Actor}
 import database._
 import org.prevayler.{Transaction, PrevaylerFactory}
-import types.OdfTypes.OdfValue
 import CallbackHandlers._
 import types.OmiTypes.SubscriptionRequest
 
+import types.OdfTypes.OdfValue
 import types._
 
-import scala.collection.SortedSet
 
 import scala.collection.JavaConversions.asScalaIterator
 
@@ -62,9 +56,6 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
   val scheduler = system.scheduler
 
-  case class EventSubs(var eventSubs: HashMap[String, Seq[EventSub]])
-
-  case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
 
 //TODO EventSub
   case class AddEventSub(eventSub: SubscriptionRequest, sId: Long) extends Transaction[EventSubs] {
@@ -115,27 +106,8 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   }
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
-  object TimedSubOrdering extends Ordering[TimedSub] {
-    def compare(a: TimedSub, b: TimedSub) =
-      a.nextRunTime.getTime compare b.nextRunTime.getTime
-  }
 
-  case class TimedSub(id: Long, ttl: Duration, endTime: Date, callback: Option[String], paths: Seq[Path], interval: Duration, startTime: Duration, nextRunTime: Timestamp)
-    extends SavedSub
 
-  sealed trait SavedSub {
-    val id: Long
-    val endTime: Date
-    val callback: Option[String]
-    val paths: Seq[Path]
-    //va: Duration
-
-  }
-
-  case class IntervalSub(id: Long, paths: Seq[Path], endTime: Date, callback: Option[String], interval: Duration) extends SavedSub//, startTime: Duration) extends SavedSub
-
-  case class EventSub(id: Long, paths: Seq[Path], endTime:Date, callback: Option[String], lastValue: OdfValue) //startTime: Duration)
-    extends SavedSub
 
 
   /*
