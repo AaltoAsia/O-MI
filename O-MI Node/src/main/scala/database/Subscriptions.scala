@@ -12,15 +12,6 @@ import scala.collection.immutable.SortedSet
 import scala.collection.immutable.HashMap
 import scala.concurrent.duration.Duration
 
-case class TimedSub(id: Long,
-  ttl: Duration,
-  endTime: Date,
-  callback: Option[String],
-  paths: Seq[Path],
-  interval: Duration,
-  startTime: Duration,
-  nextRunTime: Timestamp
-  ) extends SavedSub
 
 object IntervalSubOrdering extends Ordering[IntervalSub] {
   def compare(a: IntervalSub, b: IntervalSub) =
@@ -43,7 +34,8 @@ case class IntervalSub(
   endTime: Timestamp,
   callback: Option[String],
   interval: Duration,
-  nextRunTime: Timestamp
+  nextRunTime: Timestamp,
+  startTime: Timestamp
   ) extends SavedSub//, startTime: Duration) extends SavedSub
 
 case class EventSub(

@@ -3,16 +3,16 @@ package responses
 import java.sql.Timestamp
 import java.util.Date
 
-import org.prevayler.{Query, Transaction, TransactionWithQuery}
+import org.prevayler.{Transaction, TransactionWithQuery}
 import types.OdfTypes.OdfValue
 
-import scala.collection.immutable.{SortedSet, HashMap}
+import scala.collection.JavaConversions.asScalaIterator
+import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.stm.Ref
 import scala.util.Try
-import scala.collection.JavaConversions.asScalaIterator
 
 
 //import java.util.concurrent.ConcurrentSkipListSet
@@ -111,13 +111,18 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
-
+    case HandleIntervals => handleIntervals
     }
       //temp: Any => Unit
-  case object GetIntervals extends Query[IntervalSubs, (SortedSet[TimedSub], Timestamp)] {
-        def query(store: IntervalSubs, d: Date): (SortedSet[TimedSub], Timestamp) = {
-          val (oldIntervals, nextRunTime) = store.intervalSubs.span(_.nextRunTime.before(d))//(_.nextRunTime.before(d))
-          ???
+  case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
+        def executeAndQuery(store: IntervalSubs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
+          val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
+          val newIntervals = passedIntervals.map{a =>
+              val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
+              val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
+              a.copy(nextRunTime = newTime)}
+          store.intervalSubs = rest ++ newIntervals
+          (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
         }
 
   }
@@ -125,8 +130,9 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   //
   //}
 
- // private def checkIntervalSubs: Unit => {
- // }
+  private def handleIntervals: Unit = {
+   ???
+  }
 
   private def subEndTimestamp(subttl: Duration): Timestamp ={
               if (subttl.isFinite()) {
@@ -160,14 +166,15 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
           case dur@Duration(-2, duration.SECONDS) => ??? // subscription for new node
           case dur: FiniteDuration => {
             val newTime = subEndTimestamp(subscription.ttl)
-
             SingleStores.intervalPrevayler execute AddIntervalSub(
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
                 cb,
                 dur,
-                new Timestamp(System.currentTimeMillis() + dur.toMillis)
+                new Timestamp(System.currentTimeMillis() + dur.toMillis),
+                new Timestamp(System.currentTimeMillis())
+
               )
             )
 
