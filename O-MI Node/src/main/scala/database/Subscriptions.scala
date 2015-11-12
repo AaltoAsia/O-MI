@@ -20,8 +20,8 @@ case class TimedSub(id: Long,
   nextRunTime: Timestamp
   ) extends SavedSub
 
-object TimedSubOrdering extends Ordering[TimedSub] {
-  def compare(a: TimedSub, b: TimedSub) =
+object IntervalSubOrdering extends Ordering[IntervalSub] {
+  def compare(a: IntervalSub, b: IntervalSub) =
     a.nextRunTime.getTime compare b.nextRunTime.getTime
 }
 
@@ -40,7 +40,8 @@ case class IntervalSub(
   paths: Seq[Path],
   endTime: Timestamp,
   callback: Option[String],
-  interval: Duration
+  interval: Duration,
+  nextRunTime: Timestamp
   ) extends SavedSub//, startTime: Duration) extends SavedSub
 
 case class EventSub(
@@ -57,10 +58,10 @@ object EventSubs {
   def empty = EventSubs(HashMap.empty)
 }
 
-case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
+case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
 object IntervalSubs {
   // type IntervalSubs = Prevayler[IntervalSubs]
-  def empty = IntervalSubs(SortedSet.empty(TimedSubOrdering.reverse))
+  def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering.reverse))
 }
 
 // Transactions are in responses/SubPrevayler.scala or Subscription Handler

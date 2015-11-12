@@ -3,10 +3,10 @@ package responses
 import java.sql.Timestamp
 import java.util.Date
 
-import org.prevayler.{Transaction, TransactionWithQuery}
+import org.prevayler.{Query, Transaction, TransactionWithQuery}
 import types.OdfTypes.OdfValue
 
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{SortedSet, HashMap}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -55,7 +55,7 @@ case class PrevaylerSub(
 //TODO remove initial value
 class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
-  val scheduler = context.system.scheduler
+  val ttlScheduler = context.system.scheduler
 
 
 //TODO EventSub
@@ -68,7 +68,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
       if(scheduleTime > 0L){
         if(eventSub.endTime.getTime < Long.MaxValue){
-          scheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
+          ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
         }
         val newSubs: HashMap[String, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n.toString() -> Seq(eventSub)))(collection.breakOut)
         store.eventSubs = store.eventSubs.merged(newSubs)((a, b) => (a._1, a._2 ++ b._2))
@@ -82,10 +82,9 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
       val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
       if(scheduleTime >= 0){
         if(intervalSub.endTime.getTime < Long.MaxValue){
-          scheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(intervalSub.id))
+          ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(intervalSub.id))
         }
-        val
-        ???
+        store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
       }
       val currentTime = System.currentTimeMillis()
 
@@ -115,6 +114,19 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
 
     }
       //temp: Any => Unit
+  case object GetIntervals extends Query[IntervalSubs, (SortedSet[TimedSub], Timestamp)] {
+        def query(store: IntervalSubs, d: Date): (SortedSet[TimedSub], Timestamp) = {
+          val (oldIntervals, nextRunTime) = store.intervalSubs.span(_.nextRunTime.before(d))//(_.nextRunTime.before(d))
+          ???
+        }
+
+  }
+  //case object GetIntervals extends Query[IntervalSubs, IntervalSub] {
+  //
+  //}
+
+ // private def checkIntervalSubs: Unit => {
+ // }
 
   private def subEndTimestamp(subttl: Duration): Timestamp ={
               if (subttl.isFinite()) {
@@ -147,8 +159,20 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
           }
           case dur@Duration(-2, duration.SECONDS) => ??? // subscription for new node
           case dur: FiniteDuration => {
+            val newTime = subEndTimestamp(subscription.ttl)
+
+            SingleStores.intervalPrevayler execute AddIntervalSub(
+              IntervalSub(newId,
+                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                newTime,
+                cb,
+                dur,
+                new Timestamp(System.currentTimeMillis() + dur.toMillis)
+              )
+            )
+
             // interval subscription
-            ???
+            newId
           }
           case dur => ??? //log.error(Exception("unsupported Duration for subscription"), s"Duration $dur is unsupported")
         }
