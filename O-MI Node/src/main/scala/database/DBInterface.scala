@@ -21,6 +21,8 @@ import java.io.File
 
 import LatestValues.LatestStore
 import http.Boot.settings
+import types.OdfTypes.OdfValue
+import types.Path
 
 
 package object database {
@@ -61,6 +63,29 @@ object SingleStores {
     val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs.empty, settings.journalsDirectory)
     val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
     val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(0), settings.journalsDirectory)
+
+    /**
+     * Main function for handling incoming data and running all event-based subscriptions.
+     *  As a side effect, updates the internal latest value store and might start callback threads.
+     *  Event callbacks are sent seperately for each *changed* value.
+     * @param path Path to incoming data
+     * @param newData Actual incoming data
+     */
+    def processEvents(path: Path, newData: OdfValue): Unit = {
+      val oldValueOpt = latestStore execute LookupSensorData(path)
+
+      oldValueOpt match {
+        case Some(oldValue) =>
+          if (oldValue.timestamp.get before newData.timestamp.get)
+            ???
+        case None => 
+          ???
+          // TODO: Attach events
+      }
+
+      // val esubs = eventPrevayler execute LookupEventSub(path)
+    }
+
 }
 
 

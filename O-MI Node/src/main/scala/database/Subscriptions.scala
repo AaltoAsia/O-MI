@@ -1,5 +1,7 @@
 package database
 
+import org.prevayler._
+
 import java.sql.Timestamp
 import java.util.Date
 
@@ -52,6 +54,7 @@ case class EventSub(
   lastValue: OdfValue
   ) extends SavedSub //startTime: Duration) extends SavedSub
 
+/** from Path string to event subs for that path */
 case class EventSubs(var eventSubs: HashMap[String, Seq[EventSub]])
 object EventSubs {
   //type EventSubsStore = Prevayler[EventSubs]
@@ -64,4 +67,8 @@ object IntervalSubs {
   def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering.reverse))
 }
 
-// Transactions are in responses/SubPrevayler.scala or Subscription Handler
+case class LookupEventSub(path: Path) extends Query[EventSubs, Seq[EventSub]] {
+  def query(es: EventSubs, d: Date): Seq[EventSub] = es.eventSubs(path.toString)
+}
+
+// Other transactions are in responses/SubPrevayler.scala or Subscription Handler
