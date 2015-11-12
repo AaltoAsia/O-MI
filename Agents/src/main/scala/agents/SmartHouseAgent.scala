@@ -73,13 +73,14 @@ class SmartHouseAgent extends InternalAgent {
         InternalAgent.log.warning("Odf was empty, SmartHouseAgent shutting down.")
         return;     
       case Some(infoItems) =>
+      /*
         InputPusher.handlePathMetaDataPairs( 
           odfInfoItems.getOrElse(Iterable.empty).collect{ 
             case ((info @ OdfInfoItem(_,_,_, Some(metaData)), firstValue:String )) => 
               (info.path, metaData.data)
           },
           new Timeout(t)
-        )
+        )*/
     }
     initialized = true
   }

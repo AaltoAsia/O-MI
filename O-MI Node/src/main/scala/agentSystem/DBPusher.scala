@@ -68,21 +68,20 @@ class DBPusher(val dbobject: DB)
     if(
       data.nonEmpty 
     ){
-      handleInfoItems(data.collect { case infoitem: OdfInfoItem => infoitem }).map{
-        succ : Boolean =>
+      val write : Try[Boolean] = handleInfoItems(data.collect { case infoitem: OdfInfoItem => infoitem })
+      if( write.isSuccess ){
         log.debug("Successfully saved Odfs to DB")
         val odfNodes = getOdfNodes(objects.objects.toSeq: _*).toSet
         val descriptions = odfNodes.collect {
           case node if node.description.nonEmpty => node
         }.toIterable
-        val trys = descriptions.map{ node => dbobject.setDescription(node) }
-        trys.fold(succ){
-          case (l : Boolean ,r : Try[Boolean] ) =>
-          l && r.isSuccess 
-        }
-      }
+        descriptions.map{ node => dbobject.setDescription(node) }
+      } 
+      write.get
+    } else {
+      log.warning("Empty odf pushed for DBPusher.")
+      false
     }
-    false
   }
   /**
    * Function for handling sequences of OdfObject.
@@ -107,14 +106,14 @@ class DBPusher(val dbobject: DB)
     val meta = infoitems.collect {
       case OdfInfoItem(path, _, _, Some(metaData)) => (path, metaData.data)
     }
-    if (meta.nonEmpty) handlePathMetaDataPairs(meta)
+    val metaTry = if (meta.nonEmpty) handlePathMetaDataPairs(meta) else Success(true)
 
     val descriptions = infoitems.collect {
       case info if info.description.nonEmpty => info
     }
-    descriptions.foreach { info => dbobject.setDescription(info) }
+    descriptions.map{ node => dbobject.setDescription(node) }
+    metaTry.get 
 
-    true
   }
 
   /**

@@ -66,13 +66,13 @@ class VTTAgent extends InternalAgent {
       case None =>
         InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
       case Some(infoItems) =>
-        InputPusher.handlePathMetaDataPairs( 
+        /*InputPusher.handlePathMetaDataPairs( 
           odfInfoItems.getOrElse(Iterable.empty).collect{ 
             case ((info @ OdfInfoItem(_,_,_, Some(metaData)), firstValue:String )) => 
               (info.path, metaData.data)
           },
           new Timeout(t)
-        )
+        )*/
     }
   }
   

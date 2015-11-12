@@ -198,41 +198,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleSubscription(subscription)
     }
     case write: WriteRequest => {
-      val future : Future[Try[Boolean]] = if(write.ttl.isFinite)
-        InputPusher.handleObjects(write.odf.objects, new Timeout(write.ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
-      else
-        InputPusher.handleObjects(write.odf.objects, new Timeout(Long.MaxValue,SECONDS)).mapTo[Try[Boolean]]
-      //XXX:
-      val result = Await.result(future, write.ttl)
-      result match{
-        case Success(b: Boolean ) =>
-        if(b)
-          (success, 200)
-        else
-          (success, 500)
-        case Failure(thro: Throwable) => 
-        (internalError(thro),500)
-      }
+      handleWrite(write)
     }
     case response: ResponseRequest => {
-      log.debug("Response received.")
-      (xmlFromResults(
-        1.0,
-        response.results.map{
-          result => 
-          result.odf match {
-            case Some(odf) =>
-            if(response.ttl.isFinite)
-              InputPusher.handleObjects(odf.objects, new Timeout(response.ttl.toSeconds, SECONDS))
-            else
-              InputPusher.handleObjects(odf.objects, new Timeout(Long.MaxValue,SECONDS))
-            case None =>//noop?
-          }
-          Results.success
-        }.toSeq:_*
-      ),
-      200
-      )
+      handleResponse(response)
     }
     case cancel: CancelRequest => {
       handleCancel(cancel)
@@ -245,6 +214,75 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
   }
 
+
+
+  /** Method for handling WriteRequest.
+    * @param write request
+    * @return (xml response, HTTP status code)
+    */
+  def handleWrite( write: WriteRequest ) : (NodeSeq,Int) ={
+      log.warning("Handling write.")
+      log.warning(write.ttl.toString)
+      val ttl = if( write.ttl.isFinite ) {
+        if(write.ttl.toSeconds != 0)
+          FiniteDuration(write.ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
+      val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
+      //XXX:
+      val result = Await.result(future, ttl)
+      result match{
+      case Success(b: Boolean ) =>
+        if(b)
+          (success, 200)
+        else
+          (invalidRequest("Failed without exception."), 500)
+        case Failure(thro: Throwable) => 
+        (internalError(thro),500)
+      }
+  }
+  /** Method for handling ResponseRequest.
+    * @param response request
+    * @return (xml response, HTTP status code)
+    */
+  def handleResponse( response: ResponseRequest ) : (NodeSeq,Int) ={
+      log.debug("Response received.")
+      val ttl = if( response.ttl.isFinite ) {
+        if(response.ttl.toSeconds != 0)
+         FiniteDuration(response.ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+         FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
+      (xmlFromResults(
+        1.0,
+        response.results.map{
+          result => 
+          result.odf match {
+            case Some(odf) =>
+            val future =  InputPusher.handleObjects(odf.objects, new Timeout(ttl)).mapTo[Try[Boolean]]
+            Await.result(future, ttl) match{
+              case Success(b: Boolean ) =>
+              if(b)
+                Results.success
+              else
+                Results.invalidRequest("Failed without exception.")
+              case Failure(thro: Throwable) => 
+                Results.internalError("Internal server error: " + thro.getMessage())
+            }
+            case None =>//noop?
+              Results.success
+          }
+        }.toSeq:_*
+      ),
+      200
+      )
+  
+  }
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
