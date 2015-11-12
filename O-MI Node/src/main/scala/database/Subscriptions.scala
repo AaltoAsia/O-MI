@@ -8,7 +8,7 @@ import java.util.Date
 import types.OdfTypes.OdfValue
 import types._
 
-import scala.collection.SortedSet
+import scala.collection.immutable.SortedSet
 import scala.collection.immutable.HashMap
 import scala.concurrent.duration.Duration
 
@@ -22,8 +22,8 @@ case class TimedSub(id: Long,
   nextRunTime: Timestamp
   ) extends SavedSub
 
-object TimedSubOrdering extends Ordering[TimedSub] {
-  def compare(a: TimedSub, b: TimedSub) =
+object IntervalSubOrdering extends Ordering[IntervalSub] {
+  def compare(a: IntervalSub, b: IntervalSub) =
     a.nextRunTime.getTime compare b.nextRunTime.getTime
 }
 
@@ -40,9 +40,10 @@ case class SubIds(var id: Long)
 case class IntervalSub(
   id: Long,
   paths: Seq[Path],
-  endTime: Date,
+  endTime: Timestamp,
   callback: Option[String],
-  interval: Duration
+  interval: Duration,
+  nextRunTime: Timestamp
   ) extends SavedSub//, startTime: Duration) extends SavedSub
 
 case class EventSub(
@@ -60,10 +61,10 @@ object EventSubs {
   def empty = EventSubs(HashMap.empty)
 }
 
-case class IntervalSubs(var intervalSubs: SortedSet[TimedSub])
+case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
 object IntervalSubs {
   // type IntervalSubs = Prevayler[IntervalSubs]
-  def empty = IntervalSubs(SortedSet.empty(TimedSubOrdering.reverse))
+  def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering.reverse))
 }
 
 case class LookupEventSub(path: Path) extends Query[EventSubs, Seq[EventSub]] {
