@@ -6,6 +6,7 @@ import java.util.Date
 import types.Path
 import types.OdfTypes.OdfValue
 
+// TODO: save the whole InfoItem!!!!
 
 case class LatestValues(var allData: Map[Path, OdfValue])
 object LatestValues {

@@ -290,7 +290,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val returnId = runSync(updateAction.transactionally)
 
-    val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, Some(timestamp) ) ) ) 
+    val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) ) 
 
     //Call hooks
     database.getSetHooks foreach { _(Seq(infoitem)) }
@@ -307,10 +307,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val pathsData: Map[Path, Seq[OdfValue]] =
       data.groupBy(_._1).mapValues(
         v => v.map(_._2).sortBy(
-          _.timestamp match {
-            case Some(time) => time.getTime
-            case None       => 0
-          }))
+          _.timestamp.getTime
+        ))
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(
@@ -331,9 +329,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           DBValue(
             id,
             //create new timestamp if option is None
-            odfVal.timestamp.getOrElse {
-              new Timestamp(new java.util.Date().getTime)
-            },
+            odfVal.timestamp,
             odfVal.value,
             odfVal.typeValue)
         }
@@ -371,9 +367,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
             OdfValue(
               va.value,
               va.typeValue,
-              Some(va.timestamp.getOrElse{
-                new Timestamp(new java.util.Date().getTime)
-              })
+              va.timestamp
             )
           }.toIterable
       )

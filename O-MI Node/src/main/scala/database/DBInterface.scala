@@ -76,7 +76,7 @@ object SingleStores {
 
       oldValueOpt match {
         case Some(oldValue) =>
-          if (oldValue.timestamp.get before newData.timestamp.get)
+          if (oldValue.timestamp before newData.timestamp)
             ???
         case None => 
           ???

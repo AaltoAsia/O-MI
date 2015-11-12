@@ -81,7 +81,7 @@ trait Starter {
     InputPusher.handleInfoItems(Iterable(
       OdfInfoItem(
         Path(settings.settingsOdfPath + "num-latest-values-stored"), 
-        Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", Some(currentTime))),
+        Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
         Some(OdfDescription(numDescription))
       )
     ))

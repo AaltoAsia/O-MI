@@ -92,7 +92,7 @@ class SmartHouseAgent extends InternalAgent {
               case None => Random.nextInt
             }
             (
-            OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , Some( new Timestamp( date.getTime) ) ))),
+            OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , new Timestamp( date.getTime) ))),
             firstValue
             )
           } 

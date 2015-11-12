@@ -102,7 +102,7 @@ class VTTAgent extends InternalAgent {
                 OdfValue(
                   newVal.toString,
                   "xs:double",
-                  Some( new Timestamp( date.getTime) ) 
+                  new Timestamp( date.getTime )
                 )
               )
             ),

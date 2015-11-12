@@ -81,14 +81,14 @@ case class OdfMetaData(
 case class OdfValue(
   value:                String,
   typeValue:            String,
-  timestamp:            Option[Timestamp] = None
+  timestamp:            Timestamp
 ) {
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
     ValueType(
       value,
       typeValue,
-      unixTime = timestamp.map( _.getTime/1000),
+      unixTime = Some(timestamp.getTime/1000),
       attributes = Map.empty
     )
   }

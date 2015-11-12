@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import java.lang.Integer;
 
 // scala stuff can be generally constructed by calling .apply() method or "new ..."
-import scala.Option;
 import scala.Tuple2;
 
 import types.OdfTypes.OdfValue;
@@ -53,11 +52,7 @@ public class JavaAgent extends InternalAgent{
                 OdfValue value = new OdfValue(
                         Integer.toString(rnd.nextInt()),  // create a random value
                         "xs:integer",
-                        Option.apply(  // Option is a simple container from scala for handling null values
-                            new Timestamp( 
-                                date.getTime() 
-                                ) 
-                            ) 
+                        new Timestamp( date.getTime() ) 
                         );
 
                 // Create the right container objects:
