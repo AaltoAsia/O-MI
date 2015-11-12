@@ -52,10 +52,10 @@ class DBPusher(val dbobject: DB)
    */
   override def receive = {
     case HandleOdf(objects)             => handleOdf(objects)
-    case HandleObjects(objs)            => if (objs.nonEmpty) handleObjects(objs)
-    case HandleInfoItems(items)         => if (items.nonEmpty) handleInfoItems(items)
-    case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) handlePathValuePairs(pairs)
-    case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) handlePathMetaDataPairs(pairs)
+    case HandleObjects(objs)            => if (objs.nonEmpty) sender() ! handleObjects(objs)
+    case HandleInfoItems(items)         => if (items.nonEmpty) sender() ! handleInfoItems(items)
+    case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) sender() ! handlePathValuePairs(pairs)
+    case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
     case u                              => log.warning("Unknown message received.")
   }
 

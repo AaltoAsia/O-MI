@@ -39,24 +39,34 @@ import scala.Tuple2;
  */
 public class InputPusher {
     public static ActorRef ipdb = null; 
-     public static void handleOdf( OdfObjects objs, Timeout t) { 
+     public static Future handleOdf( OdfObjects objs, Timeout t) { 
     	if(ipdb != null)
-		ask(ipdb,new HandleOdf(objs), t); 
+        	return ask(ipdb,new HandleOdf(objs), t); 
+        else
+            return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-    public static void handleObjects( Iterable<OdfObject> objs, Timeout t ) { 
+    public static Future handleObjects( Iterable<OdfObject> objs, Timeout t ) { 
     	if(ipdb != null)
-		ask(ipdb,new HandleObjects(objs), t); 
+		return ask(ipdb,new HandleObjects(objs), t); 
+        else
+            return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-    public static void handleInfoItems( Iterable<OdfInfoItem> items,Timeout t) { 
+    public static Future handleInfoItems( Iterable<OdfInfoItem> items,Timeout t) { 
     	if(ipdb != null)
-		ask(ipdb,new HandleInfoItems(items), t ); 
+        	return ask(ipdb,new HandleInfoItems(items), t ); 
+        else
+            return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-    public static void handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs,Timeout t) { 
+    public static Future handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs,Timeout t) { 
     	if(ipdb != null)
-		ask(ipdb,new HandlePathValuePairs(pairs),t);
+		return ask(ipdb,new HandlePathValuePairs(pairs),t);
+        else
+            return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-    public static void handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs, Timeout t) { 
+    public static Future handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs, Timeout t) { 
     	if(ipdb != null)
-		ask(ipdb,new HandlePathMetaDataPairs(pairs), t); 
+	    return ask(ipdb,new HandlePathMetaDataPairs(pairs), t); 
+        else
+            return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
 }

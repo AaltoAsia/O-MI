@@ -198,12 +198,21 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleSubscription(subscription)
     }
     case write: WriteRequest => {
-      if(write.ttl.isFinite)
-        InputPusher.handleObjects(write.odf.objects, new Timeout(write.ttl.toSeconds, SECONDS))
+      val future : Future[Try[Boolean]] = if(write.ttl.isFinite)
+        InputPusher.handleObjects(write.odf.objects, new Timeout(write.ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
       else
-        InputPusher.handleObjects(write.odf.objects, new Timeout(Long.MaxValue,SECONDS))
+        InputPusher.handleObjects(write.odf.objects, new Timeout(Long.MaxValue,SECONDS)).mapTo[Try[Boolean]]
       //XXX:
-      (success, 200)
+      val result = Await.result(future, write.ttl)
+      result match{
+        case Success(b: Boolean ) =>
+        if(b)
+          (success, 200)
+        else
+          (success, 500)
+        case Failure(thro: Throwable) => 
+        (internalError(thro),500)
+      }
     }
     case response: ResponseRequest => {
       log.debug("Response received.")
