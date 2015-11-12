@@ -133,7 +133,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
                 cb,
-                OdfValue("", "", None)
+                OdfValue("", "", ???)
               )
             )
             newId

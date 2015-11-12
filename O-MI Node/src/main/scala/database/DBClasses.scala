@@ -102,7 +102,7 @@ case class DBValue(
   value: String,
   valueType: String
 ) {
-  def toOdf = OdfValue(value, valueType, Some(timestamp))
+  def toOdf = OdfValue(value, valueType, timestamp)
 }
 
 
