@@ -64,11 +64,11 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
       //val sId = subIDCounter.single.getAndTransform(_+1)
       val currentTime = System.currentTimeMillis()
 
-      val expiredSub: Boolean = eventSub.endTime.before(d) // eventSub.ttl match
+      val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
 
-      if(!expiredSub){
-        if(eventSub.endTime.before(new Date(Long.MaxValue))){
-          scheduler.scheduleOnce(Duration(eventSub.endTime.getTime - d.getTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
+      if(scheduleTime > 0L){
+        if(eventSub.endTime.getTime < Long.MaxValue){
+          scheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
         }
         val newSubs: HashMap[String, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n.toString() -> Seq(eventSub)))(collection.breakOut)
         store.eventSubs = store.eventSubs.merged(newSubs)((a, b) => (a._1, a._2 ++ b._2))
@@ -79,8 +79,13 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {
     def executeOn(store: IntervalSubs, d: Date) = {
       //val sId = subIDCounter.single.getAndTransform(_+1)
-      if(d.after(intervalSub.endTime)){
-???
+      val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
+      if(scheduleTime >= 0){
+        if(intervalSub.endTime.getTime < Long.MaxValue){
+          scheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(intervalSub.id))
+        }
+        val
+        ???
       }
       val currentTime = System.currentTimeMillis()
 
@@ -111,21 +116,23 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
     }
       //temp: Any => Unit
 
-
-  def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
+  private def subEndTimestamp(subttl: Duration): Timestamp ={
+              if (subttl.isFinite()) {
+               new Timestamp(System.currentTimeMillis() + subttl.toMillis)
+              } else {
+               new Timestamp(Long.MaxValue)
+              }
+  }
+  private def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
     Try {
       val newId = SingleStores.idPrevayler execute getAndUpdateId
 
       subscription.callback match {
-        case cb@Some(callback) => subscription.interval match {
-          case dur@Duration(-1, duration.SECONDS) => {
-            val newTime: Timestamp = {
-              if (subscription.ttl.isFinite()) {
-               new Timestamp(System.currentTimeMillis() + subscription.ttlToMillis)
-              } else {
-               new Timestamp(Long.MaxValue)
-              }
-            }
+        case cb @ Some(callback) => subscription.interval match {
+          case Duration(-1, duration.SECONDS) => {
+            //event subscription
+
+            val newTime = subEndTimestamp(subscription.ttl)
 
             SingleStores.eventPrevayler execute AddEventSub(
               EventSub(
@@ -138,8 +145,11 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
             )
             newId
           }
-          case dur@Duration(-2, duration.SECONDS) => ???
-          case dur: FiniteDuration => ???
+          case dur@Duration(-2, duration.SECONDS) => ??? // subscription for new node
+          case dur: FiniteDuration => {
+            // interval subscription
+            ???
+          }
           case dur => ??? //log.error(Exception("unsupported Duration for subscription"), s"Duration $dur is unsupported")
         }
         case None => ??? //PollSub

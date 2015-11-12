@@ -6,7 +6,7 @@ import java.util.Date
 import types.OdfTypes.OdfValue
 import types._
 
-import scala.collection.SortedSet
+import scala.collection.immutable.SortedSet
 import scala.collection.immutable.HashMap
 import scala.concurrent.duration.Duration
 
@@ -38,7 +38,7 @@ case class SubIds(var id: Long)
 case class IntervalSub(
   id: Long,
   paths: Seq[Path],
-  endTime: Date,
+  endTime: Timestamp,
   callback: Option[String],
   interval: Duration
   ) extends SavedSub//, startTime: Duration) extends SavedSub
