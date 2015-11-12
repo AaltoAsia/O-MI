@@ -48,7 +48,7 @@ case class IntervalSub(
 case class EventSub(
   id: Long,
   paths: Seq[Path],
-  endTime:Date,
+  endTime: Timestamp,
   callback: Option[String],
   lastValue: OdfValue
   ) extends SavedSub //startTime: Duration) extends SavedSub
