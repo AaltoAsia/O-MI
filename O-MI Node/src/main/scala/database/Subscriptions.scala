@@ -15,7 +15,7 @@ import scala.concurrent.duration.Duration
 case class TimedSub(id: Long,
   ttl: Duration,
   endTime: Date,
-  callback: Option[String],
+  callback: String,
   paths: Seq[Path],
   interval: Duration,
   startTime: Duration,
@@ -30,7 +30,7 @@ object IntervalSubOrdering extends Ordering[IntervalSub] {
 sealed trait SavedSub {
   val id: Long
   val endTime: Date
-  val callback: Option[String]
+  val callback: String
   val paths: Seq[Path]
   //va: Duration
 }
@@ -41,7 +41,7 @@ case class IntervalSub(
   id: Long,
   paths: Seq[Path],
   endTime: Timestamp,
-  callback: Option[String],
+  callback: String,
   interval: Duration,
   nextRunTime: Timestamp
   ) extends SavedSub//, startTime: Duration) extends SavedSub
@@ -50,12 +50,12 @@ case class EventSub(
   id: Long,
   paths: Seq[Path],
   endTime: Timestamp,
-  callback: Option[String],
+  callback: String,
   lastValue: OdfValue
   ) extends SavedSub //startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
-case class EventSubs(var eventSubs: HashMap[String, Seq[EventSub]])
+case class EventSubs(var eventSubs: HashMap[Path, Seq[EventSub]])
 object EventSubs {
   //type EventSubsStore = Prevayler[EventSubs]
   def empty = EventSubs(HashMap.empty)
@@ -67,8 +67,8 @@ object IntervalSubs {
   def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering.reverse))
 }
 
-case class LookupEventSub(path: Path) extends Query[EventSubs, Seq[EventSub]] {
-  def query(es: EventSubs, d: Date): Seq[EventSub] = es.eventSubs(path.toString)
+case class LookupEventSubs(path: Path) extends Query[EventSubs, Seq[EventSub]] {
+  def query(es: EventSubs, d: Date): Seq[EventSub] = es.eventSubs(path)
 }
 
 // Other transactions are in responses/SubPrevayler.scala or Subscription Handler

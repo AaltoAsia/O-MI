@@ -7,6 +7,7 @@ import types.Path
 import types.OdfTypes.OdfValue
 
 // TODO: save the whole InfoItem!!!!
+//case class OdfInfoItem
 
 case class LatestValues(var allData: Map[Path, OdfValue])
 object LatestValues {

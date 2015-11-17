@@ -70,8 +70,9 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
         if(eventSub.endTime.getTime < Long.MaxValue){
           ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
         }
-        val newSubs: HashMap[String, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n.toString() -> Seq(eventSub)))(collection.breakOut)
-        store.eventSubs = store.eventSubs.merged(newSubs)((a, b) => (a._1, a._2 ++ b._2))
+        //val newSubs: HashMap[Path, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n -> Seq(eventSub)))(collection.breakOut)
+        //store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
+        ???
       }
     }
   }
@@ -151,7 +152,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
-                cb,
+                callback,
                 OdfValue("", "", ???)
               )
             )
@@ -165,7 +166,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
-                cb,
+                callback,
                 dur,
                 new Timestamp(System.currentTimeMillis() + dur.toMillis)
               )
