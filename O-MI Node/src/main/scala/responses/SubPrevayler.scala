@@ -92,7 +92,34 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   }
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
+  /**
+   * Transaction to remove a subscription from interval subscriptions, returns false if no sub with id found
+   * @param id id of the subscription to remove
+   */
+  case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs, Boolean] {
+    def executeAndQuery(store: IntervalSubs, d: Date): Boolean={
+      val target = store.intervalSubs.find( _.id == id)
+      target.fold(false){ sub =>
+        store.intervalSubs = store.intervalSubs - sub
+        true
+      }
 
+    }
+  }
+
+  case class RemoveEventSub(id: Long) extends  TransactionWithQuery[EventSubs, Boolean] {
+    def executeAndQuery(store:EventSubs, d: Date): Boolean = {
+      if(store.eventSubs.values.exists(_.exists(_.id == id))){
+        val newStore: HashMap[String, Seq[EventSub]] =
+          store.eventSubs
+            .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
+            .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
+            .map(identity)(collection.breakOut) //map to HashMap
+        store.eventSubs = newStore
+      }
+      false
+    }
+  }
 
 
 
@@ -112,7 +139,8 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
     case HandleIntervals => handleIntervals
-    }
+    case RemoveSubscription(id) => ??? //TODO !!!
+  }
       //temp: Any => Unit
   case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
         def executeAndQuery(store: IntervalSubs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
@@ -140,6 +168,13 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
               } else {
                new Timestamp(Long.MaxValue)
               }
+  }
+
+
+  def removeSubscription(id: Long): Boolean = {
+    if(SingleStores.intervalPrevayler execute RemoveIntervalSub(id)) true
+    else if(SingleStores.eventPrevayler execute RemoveEventSub(id)) true
+    else false
   }
   private def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
     Try {

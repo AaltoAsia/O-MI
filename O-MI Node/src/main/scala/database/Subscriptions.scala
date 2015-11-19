@@ -1,15 +1,13 @@
 package database
 
-import org.prevayler._
-
 import java.sql.Timestamp
 import java.util.Date
 
+import org.prevayler._
 import types.OdfTypes.OdfValue
 import types._
 
-import scala.collection.immutable.SortedSet
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{HashMap, SortedSet}
 import scala.concurrent.duration.Duration
 
 
