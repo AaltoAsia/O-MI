@@ -30,6 +30,7 @@ import types.OdfTypes._
 import scala.collection.JavaConversions.asJavaIterable
 import database._
 
+import scala.util.{Try, Failure, Success}
 import xml._
 
 /**
@@ -145,10 +146,16 @@ trait Starter {
  */
 object Boot extends Starter with App{
 //def main(args: Array[String]) = {
+  Try {
     init()
     val serviceActor = start()
     bindHttp(serviceActor)
-  //}
+  } match {
+    case Failure(ex) => system.log.error(ex, "Error during startup")
+    case Success(_) => system.log.info("Process exited normally")
+  }
+    //}
+
 }
 
 
