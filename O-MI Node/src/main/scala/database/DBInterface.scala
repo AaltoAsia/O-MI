@@ -23,6 +23,9 @@ import LatestValues.LatestStore
 import http.Boot.settings
 import types.OdfTypes.OdfValue
 import types.Path
+import types.OdfTypes.fromPath
+
+import collection.JavaConversions.asJavaIterable
 
 
 package object database {
@@ -58,7 +61,6 @@ import database._
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-    // Latest values stored
     val latestStore = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
     val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs.empty, settings.journalsDirectory)
     val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
@@ -66,24 +68,41 @@ object SingleStores {
 
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
-     *  As a side effect, updates the internal latest value store and might start callback threads.
-     *  Event callbacks are sent seperately for each *changed* value.
+     *  As a side effect, updates the internal latest value store.
+     *  Event callbacks are sent seperately for each *changed* value and .
      * @param path Path to incoming data
-     * @param newData Actual incoming data
+     * @param newValue Actual incoming data
+     * @return Triggered responses
      */
-    def processEvents(path: Path, newData: OdfValue): Unit = {
+    def processEvents(path: Path, newValue: OdfValue): Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
+      lazy val esubs = eventPrevayler execute LookupEventSubs(path)
+      // TODO: attach or other events
+      // lazy val onChange = esubs.filter{???} 
+
       val oldValueOpt = latestStore execute LookupSensorData(path)
 
       oldValueOpt match {
         case Some(oldValue) =>
-          if (oldValue.timestamp before newData.timestamp)
-            ???
+          if (oldValue.timestamp before newValue.timestamp) {
+            val onChangeResponses =
+              if (oldValue.value != newValue.value) {
+                esubs.map{ esub =>
+                  val resp = responses.Results.odf("200", None, Some(esub.id.toString),
+                    fromPath(OdfInfoItem(path, Iterable(newValue)))
+                  )
+                  (esub, resp)
+                }
+              } else Seq.empty
+
+            latestStore execute SetSensorData(path, newValue)
+
+            onChangeResponses
+          } else Seq.empty
         case None => 
-          ???
           // TODO: Attach events
+          Seq.empty
       }
 
-      // val esubs = eventPrevayler execute LookupEventSub(path)
     }
 
 }
@@ -153,6 +172,9 @@ trait DB extends DBReadWrite with DBBase {
   /**
    * Fast latest values storage interface
    */
-  val latestStore: LatestStore = SingleStores.latestStore
+  //val latestStore: LatestStore = SingleStores.latestStore
+  //val eventPrevayler = SingleStores.eventPrevayler
+  //val intervalPrevayler = SingleStores.intervalPrevayler
+  //val idPrevayler: LatestStore = SingleStores.idPrevayler
 
 }

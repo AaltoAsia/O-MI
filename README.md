@@ -11,7 +11,8 @@ Implementation of O-MI Node as specified in [Open Messaging Interface](https://w
 
 See `development` branch for latest progress.
 
-[API Documentation](http://pesutykki.mooo.com/dump/Code-Gardeners-api/#package)
+[API Documentation ScalaDoc](http://pesutykki.mooo.com/dump/O-MI-ScalaApi/)
+[API Documentation JavaDoc](http://pesutykki.mooo.com/dump/O-MI-JavaApi/)
 
 [Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
 

@@ -70,8 +70,9 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
         if(eventSub.endTime.getTime < Long.MaxValue){
           ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
         }
-        val newSubs: HashMap[String, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n.toString() -> Seq(eventSub)))(collection.breakOut)
-        store.eventSubs = store.eventSubs.merged(newSubs)((a, b) => (a._1, a._2 ++ b._2))
+        //val newSubs: HashMap[Path, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n -> Seq(eventSub)))(collection.breakOut)
+        //store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
+        ???
       }
     }
   }
@@ -107,14 +108,18 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
     }
   }
 
+  /**
+   * Transaction to remove subscription from event subscriptions
+   * @param id id of the subscription to remove
+   */
   case class RemoveEventSub(id: Long) extends  TransactionWithQuery[EventSubs, Boolean] {
     def executeAndQuery(store:EventSubs, d: Date): Boolean = {
       if(store.eventSubs.values.exists(_.exists(_.id == id))){
-        val newStore: HashMap[String, Seq[EventSub]] =
+        val newStore: HashMap[Path, Seq[EventSub]] =
           store.eventSubs
             .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
             .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
-            .map(identity)(collection.breakOut) //map to HashMap
+            .map(identity)(collection.breakOut) //map to HashMap //TODO create helper method for matching
         store.eventSubs = newStore
       }
       false
@@ -192,7 +197,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
-                cb,
+                callback,
                 OdfValue("", "", ???)
               )
             )
@@ -205,7 +210,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
-                cb,
+                callback,
                 dur,
                 new Timestamp(System.currentTimeMillis() + dur.toMillis),
                 new Timestamp(System.currentTimeMillis())
