@@ -32,6 +32,9 @@ Session.vim
 .cache-main
 .cache-tests
 
+#IDEA
+.idea/
+
 #
 *.pydevproject
 .metadata

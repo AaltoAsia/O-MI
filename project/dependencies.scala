@@ -33,6 +33,7 @@ object Dependencies {
 
   //etc
   val logback = "ch.qos.logback" % "logback-classic" % "1.0.13"
+  val prevayler = "org.prevayler" % "prevayler-core" % "2.6"
 
 
 
@@ -61,7 +62,8 @@ object Dependencies {
     json4s,
     scalaXML,
     schwatcher,
-    commonsLang)
+    commonsLang,
+    prevayler)
 
   val servletDependencies: Seq[ModuleID] = Seq(
     sprayServlet,
