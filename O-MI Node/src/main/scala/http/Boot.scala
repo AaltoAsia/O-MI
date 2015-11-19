@@ -84,7 +84,7 @@ trait Starter {
         Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", Some(currentTime))),
         Some(OdfDescription(numDescription))
       )
-    ))
+    ), new Timeout(5, SECONDS))
   }
 
 
