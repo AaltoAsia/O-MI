@@ -144,7 +144,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
     case HandleIntervals => handleIntervals
-    case RemoveSubscription(id) => ??? //TODO !!!
+    case RemoveSubscription(id) => sender() ! removeSubscription(id) //TODO !!!
   }
       //temp: Any => Unit
   case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
