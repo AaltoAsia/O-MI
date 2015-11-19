@@ -56,6 +56,7 @@ case class PrevaylerSub(
 class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
   val ttlScheduler = context.system.scheduler
+  val intervalScheduler = ttlScheduler
 
 
 //TODO EventSub
@@ -163,8 +164,23 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   //
   //}
 
+  //case object G
+  //TODO this
   private def handleIntervals: Unit = {
-   ???
+    val (iSubscriptions, nextRunTimestamp) = SingleStores.intervalPrevayler execute GetIntervals
+    if(iSubscriptions.isEmpty) {
+      log.warning("handleIntervals called when no interval subscriptions")
+      return
+    }
+
+    //make logic for handling intervals yourself here...
+
+    val currentTime = System.currentTimeMillis()
+
+    nextRunTimestamp.foreach{tStamp =>
+      val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
+      intervalScheduler.scheduleOnce(nextRun, self, HandleIntervals)
+    }
   }
 
   private def subEndTimestamp(subttl: Duration): Timestamp ={
