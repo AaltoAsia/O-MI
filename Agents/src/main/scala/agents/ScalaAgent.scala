@@ -9,9 +9,12 @@ import java.sql.Timestamp;
 import java.util.Random;
 import java.util.Date;
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
+import scala.concurrent.duration._
+import akka.util.Timeout
 
 class ScalaAgent  extends InternalAgent{
 	val rnd: Random = new Random()
+  val t : FiniteDuration = Duration(5, SECONDS) 
 	var pathO: Option[Path] = None
   def date = new java.util.Date();
   var initialised = false
@@ -45,18 +48,18 @@ class ScalaAgent  extends InternalAgent{
         }
         val values = Iterable(tuple).flatten
         InternalAgent.log.info("ScalaAgent pushing data.");
-        InputPusher.handlePathValuePairs(values);
+        InputPusher.handlePathValuePairs(values, new Timeout(t) )
         Thread.sleep(10000);
       }     
     }catch{
       case e : InterruptedException =>
-      InternalAgent.log.warning("ScalaAgent has been interrupted.");
+      InternalAgent.log.warning("ScalaAgent has been interrupted.")
       InternalAgent.loader ! AgentInterruption(this,e) 
       case e : Exception =>
-      InternalAgent.log.warning("ScalaAgent has caught an exception");
+      InternalAgent.log.warning("ScalaAgent has caught an exception")
       InternalAgent.loader ! AgentException(this,e) 
     }finally{
-      InternalAgent.log.warning("ScalaAgent has died.");
+      InternalAgent.log.warning("ScalaAgent has died.")
     }
   }
 }
