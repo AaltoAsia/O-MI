@@ -176,11 +176,12 @@ trait OmiService
                   }
                 case _ =>  (notImplemented, 501)
               }
-
+              if(returnCode != 200) log.warning(s"Errors with following request:\n ${xml.toString}")
               complete((returnCode, response))
 
             case Left(errors) =>  // Errors found
 
+              log.warning(s"${xml.toString}")
               log.warning("Parse Errors: {}", errors.mkString(", "))
 
               val errorResponse = parseError(errors.toSeq:_*)
