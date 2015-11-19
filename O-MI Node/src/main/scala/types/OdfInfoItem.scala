@@ -21,6 +21,8 @@ import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 import http.Boot.settings
+import java.util.GregorianCalendar
+import javax.xml.datatype.{XMLGregorianCalendar, DatatypeFactory}
 
 /** Class implementing OdfInfoItem. */
 class  OdfInfoItemImpl(
@@ -89,6 +91,12 @@ case class OdfValue(
       value,
       typeValue,
       unixTime = timestamp.map( _.getTime/1000),
+      dateTime = timestamp.map{
+        time => 
+        val c :GregorianCalendar  = new GregorianCalendar()
+        c.setTimeInMillis(time.getTime)
+        DatatypeFactory.newInstance().newXMLGregorianCalendar(c)
+      },
       attributes = Map.empty
     )
   }

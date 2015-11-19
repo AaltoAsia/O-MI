@@ -138,11 +138,27 @@ class SystemTest extends Specification with Starter with AfterAll {
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
   }
 
+  def removeTimes( text: String) : String =removeUnixTime(removeDateTime(text))
+  def removeDateTime( text: String) : String =text.replaceAll(
+    """dateTime\s*=\s*"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})?((\+|-)\d\d:\d\d)?"""",
+    ""
+  )
+  def removeUnixTime( text: String) : String =text.replaceAll(
+    """unixTime\s*=\s*"\d*"""",
+    ""
+  )
+
   def getSingleResponseNoTime(reqresp: NodeSeq): Try[Elem] = {
-    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text.replaceAll("""unixTime\s*=\s*"\d*"""", ""))))
+    Try(
+      XML.loadString(
+        setTimezoneToSystemLocale(
+          removeTimes(reqresp.last.text)
+        )
+      )
+    )
   }
   def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
-    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.last.text)))
+    Try(XML.loadString(setTimezoneToSystemLocale(removeDateTime(reqresp.last.text))))
   }
   def getCallbackRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
@@ -209,11 +225,11 @@ class SystemTest extends Specification with Starter with AfterAll {
             correctResponse aka "Correct read response message" must beSuccessfulTry
 
             val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-            val response = Try(Await.result(responseFuture, Duration(2, "second")))
+            val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))
 
-            response must beSuccessfulTry
-
-            response.get showAs (n =>
+            responseXML must beSuccessfulTry
+            val response = XML.loadString(removeDateTime(responseXML.get.toString))
+            response showAs (n =>
               "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
           })
       })
@@ -238,7 +254,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
               responseXml must beSuccessfulTry
               
-              val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+              val response = XML.loadString(removeTimes(responseXml.get.toString))
 
               response showAs (n =>
                 "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
@@ -276,7 +292,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
                 responseXml must beSuccessfulTry
               
-              val response = XML.loadString(responseXml.get.toString.replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+              val response = XML.loadString(removeTimes(responseXml.get.toString))
                 //remove blocking waits if possible
                 if(request.get.\\("write").nonEmpty){
                   Thread.sleep(2000)
@@ -288,7 +304,7 @@ class SystemTest extends Specification with Starter with AfterAll {
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
                 
                 messageOption must beSome
-                val response = XML.loadString(messageOption.get.toString().replaceAll("""unixTime\s*=\s*"\d*"""", ""))
+                val response = XML.loadString(removeTimes(messageOption.get.toString()))
                 
                 response showAs (n =>
                   "Response at callback server:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
