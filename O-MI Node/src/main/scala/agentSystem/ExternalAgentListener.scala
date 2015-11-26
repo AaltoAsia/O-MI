@@ -15,6 +15,7 @@ package agentSystem
 
 import akka.actor.{ Actor, Props, ActorLogging }
 import akka.io.{ IO, Tcp  }
+import akka.util.Timeout
 import java.net.InetSocketAddress
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -101,7 +102,7 @@ class ExternalAgentHandler(
         case Left(errors) =>
           log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
         case Right(odf) => 
-          InputPusher.handleOdf(odf)
+          InputPusher.handleOdf(odf, new Timeout(5, SECONDS))
         case _ => // not possible
       }
     }

@@ -3,10 +3,12 @@ package agents;
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.Random;
+import akka.util.Timeout;
 import java.util.Date;
 import java.util.LinkedList;
 import java.lang.Integer;
 
+import scala.concurrent.duration.FiniteDuration;
 // scala stuff can be generally constructed by calling .apply() method or "new ..."
 import scala.Tuple2;
 
@@ -18,12 +20,14 @@ import agentSystem.InternalAgentExceptions.AgentException;
 import agentSystem.InternalAgentExceptions.AgentInitializationException;
 import agentSystem.InternalAgentExceptions.AgentInterruption;
 import agentSystem.InputPusher;
+import java.util.concurrent.TimeUnit;
 
 public class JavaAgent extends InternalAgent{
     public JavaAgent() { }
 
     private Path path;
     private Random rnd;
+    private final FiniteDuration t = FiniteDuration.create(5, TimeUnit.SECONDS );
 
     // Initialize, called once to reset the agent
     public void init( String config ){
@@ -65,7 +69,7 @@ public class JavaAgent extends InternalAgent{
                 log.info( "JavaAgent pushing data." );
 
                 // Push data to the system
-                InputPusher.handlePathValuePairs( values );
+                InputPusher.handlePathValuePairs( values, new Timeout(t) );
 
                 Thread.sleep( 10000 );
 

@@ -21,6 +21,8 @@ import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 import http.Boot.settings
+import java.util.GregorianCalendar
+import javax.xml.datatype.{XMLGregorianCalendar, DatatypeFactory}
 
 /** Class implementing OdfInfoItem. */
 class  OdfInfoItemImpl(
@@ -84,7 +86,7 @@ case class OdfMetaData(
 ) {
   /** Method to convert to scalaxb generated class. */
   implicit def asMetaData : MetaData = {
-    scalaxb.fromXML[MetaData]( XML.loadString( data ) )
+    scalaxb.fromXML[MetaData]( XML.loadString( data ) ) // What if agent inserts malformed xml string with InputPushe/DBPusher functions
   }
 }
 
@@ -100,6 +102,11 @@ case class OdfValue(
       value,
       typeValue,
       unixTime = Some(timestamp.getTime/1000),
+      dateTime = Some{
+        val c :GregorianCalendar  = new GregorianCalendar()
+        c.setTimeInMillis(timestamp.getTime)
+        DatatypeFactory.newInstance().newXMLGregorianCalendar(c)
+      },
       attributes = Map.empty
     )
   }

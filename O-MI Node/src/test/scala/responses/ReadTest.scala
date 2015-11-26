@@ -15,6 +15,7 @@ import java.util.Calendar
 import java.text.SimpleDateFormat
 import scala.xml.Utility.trim
 import scala.xml.XML
+import scala.xml.{Elem, NodeSeq}
 import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor }
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
@@ -88,6 +89,16 @@ class ReadTest extends Specification with BeforeAfterAll {
       """<MetaData xmlns="odf.xsd"><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
 
   }
+  def removeDateTimeString( text: String) : String =text.replaceAll(
+    """dateTime\s*=\s*"\S*?"""",
+    ""
+  )
+
+  def removeDateTime(reqresp: NodeSeq): Elem = {
+      XML.loadString(
+          removeDateTimeString(reqresp.toString)
+      )
+  }
   def afterAll = {
     dbConnection.destroy()
   }
@@ -138,7 +149,7 @@ class ReadTest extends Specification with BeforeAfterAll {
                     <Object>
                       <id>Refrigerator123</id>
                       <InfoItem name="PowerConsumption">
-                        <value unixTime="1428975">0.123</value>
+                        <value unixTime="1428975" >0.123</value>
                       </InfoItem>
                     </Object>
                     <Object>
@@ -166,10 +177,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       resultOption must beSome.which(_._2 === 200)
       val node = resultOption.get._1
       node must \("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
-
-      resultOption must beSome.which(n => (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
-      resultOption must beSome.which(
-        result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
+      
+      val odf = removeDateTime(node \\ ("Objects"))
+      odf must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects"))
+      OmiParser.parse(removeDateTime(node)) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
     }
 
     "Give a history of values when begin and end is used" in {
@@ -226,13 +237,13 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 === 200)
-      resultOption must beSome.which(n => (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
       val node = resultOption.get._1
 
       node must \("response") \ ("result", "msgformat" -> "odf") \ ("msg") \ ("Objects") \ ("Object") //if this test fails, check the namespaces
-
-      resultOption must beSome.which(
-        result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
+      val timelessRes = removeDateTime(node)
+      val odf = timelessRes \\("Objects")  
+      odf must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects"))
+      OmiParser.parse(timelessRes) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
     }
     "Give object and its children when asked for" in {
       val plainxml =
@@ -315,10 +326,11 @@ class ReadTest extends Specification with BeforeAfterAll {
       //      println(printer.format(resultOption.get._1.head))
       //      println("correct:")
       //      println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(n => (n._1 \\ ("Objects")) must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects")))
 
-      resultOption must beSome.which(
-        result => OmiParser.parse(result._1.toString()) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest])))
+      val node = resultOption.get._1
+      val odf = removeDateTime(node \\ ("Objects"))
+      odf must beEqualToIgnoringSpace(correctxmlreturn \\ ("Objects"))
+      OmiParser.parse(removeDateTime(node)) must beRight.which(_.headOption must beSome.which(_ should beAnInstanceOf[ResponseRequest]))
     }
 
     "Give errors when a user asks for a wrong kind of/nonexisting object" in {
@@ -359,8 +371,8 @@ class ReadTest extends Specification with BeforeAfterAll {
       val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))
 
       resultOption must beSome.which(_._2 !== 200)
-      resultOption must beSome.which(n => (n._1) must beEqualToIgnoringSpace(correctxmlreturn))
-
+      val node = resultOption.get._1
+      removeDateTime(node) must beEqualToIgnoringSpace(correctxmlreturn)
     }
 
     "Give partial result when part of the request is wrong" in {
@@ -390,10 +402,10 @@ class ReadTest extends Specification with BeforeAfterAll {
           </omi:read>
         </omi:omiEnvelope>
       val partialresult =
-        <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <omi:omiEnvelope version="1.0" ttl="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <omi:response>
             <omi:result msgformat="odf">
-              <omi:return returnCode="200"></omi:return>
+              <omi:return returnCode="200"/>
               <omi:msg>
                 <Objects>
                   <Object>
@@ -409,14 +421,13 @@ class ReadTest extends Specification with BeforeAfterAll {
               </omi:msg>
             </omi:result>
             <omi:result>
-              <omi:return description={
+              <omi:return returnCode="404" description={
                 "Could not find the following elements from the database:" +
-                  "\nObjects/ReadTest/NonexistingObject" +
-                  "\nObjects/ReadTest/Roomsensors1/CarbonDioxide" +
-                  "\nObjects/ReadTest/Roomsensors1/wrong" +
-                  "\nObjects/ReadTest/Roomsensors1/Temperature"
-              } returnCode="404">
-              </omi:return>
+                  " Objects/ReadTest/NonexistingObject" +
+                  " Objects/ReadTest/Roomsensors1/CarbonDioxide" +
+                  " Objects/ReadTest/Roomsensors1/wrong" +
+                  " Objects/ReadTest/Roomsensors1/Temperature"
+              }/>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -429,7 +440,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       //returnCode should not be 200
       //resultOption must beSome.which(_._2 !== 200)
 
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(partialresult))
+      resultOption must beSome.which{
+        case (result, http) => 
+        removeDateTime(result) must beEqualToIgnoringSpace(partialresult)
+      }
 
     }
 
@@ -463,7 +477,7 @@ class ReadTest extends Specification with BeforeAfterAll {
                     <InfoItem name="Temperature">
                       <MetaData>
                         <InfoItem name="TemperatureFormat">
-                          <value dateTime="1970-01-17T12:56:15.723" type="xs:string">Celsius</value>
+                          <value type="xs:string">Celsius</value>
                         </InfoItem>
                       </MetaData>
                       <value unixTime="1428975">asd</value>
@@ -487,8 +501,8 @@ class ReadTest extends Specification with BeforeAfterAll {
       //      println(printer.format(resultOption.get._1.head))
       //      println("correct:")
       //      println(printer.format(correctxmlreturn.head))
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(correctxmlreturn))
-
+      val node = resultOption.get._1
+      removeDateTime(node) must beEqualToIgnoringSpace(correctxmlreturn)
     }
 
   }
@@ -519,7 +533,7 @@ class ReadTest extends Specification with BeforeAfterAll {
                        <value unixTime="1428975">too much</value>
                      </InfoItem>
 
-      RESTXML must beSome.which(_ must beRight.which(_ must beEqualToIgnoringSpace(rightXML)))
+                     RESTXML must beSome.which(_ must beRight.which(r => removeDateTime(r) must beEqualToIgnoringSpace(rightXML)))
       //        trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
     }
 

@@ -22,7 +22,7 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 import scala.collection.JavaConversions.asJavaIterable
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.BoundedMessageQueueSemantics
-     
+import scala.util.{Try, Success, Failure}
 
 
 
@@ -52,10 +52,10 @@ class DBPusher(val dbobject: DB)
    */
   override def receive = {
     case HandleOdf(objects)             => handleOdf(objects)
-    case HandleObjects(objs)            => if (objs.nonEmpty) handleObjects(objs)
-    case HandleInfoItems(items)         => if (items.nonEmpty) handleInfoItems(items)
-    case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) handlePathValuePairs(pairs)
-    case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) handlePathMetaDataPairs(pairs)
+    case HandleObjects(objs)            => if (objs.nonEmpty) sender() ! handleObjects(objs)
+    case HandleInfoItems(items)         => if (items.nonEmpty) sender() ! handleInfoItems(items)
+    case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) sender() ! handlePathValuePairs(pairs)
+    case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
     case u                              => log.warning("Unknown message received.")
   }
 
@@ -63,23 +63,31 @@ class DBPusher(val dbobject: DB)
    * Function for handling OdfObjects.
    *
    */
-  private def handleOdf(objects: OdfObjects): Unit = {
+  private def handleOdf(objects: OdfObjects):  Try[Boolean] = Try{
     val data = getLeafs(objects)
-    if (data.nonEmpty) {
-      handleInfoItems(data.collect { case infoitem: OdfInfoItem => infoitem })
-      log.debug("Successfully saved Odfs to DB")
-      val odfNodes = getOdfNodes(objects.objects.toSeq: _*).toSet
-      val descriptions = odfNodes.collect {
-        case node if node.description.nonEmpty => node
-      }.toIterable
-      descriptions.foreach { node => dbobject.setDescription(node) }
+    if(
+      data.nonEmpty 
+    ){
+      val write : Try[Boolean] = handleInfoItems(data.collect { case infoitem: OdfInfoItem => infoitem })
+      if( write.isSuccess ){
+        log.debug("Successfully saved Odfs to DB")
+        val odfNodes = getOdfNodes(objects.objects.toSeq: _*).toSet
+        val descriptions = odfNodes.collect {
+          case node if node.description.nonEmpty => node
+        }.toIterable
+        descriptions.map{ node => dbobject.setDescription(node) }
+      } 
+      write.get
+    } else {
+      log.warning("Empty odf pushed for DBPusher.")
+      false
     }
   }
   /**
    * Function for handling sequences of OdfObject.
    *
    */
-  private def handleObjects(objs: Iterable[OdfObject]): Unit = {
+  private def handleObjects(objs: Iterable[OdfObject]): Try[Boolean] = {
     handleOdf(OdfObjects(objs))
   }
 
@@ -87,7 +95,7 @@ class DBPusher(val dbobject: DB)
    * Function for handling sequences of OdfInfoItem.
    *
    */
-  private def handleInfoItems(infoitems: Iterable[OdfInfoItem]): Unit = {
+  private def handleInfoItems(infoitems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
     
     val pairs = infoitems.map { info =>
       info.values.map { tv => (info.path, tv) }
@@ -99,32 +107,36 @@ class DBPusher(val dbobject: DB)
     val meta = infoitems.collect {
       case OdfInfoItem(path, _, _, Some(metaData)) => (path, metaData.data)
     }
-    if (meta.nonEmpty) handlePathMetaDataPairs(meta)
+    val metaTry = if (meta.nonEmpty) handlePathMetaDataPairs(meta) else Success(true)
 
     val descriptions = infoitems.collect {
       case info if info.description.nonEmpty => info
     }
-    descriptions.foreach { info => dbobject.setDescription(info) }
+    descriptions.map{ node => dbobject.setDescription(node) }
+    metaTry.get 
+
   }
 
   /**
    * Function for handling sequences of path and value pairs.
    *
    */
-  private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Unit = {
+  private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Try[Boolean] = Try{
     // save first to latest values and then db
     pairs foreach (data => SingleStores.latestStore execute (SetSensorData.apply _).tupled(data))
     dbobject.setMany(pairs.toList)
     log.debug("Successfully saved Path-TimedValue pairs to DB")
+    true
   }
 
   /**
    * Function for handling sequences of path and MetaData(as String)  pairs.
    *
    */
-  private def handlePathMetaDataPairs(pairs: Iterable[(Path, String)]): Unit = {
+  private def handlePathMetaDataPairs(pairs: Iterable[(Path, String)]):  Try[Boolean] = Try{
     pairs.foreach { case (path, metadata) => dbobject.setMetaData(path, metadata) }
     log.debug("Successfully saved Path-MetaData pairs to DB")
+    true
   }
 
 }
