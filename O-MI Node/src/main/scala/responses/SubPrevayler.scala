@@ -3,10 +3,11 @@ package responses
 import java.sql.Timestamp
 import java.util.Date
 
-import org.prevayler.{Transaction, TransactionWithQuery}
+import org.prevayler.{Query, Transaction, TransactionWithQuery}
 import types.OdfTypes.OdfValue
 
 import scala.collection.JavaConversions.asScalaIterator
+import scala.collection.SortedSet
 import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration
@@ -42,14 +43,6 @@ case class RemoveSubscription(id: Long)
 // */
 //private val ttlQueue: ConcurrentSkipListSet[TTLTimeout] = new ConcurrentSkipListSet(subOrder)
 
-case class PrevaylerSub(
-                         val id: Long,
-                         val ttl: Duration,
-                         val interval: Duration,
-                         val callback: Option[String],
-                         val paths: Seq[Path]
-
-                         )
 
 //TODO remove initial value
 class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
@@ -153,7 +146,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   re schedule when starting in new subscription transactions
   */
 
-  case object getAndUpdateId extends TransactionWithQuery[SubIds, Long]{
+  case object getAndUpdateId extends TransactionWithQuery[SubIds, Long] {
     override def executeAndQuery(p: SubIds, date: Date): Long = {
       p.id = p.id + 1
       p.id
@@ -167,54 +160,57 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id) //TODO !!!
   }
-      //temp: Any => Unit
-  case object GetNextIntervalSub extends TransactionWithQuery[IntervalSubs, Option[(IntervalSub, Timestamp)]] {
-        def executeAndQuery(store: IntervalSubs, d: Date): Option[(IntervalSub, Timestamp)] = {
-          val nextIntervalSub = store.intervalSubs.headOption
-          //val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
-          val nextSub = nextIntervalSub.map{a =>
-              val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
-              val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
-              val newSub = a.copy(nextRunTime = newTime)
-              store.intervalSubs = store.intervalSubs.tail + newSub
-              (newSub, store.intervalSubs.head.nextRunTime)
-          }
-          nextSub
-        }
+
+  /**
+   * Transaction to get the intervalSub with the earliest interval
+   */
+
+  case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
+    def executeAndQuery(store: IntervalSubs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
+      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
+      val newIntervals = passedIntervals.map{a =>
+          val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
+          val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
+          a.copy(nextRunTime = newTime)}
+      store.intervalSubs = rest ++ newIntervals
+      (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
+    }
 
   }
-  //case object GetIntervals extends Query[IntervalSubs, IntervalSub] {
-  //
-  //}
 
-  //case object G
-  //TODO this
+  /**
+   * Method called when the interval of an interval subscription has passed
+   */
   private def handleIntervals(): Unit = {
-    val SubWithNextRunTimeOption = SingleStores.intervalPrevayler execute GetNextIntervalSub
-    if(SubWithNextRunTimeOption.isEmpty) {
-      log.warning("handleIntervals called when no interval subscriptions")
+    val currentTime = System.currentTimeMillis()
+
+    val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals)
+
+    //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
+     // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
+    if(iSubs.isEmpty) {
+      log.warning("HandleIntervals called when no interval subs existed")
       return
     }
-    val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
-      .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
 
 
-
-    val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
+    //val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
 
 
     //TODO fix when previous query is refactored!!(send callback)
 
 
-
-    val currentTime = System.currentTimeMillis()
-
-    nextRunTime.foreach{ tStamp =>
+    nextRunTimeOption.foreach{ tStamp =>
       val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
       intervalScheduler.scheduleOnce(nextRun, self, HandleIntervals)
     }
   }
 
+  /**
+   * Helper method to get the Timestamp for removing the subscription
+   * @param subttl time to live of the subscription
+   * @return endTime of subscription as Timestamp
+   */
   private def subEndTimestamp(subttl: Duration): Timestamp ={
               if (subttl.isFinite()) {
                new Timestamp(System.currentTimeMillis() + subttl.toMillis)
@@ -223,13 +219,23 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               }
   }
 
-
-  def removeSubscription(id: Long): Boolean = {
+  /**
+   * Method used for removing subscriptions using their Id
+   * @param id Id of the subscription to remove
+   * @return Boolean indicating if the removing was successful
+   */
+  private def removeSubscription(id: Long): Boolean = {
     if(SingleStores.intervalPrevayler execute RemoveIntervalSub(id)) true
     else if(SingleStores.pollPrevayler execute RemovePollSub(id)) true
     else if(SingleStores.eventPrevayler execute RemoveEventSub(id)) true
     else false
   }
+
+  /**
+   * Method used to add subcriptions to Prevayler database
+   * @param subscription SubscriptionRequest of the subscription to add
+   * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
+   */
   private def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
     Try {
       val newId = SingleStores.idPrevayler execute getAndUpdateId
@@ -313,5 +319,4 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       }
     }
   }
-
 }
