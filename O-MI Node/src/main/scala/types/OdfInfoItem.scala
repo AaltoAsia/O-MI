@@ -51,6 +51,17 @@ class  OdfInfoItemImpl(
     )
   }
 
+  def isMetaDataRequest: Boolean = metaData match {
+    case Some(meta) => meta.data.trim.isEmpty
+    case _ => false
+  }
+  def hasMetadata: Boolean = metaData match {
+    case Some(meta) => meta.data.trim.nonEmpty
+    case _ => false
+  }
+  
+  def hasDescription: Boolean = description.nonEmpty
+
   /** Method to convert to scalaxb generated class. */
   implicit def asInfoItemType: InfoItemType = {
     InfoItemType(
