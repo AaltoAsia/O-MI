@@ -11,7 +11,6 @@ import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.stm.Ref
 import scala.util.Try
 
 
@@ -53,7 +52,7 @@ case class PrevaylerSub(
                          )
 
 //TODO remove initial value
-class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConnection: DB) extends Actor with ActorLogging {
+class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
   val ttlScheduler = context.system.scheduler
   val intervalScheduler = ttlScheduler
@@ -63,7 +62,7 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {
     def executeOn(store: EventSubs, d: Date) = {
       //val sId = subIDCounter.single.getAndTransform(_+1)
-      val currentTime = System.currentTimeMillis()
+      val currentTime: Long = System.currentTimeMillis()
 
       val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
 
@@ -71,9 +70,8 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
         if(eventSub.endTime.getTime < Long.MaxValue){
           ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
         }
-        //val newSubs: HashMap[Path, Seq[EventSub]] = eventSub.paths.groupBy(identity).map(n => (n -> Seq(eventSub)))(collection.breakOut)
-        //store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
-        ???
+        val newSubs: HashMap[Path, Seq[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Seq(eventSub))): _*)
+        store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
       }
     }
   }
@@ -148,15 +146,18 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
     case RemoveSubscription(id) => sender() ! removeSubscription(id) //TODO !!!
   }
       //temp: Any => Unit
-  case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
-        def executeAndQuery(store: IntervalSubs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
-          val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
-          val newIntervals = passedIntervals.map{a =>
+  case object GetNextIntervalSub extends TransactionWithQuery[IntervalSubs, Option[(IntervalSub, Timestamp)]] {
+        def executeAndQuery(store: IntervalSubs, d: Date): Option[(IntervalSub, Timestamp)] = {
+          val nextIntervalSub = store.intervalSubs.headOption
+          //val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
+          val nextSub = nextIntervalSub.map{a =>
               val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
               val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
-              a.copy(nextRunTime = newTime)}
-          store.intervalSubs = rest ++ newIntervals
-          (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
+              val newSub = a.copy(nextRunTime = newTime)
+              store.intervalSubs = store.intervalSubs.tail + newSub
+              (newSub, store.intervalSubs.head.nextRunTime)
+          }
+          nextSub
         }
 
   }
@@ -167,17 +168,26 @@ class SubscriptionHandler(subIDCounter:Ref[Long] = Ref(0L))(implicit val dbConne
   //case object G
   //TODO this
   private def handleIntervals: Unit = {
-    val (iSubscriptions, nextRunTimestamp) = SingleStores.intervalPrevayler execute GetIntervals
-    if(iSubscriptions.isEmpty) {
+    val SubWithNextRunTimeOption = SingleStores.intervalPrevayler execute GetNextIntervalSub
+    if(SubWithNextRunTimeOption.isEmpty) {
       log.warning("handleIntervals called when no interval subscriptions")
       return
     }
+    val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
+      .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
 
-    //make logic for handling intervals yourself here...
+
+
+    val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
+
+
+    //TODO fix when previous query is refactored!!
+
+
 
     val currentTime = System.currentTimeMillis()
 
-    nextRunTimestamp.foreach{tStamp =>
+    nextRunTime.foreach{tStamp =>
       val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
       intervalScheduler.scheduleOnce(nextRun, self, HandleIntervals)
     }
