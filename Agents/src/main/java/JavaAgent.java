@@ -77,7 +77,7 @@ public class JavaAgent extends InternalAgent{
                 log.info( "JavaAgent pushing data." );
 
                 // Push data to the system
-                InputPusher.handlePathValuePairs( values, new Timeout(t) );
+                InputPusher.handlePathValuePairs( values );
                 InputPusher.handlePathMetaDataPairs( metadatas);
 
                 Thread.sleep( 10000 );
