@@ -90,7 +90,7 @@ class ReadTest extends Specification with BeforeAfterAll {
 
   }
   def removeDateTimeString( text: String) : String =text.replaceAll(
-    """dateTime\s*=\s*"\S*"""",
+    """dateTime\s*=\s*"\S*?"""",
     ""
   )
 
@@ -402,10 +402,10 @@ class ReadTest extends Specification with BeforeAfterAll {
           </omi:read>
         </omi:omiEnvelope>
       val partialresult =
-        <omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <omi:omiEnvelope version="1.0" ttl="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <omi:response>
             <omi:result msgformat="odf">
-              <omi:return returnCode="200"></omi:return>
+              <omi:return returnCode="200"/>
               <omi:msg>
                 <Objects>
                   <Object>
@@ -413,7 +413,7 @@ class ReadTest extends Specification with BeforeAfterAll {
                     <Object>
                       <id>SmartOven</id>
                       <InfoItem name="Temperature">
-                        <value unixTime="1428980"  dateTime="1970-01-17T14:56:20.723+02:00">117</value>
+                        <value unixTime="1428980">117</value>
                       </InfoItem>
                     </Object>
                   </Object>
@@ -421,14 +421,13 @@ class ReadTest extends Specification with BeforeAfterAll {
               </omi:msg>
             </omi:result>
             <omi:result>
-              <omi:return description={
+              <omi:return returnCode="404" description={
                 "Could not find the following elements from the database:" +
-                  "\nObjects/ReadTest/NonexistingObject" +
-                  "\nObjects/ReadTest/Roomsensors1/CarbonDioxide" +
-                  "\nObjects/ReadTest/Roomsensors1/wrong" +
-                  "\nObjects/ReadTest/Roomsensors1/Temperature"
-              } returnCode="404">
-              </omi:return>
+                  " Objects/ReadTest/NonexistingObject" +
+                  " Objects/ReadTest/Roomsensors1/CarbonDioxide" +
+                  " Objects/ReadTest/Roomsensors1/wrong" +
+                  " Objects/ReadTest/Roomsensors1/Temperature"
+              }/>
             </omi:result>
           </omi:response>
         </omi:omiEnvelope>
@@ -441,7 +440,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       //returnCode should not be 200
       //resultOption must beSome.which(_._2 !== 200)
 
-      resultOption must beSome.which(_._1 must beEqualToIgnoringSpace(partialresult))
+      resultOption must beSome.which{
+        case (result, http) => 
+        removeDateTime(result) must beEqualToIgnoringSpace(partialresult)
+      }
 
     }
 
@@ -475,10 +477,10 @@ class ReadTest extends Specification with BeforeAfterAll {
                     <InfoItem name="Temperature">
                       <MetaData>
                         <InfoItem name="TemperatureFormat">
-                          <value dateTime="1970-01-17T12:56:15.723" type="xs:string">Celsius</value>
+                          <value type="xs:string">Celsius</value>
                         </InfoItem>
                       </MetaData>
-                      <value dateTime="1970-01-17T14:56:15.723+02:00" unixTime="1428975">asd</value>
+                      <value unixTime="1428975">asd</value>
                     </InfoItem>
                   </Object>
                 </Objects>
@@ -500,7 +502,7 @@ class ReadTest extends Specification with BeforeAfterAll {
       //      println("correct:")
       //      println(printer.format(correctxmlreturn.head))
       val node = resultOption.get._1
-      node must beEqualToIgnoringSpace(correctxmlreturn)
+      removeDateTime(node) must beEqualToIgnoringSpace(correctxmlreturn)
     }
 
   }
@@ -528,10 +530,10 @@ class ReadTest extends Specification with BeforeAfterAll {
       val RESTXML = requestHandler.generateODFREST(Path("Objects/ReadTest/RoomSensors1/CarbonDioxide"))
 
       val rightXML = <InfoItem name="CarbonDioxide" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                       <value unixTime="1428975" dateTime="1970-01-17T14:56:15.723+02:00">too much</value>
+                       <value unixTime="1428975">too much</value>
                      </InfoItem>
 
-      RESTXML must beSome.which(_ must beRight.which(_ must beEqualToIgnoringSpace(rightXML)))
+                     RESTXML must beSome.which(_ must beRight.which(r => removeDateTime(r) must beEqualToIgnoringSpace(rightXML)))
       //        trim(RESTXML.get.right.get) should be equalTo(trim(rightXML))
     }
 
