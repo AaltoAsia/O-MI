@@ -32,6 +32,8 @@ case class NewSubscription(subscription: SubscriptionRequest)
 
 case class RemoveSubscription(id: Long)
 
+case class PollSubscription(id: Long)
+
 //private val subOrder: Ordering[TTLTimeout] = Ordering.by(_.endTimeMillis)
 
 
@@ -141,6 +143,13 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     }
   }
 
+  case class PollSub(id: Long) extends TransactionWithQuery[PolledSubs, Option[PolledSub]] {
+    def executeAndQuery(store: PolledSubs, d: Date): Option[PolledSub] = {
+      val sub = store.polledSubs.get(id)
+      //sub.foreach(a => store.polledSubs = store.polledSubs.updated(id)) TODO update store and return value
+      sub
+    }
+  }
 
   /*
   re schedule when starting in new subscription transactions
@@ -158,7 +167,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
     case HandleIntervals => handleIntervals()
-    case RemoveSubscription(id) => sender() ! removeSubscription(id) //TODO !!!
+    case RemoveSubscription(id) => sender() ! removeSubscription(id)
+    case PollSubscription(id) => sender() ! pollSubscription(id)
   }
 
   /**
@@ -178,13 +188,16 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
   }
 
+  private def pollSubscription(id: Long) = { //explicit return type
+    ???
+  }
   /**
    * Method called when the interval of an interval subscription has passed
    */
   private def handleIntervals(): Unit = {
     val currentTime = System.currentTimeMillis()
 
-    val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals)
+    val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
 
     //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
      // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
