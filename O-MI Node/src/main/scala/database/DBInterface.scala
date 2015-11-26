@@ -13,19 +13,15 @@
 **/
 package database
 
-import types.OdfTypes.OdfInfoItem
-import slick.driver.H2Driver.api._
-import org.prevayler.PrevaylerFactory
-
 import java.io.File
 
-import LatestValues.LatestStore
 import http.Boot.settings
-import types.OdfTypes.OdfValue
+import org.prevayler.PrevaylerFactory
+import slick.driver.H2Driver.api._
+import types.OdfTypes.{OdfInfoItem, OdfValue, fromPath}
 import types.Path
-import types.OdfTypes.fromPath
 
-import collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.asJavaIterable
 
 
 package object database {
@@ -64,6 +60,7 @@ object SingleStores {
     val latestStore = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
     val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs.empty, settings.journalsDirectory)
     val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
+    val pollPrevayler = PrevaylerFactory.createPrevayler(PolledSubs.empty, settings.journalsDirectory)
     val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(0), settings.journalsDirectory)
 
     /**

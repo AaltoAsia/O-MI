@@ -54,6 +54,7 @@ case class PrevaylerSub(
 //TODO remove initial value
 class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
+  val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = context.system.scheduler
   val intervalScheduler = ttlScheduler
 
@@ -62,7 +63,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {
     def executeOn(store: EventSubs, d: Date) = {
       //val sId = subIDCounter.single.getAndTransform(_+1)
-      val currentTime: Long = System.currentTimeMillis()
+      //val currentTime: Long = System.currentTimeMillis()
 
       val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
 
@@ -80,16 +81,27 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     def executeOn(store: IntervalSubs, d: Date) = {
       //val sId = subIDCounter.single.getAndTransform(_+1)
       val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
-      if(scheduleTime >= 0){
+      if(scheduleTime > 0){
         if(intervalSub.endTime.getTime < Long.MaxValue){
           ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(intervalSub.id))
         }
         store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
       }
-      val currentTime = System.currentTimeMillis()
 
     }
   }
+    case class AddPollSub(polledSub: PolledSub) extends Transaction[PolledSubs] {
+      def executeOn(store: PolledSubs, d: Date) = {
+        val scheduleTime: Long = polledSub.endTime.getTime - d.getTime
+        if (scheduleTime > 0){
+          if(polledSub.endTime.getTime < Long.MaxValue) {
+            ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(polledSub.id))
+          }
+          store.polledSubs = store.polledSubs + (polledSub.id -> polledSub)
+        }
+      }
+    }
+
   //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
   /**
@@ -120,11 +132,21 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
             .map(identity)(collection.breakOut) //map to HashMap //TODO create helper method for matching
         store.eventSubs = newStore
+        true
+      } else{
+        false
       }
-      false
     }
   }
 
+  case class RemovePollSub(id: Long) extends TransactionWithQuery[PolledSubs, Boolean] {
+    def executeAndQuery(store: PolledSubs, d: Date): Boolean = {
+      if(store.polledSubs.contains(id)){
+        store.polledSubs = store.polledSubs - id
+        true
+      } else false
+    }
+  }
 
 
   /*
@@ -142,7 +164,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
-    case HandleIntervals => handleIntervals
+    case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id) //TODO !!!
   }
       //temp: Any => Unit
@@ -167,7 +189,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
   //case object G
   //TODO this
-  private def handleIntervals: Unit = {
+  private def handleIntervals(): Unit = {
     val SubWithNextRunTimeOption = SingleStores.intervalPrevayler execute GetNextIntervalSub
     if(SubWithNextRunTimeOption.isEmpty) {
       log.warning("handleIntervals called when no interval subscriptions")
@@ -181,13 +203,13 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
 
 
-    //TODO fix when previous query is refactored!!
+    //TODO fix when previous query is refactored!!(send callback)
 
 
 
     val currentTime = System.currentTimeMillis()
 
-    nextRunTime.foreach{tStamp =>
+    nextRunTime.foreach{ tStamp =>
       val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
       intervalScheduler.scheduleOnce(nextRun, self, HandleIntervals)
     }
@@ -204,19 +226,21 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
   def removeSubscription(id: Long): Boolean = {
     if(SingleStores.intervalPrevayler execute RemoveIntervalSub(id)) true
+    else if(SingleStores.pollPrevayler execute RemovePollSub(id)) true
     else if(SingleStores.eventPrevayler execute RemoveEventSub(id)) true
     else false
   }
   private def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
     Try {
       val newId = SingleStores.idPrevayler execute getAndUpdateId
+      val newTime = subEndTimestamp(subscription.ttl)
+      val currentTime = System.currentTimeMillis()
 
       subscription.callback match {
         case cb @ Some(callback) => subscription.interval match {
           case Duration(-1, duration.SECONDS) => {
             //event subscription
 
-            val newTime = subEndTimestamp(subscription.ttl)
 
             SingleStores.eventPrevayler execute AddEventSub(
               EventSub(
@@ -224,32 +248,68 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
                 callback,
-                OdfValue("", "", ???)
+                OdfValue("", "", new Timestamp(currentTime))
               )
             )
             newId
           }
           case dur@Duration(-2, duration.SECONDS) => ??? // subscription for new node
-          case dur: FiniteDuration => {
-            val newTime = subEndTimestamp(subscription.ttl)
+          case dur: FiniteDuration if dur.gteq(minIntervalDuration)=> {
             SingleStores.intervalPrevayler execute AddIntervalSub(
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
                 callback,
                 dur,
-                new Timestamp(System.currentTimeMillis() + dur.toMillis),
-                new Timestamp(System.currentTimeMillis())
+                new Timestamp(currentTime + dur.toMillis),
+                new Timestamp(currentTime)
 
               )
             )
 
-            // interval subscription
             newId
           }
-          case dur => ??? //log.error(Exception("unsupported Duration for subscription"), s"Duration $dur is unsupported")
+          case dur => {
+            log.error(s"Duration $dur is unsupported")
+            throw new Exception(s"Duration $dur is unsupported")
+          }
         }
-        case None => ??? //PollSub
+        case None => {
+          subscription.interval match{
+            case Duration(-1, duration.SECONDS) => {
+              //event poll sub
+              SingleStores.pollPrevayler execute AddPollSub(
+                PollEventSub(
+                  newId,
+                  newTime,
+                  OdfValue("","",new Timestamp(currentTime)),
+                  new Timestamp(currentTime),
+                  OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
+                )
+              )
+              newId
+            }
+            case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
+              //interval poll
+              SingleStores.pollPrevayler execute AddPollSub(
+                PollIntervalSub(
+                  newId,
+                  newTime,
+                  OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                  dur,
+                  new Timestamp(currentTime)
+                )
+              )
+
+              newId
+            }
+            case dur => {
+              log.error(s"Duration $dur is unsupported")
+              throw new Exception(s"Duration $dur is unsupported")
+            }
+
+          }
+        }
       }
     }
   }
