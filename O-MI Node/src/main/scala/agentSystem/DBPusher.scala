@@ -23,6 +23,11 @@ import scala.collection.JavaConversions.asJavaIterable
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.BoundedMessageQueueSemantics
 import scala.util.{Try, Success, Failure}
+import scala.xml.XML
+import parsing.xmlGen
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
+import types._
 
 
 
@@ -131,7 +136,19 @@ class DBPusher(val dbobject: DB)
    *
    */
   private def handlePathMetaDataPairs(pairs: Iterable[(Path, String)]):  Try[Boolean] = Try{
-    pairs.foreach { case (path, metadata) => dbobject.setMetaData(path, metadata) }
+    
+    pairs.foreach { case (path, metadata) => 
+    
+      Try{
+        val xml = XML.loadString(metadata)
+        val meta = xmlGen.scalaxb.fromXML[MetaData](xml)
+      } match {
+        case Success(a) =>
+          dbobject.setMetaData(path, metadata) 
+        case Failure(exp) =>
+         throw exp;
+      }
+    }
     log.debug("Successfully saved Path-MetaData pairs to DB")
     true
   }
