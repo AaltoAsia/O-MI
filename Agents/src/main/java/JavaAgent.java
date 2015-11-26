@@ -66,15 +66,19 @@ public class JavaAgent extends InternalAgent{
 
                 // Create the right container objects:
                 LinkedList< Tuple2< Path, OdfValue > > values = new  LinkedList< Tuple2< Path, OdfValue > >();
+                LinkedList< Tuple2< Path, String> > metadatas = new  LinkedList< Tuple2< Path, String> >();
 
                 Tuple2< Path, OdfValue > tuple = new Tuple2( path, value ); 
+                Tuple2< Path, String> tupleM = new Tuple2( path,"<MetaData xmlns=\"odf.xsd\" ><InfoItem name=\"test\"><value>ok</value></InfoItem></MetaData>"); 
 
                 values.add( tuple );
+                metadatas.add(tupleM);
 
                 log.info( "JavaAgent pushing data." );
 
                 // Push data to the system
                 InputPusher.handlePathValuePairs( values, new Timeout(t) );
+                InputPusher.handlePathMetaDataPairs( metadatas);
 
                 Thread.sleep( 10000 );
 

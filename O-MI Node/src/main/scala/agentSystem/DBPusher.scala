@@ -146,6 +146,7 @@ class DBPusher(val dbobject: DB)
         case Success(a) =>
           dbobject.setMetaData(path, metadata) 
         case Failure(exp) =>
+         log.error( exp, "InputPusher" )
          throw exp;
       }
     }
