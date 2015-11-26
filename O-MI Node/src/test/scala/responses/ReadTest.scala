@@ -90,7 +90,7 @@ class ReadTest extends Specification with BeforeAfterAll {
 
   }
   def removeDateTimeString( text: String) : String =text.replaceAll(
-    """dateTime\s*=\s*"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})?((\+|-)\d\d:\d\d)?"""",
+    """dateTime\s*=\s*"\S*"""",
     ""
   )
 

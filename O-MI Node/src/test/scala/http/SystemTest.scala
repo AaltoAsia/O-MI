@@ -140,7 +140,7 @@ class SystemTest extends Specification with Starter with AfterAll {
 
   def removeTimes( text: String) : String =removeUnixTime(removeDateTime(text))
   def removeDateTime( text: String) : String =text.replaceAll(
-    """dateTime\s*=\s*"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})?((\+|-)\d\d:\d\d)?"""",
+    """dateTime\s*=\s*"\S*"""",
     ""
   )
   def removeUnixTime( text: String) : String =text.replaceAll(
