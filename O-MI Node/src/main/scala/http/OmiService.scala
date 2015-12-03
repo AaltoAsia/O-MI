@@ -13,23 +13,20 @@
 **/
 package http
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.actor.{Actor, ActorLogging}
 import akka.event.LoggingAdapter
-import spray.routing._
-import spray.http._
-import spray.http.HttpHeaders.RawHeader
-import MediaTypes._
-
-import responses.RequestHandler
-import responses.OmiGenerator._
+import http.Authorization._
 import parsing.OmiParser
-import types.{Path, OmiTypes}
-import OmiTypes._
-import database.DB
-import Authorization._
+import responses.OmiGenerator._
+import responses.RequestHandler
+import spray.http.MediaTypes._
+import spray.http._
+import spray.routing._
+import types.OmiTypes._
+import types.Path
 
-import scala.xml.NodeSeq
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.xml.NodeSeq
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -39,7 +36,7 @@ trait OmiServiceAuthorization
 
 /**
  * Actor that handles incoming http messages
- * @param requestHandler ActorRef that is used in subscription handling
+ * @param reqHandler ActorRef that is used in subscription handling
  */
 class OmiServiceActor(reqHandler: RequestHandler)
   extends Actor

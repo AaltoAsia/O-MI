@@ -19,13 +19,29 @@ object IntervalSubOrdering extends Ordering[IntervalSub] {
 sealed trait SavedSub {
   val id: Long
   val endTime: Date
-  val callback: String
   val paths: Seq[Path]
   //va: Duration
 }
+sealed trait PolledSub extends SavedSub
 
 
 case class SubIds(var id: Long)
+case class PollEventSub(
+  id: Long,
+  endTime: Timestamp,
+  lastValue: OdfValue,
+  lastPolled: Timestamp,
+  paths: Seq[Path]
+  ) extends PolledSub
+
+case class PollIntervalSub(
+  id: Long,
+  endTime: Timestamp,
+  paths: Seq[Path],
+  interval: Duration,
+  lastPolled: Timestamp
+) extends PolledSub
+
 case class IntervalSub(
   id: Long,
   paths: Seq[Path],
@@ -42,13 +58,18 @@ case class EventSub(
   endTime: Timestamp,
   callback: String,
   lastValue: OdfValue
-  ) extends SavedSub //startTime: Duration) extends SavedSub
+  ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
 case class EventSubs(var eventSubs: HashMap[Path, Seq[EventSub]])
 object EventSubs {
   //type EventSubsStore = Prevayler[EventSubs]
   def empty = EventSubs(HashMap.empty)
+}
+
+case class PolledSubs(var polledSubs: HashMap[Long, PolledSub])
+object PolledSubs {
+  def empty = PolledSubs(HashMap.empty)
 }
 
 case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
