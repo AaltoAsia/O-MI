@@ -36,6 +36,7 @@ trait OmiServiceAuthorization
      with IpAuthorization         // Write and Response requests for configured server IPs
      with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
      with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+     with AuthApiProvider         // Easier java api for authorization
      with LogUnauthorized         // Log everything else
 
 /**
