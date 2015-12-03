@@ -33,9 +33,11 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
-     with IpAuthorization         // Write and Response requests
-     with SamlHttpHeaderAuth      // Write and Response requests
+     with IpAuthorization         // Write and Response requests for configured server IPs
+     with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
      with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+     with AuthApiProvider         // Easier java api for authorization
+     with LogUnauthorized         // Log everything else
 
 /**
  * Actor that handles incoming http messages
