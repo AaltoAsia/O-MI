@@ -157,10 +157,19 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
     super.makePermissionTestFunction,
     provide{
       case r: PermissiveRequest =>
-        log.warning(s"Unauthorized user: tried to use ${r.toString.take(130)}...")
         false
       case _ =>
         true
+    }
+  )
+}
+trait LogUnauthorized extends AuthorizationExtension {
+  abstract override def makePermissionTestFunction = combineWithPrevious(
+    super.makePermissionTestFunction,
+    provide{
+      case r =>
+        log.warning(s"Unauthorized user: tried to use ${r.toString.take(130)}...")
+        false
     }
   )
 }
