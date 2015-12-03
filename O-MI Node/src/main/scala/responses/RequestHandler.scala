@@ -221,8 +221,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleWrite( write: WriteRequest ) : (NodeSeq,Int) ={
-      log.warning("Handling write.")
-      log.warning(write.ttl.toString)
+      log.debug("Handling write.")
       val ttl = if( write.ttl.isFinite ) {
         if(write.ttl.toSeconds != 0)
           FiniteDuration(write.ttl.toSeconds, SECONDS)
@@ -249,7 +248,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleResponse( response: ResponseRequest ) : (NodeSeq,Int) ={
-      log.debug("Response received.")
+      log.debug("Handling response.")
       val ttl = if( response.ttl.isFinite ) {
         if(response.ttl.toSeconds != 0)
          FiniteDuration(response.ttl.toSeconds, SECONDS)
@@ -288,6 +287,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleRead(read: ReadRequest): (NodeSeq, Int) = {
+    log.debug("Handling read.")
     val objectsO: Option[OdfObjects] = dbConnection.getNBetween(getLeafs(read.odf), read.begin, read.end, read.newest, read.oldest)
 
     objectsO match {
@@ -317,6 +317,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handlePoll(poll: PollRequest): (NodeSeq, Int) = {
+    log.debug("Handling poll.")
     val time = date.getTime
     val results =
       poll.requestIDs.map { id =>
@@ -344,6 +345,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleSubscription(subscription: SubscriptionRequest): (NodeSeq, Int) = {
+    log.debug("Handling subscription.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
     val (response, returnCode) =
@@ -373,6 +375,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
+    log.debug("Handling cancel.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
     val jobs = cancel.requestID.map { id =>
@@ -418,6 +421,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   }
 
   def handleSubData(subdata: SubDataRequest) = {
+    log.debug("Handling internal.")
     val objectsO: Option[OdfObjects] = dbConnection.getSubData(subdata.sub.id)
 
     objectsO match {
