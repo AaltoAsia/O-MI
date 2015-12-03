@@ -25,7 +25,6 @@ import types.OdfTypes.OdfValue
 import types.Path
 import types.OdfTypes.fromPath
 
-import collection.JavaConversions.asJavaIterable
 
 
 package object database {
@@ -66,6 +65,7 @@ object SingleStores {
     val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
     val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(0), settings.journalsDirectory)
 
+
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
      *  As a side effect, updates the internal latest value store.
@@ -74,21 +74,25 @@ object SingleStores {
      * @param newValue Actual incoming data
      * @return Triggered responses
      */
-    def processEvents(path: Path, newValue: OdfValue): Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
+    def processData(path: Path, newValue: OdfValue): Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
       lazy val esubs = eventPrevayler execute LookupEventSubs(path)
       // TODO: attach or other events
       // lazy val onChange = esubs.filter{???} 
 
-      val oldValueOpt = latestStore execute LookupSensorData(path)
+      val oldInfoOpt = latestStore execute LookupSensorData(path)
 
-      oldValueOpt match {
-        case Some(oldValue) =>
+      // TODO: Replace metadata and description if given
+
+      oldInfoOpt match {
+        case Some(oldInfo) =>
+          val oldValue = oldInfo.value
           if (oldValue.timestamp before newValue.timestamp) {
             val onChangeResponses =
               if (oldValue.value != newValue.value) {
                 esubs.map{ esub =>
+                  val newInfo = oldInfo.copy(value = newValue)
                   val resp = responses.Results.odf("200", None, Some(esub.id.toString),
-                    fromPath(OdfInfoItem(path, Iterable(newValue)))
+                    fromPath(newInfo.toOdfInfoItem(path))
                   )
                   (esub, resp)
                 }

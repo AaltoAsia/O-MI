@@ -93,15 +93,16 @@ class DBPusher(val dbobject: DB)
 
   /**
    * Function for handling sequences of OdfInfoItem.
-   *
+   * @return true if the write was accepted.
    */
   private def handleInfoItems(infoitems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
-    
-    val pairs = infoitems.map { info =>
-      info.values.map { tv => (info.path, tv) }
-    }.flatten[(Path, OdfValue)].toList
+    // save only changed values
+    infoitems foreach { data =>
+      val path = data.path
+      SingleStores.latestStore execute (SetSensorData.apply _).tupled(data)
+    }
 
-    handlePathValuePairs(pairs)
+    // save first to latest values and then db
 
     //log.debug("Successfully saved InfoItems to DB")
     val meta = infoitems.collect {
@@ -119,12 +120,14 @@ class DBPusher(val dbobject: DB)
 
   /**
    * Function for handling sequences of path and value pairs.
-   *
+   * @return true if the write was accepted.
    */
   private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Try[Boolean] = Try{
     // save first to latest values and then db
     pairs foreach (data => SingleStores.latestStore execute (SetSensorData.apply _).tupled(data))
+
     dbobject.setMany(pairs.toList)
+
     log.debug("Successfully saved Path-TimedValue pairs to DB")
     true
   }
