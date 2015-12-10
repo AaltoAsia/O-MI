@@ -66,12 +66,12 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       case Some(x) =>{
 
         val nodes = x.paths.flatMap(m => dbConnection.get(m))
-        val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
+        //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
 
 
         x match {
           case pollEvent: PollEventSub => {
-            dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
+            //dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
           }
           case pollInterval: PollIntervalSub =>
           case unknown => log.error(s"unknown subscription type $unknown")
@@ -102,6 +102,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     iSubs.foreach{iSub =>
       log.info(s"Trying to send subscription data to ${iSub.callback}")
       val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
+      //TODO combine path with the ODFVALUE !!
       CallbackHandlers.sendCallback(iSub.callback,???,iSub.interval)//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
     }
 
