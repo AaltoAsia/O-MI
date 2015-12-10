@@ -22,7 +22,9 @@ sealed trait SavedSub {
   val paths: Seq[Path]
   //va: Duration
 }
-sealed trait PolledSub extends SavedSub
+sealed trait PolledSub extends SavedSub {
+  val lastPolled: Timestamp
+}
 
 
 case class SubIds(var id: Long)

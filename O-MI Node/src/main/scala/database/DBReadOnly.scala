@@ -291,10 +291,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * All parameters except the first are optional, given only the first returns all requested data
    *
    * @param requests SINGLE requests in a list (leafs in request O-DF); InfoItems, Objects and MetaDatas
-   * @param start optional start Timestamp
+   * @param begin optional start Timestamp
    * @param end optional end Timestamp
-   * @param fromStart number of values to be returned from start
-   * @param fromEnd number of values to be returned from end
+   * @param newest number of values to be returned from start
+   * @param  number of values to be returned from end
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
