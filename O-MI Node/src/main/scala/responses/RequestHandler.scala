@@ -137,7 +137,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   }
 
   /**
-   * Method for runnig response generation. Handles tiemout etc. upper level failures.
+   * Method for running response generation. Handles tiemout etc. upper level failures.
    *
    * @param request request is O-MI request to be handled
    */

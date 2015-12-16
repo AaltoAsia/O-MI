@@ -66,7 +66,7 @@ trait OdfConversions extends OmiNodeTables {
       objectNode.toOdfObject
     case (objectNode, values) if !objectNode.isInfoItem && objectNode.depth == 1 =>
       objectNode.toOdfObjects
-    case matchError => throw new MatchError
+    case matchError => throw new MatchError(matchError)
   }
 
   /**

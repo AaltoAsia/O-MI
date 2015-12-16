@@ -13,20 +13,19 @@
 **/
 package database
 
-import slick.driver.H2Driver.api._
 import java.sql.Timestamp
+
+import slick.driver.H2Driver.api._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
-
-
-import types._
 import types.OdfTypes._
 import types.OmiTypes.SubLike
+import types._
+
+import scala.collection.JavaConversions.asJavaIterable
 //import types.Path._
-import database._
 
 
 /**
@@ -218,7 +217,37 @@ trait OmiNodeTables extends DBBase {
 
   protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data
 
+///////////////////////////////////////////////////
+  case class SubValue(
+                     id: Option[Int],
+                     subId: Int,
+                     path: Path,
+                     timestamp: Timestamp,
+                     value: String,
+                     valueType: String
+                     ) {
+  def toOdf = OdfValue(value, valueType, timestamp)
+}
 
+  class PollSubsTable(tag: Tag)
+    extends Table[SubValue](tag, "POLLSUBVALUES") {
+    /** This is the PrimaryKey */
+    def id            = column[Int]("ID", O.PrimaryKey, O.AutoInc)
+    def subId         = column[Int]("SUBID")
+    def path          = column[Path]("PATH")
+    def timestamp     = column[Timestamp]("TIME")
+    def value         = column[String]("VALUE")
+    def valueType     = column[String]("VALUETYPE")
+
+    // Every table needs a * projection with the same type as the table's type parameter
+    def * = (id.?, subId, path, timestamp, value, valueType) <> (
+      SubValue.tupled,
+      SubValue.unapply
+      )
+  }
+
+  protected[this] val pollSubs = TableQuery[PollSubsTable]
+  ///////////////////////////////////////////////////
 
 
 
@@ -346,6 +375,7 @@ trait OmiNodeTables extends DBBase {
        , metadatas
        , subs
        , subItems
+       , pollSubs
        )
 
   protected[this] val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)

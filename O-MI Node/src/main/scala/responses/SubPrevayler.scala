@@ -3,11 +3,10 @@ package responses
 import java.sql.Timestamp
 import java.util.Date
 
-import org.prevayler.{Query, Transaction, TransactionWithQuery}
+import org.prevayler.{Transaction, TransactionWithQuery}
 import types.OdfTypes.OdfValue
 
 import scala.collection.JavaConversions.asScalaIterator
-import scala.collection.SortedSet
 import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration
@@ -54,115 +53,6 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   val intervalScheduler = ttlScheduler
 
 
-//TODO EventSub
-  case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {
-    def executeOn(store: EventSubs, d: Date) = {
-      //val sId = subIDCounter.single.getAndTransform(_+1)
-      //val currentTime: Long = System.currentTimeMillis()
-
-      val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
-
-      if(scheduleTime > 0L){
-        if(eventSub.endTime.getTime < Long.MaxValue){
-          ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
-        }
-        val newSubs: HashMap[Path, Seq[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Seq(eventSub))): _*)
-        store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
-      }
-    }
-  }
-
-  case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {
-    def executeOn(store: IntervalSubs, d: Date) = {
-      //val sId = subIDCounter.single.getAndTransform(_+1)
-      val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
-      if(scheduleTime > 0){
-        if(intervalSub.endTime.getTime < Long.MaxValue){
-          ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(intervalSub.id))
-        }
-        store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
-      }
-
-    }
-  }
-    case class AddPollSub(polledSub: PolledSub) extends Transaction[PolledSubs] {
-      def executeOn(store: PolledSubs, d: Date) = {
-        val scheduleTime: Long = polledSub.endTime.getTime - d.getTime
-        if (scheduleTime > 0){
-          if(polledSub.endTime.getTime < Long.MaxValue) {
-            ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(polledSub.id))
-          }
-          store.polledSubs = store.polledSubs + (polledSub.id -> polledSub)
-        }
-      }
-    }
-
-  //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
-
-  /**
-   * Transaction to remove a subscription from interval subscriptions, returns false if no sub with id found
-   * @param id id of the subscription to remove
-   */
-  case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs, Boolean] {
-    def executeAndQuery(store: IntervalSubs, d: Date): Boolean={
-      val target = store.intervalSubs.find( _.id == id)
-      target.fold(false){ sub =>
-        store.intervalSubs = store.intervalSubs - sub
-        true
-      }
-
-    }
-  }
-
-  /**
-   * Transaction to remove subscription from event subscriptions
-   * @param id id of the subscription to remove
-   */
-  case class RemoveEventSub(id: Long) extends  TransactionWithQuery[EventSubs, Boolean] {
-    def executeAndQuery(store:EventSubs, d: Date): Boolean = {
-      if(store.eventSubs.values.exists(_.exists(_.id == id))){
-        val newStore: HashMap[Path, Seq[EventSub]] =
-          store.eventSubs
-            .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
-            .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
-            .map(identity)(collection.breakOut) //map to HashMap //TODO create helper method for matching
-        store.eventSubs = newStore
-        true
-      } else{
-        false
-      }
-    }
-  }
-
-  case class RemovePollSub(id: Long) extends TransactionWithQuery[PolledSubs, Boolean] {
-    def executeAndQuery(store: PolledSubs, d: Date): Boolean = {
-      if(store.polledSubs.contains(id)){
-        store.polledSubs = store.polledSubs - id
-        true
-      } else false
-    }
-  }
-
-  case class PollSub(id: Long) extends TransactionWithQuery[PolledSubs, Option[PolledSub]] {
-    def executeAndQuery(store: PolledSubs, d: Date): Option[PolledSub] = {
-      val sub = store.polledSubs.get(id)
-      //sub.foreach(a => store.polledSubs = store.polledSubs.updated(id)) TODO update store and return value
-      sub
-    }
-  }
-
-  /*
-  re schedule when starting in new subscription transactions
-  */
-
-  case object getAndUpdateId extends TransactionWithQuery[SubIds, Long] {
-    override def executeAndQuery(p: SubIds, date: Date): Long = {
-      p.id = p.id + 1
-      p.id
-    }
-  }
-
-
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
@@ -171,26 +61,29 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case PollSubscription(id) => sender() ! pollSubscription(id)
   }
 
-  /**
-   * Transaction to get the intervalSub with the earliest interval
-   */
-
-  case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
-    def executeAndQuery(store: IntervalSubs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
-      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
-      val newIntervals = passedIntervals.map{a =>
-          val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
-          val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
-          a.copy(nextRunTime = newTime)}
-      store.intervalSubs = rest ++ newIntervals
-      (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
-    }
-
-  }
-
   private def pollSubscription(id: Long) = { //explicit return type
-    ???
+    val sub = SingleStores.pollPrevayler execute PollSub(id)
+    sub match {
+      case Some(x) =>{
+
+        val nodes = x.paths.flatMap(m => dbConnection.get(m))
+        //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
+
+
+        x match {
+          case pollEvent: PollEventSub => {
+            //dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
+          }
+          case pollInterval: PollIntervalSub =>
+          case unknown => log.error(s"unknown subscription type $unknown")
+        }
+      }
+      case _ => None
+    }
+    val temp = sub.map(n => n.paths.flatMap(m => dbConnection.get(m)))
+    //dbConnection.getNBetween(temp,sub.get)
   }
+
   /**
    * Method called when the interval of an interval subscription has passed
    */
@@ -206,11 +99,19 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       return
     }
 
+    //send new data to callback addresses
+    iSubs.foreach{iSub =>
+      log.info(s"Trying to send subscription data to ${iSub.callback}")
+      val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
+      //TODO combine path with the ODFVALUE !!
+
+
+      CallbackHandlers.sendCallback(iSub.callback,???,iSub.interval)//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
+    }
+
 
     //val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
 
-
-    //TODO fix when previous query is refactored!!(send callback)
 
 
     nextRunTimeOption.foreach{ tStamp =>
@@ -219,18 +120,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     }
   }
 
-  /**
-   * Helper method to get the Timestamp for removing the subscription
-   * @param subttl time to live of the subscription
-   * @return endTime of subscription as Timestamp
-   */
-  private def subEndTimestamp(subttl: Duration): Timestamp ={
-              if (subttl.isFinite()) {
-               new Timestamp(System.currentTimeMillis() + subttl.toMillis)
-              } else {
-               new Timestamp(Long.MaxValue)
-              }
-  }
+  //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
   /**
    * Method used for removing subscriptions using their Id
@@ -331,5 +221,142 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
         }
       }
     }
+  }
+
+  /**
+   * Helper method to get the Timestamp for removing the subscription
+   * @param subttl time to live of the subscription
+   * @return endTime of subscription as Timestamp
+   */
+  private def subEndTimestamp(subttl: Duration): Timestamp ={
+              if (subttl.isFinite()) {
+               new Timestamp(System.currentTimeMillis() + subttl.toMillis)
+              } else {
+               new Timestamp(Long.MaxValue)
+              }
+  }
+
+//TODO EventSub
+  case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {
+    def executeOn(store: EventSubs, d: Date) = {
+      //val sId = subIDCounter.single.getAndTransform(_+1)
+      //val currentTime: Long = System.currentTimeMillis()
+
+      val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
+
+      if(scheduleTime > 0L){
+        if(eventSub.endTime.getTime < Long.MaxValue){
+          ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(eventSub.id))
+        }
+        val newSubs: HashMap[Path, Seq[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Seq(eventSub))): _*)
+        store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
+      }
+    }
+  }
+
+  /*
+  re schedule when starting in new subscription transactions
+  */
+
+  case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {
+    def executeOn(store: IntervalSubs, d: Date) = {
+      //val sId = subIDCounter.single.getAndTransform(_+1)
+      val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
+      if(scheduleTime > 0){
+        if(intervalSub.endTime.getTime < Long.MaxValue){
+          ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(intervalSub.id))
+        }
+        store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
+      }
+
+    }
+  }
+
+    case class AddPollSub(polledSub: PolledSub) extends Transaction[PolledSubs] {
+      def executeOn(store: PolledSubs, d: Date) = {
+        val scheduleTime: Long = polledSub.endTime.getTime - d.getTime
+        if (scheduleTime > 0){
+          if(polledSub.endTime.getTime < Long.MaxValue) {
+            ttlScheduler.scheduleOnce(Duration(scheduleTime, "milliseconds"), self, RemoveSubscription(polledSub.id))
+          }
+          store.polledSubs = store.polledSubs + (polledSub.id -> polledSub)
+        }
+      }
+    }
+
+  /**
+   * Transaction to remove a subscription from interval subscriptions, returns false if no sub with id found
+   * @param id id of the subscription to remove
+   */
+  case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs, Boolean] {
+    def executeAndQuery(store: IntervalSubs, d: Date): Boolean={
+      val target = store.intervalSubs.find( _.id == id)
+      target.fold(false){ sub =>
+        store.intervalSubs = store.intervalSubs - sub
+        true
+      }
+
+    }
+  }
+
+  /**
+   * Transaction to remove subscription from event subscriptions
+   * @param id id of the subscription to remove
+   */
+  case class RemoveEventSub(id: Long) extends  TransactionWithQuery[EventSubs, Boolean] {
+    def executeAndQuery(store:EventSubs, d: Date): Boolean = {
+      if(store.eventSubs.values.exists(_.exists(_.id == id))){
+        val newStore: HashMap[Path, Seq[EventSub]] =
+          store.eventSubs
+            .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
+            .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
+            .map(identity)(collection.breakOut) //map to HashMap //TODO create helper method for matching
+        store.eventSubs = newStore
+        true
+      } else{
+        false
+      }
+    }
+  }
+
+  case class RemovePollSub(id: Long) extends TransactionWithQuery[PolledSubs, Boolean] {
+    def executeAndQuery(store: PolledSubs, d: Date): Boolean = {
+      if(store.polledSubs.contains(id)){
+        store.polledSubs = store.polledSubs - id
+        true
+      } else false
+    }
+  }
+
+  case class PollSub(id: Long) extends TransactionWithQuery[PolledSubs, Option[PolledSub]] {
+    def executeAndQuery(store: PolledSubs, d: Date): Option[PolledSub] = {
+      val sub = store.polledSubs.get(id)
+      //sub.foreach(a => store.polledSubs = store.polledSubs.updated(id)) TODO update store and return value
+      sub
+    }
+  }
+
+  case object getAndUpdateId extends TransactionWithQuery[SubIds, Long] {
+    override def executeAndQuery(p: SubIds, date: Date): Long = {
+      p.id = p.id + 1
+      p.id
+    }
+  }
+
+  /**
+   * Transaction to get the intervalSub with the earliest interval
+   */
+
+  case object GetIntervals extends TransactionWithQuery[IntervalSubs, (Set[IntervalSub], Option[Timestamp])] {
+    def executeAndQuery(store: IntervalSubs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
+      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
+      val newIntervals = passedIntervals.map{a =>
+          val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
+          val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
+          a.copy(nextRunTime = newTime)}
+      store.intervalSubs = rest ++ newIntervals
+      (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
+    }
+
   }
 }
