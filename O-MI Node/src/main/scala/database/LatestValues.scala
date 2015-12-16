@@ -30,9 +30,12 @@ case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[Odf
   def query(ls: LatestValues, d: Date) = ls.allData.get(sensor)
 }
 
-case class LookupSensorDatas(sensors: Seq[Path]) extends Query[LatestValues, Seq[OdfValue]] {
+case class LookupSensorDatas(sensors: Seq[Path]) extends Query[LatestValues, Seq[(Path, OdfValue)]] {
   def query(ls: LatestValues, d: Date) = {
-    sensors.map(ls.allData get _).map(_.toList).flatten
+    (for (sensorPath <- sensors) yield {
+      val dataOpt = ls.allData get sensorPath
+      (dataOpt map {data => (sensorPath, data)}).toList
+    }).flatten
   }
 }
 case class LookupAllDatas() extends Query[LatestValues, Map[Path, OdfValue]] {
@@ -58,6 +61,7 @@ case class GetTree() extends Query[OdfTree, OdfObjects] {
   def query(t: OdfTree, d: Date) = t.root
 }
 
+/* This can be used for updating also */
 case class Union(anotherRoot: OdfObjects) extends Transaction[OdfTree] {
   def executeOn(t: OdfTree, d: Date) = t.root = t.root combine anotherRoot
 }
