@@ -4,14 +4,16 @@ import java.sql.Timestamp
 import java.util.Date
 
 import org.prevayler.{Transaction, TransactionWithQuery}
-import types.OdfTypes.OdfValue
+import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
+import types.OdfTypes.{OdfInfoItem, OdfValue}
 
 import scala.collection.JavaConversions.asScalaIterator
 import scala.collection.immutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConversions.asJavaIterable
 
 
 //import java.util.concurrent.ConcurrentSkipListSet
@@ -19,6 +21,7 @@ import akka.actor.{Actor, ActorLogging}
 import database._
 import types.OmiTypes.SubscriptionRequest
 import types._
+import types.OdfTypes._
 
 
 case object HandleIntervals
@@ -88,6 +91,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * Method called when the interval of an interval subscription has passed
    */
   private def handleIntervals(): Unit = {
+    //TODO add error messages from requesthandler
     val currentTime = System.currentTimeMillis()
 
     val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
@@ -103,10 +107,38 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     iSubs.foreach{iSub =>
       log.info(s"Trying to send subscription data to ${iSub.callback}")
       val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
-      //TODO combine path with the ODFVALUE !!
+      val objectsAndFailures: Seq[Either[(Path, String),OdfObjects]] = datas.map{ case (iPath, oValue) =>
+          val odfInfoOpt = (SingleStores.hierarchyStore execute GetTree()).get(iPath)
+          odfInfoOpt match {
+            case Some(infoI: OdfInfoItem) =>
+              Right(fromPath(infoI.copy(values = Iterable(oValue))))
+            case thing => {
+              log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
+              Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
+            }
+          }
+      }
 
+        val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){ (s, n) =>
+        n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
+    }
+       val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.combine(n))))//rights.reduce(_.combine(_))
+       val succResult = optionObjects.map(odfObjects => responses.Results.odf("200",None, Some(iSub.id.toString), odfObjects)).toSeq
+      val failedResults = lefts.map(fail => Results.simple("404", Some(s"Could not find path: ${fail._1}. ${fail._2}")))
+       val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
-      CallbackHandlers.sendCallback(iSub.callback,???,iSub.interval)//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
+      CallbackHandlers.sendCallback(iSub.callback,resultXml,iSub.interval)
+        .onComplete {
+        case Success(CallbackSuccess) =>
+          log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+
+        case Success(fail: CallbackFailure) =>
+          log.warning(
+          s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
+        case Failure(e) =>
+          log.warning(
+          s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+      }//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
     }
 
 
