@@ -95,22 +95,26 @@ class DBPusher(val dbobject: DB)
    * Function for handling sequences of OdfInfoItem.
    * @return true if the write was accepted.
    */
-  private def handleInfoItems(infoitems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
+  private def handleInfoItems(infoItems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
     // save only changed values
-    infoitems foreach { data =>
-      val path = data.path
-      SingleStores.latestStore execute (SetSensorData.apply _).tupled(data)
+    val callbackData = for {
+      info <- infoItems
+      path = info.path
+      value <- info.values
+    } {
+      SingleStores.processData(path, value)
     }
+    // TODO: process callbackdata
 
     // save first to latest values and then db
 
     //log.debug("Successfully saved InfoItems to DB")
-    val meta = infoitems.collect {
+    val meta = infoItems.collect {
       case OdfInfoItem(path, _, _, Some(metaData)) => (path, metaData.data)
     }
     val metaTry = if (meta.nonEmpty) handlePathMetaDataPairs(meta) else Success(true)
 
-    val descriptions = infoitems.collect {
+    val descriptions = infoItems.collect {
       case info if info.description.nonEmpty => info
     }
     descriptions.map{ node => dbobject.setDescription(node) }
@@ -124,7 +128,9 @@ class DBPusher(val dbobject: DB)
    */
   private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Try[Boolean] = Try{
     // save first to latest values and then db
-    pairs foreach (data => SingleStores.latestStore execute (SetSensorData.apply _).tupled(data))
+    pairs foreach (SingleStores.processData _).tupled  // Just call the function with tuple
+
+    // TODO: process callbackdata
 
     dbobject.setMany(pairs.toList)
 
