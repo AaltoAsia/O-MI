@@ -30,6 +30,7 @@ import types.Path
 import types.OdfTypes._
 import database._
 
+import scala.util.{Try, Failure, Success}
 import xml._
 
 /**
@@ -84,7 +85,7 @@ trait Starter {
         Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
         Some(OdfDescription(numDescription))
       )
-    ))
+    ), new Timeout(5, SECONDS))
   }
 
 
@@ -148,12 +149,18 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter { // with App{
+object Boot extends Starter {// with App{
   def main(args: Array[String]) = {
+  Try {
     init()
     val serviceActor = start()
     bindHttp(serviceActor)
+  } match {
+    case Failure(ex) => system.log.error(ex, "Error during startup")
+    case Success(_) => system.log.info("Process exited normally")
   }
+  }
+
 }
 
 

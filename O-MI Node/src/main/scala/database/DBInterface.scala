@@ -57,11 +57,13 @@ import database._
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-    val latestStore = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
-    val eventPrevayler = PrevaylerFactory.createPrevayler(EventSubs.empty, settings.journalsDirectory)
+    val latestStore       = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
+    val hierarchyStore    = PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory)
+    val eventPrevayler    = PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory)
     val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
-    val pollPrevayler = PrevaylerFactory.createPrevayler(PolledSubs.empty, settings.journalsDirectory)
-    val idPrevayler = PrevaylerFactory.createPrevayler(SubIds(0), settings.journalsDirectory)
+    val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory)
+    val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory)
+
 
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
@@ -71,23 +73,32 @@ object SingleStores {
      * @param newValue Actual incoming data
      * @return Triggered responses
      */
-    def processEvents(path: Path, newValue: OdfValue): Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
+    def processData(path: Path, newValue: OdfValue): Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
       lazy val esubs = eventPrevayler execute LookupEventSubs(path)
       // TODO: attach or other events
       // lazy val onChange = esubs.filter{???} 
 
       val oldValueOpt = latestStore execute LookupSensorData(path)
 
+      // TODO: Replace metadata and description if given
+
       oldValueOpt match {
         case Some(oldValue) =>
           if (oldValue.timestamp before newValue.timestamp) {
             val onChangeResponses =
               if (oldValue.value != newValue.value) {
-                esubs.map{ esub =>
-                  val resp = responses.Results.odf("200", None, Some(esub.id.toString),
-                    fromPath(OdfInfoItem(path, Iterable(newValue)))
-                  )
-                  (esub, resp)
+                val oldInfoOpt = (hierarchyStore execute GetTree()).get(path)
+                oldInfoOpt match {
+                  case Some(oldInfo: OdfInfoItem) =>
+                    val newInfo = oldInfo.copy(values = Iterable(newValue))
+                    val newOdf = fromPath(newInfo)
+
+                    esubs.map{ esub =>
+                      val resp = responses.Results.odf("200", None, Some(esub.id.toString), newOdf)
+                      (esub, resp)
+                    }
+                  case thing => throw new RuntimeException(
+                    s"Problem in hierarchyStore, Some(OdfInfoItem) expected, actual: $thing")
                 }
               } else Seq.empty
 
@@ -96,7 +107,7 @@ object SingleStores {
             onChangeResponses
           } else Seq.empty
         case None => 
-          // TODO: Attach events
+          // TODO: -2 Attach events
           Seq.empty
       }
 

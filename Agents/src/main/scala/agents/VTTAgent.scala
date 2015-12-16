@@ -15,6 +15,8 @@ import scala.util.Random
 // Scala XML
 import scala.xml._
 
+import scala.concurrent.duration._
+import akka.util.Timeout
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
 import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 
@@ -26,6 +28,7 @@ class VTTAgent extends InternalAgent {
   
   private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
   private var initialized = false
+  val t : FiniteDuration = Duration(5, SECONDS) 
   
   override def init(configPath : String) : Unit = {
     if(configPath.isEmpty || !(new File(configPath).exists())){
@@ -63,12 +66,13 @@ class VTTAgent extends InternalAgent {
       case None =>
         InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
       case Some(infoItems) =>
-        InputPusher.handlePathMetaDataPairs( 
+        /*InputPusher.handlePathMetaDataPairs( 
           odfInfoItems.getOrElse(Iterable.empty).collect{ 
             case ((info @ OdfInfoItem(_,_,_, Some(metaData)), firstValue:String )) => 
               (info.path, metaData.data)
-          }
-        )
+          },
+          new Timeout(t)
+        )*/
     }
   }
   
@@ -113,7 +117,8 @@ class VTTAgent extends InternalAgent {
 
       InternalAgent.log.info("VTTAgent pushed data to DB.")
       InputPusher.handleInfoItems(
-        odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info} 
+        odfInfoItems.getOrElse(Seq.empty).map{ case (info, _) => info}, 
+          new Timeout(t)
       )
       Thread.sleep(60000)
     }
