@@ -52,6 +52,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   val ttlScheduler = context.system.scheduler
   val intervalScheduler = ttlScheduler
 
+
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
