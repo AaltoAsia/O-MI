@@ -104,6 +104,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       log.info(s"Trying to send subscription data to ${iSub.callback}")
       val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
       //TODO combine path with the ODFVALUE !!
+
+
       CallbackHandlers.sendCallback(iSub.callback,???,iSub.interval)//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
     }
 

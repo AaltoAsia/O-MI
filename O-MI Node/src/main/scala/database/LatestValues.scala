@@ -1,11 +1,10 @@
 package database
 
-import collection.JavaConversions.asJavaIterable
-import org.prevayler._
 import java.util.Date
 
-import types.Path
+import org.prevayler._
 import types.OdfTypes._
+import types.Path
 
 // TODO: save the whole InfoItem
 /*case class LatestInfoItemData(

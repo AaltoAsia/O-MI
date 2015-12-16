@@ -375,6 +375,7 @@ trait OmiNodeTables extends DBBase {
        , metadatas
        , subs
        , subItems
+       , pollSubs
        )
 
   protected[this] val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)
