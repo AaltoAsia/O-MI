@@ -97,14 +97,14 @@ class DBPusher(val dbobject: DB)
    */
   private def handleInfoItems(infoItems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
     // save only changed values
-    val callbackData = for {
+    // val callbackData =
+    for {
       info <- infoItems
       path = info.path
       value <- info.values
     } {
       SingleStores.processData(path, value)
     }
-    // TODO: process callbackdata
 
     // save first to latest values and then db
 
@@ -130,7 +130,6 @@ class DBPusher(val dbobject: DB)
     // save first to latest values and then db
     pairs foreach (SingleStores.processData _).tupled  // Just call the function with tuple
 
-    // TODO: process callbackdata
 
     dbobject.setMany(pairs.toList)
 
