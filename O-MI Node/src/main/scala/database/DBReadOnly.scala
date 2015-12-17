@@ -262,7 +262,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
               metaInfoItem = OdfInfoItem(path, Iterable(), None, None)
               result = odfInfoItem.map {
-                infoItem => fromPath(infoItem) combine fromPath(metaInfoItem)
+                infoItem => fromPath(infoItem) union fromPath(metaInfoItem)
               }
 
             } yield result
@@ -284,7 +284,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     // Combine some Options
     allResults.fold(None) {
-      case (Some(results), Some(otherResults)) => Some(results combine otherResults)
+      case (Some(results), Some(otherResults)) => Some(results union otherResults)
       case (None, Some(results))               => Some(results)
       case (Some(results), None)               => Some(results)
       case (None, None)                        => None
@@ -310,7 +310,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       infoItemIdTuples.map {
         case (id, info) =>
           fromPath(info.copy(values = betweenValues.collect { case dbval if dbval.hierarchyId == id => dbval.toOdf }))
-      }.foldLeft(OdfObjects())(_.combine(_))
+      }.foldLeft(OdfObjects())(_.union(_))
     }
 
   /**

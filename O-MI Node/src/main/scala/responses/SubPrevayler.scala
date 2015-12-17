@@ -51,6 +51,23 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   val ttlScheduler = context.system.scheduler
   val intervalScheduler = ttlScheduler
 
+  def scheduleTtls() = {
+    val currentTime = System.currentTimeMillis()
+    //event subs
+    val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++
+                  (SingleStores.intervalPrevayler execute GetAllIntervalSubs()) ++
+                  (SingleStores.pollPrevayler execute GetAllPollSubs())
+    allSubs.foreach{ sub =>
+      val nextRun = Duration(sub.endTime.getTime() - currentTime, "milliseconds")
+      if(nextRun.toMillis > 0L){
+        ttlScheduler.scheduleOnce(nextRun, self, RemoveSubscription(sub.id))
+      } else {
+        //TODO
+        ???
+      }
+    }
+  }
+
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
   def receive = {
@@ -91,11 +108,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   private def handleIntervals(): Unit = {
     //TODO add error messages from requesthandler
     val currentTime = System.currentTimeMillis()
-
+    val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
 
     //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
-     // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
+    // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no interval subs existed")
       return
@@ -122,23 +139,23 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
         (s, n) =>
         n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
       }
-      val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.combine(n))))//rights.reduce(_.combine(_))
+      val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n))))//rights.reduce(_.combine(_))
       val succResult = optionObjects.map(odfObjects => responses.Results.odf("200",None, Some(iSub.id.toString), odfObjects)).toSeq
       val failedResults = lefts.map(fail => Results.simple("404", Some(s"Could not find path: ${fail._1}. ${fail._2}")))
-       val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
+      val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
       CallbackHandlers.sendCallback(iSub.callback,resultXml,iSub.interval)
         .onComplete {
-        case Success(CallbackSuccess) =>
-          log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+          case Success(CallbackSuccess) =>
+            log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
 
-        case Success(fail: CallbackFailure) =>
-          log.warning(
-          s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-        case Failure(e) =>
-          log.warning(
-          s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
-      }//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
+          case Success(fail: CallbackFailure) =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
+          case Failure(e) =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+        }//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
     }
 
 
@@ -255,10 +272,10 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
           }
         }
       }
-        subscription.ttl match {
-          case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
-          case _ =>
-        }
+      subscription.ttl match {
+        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
+        case _ =>
+      }
       subId
     }
   }
@@ -269,11 +286,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * @return endTime of subscription as Timestamp
    */
   private def subEndTimestamp(subttl: Duration): Timestamp ={
-              if (subttl.isFinite()) {
-               new Timestamp(System.currentTimeMillis() + subttl.toMillis)
-              } else {
-               new Timestamp(Long.MaxValue)
-              }
+    if (subttl.isFinite()) {
+      new Timestamp(System.currentTimeMillis() + subttl.toMillis)
+    } else {
+      new Timestamp(Long.MaxValue)
+    }
   }
 
 

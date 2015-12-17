@@ -23,6 +23,14 @@ import scala.collection.JavaConversions.asJavaIterable
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.BoundedMessageQueueSemantics
 import scala.util.{Try, Success, Failure}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import types.Path
+import types.OdfTypes._
+import responses.Results
+import responses.OmiGenerator.xmlFromResults
+import responses.CallbackHandlers._
 
 
 
@@ -59,25 +67,59 @@ class DBPusher(val dbobject: DB)
     case u                              => log.warning("Unknown message received.")
   }
 
+  private def sendEventCallback(esub: EventSub, odf: OdfObjects): Unit = {
+    val log = http.Boot.system.log
+    val id = esub.id
+    val callbackAddr = esub.callback
+    log.debug(s"Sending data to event sub: $id.")
+    val xmlMsg = xmlFromResults(
+      1.0,
+      Results.poll(id.toString, odf))
+    log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
+    //log.debug("Send msg:\n" + xmlMsg)
+
+    def failed(reason: String) =
+      log.warning(
+        s"Callback failed; subscription id:$id interval:-1  reason: $reason")
+
+
+    sendCallback(
+      callbackAddr,
+      xmlMsg,
+      (esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds
+    ) onComplete {
+      case Success(CallbackSuccess) =>
+        log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
+
+      case Success(fail: CallbackFailure) =>
+        failed(fail.toString)
+      case Failure(e) =>
+        failed(e.getMessage)
+    }
+  }
+
   /**
    * Function for handling OdfObjects.
    *
    */
   private def handleOdf(objects: OdfObjects):  Try[Boolean] = Try{
+    def nonInfoItem: OdfNode => Boolean = {
+        case ii: OdfInfoItem => false
+        case _ => true
+      }
+
     val data = getLeafs(objects)
-    if(
-      data.nonEmpty 
-    ){
-      val write : Try[Boolean] = handleInfoItems(data.collect { case infoitem: OdfInfoItem => infoitem })
-      if( write.isSuccess ){
-        log.debug("Successfully saved Odfs to DB")
-        val odfNodes = getOdfNodes(objects.objects.toSeq: _*).toSet
-        val descriptions = odfNodes.collect {
-          case node if node.description.nonEmpty => node
-        }.toIterable
-        descriptions.map{ node => dbobject.setDescription(node) }
-      } 
-      write.get
+    if( data.nonEmpty ) {
+      if (data exists nonInfoItem) {
+        SingleStores.hierarchyStore execute Union(objects)
+      }
+      val writeValues : Try[Boolean] = handleInfoItems(
+        data collect { case infoitem: OdfInfoItem => infoitem }
+      )
+
+      log.debug("Successfully saved Odfs to DB")
+      val odfNodes = getOdfNodes(objects.objects.toSeq: _*).toSet
+      true
     } else {
       log.warning("Empty odf pushed for DBPusher.")
       false
@@ -105,6 +147,7 @@ class DBPusher(val dbobject: DB)
     } {
       SingleStores.processData(path, value)
     }
+    //TODO: route metadata and stuff to SingleStores
 
     // save first to latest values and then db
 
