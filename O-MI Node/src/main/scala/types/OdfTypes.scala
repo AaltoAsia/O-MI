@@ -50,7 +50,7 @@ object `package` {
   def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {
     hasPaths.flatMap {
       case info: OdfInfoItem => Seq(info)
-      case obj: OdfObject    => Seq(obj) ++ getOdfNodes((obj.objects.toSeq ++ obj.infoItems.toSeq): _*)
+      case obj:  OdfObject   => Seq(obj) ++ getOdfNodes((obj.objects.toSeq ++ obj.infoItems.toSeq): _*)
       case objs: OdfObjects  => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
     }.toSeq
   }
@@ -83,7 +83,7 @@ object `package` {
       case objs: OdfObjects =>
         objs
 
-      case newType => throw new MatchError
+      case newType => throw new MatchError(newType)
     }
   }
   /** Method for generating parent OdfNode of this instance */
@@ -104,7 +104,7 @@ object `package` {
       case objs: OdfObjects =>
         objs
 
-      case newType => throw new MatchError
+      case newType => throw new MatchError(newType)
     }
   }
 }
@@ -124,7 +124,7 @@ case class OdfObjects(
   objects: JavaIterable[OdfObject] = Iterable(),
   version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode{
   /** Method for searching OdfNode from O-DF Structure */
-  override def get(path: Path) : Option[OdfNode] = {
+  def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)
     //HeadOption is because of values being Iterable of OdfObject
     val grouped = objects.groupBy(_.path).mapValues{_.headOption.getOrElse(throw new Exception("Pathless Object was grouped."))}
@@ -140,6 +140,8 @@ case class OdfObjects(
     }
   }
 
+  def valuesRemoved: OdfObjects = this.copy(objects = objects map (_.valuesRemoved))
+
 }
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
@@ -148,7 +150,7 @@ case class OdfObject(
   objects: JavaIterable[OdfObject],
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None) extends OdfObjectImpl(path, infoItems, objects, description, typeValue) with OdfNode{
-  override def get(path: Path) : Option[OdfNode] ={
+  def get(path: Path) : Option[OdfNode] ={
     if( path == this.path ) return Some(this)
     val haspaths = infoItems.toSeq.map{ item => item : OdfNode} ++ objects.toSeq.map{ item => item : OdfNode}
     val grouped = haspaths.groupBy(_.path).mapValues{_.headOption.getOrElse(OdfObjects())}
@@ -171,6 +173,10 @@ case class OdfObject(
     }
   
   }
+  def valuesRemoved: OdfObject = this.copy(
+        objects = objects map (_.valuesRemoved),
+        infoItems = infoItems map (_.valuesRemoved)
+      )
 
 }
   
@@ -181,6 +187,7 @@ case class OdfInfoItem(
     description: Option[OdfDescription] = None,
     metaData: Option[OdfMetaData] = None) extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
+  def valuesRemoved: OdfInfoItem = this.copy(values = Iterable())
 }
 
 /** Class presenting O-DF description element*/

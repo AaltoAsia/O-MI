@@ -21,6 +21,9 @@ import scala.collection.immutable.HashMap
 }
  */ 
 
+/**
+ * The latest values should be stored here. Contains only the latest value for each path.
+ */
 case class LatestValues(var allData: Map[Path, OdfValue])
 object LatestValues {
   type LatestStore = Prevayler[LatestValues]
@@ -53,6 +56,9 @@ case class EraseSensorData(sensor: Path) extends Transaction[LatestValues] {
 }
 
 
+/**
+ * Stores hierarchy of the odf, so it removes all values if they end up in this tree
+ */
 case class OdfTree(var root: OdfObjects)
 object OdfTree {
   type OdfTreeStore = Prevayler[OdfTree]
@@ -63,9 +69,11 @@ case class GetTree() extends Query[OdfTree, OdfObjects] {
   def query(t: OdfTree, d: Date) = t.root
 }
 
-/* This can be used for updating also */
+/**
+ * This is used for updating also
+ */
 case class Union(anotherRoot: OdfObjects) extends Transaction[OdfTree] {
-  def executeOn(t: OdfTree, d: Date) = t.root = t.root combine anotherRoot
+  def executeOn(t: OdfTree, d: Date) = t.root = t.root combine anotherRoot.valuesRemoved  // Remove values so they don't pile up
 }
 
 case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
