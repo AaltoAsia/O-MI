@@ -37,111 +37,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
-      hierarchyNodes filter (_.path === Path(childPath.init)))
+      hierarchyNodes filter (_.path === Path(childPath.init))
+  )
+  
 
-  /**
-   * Used to get metadata from database for given path
-   * @param path path to sensor whose metadata is requested
-   *
-   * @return metadata as Option[String], none if no data is found
-   */
-  def getMetaData(path: Path): Option[OdfMetaData] = runSync(getMetaDataI(path))
-
-  protected[this] def getMetaDataI(path: Path): DBIOro[Option[OdfMetaData]] = {
-    val queryResult = getWithHierarchyQ[DBMetaData, DBMetaDatasTable](path, metadatas).result
-    queryResult map (
-      _.headOption map (_.toOdf))
-  }
-  protected[this] def getMetaDataI(id: Int): DBIO[Option[OdfMetaData]] =
-    (metadatas filter (_.hierarchyId === id)).result map (
-      _.headOption map (_.toOdf))
-
-  protected[this] def getSubItemDataI(subId: Long)(): DBIO[DBInfoItems] = for {
-    subsItems <- (subItems filter (_.subId === subId)).result
-    result <- getSubItemDataI(subsItems)
-  } yield result
-
-  protected[this] def getSubItemDataI(forSubItems: Seq[DBSubscriptionItem])(): DBIO[DBInfoItems] = for {
-    subItemNodes <- hierarchyNodes.filter(
-      _.id.inSet(forSubItems map (_.hierarchyId))).result
-
-    subTreeDatas = subItemNodes map { node =>
-      for {
-        rawData <- getSubTreeQ(node).result
-        infoItems = toDBInfoItems(rawData)
-      } yield infoItems
-    }
-
-    subTreeData <- dbioDBInfoItemsSum(subTreeDatas)
-
-  } yield subTreeData
-
-  /**
-   * Get data for Interval subscription with callback.
-   * Result consists of all sensor values after beginning of the subscription
-   * for all the sensors in the subscription
-   * returns empty array if no data or subscription is found
-   *
-   * @param subId subscription id that is assigned during saving the subscription
-   *
-   * @return objects
-   */
-  def getSubData(subId: Long): Option[OdfObjects] = {
-    val dataI = for {
-      items <- getSubItemDataI(subId)
-
-      // re-uses takeLogic, same behaviour as when no time parameters are given
-      // so takes the newest value
-      filtered = items mapValues takeLogic(None, None, true)
-
-    } yield odfConversion(filtered)
-
-    runSync(dataI)
-  }
-
-  /*
-  def getBetween( values: Seq[DBValue], after: Timestamp, before: Timestamp ) = {
-    values.filter( value =>
-        ( value.timestamp.equals(before)
-          || value.timestamp.before( before )
-        ) &&
-        ( value.timestamp.equals( after )
-          || value.timestamp.after( after )
-        )
-      )
-  }
-  */
-
-  /**
-   * Get values for each interval
-   * @param values input values
-   * @param beginTime of the subscription
-   * @param endTime for the timeframe, timestamp for the current poll
-   * @param interval of the subscription
-   * @return the poll result for these parameters
-   */
-  protected[this] def getByIntervalBetween(values: Seq[DBValue], beginTime: Timestamp, endTime: Timestamp, interval: Duration) = {
-    val timeFrameLengthMs = endTime.getTime - beginTime.getTime
-    // last interval time before the poll
-    val lastIntervalTime = endTime.getTime - (timeFrameLengthMs % interval.toMillis)
-
-    val sortedVals = values.sortBy(
-      value =>
-        value.timestamp.getTime) //ascending
-
-    var intervalTime = lastIntervalTime
-    var intervalValues: Seq[DBValue] = Seq.empty
-    var index = 1
-
-    while (index > -1 && intervalTime >= beginTime.getTime) {
-      index = sortedVals.lastIndexWhere(value => value.timestamp.getTime <= intervalTime)
-      if (index > -1) {
-        intervalValues = intervalValues :+ sortedVals(index)
-        intervalTime -= interval.toMillis
-      }
-    }
-    intervalValues.reverse
-  }
 
   /**
    * Used to get data from database based on given path.
@@ -360,12 +259,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
               odfInfoItem <- processObjectI(path)
 
-              metaData <- metadataQuery match {
-                case Some(_) => getMetaDataI(nodeId) // fetch metadata
-                case None    => DBIO.successful(None)
-              }
 
-              metaInfoItem = OdfInfoItem(path, Iterable(), None, metaData)
+              metaInfoItem = OdfInfoItem(path, Iterable(), None, None)
               result = odfInfoItem.map {
                 infoItem => fromPath(infoItem) union fromPath(metaInfoItem)
               }
@@ -459,49 +354,6 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case None => DBIO.successful(Seq()) // TODO: What if not found?
     }
   }
-
-  /**
-   * getAllSubs is used to search the database for subscription information
-   * Can also filter subscriptions based on whether it has a callback address
-   * @param hasCallBack optional boolean value to filter results based on having callback address
-   *
-   * None -> all subscriptions
-   * Some(True) -> only with callback
-   * Some(False) -> only without callback
-   *
-   * @return DBSub objects for the query as Seq
-   */
-  def getAllSubs(hasCallBack: Option[Boolean]): Seq[DBSub] = {
-    val all = runSync(hasCallBack match {
-      case Some(true)  => subs.filter(!_.callback.isEmpty).result
-      case Some(false) => subs.filter(_.callback.isEmpty).result
-      case None        => subs.result
-    })
-    all.collect({ case x: DBSub => x })
-
-  }
-
-  def getSubscribedPaths(subId: Long): Seq[Path] = {
-    val pathsQ = for {
-      (subI, hie) <- subItems.filter(_.subId === subId) join hierarchyNodes on (_.hierarchyId === _.id)
-    } yield (hie.path)
-    runSync(pathsQ.result)
-  }
-  def getSubscribedItems(subId: Long): Seq[SubscriptionItem] = {
-    val pathsQ = for {
-      (subI, hie) <- subItems.filter(_.subId === subId) join hierarchyNodes on (_.hierarchyId === _.id)
-    } yield (subI.subId, hie.path, subI.lastValue)
-    runSync(pathsQ.result) map SubscriptionItem.tupled
-  }
-
-  /**
-   * Returns DBSub object wrapped in Option for given id.
-   * Returns None if no subscription data matches the id
-   * @param id number that was generated during saving
-   *
-   * @return returns Some(BDSub) if found element with given id None otherwise
-   */
-  def getSub(id: Long): Option[DBSub] = runSync(getSubI(id))
 
   protected[this] def getInfoItemsI(hNodes: Seq[DBNode]): DBIO[DBInfoItems] =
     dbioDBInfoItemsSum(
