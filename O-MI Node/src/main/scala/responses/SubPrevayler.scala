@@ -19,17 +19,27 @@ import types.OdfTypes._
 import types.OmiTypes.SubscriptionRequest
 import types._
 
-
+/**
+ * Message for triggering handling of intervalsubscriptions
+ */
 case object HandleIntervals
 
-case object CheckTTL
-
-case class RegisterRequestHandler(reqHandler: RequestHandler)
-
+/**
+ * New subscription event
+ * @param subscription Subscription to be added
+ */
 case class NewSubscription(subscription: SubscriptionRequest)
 
+/**
+ * Remove subscription event
+ * @param id Id of the subscription to remove
+ */
 case class RemoveSubscription(id: Long)
 
+/**
+ * Event for polling pollable subscriptions
+ * @param id Id of the subscription to poll
+ */
 case class PollSubscription(id: Long)
 
 //private val subOrder: Ordering[TTLTimeout] = Ordering.by(_.endTimeMillis)
@@ -45,13 +55,23 @@ case class PollSubscription(id: Long)
 
 
 //TODO remove initial value
+/**
+ * Class that handles event and interval based subscriptions.
+ * Uses Akka scheduler to schedule ttl handling and intervalhandling
+ * @param dbConnection
+ */
 class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = context.system.scheduler
   val intervalScheduler = ttlScheduler
 
-  def scheduleTtls() = {
+  /**
+   * Schedule remove operation for subscriptions that are in prevayler stores,
+   * only run at startup
+   */
+  private[this] def scheduleTtls() = {
+    log.debug("Scheduling removesubscriptions for the first time...")
     val currentTime = System.currentTimeMillis()
     //event subs
     val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++
@@ -62,14 +82,18 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       if(nextRun.toMillis > 0L){
         ttlScheduler.scheduleOnce(nextRun, self, RemoveSubscription(sub.id))
       } else {
-        //TODO
-        ???
+        self ! RemoveSubscription(sub.id)
       }
     }
+    log.debug("Scheduling done")
   }
+
+  scheduleTtls()
 
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
+
+
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
     case HandleIntervals => handleIntervals()
@@ -77,16 +101,21 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case PollSubscription(id) => sender() ! pollSubscription(id)
   }
 
+  /**
+   * Get pollsubscriptions data drom database
+   * @param id id of subscription to poll
+   * @return
+   */
   private def pollSubscription(id: Long) = { //explicit return type
   val sub = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
-      case Some(x) =>{
+      case Some(pollSub) =>{
 
-        val nodes = x.paths.flatMap(m => dbConnection.get(m))
+        val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
         //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
 
 
-        x match {
+        pollSub match {
           case pollEvent: PollEventSub => {
             //dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
           }
