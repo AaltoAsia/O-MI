@@ -31,48 +31,41 @@ class VTTAgent extends InternalAgent {
   val t : FiniteDuration = Duration(5, SECONDS) 
   
   override def init(configPath : String) : Unit = {
-    if(configPath.isEmpty || !(new File(configPath).exists())){
-      InternalAgent.log.warning("ConfigPath was empty or didn't exist, VTTAgent shutting down.")
+    if(configPath.isEmpty){
+      InternalAgent.log.warning("ConfigPath was empty, VTTAgent shutting down.")
     } else {
-      val lines = scala.io.Source.fromFile(configPath).getLines().toSeq
-      if(lines.isEmpty){
-        InternalAgent.log.warning("Config file was empty, VTTAgent shutting down.")
+      val file =  new File(configPath)
+      if(!file.exists()){
+        InternalAgent.log.warning("File" + file + " doesn't exists, VTTAgent shutting down.")
+      } else if(!file.canRead){
+        InternalAgent.log.warning("File "+ file + " can't be read, VTTAgent shutting down.")     
       } else {
-        val file =  new File(lines.head)
-        if(!file.exists() || !file.canRead){
-          InternalAgent.log.warning("File "+ lines.head + " doesn't exist or can't be read, VTTAgent shutting down.")
-        } else {
-          val xml = XML.loadFile(file)
-          OdfParser.parse( xml) match {
-            case Left( errors ) =>
-              InternalAgent.log.warning("Odf has errors, VTTAgent shutting down.")
-              InternalAgent.log.warning("VTT: "+errors.mkString("\n"))
-            case Right(odfObjects) =>
-              odfInfoItems = Some(
-                getLeafs(odfObjects).collect{
-                  case infoItem : OdfInfoItem if infoItem.values.nonEmpty =>
-                   (
-                     infoItem,
-                     infoItem.values.headOption.map( _.value.toString ).getOrElse("")
-                   ) 
-                 }
-              )
+        val xml = XML.loadFile(file)
+        OdfParser.parse( xml) match {
+          case Left( errors ) =>{
+            InternalAgent.log.warning("Odf has errors, VTTAgent shutting down.")
+            InternalAgent.log.warning("VTT: "+errors.mkString("\n"))
           }
+          case Right(odfObjects) => {
+            odfInfoItems = Some(
+              getLeafs(odfObjects).collect{
+                case infoItem : OdfInfoItem if infoItem.values.nonEmpty =>
+                (
+                  infoItem,
+                  infoItem.values.headOption.map( _.value.toString ).getOrElse("")
+                ) 
+              }
+            )
         }
+        case _ => // not possible?
       }
-      initialized = true
+      odfInfoItems match {
+        case None =>
+          InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
+        case Some(infoItems) =>//Success. Maybe push MetaData.
+          initialized = true
+      }
     }
-    odfInfoItems match {
-      case None =>
-        InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
-      case Some(infoItems) =>
-        /*InputPusher.handlePathMetaDataPairs( 
-          odfInfoItems.getOrElse(Iterable.empty).collect{ 
-            case ((info @ OdfInfoItem(_,_,_, Some(metaData)), firstValue:String )) => 
-              (info.path, metaData.data)
-          },
-          new Timeout(t)
-        )*/
     }
   }
   
