@@ -203,3 +203,21 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
         }
       }
     }
+
+  case class GetAllEventSubs() extends Query[EventSubs, Set[EventSub]] {
+    def query(store: EventSubs, d: Date): Set[EventSub] = {
+      store.eventSubs.values.flatten.toSet
+    }
+  }
+
+  case class GetAllIntervalSubs() extends Query[IntervalSubs, Set[IntervalSub]] {
+    def query(store: IntervalSubs, d: Date): Set[IntervalSub] = {
+      store.intervalSubs.toSet
+    }
+  }
+
+  case class GetAllPollSubs() extends Query[PolledSubs, Set[PolledSub]] {
+    def query(store: PolledSubs, d: Date): Set[PolledSub] = {
+      store.idToSub.values.toSet
+    }
+  }
