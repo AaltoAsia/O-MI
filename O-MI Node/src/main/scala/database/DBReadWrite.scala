@@ -335,26 +335,16 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         }
       }
       updateAction <- latestValues ++= dbValues
-
-      remSeq = idMap.map{
-        case (_,(nodeId, _ )) => nodeId
-      }
-      
-////remove excess refactor
-//      .filter {
-//        case (_, (_, zeroPollRefs)) => zeroPollRefs
-//      }.map {
-//        case (_, (nodeId, _)) => nodeId
+//Removes old values for every write, slows database 
+//      remSeq = idMap.map{
+//        case (_,(nodeId, _ )) => nodeId
 //      }
 
-      removeAction <- DBIO.sequence(
-        remSeq.map(removeExcessI(_)))
+
+//Removes old values for every write, slows database 
+//     removeAction <- DBIO.sequence(
+//        remSeq.map(removeExcessI(_)))
         
-//        debug = {
-//        println(s"""
-//removeAction: $removeAction
-//""")
-//      }
     } yield (idMap map { case (path, (id, _)) => (path, id) }).toSeq
 
     val pathIdRelations = runSync(writeAction.transactionally)
