@@ -69,9 +69,9 @@ object EventSubs {
   def empty = EventSubs(HashMap.empty)
 }
 
-case class PolledSubs(var polledSubs: HashMap[Long, PolledSub])
+case class PolledSubs(var idToSub: HashMap[Long, PolledSub], var pathToSubs: HashMap[Path, Set[Long]])
 object PolledSubs {
-  def empty = PolledSubs(HashMap.empty)
+  def empty = PolledSubs(HashMap.empty, HashMap.empty)
 }
 
 case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
