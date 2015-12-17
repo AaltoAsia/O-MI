@@ -73,7 +73,7 @@ case class GetTree() extends Query[OdfTree, OdfObjects] {
  * This is used for updating also
  */
 case class Union(anotherRoot: OdfObjects) extends Transaction[OdfTree] {
-  def executeOn(t: OdfTree, d: Date) = t.root = t.root combine anotherRoot.valuesRemoved  // Remove values so they don't pile up
+  def executeOn(t: OdfTree, d: Date) = t.root = t.root union anotherRoot.valuesRemoved  // Remove values so they don't pile up
 }
 
 case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
