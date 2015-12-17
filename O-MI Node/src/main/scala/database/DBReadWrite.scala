@@ -660,6 +660,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runWait(subs.filter(_.id === id).map(p => (p.startTime, p.ttl)).update((newTime, newTTL)))
   }
 
+  def removePollSub(id: Long): Boolean = {
+    val q = pollSubs filter(_.subId === id)
+    val action = q.delete
+    val result = runSync(action)
+    true
+  }
+
   /**
    * Saves subscription information to database
    * adds timestamp at current time to keep track of expiring

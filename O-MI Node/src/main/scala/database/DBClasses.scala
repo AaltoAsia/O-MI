@@ -220,7 +220,7 @@ trait OmiNodeTables extends DBBase {
 ///////////////////////////////////////////////////
   case class SubValue(
                      id: Option[Int],
-                     subId: Int,
+                     subId: Long,
                      path: Path,
                      timestamp: Timestamp,
                      value: String,
@@ -233,7 +233,7 @@ trait OmiNodeTables extends DBBase {
     extends Table[SubValue](tag, "POLLSUBVALUES") {
     /** This is the PrimaryKey */
     def id            = column[Int]("ID", O.PrimaryKey, O.AutoInc)
-    def subId         = column[Int]("SUBID")
+    def subId         = column[Long]("SUBID")
     def path          = column[Path]("PATH")
     def timestamp     = column[Timestamp]("TIME")
     def value         = column[String]("VALUE")
