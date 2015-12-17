@@ -23,7 +23,7 @@ import scala.collection.JavaConversions.asJavaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import http.Boot.settings
-import types.OdfTypes.{OdfObjects, OdfInfoItem, OdfValue, fromPath}
+import types.OdfTypes._
 import types.Path
 import responses.Results
 import responses.OmiGenerator.xmlFromResults
@@ -151,6 +151,26 @@ object SingleStores {
 
   }
 
+  def getMetaData(path: Path) : Option[OdfMetaData] = {
+    (hierarchyStore execute GetTree()).get(path).collect{ 
+      case info : OdfInfoItem => info.metaData
+    }.flatten
+  }
+  def get(path: Path) : Option[OdfNode] ={
+    (hierarchyStore execute GetTree()).get(path).map{
+      case info : OdfInfoItem => 
+        latestStore execute LookupSensorData(path) match {
+          case Some(value) =>
+          info.copy( values = Iterable(value) ) 
+          case None => 
+          info
+        }
+      case objs : OdfObjects => 
+        objs
+      case obj : OdfObject => 
+        obj
+    }
+  } 
 }
 
 

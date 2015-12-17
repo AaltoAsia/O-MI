@@ -219,7 +219,6 @@ trait OmiNodeTables extends DBBase {
 
 ///////////////////////////////////////////////////
   case class SubValue(
-                     id: Option[Int],
                      subId: Long,
                      path: Path,
                      timestamp: Timestamp,
@@ -232,7 +231,6 @@ trait OmiNodeTables extends DBBase {
   class PollSubsTable(tag: Tag)
     extends Table[SubValue](tag, "POLLSUBVALUES") {
     /** This is the PrimaryKey */
-    def id            = column[Int]("ID", O.PrimaryKey, O.AutoInc)
     def subId         = column[Long]("SUBID")
     def path          = column[Path]("PATH")
     def timestamp     = column[Timestamp]("TIME")
@@ -240,7 +238,7 @@ trait OmiNodeTables extends DBBase {
     def valueType     = column[String]("VALUETYPE")
 
     // Every table needs a * projection with the same type as the table's type parameter
-    def * = (id.?, subId, path, timestamp, value, valueType) <> (
+    def * = ( subId, path, timestamp, value, valueType) <> (
       SubValue.tupled,
       SubValue.unapply
       )
@@ -251,130 +249,9 @@ trait OmiNodeTables extends DBBase {
 
 
 
-
-
-  case class DBMetaData(
-    val hierarchyId: Int,
-    val metadata: String
-  ) {
-    def toOdf = OdfMetaData(metadata)
-  }
-
-  /**
-   * (Boilerplate) Table for storing metadata for sensors as string e.g XML block as string
-   */
-  class DBMetaDatasTable(tag: Tag)
-    extends Table[DBMetaData](tag, "METADATA") with HierarchyFKey[DBMetaData] {
-    val hierarchyfkName = "METADATAHIERARCHY_FK"
-    /** This is the PrimaryKey */
-    override def hierarchyId = column[Int]("HIERARCHYID", O.PrimaryKey)
-    def metadata    = column[String]("METADATA")
-
-    def * = (hierarchyId, metadata) <> (DBMetaData.tupled, DBMetaData.unapply)
-  }
-  protected[this] val metadatas = TableQuery[DBMetaDatasTable]//table for metadata information
-
-
-
-
-
-
-
-  /**
-   * (Boilerplate) Table for O-MI subscription information
-   */
-  class DBSubsTable(tag: Tag)
-    extends Table[DBSubInternal](tag, "SUBSCRIPTIONS") {
-    /** This is the PrimaryKey */
-    def id        = column[Long]("ID", O.PrimaryKey, O.AutoInc)
-    def interval  = column[Double]("INTERVAL")
-    def startTime = column[Timestamp]("START")
-    def ttl       = column[Double]("TTL")
-    def callback  = column[Option[String]]("CALLBACK")
-
-
-    private[this] def dbsubTupled:
-      ((Option[Long], Double, Timestamp, Double, Option[String])) => DBSubInternal = {
-        case (None, interval_, startTime_, ttl_, callback_) =>
-          val durationTtl =
-            if (ttl_ == -1.0) Duration.Inf else ttl_.seconds
-
-          val durationInt = parsing.OmiParser.parseInterval(interval_)
-          NewDBSub(durationInt, startTime_, durationTtl, callback_)
-
-        case (Some(id_), interval_, startTime_, ttl_, callback_) =>
-          val durationTtl =
-            if (ttl_ == -1.0) Duration.Inf else ttl_.seconds
-
-          val durationInt = parsing.OmiParser.parseInterval(interval_)
-          DBSub(id_, durationInt, startTime_, durationTtl, callback_)
-      }
-    private[this] def dbsubUnapply: 
-      DBSubInternal => Option[(Option[Long], Double, Timestamp, Double, Option[String])] = {
-        case DBSub(id_, interval_, startTime_, ttl_, callback_) =>
-          val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0
-
-          Some((Some(id_), interval_.toUnit(SECONDS), startTime_, ttlDouble, callback_))
-
-        case NewDBSub(interval_, startTime_, ttl_, callback_) =>
-          val ttlDouble = if (ttl_.isFinite) ttl_.toUnit(SECONDS) else -1.0
-
-          Some((None, interval_.toUnit(SECONDS), startTime_, ttlDouble, callback_))
-          
-        case _ => None
-      }
-
-    def * =
-      (id.?, interval, startTime, ttl, callback).shaped <> (
-      dbsubTupled, dbsubUnapply
-    )
-  }
-
-  protected[this] val subs = TableQuery[DBSubsTable]
-  protected[this] val subsWithInsertId = subs returning subs.map(_.id)
-
-  trait SubFKey[A] extends Table[A] {
-    val subfkName: String
-    def subId = column[Long]("SUBID")
-    def sub   = foreignKey(subfkName, subId, subs)(
-      _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade
-    )
-  }
-
-
-
-
-
-  case class DBSubscriptionItem(
-    val subId: Long,
-    val hierarchyId: Int,
-    val lastValue: Option[String] // for event polling subs
-  )
-  /**
-   * Storing paths of subscriptions
-   */
-  class DBSubscribedItemsTable(tag: Tag)
-      extends Table[DBSubscriptionItem](tag, "SUBITEMS")
-      with SubFKey[DBSubscriptionItem]
-      with HierarchyFKey[DBSubscriptionItem] {
-    val hierarchyfkName = "SUBITEMSHIERARCHY_FK"
-    val subfkName = "SUBITEMSSUB_FK"
-    // from extension:
-    //def subId = column[Int]("SUBID")
-    //def hierarchyId = column[Int]("HIERARCHYID")
-    def lastValue = column[Option[String]]("LASTVALUE")
-    def pk = primaryKey("PK_SUBITEMS", (subId, hierarchyId))
-    def * = (subId, hierarchyId, lastValue) <> (DBSubscriptionItem.tupled, DBSubscriptionItem.unapply)
-  }
-
-  protected[this] val subItems = TableQuery[DBSubscribedItemsTable]
-
   protected[this] val allTables =
     Seq( hierarchyNodes
        , latestValues
-       , metadatas
-       , subs
-       , subItems
        , pollSubs
        )
 
