@@ -18,16 +18,11 @@ import java.io.File
 import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
 import scala.util.{Try,Success,Failure}
-import scala.concurrent.duration._
 import scala.collection.JavaConversions.asJavaIterable
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import http.Boot.settings
 import types.OdfTypes.{OdfObjects, OdfInfoItem, OdfValue, fromPath}
 import types.Path
-import responses.Results
-import responses.OmiGenerator.xmlFromResults
-import responses.CallbackHandlers._
 
 
 package object database {
@@ -74,16 +69,16 @@ object SingleStores {
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
      *  As a side effect, updates the internal latest value store.
-     *  Event callbacks are sent seperately for each *changed* value and .
+     *  Event callbacks are not sent for each *changed* value, instead event results are returned.
      * @param path Path to incoming data
      * @param newValue Actual incoming data
      * @return Triggered responses
      */
-    def processData(path: Path, newValue: OdfValue): Seq[EventSub] = {
+    def processData(path: Path, newValue: OdfValue): Seq[(EventSub, OdfObjects)] = {
     // : Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
       lazy val esubs = eventPrevayler execute LookupEventSubs(path)
       // TODO: attach or other events
-      // lazy val onChange = esubs.filter{???} 
+      // lazy val onChange = esubs.filter{???}
 
       val oldValueOpt = latestStore execute LookupSensorData(path)
 
@@ -100,10 +95,9 @@ object SingleStores {
                     val newInfo = oldInfo.copy(values = Iterable(newValue))
                     val newOdf = fromPath(newInfo)
 
-                    esubs.foreach{ esub =>
-                      sendEventCallback(esub, newOdf)
+                    esubs.map{ esub =>
+                      (esub, newOdf)
                     }
-                    esubs
                   case thing => throw new RuntimeException(
                     s"Problem in hierarchyStore, Some(OdfInfoItem) expected, actual: $thing")
                 }
@@ -119,37 +113,7 @@ object SingleStores {
       }
 
     }
-  private def sendEventCallback(esub: EventSub, odf: OdfObjects): Unit = {
-    val log = http.Boot.system.log
-    val id = esub.id
-    val callbackAddr = esub.callback
-    log.debug(s"Sending data to event sub: $id.")
-    val xmlMsg = xmlFromResults(
-      1.0,
-      Results.poll(id.toString, odf))
-    log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
-    //log.debug("Send msg:\n" + xmlMsg)
 
-    def failed(reason: String) =
-      log.warning(
-        s"Callback failed; subscription id:$id interval:-1  reason: $reason")
-
-
-    sendCallback(
-      callbackAddr,
-      xmlMsg,
-      (esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds
-    ) onComplete {
-      case Success(CallbackSuccess) =>
-        log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
-
-      case Success(fail: CallbackFailure) =>
-        failed(fail.toString)
-      case Failure(e) =>
-        failed(e.getMessage)
-    }
-
-  }
 
 }
 
