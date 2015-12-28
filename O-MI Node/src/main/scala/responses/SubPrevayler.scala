@@ -64,7 +64,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = context.system.scheduler
-  val intervalScheduler = ttlScheduler
+  val intervalScheduler = ttlScheduler //temporarily
 
   /**
    * Schedule remove operation for subscriptions that are in prevayler stores,
@@ -106,7 +106,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long) : Option[OdfObjects]= { //explicit return type
+  private def pollSubscription(id: Long) : Option[OdfObjects]= {
     val sub = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
@@ -153,10 +153,10 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
       val objectsAndFailures: Seq[Either[(Path, String),OdfObjects]] = datas.map{ 
         case (iPath, oValue) =>
-        val odfInfoOpt = (SingleStores.hierarchyStore execute GetTree()).get(iPath)
+        val odfInfoOpt = hTree.get(iPath)
         odfInfoOpt match {
           case Some(infoI: OdfInfoItem) =>
-          Right(fromPath(infoI.copy(values = Iterable(oValue))))
+            Right(fromPath(infoI.copy(values = Iterable(oValue))))
           case thing => {
             log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
             Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
@@ -184,13 +184,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
           case Failure(e) =>
             log.warning(
               s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
-        }//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
+        }
     }
-
-
-    //val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
-
-
 
     nextRunTimeOption.foreach{ tStamp =>
       val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
@@ -198,7 +193,6 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     }
   }
 
-  //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
   /**
    * Method used for removing subscriptions using their Id
