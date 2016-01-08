@@ -1,3 +1,17 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
+
 package responses
 
 import java.sql.Timestamp
@@ -42,19 +56,6 @@ case class RemoveSubscription(id: Long)
  */
 case class PollSubscription(id: Long)
 
-//private val subOrder: Ordering[TTLTimeout] = Ordering.by(_.endTimeMillis)
-
-
-///**
-// * PriorityQueue with subOrder ordering. value with earliest timeout is first.
-// * This val is lazy and is computed when needed for the first time
-// *
-// * This queue contains only subs that have no callback address defined and have ttl > 0.
-// */
-//private val ttlQueue: ConcurrentSkipListSet[TTLTimeout] = new ConcurrentSkipListSet(subOrder)
-
-
-//TODO remove initial value
 /**
  * Class that handles event and interval based subscriptions.
  * Uses Akka scheduler to schedule ttl handling and intervalhandling
@@ -63,8 +64,8 @@ case class PollSubscription(id: Long)
 class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
   val minIntervalDuration = Duration(1, duration.SECONDS)
-  val ttlScheduler = context.system.scheduler
-  val intervalScheduler = ttlScheduler //temporarily
+  val ttlScheduler = new SubscriptionScheduler
+  val intervalScheduler = context.system.scheduler//ttlScheduler //temporarily
 
   /**
    * Schedule remove operation for subscriptions that are in prevayler stores,
