@@ -94,7 +94,8 @@ lazy val root = (project in file(".")).
           base / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
           base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
-          base / "GettingStartedGuide.md" -> "GettingStartedGuide.md")
+          base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",
+          base / "LICENCE.txt" -> "LICENCE.txt")
       })): _*).
     aggregate(omiNode, agents).
     dependsOn(omiNode, agents)
