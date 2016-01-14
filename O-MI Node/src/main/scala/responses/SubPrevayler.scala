@@ -108,6 +108,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * @return
    */
   private def pollSubscription(id: Long) : Option[OdfObjects]= {
+    val pollTime = System.currentTimeMillis()
     val sub = SingleStores.pollPrevayler execute PollSub(id) //TODO update lastpolled in this trnasaction?
     sub match {
       case Some(pollSub) =>{
@@ -127,8 +128,25 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
               .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
           }
-          case pollInterval: PollIntervalSub =>
-          ???
+          case pollInterval: PollIntervalSub => {
+            val interval = pollInterval.interval
+            data.mapValues(values =>
+              values
+                .tail //add first value in foldLeft default parameter
+                .:+(values.last.copy(timestamp = new Timestamp(pollTime)))
+                .zip(Seq.tabulate(values.length)(n => n*interval.toMillis))//TODO comment steps and  handle adding values after last timestamp
+                .foldLeft(Seq(values.head)){ (col, nextTuple) => //if
+                  val (next, matchingInterval) = nextTuple //TODO make this work
+                  val timeBetweenSensorUpdates = next.timestamp.getTime - col.last.timestamp.getTime() - 1
+                  //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
+                  val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
+                  col ++ Seq.fill(intervalsPassed)(col.last) :+ next //Create values between timestamps if necessary
+            }.init)
+            .map(n => OdfInfoItem(n._1, n._2))
+            .map(i => fromPath(i)).reduceOption(_.union(_))
+
+          }
+
           case unknown => log.error(s"unknown subscription type $unknown")
           None
         }
