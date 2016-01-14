@@ -168,6 +168,17 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     returnId
   }
 
+  def pollAndRemove(id: Long): Seq[OdfInfoItem] = {
+    runSync(pollAndRemoveI(id))
+  }
+  private def pollAndRemoveI(id: Long): DBIOAction = {
+    val subData = pollSubs filter (_.subId === id)
+    val pollAction = for{
+      res <- subData result
+
+    } yield res.groupBy(_.path)
+  }
+
   /**
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.

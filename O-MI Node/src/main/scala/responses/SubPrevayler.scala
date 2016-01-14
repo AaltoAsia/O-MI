@@ -108,17 +108,17 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * @return
    */
   private def pollSubscription(id: Long) : Option[OdfObjects]= {
-    val sub = SingleStores.pollPrevayler execute PollSub(id)
+    val sub = SingleStores.pollPrevayler execute PollSub(id) //TODO update lastpolled in this trnasaction?
     sub match {
       case Some(pollSub) =>{
 
-        val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
+        //val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
         //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
 
 
         pollSub match {
           case pollEvent: PollEventSub => {
-            //dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
+            dbConnection.get()//dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
           ???
           }
           case pollInterval: PollIntervalSub =>

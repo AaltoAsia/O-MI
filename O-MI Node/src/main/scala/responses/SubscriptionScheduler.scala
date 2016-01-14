@@ -35,4 +35,22 @@ class SubscriptionScheduler {
     scheduler.schedule(task, timeout.toSeconds, SECONDS)
   }
 }
+/**
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.SECONDS
 
+/**
+ * Created by satsuma on 8.1.2016.
+ */
+class SubscriptionScheduler {
+  val timeunit = SECONDS
+  private val scheduler = Executors.newSingleThreadScheduledExecutor()
+
+  private def createRunnable(message: Any): Runnable = new Runnable() {def run() = println(message)}
+
+  def scheduleOnce(timeout: Int, message: Any) = {
+    val task: Runnable = createRunnable(message)
+    scheduler.schedule(task, timeout, SECONDS)
+  }
+}
+*/
