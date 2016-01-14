@@ -168,15 +168,24 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     returnId
   }
 
-  def pollAndRemove(id: Long): Seq[OdfInfoItem] = {
+  /**
+   * Query to the database for given subscription id.
+   * Polling subscription also removes the data from the database
+   * @param id id of the subscription to poll
+   * @return
+   */
+  def pollAndRemove(id: Long): Seq[SubValue] = {
     runSync(pollAndRemoveI(id))
   }
-  private def pollAndRemoveI(id: Long): DBIOAction = {
+  private def pollAndRemoveI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)
     val pollAction = for{
-      res <- subData result
+      res <- subData.result
+      //temp = res.groupBy(_.path).mapValues(_.map(_.toOdf)).map(n=> OdfInfoItem(n._1, n._2))
+      del <- subData.delete
 
-    } yield res.groupBy(_.path)
+    } yield res
+    pollAction
   }
 
   /**

@@ -112,14 +112,20 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     sub match {
       case Some(pollSub) =>{
 
+        val data: Map[Path, Seq[OdfValue]] = dbConnection.pollAndRemove(id)
+          .groupBy(_.path)
+          .mapValues(_.map(_.toOdf))
+
+
         //val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
         //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
 
 
         pollSub match {
           case pollEvent: PollEventSub => {
-            dbConnection.get()//dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
-          ???
+            data
+              .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
+              .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
           }
           case pollInterval: PollIntervalSub =>
           ???
