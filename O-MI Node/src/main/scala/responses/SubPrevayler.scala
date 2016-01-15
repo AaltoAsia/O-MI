@@ -256,8 +256,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
-                callback,
-                OdfValue("", "", new Timestamp(currentTime))
+                callback
               )
             )
             newId

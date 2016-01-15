@@ -53,10 +53,13 @@ class  OdfInfoItemImpl(
     )
   }
 
-  def isMetaDataRequest: Boolean = metaData match {
-    case Some(meta) => meta.data.trim.isEmpty
+  def hasMetadataTag: Boolean = metaData match {
+    case Some(_) => true
     case _ => false
   }
+  /**
+   * Non empty metadata
+   */
   def hasMetadata: Boolean = metaData match {
     case Some(meta) => meta.data.trim.nonEmpty
     case _ => false

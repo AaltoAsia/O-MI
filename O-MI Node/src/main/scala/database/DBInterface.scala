@@ -54,6 +54,25 @@ package object database {
 import database._
 
 
+sealed trait InfoItemEvent {
+  val infoItem: OdfInfoItem
+}
+
+/*
+ * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
+ */
+class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
+object ChangeEvent {
+  def apply(ii: OdfInfoItem) = new ChangeEvent(ii)
+  def unapply(ce: ChangeEvent) = Some(ce.infoItem)
+}
+
+
+/*
+ * New InfoItem (is also ChangeEvent)
+ */
+case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(infoItem) with InfoItemEvent
+
 /**
  * Contains all stores that requires only one instance for interfacing
  */
@@ -69,16 +88,13 @@ object SingleStores {
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
      *  As a side effect, updates the internal latest value store.
-     *  Event callbacks are not sent for each *changed* value, instead event results are returned.
+     *  Event callbacks are not sent for each changed value, instead event results are returned 
+     *  for aggregation and other extra functionality.
      * @param path Path to incoming data
      * @param newValue Actual incoming data
      * @return Triggered responses
      */
-    def processData(path: Path, newValue: OdfValue): Seq[(EventSub, OdfObjects)] = {
-    // : Seq[(EventSub, parsing.xmlGen.xmlTypes.RequestResultType)] = {
-      lazy val esubs = eventPrevayler execute LookupEventSubs(path)
-      // TODO: attach or other events
-      // lazy val onChange = esubs.filter{???}
+    def processData(path: Path, newValue: OdfValue): Option[InfoItemEvent] = {
 
       val oldValueOpt = latestStore execute LookupSensorData(path)
 
@@ -87,29 +103,30 @@ object SingleStores {
       oldValueOpt match {
         case Some(oldValue) =>
           if (oldValue.timestamp before newValue.timestamp) {
-            val onChangeResponses =
+            val onChangeData =
               if (oldValue.value != newValue.value) {
+
                 val oldInfoOpt = (hierarchyStore execute GetTree()).get(path)
                 oldInfoOpt match {
                   case Some(oldInfo: OdfInfoItem) =>
                     val newInfo = oldInfo.copy(values = Iterable(newValue))
-                    val newOdf = fromPath(newInfo)
 
-                    esubs.map{ esub =>
-                      (esub, newOdf)
-                    }
+                    Some(ChangeEvent(newInfo))
+
                   case thing => throw new RuntimeException(
                     s"Problem in hierarchyStore, Some(OdfInfoItem) expected, actual: $thing")
                 }
-              } else Seq.empty
+              } else None  // Value is same as the previous
 
+            // NOTE: This effectively discards incoming data that is older than the latest received value
             latestStore execute SetSensorData(path, newValue)
 
-            onChangeResponses
-          } else Seq.empty
-        case None => 
-          // TODO: -2 Attach events
-          Seq.empty
+            onChangeData
+          } else None  // Newer data found
+
+        case None =>  // no data was found => new sensor
+          val newInfo = OdfInfoItem(path, Iterable(newValue))
+          Some(AttachEvent(newInfo))
       }
 
     }
