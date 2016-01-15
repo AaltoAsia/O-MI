@@ -10,7 +10,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.2.0",
+  version := "0.2.1",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -94,7 +94,8 @@ lazy val root = (project in file(".")).
           base / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
           base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
-          base / "GettingStartedGuide.md" -> "GettingStartedGuide.md")
+          base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",
+          base / "LICENCE.txt" -> "LICENCE.txt")
       })): _*).
     aggregate(omiNode, agents).
     dependsOn(omiNode, agents)

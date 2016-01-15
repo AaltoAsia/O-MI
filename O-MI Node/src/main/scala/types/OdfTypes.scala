@@ -107,6 +107,10 @@ object `package` {
       case newType => throw new MatchError(newType)
     }
   }
+
+  def getPathValuePairs( objs: OdfObjects ) : JavaIterable[(Path,OdfValue)]={
+    getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
+  }
 }
 
 /** Sealed base trait defining all shared members of OdfNodes*/
