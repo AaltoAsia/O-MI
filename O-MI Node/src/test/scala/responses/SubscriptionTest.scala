@@ -1,49 +1,29 @@
 package responses
 
-import org.specs2.mutable._
 import org.specs2.matcher.XmlMatchers._
-import org.specs2.specification.Scope
-import scala.io.Source
-
-import responses._
+import org.specs2.mutable._
 //import responses.Common._
-import parsing._
-import types._
-import types.Path._
-import types.OmiTypes._
-import database._
-import parsing.OdfParser._
-
-import java.util.Date;
-import java.util.Calendar;
-import java.util.TimeZone
-import java.text.SimpleDateFormat;
 import java.sql.Timestamp
-
-import scala.xml.Utility.trim
-import scala.xml.XML
+import java.util.{Calendar, TimeZone}
 
 import akka.actor._
-import akka.testkit.{ TestKit, TestActorRef, EventFilter }
-import akka.testkit.TestEvent.{Mute, UnMute}
-import akka.pattern.ask
-import scala.concurrent.{ Await, Future }
+import com.typesafe.config.ConfigFactory
+import database._
+import parsing._
+import testHelpers.{BeforeAfterAll, DeactivatedTimeConversions}
+import types.OmiTypes._
+import types._
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 import scala.concurrent.duration._
 import scala.util.Try
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.mutable.Iterable
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.JavaConversions.iterableAsScalaIterable
-
-import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor, DeactivatedTimeConversions }
 
 // For eclipse:
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
+
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import java.util.GregorianCalendar
-import javax.xml.datatype.{XMLGregorianCalendar, DatatypeFactory}
 
 //
 
@@ -302,6 +282,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       //      trim(xmlreturn.head) === trim(correctxml)
       xmlreturn._1.headOption must beSome.which(_ must beEqualToIgnoringSpace(correctxml))
     }
+    /** Subscription handling is inside actor now, testing through other tests
     "Return polled data only once" in {
       val testPath = Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest1")
       //      dbConnection.setVal(testPath)
@@ -511,6 +492,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       }
       dbConnection.getSub(subscriptions.last) must beSome
     }
+  */
     
     
   }

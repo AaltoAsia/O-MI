@@ -121,7 +121,7 @@ trait OdfConversions extends OmiNodeTables {
 
     // safe version of reduce
     odfObjectsTrees.headOption map { head =>
-      odfObjectsTrees.par.reduce(_ combine _)
+      odfObjectsTrees.par.reduce(_ union _)
     }
   }
 }

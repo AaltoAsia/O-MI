@@ -1,3 +1,17 @@
+/**
+  Copyright (c) 2015 Aalto University.
+
+  Licensed under the 4-clause BSD (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at top most directory of project.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+**/
+
 package responses
 
 import java.sql.Timestamp
@@ -19,40 +33,68 @@ import types.OdfTypes._
 import types.OmiTypes.SubscriptionRequest
 import types._
 
-
+/**
+ * Message for triggering handling of intervalsubscriptions
+ */
 case object HandleIntervals
 
-case object CheckTTL
-
-case class RegisterRequestHandler(reqHandler: RequestHandler)
-
+/**
+ * New subscription event
+ * @param subscription Subscription to be added
+ */
 case class NewSubscription(subscription: SubscriptionRequest)
 
+/**
+ * Remove subscription event
+ * @param id Id of the subscription to remove
+ */
 case class RemoveSubscription(id: Long)
 
+/**
+ * Event for polling pollable subscriptions
+ * @param id Id of the subscription to poll
+ */
 case class PollSubscription(id: Long)
 
-//private val subOrder: Ordering[TTLTimeout] = Ordering.by(_.endTimeMillis)
-
-
-///**
-// * PriorityQueue with subOrder ordering. value with earliest timeout is first.
-// * This val is lazy and is computed when needed for the first time
-// *
-// * This queue contains only subs that have no callback address defined and have ttl > 0.
-// */
-//private val ttlQueue: ConcurrentSkipListSet[TTLTimeout] = new ConcurrentSkipListSet(subOrder)
-
-
-//TODO remove initial value
+/**
+ * Class that handles event and interval based subscriptions.
+ * Uses Akka scheduler to schedule ttl handling and intervalhandling
+ * @param dbConnection
+ */
 class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
   val minIntervalDuration = Duration(1, duration.SECONDS)
-  val ttlScheduler = context.system.scheduler
-  val intervalScheduler = ttlScheduler
+  val ttlScheduler = new SubscriptionScheduler
+  val intervalScheduler = context.system.scheduler//ttlScheduler //temporarily
+
+  /**
+   * Schedule remove operation for subscriptions that are in prevayler stores,
+   * only run at startup
+   */
+  private[this] def scheduleTtls() = {
+    log.debug("Scheduling removesubscriptions for the first time...")
+    val currentTime = System.currentTimeMillis()
+    //event subs
+    val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++
+                  (SingleStores.intervalPrevayler execute GetAllIntervalSubs()) ++
+                  (SingleStores.pollPrevayler execute GetAllPollSubs())
+    allSubs.foreach{ sub =>
+      val nextRun = Duration(sub.endTime.getTime() - currentTime, "milliseconds")
+      if(nextRun.toMillis > 0L){
+        ttlScheduler.scheduleOnce(nextRun, self, RemoveSubscription(sub.id))
+      } else {
+        self ! RemoveSubscription(sub.id)
+      }
+    }
+    log.debug("Scheduling done")
+  }
+
+  scheduleTtls()
 
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
+
+
   def receive = {
     case NewSubscription(subscription) => sender() ! setSubscription(subscription)
     case HandleIntervals => handleIntervals()
@@ -60,26 +102,57 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case PollSubscription(id) => sender() ! pollSubscription(id)
   }
 
-  private def pollSubscription(id: Long) = { //explicit return type
-    val sub = SingleStores.pollPrevayler execute PollSub(id)
+  /**
+   * Get pollsubscriptions data drom database
+   * @param id id of subscription to poll
+   * @return
+   */
+  private def pollSubscription(id: Long) : Option[OdfObjects]= {
+    val pollTime = System.currentTimeMillis()
+    val sub = SingleStores.pollPrevayler execute PollSub(id) //TODO update lastpolled in this trnasaction?
     sub match {
-      case Some(x) =>{
+      case Some(pollSub) =>{
 
-        val nodes = x.paths.flatMap(m => dbConnection.get(m))
+        val data: Map[Path, Seq[OdfValue]] = dbConnection.pollAndRemove(id)
+          .groupBy(_.path)
+          .mapValues(_.map(_.toOdf))
+
+
+        //val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
         //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
 
 
-        x match {
+        pollSub match {
           case pollEvent: PollEventSub => {
-            //dbConnection.getNBetween(nodes,Some(pollEvent.lastPolled),None,None,None)
+            data
+              .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
+              .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
           }
-          case pollInterval: PollIntervalSub =>
+          case pollInterval: PollIntervalSub => {
+            val interval = pollInterval.interval
+            data.mapValues(values =>
+              values
+                .tail //add first value in foldLeft default parameter
+                .:+(values.last.copy(timestamp = new Timestamp(pollTime)))
+                .zip(Seq.tabulate(values.length)(n => n*interval.toMillis))//TODO comment steps and  handle adding values after last timestamp
+                .foldLeft(Seq(values.head)){ (col, nextTuple) => //if
+                  val (next, matchingInterval) = nextTuple //TODO make this work
+                  val timeBetweenSensorUpdates = next.timestamp.getTime - col.last.timestamp.getTime() - 1
+                  //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
+                  val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
+                  col ++ Seq.fill(intervalsPassed)(col.last) :+ next //Create values between timestamps if necessary
+            }.init)
+            .map(n => OdfInfoItem(n._1, n._2))
+            .map(i => fromPath(i)).reduceOption(_.union(_))
+
+          }
+
           case unknown => log.error(s"unknown subscription type $unknown")
+          None
         }
       }
       case _ => None
     }
-    val temp = sub.map(n => n.paths.flatMap(m => dbConnection.get(m)))
     //dbConnection.getNBetween(temp,sub.get)
   }
 
@@ -89,11 +162,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   private def handleIntervals(): Unit = {
     //TODO add error messages from requesthandler
     val currentTime = System.currentTimeMillis()
-
+    val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
 
     //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
-     // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
+    // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no interval subs existed")
       return
@@ -103,44 +176,41 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     iSubs.foreach{iSub =>
       log.info(s"Trying to send subscription data to ${iSub.callback}")
       val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
-      val objectsAndFailures: Seq[Either[(Path, String),OdfObjects]] = datas.map{ case (iPath, oValue) =>
-          val odfInfoOpt = (SingleStores.hierarchyStore execute GetTree()).get(iPath)
-          odfInfoOpt match {
-            case Some(infoI: OdfInfoItem) =>
-              Right(fromPath(infoI.copy(values = Iterable(oValue))))
-            case thing => {
-              log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
-              Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
-            }
+      val objectsAndFailures: Seq[Either[(Path, String),OdfObjects]] = datas.map{ 
+        case (iPath, oValue) =>
+        val odfInfoOpt = hTree.get(iPath)
+        odfInfoOpt match {
+          case Some(infoI: OdfInfoItem) =>
+            Right(fromPath(infoI.copy(values = Iterable(oValue))))
+          case thing => {
+            log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
+            Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
           }
+        }
       }
 
-        val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){ (s, n) =>
+      val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){ 
+        (s, n) =>
         n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
-    }
-       val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.combine(n))))//rights.reduce(_.combine(_))
-       val succResult = optionObjects.map(odfObjects => responses.Results.odf("200",None, Some(iSub.id.toString), odfObjects)).toSeq
+      }
+      val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n))))//rights.reduce(_.combine(_))
+      val succResult = optionObjects.map(odfObjects => responses.Results.odf("200",None, Some(iSub.id.toString), odfObjects)).toSeq
       val failedResults = lefts.map(fail => Results.simple("404", Some(s"Could not find path: ${fail._1}. ${fail._2}")))
-       val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
+      val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
       CallbackHandlers.sendCallback(iSub.callback,resultXml,iSub.interval)
         .onComplete {
-        case Success(CallbackSuccess) =>
-          log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+          case Success(CallbackSuccess) =>
+            log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
 
-        case Success(fail: CallbackFailure) =>
-          log.warning(
-          s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-        case Failure(e) =>
-          log.warning(
-          s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
-      }//Duration(iSub.endTime.getTime - currentTime, "milliseconds")) //TODO XXX ttl is the sub ttl not message ttl
+          case Success(fail: CallbackFailure) =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
+          case Failure(e) =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+        }
     }
-
-
-    //val odfValues = iSubscription.map(iSub => SingleStores.latestStore execute LookupSensorDatas(iSub.paths))
-
-
 
     nextRunTimeOption.foreach{ tStamp =>
       val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
@@ -148,7 +218,6 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     }
   }
 
-  //  case class PollSubs(var pollSubs: ConcurrentSkipListSet[TTLTimeout])
 
   /**
    * Method used for removing subscriptions using their Id
@@ -251,10 +320,10 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
           }
         }
       }
-        subscription.ttl match {
-          case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
-          case _ =>
-        }
+      subscription.ttl match {
+        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
+        case _ =>
+      }
       subId
     }
   }
@@ -265,11 +334,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * @return endTime of subscription as Timestamp
    */
   private def subEndTimestamp(subttl: Duration): Timestamp ={
-              if (subttl.isFinite()) {
-               new Timestamp(System.currentTimeMillis() + subttl.toMillis)
-              } else {
-               new Timestamp(Long.MaxValue)
-              }
+    if (subttl.isFinite()) {
+      new Timestamp(System.currentTimeMillis() + subttl.toMillis)
+    } else {
+      new Timestamp(Long.MaxValue)
+    }
   }
 
 

@@ -13,26 +13,29 @@
 **/
 package agentSystem
 
+import java.lang.Iterable
+
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.concurrent.ExecutionContext.Implicits.global
+import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 import akka.actor._
 import java.lang.Iterable
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
-import scala.collection.JavaConversions.asJavaIterable
-import akka.dispatch.RequiresMessageQueue
-import akka.dispatch.BoundedMessageQueueSemantics
-import scala.util.{Try, Success, Failure}
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.xml.XML
-import parsing.xmlGen
-import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes._
 
-import types.OdfTypes._
 import database._
 import types._
 import responses.Results
 import responses.OmiGenerator.xmlFromResults
 import responses.CallbackHandlers._
+import responses.Results
+import parsing.xmlGen
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
+import types.OdfTypes._
+import types.Path
 
 
 
@@ -46,7 +49,7 @@ object InputPusherCmds {
   case class HandlePathMetaDataPairs(pairs: Iterable[(Path, String)])
 }
 
-import InputPusherCmds._
+import agentSystem.InputPusherCmds._
 /**
  * Actor for pushing data to db.
  */

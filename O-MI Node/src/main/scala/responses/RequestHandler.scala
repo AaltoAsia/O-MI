@@ -20,6 +20,7 @@ import parsing.xmlGen.{ xmlTypes, scalaxb }
 import database.DB
 import agentSystem.InputPusher
 import CallbackHandlers._
+import database.SingleStores
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
@@ -65,42 +66,12 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
     }
 
-    def handleSubDataRequest(subdata: SubDataRequest, address: String) = {
-      val sub = subdata.sub
-      val interval = sub.interval
-      val callbackAddr = address
-      val (xmlMsg, returnCode) = runGeneration(subdata)
-      log.info(s"Sending in progress; Subscription subId:${sub.id} addr:$callbackAddr interval:$interval")
-
-      def failed(reason: String) =
-        log.warning(
-          s"Callback failed; subscription id:${sub.id} interval:$interval  reason: $reason")
-
-      sendCallback(
-        callbackAddr,
-        xmlMsg, 
-        sub.ttl
-      ) onComplete {
-        case Success(CallbackSuccess) =>
-          log.info(s"Callback sent; subscription id:${sub.id} addr:$callbackAddr interval:$interval")
-
-        case Success(fail: CallbackFailure) =>
-          failed(fail.toString)
-        case Failure(e) =>
-          failed(e.getMessage)
-      }
-      (success, 200) //DUMMY
-    }
-
     request.callback match {
       
       case Some(address) => {
         checkCallback(address).map { x =>
           request match {
             case sub: SubscriptionRequest => runGeneration(sub)
-            case subdata: SubDataRequest => {
-              handleSubDataRequest(subdata, address)
-            }
             case _ => {
               // TODO: Can't cancel this callback
               Future { runGeneration(request) } map {
@@ -206,30 +177,26 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     case cancel: CancelRequest => {
       handleCancel(cancel)
     }
-    case subdata: SubDataRequest => {
-      handleSubData(subdata)
-    }
     case _ => {
       (xmlFromResults(1.0, Results.simple("500", Some("Unknown request."))), 500)
     }
   }
 
-
+  private def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
+        if(ttl.toSeconds != 0)
+          FiniteDuration(ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
 
   /** Method for handling WriteRequest.
     * @param write request
     * @return (xml response, HTTP status code)
     */
   def handleWrite( write: WriteRequest ) : (NodeSeq,Int) ={
-      log.debug("Handling write.")
-      val ttl = if( write.ttl.isFinite ) {
-        if(write.ttl.toSeconds != 0)
-          FiniteDuration(write.ttl.toSeconds, SECONDS)
-        else
-          FiniteDuration(2,MINUTES)
-      } else {
-        FiniteDuration(Int.MaxValue,MILLISECONDS)
-      }
+      val ttl = handleTTL(write.ttl)
       val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
       //XXX:
       val result = Await.result(future, ttl)
@@ -248,15 +215,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleResponse( response: ResponseRequest ) : (NodeSeq,Int) ={
-      log.debug("Handling response.")
-      val ttl = if( response.ttl.isFinite ) {
-        if(response.ttl.toSeconds != 0)
-         FiniteDuration(response.ttl.toSeconds, SECONDS)
-        else
-          FiniteDuration(2,MINUTES)
-      } else {
-         FiniteDuration(Int.MaxValue,MILLISECONDS)
-      }
+      val ttl = handleTTL(response.ttl)
       (xmlFromResults(
         1.0,
         response.results.map{
@@ -317,20 +276,24 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handlePoll(poll: PollRequest): (NodeSeq, Int) = {
-    log.debug("Handling poll.")
+    val ttl = handleTTL(poll.ttl)
+    implicit val timeout = Timeout(ttl) 
     val time = date.getTime
     val results =
       poll.requestIDs.map { id =>
 
-        val objectsO: Option[OdfObjects] = dbConnection.getPollData(id, new Timestamp(time))
+      val objectsF /*: Future[Option[OdfObjects]]*/ = subscriptionHandler ? PollSubscription(id)
 
-        objectsO match {
-          case Some(objects) =>
-            Results.poll(id.toString, objects)
-          case None =>
-            Results.notFoundSub(id.toString)
-        }
+      Await.result(objectsF, Duration.Inf) match {
+        case Success(Some(objects: OdfObjects)) =>
+        Results.poll(id.toString, objects)
+        case Success(None) =>
+        Results.notFoundSub(id.toString)
+        case Failure(e) => 
+        (Results.internalError(
+          s"Internal server error when trying to poll ubscription: ${e.getMessage}"))
       }
+    }
     val returnTuple = (
       xmlFromResults(
         1.0,
@@ -345,7 +308,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleSubscription(subscription: SubscriptionRequest): (NodeSeq, Int) = {
-    log.debug("Handling subscription.")
+    val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
     val (response, returnCode) =
@@ -412,22 +375,6 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         returnCode)
   }
 
-  def handleSubData(subdata: SubDataRequest) = {
-    log.debug("Handling internal.")
-    val objectsO: Option[OdfObjects] = dbConnection.getSubData(subdata.sub.id)
-
-    objectsO match {
-      case Some(objects) =>
-        (xmlFromResults(
-          1.0, Results.poll(subdata.sub.id.toString, objects)), 200)
-
-      case None =>
-        (xmlFromResults(
-          1.0, Results.notFound), 404)
-    }
-
-  }
-
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
@@ -449,7 +396,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
 
     val (path, wasValue) = restNormalizePath(orgPath)
 
-    dbConnection.get(path) match {
+    SingleStores.get(path) match {
       case Some(infoitem: OdfInfoItem) =>
 
         wasValue match {
@@ -460,7 +407,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
                 case None                  => "NO VALUE FOUND"
               }))
           case Some("MetaData") =>
-            val metaDataO = dbConnection.getMetaData(path)
+            val metaDataO = SingleStores.getMetaData(path)
             metaDataO match {
               case None =>
                 Some(Left("No metadata found."))
