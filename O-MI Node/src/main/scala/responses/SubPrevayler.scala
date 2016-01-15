@@ -16,7 +16,6 @@ package responses
 
 import java.sql.Timestamp
 
-import database.OmiNodeTables.SubValue
 import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
 import types.OdfTypes.{OdfInfoItem, OdfValue}
 
@@ -268,8 +267,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
-                callback,
-                OdfValue("", "", currentTimestamp)
+                callback
               )
             )
             newId

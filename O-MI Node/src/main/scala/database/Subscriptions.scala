@@ -57,8 +57,7 @@ case class EventSub(
   id: Long,
   paths: Seq[Path],
   endTime: Timestamp,
-  callback: String,
-  lastValue: OdfValue
+  callback: String
   ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
@@ -80,7 +79,8 @@ object IntervalSubs {
 }
 
 case class LookupEventSubs(path: Path) extends Query[EventSubs, Seq[EventSub]] {
-  def query(es: EventSubs, d: Date): Seq[EventSub] = es.eventSubs(path)
+  def query(es: EventSubs, d: Date): Seq[EventSub] =
+    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten // get for Map returns Option (safe)
 }
 
 // Other transactions are in responses/SubPrevayler.scala or Subscription Handler

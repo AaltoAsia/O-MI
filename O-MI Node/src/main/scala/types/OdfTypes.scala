@@ -59,8 +59,9 @@ object `package` {
   def getInfoItems( objects: OdfObjects ) : JavaIterable[OdfInfoItem] = {
     getLeafs(objects).collect{ case info: OdfInfoItem => info}
   }
+
   /**
-   * Generates odf tree containing the ancestors of given object.
+   * Generates odf tree containing the ancestors of given object up to the root Objects level.
    */
   @annotation.tailrec
   def fromPath(last: OdfNode): OdfObjects = {
@@ -106,6 +107,10 @@ object `package` {
 
       case newType => throw new MatchError(newType)
     }
+  }
+
+  def getPathValuePairs( objs: OdfObjects ) : JavaIterable[(Path,OdfValue)]={
+    getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
 }
 
@@ -185,9 +190,10 @@ case class OdfInfoItem(
     path: Path,
     values: JavaIterable[OdfValue] = Iterable(),
     description: Option[OdfDescription] = None,
-    metaData: Option[OdfMetaData] = None) extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+    metaData: Option[OdfMetaData] = None)
+  extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
-  def valuesRemoved: OdfInfoItem = this.copy(values = Iterable())
+  def valuesRemoved: OdfInfoItem = if (values.nonEmpty) this.copy(values = Iterable()) else this
 }
 
 /** Class presenting O-DF description element*/

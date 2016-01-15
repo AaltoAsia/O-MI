@@ -246,6 +246,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleRead(read: ReadRequest): (NodeSeq, Int) = {
+    log.debug("Handling read.")
     val objectsO: Option[OdfObjects] = dbConnection.getNBetween(getLeafs(read.odf), read.begin, read.end, read.newest, read.oldest)
 
     objectsO match {
@@ -308,7 +309,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     */
   def handleSubscription(subscription: SubscriptionRequest): (NodeSeq, Int) = {
     val ttl = handleTTL(subscription.ttl)
-    implicit val timeout = Timeout(ttl) 
+    implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
     val (response, returnCode) =
       Await.result(subFuture, Duration.Inf) match {
@@ -337,6 +338,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @return (xml response, HTTP status code)
     */
   def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
+    log.debug("Handling cancel.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
     val jobs = cancel.requestID.map { id =>
