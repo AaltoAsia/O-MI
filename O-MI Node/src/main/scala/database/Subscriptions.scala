@@ -24,7 +24,6 @@ sealed trait SavedSub {
 }
 sealed trait PolledSub extends SavedSub {
   val lastPolled: Timestamp
-  val lastValue: OdfValue
 }
 
 
@@ -33,7 +32,6 @@ case class PollEventSub(
   id: Long,
   endTime: Timestamp,
   lastPolled: Timestamp,
-  lastValue: OdfValue,
   paths: Seq[Path]
   ) extends PolledSub
 
@@ -42,7 +40,6 @@ case class PollIntervalSub(
   endTime: Timestamp,
   interval: Duration,
   lastPolled: Timestamp,
-  lastValue: OdfValue,
   paths: Seq[Path]
 ) extends PolledSub
 

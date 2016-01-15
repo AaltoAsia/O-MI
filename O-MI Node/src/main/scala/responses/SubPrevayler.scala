@@ -16,6 +16,7 @@ package responses
 
 import java.sql.Timestamp
 
+import database.OmiNodeTables.SubValue
 import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
 import types.OdfTypes.{OdfInfoItem, OdfValue}
 
@@ -109,13 +110,14 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    */
   private def pollSubscription(id: Long) : Option[OdfObjects]= {
     val pollTime = System.currentTimeMillis()
-    val sub = SingleStores.pollPrevayler execute PollSub(id) //TODO update lastpolled in this trnasaction?
+    val sub = SingleStores.pollPrevayler execute PollSub(id) //TODO update lastPolled in this transaction?
     sub match {
       case Some(pollSub) =>{
 
-        val data: Map[Path, Seq[OdfValue]] = dbConnection.pollAndRemove(id)
+        val rawData = dbConnection.pollSubData(id)
           .groupBy(_.path)
-          .mapValues(_.map(_.toOdf))
+          .mapValues(_.sortBy(_.timestamp.getTime))
+        val data: Map[Path, IndexedSeq[OdfValue]] = rawData.mapValues(_.map(_.toOdf).toVector)
 
 
         //val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
@@ -124,17 +126,20 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
         pollSub match {
           case pollEvent: PollEventSub => {
-            val eventData =
-            data
+            val eventData = ??? //TODO take last value into consideration
+            val pollData = data
               .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
               .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
+
+            pollData
           }
           case pollInterval: PollIntervalSub => {
             val interval = pollInterval.interval
-            data.mapValues(values =>
+            val pollData = data.mapValues(values =>
               values
                 .:+(values.last.copy(timestamp = new Timestamp(pollTime))) //take pollTime into calculations
-                .foldLeft((Seq[OdfValue](pollInterval.lastValue),pollInterval.lastPolled.getTime)){ (col, nextSensorValue) => //if
+                .tail
+                .foldLeft((Seq[OdfValue](values.head),pollInterval.lastPolled.getTime)){ (col, nextSensorValue) => //if
                   //produces tuple with the values in the first variable, second variable is to keep track of passed intervals
                   if(nextSensorValue.timestamp.getTime() < col._2){
                     //If sensor value updates are faster than the interval of the Subscription
@@ -150,6 +155,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             .map(n => OdfInfoItem(n._1, n._2))
             .map(i => fromPath(i)).reduceOption(_.union(_))
 
+            pollData
           }
 
           case unknown => log.error(s"unknown subscription type $unknown")
@@ -249,6 +255,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       val newId = SingleStores.idPrevayler execute getAndUpdateId
       val newTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
+      val currentTimestamp = new Timestamp(currentTime)
 
       val subId = subscription.callback match {
         case cb @ Some(callback) => subscription.interval match {
@@ -262,7 +269,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                 newTime,
                 callback,
-                OdfValue("", "", new Timestamp(currentTime))
+                OdfValue("", "", currentTimestamp)
               )
             )
             newId
@@ -276,8 +283,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 callback,
                 dur,
                 new Timestamp(currentTime + dur.toMillis),
-                new Timestamp(currentTime)
-
+                currentTimestamp
               )
             )
 
@@ -289,6 +295,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
           }
         }
         case None => {
+          val paths = OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
+          val subData = paths.map(path => SubValue(newId,path,currentTimestamp,"",""))
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
@@ -296,11 +304,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 PollEventSub(
                   newId,
                   newTime,
-                  new Timestamp(currentTime),
-                  OdfValue("","",new Timestamp(currentTime)),
-                  OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
+                  currentTimestamp,
+                  paths
                 )
               )
+              dbConnection.addNewPollData(newId, subData)
               newId
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
@@ -310,12 +318,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                   newId,
                   newTime,
                   dur,
-                  new Timestamp(currentTime),
-                  OdfValue("","",new Timestamp(currentTime)),
-                  OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
+                  currentTimestamp,
+                  paths
                 )
               )
-
+              dbConnection.addNewPollData(newId, subData)
               newId
             }
             case dur => {

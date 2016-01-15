@@ -168,25 +168,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     returnId
   }
 
-  /**
-   * Query to the database for given subscription id.
-   * Polling subscription also removes the data from the database
-   * @param id id of the subscription to poll
-   * @return
-   */
-  def pollAndRemove(id: Long): Seq[SubValue] = {
-    runSync(pollAndRemoveI(id))
-  }
-  private def pollAndRemoveI(id: Long) = {
-    val subData = pollSubs filter (_.subId === id)
-    val pollAction = for{
-      res <- subData.result
-      //temp = res.groupBy(_.path).mapValues(_.map(_.toOdf)).map(n=> OdfInfoItem(n._1, n._2))
-      del <- subData.delete
 
-    } yield res
-    pollAction
-  }
 
   /**
    * Used to set many values efficiently to the database.
@@ -280,11 +262,24 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
 
-  def removePollSub(id: Long): Boolean = {
+  def removePollSub(id: Long): Int = {
     val q = pollSubs filter(_.subId === id)
     val action = q.delete
     val result = runSync(action)
-    true
+    result
   }
-
+  def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
+    runSync(removeDataAndUpdateLastValuesI(id, lastValues))
+  }
+  private def removeDataAndUpdateLastValuesI(id: Long, lastValues: Seq[SubValue]) = {
+    val subData = pollSubs filter (_.subId === id)
+    val updateAction = for {
+      _ <- subData.delete
+      added <- pollSubs ++= lastValues
+    } yield added
+    updateAction
+  }
+  def addNewPollData(id: Long, newData: Seq[SubValue]) = {
+    runSync(pollSubs ++= newData)
+  }
 }

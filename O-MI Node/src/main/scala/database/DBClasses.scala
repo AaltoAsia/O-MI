@@ -105,6 +105,15 @@ case class DBValue(
   def toOdf = OdfValue(value, valueType, timestamp)
 }
 
+case class SubValue(
+                     subId: Long,
+                     path: Path,
+                     timestamp: Timestamp,
+                     value: String,
+                     valueType: String
+                     ) {
+  def toOdf = OdfValue(value, valueType, timestamp)
+}
 
 
 
@@ -218,15 +227,7 @@ trait OmiNodeTables extends DBBase {
   protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data
 
 ///////////////////////////////////////////////////
-  case class SubValue(
-                     subId: Long,
-                     path: Path,
-                     timestamp: Timestamp,
-                     value: String,
-                     valueType: String
-                     ) {
-  def toOdf = OdfValue(value, valueType, timestamp)
-}
+
 
   class PollSubsTable(tag: Tag)
     extends Table[SubValue](tag, "POLLSUBVALUES") {
