@@ -124,6 +124,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
         pollSub match {
           case pollEvent: PollEventSub => {
+            val eventData =
             data
               .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
               .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
@@ -132,16 +133,20 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             val interval = pollInterval.interval
             data.mapValues(values =>
               values
-                .tail //add first value in foldLeft default parameter
-                .:+(values.last.copy(timestamp = new Timestamp(pollTime)))
-                .zip(Seq.tabulate(values.length)(n => n*interval.toMillis))//TODO comment steps and  handle adding values after last timestamp
-                .foldLeft(Seq(values.head)){ (col, nextTuple) => //if
-                  val (next, matchingInterval) = nextTuple //TODO make this work
-                  val timeBetweenSensorUpdates = next.timestamp.getTime - col.last.timestamp.getTime() - 1
-                  //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
-                  val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
-                  col ++ Seq.fill(intervalsPassed)(col.last) :+ next //Create values between timestamps if necessary
-            }.init)
+                .:+(values.last.copy(timestamp = new Timestamp(pollTime))) //take pollTime into calculations
+                .foldLeft((Seq[OdfValue](pollInterval.lastValue),pollInterval.lastPolled.getTime)){ (col, nextSensorValue) => //if
+                  //produces tuple with the values in the first variable, second variable is to keep track of passed intervals
+                  if(nextSensorValue.timestamp.getTime() < col._2){
+                    //If sensor value updates are faster than the interval of the Subscription
+                    (col._1.updated(col._1.length - 1,nextSensorValue),col._2)
+                  } else {
+                    //If there are multiple intervals between sensor updates
+                    val timeBetweenSensorUpdates = nextSensorValue.timestamp.getTime - col._1.last.timestamp.getTime() - 1
+                    //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
+                    val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
+                    (col._1 ++ Seq.fill(intervalsPassed)(col._1.last) :+ nextSensorValue, col._2+interval.toMillis) //Create values between timestamps if necessary
+                  }
+            }._1.init)
             .map(n => OdfInfoItem(n._1, n._2))
             .map(i => fromPath(i)).reduceOption(_.union(_))
 
@@ -291,8 +296,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 PollEventSub(
                   newId,
                   newTime,
-                  OdfValue("","",new Timestamp(currentTime)),
                   new Timestamp(currentTime),
+                  OdfValue("","",new Timestamp(currentTime)),
                   OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
                 )
               )
@@ -304,9 +309,10 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 PollIntervalSub(
                   newId,
                   newTime,
-                  OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
                   dur,
-                  new Timestamp(currentTime)
+                  new Timestamp(currentTime),
+                  OdfValue("","",new Timestamp(currentTime)),
+                  OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
                 )
               )
 
