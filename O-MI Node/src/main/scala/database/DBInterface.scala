@@ -15,14 +15,13 @@ package database
 
 import java.io.File
 
+import http.Boot.settings
 import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
-import scala.util.{Try,Success,Failure}
-import scala.collection.JavaConversions.asJavaIterable
-
-import http.Boot.settings
 import types.OdfTypes._
 import types.Path
+
+import scala.collection.JavaConversions.asJavaIterable
 
 
 package object database {
@@ -51,8 +50,8 @@ package object database {
   val dbConfigName = "h2-conf"
 
 }
-import database._
-
+//import database.database._
+import database.dbConfigName
 
 sealed trait InfoItemEvent {
   val infoItem: OdfInfoItem

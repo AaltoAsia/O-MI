@@ -50,6 +50,7 @@ case class NewSubscription(subscription: SubscriptionRequest)
  */
 case class RemoveSubscription(id: Long)
 
+//case class NewDataEvent(path: Path, ) TODO
 /**
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
@@ -109,7 +110,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    */
   private def pollSubscription(id: Long) : Option[OdfObjects]= {
     val pollTime = System.currentTimeMillis()
-    val sub = SingleStores.pollPrevayler execute PollSub(id) //TODO update lastPolled in this transaction?
+    val sub = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
 
@@ -118,17 +119,17 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
           .mapValues(_.sortBy(_.timestamp.getTime))
         val data: Map[Path, IndexedSeq[OdfValue]] = rawData.mapValues(_.map(_.toOdf).toVector)
 
-
-        //val nodes = pollSub.paths.flatMap(path => dbConnection.get(path))
-        //val infoitems = dbConnection.getNBetween(nodes,Some(x.lastPolled), None, None, None)
+        val latestValues: Seq[SubValue] = rawData.mapValues(_.last).values.toSeq
 
 
         pollSub match {
           case pollEvent: PollEventSub => {
-            val eventData = ??? //TODO take last value into consideration
-            val pollData = data
+            val eventData = data //TODO take last value into consideration
+            val pollData = eventData
               .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
               .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
+
+            dbConnection.removeDataAndUpdateLastValues(id, latestValues)
 
             pollData
           }
@@ -153,6 +154,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             }._1.init)
             .map(n => OdfInfoItem(n._1, n._2))
             .map(i => fromPath(i)).reduceOption(_.union(_))
+
+            dbConnection.removeDataAndUpdateLastValues(id, latestValues)
 
             pollData
           }

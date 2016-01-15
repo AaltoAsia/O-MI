@@ -32,7 +32,7 @@ import akka.pattern.ask
 
 import scala.collection.breakOut
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import java.sql.Timestamp
+import scala.collection.JavaConversions.asJavaIterable
 import java.util.Date
 import java.net.{ URL, InetAddress, UnknownHostException }
 
@@ -232,7 +232,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               case Failure(thro: Throwable) => 
                 Results.internalError("Internal server error: " + thro.getMessage())
             }
-            case None =>//noop?
+            case None => //noop?
               Results.success
           }
         }.toSeq:_*

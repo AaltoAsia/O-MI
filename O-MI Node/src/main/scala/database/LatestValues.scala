@@ -136,7 +136,13 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
   case class PollSub(id: Long) extends TransactionWithQuery[PolledSubs, Option[PolledSub]] {
     def executeAndQuery(store: PolledSubs, d: Date): Option[PolledSub] = {
       val sub = store.idToSub.get(id)
-      //sub.foreach(a => store.polledSubs = store.polledSubs.updated(id)) TODO update store and return value
+      sub.foreach(pSub => pSub match {
+        //Update the lastPolled timestamp
+        case polledEvent: PollEventSub =>
+          store.idToSub = store.idToSub.updated(id, polledEvent.copy(lastPolled = new Timestamp(d.getTime())))
+        case pollInterval: PollIntervalSub =>
+          store.idToSub = store.idToSub.updated(id, pollInterval.copy(lastPolled = new Timestamp(d.getTime())))
+      })
       sub
     }
   }
