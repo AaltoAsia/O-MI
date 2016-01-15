@@ -116,7 +116,6 @@ trait Starter {
     val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
 
 
-
     implicit val timeoutForBind = Timeout(5.seconds)
 
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,

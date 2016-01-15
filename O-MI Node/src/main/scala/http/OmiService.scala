@@ -13,6 +13,7 @@
 **/
 package http
 
+import accessControl.AuthAPIService
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingAdapter
 import spray.routing._
@@ -33,9 +34,9 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
-     with IpAuthorization         // Write and Response requests for configured server IPs
-     with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
-     with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+//     with IpAuthorization         // Write and Response requests for configured server IPs
+//     with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
+//     with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
      with AuthApiProvider         // Easier java api for authorization
      with LogUnauthorized         // Log everything else
 
@@ -49,6 +50,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
      with OmiService
      {
 
+  registerApi(new AuthAPIService());
   /**
    * the HttpService trait defines only one abstract member, which
    * connects the services environment to the enclosing actor or test
