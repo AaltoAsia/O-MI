@@ -14,15 +14,16 @@
 package types
 package OdfTypes
 
+import java.lang.{Iterable => JavaIterable}
+import java.sql.Timestamp
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
+
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
-import xml.XML
-import java.sql.Timestamp
-import java.lang.{Iterable => JavaIterable}
+
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
-import http.Boot.settings
-import java.util.GregorianCalendar
-import javax.xml.datatype.{XMLGregorianCalendar, DatatypeFactory}
+import scala.xml.XML
 
 /** Class implementing OdfInfoItem. */
 class  OdfInfoItemImpl(
@@ -104,8 +105,8 @@ case class OdfValue(
     ValueType(
       value,
       typeValue,
-      unixTime = Some(timestamp.getTime/1000),
-      dateTime = Some{
+      unixTime = Option(timestamp.getTime/1000),
+      dateTime = Option{
         val c :GregorianCalendar  = new GregorianCalendar()
         c.setTimeInMillis(timestamp.getTime)
         DatatypeFactory.newInstance().newXMLGregorianCalendar(c)

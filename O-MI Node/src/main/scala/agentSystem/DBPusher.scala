@@ -13,26 +13,25 @@
 **/
 package agentSystem
 
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.concurrent.ExecutionContext.Implicits.global
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
-import akka.actor._
-import java.lang.{Iterable => JavaIterable}
-import scala.xml.XML
+import java.lang.Iterable // => JavaIterable}
 
+import akka.actor._
+import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import database._
-import types._
-import responses.Results
-import responses.OmiGenerator.xmlFromResults
-import responses.CallbackHandlers._
-import responses.Results
 import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
+import responses.CallbackHandlers._
+import responses.OmiGenerator.xmlFromResults
+import responses.Results
 import types.OdfTypes._
 import types.Path
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
+import scala.xml.XML
 
 
 
@@ -234,8 +233,8 @@ class DBPusher(val dbobject: DB)
   private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Try[Boolean] = Try{
     // save first to latest values and then db
 
-    val items = pairs map {
-      case (path, value) => OdfInfoItem(path, Iterable(value))
+    val items: Iterable[OdfInfoItem] = pairs map {
+      case (path, value) => OdfInfoItem(path, List(value))
     }
 
     handleInfoItems(items) match {
@@ -267,7 +266,7 @@ class DBPusher(val dbobject: DB)
     
     val metaInfos = pairs map {
       case (path, metadata) => 
-        OdfInfoItem(path, Iterable(), None, Some(OdfMetaData(metadata)))
+        OdfInfoItem(path, List(), None, Some(OdfMetaData(metadata)))
     }
 
     val ret = handleInfoItems(metaInfos)

@@ -34,7 +34,6 @@ import akka.util.Timeout;
 
 import java.util.concurrent.TimeUnit;
 
-
 import scala.Tuple2;
 
 /** Interface for pushing data to InputPusher actor. 
@@ -44,7 +43,7 @@ public class InputPusher {
     public static ActorRef ipdb = null; 
      public static Future handleOdf( OdfObjects objs, Timeout t ) { 
     	if(ipdb != null)
-        	return ask(ipdb,new HandleOdf(objs), t); 
+        	return ask(ipdb,new HandleOdf(objs), t);
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }

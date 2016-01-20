@@ -73,11 +73,11 @@ public class JavaHouseAgent extends InternalAgent{
                     OdfValue value = new OdfValue(
                             Double.toString( Double.parseDouble( pair._2().value() ) + rnd.nextGaussian()*Double.parseDouble(pair._2().value())),  // create a random value
                             "xs:double",
-                            Option.apply(  // Option is a simple container from scala for handling null values
+                            //Option.apply(  // Option is a simple container from scala for handling null values
                                 new Timestamp( 
                                     date.getTime() 
                                     ) 
-                                ) 
+                                //)
                             );
                     Tuple2<Path, OdfValue> n_pair = new Tuple2<Path, OdfValue>(pair._1(), value);
                     pairs.add(n_pair);

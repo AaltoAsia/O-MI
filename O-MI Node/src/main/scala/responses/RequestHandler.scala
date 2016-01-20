@@ -31,6 +31,8 @@ import akka.util.Timeout
 import akka.pattern.ask
 
 import scala.collection.breakOut
+//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
+//import scala.collection.JavaConversions.asJavaIterator
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 import java.util.Date
@@ -247,12 +249,14 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     */
   def handleRead(read: ReadRequest): (NodeSeq, Int) = {
     log.debug("Handling read.")
-    val objectsO: Option[OdfObjects] = dbConnection.getNBetween(getLeafs(read.odf), read.begin, read.end, read.newest, read.oldest)
+
+    val leafs = getLeafs(read.odf)
+    val objectsO: Option[OdfObjects] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
     objectsO match {
       case Some(objects) =>
         val found = Results.read(objects)
-        val requestsPaths = getLeafs(read.odf).map { _.path }
+        val requestsPaths = leafs.map { _.path }
         val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
         val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
         var results = Seq(found)
