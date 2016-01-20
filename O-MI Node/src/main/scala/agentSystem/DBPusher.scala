@@ -17,15 +17,6 @@ import java.lang.Iterable // => JavaIterable}
 
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import database._
-import parsing.xmlGen
-import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes._
-import responses.CallbackHandlers._
-import responses.OmiGenerator.xmlFromResults
-import responses.Results
-import types.OdfTypes._
-import types.Path
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,6 +24,16 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
+import database._
+import parsing.xmlGen
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
+import responses.CallbackHandlers._
+import responses.OmiGenerator.xmlFromResults
+import responses.Results
+import responses.NewDataEvent
+import types.OdfTypes._
+import types.Path
 
 
 /** Object that contains all commands of InputPusher.
@@ -49,7 +50,7 @@ import agentSystem.InputPusherCmds._
 /**
  * Actor for pushing data to db.
  */
-class DBPusher(val dbobject: DB)
+class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
@@ -113,18 +114,15 @@ class DBPusher(val dbobject: DB)
         val esubs = SingleStores.eventPrevayler execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
     }
-    // Aggregate under same subscriptions (for optimized callbacks)
+    // Aggregate events under same subscriptions (for optimized callbacks)
     val esubAggregation: Map[EventSub, Seq[(EventSub, OdfInfoItem)]] =
         esubLists groupBy {_._1}
 
-    for ((_, infoSeq) <- esubAggregation) {
+    for ((esub, infoSeq) <- esubAggregation) {
 
-        val esubOpt = infoSeq.headOption map {_._1}
         val infoItems = infoSeq map {_._2}
 
-        esubOpt match {
-            case Some(esub) => sendEventCallback(esub, infoItems)
-        }
+        sendEventCallback(esub, infoItems)
     }
 
   }
@@ -194,7 +192,10 @@ class DBPusher(val dbobject: DB)
     val metas = infoItems filter { _.hasMetadata }
     // check syntax
     metas foreach {metaInfo =>
+
       checkMetaData(metaInfo.metaData) match {
+
+        case Success(_) => // noop: exception on failure instead of filtering the valid
         case Failure(exp) =>
          log.error( exp, "InputPusher" )
          throw exp;
@@ -215,12 +216,14 @@ class DBPusher(val dbobject: DB)
         SingleStores.hierarchyStore execute Union(updateTree)
     }
 
-    // DB
-    val itemValues = infoItems flatMap {item =>
+    // DB + Poll Subscriptions
+    val itemValues = (infoItems flatMap {item =>
       val values = item.values.toSeq
       values map {value => (item.path, value)}
-    }
-    dbobject.setMany(itemValues.toList)
+    }).toSeq
+    dbobject.setMany(itemValues)
+
+    subHandler ! NewDataEvent(itemValues)
 
     //log.debug("Successfully saved InfoItems to DB")
     true

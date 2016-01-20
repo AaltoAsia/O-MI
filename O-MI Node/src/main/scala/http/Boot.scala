@@ -45,6 +45,9 @@ trait Starter {
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
   val settings = Settings(system)
+
+  private val subHandlerDbConn = new DatabaseConnection
+  val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler")
   
 
   /**
@@ -52,9 +55,8 @@ trait Starter {
    * @param dbConnection Use a specific db connection for all agents, intended for testing
    */
   def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-db-pusher") = {
-    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),actorname)
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subHandler)), actorname)
   }
-
 
   /** 
    * Setup database and apply config [[settings]].
@@ -97,7 +99,6 @@ trait Starter {
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
   def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
-    val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
