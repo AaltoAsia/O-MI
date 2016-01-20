@@ -50,7 +50,7 @@ case class NewSubscription(subscription: SubscriptionRequest)
  */
 case class RemoveSubscription(id: Long)
 
-//case class NewDataEvent(path: Path, ) TODO
+case class NewDataEvent(data: Seq[(Path, OdfValue)])// TODO
 /**
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
@@ -151,6 +151,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                     val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
                     (col._1 ++ Seq.fill(intervalsPassed)(col._1.last) :+ nextSensorValue, col._2+interval.toMillis) //Create values between timestamps if necessary
                   }
+            //Take values from tuple and remove last value
             }._1.init)
             .map(n => OdfInfoItem(n._1, n._2))
             .map(i => fromPath(i)).reduceOption(_.union(_))
