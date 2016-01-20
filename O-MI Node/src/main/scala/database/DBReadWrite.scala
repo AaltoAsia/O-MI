@@ -174,7 +174,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def setMany(data: List[(Path, OdfValue)]): Seq[(Path, Int)] = {
+  def setMany(data: Seq[(Path, OdfValue)]): Seq[(Path, Int)] = {
 
     val pathsData: Map[Path, Seq[OdfValue]] =
       data.groupBy(_._1).mapValues(
