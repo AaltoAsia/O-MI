@@ -101,6 +101,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
+    case NewDataEvent(data) => handleNewData(data)
+  }
+
+  private def handleNewData(data: Seq[(Path, OdfValue)]): Unit = {
+    val subs = SingleStores.pollPrevayler execute NewPollDataEvent(data.map(_._1))
   }
 
   /**
@@ -133,6 +138,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
             pollData
           }
+            //TODO Error checking, remove last/head calls or comment
           case pollInterval: PollIntervalSub => {
             val interval = pollInterval.interval
             val pollData = data.mapValues(values =>

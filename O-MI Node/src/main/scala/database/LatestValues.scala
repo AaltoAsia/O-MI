@@ -133,6 +133,12 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
     }
   }
 
+  case class NewPollDataEvent(paths: Seq[Path]) extends Query[PolledSubs, Seq[(Path, Set[Long])]] {
+    def query(store: PolledSubs, d: Date): Seq[(Path, Set[Long])] = {
+      paths.map(path => (path, store.pathToSubs(path)))
+    }
+  }
+
   case class PollSub(id: Long) extends TransactionWithQuery[PolledSubs, Option[PolledSub]] {
     def executeAndQuery(store: PolledSubs, d: Date): Option[PolledSub] = {
       val sub = store.idToSub.get(id)
