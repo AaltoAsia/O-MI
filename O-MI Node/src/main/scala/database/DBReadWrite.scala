@@ -13,20 +13,16 @@
 **/
 package database
 
-import scala.language.postfixOps
+import java.sql.Timestamp
 
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
-import java.sql.Timestamp
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
-import scala.collection.SortedMap
-
-import types._
 import types.OdfTypes._
+import types._
+
+import scala.collection.JavaConversions.asJavaIterable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 /**
  * Read-write interface methods for db tables.
@@ -261,14 +257,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     true
   }
 
-
   def removePollSub(id: Long): Int = {
     val q = pollSubs filter(_.subId === id)
     val action = q.delete
     val result = runSync(action)
     result
   }
-  def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
+
+  /*def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
     runSync(removeDataAndUpdateLastValuesI(id, lastValues))
   }
   private def removeDataAndUpdateLastValuesI(id: Long, lastValues: Seq[SubValue]) = {
@@ -278,8 +274,28 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       added <- pollSubs ++= lastValues
     } yield added
     updateAction
+  }*/
+  /**
+   * Method used for polling subsription data from database.
+   * Returns and removes
+   * @param id
+   * @return
+   */
+  def pollSubscription(id: Long): Seq[SubValue] = {
+    runSync(pollSubscriptionI(id))
   }
-  def addNewPollData(id: Long, newData: Seq[SubValue]) = {
+
+  private def pollSubscriptionI(id: Long): DBIOAction[] = {
+    val subData = pollSubs filter (_.subId === id)
+    for{
+      _ <- subData.delete
+      data <- subData.result
+    } yield data
+  }
+
+
+
+  def addNewPollData(newData: Seq[SubValue]) = {
     runSync(pollSubs ++= newData)
   }
 }

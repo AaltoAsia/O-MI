@@ -50,7 +50,7 @@ case class NewSubscription(subscription: SubscriptionRequest)
  */
 case class RemoveSubscription(id: Long)
 
-case class NewDataEvent(data: Seq[(Path, OdfValue)])// TODO
+case class NewDataEvent(data: Seq[(Path, OdfValue)])// TODO move to DB
 /**
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
@@ -101,12 +101,18 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
-    case NewDataEvent(data) => handleNewData(data)
+    //case NewDataEvent(data) => handleNewData(data)
   }
 
-  private def handleNewData(data: Seq[(Path, OdfValue)]): Unit = {
-    val subs = SingleStores.pollPrevayler execute NewPollDataEvent(data.map(_._1))
-  }
+  /*private def handleNewData(data: Seq[(Path, OdfValue)]): Unit = {
+    //val subs = SingleStores.pollPrevayler execute NewPollDataEvent(data)
+    val newData = subs.flatMap{ res =>
+      val (data, ids) = res
+      ids.map(subId => SubValue(subId,data._1,data._2.timestamp,data._2.value,data._2.typeValue))
+    }
+
+    dbConnection.addNewPollData(newData)
+  }*/
 
   /**
    * Get pollsubscriptions data drom database
@@ -118,51 +124,55 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     val sub = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
-
-        val rawData = dbConnection.pollSubData(id)
+        log.debug(s"Polling subcription with id: ${pollSub.id}")
+        //pollSubscription method removes the data from database and returns the requested data
+        val data: Map[Path, IndexedSeq[OdfValue]]  = dbConnection.pollSubscription(id)
           .groupBy(_.path)
-          .mapValues(_.sortBy(_.timestamp.getTime))
-        val data: Map[Path, IndexedSeq[OdfValue]] = rawData.mapValues(_.map(_.toOdf).toVector)
-
-        val latestValues: Seq[SubValue] = rawData.mapValues(_.last).values.toSeq
-
+          .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf).toVector)
 
         pollSub match {
           case pollEvent: PollEventSub => {
-            val eventData = data //TODO take last value into consideration
+
+            log.debug(s"Creating response message for Polled Event Subscription")
+
+            val eventData = data //TODO take last value into consideration => add duplicate handling in DBInterface
             val pollData = eventData
               .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
               .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
 
-            dbConnection.removeDataAndUpdateLastValues(id, latestValues)
-
             pollData
           }
-            //TODO Error checking, remove last/head calls or comment
+            //TODO Error checking, remove last/head calls or comment fix after moving last value checking into DBInterface
           case pollInterval: PollIntervalSub => {
+
+            log.debug(s"Creating response message for Polled Interval Subscription")
+
             val interval = pollInterval.interval
-            val pollData = data.mapValues(values =>
-              values
+            val pollData = data.map( pathValuesTuple =>{
+              val (path, values) = pathValuesTuple
+              val lastValue = SingleStores.latestStore execute LookupSensorData(path)
+              lastValue.fold[IndexedSeq[OdfValue]](Vector()) { lastVal =>
+                values
+                .+:(lastVal) //TODO case: last value empty (duplicate lastvalue)
                 .:+(values.last.copy(timestamp = new Timestamp(pollTime))) //take pollTime into calculations
                 .tail
-                .foldLeft((Seq[OdfValue](values.head),pollInterval.lastPolled.getTime)){ (col, nextSensorValue) => //if
-                  //produces tuple with the values in the first variable, second variable is to keep track of passed intervals
-                  if(nextSensorValue.timestamp.getTime() < col._2){
-                    //If sensor value updates are faster than the interval of the Subscription
-                    (col._1.updated(col._1.length - 1,nextSensorValue),col._2)
-                  } else {
-                    //If there are multiple intervals between sensor updates
-                    val timeBetweenSensorUpdates = nextSensorValue.timestamp.getTime - col._1.last.timestamp.getTime() - 1
-                    //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
-                    val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
-                    (col._1 ++ Seq.fill(intervalsPassed)(col._1.last) :+ nextSensorValue, col._2+interval.toMillis) //Create values between timestamps if necessary
-                  }
-            //Take values from tuple and remove last value
-            }._1.init)
+                  .foldLeft((Seq[OdfValue](values.head), pollInterval.lastPolled.getTime)) { (col, nextSensorValue) => //if
+                    //produces tuple with the values in the first variable, second variable is to keep track of passed intervals
+                    if (nextSensorValue.timestamp.getTime() < col._2) {
+                      //If sensor value updates are faster than the interval of the Subscription
+                      (col._1.updated(col._1.length - 1, nextSensorValue), col._2)
+                    } else {
+                      //If there are multiple intervals between sensor updates
+                      val timeBetweenSensorUpdates = nextSensorValue.timestamp.getTime - col._1.last.timestamp.getTime() - 1
+                      //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
+                      val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
+                      (col._1 ++ Seq.fill(intervalsPassed)(col._1.last) :+ nextSensorValue, col._2 + interval.toMillis) //Create values between timestamps if necessary
+                    }
+                  }._1.init
+                path -> pollData
+              }})
             .map(n => OdfInfoItem(n._1, n._2))
             .map(i => fromPath(i)).reduceOption(_.union(_))
-
-            dbConnection.removeDataAndUpdateLastValues(id, latestValues)
 
             pollData
           }
@@ -313,10 +323,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                   newId,
                   newTime,
                   currentTimestamp,
+                  currentTimestamp,
                   paths
                 )
               )
-              dbConnection.addNewPollData(newId, subData)
+              dbConnection.addNewPollData(subData)
               newId
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
@@ -327,10 +338,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                   newTime,
                   dur,
                   currentTimestamp,
+                  currentTimestamp,
                   paths
                 )
               )
-              dbConnection.addNewPollData(newId, subData)
+              dbConnection.addNewPollData(subData)
               newId
             }
             case dur => {

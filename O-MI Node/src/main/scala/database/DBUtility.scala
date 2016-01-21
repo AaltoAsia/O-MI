@@ -13,17 +13,12 @@
 **/
 package database
 
-import scala.language.postfixOps
-
 import slick.driver.H2Driver.api._
-import java.sql.Timestamp
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.SortedMap
-
 import types._
-import OdfTypes._
-import scala.collection.JavaConversions.iterableAsScalaIterable
+
+import scala.collection.SortedMap
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]

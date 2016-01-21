@@ -133,11 +133,11 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
     }
   }
 
-  case class NewPollDataEvent(paths: Seq[Path]) extends Query[PolledSubs, Seq[(Path, Set[Long])]] {
-    def query(store: PolledSubs, d: Date): Seq[(Path, Set[Long])] = {
-      paths.map(path => (path, store.pathToSubs(path)))
+  /*case class NewPollDataEvent(paths: Seq[(Path,OdfValue)]) extends Query[PolledSubs, Seq[((Path, OdfValue), Set[Long])]] {
+    def query(store: PolledSubs, d: Date): Seq[((Path, OdfValue), Set[Long])] = {
+      paths.map(path => (path, store.pathToSubs(path._1)))
     }
-  }
+  }*/
 
   case class PollSub(id: Long) extends TransactionWithQuery[PolledSubs, Option[PolledSub]] {
     def executeAndQuery(store: PolledSubs, d: Date): Option[PolledSub] = {
@@ -145,9 +145,9 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
       sub.foreach(pSub => pSub match {
         //Update the lastPolled timestamp
         case polledEvent: PollEventSub =>
-          store.idToSub = store.idToSub.updated(id, polledEvent.copy(lastPolled = new Timestamp(d.getTime())))
+          store.idToSub = store.idToSub + (id -> polledEvent.copy(lastPolled = new Timestamp(d.getTime())))
         case pollInterval: PollIntervalSub =>
-          store.idToSub = store.idToSub.updated(id, pollInterval.copy(lastPolled = new Timestamp(d.getTime())))
+          store.idToSub = store.idToSub + (id ->pollInterval.copy(lastPolled = new Timestamp(d.getTime())))
       })
       sub
     }
