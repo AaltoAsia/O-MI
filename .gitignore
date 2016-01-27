@@ -1,6 +1,7 @@
 #scala
 *.class
 *.log
+/logs
 
 # sbt specific
 .cache

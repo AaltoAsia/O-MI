@@ -33,12 +33,21 @@ import org.specs2.runner.JUnitRunner
 class SystemTest extends Specification with Starter with AfterAll {
   
             
-  override def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
-    val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
+  //start the program
+  implicit val dbConnection = new TestDB("SystemTest")
+
+  override protected val subHandlerDbConn = dbConnection
+
+  override def start(dbConnection: DB): ActorRef = {
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
     // do not start InternalAgents to keep database clean
     //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
+    //
+    // val omiNodeCLIListener =system.actorOf(
+    //   Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
+    //   "omi-node-cli-listener"
+    // )
 
     // create omi service actor
     val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
@@ -55,8 +64,6 @@ class SystemTest extends Specification with Starter with AfterAll {
   import system.dispatcher
 
 
-  //start the program
-  implicit val dbConnection = new TestDB("SystemTest")
 
   init(dbConnection)
   val serviceActor = start(dbConnection)

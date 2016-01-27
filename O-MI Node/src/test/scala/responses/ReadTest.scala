@@ -3,20 +3,12 @@ package responses
 import org.specs2.mutable._
 import org.specs2.matcher.XmlMatchers._
 import scala.io.Source
-import responses._
-import parsing._
-import types._
-import types.Path._
-import types.OmiTypes._
-import database._
-import parsing.OdfParser._
 import java.util.Date
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import scala.xml.Utility.trim
 import scala.xml.XML
 import scala.xml.{Elem, NodeSeq}
-import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor }
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -25,9 +17,21 @@ import scala.util.Try
 import shapeless.headOption
 import akka.testkit.TestActorRef
 import java.util.TimeZone
+import java.lang.{Iterable => JavaIterable}
 
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
+
+import responses._
+import parsing._
+import types._
+import types.Path._
+import types.OmiTypes._
+import database._
+import parsing.OdfParser._
+import agentSystem.InputPusher
+
+import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor }
 //
 @RunWith(classOf[JUnitRunner])
 class ReadTest extends Specification with BeforeAfterAll {
@@ -85,8 +89,10 @@ class ReadTest extends Specification with BeforeAfterAll {
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
     //    dbConnection.remove(Path("Objects/Metatest/Temperature"))
     dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
-    dbConnection.setMetaData(Path("Objects/Metatest/Temperature"),
-      """<MetaData xmlns="odf.xsd"><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>""")
+
+    // FIXME
+    // dbConnection(JavaIterable(Path("Objects/Metatest/Temperature"),
+    //   """<MetaData xmlns="odf.xsd"><InfoItem name="TemperatureFormat"><value dateTime="1970-01-17T12:56:15.723">Celsius</value></InfoItem></MetaData>"""))
 
   }
   def removeDateTimeString( text: String) : String =text.replaceAll(

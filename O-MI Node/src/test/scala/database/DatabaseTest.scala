@@ -413,35 +413,40 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
 //        db.removeSub(id8)
 //        db.removeSub(id9)
 //      }
-    "be able to add many values in one go" in {
-//      db.clearDB()
-      db.set(Path("/Objects/path/to/setmany/test1"), new Timestamp(1000), "first")
-      val testSub3 = db.saveSub(NewDBSub(-1.seconds, new Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
 
-      //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
-      val testdata: List[(Path, OdfValue)] = {
-        List(
-          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1001)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1002)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1003)))),
-          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1004)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1005)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1006)))),
-          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1007)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1008)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1009)))),
-          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1010)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1011)))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", Some(new Timestamp(1012)))),
-          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1013)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1014)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1015)))),
-          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1016)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1017)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1018)))),
-          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1019)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1020)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1021)))),
-          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1022)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1023)))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", Some(new Timestamp(1024)))))
-      }
-      val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
-      db.setMany(pathValuePairs)
-      val temp1 = db.get(Path("/Objects/path/to/setmany/test1")).map(fromPath(_))
-      val values1 = temp1.map(OdfObjectsToValues(_))
-      values1 must beSome.which(_ must have size (13))
-      val temp2 = db.get(Path("/Objects/path/to/setmany/test2")).map(fromPath(_))
-      val values2 = temp2.map(OdfObjectsToValues(_))
-      values2 must beSome.which(_ must have size (10))
-      db.removeSub(testSub3.id)
-      db.remove(Path("/Objects/path/to/setmany/test1"))
-      db.remove(Path("/Objects/path/to/setmany/test2"))
-    }
+
+// FIXME: Disabled because poll subs does not use values table anymore
+//    "be able to add many values in one go" in {
+//      db.set(Path("/Objects/path/to/setmany/test1"), new Timestamp(1000), "first")
+//      // val testSub3 = db.saveSub(NewDBSub(-1.seconds, new Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/setmany/test1")))
+//
+//      //      db.startBuffering(Path("/Objects/path/to/setmany/test1"))
+//      val testdata: List[(Path, OdfValue)] = {
+//        List(
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1001))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1002))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1003))),
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1004))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1005))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1006))),
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1007))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1008))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1009))),
+//          (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1010))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1011))), (Path("/Objects/path/to/setmany/test1"), OdfValue("val1", "", new Timestamp(1012))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1013))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1014))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1015))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1016))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1017))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1018))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1019))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1020))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1021))),
+//          (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1022))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1023))), (Path("/Objects/path/to/setmany/test2"), OdfValue("val1", "", new Timestamp(1024))))
+//      }
+//      val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
+//      db.setMany(pathValuePairs)
+//
+//      val temp1 = db.get(Path("/Objects/path/to/setmany/test1")).map(fromPath(_))
+//      val values1 = temp1.map(OdfObjectsToValues(_))
+//      values1 must beSome.which(_ must have size (13))
+//
+//      val temp2 = db.get(Path("/Objects/path/to/setmany/test2")).map(fromPath(_))
+//      val values2 = temp2.map(OdfObjectsToValues(_))
+//      values2 must beSome.which(_ must have size (10))
+//
+//      // db.removeSub(testSub3.id)
+//      db.remove(Path("/Objects/path/to/setmany/test1"))
+//      db.remove(Path("/Objects/path/to/setmany/test2"))
+//    }
     
 // TODO: metadata tests for new system
 //    "be able to save and load metadata for a path" in {
