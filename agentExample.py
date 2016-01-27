@@ -8,7 +8,7 @@ while True:
     data = input()
     odf_message = b'''
         <Objects>
-            <Object>
+            <Object xmlns="odf.xsd">
                 <id>ExampleAgent</id>
                 <InfoItem name="ExampleAgentSensor">
                     <value>''' +\
