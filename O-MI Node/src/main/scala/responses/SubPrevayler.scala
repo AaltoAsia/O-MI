@@ -104,18 +104,19 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     //case NewDataEvent(data) => handleNewData(data)
   }
 
-  /*private def handleNewData(data: Seq[(Path, OdfValue)]): Unit = {
-    //val subs = SingleStores.pollPrevayler execute NewPollDataEvent(data)
-    val newData = subs.flatMap{ res =>
-      val (data, ids) = res
-      ids.map(subId => SubValue(subId,data._1,data._2.timestamp,data._2.value,data._2.typeValue))
-    }
-
-    dbConnection.addNewPollData(newData)
-  }*/
 
   /**
    * Get pollsubscriptions data drom database
+   *
+   * This method is used to both 'event' and 'interval' based subscriptions.
+   *
+   * Event subscriptions remove all data from database related to the poll.
+   *
+   * Interval subscriptions leave one value in the database to serve as starting value for next poll.
+   * Database only stores changed values for subscriptions so values need to be interpolated for interval based subscriptions.
+   * If sensor updates happen faster than the interval of the subscription then only the newest sensor value is added and older values dropped,
+   * on the other hand if interval is shorter than the sensor updates then interpolated values will be generated between sensor values.
+   *
    * @param id id of subscription to poll
    * @return
    */
