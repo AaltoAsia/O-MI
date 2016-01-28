@@ -1,24 +1,24 @@
 package agents
 
-import agentSystem._
-import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
-import types._
-import types.Path._
-import types.OdfTypes._
-import parsing.OdfParser
-
 import java.io.File
 import scala.io.Source
 
 import java.sql.Timestamp
 import scala.util.Random
 
-// Scala XML
+// Scala XML contains also parsing package
+import parsing.OdfParser
 import scala.xml._
 
 import scala.concurrent.duration._
 import akka.util.Timeout
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
+
+import agentSystem._
+import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
+import types._
+import types.Path._
+import types.OdfTypes._
 
 
 /** Agent for the SmartHouse
@@ -26,7 +26,7 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
   */
 class SmartHouseAgent extends InternalAgent {
   
-  private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
+  private var odfInfoItems : Option[Vector[(OdfInfoItem, String)]] = None   
   private var initialized = false
   val t : FiniteDuration = Duration(5, SECONDS) 
   
@@ -81,7 +81,7 @@ class SmartHouseAgent extends InternalAgent {
               case None => Random.nextInt
             }
             (
-            OdfInfoItem( info.path, Iterable( OdfValue(  newVal.toString, "xs:double" , new Timestamp( date.getTime) ))),
+            OdfInfoItem( info.path, Vector( OdfValue(  newVal.toString, "xs:double" , new Timestamp( date.getTime) ))),
             firstValue
             )
           } 

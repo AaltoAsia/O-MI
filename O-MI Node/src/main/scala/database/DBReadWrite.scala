@@ -26,6 +26,7 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 import scala.collection.SortedMap
 
 import types._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 
 /**

@@ -21,6 +21,7 @@ import scala.collection.JavaConversions.{asJavaIterable,iterableAsScalaIterable}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.{ SortedMap, breakOut }
 
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 
 trait OdfConversions extends OmiNodeTables {

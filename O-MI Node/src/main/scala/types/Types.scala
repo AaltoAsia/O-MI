@@ -29,7 +29,7 @@ import java.sql.Timestamp
    * two paths or creating new Paths from user input.
    * Path can be used as a sequence via an implicit conversion or _.toSeq
    */
-  class Path(pathSeq: Vector[String]){
+  class Path(pathSeq: Vector[String]) extends Serializable { // TODO: is this ok
     import Path._
     /**
      * Removes extra path elements and holds the Path as Seq[String]

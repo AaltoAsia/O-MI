@@ -18,6 +18,7 @@ import java.io.File
 import http.Boot.settings
 import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.Path
 

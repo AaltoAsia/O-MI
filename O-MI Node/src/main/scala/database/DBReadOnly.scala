@@ -26,6 +26,7 @@ import scala.collection.SortedMap
 
 import types._
 import types.OdfTypes._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 /**
  * Read only restricted interface methods for db tables

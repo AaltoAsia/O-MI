@@ -28,6 +28,7 @@ import agentSystem._
 import responses.{RequestHandler, SubscriptionHandler}
 import types.Path
 import types.OdfTypes._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import database._
 
 import scala.util.{Try, Failure, Success}

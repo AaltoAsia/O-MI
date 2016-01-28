@@ -6,6 +6,7 @@ import types._
 import types.Path._
 import types.OmiTypes._
 import types.OdfTypes._
+import types.OdfTypes.OdfTreeCollection._
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList, iterableAsScalaIterable}
 import scala.concurrent.duration._
 

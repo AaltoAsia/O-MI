@@ -20,9 +20,11 @@ import parsing.xmlGen.xmlTypes._
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 
+import OdfTreeCollection._
+
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
-  objects:              JavaIterable[OdfObject] = Iterable(),
+  objects:              OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version:              Option[String] = None
 ) {
 

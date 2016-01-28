@@ -26,7 +26,7 @@ import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationE
   */
 class VTTAgent extends InternalAgent {
   
-  private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
+  private var odfInfoItems : Option[Vector[(OdfInfoItem, String)]] = None   
   private var initialized = false
   val t : FiniteDuration = Duration(5, SECONDS) 
   
@@ -95,7 +95,7 @@ class VTTAgent extends InternalAgent {
           (
             OdfInfoItem( 
               info.path,
-              Iterable( 
+              Vector( 
                 OdfValue(
                   newVal.toString,
                   "xs:double",
