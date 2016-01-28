@@ -281,19 +281,39 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param id
    * @return
    */
-  def pollSubscription(id: Long): Seq[SubValue] = {
-    runSync(pollSubscriptionI(id))
+  def pollEventSubscription(id: Long): Seq[SubValue] = {
+    runSync(pollEventSubscriptionI(id))
   }
 
-  private def pollSubscriptionI(id: Long): DBIOAction[] = {
+  private def pollEventSubscriptionI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)
     for{
-      _ <- subData.delete
       data <- subData.result
+      _ <- subData.delete
     } yield data
   }
-
-
+  
+  def pollIntervalSubscription(id: Long): Seq[SubValue] = {
+    runSync(pollIntervalSubscriptionI(id))
+  }
+  
+  private def pollIntervalSubscriptionI(id: Long) = {
+    val subData = pollSubs filter (_.subId === id)
+    for{
+      data <- subData.result
+      _ <- subData.delete
+      lastValues = data.groupBy(_.path).flatMap{ //group by path
+        case (iPath, pathData) =>
+          pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp
+            col.fold(Option(next)){c => //compare
+              if (c.timestamp.before(next.timestamp)) Option(next) else Option(c)
+            }
+          }
+      }
+      _ <- pollSubs ++= lastValues
+      //_<- //(pollSubs ++= groupedData.map(_._2).flatten)
+    } yield data
+  }
 
   def addNewPollData(newData: Seq[SubValue]) = {
     runSync(pollSubs ++= newData)
