@@ -100,6 +100,9 @@ object SingleStores {
 
       // TODO: Replace metadata and description if given
 
+      //TODO: handle duplicates in the PollSubscription Database
+      val relatedEventSubs = EventSubs
+
       oldValueOpt match {
         case Some(oldValue) =>
           if (oldValue.timestamp before newValue.timestamp) {

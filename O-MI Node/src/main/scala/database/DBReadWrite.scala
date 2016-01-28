@@ -13,13 +13,16 @@
 **/
 package database
 
-import scala.language.postfixOps
+import java.sql.Timestamp
 
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
-import java.sql.Timestamp
+import types.OdfTypes._
+import types._
 
+import scala.collection.JavaConversions.asJavaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
@@ -262,14 +265,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     true
   }
 
-
   def removePollSub(id: Long): Int = {
     val q = pollSubs filter(_.subId === id)
     val action = q.delete
     val result = runSync(action)
     result
   }
-  def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
+
+  /*def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
     runSync(removeDataAndUpdateLastValuesI(id, lastValues))
   }
   private def removeDataAndUpdateLastValuesI(id: Long, lastValues: Seq[SubValue]) = {
@@ -279,8 +282,48 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       added <- pollSubs ++= lastValues
     } yield added
     updateAction
+  }*/
+  /**
+   * Method used for polling subsription data from database.
+   * Returns and removes
+   * @param id
+   * @return
+   */
+  def pollEventSubscription(id: Long): Seq[SubValue] = {
+    runSync(pollEventSubscriptionI(id))
   }
-  def addNewPollData(id: Long, newData: Seq[SubValue]) = {
+
+  private def pollEventSubscriptionI(id: Long) = {
+    val subData = pollSubs filter (_.subId === id)
+    for{
+      data <- subData.result
+      _ <- subData.delete
+    } yield data
+  }
+  
+  def pollIntervalSubscription(id: Long): Seq[SubValue] = {
+    runSync(pollIntervalSubscriptionI(id))
+  }
+  
+  private def pollIntervalSubscriptionI(id: Long) = {
+    val subData = pollSubs filter (_.subId === id)
+    for{
+      data <- subData.result
+      _ <- subData.delete
+      lastValues = data.groupBy(_.path).flatMap{ //group by path
+        case (iPath, pathData) =>
+          pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp
+            col.fold(Option(next)){c => //compare
+              if (c.timestamp.before(next.timestamp)) Option(next) else Option(c)
+            }
+          }
+      }
+      _ <- pollSubs ++= lastValues
+      //_<- //(pollSubs ++= groupedData.map(_._2).flatten)
+    } yield data
+  }
+
+  def addNewPollData(newData: Seq[SubValue]) = {
     runSync(pollSubs ++= newData)
   }
 }

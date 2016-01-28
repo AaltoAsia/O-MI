@@ -23,6 +23,7 @@ sealed trait SavedSub {
 }
 sealed trait PolledSub extends SavedSub {
   val lastPolled: Timestamp
+  val startTime: Timestamp  //Used for preventing from saving duplicate values in database and debugging
 }
 
 
@@ -31,6 +32,7 @@ case class PollEventSub(
   id: Long,
   endTime: Timestamp,
   lastPolled: Timestamp,
+  startTime: Timestamp,
   paths: Seq[Path]
   ) extends PolledSub
 
@@ -39,6 +41,7 @@ case class PollIntervalSub(
   endTime: Timestamp,
   interval: Duration,
   lastPolled: Timestamp,
+  startTime: Timestamp,
   paths: Seq[Path]
 ) extends PolledSub
 

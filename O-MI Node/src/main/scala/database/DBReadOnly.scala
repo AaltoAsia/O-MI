@@ -371,7 +371,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         } yield result
       })
 
-  /**
+ /* /**
    * Query to the database for given subscription id.
    * Data removing is done separately
    * @param id id of the subscription to poll
@@ -383,5 +383,5 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
   private def pollSubDataI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)
     subData.result
-  }
+  }*/
 }
