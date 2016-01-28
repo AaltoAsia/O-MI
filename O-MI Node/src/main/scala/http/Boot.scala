@@ -46,7 +46,7 @@ trait Starter {
    */
   val settings = Settings(system)
 
-  private val subHandlerDbConn = new DatabaseConnection
+  protected val subHandlerDbConn: DB = new DatabaseConnection
   val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler")
   
 

@@ -47,31 +47,31 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
             OdfInfoItem(
               Path("Objects/SmartHouse/PowerConsumption"), Iterable(
                 OdfValue(
-                  "180", "xs:string", Some(
-                    Timestamp.valueOf("2014-12-18 15:34:52")))), None, None), OdfInfoItem(
+                  "180", "xs:string",
+                    Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
               Path("Objects/SmartHouse/Moisture"), Iterable(
                 OdfValue(
-                  "0.20", "xs:string", Some(
-                    new Timestamp(1418916892L * 1000)))), None, None)), Iterable(
+                  "0.20", "xs:string",
+                    new Timestamp(1418916892L * 1000))), None, None)), Iterable(
             OdfObject(
               Path("Objects/SmartHouse/SmartFridge"), Iterable(
                 OdfInfoItem(
                   Path("Objects/SmartHouse/SmartFridge/PowerConsumption"), Iterable(
                     OdfValue(
-                      "56", "xs:string", Some(
-                        Timestamp.valueOf("2014-12-18 15:34:52")))), None, None)), Iterable(), None, None), OdfObject(
+                      "56", "xs:string",
+                        Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None), OdfObject(
               Path("Objects/SmartHouse/SmartOven"), Iterable(
                 OdfInfoItem(
                   Path("Objects/SmartHouse/SmartOven/PowerOn"), Iterable(
                     OdfValue(
-                      "1", "xs:string", Some(
-                        Timestamp.valueOf("2014-12-18 15:34:52")))), None, None)), Iterable(), None, None)), None, None), OdfObject(
+                      "1", "xs:string",
+                        Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None)), None, None), OdfObject(
           Path("Objects/SmartCar"), Iterable(
             OdfInfoItem(
               Path("Objects/SmartCar/Fuel"), Iterable(
                 OdfValue(
-                  "30", "xs:string", Some(
-                    Timestamp.valueOf("2014-12-18 15:34:52")))), None, Some(
+                  "30", "xs:string",
+                    Timestamp.valueOf("2014-12-18 15:34:52"))), None, Some(
                 OdfMetaData(
                   """<MetaData xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><InfoItem name="Units"><value type="xs:String">Litre</value></InfoItem></MetaData>""")))), Iterable(), None, None), OdfObject(
           Path("Objects/SmartCottage"), Iterable(), Iterable(
