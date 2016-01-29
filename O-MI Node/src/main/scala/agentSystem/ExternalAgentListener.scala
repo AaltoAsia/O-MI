@@ -20,7 +20,6 @@ import akka.io.Tcp
 import akka.util.Timeout
 import http.Authorization.ExtensibleAuthorization
 import http.IpAuthorization
-import org.xml.sax.helpers.DefaultHandler
 import parsing.OdfParser
 import types.OdfTypes._
 import types._
@@ -78,9 +77,6 @@ class ExternalAgentListener
   }
 }
 
-class SAXOdfHandler extends DefaultHandler {
-
-}
 
 /** A handler for data received from a agent.
   * @param sourceAddress Agent's adress 
