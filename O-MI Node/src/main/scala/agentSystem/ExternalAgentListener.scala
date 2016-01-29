@@ -93,7 +93,7 @@ class ExternalAgentHandler(
   def receive = {
     case Received(data) =>
     { 
-      val dataString = data.decodeString("UTF-8").trim //TODO
+      val dataString = data.decodeString("UTF-8").trim
 
       log.debug(s"Got following data from $sender:\n$dataString")
       if(dataString.startsWith("<?xml") || dataString.startsWith("<Objects")){
