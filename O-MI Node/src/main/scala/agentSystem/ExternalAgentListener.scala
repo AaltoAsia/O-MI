@@ -13,22 +13,20 @@
 **/
 package agentSystem
 
-import akka.actor.{ Actor, Props, ActorLogging }
-import akka.io.{ IO, Tcp  }
-import akka.util.Timeout
 import java.net.InetSocketAddress
-import scala.collection.immutable
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 
+import akka.actor.{Actor, ActorLogging, Props}
+import akka.io.Tcp
+import akka.util.Timeout
 import http.Authorization.ExtensibleAuthorization
 import http.IpAuthorization
+import org.xml.sax.helpers.DefaultHandler
 import parsing.OdfParser
-import types._
-import types.Path._ //Useless?
 import types.OdfTypes._
+import types._
 
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.concurrent.duration._
 
 /** AgentListener handles connections from agents.
   */
@@ -80,6 +78,10 @@ class ExternalAgentListener
   }
 }
 
+class SAXOdfHandler extends DefaultHandler {
+
+}
+
 /** A handler for data received from a agent.
   * @param sourceAddress Agent's adress 
   */
@@ -88,22 +90,33 @@ class ExternalAgentHandler(
   ) extends Actor with ActorLogging {
 
   import Tcp._
+  private var storage: String = ""
+  //private def buffer(data: ByteString) = storage.append(data)
 
   /** Partial function for handling received messages.
     */
   def receive = {
     case Received(data) =>
     { 
-      val dataString = data.decodeString("UTF-8")
+      val dataString = data.decodeString("UTF-8").trim //TODO
 
-      log.debug(s"Got data from $sender")
-      val parsedEntries = OdfParser.parse(dataString)
-      parsedEntries match {
-        case Left(errors) =>
-          log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
-        case Right(odf) => 
-          InputPusher.handleOdf(odf, new Timeout(5, SECONDS))
-        case _ => // not possible
+      log.debug(s"Got following data from $sender:\n$dataString")
+      if(dataString.startsWith("<?xml") || dataString.startsWith("<Objects")){
+        storage = ""
+      }
+      storage += dataString
+      if(storage.endsWith("</Objects>")) {
+
+        val parsedEntries = OdfParser.parse(storage)
+        storage = ""
+        parsedEntries match {
+          case Left(errors) =>
+            log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
+          case Right(odf) =>
+            InputPusher.handleOdf(odf, new Timeout(5, SECONDS))
+            log.info(s"External agent sent data from $sender to InputPusher")
+          case _ => // not possible
+        }
       }
     }
     case PeerClosed =>
