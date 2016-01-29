@@ -87,7 +87,6 @@ class ExternalAgentHandler(
 
   import Tcp._
   private var storage: String = ""
-  //private def buffer(data: ByteString) = storage.append(data)
 
   /** Partial function for handling received messages.
     */
