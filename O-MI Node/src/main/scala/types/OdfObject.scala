@@ -30,7 +30,7 @@ class  OdfObjectImpl(
   objects:              OdfTreeCollection[OdfObject],
   description:          Option[OdfDescription] = None,
   typeValue:            Option[String] = None
-){
+) extends Serializable {
 require(path.length > 1,
   s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path(${path})")
 
