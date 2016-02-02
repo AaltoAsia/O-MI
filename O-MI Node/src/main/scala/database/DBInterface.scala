@@ -22,8 +22,6 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.Path
 
-import scala.collection.JavaConversions.asJavaIterable
-
 
 package object database {
 
@@ -52,7 +50,7 @@ package object database {
 
 }
 //import database.database._
-import database.dbConfigName
+import database.database.dbConfigName
 
 sealed trait InfoItemEvent {
   val infoItem: OdfInfoItem
@@ -101,7 +99,17 @@ object SingleStores {
       // TODO: Replace metadata and description if given
 
       //TODO: handle duplicates in the PollSubscription Database
-      val relatedEventSubs = EventSubs
+      val relatedPollSubs = pollPrevayler execute GetSubsForPath(path)
+
+      relatedPollSubs.foreach {
+        case sub if sub.lastPolled == sub.startTime => //AddData
+        case sub => oldValueOpt match {
+          case Some(value) => ???
+          case _ => ???
+        }
+      }
+
+
 
       oldValueOpt match {
         case Some(oldValue) =>
