@@ -149,14 +149,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       _ <- addObjectsI(path, true)
 
       nodeIdSeq <- getHierarchyNodeQ(path).map(
-        node => (node.id, node.pollRefCount === 0)).result
+        node => node.id).result
 
       updateResult <- nodeIdSeq.headOption match {
         case None =>
           // shouldn't happen
           throw new RuntimeException("Didn't get nodeIds from query when they were just checked/added")
 
-        case Some((id, buffering)) => for {
+        case Some(id) => for {
           _ <- (latestValues += DBValue(id, timestamp, value, valueType))
         } yield (path, id)
       }
@@ -191,13 +191,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         pathsData.keys map (addObjectsI(_, lastIsInfoItem = true)))
 
       idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode =>
-        (hNode.path, (hNode.id, hNode.pollRefCount === 0))
+        (hNode.path, hNode.id)
       } result
 
-      idMap = idQry.toMap: Map[Path, (Int, Boolean)]
+      idMap = idQry.toMap: Map[Path, Int]
 
       pathsToIds = pathsData map {
-        case (path, odfValues) => (idMap(path)._1, odfValues)
+        case (path, odfValues) => (idMap(path), odfValues)
       }
 
       dbValues = pathsToIds flatMap {
@@ -212,7 +212,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
       updateAction <- latestValues ++= dbValues
         
-    } yield (idMap map { case (path, (id, _)) => (path, id) }).toSeq
+    } yield idMap.toSeq
 
     val pathIdRelations = runSync(writeAction.transactionally)
 

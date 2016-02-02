@@ -84,6 +84,21 @@ object SingleStores {
     val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
     val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
 
+    def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
+
+      val odfObjectsTrees = items map { case (path, value) =>
+        val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
+        fromPath(infoItem)
+      }
+      // safe version of reduce, might be a bit slow way to construct the result
+      val valueOdfTree = odfObjectsTrees.headOption map { head =>
+        odfObjectsTrees.par.reduce(_ union _)
+      } getOrElse (OdfObjects())
+
+      val metadataTree = hierarchyStore execute GetTree()
+      valueOdfTree union metadataTree
+
+    }
 
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
@@ -128,6 +143,7 @@ object SingleStores {
           } else None  // Newer data found
 
         case None =>  // no data was found => new sensor
+          latestStore execute SetSensorData(path, newValue)
           val newInfo = OdfInfoItem(path, Iterable(newValue))
           Some(AttachEvent(newInfo))
       }

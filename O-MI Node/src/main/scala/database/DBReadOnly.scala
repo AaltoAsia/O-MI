@@ -83,13 +83,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param fromEnd number of values to be returned from end
    * @return query for the requested values
    */
-  protected[this] def getNBetweenDBInfoItemQ(
-    id: Int,
-    begin: Option[Timestamp],
-    end: Option[Timestamp],
-    newest: Option[Int],
-    oldest: Option[Int]): Query[DBValuesTable, DBValue, Seq] =
-    nBetweenLogicQ(getValuesQ(id), begin, end, newest, oldest)
+  //protected[this] def getNBetweenDBInfoItemQ(
+  //  id: Int,
+  //  begin: Option[Timestamp],
+  //  end: Option[Timestamp],
+  //  newest: Option[Int],
+  //  oldest: Option[Int]): Query[DBValuesTable, DBValue, Seq] =
+  //  nBetweenLogicQ(getValuesQ(id), begin, end, newest, oldest)
 
   /**
    * Makes a Query which filters, limits and sorts as limited by the parameters.
@@ -242,6 +242,11 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case obj @ OdfObjects(objects, _) =>
         require(objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
+
+        // Optimizing the basic read all request
+        if (newest.isEmpty && oldest.isEmpty && begin.isEmpty && end.isEmpty)
+          return Some( SingleStores.buildOdfFromValues(
+            SingleStores.latestStore execute LookupAllDatas()) )
 
         runSync(processObjectI(obj.path))
 
