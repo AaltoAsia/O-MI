@@ -143,6 +143,7 @@ sealed trait OdfNode {
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode{
+
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)

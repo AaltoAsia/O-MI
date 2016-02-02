@@ -20,6 +20,8 @@ import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Awaitable
 import java.util.Date
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions.asJavaIterable
@@ -33,6 +35,8 @@ import database._
 
 import scala.util.{Try, Failure, Success}
 import xml._
+
+import scala.language.postfixOps
 
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
@@ -79,16 +83,23 @@ trait Starter {
     val date = new Date();
     val currentTime = new java.sql.Timestamp(date.getTime)
 
+    // Save settings in db, this works also as a test for writing
     val numDescription =
       "Number of latest values (per sensor) that will be saved to the DB"
     system.log.info(s"$numDescription: ${settings.numLatestValues}")
-    InputPusher.handleInfoItems(Iterable(
+    val dataSaveTest = InputPusher.handleInfoItems(Iterable(
       OdfInfoItem(
         Path(settings.settingsOdfPath + "num-latest-values-stored"), 
         Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
         Some(OdfDescription(numDescription))
       )
     ), new Timeout(5, SECONDS))
+
+    Await.result(dataSaveTest, 5 seconds) match {
+      case Success(true) => system.log.info("O-MI InputPusher system working.")
+      case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
+      case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
+    }
   }
 
 

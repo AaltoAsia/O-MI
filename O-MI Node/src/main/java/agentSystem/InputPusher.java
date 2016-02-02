@@ -41,49 +41,49 @@ import scala.Tuple2;
 public class InputPusher {
     private static Timeout default_timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
     public static ActorRef ipdb = null; 
-     public static Future handleOdf( OdfObjects objs, Timeout t ) { 
+     public static Future<Object> handleOdf( OdfObjects objs, Timeout t ) { 
     	if(ipdb != null)
         	return ask(ipdb,new HandleOdf(objs), t);
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-     public static Future handleOdf( OdfObjects objs) { 
+     public static Future<Object> handleOdf( OdfObjects objs) { 
          return handleOdf( objs, default_timeout );
      }
-    public static Future handleObjects( Iterable<OdfObject> objs, Timeout t ) { 
+    public static Future<Object> handleObjects( Iterable<OdfObject> objs, Timeout t ) { 
     	if(ipdb != null)
 		return ask(ipdb,new HandleObjects(objs), t); 
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-     public static Future handleObjects( Iterable<OdfObject> objs) { 
+     public static Future<Object> handleObjects( Iterable<OdfObject> objs) { 
          return handleObjects( objs, default_timeout );
      }
-    public static Future handleInfoItems( Iterable<OdfInfoItem> items,Timeout t ) { 
+    public static Future<Object> handleInfoItems( Iterable<OdfInfoItem> items,Timeout t ) { 
     	if(ipdb != null)
         	return ask(ipdb,new HandleInfoItems(items), t ); 
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-     public static Future handleInfoItems( Iterable<OdfInfoItem> items) { 
+     public static Future<Object> handleInfoItems( Iterable<OdfInfoItem> items) { 
          return handleInfoItems( items, default_timeout );
      }
-    public static Future handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs,Timeout t) { 
+    public static Future<Object> handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs,Timeout t) { 
     	if(ipdb != null)
 		return ask(ipdb,new HandlePathValuePairs(pairs),t);
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-    public static Future handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs) { 
+    public static Future<Object> handlePathValuePairs(Iterable<Tuple2<Path,OdfValue>> pairs) { 
          return handlePathValuePairs(pairs,default_timeout);
      }
-    public static Future handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs, Timeout t) { 
+    public static Future<Object> handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs, Timeout t) { 
     	if(ipdb != null)
 	    return ask(ipdb,new HandlePathMetaDataPairs(pairs), t); 
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }
-    public static Future handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs) { 
+    public static Future<Object> handlePathMetaDataPairs(Iterable< Tuple2<Path,String> > pairs) { 
         return handlePathMetaDataPairs( pairs, default_timeout);
     } 
 }

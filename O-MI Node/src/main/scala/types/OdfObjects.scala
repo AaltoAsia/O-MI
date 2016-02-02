@@ -26,7 +26,7 @@ import OdfTreeCollection._
 class OdfObjectsImpl(
   objects:              OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version:              Option[String] = None
-) {
+) extends Serializable {
 
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
