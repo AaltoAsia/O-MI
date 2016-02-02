@@ -33,7 +33,7 @@ class  OdfInfoItemImpl(
   values:               OdfTreeCollection[OdfValue] = OdfTreeCollection(),
   description:          Option[OdfDescription] = None,
   metaData:             Option[OdfMetaData] = None
-){
+) extends Serializable {
 
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfInfoItem) : OdfInfoItem ={

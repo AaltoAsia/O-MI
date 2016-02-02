@@ -75,12 +75,12 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-    val latestStore       = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory)
-    val hierarchyStore    = PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory)
-    val eventPrevayler    = PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory)
-    val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory)
-    val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory)
-    val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory)
+    val latestStore       = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
+    val hierarchyStore    = PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
+    val eventPrevayler    = PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
+    val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
+    val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
+    val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
 
 
     /**

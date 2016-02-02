@@ -142,7 +142,8 @@ sealed trait OdfNode {
 /** Class presenting O-DF Objects structure*/
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode{
+  version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode {
+
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)
@@ -169,7 +170,9 @@ case class OdfObject(
   infoItems: OdfTreeCollection[OdfInfoItem],
   objects: OdfTreeCollection[OdfObject],
   description: Option[OdfDescription] = None,
-  typeValue: Option[String] = None) extends OdfObjectImpl(path, infoItems, objects, description, typeValue) with OdfNode{
+  typeValue: Option[String] = None
+  ) extends OdfObjectImpl(path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+
   def get(path: Path) : Option[OdfNode] ={
     if( path == this.path ) return Some(this)
     val haspaths = infoItems.toSeq.map{ item => item : OdfNode} ++ objects.toSeq.map{ item => item : OdfNode}
