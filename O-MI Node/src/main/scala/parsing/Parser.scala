@@ -42,7 +42,7 @@ abstract trait Parser[Result] {
    * @param xml xml structure to check
    * @return ParseErrors found while checking, if empty, successful
    */
-  def schemaValitation(xml: Node): Seq[ParseError] = {
+  def schemaValidation(xml: Node): Seq[ParseError] = {
     val factory : SchemaFactory =
       SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
 

@@ -99,9 +99,10 @@ class ExternalAgentHandler(
 
       log.debug(s"Got following data from $sender:\n$dataString")
       if(beginning.startsWith("<?xml") || beginning.startsWith("<Objects")){
-        storage = ""
+        storage = dataString.dropWhile(_.isWhitespace)
+      }else if(storage.nonEmpty) {
+        storage += dataString
       }
-      storage += dataString
 
       val lastCharIndex = storage.lastIndexWhere(!_.isWhitespace) //find last whiteSpace location
       //check if the last part of the message contains closing xml tag
