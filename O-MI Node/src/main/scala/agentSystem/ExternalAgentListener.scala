@@ -93,14 +93,19 @@ class ExternalAgentHandler(
   def receive = {
     case Received(data) =>
     { 
-      val dataString = data.decodeString("UTF-8").trim
+      val dataString = data.decodeString("UTF-8")
+
+      val beginning = dataString.dropWhile(_.isWhitespace).take(8)
 
       log.debug(s"Got following data from $sender:\n$dataString")
-      if(dataString.startsWith("<?xml") || dataString.startsWith("<Objects")){
+      if(beginning.startsWith("<?xml") || beginning.startsWith("<Objects")){
         storage = ""
       }
       storage += dataString
-      if(storage.endsWith("</Objects>")) {
+
+      val lastCharIndex = storage.lastIndexWhere(!_.isWhitespace) //find last whiteSpace location
+      //check if the last part of the message contains closing xml tag
+      if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
 
         val parsedEntries = OdfParser.parse(storage)
         storage = ""

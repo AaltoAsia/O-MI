@@ -45,6 +45,7 @@ abstract trait Parser[Result] {
   def schemaValitation(xml: Node): Seq[ParseError] = {
     val factory : SchemaFactory =
       SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+
     val schema: Schema = factory.newSchema(schemaPath)
     val validator: Validator = schema.newValidator()
     Try {
