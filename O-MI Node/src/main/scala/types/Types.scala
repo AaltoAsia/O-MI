@@ -29,14 +29,14 @@ import java.sql.Timestamp
    * two paths or creating new Paths from user input.
    * Path can be used as a sequence via an implicit conversion or _.toSeq
    */
-  class Path(pathSeq: Vector[String]) extends Serializable { // TODO: is this ok
+  class Path(pathSeq: Vector[String]) extends Serializable { // TODO: test the Serializable
     import Path._
     /**
      * Removes extra path elements and holds the Path as Seq[String]
      */
-    val toSeq: Seq[String] = {
+    val toSeq: Vector[String] = {
       val normalized = pathSeq.filterNot(_ == "")
-      normalized.toVector
+      normalized.toVector // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
     def this(pathStr: String) = this{
@@ -83,6 +83,6 @@ import java.sql.Timestamp
 
     import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 
-    implicit def PathAsSeq(p: Path): Seq[String] = p.toSeq
+    implicit def PathAsSeq(p: Path): Vector[String] = p.toSeq
     implicit def SeqAsPath(s: Seq[String]): Path = Path(s.toVector)
   }
