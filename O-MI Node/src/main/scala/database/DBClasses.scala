@@ -190,7 +190,8 @@ trait OmiNodeTables extends DBBase {
     hierarchyId: Int,
     timestamp: Timestamp,
     value: String,
-    valueType: String
+    valueType: String,
+    valueId: Option[Long] = None
   ) {
     def toOdf = OdfValue(value, valueType, Some(timestamp))
   }
@@ -203,14 +204,15 @@ trait OmiNodeTables extends DBBase {
     val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
     //def hierarchyId = column[Int]("HIERARCHYID")
-    def timestamp = column[Timestamp]("TIME")
+    def id            = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
+    def timestamp = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
     def value = column[String]("VALUE")
     def valueType = column[String]("VALUETYPE")
 
     /** Primary Key: (hierarchyId, timestamp) */
-    def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))
+    //def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))
 
-    def * = (hierarchyId, timestamp, value, valueType) <> (DBValue.tupled, DBValue.unapply)
+    def * = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)
   }
 
   protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data

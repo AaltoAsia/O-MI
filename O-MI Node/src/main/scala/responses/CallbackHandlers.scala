@@ -59,7 +59,7 @@ object CallbackHandlers {
         var result : CallbackResult = new CallbackFailure
         while( keepTrying && tryUntil.after( currentTimestamp ) ){
           system.log.info(
-            s"Trying to send POST reqeust to $address, attemp: $attemps , will keep trying until $tryUntil."
+            s"Trying to send POST request to $address, attemp: $attemps, will keep trying until $tryUntil."
           ) 
           val responseFuture = httpHandler(request)
           Await.ready[HttpResponse](
@@ -91,8 +91,8 @@ object CallbackHandlers {
         result
       } catch {
         case e: Exception =>
-        system.log.warning(
-          "Exception turing sendeing request to callback. $e"
+        system.log.error(
+          e,"CallbackHandler"
         )
         e.printStackTrace()
         new CallbackFailure          

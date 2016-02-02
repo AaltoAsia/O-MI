@@ -42,6 +42,9 @@ import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor, DeactivatedTi
 // For eclipse:
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
+import java.util.GregorianCalendar
+import javax.xml.datatype.{XMLGregorianCalendar, DatatypeFactory}
+
 //
 
 @RunWith(classOf[JUnitRunner])
@@ -74,6 +77,15 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
   val requestHandler = new RequestHandler(subscriptionHandlerRef)(dbConnection)
 
+  def removeTimes( text: String) : String =removeUnixTime(removeDateTime(text))
+  def removeDateTime( text: String) : String =text.replaceAll(
+    """dateTime\s*=\s*"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})?((\+|\-)\d\d:\d\d)?"""",
+    ""
+  )
+  def removeUnixTime( text: String) : String =text.replaceAll(
+    """unixTime\s*=\s*"\d*"""",
+    ""
+  )
   val calendar = Calendar.getInstance()
   // try to fix bug with travis
   val timeZone = TimeZone.getTimeZone("Etc/GMT+2")
@@ -180,7 +192,14 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
                     <Object>
                       <id>Refrigerator123</id>
                       <InfoItem name="PowerConsumption">
-                        <value unixTime={ (testtime.getTime / 1000).toInt.toString }>0.123</value>
+                        <value unixTime={ 
+                          (testtime.getTime / 1000).toInt.toString 
+                        } dateTime={
+                          val c :GregorianCalendar  = new GregorianCalendar()
+                          c.setTimeInMillis(testtime.getTime)
+                          DatatypeFactory.newInstance().newXMLGregorianCalendar(c).toString
+                        }>
+                      0.123</value>
                       </InfoItem>
                     </Object>
                   </Object>

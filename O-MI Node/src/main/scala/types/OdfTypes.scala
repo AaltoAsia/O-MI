@@ -83,7 +83,7 @@ object `package` {
       case objs: OdfObjects =>
         objs
 
-      case newType => throw new MatchError
+      case newType => throw new MatchError(())
     }
   }
   /** Method for generating parent OdfNode of this instance */
@@ -104,8 +104,12 @@ object `package` {
       case objs: OdfObjects =>
         objs
 
-      case newType => throw new MatchError
+      case newType => throw new MatchError(())
     }
+  }
+
+  def getPathValuePairs( objs: OdfObjects ) : JavaIterable[(Path,OdfValue)]={
+    getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
 }
 

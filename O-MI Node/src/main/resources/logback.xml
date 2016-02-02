@@ -11,15 +11,16 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/omi.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- keep 10 days' worth of history -->
+            <maxHistory>10</maxHistory>
             <!-- daily rollover -->
-            <fileNamePattern>logs\omi.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>logs\omi.%d{yyyy-MM-dd-hh.mm}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy
                 class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <!-- or whenever the file size reaches 10MB -->
                 <maxFileSize>10MB</maxFileSize>
+                <maxHistory>4</maxHistory>
             </timeBasedFileNamingAndTriggeringPolicy>
-            <!-- keep 10 days' worth of history -->
-            <maxHistory>10</maxHistory>
         </rollingPolicy>
         <append>true</append>
         <encoder>

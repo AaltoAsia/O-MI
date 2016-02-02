@@ -261,7 +261,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
 
   def e1 = {
     val temp = OmiParser.parse("incorrect xml")
-    temp should be equalTo Left(Iterable(ParseError("OmiParser: Invalid XML")))
+    temp should be equalTo Left(Iterable(ParseError("OmiParser: Invalid XML: Content is not allowed in prolog.")))
 
   }
 
@@ -772,7 +772,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
 
   def e401 = {
     val temp = OdfParser.parse("incorrect xml")
-    temp should be equalTo Left(Iterable(ParseError("Invalid XML")))
+    temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
 
   }
   def e402 = {
