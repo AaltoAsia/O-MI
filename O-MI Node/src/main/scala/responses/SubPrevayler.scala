@@ -29,6 +29,7 @@ import scala.util.{Failure, Success, Try}
 //import java.util.concurrent.ConcurrentSkipListSet
 import akka.actor.{Actor, ActorLogging}
 import database._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.SubscriptionRequest
 import types._

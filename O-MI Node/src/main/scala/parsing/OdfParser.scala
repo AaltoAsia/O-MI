@@ -13,11 +13,6 @@
 **/
 package parsing
 
-import types._
-import OmiTypes._
-import OdfTypes._
-import xmlGen._
-import xmlGen.xmlTypes._
 import scala.util.{Try, Success, Failure}
 import java.util.Date
 import java.io.File
@@ -28,6 +23,13 @@ import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+
+import types._
+import OmiTypes._
+import OdfTypes._
+import xmlGen._
+import xmlGen.xmlTypes._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {

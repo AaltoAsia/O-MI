@@ -286,16 +286,16 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     val results =
       poll.requestIDs.map { id =>
 
-      val objectsF /*: Future[Option[OdfObjects]]*/ = subscriptionHandler ? PollSubscription(id)
+      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = subscriptionHandler ? PollSubscription(id)
 
-      Await.result(objectsF, Duration.Inf) match {
+      Await.ready(objectsF, Duration.Inf).value.get match {
         case Success(Some(objects: OdfObjects)) =>
-        Results.poll(id.toString, objects)
+          Results.poll(id.toString, objects)
         case Success(None) =>
-        Results.notFoundSub(id.toString)
+          Results.notFoundSub(id.toString)
         case Failure(e) => 
-        (Results.internalError(
-          s"Internal server error when trying to poll ubscription: ${e.getMessage}"))
+          (Results.internalError(
+            s"Internal server error when trying to poll subscription: ${e.getMessage}"))
       }
     }
     val returnTuple = (

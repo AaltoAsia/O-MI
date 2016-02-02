@@ -23,6 +23,14 @@ import types._
 import scala.collection.JavaConversions.asJavaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
+import scala.collection.SortedMap
+
+import types._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
 
 /**
  * Read-write interface methods for db tables.

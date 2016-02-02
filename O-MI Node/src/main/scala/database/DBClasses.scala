@@ -21,6 +21,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import types.OdfTypes._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OmiTypes.SubLike
 import types._
 

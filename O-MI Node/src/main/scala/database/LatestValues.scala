@@ -35,7 +35,7 @@ case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[Odf
   def query(ls: LatestValues, d: Date) = ls.allData.get(sensor)
 }
 
-case class LookupSensorDatas(sensors: Seq[Path]) extends Query[LatestValues, Seq[(Path, OdfValue)]] {
+case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, Vector[(Path, OdfValue)]] {
   def query(ls: LatestValues, d: Date) = {
     (for (sensorPath <- sensors) yield {
       val dataOpt = ls.allData get sensorPath
@@ -102,7 +102,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
   case class RemoveEventSub(id: Long) extends  TransactionWithQuery[EventSubs, Boolean] {
     def executeAndQuery(store:EventSubs, d: Date): Boolean = {
       if(store.eventSubs.values.exists(_.exists(_.id == id))){
-        val newStore: HashMap[Path, Seq[EventSub]] =
+        val newStore: HashMap[Path, Vector[EventSub]] =
           store.eventSubs
             .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
             .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
@@ -133,8 +133,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
     }
   }
 
-  /*case class NewPollDataEvent(paths: Seq[(Path,OdfValue)]) extends Query[PolledSubs, Seq[((Path, OdfValue), Set[Long])]] {
-    def query(store: PolledSubs, d: Date): Seq[((Path, OdfValue), Set[Long])] = {
+  /*case class NewPollDataEvent(paths: Vector[(Path,OdfValue)]) extends Query[PolledSubs, Seq[((Path, OdfValue), Set[Long])]] {
+    def query(store: PolledSubs, d: Date): Vector[((Path, OdfValue), Set[Long])] = {
       paths.map(path => (path, store.pathToSubs(path._1)))
     }
   }*/
@@ -186,8 +186,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
       val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
 
       if(scheduleTime > 0L){
-        val newSubs: HashMap[Path, Seq[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Seq(eventSub))): _*)
-        store.eventSubs = store.eventSubs.merged[Seq[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
+        val newSubs: HashMap[Path, Vector[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Vector(eventSub))): _*)
+        store.eventSubs = store.eventSubs.merged[Vector[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
       }
     }
   }

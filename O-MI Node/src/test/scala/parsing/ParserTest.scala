@@ -5,6 +5,7 @@ import scala.io.Source
 import parsing._
 import types._
 import types.OmiTypes._
+import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
 import types.Path._
 import java.sql.Timestamp
@@ -465,7 +466,7 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None, asJavaIterable(Iterable.empty[Long]), Some(OdfObjects(asJavaIterable(Iterable.empty[OdfObject]))))), 10 seconds)
+    temp.right.get.head should be equalTo ResponseRequest(OdfTreeCollection(OmiResult("", "200", None, Iterable.empty[Long], Some(OdfObjects(Iterable.empty[OdfObject])))), 10 seconds)
 
   }
 

@@ -18,7 +18,7 @@ object IntervalSubOrdering extends Ordering[IntervalSub] {
 sealed trait SavedSub {
   val id: Long
   val endTime: Date
-  val paths: Seq[Path]
+  val paths: Vector[Path]
   //va: Duration
 }
 sealed trait PolledSub extends SavedSub {
@@ -33,7 +33,7 @@ case class PollEventSub(
   endTime: Timestamp,
   lastPolled: Timestamp,
   startTime: Timestamp,
-  paths: Seq[Path]
+  paths: Vector[Path]
   ) extends PolledSub
 
 case class PollIntervalSub(
@@ -42,12 +42,12 @@ case class PollIntervalSub(
   interval: Duration,
   lastPolled: Timestamp,
   startTime: Timestamp,
-  paths: Seq[Path]
+  paths: Vector[Path]
 ) extends PolledSub
 
 case class IntervalSub(
   id: Long,
-  paths: Seq[Path],
+  paths: Vector[Path],
   endTime: Timestamp,
   callback: String,
   interval: Duration,
@@ -57,13 +57,13 @@ case class IntervalSub(
 
 case class EventSub(
   id: Long,
-  paths: Seq[Path],
+  paths: Vector[Path],
   endTime: Timestamp,
   callback: String
   ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
-case class EventSubs(var eventSubs: HashMap[Path, Seq[EventSub]])
+case class EventSubs(var eventSubs: HashMap[Path, Vector[EventSub]])
 object EventSubs {
   //type EventSubsStore = Prevayler[EventSubs]
   def empty = EventSubs(HashMap.empty)
@@ -80,9 +80,9 @@ object IntervalSubs {
   def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering.reverse))
 }
 
-case class LookupEventSubs(path: Path) extends Query[EventSubs, Seq[EventSub]] {
-  def query(es: EventSubs, d: Date): Seq[EventSub] =
-    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten // get for Map returns Option (safe)
+case class LookupEventSubs(path: Path) extends Query[EventSubs, Vector[EventSub]] {
+  def query(es: EventSubs, d: Date): Vector[EventSub] =
+    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 
 // Other transactions are in responses/SubPrevayler.scala or Subscription Handler

@@ -4,6 +4,7 @@ import org.specs2.mutable._
 import database._
 import java.sql.Timestamp
 import types.OdfTypes._
+import types.OdfTypes.OdfTreeCollection._
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
 import types.OmiTypes._

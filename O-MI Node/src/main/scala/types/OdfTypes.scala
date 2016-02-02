@@ -20,6 +20,7 @@ import scala.xml.XML
 import java.sql.Timestamp
 import java.lang.{ Iterable => JavaIterable }
 import scala.collection.JavaConversions.{ asJavaIterable, iterableAsScalaIterable }
+import scala.collection.JavaConverters._
 import scala.language.existentials
 
 /**
@@ -28,12 +29,17 @@ import scala.language.existentials
  */
 object `package` {
   type OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]
+
+  /**
+   * Collection type to be used as all children members in odf tree types
+   */
+  type OdfTreeCollection[T] = Vector[T]
   
   /** Helper method for getting all leaf nodes of O-DF Structure */
-  def getLeafs(objects: OdfObjects): JavaIterable[OdfNode] = {
-    def getLeafs(obj: OdfObject): JavaIterable[OdfNode] = {
+  def getLeafs(objects: OdfObjects): OdfTreeCollection[OdfNode] = {
+    def getLeafs(obj: OdfObject): OdfTreeCollection[OdfNode] = {
       if (obj.infoItems.isEmpty && obj.objects.isEmpty)
-        Iterable(obj)
+        OdfTreeCollection(obj)
       else
         obj.infoItems ++ obj.objects.flatMap {
           subobj =>
@@ -44,7 +50,7 @@ object `package` {
       objects.objects.flatMap {
         obj => getLeafs(obj)
       }
-    else Iterable(objects)
+    else OdfTreeCollection(objects)
   }
   /** Helper method for getting all OdfNodes found in given OdfNodes. Bascily get list of all nodes in tree.  */
   def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {
@@ -56,7 +62,7 @@ object `package` {
   }
 
   /** Helper method for getting all OdfInfoItems found in OdfObjects */
-  def getInfoItems( objects: OdfObjects ) : JavaIterable[OdfInfoItem] = {
+  def getInfoItems( objects: OdfObjects ) : OdfTreeCollection[OdfInfoItem] = {
     getLeafs(objects).collect{ case info: OdfInfoItem => info}
   }
 
@@ -70,14 +76,14 @@ object `package` {
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(parentPath, Iterable(info), Iterable())
+        val parent = OdfObject(parentPath, OdfTreeCollection(info), OdfTreeCollection())
         fromPath(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
-          OdfObjects(Iterable(obj))
+          OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(parentPath, Iterable(), Iterable(obj))
+          val parent = OdfObject(parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           fromPath(parent)
         }
 
@@ -92,13 +98,13 @@ object `package` {
     val parentPath = child.path.dropRight(1)
     child match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(parentPath, Iterable(info), Iterable())
+        val parent = OdfObject(parentPath, OdfTreeCollection(info), OdfTreeCollection())
         parent
       case obj: OdfObject =>
         if (parentPath.length == 1)
-          OdfObjects(Iterable(obj))
+          OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(parentPath, Iterable(), Iterable(obj))
+          val parent = OdfObject(parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           parent
         }
 
@@ -109,9 +115,18 @@ object `package` {
     }
   }
 
-  def getPathValuePairs( objs: OdfObjects ) : JavaIterable[(Path,OdfValue)]={
+  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
+}
+object OdfTreeCollection {
+  def apply[T](): OdfTreeCollection[T] = Vector()
+  def apply[T](elems: T*): OdfTreeCollection[T] = Vector(elems:_*)
+  def fromIterable[T](elems: Iterable[T]): OdfTreeCollection[T] = elems.toVector
+  def toJava[T](c: OdfTreeCollection[T]): java.util.List[T] = c.toBuffer.asJava
+  def fromJava[T](i: java.lang.Iterable[T]): OdfTreeCollection[T] = fromIterable(i.asScala)
+  import scala.language.implicitConversions
+  implicit def seqToOdfTreeCollection[E](s: Iterable[E]): OdfTreeCollection[E] = OdfTreeCollection.fromIterable(s)
 }
 
 /** Sealed base trait defining all shared members of OdfNodes*/
@@ -126,12 +141,12 @@ sealed trait OdfNode {
 
 /** Class presenting O-DF Objects structure*/
 case class OdfObjects(
-  objects: JavaIterable[OdfObject] = Iterable(),
+  objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode{
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)
-    //HeadOption is because of values being Iterable of OdfObject
+    //HeadOption is because of values being OdfTreeCollection of OdfObject
     val grouped = objects.groupBy(_.path).mapValues{_.headOption.getOrElse(throw new Exception("Pathless Object was grouped."))}
     grouped.get(path) match {
       case None => 
@@ -151,8 +166,8 @@ case class OdfObjects(
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
   path: Path,
-  infoItems: JavaIterable[OdfInfoItem],
-  objects: JavaIterable[OdfObject],
+  infoItems: OdfTreeCollection[OdfInfoItem],
+  objects: OdfTreeCollection[OdfObject],
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None) extends OdfObjectImpl(path, infoItems, objects, description, typeValue) with OdfNode{
   def get(path: Path) : Option[OdfNode] ={
@@ -188,12 +203,12 @@ case class OdfObject(
 /** Class presenting O-DF InfoItem structure*/
 case class OdfInfoItem(
     path: Path,
-    values: JavaIterable[OdfValue] = Iterable(),
+    values: OdfTreeCollection[OdfValue] = OdfTreeCollection(),
     description: Option[OdfDescription] = None,
     metaData: Option[OdfMetaData] = None)
   extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
-  def valuesRemoved: OdfInfoItem = if (values.nonEmpty) this.copy(values = Iterable()) else this
+  def valuesRemoved: OdfInfoItem = if (values.nonEmpty) this.copy(values = OdfTreeCollection()) else this
 }
 
 /** Class presenting O-DF description element*/

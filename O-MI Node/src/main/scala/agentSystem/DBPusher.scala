@@ -19,6 +19,7 @@ import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -34,6 +35,7 @@ import responses.Results
 import responses.NewDataEvent
 import types.OdfTypes._
 import types.Path
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 
 /** Object that contains all commands of InputPusher.
@@ -157,7 +159,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
    * Function for handling sequences of OdfObject.
    */
   private def handleObjects(objs: Iterable[OdfObject]): Try[Boolean] = {
-    handleOdf(OdfObjects(objs))
+    handleOdf(OdfObjects(objs.asScala))
   }
 
   /**
