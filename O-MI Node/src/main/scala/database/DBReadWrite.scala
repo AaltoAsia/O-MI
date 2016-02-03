@@ -309,7 +309,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val subData = pollSubs filter (_.subId === id)
     for{
       data <- subData.result
-      _ <- subData.delete
+      //_ <- subData.delete
       lastValues = data.groupBy(_.path).flatMap{ //group by path
         case (iPath, pathData) =>
           pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp

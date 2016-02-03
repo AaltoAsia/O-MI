@@ -50,7 +50,7 @@ package object database {
 
 }
 //import database.database._
-import database.database.dbConfigName
+import database.dbConfigName
 
 sealed trait InfoItemEvent {
   val infoItem: OdfInfoItem
@@ -82,7 +82,6 @@ object SingleStores {
     val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
     val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
 
-
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
      *  As a side effect, updates the internal latest value store.
@@ -92,24 +91,9 @@ object SingleStores {
      * @param newValue Actual incoming data
      * @return Triggered responses
      */
-    def processData(path: Path, newValue: OdfValue): Option[InfoItemEvent] = {
-
-      val oldValueOpt = latestStore execute LookupSensorData(path)
+    def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
 
       // TODO: Replace metadata and description if given
-
-      //TODO: handle duplicates in the PollSubscription Database
-      val relatedPollSubs = pollPrevayler execute GetSubsForPath(path)
-
-      relatedPollSubs.foreach {
-        case sub if sub.lastPolled == sub.startTime => //AddData
-        case sub => oldValueOpt match {
-          case Some(value) => ???
-          case _ => ???
-        }
-      }
-
-
 
       oldValueOpt match {
         case Some(oldValue) =>

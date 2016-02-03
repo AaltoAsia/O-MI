@@ -163,17 +163,50 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   }
 
   /**
+   * Helper method to create sub values using id, path, and value
+   */
+  private def createSubValue(id: Long, path: Path, value: OdfValue): SubValue = {
+      SubValue(id, path, value.timestamp, value.value,value.typeValue)
+    }
+
+  /**
+   * Creates values that are to be updated into the database for polled subscription.
+   * @param path
+   * @param newValue
+   * @param oldValueOpt
+   * @return returns Sequence of SubValues to be added to database
+   */
+  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
+    val relatedPollSubs = SingleStores.pollPrevayler execute GetSubsForPath(path)
+
+    relatedPollSubs.collect {
+      //if no old value found for path or start time of subscription is after last value timestamp
+      //if new value is updated value. forall for option returns true if predicate is true or the value is None
+      case sub if(oldValueOpt.forall(oldValue =>
+        oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
+          createSubValue(sub.id,path,newValue)
+      }
+    }
+  }
+
+  /**
    * Function for handling sequences of OdfInfoItem.
    * @return true if the write was accepted.
    */
   private def handleInfoItems(infoItems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
     // save only changed values
-    val callbackDataOptions: Seq[List[InfoItemEvent]] = for {
+    val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
       path = info.path
+      oldValueOpt = SingleStores.latestStore execute LookupSensorData(path)
       value <- info.values
-    } yield SingleStores.processData(path, value).toList
+    } yield (path, value, oldValueOpt)
 
+    val newPollValues = pathValueOldValueTuples.flatMap(n => handlePollData _ tupled n)
+
+    dbobject.addNewPollData(newPollValues)
+
+    val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)
     val triggeringEvents = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
