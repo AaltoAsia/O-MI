@@ -405,6 +405,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   }
 
   private[this] def hasTTLEnded(sub: DBSub, currentTimeMillis: Long): Boolean = {
+    //Gets evaluated only if sub ttl is not infinite
     lazy val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
     if (!sub.isImmortal && removeTime <= currentTimeMillis) {

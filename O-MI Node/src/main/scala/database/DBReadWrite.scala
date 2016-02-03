@@ -13,20 +13,17 @@
 **/
 package database
 
-import scala.language.postfixOps
+import java.sql.Timestamp
 
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
-import java.sql.Timestamp
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
-import scala.collection.SortedMap
-
-import types._
 import types.OdfTypes._
+import types._
+
+import scala.collection.JavaConversions.asJavaIterable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 /**
  * Read-write interface methods for db tables.
