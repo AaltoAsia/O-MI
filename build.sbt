@@ -86,8 +86,8 @@ lazy val root = (project in file(".")).
       },
       mappings in Universal <++= (baseDirectory in omiNode) map { base =>
         Seq(
-          base / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
-          base / "SmartHouse.xml" -> "SmartHouse.xml")
+          base / "configs" / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
+          base / "configs" / "SmartHouse.xml" -> "SmartHouse.xml")
       },
       mappings in Universal <++= baseDirectory map { base =>
         Seq(
