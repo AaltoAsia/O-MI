@@ -47,6 +47,7 @@ class VTTAgent extends InternalAgent {
             InternalAgent.log.warning("VTT: "+errors.mkString("\n"))
           }
           case Right(odfObjects) => {
+            InputPusher.handleOdf(odfObjects)
             odfInfoItems = Some(
               getLeafs(odfObjects).collect{
                 case infoItem : OdfInfoItem if infoItem.values.nonEmpty =>
@@ -62,7 +63,7 @@ class VTTAgent extends InternalAgent {
       odfInfoItems match {
         case None =>
           InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
-        case Some(infoItems) =>//Success. Maybe push MetaData.
+        case Some(infoItems) =>//Success.
           initialized = true
       }
     }
