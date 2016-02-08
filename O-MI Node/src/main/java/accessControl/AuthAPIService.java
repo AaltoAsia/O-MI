@@ -2,6 +2,11 @@ package accessControl;
 
 import http.AuthApi;
 import http.AuthApi$class;
+import http.AuthorizationResult;
+import http.Authorized;
+import http.Unauthorized;
+import http.Partial;
+import http.AuthorizationResult;
 import scala.collection.immutable.List;
 import spray.http.HttpCookie;
 import types.Path;
@@ -26,7 +31,7 @@ public class AuthAPIService implements AuthApi {
     private final String authServiceURI = "http://localhost:" + authServicePort + "/PermissionService?ac=true";
 
     @Override
-    public boolean isAuthorizedForType(spray.http.HttpRequest httpRequest,
+    public AuthorizationResult isAuthorizedForType(spray.http.HttpRequest httpRequest,
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
 
@@ -39,14 +44,14 @@ public class AuthAPIService implements AuthApi {
             // the very first query to read the tree
             if (nextObj.equalsIgnoreCase("Objects")) {
                 System.out.println("Root tree requested. Allowed.");
-                return true;
+                return Authorized.instance();
             }
         }
 
         scala.collection.Iterator iter = httpRequest.cookies().iterator();
         if (!iter.hasNext()) {
             System.out.println("No cookies!");
-            return false;
+            return Unauthorized.instance();
         } else {
 
             HttpCookie ck = null;
@@ -69,7 +74,7 @@ public class AuthAPIService implements AuthApi {
 
                     // the very first query to read the tree
                     if (nextObj.equalsIgnoreCase("Objects"))
-                        return true;
+                        return Authorized.instance();
 
                     requestBody += "\"" + nextObj + "\"";
 
@@ -82,16 +87,16 @@ public class AuthAPIService implements AuthApi {
                 System.out.println("Paths:" +requestBody);
                 return sendPermissionRequest(isWrite, requestBody, ck.toString());
             } else
-                return false;
+                return Unauthorized.instance();
         }
     }
 
-    public boolean isAuthorizedForRequest(spray.http.HttpRequest httpRequest,
+    public AuthorizationResult isAuthorizedForRequest(spray.http.HttpRequest httpRequest,
                                    OmiRequest omiRequest) {
         return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
 
-    public boolean sendPermissionRequest(boolean isWrite, String body, String sessionCookie) {
+    public AuthorizationResult sendPermissionRequest(boolean isWrite, String body, String sessionCookie) {
         HttpURLConnection connection = null;
         try {
             //Create connection
@@ -131,10 +136,10 @@ public class AuthAPIService implements AuthApi {
 
 //            System.out.println("RESPONSE:"+response.toString());
 
-            return response.toString().equalsIgnoreCase("true");
+            return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return Unauthorized.instance();
         } finally {
             if(connection != null) {
                 connection.disconnect();

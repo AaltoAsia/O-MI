@@ -15,16 +15,16 @@ import Authorization.AuthorizationExtension
 import scala.collection.mutable.Buffer
 
 
+sealed trait AuthorizationResult
+case object Authorized extends AuthorizationResult {def instance = this}
+case object Unauthorized extends AuthorizationResult {def instance = this}
+case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
+
 /**
  * Implement this interface and register the class through AuthApiProvider
  */
 trait AuthApi {
 
-  sealed trait AuthorizationResult
-
-  case object Authorized extends AuthorizationResult
-  case object Unauthorized extends AuthorizationResult
-  case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
 
   /** This can be overridden or isAuthorizedForType can be overridden instead.
    *  @return True if user is authorized
@@ -74,9 +74,9 @@ trait AuthApiProvider extends AuthorizationExtension {
     extract {context => context.request} map {(httpRequest: HttpRequest) => (omiRequest: OmiRequest) =>
       authorizationSystems exists {authApi =>
         authApi.isAuthorizedForRequest(httpRequest, omiRequest) match {
-          case authApi.Unauthorized => false
-          case authApi.Authorized => true
-          case authApi.Partial(paths) => throw new NotImplementedError(
+          case Unauthorized => false
+          case Authorized => true
+          case Partial(paths) => throw new NotImplementedError(
             s"Partial authorization granted for ${paths.mkString(", ")}, BUT not yet implemented in O-MI node.")
         }
       }
