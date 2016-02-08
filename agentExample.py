@@ -6,8 +6,8 @@ connection = create_connection(("localhost", 8181))
 
 while True:
     data = input()
-    odf_message = b'''
-        <Objects xmlns="odf.xsd">
+    odf_message = \
+    b'''<Objects xmlns="odf.xsd">
             <Object>
                 <id>ExampleAgent</id>
                 <InfoItem name="ExampleAgentSensor">
