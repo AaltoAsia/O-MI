@@ -4,7 +4,7 @@ import NativePackagerHelper._
 import Path.relativeTo
 import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 
-addCommandAlias("release", ";doc;universal:package-bin")
+addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 
