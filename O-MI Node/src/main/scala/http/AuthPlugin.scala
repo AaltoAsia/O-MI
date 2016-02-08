@@ -14,14 +14,22 @@ import Authorization.AuthorizationExtension
 
 import scala.collection.mutable.Buffer
 
+
 /**
  * Implement this interface and register the class through AuthApiProvider
  */
 trait AuthApi {
+
+  sealed trait AuthorizationResult
+
+  case object Authorized extends AuthorizationResult
+  case object Unauthorized extends AuthorizationResult
+  case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
+
   /** This can be overridden or isAuthorizedForType can be overridden instead.
    *  @return True if user is authorized
    */
-  def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): Boolean = {
+  def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {
     omiRequest match {
       case odfRequest: OdfRequest =>
 
@@ -35,7 +43,7 @@ trait AuthApi {
             isAuthorizedForType(httpRequest, false, paths)
 
       }
-      case _ => false
+      case _ => Unauthorized
     }
   }
 
@@ -46,7 +54,7 @@ trait AuthApi {
    *  @param paths O-DF paths to all of the requested or to be written InfoItems.
    *  @return True if user is authorized, false if unauthorized
    */
-  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): Boolean
+  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult
 
 }
 
@@ -64,7 +72,14 @@ trait AuthApiProvider extends AuthorizationExtension {
   abstract override def makePermissionTestFunction = combineWithPrevious(
     super.makePermissionTestFunction,
     extract {context => context.request} map {(httpRequest: HttpRequest) => (omiRequest: OmiRequest) =>
-      authorizationSystems exists {_.isAuthorizedForRequest(httpRequest, omiRequest)}
+      authorizationSystems exists {authApi =>
+        authApi.isAuthorizedForRequest(httpRequest, omiRequest) match {
+          case authApi.Unauthorized => false
+          case authApi.Authorized => true
+          case authApi.Partial(paths) => throw new NotImplementedError(
+            s"Partial authorization granted for ${paths.mkString(", ")}, BUT not yet implemented in O-MI node.")
+        }
+      }
     }
   )
 }
