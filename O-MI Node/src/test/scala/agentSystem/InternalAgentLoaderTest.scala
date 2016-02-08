@@ -38,7 +38,6 @@ class InternalAgentLoaderTest extends Specification { // with AfterAll {
       val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
       val actor = actorRef.underlyingActor
       val agents = actor.getAgents
-      agents must haveKey("agents.VTTAgent")
       agents must haveKey("agents.SmartHouseAgent")
       agents must haveKey("agents.JavaAgent")
       val actors= actor.getAgents.keys
