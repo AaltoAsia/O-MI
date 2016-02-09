@@ -49,7 +49,7 @@ class VTTAgent extends InternalAgent {
           case Right(odfObjects) => {
             odfInfoItems = Some(
               getLeafs(odfObjects).collect{
-                case infoItem : OdfInfoItem if infoItem.values.nonEmpty =>
+                case infoItem: OdfInfoItem if infoItem.values.nonEmpty =>
                 (
                   infoItem,
                   infoItem.values.headOption.map( _.value.toString ).getOrElse("")

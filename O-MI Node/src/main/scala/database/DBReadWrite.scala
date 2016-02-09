@@ -326,4 +326,17 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def addNewPollData(newData: Seq[SubValue]) = {
     runSync(pollSubs ++= newData)
   }
+
+  def trimDB = runSync(trimDBI)
+  def trimDBI = {
+    database.historyLength
+    val data = latestValues groupBy(_.hierarchyfkName)
+    val sorted = for {
+      (k, v) <- data
+      deleted <- v.sortBy(_.timestamp.asc).take(database.historyLength)
+    } yield deleted
+
+    //take + delete might not work
+    sorted.delete
+  }
 }

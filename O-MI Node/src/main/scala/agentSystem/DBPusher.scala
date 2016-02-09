@@ -71,6 +71,10 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     case u                              => log.warning("Unknown message received.")
   }
 
+  private def trimValues = {
+
+  }
+
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
       (infoItems map fromPath).foldLeft(OdfObjects())(_ union _)

@@ -14,12 +14,8 @@
 package types
 package OdfTypes
 
-import java.lang.{Iterable => JavaIterable}
 
 import parsing.xmlGen.xmlTypes._
-
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
-
 import OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
