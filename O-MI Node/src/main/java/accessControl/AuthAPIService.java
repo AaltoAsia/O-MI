@@ -1,6 +1,9 @@
 package accessControl;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import http.AuthApi;
 import http.AuthApi$class;
@@ -22,6 +25,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -102,17 +106,6 @@ public class AuthAPIService implements AuthApi {
 
         System.out.println("isAuthorizedForType EXECUTED!");
 
-        Iterator<Path> iterator = paths.iterator();
-        while (iterator.hasNext()) {
-            String nextObj = iterator.next().toString();
-
-            // the very first query to read the tree
-            if (nextObj.equalsIgnoreCase("Objects")) {
-                System.out.println("Root tree requested. Allowed.");
-                return Authorized.instance();
-            }
-        }
-
         scala.collection.Iterator iter = httpRequest.cookies().iterator();
         if (!iter.hasNext()) {
             System.out.println("No cookies!");
@@ -132,6 +125,18 @@ public class AuthAPIService implements AuthApi {
 
             if (ck != null) {
 
+                Iterator<Path> iterator = paths.iterator();
+                while (iterator.hasNext()) {
+                    String nextObj = iterator.next().toString();
+
+                    // the very first query to read the tree
+                    if (nextObj.equalsIgnoreCase("Objects")) {
+                        System.out.println("Root tree requested. forwarding to Partial API.");
+                        return Partial.apply(getAvailablePaths(ck.toString()));
+                    } else
+                        break;
+                }
+
                 String requestBody = "{\"paths\":[";
                 Iterator<Path> it = paths.iterator();
                 while (it.hasNext()) {
@@ -150,6 +155,7 @@ public class AuthAPIService implements AuthApi {
 
                 System.out.println("isWrite:"+isWrite);
                 System.out.println("Paths:" +requestBody);
+
                 return sendPermissionRequest(isWrite, requestBody, ck.toString());
             } else
                 return Unauthorized.instance();
@@ -190,8 +196,20 @@ public class AuthAPIService implements AuthApi {
             }
             rd.close();
 
-            Type collectionType = new TypeToken<Collection<Integer>>(){}.getType();
-            return new Gson().fromJson(response.toString(), collectionType);
+            JsonObject paths = new JsonParser().parse(response.toString()).getAsJsonObject();
+            JsonArray json_paths = paths.getAsJsonArray("paths");
+
+            ArrayList<Path> finalPaths = new ArrayList<>(json_paths.size());
+
+            System.out.println(json_paths.size()+" PATHS FOUND");
+
+            for (int i = 0; i < json_paths.size(); i++) {
+                Path nextPath = new Path(json_paths.get(i).getAsString());
+                finalPaths.add(nextPath);
+            }
+
+            return finalPaths;
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -202,7 +220,6 @@ public class AuthAPIService implements AuthApi {
         }
     }
 
-    public boolean sendPermissionRequest(boolean isWrite, String body, String sessionCookie) {
     public AuthorizationResult sendPermissionRequest(boolean isWrite, String body, String sessionCookie) {
         HttpURLConnection connection = null;
         try {
