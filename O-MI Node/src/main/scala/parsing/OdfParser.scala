@@ -13,11 +13,6 @@
 **/
 package parsing
 
-import types._
-import OmiTypes._
-import OdfTypes._
-import xmlGen._
-import xmlGen.xmlTypes._
 import scala.util.{Try, Success, Failure}
 import java.util.Date
 import java.io.File
@@ -28,6 +23,13 @@ import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
 import scala.xml.Utility.trim
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+
+import types._
+import OmiTypes._
+import OdfTypes._
+import xmlGen._
+import xmlGen.xmlTypes._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
@@ -44,9 +46,10 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(file: File): OdfParseResult = {
     val root = Try(
       XML.loadFile(file)
-    ).getOrElse(
-      return  Left( Iterable( ParseError("Invalid XML") ) ) 
-    )
+    ) match {
+      case Success(s) => s
+      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
 
     parse(root)
   }
@@ -60,9 +63,10 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(xml_msg: String): OdfParseResult = {
     val root = Try(
       XML.loadString(xml_msg)
-    ).getOrElse(
-      return  Left( Iterable( ParseError("Invalid XML") ) ) 
-    )
+    ) match {
+      case Success(s) => s
+      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
 
     parse(root)
   }
@@ -74,7 +78,7 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(root: xml.Node): OdfParseResult = { 
-    val schema_err = schemaValitation(root)
+    val schema_err = schemaValidation(root)
     if (schema_err.nonEmpty) return Left(
       schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
     ) 
@@ -154,9 +158,9 @@ object OdfParser extends Parser[OdfParseResult] {
    */
   private[this] def timeSolver(value: ValueType ) = value.dateTime match {
     case None => value.unixTime match {
-      case None => Some(timer)
-      case Some(seconds) => Some( new Timestamp(seconds.toLong * 1000))
+      case None => currentTime()
+      case Some(seconds) => new Timestamp(seconds.toLong * 1000)
     }
-    case Some(cal) => Some( new Timestamp(cal.toGregorianCalendar().getTimeInMillis()))
+    case Some(cal) => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
   }
 }

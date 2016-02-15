@@ -13,13 +13,14 @@
 **/
 package database
 
-import types.OdfTypes.OdfInfoItem
-import slick.driver.H2Driver.api._
-
 import java.io.File
 
-
-
+import http.Boot.settings
+import org.prevayler.PrevaylerFactory
+import slick.driver.H2Driver.api._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
+import types.Path
 
 
 package object database {
@@ -34,7 +35,7 @@ package object database {
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
-  private[this] var histLength = 10
+  private var histLength = 10
   /**
    * Sets the historylength to desired length
    * default is 10
@@ -48,31 +49,128 @@ package object database {
   val dbConfigName = "h2-conf"
 
 }
-import database._
+//import database.database._
+import database.dbConfigName
 
+sealed trait InfoItemEvent {
+  val infoItem: OdfInfoItem
+}
 
-
-/**
- * Old way of using single connection
+/*
+ * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
  */
-object singleConnection extends DB {
-  val db = Database.forConfig(dbConfigName)
-  initialize()
-
-  def destroy() = {
-    println("[WARN] Destroying db connection, to drop the database: remove db file!")
-    db.close()
-  }
+class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
+object ChangeEvent {
+  def apply(ii: OdfInfoItem) = new ChangeEvent(ii)
+  def unapply(ce: ChangeEvent) = Some(ce.infoItem)
 }
 
 
+/*
+ * New InfoItem (is also ChangeEvent)
+ */
+case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(infoItem) with InfoItemEvent
 
 /**
- * Database class for sqlite. Actually uses config parameters through forConfig in singleConnection.
+ * Contains all stores that requires only one instance for interfacing
+ */
+object SingleStores {
+    val latestStore       = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
+    val hierarchyStore    = PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
+    val eventPrevayler    = PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
+    val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
+    val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
+    val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
+
+    def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
+
+      val odfObjectsTrees = items map { case (path, value) =>
+        val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
+        fromPath(infoItem)
+      }
+      // safe version of reduce, might be a bit slow way to construct the result
+      //val valueOdfTree =
+      odfObjectsTrees.headOption map { head =>
+        odfObjectsTrees.par.reduce(_ union _)
+      } getOrElse (OdfObjects())
+
+    }
+
+
+    /**
+     * Main function for handling incoming data and running all event-based subscriptions.
+     *  As a side effect, updates the internal latest value store.
+     *  Event callbacks are not sent for each changed value, instead event results are returned 
+     *  for aggregation and other extra functionality.
+     * @param path Path to incoming data
+     * @param newValue Actual incoming data
+     * @return Triggered responses
+     */
+    def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
+
+      // TODO: Replace metadata and description if given
+
+      oldValueOpt match {
+        case Some(oldValue) =>
+          if (oldValue.timestamp before newValue.timestamp) {
+            val onChangeData =
+              if (oldValue.value != newValue.value) {
+
+                val oldInfoOpt = (hierarchyStore execute GetTree()).get(path)
+                oldInfoOpt match {
+                  case Some(oldInfo: OdfInfoItem) =>
+                    val newInfo = oldInfo.copy(values = Iterable(newValue))
+
+                    Some(ChangeEvent(newInfo))
+
+                  case thing => throw new RuntimeException(
+                    s"Problem in hierarchyStore, Some(OdfInfoItem) expected, actual: $thing")
+                }
+              } else None  // Value is same as the previous
+
+            // NOTE: This effectively discards incoming data that is older than the latest received value
+            latestStore execute SetSensorData(path, newValue)
+
+            onChangeData
+          } else None  // Newer data found
+
+        case None =>  // no data was found => new sensor
+          latestStore execute SetSensorData(path, newValue)
+          val newInfo = OdfInfoItem(path, Iterable(newValue))
+          Some(AttachEvent(newInfo))
+      }
+
+    }
+
+
+  def getMetaData(path: Path) : Option[OdfMetaData] = {
+    (hierarchyStore execute GetTree()).get(path).collect{ 
+      case info : OdfInfoItem => info.metaData
+    }.flatten
+  }
+  def get(path: Path) : Option[OdfNode] ={
+    (hierarchyStore execute GetTree()).get(path).map{
+      case info : OdfInfoItem => 
+        latestStore execute LookupSensorData(path) match {
+          case Some(value) =>
+          info.copy( values = Iterable(value) ) 
+          case None => 
+          info
+        }
+      case objs : OdfObjects => 
+        objs
+      case obj : OdfObject => 
+        obj
+    }
+  } 
+}
+
+
+/**
+ * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
 class DatabaseConnection extends DB {
-  //override val db = singleConnection.db
   val db = Database.forConfig(dbConfigName)
   initialize()
 
@@ -123,6 +221,18 @@ class TestDB(val name:String = "") extends DB
  * Contains a public high level read-write interface for the database tables.
  */
 trait DB extends DBReadWrite with DBBase {
+  /**
+   * These are old ideas about reducing access to read only
+   */
   def asReadOnly: DBReadOnly = this
   def asReadWrite: DBReadWrite = this
+
+  /**
+   * Fast latest values storage interface
+   */
+  //val latestStore: LatestStore = SingleStores.latestStore
+  //val eventPrevayler = SingleStores.eventPrevayler
+  //val intervalPrevayler = SingleStores.intervalPrevayler
+  //val idPrevayler: LatestStore = SingleStores.idPrevayler
+
 }

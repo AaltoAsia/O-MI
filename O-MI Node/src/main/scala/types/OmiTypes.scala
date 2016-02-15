@@ -14,14 +14,14 @@
 package types
 package OmiTypes
 
-import OdfTypes._
-
-import java.sql.Timestamp
 import java.lang.Iterable
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
-import scala.language.existentials
+import java.sql.Timestamp
 
+import types.OdfTypes._
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
+import scala.language.existentials
 
 /**
  * Package containing classes presenting O-MI request interanlly. 
@@ -93,7 +93,7 @@ case class PollRequest(
   requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 ) extends OmiRequest
 
-/** Subscription request for startting subscription
+/** Subscription request for starting subscription
   *
   **/
 case class SubscriptionRequest(

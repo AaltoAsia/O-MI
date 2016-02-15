@@ -1,4 +1,4 @@
-/**
+/*/**
   Copyright (c) 2015 Aalto University.
 
   Licensed under the 4-clause BSD (the "License");
@@ -146,7 +146,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   private[this] def date = new Date()
   implicit val timeout = Timeout(5.seconds)
 
-  private[this] var requestHandler = new RequestHandler(self)
+  private[this] var requestHandler: RequestHandler = null // XXX new RequestHandler(self)
 
   sealed trait SavedSub {
     val sub: DBSub
@@ -405,6 +405,7 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
   }
 
   private[this] def hasTTLEnded(sub: DBSub, currentTimeMillis: Long): Boolean = {
+    //Gets evaluated only if sub ttl is not infinite
     lazy val removeTime = sub.startTime.getTime + sub.ttlToMillis
 
     if (!sub.isImmortal && removeTime <= currentTimeMillis) {
@@ -493,3 +494,4 @@ class SubscriptionHandler(implicit dbConnection: DB) extends Actor with ActorLog
 
 
 }
+*/

@@ -26,7 +26,7 @@ import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationE
   */
 class VTTAgent extends InternalAgent {
   
-  private var odfInfoItems : Option[Iterable[(OdfInfoItem, String)]] = None   
+  private var odfInfoItems : Option[Vector[(OdfInfoItem, String)]] = None   
   private var initialized = false
   val t : FiniteDuration = Duration(5, SECONDS) 
   
@@ -47,9 +47,10 @@ class VTTAgent extends InternalAgent {
             InternalAgent.log.warning("VTT: "+errors.mkString("\n"))
           }
           case Right(odfObjects) => {
+            InputPusher.handleOdf(odfObjects)
             odfInfoItems = Some(
               getLeafs(odfObjects).collect{
-                case infoItem : OdfInfoItem if infoItem.values.nonEmpty =>
+                case infoItem: OdfInfoItem if infoItem.values.nonEmpty =>
                 (
                   infoItem,
                   infoItem.values.headOption.map( _.value.toString ).getOrElse("")
@@ -62,7 +63,7 @@ class VTTAgent extends InternalAgent {
       odfInfoItems match {
         case None =>
           InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
-        case Some(infoItems) =>//Success. Maybe push MetaData.
+        case Some(infoItems) =>//Success.
           initialized = true
       }
     }
@@ -95,11 +96,11 @@ class VTTAgent extends InternalAgent {
           (
             OdfInfoItem( 
               info.path,
-              Iterable( 
+              Vector( 
                 OdfValue(
                   newVal.toString,
                   "xs:double",
-                  Some( new Timestamp( date.getTime) ) 
+                  new Timestamp( date.getTime )
                 )
               )
             ),

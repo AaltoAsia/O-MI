@@ -4,13 +4,13 @@ import NativePackagerHelper._
 import Path.relativeTo
 import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 
-addCommandAlias("release", ";doc;universal:package-bin")
+addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.2.1",
+  version := "0.2.2",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -50,8 +50,10 @@ lazy val omiNode = (project in file("O-MI Node")).
 
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
-  settings(
-    libraryDependencies ++= commonDependencies).
+  settings(Seq(
+    libraryDependencies ++= commonDependencies,
+    crossTarget <<= (unmanagedBase in omiNode)
+    )).
     dependsOn(omiNode)
 
 lazy val root = (project in file(".")).
@@ -61,7 +63,10 @@ lazy val root = (project in file(".")).
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
-      cleanFiles <+= (baseDirectory in omiNode) {base => base / "html" / "api"},
+      cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
+        base / "html" / "api",
+        base / "lib",
+        base / "logs")},
       serverLoading in Debian := SystemV,
       //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
       //  n / "html" / "api"},
@@ -86,8 +91,8 @@ lazy val root = (project in file(".")).
       },
       mappings in Universal <++= (baseDirectory in omiNode) map { base =>
         Seq(
-          base / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
-          base / "SmartHouse.xml" -> "SmartHouse.xml")
+          base / "configs" / "otaniemi3d-data.xml" -> "otaniemi3d-data.xml",
+          base / "configs" / "SmartHouse.xml" -> "SmartHouse.xml")
       },
       mappings in Universal <++= baseDirectory map { base =>
         Seq(
@@ -95,10 +100,10 @@ lazy val root = (project in file(".")).
           base / "README-release.md" -> "README.md",
           base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
           base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",
-          base / "LICENCE.txt" -> "LICENCE.txt")
+          base / "LICENSE.txt" -> "LICENSE.txt")
       })): _*).
     aggregate(omiNode, agents).
-    dependsOn(omiNode, agents)
+    dependsOn(agents)
 
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
 tomcat()

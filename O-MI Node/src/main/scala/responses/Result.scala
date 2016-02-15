@@ -22,7 +22,7 @@ import OmiGenerator.{omiResult, omiReturn, odfMsg}
 import parsing.xmlGen.defaultScope
 
 /** 
-  * Object containing helper mehtods for generating RequestResultTypes. Used to generate results  for requests.
+  * Object containing helper methods for generating RequestResultTypes. Used to generate results  for requests.
   *
   **/
 object Results{

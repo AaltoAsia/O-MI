@@ -21,6 +21,7 @@ import scala.collection.JavaConversions.{asJavaIterable,iterableAsScalaIterable}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.{ SortedMap, breakOut }
 
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 
 trait OdfConversions extends OmiNodeTables {
@@ -66,7 +67,7 @@ trait OdfConversions extends OmiNodeTables {
       objectNode.toOdfObject
     case (objectNode, values) if !objectNode.isInfoItem && objectNode.depth == 1 =>
       objectNode.toOdfObjects
-    case matchError => throw new MatchError
+    case matchError => throw new MatchError(matchError)
   }
 
   /**
@@ -121,7 +122,7 @@ trait OdfConversions extends OmiNodeTables {
 
     // safe version of reduce
     odfObjectsTrees.headOption map { head =>
-      odfObjectsTrees.par.reduce(_ combine _)
+      odfObjectsTrees.par.reduce(_ union _)
     }
   }
 }
