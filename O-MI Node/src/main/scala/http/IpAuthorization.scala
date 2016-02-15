@@ -63,17 +63,19 @@ trait IpAuthorization extends AuthorizationExtension {
   // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
   private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
 
-  def ipHasPermission: UserData => OmiRequest => Boolean = user => {
+  def ipHasPermission: UserData => OmiRequest => Option[OmiRequest] = user => {
     // Write and Response are currently PermissiveRequests
     case r : PermissiveRequest =>
-      val result = user.exists( addr =>
+      val result = if (user.exists( addr =>
         whiteIPs.contains( inetAddrToBytes( addr ) ) ||
         whiteMasks.exists{
           case (subnet : Seq[Byte], bits : Int) =>
           isInSubnet(subnet, bits, inetAddrToBytes( addr ))
         }
-      )
-      if (result) {
+      )) Some(r)
+      else None
+
+      if (result.isDefined) {
         log.info(s"Authorized IP: $user for ${r.toString.take(80)}...")
       } else {
         log.warning(s"Unauthorized IP: $user")
@@ -81,7 +83,7 @@ trait IpAuthorization extends AuthorizationExtension {
       
       result
     // Read and Subscriptions should be allowed elsewhere
-    case _ => false
+    case _ => None
    }
 
   abstract override def makePermissionTestFunction =

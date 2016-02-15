@@ -9,8 +9,9 @@ import java.lang.{ Iterable => JavaIterable }
 
 import types.Path
 import types.OmiTypes._
-import types.OdfTypes
+import types.OdfTypes._
 import Authorization.AuthorizationExtension
+import database._
 
 import scala.collection.mutable.Buffer
 
@@ -33,7 +34,7 @@ trait AuthApi {
     omiRequest match {
       case odfRequest: OdfRequest =>
 
-        val paths = OdfTypes.getLeafs(odfRequest.odf) map (_.path) // todo: refactor getLeafs to member lazy to re-use later
+        val paths = getLeafs(odfRequest.odf) map (_.path) // todo: refactor getLeafs to member lazy to re-use later
 
         odfRequest match {
           case r: PermissiveRequest =>  // Write or Response
@@ -71,14 +72,46 @@ trait AuthApiProvider extends AuthorizationExtension {
   // AuthorizationExtension implementation
   abstract override def makePermissionTestFunction = combineWithPrevious(
     super.makePermissionTestFunction,
-    extract {context => context.request} map {(httpRequest: HttpRequest) => (omiRequest: OmiRequest) =>
-      authorizationSystems exists {authApi =>
-        authApi.isAuthorizedForRequest(httpRequest, omiRequest) match {
-          case Unauthorized => false
-          case Authorized => true
-          case Partial(paths) => throw new NotImplementedError(
-            s"Partial authorization granted for ${paths.mkString(", ")}, BUT not yet implemented in O-MI node.")
-        }
+    extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: OmiRequest) =>
+
+      val currentTree = SingleStores.hierarchyStore execute GetTree()
+      //authorizationSystems exists {authApi =>
+
+      authorizationSystems.foldLeft[Option[OmiRequest]] (None) {(lastTest, nextAuthApi) =>
+        lastTest orElse (
+          nextAuthApi.isAuthorizedForRequest(httpRequest, orgOmiRequest) match {
+            case Unauthorized => None
+            case Authorized => Some(orgOmiRequest)
+            case Partial(paths) => 
+
+              // Rebuild the request having only `paths`
+              val pathTrees = paths map {path =>
+                currentTree.get(path) match {
+                  case Some(nodeType) => fromPath(nodeType)
+                  case None => OdfObjects()
+                }
+
+              }
+              val newOdf = pathTrees.fold(OdfObjects())(_ union _)
+
+              if (newOdf.objects.nonEmpty) 
+                orgOmiRequest match {
+                  case r: ReadRequest         => Some(r.copy(odf = newOdf))
+                  case r: SubscriptionRequest => Some(r.copy(odf = newOdf))
+                  case r: WriteRequest        => Some(r.copy(odf = newOdf))
+                  case r: ResponseRequest     => Some(r.copy(results = 
+                    asJavaIterable(Iterable(r.results.head.copy(odf = Some(newOdf)))) // TODO: make better copy logic?
+                  ))
+                  case r: Product => throw new NotImplementedError(
+                    s"Partial authorization granted for ${paths.mkString(", ")}, BUT request '${r.productPrefix}' not yet implemented in O-MI node.")
+                  case m => 
+                    (new MatchError(m)).printStackTrace()
+                    None
+                }
+              else None
+
+          }
+        )
       }
     }
   )

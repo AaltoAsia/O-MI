@@ -60,7 +60,7 @@ class ExternalAgentListener
       val user = Some(remote.getAddress())
       val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
 
-      if( ipHasPermission(user)(requestForPermissionCheck) ){
+      if( ipHasPermission(user)(requestForPermissionCheck).isDefined ){
         log.info(s"Agent connected from $remote to $local")
 
         val handler = context.actorOf(
