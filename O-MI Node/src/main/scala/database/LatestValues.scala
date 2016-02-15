@@ -241,3 +241,10 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
       store.idToSub.values.toSet
     }
   }
+
+  case class GetSubsForPath(path: Path) extends Query[PolledSubs, Set[PolledSub]] {
+    def query(store: PolledSubs, d: Date): Set[PolledSub] = {
+      val ids = store.pathToSubs.get(path).toSet.flatten
+      ids.map(store.idToSub(_))
+    }
+  }

@@ -70,6 +70,7 @@ object EventSubs {
 }
 
 case class PolledSubs(var idToSub: HashMap[Long, PolledSub], var pathToSubs: HashMap[Path, Set[Long]])
+
 object PolledSubs {
   def empty = PolledSubs(HashMap.empty, HashMap.empty)
 }

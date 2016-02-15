@@ -22,8 +22,6 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.Path
 
-import scala.collection.JavaConversions.asJavaIterable
-
 
 package object database {
 
@@ -37,7 +35,7 @@ package object database {
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
-  private[this] var histLength = 10
+  private var histLength = 10
   /**
    * Sets the historylength to desired length
    * default is 10
@@ -98,7 +96,9 @@ object SingleStores {
       val metadataTree = hierarchyStore execute GetTree()
       valueOdfTree union metadataTree
 
+
     }
+
 
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
@@ -109,14 +109,9 @@ object SingleStores {
      * @param newValue Actual incoming data
      * @return Triggered responses
      */
-    def processData(path: Path, newValue: OdfValue): Option[InfoItemEvent] = {
-
-      val oldValueOpt = latestStore execute LookupSensorData(path)
+    def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
 
       // TODO: Replace metadata and description if given
-
-      //TODO: handle duplicates in the PollSubscription Database
-      val relatedEventSubs = EventSubs
 
       oldValueOpt match {
         case Some(oldValue) =>
