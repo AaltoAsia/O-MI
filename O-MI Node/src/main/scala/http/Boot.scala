@@ -20,18 +20,23 @@ import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Awaitable
 import java.util.Date
 import java.net.InetSocketAddress
+import scala.collection.JavaConversions.asJavaIterable
+
 import agentSystem._
 import responses.{RequestHandler, SubscriptionHandler}
-
 import types.Path
 import types.OdfTypes._
-import scala.collection.JavaConversions.asJavaIterable
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import database._
 
 import scala.util.{Try, Failure, Success}
 import xml._
+
+import scala.language.postfixOps
 
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
@@ -45,16 +50,18 @@ trait Starter {
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
   val settings = Settings(system)
+
+  protected val subHandlerDbConn: DB = new DatabaseConnection
+  val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler")
   
 
   /**
    * This is called in [[init]]. Create input pusher actor for handling agent input.
    * @param dbConnection Use a specific db connection for all agents, intended for testing
    */
-  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-pusher-for-db") = {
-    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection)),actorname)
+  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-db-pusher") = {
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subHandler)), actorname)
   }
-
 
   /** 
    * Setup database and apply config [[settings]].
@@ -76,16 +83,23 @@ trait Starter {
     val date = new Date();
     val currentTime = new java.sql.Timestamp(date.getTime)
 
+    // Save settings in db, this works also as a test for writing
     val numDescription =
       "Number of latest values (per sensor) that will be saved to the DB"
     system.log.info(s"$numDescription: ${settings.numLatestValues}")
-    InputPusher.handleInfoItems(Iterable(
+    val dataSaveTest = InputPusher.handleInfoItems(Iterable(
       OdfInfoItem(
         Path(settings.settingsOdfPath + "num-latest-values-stored"), 
-        Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", Some(currentTime))),
+        Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
         Some(OdfDescription(numDescription))
       )
     ), new Timeout(5, SECONDS))
+
+    Await.result(dataSaveTest, 5 seconds) match {
+      case Success(true) => system.log.info("O-MI InputPusher system working.")
+      case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
+      case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
+    }
   }
 
 
@@ -97,7 +111,6 @@ trait Starter {
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
   def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
-    val subHandler = system.actorOf(Props(new SubscriptionHandler()(dbConnection)), "subscription-handler")
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
@@ -112,8 +125,13 @@ trait Starter {
       Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
       "omi-node-cli-listener"
     )
+
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
+    val omiService = system.actorOf(Props(
+      new OmiServiceActor(
+        new RequestHandler(subHandler)(dbConnection)
+      )
+    ), "omi-service")
 
 
     implicit val timeoutForBind = Timeout(5.seconds)
@@ -143,8 +161,8 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter with App{
-//def main(args: Array[String]) = {
+object Boot extends Starter {// with App{
+  def main(args: Array[String]) = {
   Try {
     init()
     val serviceActor = start()
@@ -153,7 +171,7 @@ object Boot extends Starter with App{
     case Failure(ex) => system.log.error(ex, "Error during startup")
     case Success(_) => system.log.info("Process exited normally")
   }
-    //}
+  }
 
 }
 

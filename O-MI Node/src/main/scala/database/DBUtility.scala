@@ -13,17 +13,12 @@
 **/
 package database
 
-import scala.language.postfixOps
-
 import slick.driver.H2Driver.api._
-import java.sql.Timestamp
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.SortedMap
-
 import types._
-import OdfTypes._
-import scala.collection.JavaConversions.iterableAsScalaIterable
+
+import scala.collection.SortedMap
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
@@ -100,18 +95,6 @@ trait DBUtility extends OmiNodeTables with OdfConversions {
   protected[this] def getHierarchyNodeI(id: Int): DBIOro[Option[DBNode]] =
     hierarchyNodes.filter(_.id === id).result.map(_.headOption)
 
-
-  protected[this] def getSubI(id: Long): DBIOro[Option[DBSub]] =
-    subs.filter(_.id === id).result map {
-      _.headOption map {
-        case sub: DBSub => sub
-        case _ => throw new RuntimeException("got wrong or unknown sub class???")
-      }
-    }
-  protected[this] def getSubItemHierarchyIdsI(subId: Long) =
-    subItems filter (
-      _.subId === subId
-    ) map ( _.hierarchyId ) result
 
 
 }

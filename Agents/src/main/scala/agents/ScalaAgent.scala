@@ -42,7 +42,7 @@ class ScalaAgent  extends InternalAgent{
             OdfValue(
               rnd.nextInt().toString, 
               "xs:integer",
-              Some(new Timestamp( date.getTime() ) ) 
+              new Timestamp( date.getTime() )
             ) 
           ) 
         }

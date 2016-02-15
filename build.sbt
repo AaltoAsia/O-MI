@@ -50,8 +50,10 @@ lazy val omiNode = (project in file("O-MI Node")).
 
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
-  settings(
-    libraryDependencies ++= commonDependencies).
+  settings(Seq(
+    libraryDependencies ++= commonDependencies,
+    crossTarget <<= (unmanagedBase in omiNode)
+    )).
     dependsOn(omiNode)
 
 lazy val root = (project in file(".")).
@@ -61,7 +63,10 @@ lazy val root = (project in file(".")).
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
-      cleanFiles <+= (baseDirectory in omiNode) {base => base / "html" / "api"},
+      cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
+        base / "html" / "api",
+        base / "lib",
+        base / "logs")},
       serverLoading in Debian := SystemV,
       //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
       //  n / "html" / "api"},
@@ -98,7 +103,7 @@ lazy val root = (project in file(".")).
           base / "LICENSE.txt" -> "LICENSE.txt")
       })): _*).
     aggregate(omiNode, agents).
-    dependsOn(omiNode, agents)
+    dependsOn(agents)
 
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
 tomcat()

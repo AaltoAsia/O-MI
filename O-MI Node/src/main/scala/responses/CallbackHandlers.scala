@@ -57,7 +57,7 @@ object CallbackHandlers {
       def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
       val request = Post(address, data)
       var attemps = 1
-      try{
+      Try{
         var keepTrying = true
         var result : CallbackResult = new CallbackFailure
         while( keepTrying && tryUntil.after( currentTimestamp ) ){
@@ -82,23 +82,24 @@ object CallbackHandlers {
 
           result match{
             case cs: CallbackSuccess.type =>
-              //system.log.info(s"Successfully send POST request to $address")
+              system.log.debug(s"Successfully send POST request to $address")
               keepTrying = false
             case _ =>
               attemps += 1 
               Thread.sleep(5000)
-              //system.log.info(s"Need to retry sending POST reqeust to $address, will keep trying until $tryUntil.") 
+              system.log.debug(s"Need to retry sending POST reqeust to $address, will keep trying until $tryUntil.") 
           } 
           
         }
         result
-      } catch {
-        case e: Exception =>
-        system.log.error(
-          e,"CallbackHandler"
-        )
-        e.printStackTrace()
-        new CallbackFailure          
+      } match {
+        case Success(_) => CallbackSuccess
+        case Failure(e) =>
+          system.log.error(
+            e,"CallbackHandler"
+          )
+          e.printStackTrace()
+          new CallbackFailure
       }
     }
 

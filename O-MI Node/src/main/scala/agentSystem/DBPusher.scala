@@ -13,21 +13,29 @@
 **/
 package agentSystem
 
-import java.lang.Iterable
+import java.lang.Iterable // => JavaIterable}
 
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
+import scala.xml.XML
+
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
+import responses.CallbackHandlers._
+import responses.OmiGenerator.xmlFromResults
+import responses.Results
+import responses.NewDataEvent
 import types.OdfTypes._
-import types._
-
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-
+import types.Path
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 
 /** Object that contains all commands of InputPusher.
@@ -44,7 +52,7 @@ import agentSystem.InputPusherCmds._
 /**
  * Actor for pushing data to db.
  */
-class DBPusher(val dbobject: DB)
+class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
@@ -63,94 +71,251 @@ class DBPusher(val dbobject: DB)
     case u                              => log.warning("Unknown message received.")
   }
 
+  private def trimValues = {
+
+  }
+
+  private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
+    sendEventCallback(esub,
+      (infoItems map fromPath).foldLeft(OdfObjects())(_ union _)
+    )
+  }
+
+  private def sendEventCallback(esub: EventSub, odf: OdfObjects): Unit = {
+    val log = http.Boot.system.log
+    val id = esub.id
+    val callbackAddr = esub.callback
+    log.debug(s"Sending data to event sub: $id.")
+    val xmlMsg = xmlFromResults(
+      1.0,
+      Results.poll(id.toString, odf))
+    log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
+    //log.debug("Send msg:\n" + xmlMsg)
+
+    def failed(reason: String) =
+      log.warning(
+        s"Callback failed; subscription id:$id interval:-1  reason: $reason")
+
+
+    sendCallback(
+      callbackAddr,
+      xmlMsg,
+      (esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds
+    ) onComplete {
+      case Success(CallbackSuccess) =>
+        log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
+
+      case Success(fail: CallbackFailure) =>
+        failed(fail.toString)
+      case Failure(e) =>
+        failed(e.getMessage)
+    }
+  }
+
+  private def processEvents(events: Seq[InfoItemEvent]) = {
+
+    val esubLists: Seq[(EventSub, OdfInfoItem)] = events flatMap {
+      case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
+
+        val esubs = SingleStores.eventPrevayler execute LookupEventSubs(infoItem.path)
+        esubs map { (_, infoItem) }  // make tuples
+    }
+    // Aggregate events under same subscriptions (for optimized callbacks)
+    val esubAggregation: Map[EventSub, Seq[(EventSub, OdfInfoItem)]] =
+        esubLists groupBy {_._1}
+
+    for ((esub, infoSeq) <- esubAggregation) {
+
+        val infoItems = infoSeq map {_._2}
+
+        sendEventCallback(esub, infoItems)
+    }
+
+  }
+
   /**
    * Function for handling OdfObjects.
    *
    */
-  private def handleOdf(objects: OdfObjects):  Try[Boolean] = Try{
-    val data = getLeafs(objects)
-    if(
-      data.nonEmpty 
-    ){
-      val write : Try[Boolean] = handleInfoItems(data.collect { case infoitem: OdfInfoItem => infoitem })
-      if( write.isSuccess ){
-        log.debug("Successfully saved Odfs to DB")
-        val odfNodes = getOdfNodes(objects.objects.toSeq: _*).toSet
-        val descriptions = odfNodes.collect {
-          case node if node.description.nonEmpty => node
-        }.toIterable
-        descriptions.map{ node => dbobject.setDescription(node) }
-      } 
-      write.get
+  private def handleOdf(objects: OdfObjects):  Try[Boolean] = {
+    // val data = getLeafs(objects)
+    // if ( data.nonEmpty ) {
+    val items = getInfoItems(objects)
+    if (items.nonEmpty) {
+      val writeValues : Try[Boolean] = handleInfoItems(items)
+      
+      // TODO: descriptions of objects
+      log.debug("Successfully saved Odfs to DB")
+
+      
+      //writeValues match {
+      //  case Success(ret) => ret
+      //  case Failure(e) => throw e // TODO: better ideas to pass Try result?
+      //}
+      writeValues
+
     } else {
       log.warning("Empty odf pushed for DBPusher.")
-      false
+      Success(false)
     }
   }
   /**
    * Function for handling sequences of OdfObject.
-   *
    */
   private def handleObjects(objs: Iterable[OdfObject]): Try[Boolean] = {
-    handleOdf(OdfObjects(objs))
+    handleOdf(OdfObjects(objs.asScala))
+  }
+
+  /**
+   * Helper method to create sub values using id, path, and value
+   */
+  private def createSubValue(id: Long, path: Path, value: OdfValue): SubValue = {
+      SubValue(id, path, value.timestamp, value.value,value.typeValue)
+    }
+
+  /**
+   * Creates values that are to be updated into the database for polled subscription.
+   * @param path
+   * @param newValue
+   * @param oldValueOpt
+   * @return returns Sequence of SubValues to be added to database
+   */
+  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
+    val relatedPollSubs = SingleStores.pollPrevayler execute GetSubsForPath(path)
+
+    relatedPollSubs.collect {
+      //if no old value found for path or start time of subscription is after last value timestamp
+      //if new value is updated value. forall for option returns true if predicate is true or the value is None
+      case sub if(oldValueOpt.forall(oldValue =>
+        oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
+          createSubValue(sub.id,path,newValue)
+      }
+    }
   }
 
   /**
    * Function for handling sequences of OdfInfoItem.
-   *
+   * @return true if the write was accepted.
    */
-  private def handleInfoItems(infoitems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
-    
-    val pairs = infoitems.map { info =>
-      info.values.map { tv => (info.path, tv) }
-    }.flatten[(Path, OdfValue)].toList
-    dbobject.setMany(pairs)
+  private def handleInfoItems(infoItems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
+    // save only changed values
+    val pathValueOldValueTuples = for {
+      info <- infoItems.toSeq
+      path = info.path
+      oldValueOpt = SingleStores.latestStore execute LookupSensorData(path)
+      value <- info.values
+    } yield (path, value, oldValueOpt)
 
-    log.debug("Successfully saved InfoItems to DB")
-    val meta = infoitems.collect {
-      case OdfInfoItem(path, _, _, Some(metaData)) => (path, metaData.data)
+    val newPollValues = pathValueOldValueTuples.flatMap(n => handlePollData _ tupled n)
+
+    dbobject.addNewPollData(newPollValues)
+
+    val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)
+    val triggeringEvents = callbackDataOptions.flatten
+    
+    if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
+      // TODO: implement responsible agent check here or processEvents method
+      // return false  // command was not accepted or failed in agent or physical world but no internal server errors
+
+      // Send all callbacks
+      processEvents(triggeringEvents)
     }
-    val metaTry = if (meta.nonEmpty) handlePathMetaDataPairs(meta) else Success(true)
 
-    val descriptions = infoitems.collect {
-      case info if info.description.nonEmpty => info
+
+    // Save new/changed stuff to transactional in-memory SingleStores and then DB
+
+    val newItems = triggeringEvents collect {
+        case AttachEvent(item) => item
     }
-    descriptions.map{ node => dbobject.setDescription(node) }
-    metaTry.get 
 
-  }
+    val metas = infoItems filter { _.hasMetadata }
+    // check syntax
+    metas foreach {metaInfo =>
 
-  /**
-   * Function for handling sequences of path and value pairs.
-   *
-   */
-  private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Try[Boolean] = Try{
-    dbobject.setMany(pairs.toList)
-    log.debug("Successfully saved Path-TimedValue pairs to DB")
-    true
-  }
+      checkMetaData(metaInfo.metaData) match {
 
-  /**
-   * Function for handling sequences of path and MetaData(as String)  pairs.
-   *
-   */
-  private def handlePathMetaDataPairs(pairs: Iterable[(Path, String)]):  Try[Boolean] = Try{
-    
-    pairs.foreach { case (path, metadata) => 
-    
-      Try{
-        val xml = XML.loadString(metadata)
-        val meta = xmlGen.scalaxb.fromXML[MetaData](xml)
-      } match {
-        case Success(a) =>
-          dbobject.setMetaData(path, metadata) 
+        case Success(_) => // noop: exception on failure instead of filtering the valid
         case Failure(exp) =>
          log.error( exp, "InputPusher" )
          throw exp;
       }
     }
-    log.debug("Successfully saved Path-MetaData pairs to DB")
+
+    val descriptions = infoItems filter { _.description.nonEmpty }
+
+    val updatedStaticItems = metas ++ descriptions ++ newItems
+
+    // Update our hierarchy data structures if needed
+    if (updatedStaticItems.nonEmpty) {
+
+        // aggregate all updates to single odf tree
+        val updateTree: OdfObjects =
+          (updatedStaticItems map fromPath).foldLeft(OdfObjects())(_ union _)
+
+        SingleStores.hierarchyStore execute Union(updateTree)
+    }
+
+    // DB + Poll Subscriptions
+    val itemValues = (infoItems flatMap {item =>
+      val values = item.values.toSeq
+      values map {value => (item.path, value)}
+    }).toSeq
+    dbobject.setMany(itemValues)
+
+    subHandler ! NewDataEvent(itemValues)
+
+    //log.debug("Successfully saved InfoItems to DB")
     true
   }
 
+  /**
+   * Function for handling sequences of path and value pairs.
+   * @return true if the write was accepted.
+   */
+  private def handlePathValuePairs(pairs: Iterable[(Path, OdfValue)]): Try[Boolean] = Try{
+    // save first to latest values and then db
+
+    val items: Iterable[OdfInfoItem] = pairs map {
+      case (path, value) => OdfInfoItem(path, List(value))
+    }
+
+    handleInfoItems(items) match {
+      case Success(ret) =>
+        log.debug("Successfully saved Path-TimedValue pairs to DB")
+        ret
+      case Failure(e) => throw e
+    }
+
+  }
+
+  /**
+   * Check metadata XML validity and O-DF validity
+   */
+  private def checkMetaData(metaO: Option[OdfMetaData]): Try[String] = metaO match {
+    case Some(meta) => checkMetaData(meta.data)
+    case None => Failure(new MatchError(None))
+  }
+  private def checkMetaData(metaStr: String): Try[String] = Try{
+        val xml = XML.loadString(metaStr)
+        val meta = xmlGen.scalaxb.fromXML[MetaData](xml)
+        metaStr
+      }
+  /**
+   * Function for handling sequences of path and MetaData(as String)  pairs.
+   *
+   */
+  private def handlePathMetaDataPairs(pairs: Iterable[(Path, String)]):  Try[Boolean] = {
+    
+    val metaInfos = pairs map {
+      case (path, metadata) => 
+        OdfInfoItem(path, List(), None, Some(OdfMetaData(metadata)))
+    }
+
+    val ret = handleInfoItems(metaInfos)
+    
+    log.debug("Successfully saved Path-MetaData pairs to DB")
+    ret
+  }
+
 }
+

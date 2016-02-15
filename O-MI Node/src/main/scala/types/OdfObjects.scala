@@ -14,24 +14,21 @@
 package types
 package OdfTypes
 
-import parsing.xmlGen._
+
 import parsing.xmlGen.xmlTypes._
-import xml.XML
-import java.sql.Timestamp
-import java.lang.{Iterable => JavaIterable}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
+import OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
-  objects:              JavaIterable[OdfObject] = Iterable(),
+  objects:              OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version:              Option[String] = None
-) {
+) extends Serializable {
 
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
   
-  /** Method for combining two OdfObjectss with same path */
-  def combine( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){
+  /** Method for combining two OdfObjects with same path */
+  def union( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){
     (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
     OdfObjects(
       sharedObjs.map{

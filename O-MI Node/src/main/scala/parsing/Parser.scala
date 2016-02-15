@@ -65,5 +65,5 @@ abstract trait Parser[Result] {
     }
   }
 
-  protected def timer = new Timestamp( new Date().getTime ) 
+  def currentTime() = new Timestamp( new Date().getTime ) 
 }

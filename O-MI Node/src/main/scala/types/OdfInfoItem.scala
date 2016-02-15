@@ -14,23 +14,26 @@
 package types
 package OdfTypes
 
+import java.lang.{Iterable => JavaIterable}
+import java.sql.Timestamp
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
+
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
+import scala.xml.XML
+
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
-import xml.XML
-import java.sql.Timestamp
-import java.lang.{Iterable => JavaIterable}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
-import http.Boot.settings
-import java.util.GregorianCalendar
-import javax.xml.datatype.{XMLGregorianCalendar, DatatypeFactory}
+import OdfTreeCollection._
 
 /** Class implementing OdfInfoItem. */
 class  OdfInfoItemImpl(
   path:                 Path,
-  values:               JavaIterable[OdfValue] = Iterable(),
+  values:               OdfTreeCollection[OdfValue] = OdfTreeCollection(),
   description:          Option[OdfDescription] = None,
   metaData:             Option[OdfMetaData] = None
-){
+) extends Serializable {
 
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfInfoItem) : OdfInfoItem ={
@@ -52,6 +55,20 @@ class  OdfInfoItemImpl(
       }
     )
   }
+
+  def hasMetadataTag: Boolean = metaData match {
+    case Some(_) => true
+    case _ => false
+  }
+  /**
+   * Non empty metadata
+   */
+  def hasMetadata: Boolean = metaData match {
+    case Some(meta) => meta.data.trim.nonEmpty
+    case _ => false
+  }
+  
+  def hasDescription: Boolean = description.nonEmpty
 
   /** Method to convert to scalaxb generated class. */
   implicit def asInfoItemType: InfoItemType = {
@@ -75,7 +92,7 @@ case class OdfMetaData(
 ) {
   /** Method to convert to scalaxb generated class. */
   implicit def asMetaData : MetaData = {
-    scalaxb.fromXML[MetaData]( XML.loadString( data ) )
+    scalaxb.fromXML[MetaData]( XML.loadString( data ) ) // What if agent inserts malformed xml string with InputPushe/DBPusher functions
   }
 }
 
@@ -83,18 +100,17 @@ case class OdfMetaData(
 case class OdfValue(
   value:                String,
   typeValue:            String,
-  timestamp:            Option[Timestamp] = None
+  timestamp:            Timestamp
 ) {
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
     ValueType(
       value,
       typeValue,
-      unixTime = timestamp.map( _.getTime/1000),
-      dateTime = timestamp.map{
-        time => 
+      unixTime = Option(timestamp.getTime/1000),
+      dateTime = Option{
         val c :GregorianCalendar  = new GregorianCalendar()
-        c.setTimeInMillis(time.getTime)
+        c.setTimeInMillis(timestamp.getTime)
         DatatypeFactory.newInstance().newXMLGregorianCalendar(c)
       },
       attributes = Map.empty
