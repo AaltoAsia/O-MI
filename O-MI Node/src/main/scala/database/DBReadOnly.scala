@@ -212,6 +212,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     require(requestsSeq.size >= 1,
       "getNBetween should be called with at least one request thing")
 
+    // NOTE: Might go off sync with tree or values if the request is large,
+    // but it shouldn't be a big problem
+    val metadataTree = SingleStores.hierarchyStore execute GetTree()
+
     def processObjectI(path: Path): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
         case Some(rootNode) => for {
@@ -237,16 +241,23 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     }
 
-    val allResults = requestsSeq map { // par
+    // returns metadata if metadataQuery is Some
+    def getMetaInfoItem(metadataQuery: Option[OdfMetaData], path: Path): OdfInfoItem = {
+      metadataQuery flatMap {_ =>            // If metadataQuery.nonEmpty
+        metadataTree.get(path) match {   // and InfoItem exists in tree
+          case Some(found: OdfInfoItem) => Some(found)
+          case _ => None
+        }
+      } getOrElse OdfInfoItem(path, Iterable(), None, None)
+    }
+
+
+    def getFromDB(): Seq[Option[OdfObjects]] = requestsSeq map { // par
 
       case obj @ OdfObjects(objects, _) =>
         require(objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-        // Optimizing the basic read all request
-        if (newest.isEmpty && oldest.isEmpty && begin.isEmpty && end.isEmpty)
-          return Some( SingleStores.buildOdfFromValues(
-            SingleStores.latestStore execute LookupAllDatas()) )
 
         runSync(processObjectI(obj.path))
 
@@ -266,7 +277,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               odfInfoItem <- processObjectI(path)
 
 
-              metaInfoItem = OdfInfoItem(path, Iterable(), None, None)
+              metaInfoItem: OdfInfoItem = getMetaInfoItem(metadataQuery, path)
               result = odfInfoItem.map {
                 infoItem => fromPath(infoItem) union fromPath(metaInfoItem)
               }
@@ -288,36 +299,97 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       //case OdfValue(_, _, _) =>
     }
 
+    def getFromCache(): Seq[Option[OdfObjects]] = {
+      val objectData: Seq[Option[OdfObjects]] = requestsSeq map {
+        case obj @ OdfObjects(objects, _) =>
+          require(objects.isEmpty,
+            s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
+
+          Some( SingleStores.buildOdfFromValues(
+            SingleStores.latestStore execute LookupAllDatas()) )
+
+        case obj @ OdfObject(path, items, objects, desc, _) =>
+          require(items.isEmpty && objects.isEmpty,
+            s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
+
+          val resultsO = for {
+            odfObject <- metadataTree.get(path) collect {  // get all descendants
+              case o: OdfObject => o
+            }
+            paths = getLeafs(odfObject) map (_.path)
+
+            pathValues = SingleStores.latestStore execute LookupSensorDatas(paths) 
+          } yield SingleStores.buildOdfFromValues(pathValues)
+
+          // O-DF standard is a bit unclear about description field for objects
+          // so we decided to put it in only when explicitly asked
+          (for {
+            results <- resultsO
+
+            _ <- desc  //if desc.nonEmpty
+            meta <- metadataTree.get(path) collect {
+              case o: OdfObject => fromPath(o)
+            }
+            
+          } yield (results union meta))
+
+      }
+
+      // And then get all InfoItems with the same call
+      val infoItems = requestsSeq collect {case ii: OdfInfoItem => ii}
+      val paths = infoItems map (_.path)
+      val infoItemData = SingleStores.latestStore execute LookupSensorDatas(paths)
+      val resultOdf = SingleStores.buildOdfFromValues(infoItemData)
+      objectData :+ Some(
+        infoItems.foldLeft(resultOdf){(result, info) =>
+          info match {
+            case OdfInfoItem(path, _, _, metadataQuery) =>
+              result union fromPath(getMetaInfoItem(metadataQuery, path))
+          }
+        }
+      )
+    }
+
+    // Optimizing basic read requests
+    val allResults = 
+      if (newest.isEmpty && oldest.isEmpty && begin.isEmpty && end.isEmpty)  
+        getFromCache()
+      else
+        getFromDB()
+
     // Combine some Options
-    allResults.fold(None) {
+    val results = allResults.fold(None){
       case (Some(results), Some(otherResults)) => Some(results union otherResults)
       case (None, Some(results))               => Some(results)
       case (Some(results), None)               => Some(results)
       case (None, None)                        => None
     }
 
+    results
+
   }
 
-  def getNBetweenWithHierarchyIds(
-    infoItemIdTuples: Seq[(Int, OdfInfoItem)],
-    begin: Option[Timestamp],
-    end: Option[Timestamp],
-    newest: Option[Int],
-    oldest: Option[Int]): OdfObjects =
-    {
-      val ids = infoItemIdTuples.map { case (id, info) => id }
-      val betweenValues = runSync(
-        nBetweenLogicQ(
-          latestValues.filter { _.hierarchyId.inSet(ids) },
-          begin,
-          end,
-          newest,
-          oldest).result)
-      infoItemIdTuples.map {
-        case (id, info) =>
-          fromPath(info.copy(values = betweenValues.collect { case dbval if dbval.hierarchyId == id => dbval.toOdf }))
-      }.foldLeft(OdfObjects())(_.union(_))
-    }
+//  def getNBetweenWithHierarchyIds(
+//    infoItemIdTuples: Seq[(Int, OdfInfoItem)],
+//    begin: Option[Timestamp],
+//    end: Option[Timestamp],
+//    newest: Option[Int],
+//    oldest: Option[Int]): OdfObjects =
+//    {
+//      val ids = infoItemIdTuples.map { case (id, info) => id }
+//      val betweenValues = runSync(
+//        nBetweenLogicQ(
+//          latestValues.filter { _.hierarchyId.inSet(ids) },
+//          begin,
+//          end,
+//          newest,
+//          oldest).result)
+//      infoItemIdTuples.map {
+//        case (id, info) =>
+//          fromPath(info.copy(values = betweenValues.collect { case dbval if dbval.hierarchyId == id => dbval.toOdf }))
+//      }.foldLeft(OdfObjects())(_.union(_))
+//    }
+    
 
   /**
    * @param root Root of the tree

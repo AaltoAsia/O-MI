@@ -36,16 +36,16 @@ object `package` {
   type OdfTreeCollection[T] = Vector[T]
   
   /** Helper method for getting all leaf nodes of O-DF Structure */
+  def getLeafs(obj: OdfObject): OdfTreeCollection[OdfNode] = {
+    if (obj.infoItems.isEmpty && obj.objects.isEmpty)
+      OdfTreeCollection(obj)
+    else
+      obj.infoItems ++ obj.objects.flatMap {
+        subobj =>
+          getLeafs(subobj)
+      }
+  }
   def getLeafs(objects: OdfObjects): OdfTreeCollection[OdfNode] = {
-    def getLeafs(obj: OdfObject): OdfTreeCollection[OdfNode] = {
-      if (obj.infoItems.isEmpty && obj.objects.isEmpty)
-        OdfTreeCollection(obj)
-      else
-        obj.infoItems ++ obj.objects.flatMap {
-          subobj =>
-            getLeafs(subobj)
-        }
-    }
     if (objects.objects.nonEmpty)
       objects.objects.flatMap {
         obj => getLeafs(obj)

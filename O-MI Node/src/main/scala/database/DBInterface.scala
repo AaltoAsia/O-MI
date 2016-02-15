@@ -89,13 +89,10 @@ object SingleStores {
         fromPath(infoItem)
       }
       // safe version of reduce, might be a bit slow way to construct the result
-      val valueOdfTree = odfObjectsTrees.headOption map { head =>
+      //val valueOdfTree =
+      odfObjectsTrees.headOption map { head =>
         odfObjectsTrees.par.reduce(_ union _)
       } getOrElse (OdfObjects())
-
-      val metadataTree = hierarchyStore execute GetTree()
-      valueOdfTree union metadataTree
-
 
     }
 
