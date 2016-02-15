@@ -332,7 +332,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             }
             
           } yield (results union meta))
-        case _ => // noop, infoitems are processed in the next lines
+        case _ => None // noop, infoitems are processed in the next lines
       }
 
       // And then get all InfoItems with the same call
