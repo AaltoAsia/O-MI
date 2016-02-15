@@ -48,6 +48,9 @@ object Dependencies {
   //STM            
   val stm          = "org.scala-stm"               %% "scala-stm"    % "0.7"
 
+  //Java dependencies
+  val gson         = "com.google.code.gson"         % "gson"         % "2.5"
+
   val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
     akkaSlf4j,
@@ -66,7 +69,8 @@ object Dependencies {
     schwatcher,
     commonsLang,
     prevaylerCore,
-    prevaylerFactory)
+    prevaylerFactory,
+    gson)
 
   val servletDependencies: Seq[ModuleID] = Seq(
     sprayServlet,

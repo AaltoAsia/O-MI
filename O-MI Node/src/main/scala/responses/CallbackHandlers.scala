@@ -22,7 +22,7 @@ import spray.http.{HttpRequest, HttpResponse, StatusCode, Uri}
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 
 /**
