@@ -132,7 +132,8 @@ public class AuthAPIService implements AuthApi {
                     // the very first query to read the tree
                     if (nextObj.equalsIgnoreCase("Objects")) {
                         System.out.println("Root tree requested. forwarding to Partial API.");
-                        return Partial.apply(getAvailablePaths(ck.toString()));
+                        //return Authorized.instance();
+                        return new Partial(getAvailablePaths(ck.toString()));
                     } else
                         break;
                 }
@@ -204,7 +205,9 @@ public class AuthAPIService implements AuthApi {
             System.out.println(json_paths.size()+" PATHS FOUND");
 
             for (int i = 0; i < json_paths.size(); i++) {
-                Path nextPath = new Path(json_paths.get(i).getAsString());
+                String pathString = json_paths.get(i).getAsString();
+                System.out.println(pathString);
+                Path nextPath = new Path(pathString);
                 finalPaths.add(nextPath);
             }
 
@@ -255,11 +258,12 @@ public class AuthAPIService implements AuthApi {
             }
             rd.close();
 
-//            System.out.println("RESPONSE:"+response.toString());
+            System.out.println("RESPONSE:"+response.toString());
 
             return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("EXCEPTION!");
             return Unauthorized.instance();
         } finally {
             if(connection != null) {
