@@ -319,19 +319,21 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             paths = getLeafs(odfObject) map (_.path)
 
             pathValues = SingleStores.latestStore execute LookupSensorDatas(paths) 
+            _ = println(s"PATH VALUES $paths: $pathValues")
           } yield SingleStores.buildOdfFromValues(pathValues)
 
           // O-DF standard is a bit unclear about description field for objects
           // so we decided to put it in only when explicitly asked
-          (for {
+          resultsO map (_ union (for {
             results <- resultsO
 
             _ <- desc  //if desc.nonEmpty
             meta <- metadataTree.get(path) collect {
-              case o: OdfObject => fromPath(o)
+              case o: OdfObject => o
             }
             
-          } yield (results union meta))
+          } yield fromPath(meta)).getOrElse(OdfObjects()))
+
         case _ => None // noop, infoitems are processed in the next lines
       }
 
