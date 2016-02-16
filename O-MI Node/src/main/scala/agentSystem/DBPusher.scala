@@ -58,6 +58,14 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
   {
 
+
+  case object TrimDB
+  private val scheduler = context.system.scheduler
+  private val interval = 30
+  log.info(s"scheduling databse trimming every $interval seconds")
+  scheduler.schedule(interval seconds, interval seconds, self, TrimDB)
+
+
   /**
    * Function for handling InputPusherCmds.
    *
@@ -68,6 +76,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     case HandleInfoItems(items)         => if (items.nonEmpty) sender() ! handleInfoItems(items)
     case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) sender() ! handlePathValuePairs(pairs)
     case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
+    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
     case u                              => log.warning("Unknown message received.")
   }
 

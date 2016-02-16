@@ -67,7 +67,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
-  val intervalScheduler = context.system.scheduler//ttlScheduler //temporarily
+  val intervalScheduler = context.system.scheduler
 
   /**
    * Schedule remove operation for subscriptions that are in prevayler stores,
@@ -137,8 +137,11 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               .groupBy(_.path)
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf))
             val pollData = eventData
-              .map(n=> OdfInfoItem(n._1, n._2)) // Map to Infoitems
-              .map(i => fromPath(i)).reduceOption(_.union(_)) //Create OdfObjects
+              .map(n => OdfInfoItem(n._1, n._2)) // Map to Infoitems
+              .map(i => fromPath(i))
+              .reduceOption(_.union(_)) //Create OdfObjects
+              //If empty create empty OdfTree, maybe create this and combine with the one from line above
+              .orElse(pollEvent.paths.map(p => fromPath(OdfInfoItem(p))).reduceOption(_.union(_)))
 
             pollData
           }

@@ -17,20 +17,14 @@ import java.sql.Timestamp
 
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
-import types.OdfTypes._
-import types._
-
-import scala.collection.JavaConversions.asJavaIterable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.postfixOps
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
-import scala.collection.SortedMap
-
-import types._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
+
+import http.Boot.system.log
 
 /**
  * Read-write interface methods for db tables.
@@ -327,16 +321,21 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     runSync(pollSubs ++= newData)
   }
 
-  def trimDB = runSync(trimDBI)
-  def trimDBI = {
-    database.historyLength
-    val data = latestValues groupBy(_.hierarchyfkName)
-    val sorted = for {
-      (k, v) <- data
-      deleted <- v.sortBy(_.timestamp.asc).take(database.historyLength)
-    } yield deleted
+  def trimDB() = {
+    val historyLen = 5//database.historyLength
+    val startT = System.currentTimeMillis()
+    log.info(s"trimming database to $historyLen newest values")
+    val qry = sqlu"""DELETE FROM SENSORVALUES
+                     WHERE VALUEID NOT IN (SELECT a.VALUEID FROM SENSORVALUES AS a
+                       LEFT JOIN SENSORVALUES AS a2
+                         ON a.HIERARCHYID = a2.HIERARCHYID AND a.TIME <= a2.TIME
+                     GROUP BY a.VALUEID
+                     HAVING COUNT(*) <= ${historyLen});"""
 
-    //take + delete might not work
-    sorted.delete
+    val runQ = runSync(qry)
+    val endT = System.currentTimeMillis()
+    log.info(s"Deleting took ${endT - startT} milliseconds")
+    runQ
   }
+
 }
