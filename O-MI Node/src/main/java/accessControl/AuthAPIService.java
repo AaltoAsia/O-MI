@@ -35,8 +35,8 @@ import java.util.Iterator;
  */
 public class AuthAPIService implements AuthApi {
 
-    private final int authServicePort = 8088;
-    private final String authServiceURI = "http://localhost:" + authServicePort + "/PermissionService";
+    private final int authServicePort = 8009;
+    private final String authServiceURI = "http://localhost:" + authServicePort + "/security/PermissionService";
 
 //    @Override
 //    public boolean isAuthorizedForType(spray.http.HttpRequest httpRequest,
