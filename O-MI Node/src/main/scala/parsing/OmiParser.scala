@@ -123,56 +123,56 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
   
   private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
-  read.requestID.nonEmpty match {
+    read.requestID.nonEmpty match {
       case true =>
-      Right(Iterable(
-        PollRequest(
-          ttl,
-          uriToStringOption(read.callback),
-          read.requestID map parseRequestID
-        )))
-      case false =>
-      read.msg match {
-        case Some(msg) =>
-        val odfParseResult = parseMsg(read.msg, read.msgformat)
-        odfParseResult match {
-          case Left(errors)  => Left(errors)
-          case Right(odf) => 
-          read.interval match {
-            case None =>
-            Right(Iterable(
-              ReadRequest(
-                ttl,
-                odf,
-                gcalendarToTimestampOption(read.begin),
-                gcalendarToTimestampOption(read.end),
-                read.newest,
-                read.oldest,
-                uriToStringOption(read.callback)
-              )
-            ))
-            case Some(interval) =>
-            Right(Iterable(
-              SubscriptionRequest(
-                ttl,
-                parseInterval(interval),
-                odf,
-                read.newest,
-                read.oldest,
-                uriToStringOption(read.callback)
-              )
-          ))
-      }
-        }
+        Right(Iterable(
+          PollRequest(
+            ttl,
+            uriToStringOption(read.callback),
+            read.requestID map parseRequestID
+          )))
+        case false =>
+          read.msg match {
+            case Some(msg) =>
+              val odfParseResult = parseMsg(read.msg, read.msgformat)
+              odfParseResult match {
+                case Left(errors)  => Left(errors)
+                case Right(odf) => 
+                  read.interval match {
+                    case None =>
+                      Right(Iterable(
+                        ReadRequest(
+                          ttl,
+                          odf,
+                          gcalendarToTimestampOption(read.begin),
+                          gcalendarToTimestampOption(read.end),
+                          read.newest,
+                          read.oldest,
+                          uriToStringOption(read.callback)
+                        )
+                      ))
+                    case Some(interval) =>
+                      Right(Iterable(
+                        SubscriptionRequest(
+                          ttl,
+                          parseInterval(interval),
+                          odf,
+                          read.newest,
+                          read.oldest,
+                          uriToStringOption(read.callback)
+                        )
+                      ))
+                  }
+              }
 
-      case None =>
-        Left(
-          Iterable(
-            ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
-          )
-        )
+            case None =>
+              Left(
+                Iterable(
+                  ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+                )
+              )
+          }
     }
-  }
 
   private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
     val odfParseResult = parseMsg(write.msg, write.msgformat)

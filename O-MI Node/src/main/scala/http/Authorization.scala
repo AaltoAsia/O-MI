@@ -16,6 +16,7 @@ package http
 import spray.http._
 import spray.routing._
 import Directives._
+import scala.util.{Try, Success, Failure}
 
 import types.OmiTypes._
 import Boot.system.log
@@ -95,7 +96,15 @@ object Authorization {
         ourTest   <- next
 
         combinedTest = (request: OmiRequest) =>
-          otherTest(request) orElse ourTest(request) // If any authentication method succeeds
+          otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
+            match {  // catch any exceptions, because we want to try other, possibly working extensions too
+
+              case Success(result) => result
+              case Failure(exception) =>
+                log.error(exception, "While running authorization extensions, trying next extension")
+                None
+            }
+          )
 
       } yield combinedTest)
   }

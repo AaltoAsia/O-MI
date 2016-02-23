@@ -6,7 +6,9 @@ import spray.http.HttpRequest
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.lang.{ Iterable => JavaIterable }
+import scala.util.{Try, Success, Failure}
 
+import Boot.system.log
 import types.Path
 import types.OmiTypes._
 import types.OdfTypes._
@@ -79,37 +81,45 @@ trait AuthApiProvider extends AuthorizationExtension {
 
       authorizationSystems.foldLeft[Option[OmiRequest]] (None) {(lastTest, nextAuthApi) =>
         lastTest orElse (
-          nextAuthApi.isAuthorizedForRequest(httpRequest, orgOmiRequest) match {
-            case Unauthorized => None
-            case Authorized => Some(orgOmiRequest)
-            case Partial(paths) => 
+          Try{nextAuthApi.isAuthorizedForRequest(httpRequest, orgOmiRequest)} match {
+            case Success(Unauthorized) => None
+            case Success(Authorized) => Some(orgOmiRequest)
+            case Success(Partial(maybePaths)) => 
 
-              // Rebuild the request having only `paths`
-              val pathTrees = paths map {path =>
-                currentTree.get(path) match {
-                  case Some(nodeType) => fromPath(nodeType)
-                  case None => OdfObjects()
+              val newOdfOpt = for {
+                paths <- Option(maybePaths) // paths might be null
+
+                // Rebuild the request having only `paths`
+                pathTrees = paths collect {
+                  case path: Path =>              // filter nulls out
+                    currentTree.get(path) match { // figure out is it InfoItem or Object
+                      case Some(nodeType) => fromPath(nodeType)
+                      case None => OdfObjects()
+                    }
                 }
 
+              } yield pathTrees.fold(OdfObjects())(_ union _)
+
+              newOdfOpt match {
+                case Some(newOdf) if (newOdf.objects.nonEmpty) =>
+                  orgOmiRequest match {
+                    case r: ReadRequest         => Some(r.copy(odf = newOdf))
+                    case r: SubscriptionRequest => Some(r.copy(odf = newOdf))
+                    case r: WriteRequest        => Some(r.copy(odf = newOdf))
+                    case r: ResponseRequest     => Some(r.copy(results = 
+                      asJavaIterable(Iterable(r.results.head.copy(odf = Some(newOdf)))) // TODO: make better copy logic?
+                    ))
+                    case r: Product => throw new NotImplementedError(
+                      s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.productPrefix}' not yet implemented in O-MI node.")
+                    case m => 
+                      (new MatchError(m)).printStackTrace()
+                      None
+                  }
+                case _ => None
               }
-              val newOdf = pathTrees.fold(OdfObjects())(_ union _)
-
-              if (newOdf.objects.nonEmpty) 
-                orgOmiRequest match {
-                  case r: ReadRequest         => Some(r.copy(odf = newOdf))
-                  case r: SubscriptionRequest => Some(r.copy(odf = newOdf))
-                  case r: WriteRequest        => Some(r.copy(odf = newOdf))
-                  case r: ResponseRequest     => Some(r.copy(results = 
-                    asJavaIterable(Iterable(r.results.head.copy(odf = Some(newOdf)))) // TODO: make better copy logic?
-                  ))
-                  case r: Product => throw new NotImplementedError(
-                    s"Partial authorization granted for ${paths.mkString(", ")}, BUT request '${r.productPrefix}' not yet implemented in O-MI node.")
-                  case m => 
-                    (new MatchError(m)).printStackTrace()
-                    None
-                }
-              else None
-
+            case Failure(exception) =>
+                log.error(exception, "While running AuthPlugins. => Unauthorized, trying next plugin")
+                None
           }
         )
       }
