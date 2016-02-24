@@ -354,7 +354,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     // Optimizing basic read requests
     val allResults = 
-      if (newest.isEmpty && oldest.isEmpty && begin.isEmpty && end.isEmpty)  
+      if ((newest.isEmpty || newest.exists(_ == 1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
         getFromCache()
       else
         getFromDB()
