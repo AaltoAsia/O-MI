@@ -14,12 +14,10 @@
 package types
 package OdfTypes
 
-import parsing.xmlGen._
+import java.lang.{Iterable => JavaIterable}
+
 import parsing.xmlGen.xmlTypes._
-import scala.xml.XML
-import java.sql.Timestamp
-import java.lang.{ Iterable => JavaIterable }
-import scala.collection.JavaConversions.{ asJavaIterable, iterableAsScalaIterable }
+
 import scala.collection.JavaConverters._
 import scala.language.existentials
 
@@ -71,7 +69,6 @@ object `package` {
    */
   @annotation.tailrec
   def fromPath(last: OdfNode): OdfObjects = {
-
     val parentPath = last.path.dropRight(1)
 
     last match {

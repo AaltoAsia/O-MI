@@ -61,7 +61,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
   case object TrimDB
   private val scheduler = context.system.scheduler
-  private val interval = 30
+  private val interval = 60
   log.info(s"scheduling databse trimming every $interval seconds")
   scheduler.schedule(interval seconds, interval seconds, self, TrimDB)
 
@@ -78,10 +78,6 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
     case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
     case u                              => log.warning("Unknown message received.")
-  }
-
-  private def trimValues = {
-
   }
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
@@ -176,20 +172,13 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   }
 
   /**
-   * Helper method to create sub values using id, path, and value
-   */
-  private def createSubValue(id: Long, path: Path, value: OdfValue): SubValue = {
-      SubValue(id, path, value.timestamp, value.value,value.typeValue)
-    }
-
-  /**
    * Creates values that are to be updated into the database for polled subscription.
    * @param path
    * @param newValue
    * @param oldValueOpt
    * @return returns Sequence of SubValues to be added to database
    */
-  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
+  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Set[SubValue] = {
     val relatedPollSubs = SingleStores.pollPrevayler execute GetSubsForPath(path)
 
     relatedPollSubs.collect {
@@ -197,7 +186,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
       case sub if(oldValueOpt.forall(oldValue =>
         oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
-          createSubValue(sub.id,path,newValue)
+          SubValue(sub.id, path, newValue.timestamp, newValue.value,newValue.typeValue)
       }
     }
   }
@@ -215,9 +204,12 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
       value <- info.values
     } yield (path, value, oldValueOpt)
 
-    val newPollValues = pathValueOldValueTuples.flatMap(n => handlePollData _ tupled n)
-
-    dbobject.addNewPollData(newPollValues)
+    val newPollValues = pathValueOldValueTuples.flatMap{n =>
+      handlePollData(n._1, n._2 ,n._3)}
+      //handlePollData _ tupled n}
+    if(!newPollValues.isEmpty) {
+      dbobject.addNewPollData(newPollValues)
+    }
 
     val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)
     val triggeringEvents = callbackDataOptions.flatten
