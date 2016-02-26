@@ -132,8 +132,16 @@ public class AuthAPIService implements AuthApi {
                     // the very first query to read the tree
                     if (nextObj.equalsIgnoreCase("Objects")) {
                         System.out.println("Root tree requested. forwarding to Partial API.");
-                        //return Authorized.instance();
-                        return new Partial(getAvailablePaths(ck.toString()));
+
+
+                        ArrayList<Path> res_paths = (ArrayList)getAvailablePaths(ck.toString());
+                        if (res_paths.size() == 1) {
+                            String obj_path = res_paths.get(0).toString();
+                            if (obj_path.equalsIgnoreCase("all"))
+                                return Authorized.instance();
+                        }
+
+                        return new Partial(res_paths);
                     } else
                         break;
                 }
@@ -197,7 +205,20 @@ public class AuthAPIService implements AuthApi {
             }
             rd.close();
 
-            JsonObject paths = new JsonParser().parse(response.toString()).getAsJsonObject();
+            String response_result = response.toString();
+
+            // If the whole tree is allowed (administrator mode)
+            // We need this since the list of administrators is stored on AC side
+            if (response_result.equalsIgnoreCase("true"))
+            {
+                ArrayList<Path> res = new ArrayList<>();
+                res.add(new Path("all"));
+                return res;
+            }
+
+
+            // Parse the paths and return them
+            JsonObject paths = new JsonParser().parse(response_result).getAsJsonObject();
             JsonArray json_paths = paths.getAsJsonArray("paths");
 
             ArrayList<Path> finalPaths = new ArrayList<>(json_paths.size());
