@@ -165,8 +165,9 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf))
 
             val pollData: OdfObjects = intervalData.map( pathValuesTuple =>{
+
               val (path, values) = pathValuesTuple match {
-                case (p, v) if (v.nonEmpty) => (p, v.:+(v.last.copy(timestamp = new Timestamp(pollTime))))
+                case (p, v) if (v.nonEmpty) => (p, v.:+(v.last.copy(timestamp = new Timestamp(pollTime)))) //add polltime
                 case (p, v) => {
                   log.debug(s"No values found for path: $p in Interval subscription poll for sub id ${pollSub.id}")
                   val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {
@@ -177,15 +178,37 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                   }
                   (p, latestValue)
                 }
-              }
 
-              val calculatedData: Option[IndexedSeq[OdfValue]] = if (values.size < 2) None else {
+              }
+              def calcData = {
+                val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
+                var startTime = pollInterval.lastPolled.getTime()
+                val interval  = pollInterval.interval.toMillis
+                var i = 1
+                if(values.length >= 2){
+
+                var previousValue = values.head
+                while(i < values.length){
+                  if(values(i).timestamp.getTime >= (startTime + interval)){
+                    buffer += previousValue
+                    startTime += interval
+                  } else { //if timestmap.getTime < startime + interval
+                    previousValue = values(i)
+                    i += 1
+                  }
+                }
+                  Some(buffer.toVector)
+                } else None
+              }
+              val calculatedData = calcData
+              /*val calculatedData: Option[IndexedSeq[OdfValue]] = if (values.size < 2) None else {
               //values size is atleast 2 if there is any data found for sub because the last value is added with pollTime timestamp
                   val newValues: IndexedSeq[OdfValue] = values
                     .tail
                     .foldLeft[(IndexedSeq[OdfValue], Long)]((Vector(values.head), pollInterval.lastPolled.getTime))
-                    { (col, nextSensorValue) => //if
+                    { (col, nextSensorValue) =>
                     //produces tuple with the values in the first variable, second variable is to keep track of passed intervals
+                    val tempTime = System.currentTimeMillis()
                     if (nextSensorValue.timestamp.getTime() < col._2) {
                       //If sensor value updates are faster than the interval of the Subscription
                       (col._1.updated(col._1.length - 1, nextSensorValue), col._2)
@@ -198,7 +221,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                     }
                   }._1.tail.init //Remove last and first values that were used to generate intermediate values
                   Option(newValues)
-                  }
+                  }*/
 
                 calculatedData.map(cData => path -> cData)
               }).flatMap{ n => //flatMap removes None values

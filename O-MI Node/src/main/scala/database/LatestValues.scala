@@ -147,7 +147,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
         case polledEvent: PollEventSub =>
           store.idToSub = store.idToSub + (id -> polledEvent.copy(lastPolled = new Timestamp(d.getTime())))
         case pollInterval: PollIntervalSub =>
-          store.idToSub = store.idToSub + (id ->pollInterval.copy(lastPolled = new Timestamp(d.getTime())))
+          store.idToSub = store.idToSub + (id -> pollInterval.copy(lastPolled = new Timestamp(d.getTime())))
       })
       sub
     }
