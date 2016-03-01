@@ -228,21 +228,22 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
           timeframedTreeData = subTreeData filter {
             case (node, Some(value)) => betweenLogic(begin, end)(value)
-            case (node, None)        => true // keep objects for their description etc.
+            case (node, None)        => true // keep objects for their description etc. ??
           }
 
           dbInfoItems: DBInfoItems =
             toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
 
           
-          results = (for {
+          results = for {
             odf <- odfConversion(dbInfoItems)
-            desc <-
-              if (attachObjectDescription) metadataTree.get(path) map fromPath
-              else None
-            } yield odf union desc).getOrElse(fromPath(OdfObject(path)))
+            desc = {
+                if (attachObjectDescription) metadataTree.get(path) map fromPath
+                else None
+              }.getOrElse(fromPath(OdfObject(path)))
+            } yield odf union desc
 
-        } yield Some(results)
+        } yield results
 
         case None => // Requested object was not found, TODO: think about error handling
           DBIO.successful(None)
@@ -349,12 +350,15 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       // And then get all InfoItems with the same call
       val infoItems = requestsSeq collect {case ii: OdfInfoItem => ii}
       val paths = infoItems map (_.path)
+
       val infoItemData = SingleStores.latestStore execute LookupSensorDatas(paths)
+      val foundPaths = (infoItemData map { case (path,_) => path }).toSet
+
       val resultOdf = SingleStores.buildOdfFromValues(infoItemData)
       objectData :+ Some(
         infoItems.foldLeft(resultOdf){(result, info) =>
           info match {
-            case OdfInfoItem(path, _, _, metadataQuery) =>
+            case OdfInfoItem(path, _, _, metadataQuery) if foundPaths contains path =>
               result union fromPath(getMetaInfoItem(metadataQuery, path))
           }
         }

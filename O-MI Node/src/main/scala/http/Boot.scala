@@ -79,26 +79,28 @@ trait Starter {
   }
 
   def saveSettingsOdf() = {
-    // Same timestamp for all OdfValues of the settings
-    val date = new Date();
-    val currentTime = new java.sql.Timestamp(date.getTime)
+    if (settings.settingsOdfPath.nonEmpty) {
+      // Same timestamp for all OdfValues of the settings
+      val date = new Date();
+      val currentTime = new java.sql.Timestamp(date.getTime)
 
-    // Save settings in db, this works also as a test for writing
-    val numDescription =
-      "Number of latest values (per sensor) that will be saved to the DB"
-    system.log.info(s"$numDescription: ${settings.numLatestValues}")
-    val dataSaveTest = InputPusher.handleInfoItems(Iterable(
-      OdfInfoItem(
-        Path(settings.settingsOdfPath + "num-latest-values-stored"), 
-        Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
-        Some(OdfDescription(numDescription))
-      )
-    ), new Timeout(5, SECONDS))
+      // Save settings in db, this works also as a test for writing
+      val numDescription =
+        "Number of latest values (per sensor) that will be saved to the DB"
+      system.log.info(s"$numDescription: ${settings.numLatestValues}")
+      val dataSaveTest = InputPusher.handleInfoItems(Iterable(
+        OdfInfoItem(
+          Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+          Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
+          Some(OdfDescription(numDescription))
+        )
+      ), new Timeout(5, SECONDS))
 
-    Await.result(dataSaveTest, 5 seconds) match {
-      case Success(true) => system.log.info("O-MI InputPusher system working.")
-      case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
-      case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
+      Await.result(dataSaveTest, 5 seconds) match {
+        case Success(true) => system.log.info("O-MI InputPusher system working.")
+        case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
+        case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
+      }
     }
   }
 
