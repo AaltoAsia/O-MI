@@ -30,7 +30,15 @@ object Results{
   /** O-MI result for request that caused internal server error. 
     * @return O-MI result tag.
     **/
-  def internalError(msg: String = "Internal error") : RequestResultType = simple( "500", Some(msg) )
+  def internalError(msg: String = "Internal error") : RequestResultType = 
+      Results.simple("500", Some("Internal server error: " + msg))
+  def internalError(e: Throwable) =
+      Results.simple("500", Some("Internal server error: " + e.getMessage()))
+
+  def timeOutError(message: String = "") = 
+    Results.simple("503",
+      Some(s"TTL timeout, consider increasing TTL or is the server overloaded? $message"))
+
   /** O-MI result for features that aren't implemented.
     * @param msg 
     * @return O-MI result tag.

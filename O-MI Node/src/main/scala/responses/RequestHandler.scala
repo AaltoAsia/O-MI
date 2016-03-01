@@ -124,21 +124,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case Success(a)                         => a //TODO does this fix default case not specified problem?
 
       case Failure(e: TimeoutException) =>
-        (
-          xmlFromResults(
-            1.0,
-            Results.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?"))),
-            500)
+        (OmiGenerator.timeOutError(e.getMessage), 503)
       case Failure(e: IllegalArgumentException) =>
-        (invalidRequest(e.getMessage), 400)
+        (OmiGenerator.invalidRequest(e.getMessage), 400)
 
       case Failure(e) =>
         actionOnInternalError(e)
-        (
-          xmlFromResults(
-            1.0,
-            Results.simple("501", Some("Internal server error: " + e.getMessage()))),
-            501)
+        (OmiGenerator.internalError(e), 500)
     }
   }
 
@@ -202,14 +194,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
       //XXX:
       val result = Await.result(future, ttl)
-      result match{
-      case Success(b: Boolean ) =>
-        if(b)
-          (success, 200)
-        else
-          (invalidRequest("Failed without exception."), 500)
-        case Failure(thro: Throwable) => 
-        (internalError(thro),500)
+      result match {
+        case Success(b: Boolean ) =>
+          if(b)
+            (success, 200)
+          else
+            throw new RuntimeException("Write failed without exception.")
+        case Failure(thro: Throwable) => throw thro
       }
   }
   /** Method for handling ResponseRequest.
@@ -232,7 +223,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               else
                 Results.invalidRequest("Failed without exception.")
               case Failure(thro: Throwable) => 
-                Results.internalError("Internal server error: " + thro.getMessage())
+                Results.internalError(thro)
             }
             case None => //noop?
               Results.success
@@ -295,7 +286,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           Results.notFoundSub(id.toString)
         case Failure(e) => 
           (Results.internalError(
-            s"Internal server error when trying to poll subscription: ${e.getMessage}"))
+            s"Error when trying to poll subscription: ${e.getMessage}"))
       }
     }
     val returnTuple = (
@@ -321,13 +312,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           (Results.invalidRequest(e.getMessage), 400)
         case Failure(t) =>
           (Results.internalError(
-            s"Internal server error when trying to create subscription: ${t.getMessage}"),
+            s"Error when trying to create subscription: ${t.getMessage}"),
             500)
         case Success(id: Long) =>
           (Results.subscription(id.toString), 200)
         case Success(received) =>
           (Results.internalError(
-            s"Internal server error: Invalid response type from SubscriptionHandler: ${received.getClass().getName}"),
+            s"Invalid response type from SubscriptionHandler: ${received.getClass().getName}"),
             500)
       }
     (
@@ -373,7 +364,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           }
           case Failure(e) => {
             returnCode = 501
-            Results.internalError("Internal server error, when trying to cancel subscription: " + e.toString)
+            Results.internalError("Error when trying to cancel subscription: " + e.toString)
           }
         }(breakOut): _*),
         returnCode)

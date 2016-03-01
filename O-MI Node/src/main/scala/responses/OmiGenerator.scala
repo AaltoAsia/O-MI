@@ -49,36 +49,36 @@ object OmiGenerator {
     )
 }
 
-/** Generates O-MI RequestResultType.
-  * @param returnType O-MI return tag.
-  * @param requestID O-MI requestID tag's value.
-  * @param msgformat value for omiEnvelope tag's msgformat attribute.
-  * @param msg msg tag.
-  * @return O-MI result tag.
-  */
-def omiResult(
-  returnType: ReturnType, 
-  requestID: Option[String] = None,
-  msgformat: Option[String] = None,
-  msg: Option[NodeSeq] = None ) : RequestResultType = {
-  RequestResultType(
-    returnType,
-    requestID match{
-      case Some(id) => Some(IdType(id))
-      case None => None
-    },
-    if(msgformat.nonEmpty && msg.nonEmpty)
-      Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), msg.get) )
-    else
-      None,
-    None,
-    None,
-    if(msgformat.nonEmpty && msg.nonEmpty)
-      msgformat
-    else
-      None
-  )
-  } 
+  /** Generates O-MI RequestResultType.
+    * @param returnType O-MI return tag.
+    * @param requestID O-MI requestID tag's value.
+    * @param msgformat value for omiEnvelope tag's msgformat attribute.
+    * @param msg msg tag.
+    * @return O-MI result tag.
+    */
+  def omiResult(
+    returnType: ReturnType, 
+    requestID: Option[String] = None,
+    msgformat: Option[String] = None,
+    msg: Option[NodeSeq] = None ) : RequestResultType = {
+      RequestResultType(
+        returnType,
+        requestID match{
+          case Some(id) => Some(IdType(id))
+          case None => None
+        },
+        if(msgformat.nonEmpty && msg.nonEmpty)
+          Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), msg.get) )
+        else
+          None,
+        None,
+        None,
+        if(msgformat.nonEmpty && msg.nonEmpty)
+          msgformat
+        else
+          None
+      )
+    } 
 
   /** Generates O-MI ReturnType 
     * @param returnCode HTTP return code.
@@ -114,7 +114,7 @@ def omiResult(
     * @param results used in generation.
     * @return O-MI omiEnvelo tag as xml.NodeSeq.
     */
-  def xmlFromResults(ttl: Double, results: RequestResultType*) = {
+  def xmlFromResults(ttl: Double, results: RequestResultType*): xml.NodeSeq = {
     xmlMsg(wrapResultsToResponseAndEnvelope(ttl, results: _*))
   }
 
@@ -164,27 +164,27 @@ def omiResult(
     Results.simple("400",
       Some(err.map { e => e.msg }.mkString("\n"))))
 
-    /** O-MI response for request which callback address was malformed.
-      * @param callback Invalid callback address
-      */
-    def invalidCallback(callback: String) =
-    xmlFromResults(
-      1.0,
-      Results.simple("400",
-        Some("Invalid callback address: " + callback)))
+  /** O-MI response for request which callback address was malformed.
+    * @param callback Invalid callback address
+    */
+  def invalidCallback(callback: String) =
+  xmlFromResults(
+    1.0,
+    Results.simple("400",
+      Some("Invalid callback address: " + callback)))
 
-      /** O-MI response for request that caused an exception.
-        * @param e Exception caught.
-        */
-      def internalError(e: Throwable) =
-      xmlFromResults(
-        1.0,
-        Results.simple("501", Some("Internal server error: " + e.getMessage())))
+  /** O-MI response for request that caused an exception.
+    * @param e Exception caught.
+    */
+  def internalError(e: Throwable) =
+  xmlFromResults(
+    1.0, Results.internalError(e)
+  )
 
-      /** O-MI response for request which ttl timedout. */
-      def timeOutError = xmlFromResults(
-        1.0,
-        Results.simple("500", Some("TTL timeout, consider increasing TTL or is the server overloaded?")))
-    }
+  /** O-MI response for request which ttl timedout. */
+  def timeOutError(message: String = "") = xmlFromResults(
+    1.0, Results.timeOutError(message)
+  )
+}
 
-    import OmiGenerator._
+import OmiGenerator._
