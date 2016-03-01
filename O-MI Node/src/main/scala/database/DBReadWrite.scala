@@ -24,8 +24,6 @@ import types._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
-import http.Boot.system.log
-
 /**
  * Read-write interface methods for db tables.
  */
@@ -286,7 +284,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def pollEventSubscription(id: Long): Seq[SubValue] = {
     runSync(pollEventSubscriptionI(id))
   }
-
+  def debugMethod = {
+    runSync(pollSubs.result) //TODO remove
+  }
   private def pollEventSubscriptionI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)
     for{
@@ -322,7 +322,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
   def trimDB() = {
-    val historyLen = 5//database.historyLength
+  /*  val historyLen = database.historyLength
     val startT = System.currentTimeMillis()
     log.info(s"trimming database to $historyLen newest values")
     val qry = sqlu"""DELETE FROM SENSORVALUES
@@ -336,6 +336,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val endT = System.currentTimeMillis()
     log.info(s"Deleting took ${endT - startT} milliseconds")
     runQ
-  }
+  */}
 
 }
