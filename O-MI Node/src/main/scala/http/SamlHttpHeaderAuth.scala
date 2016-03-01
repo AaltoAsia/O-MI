@@ -61,7 +61,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
       None
   )
 
-  private def hasPermission: User => OmiRequest => Boolean = {
+  private def hasPermission: User => OmiRequest => Option[OmiRequest] = {
     case u @ Some(user) => {
 
       case r : PermissiveRequest =>
@@ -70,17 +70,16 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
 
         if (result) {
           log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
+          Some(r)
         } else {
           log.warning(s"Unauthorized user: $u")
+          None
         }
 
-        result
-
-
-      case _ => false
+      case _ => None
     }
     case _ =>
-      {_ =>  false}
+      {_ =>  None}
   }
 
   abstract override def makePermissionTestFunction =

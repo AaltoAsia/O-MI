@@ -134,7 +134,6 @@ trait Starter {
     ), "omi-service")
 
 
-
     implicit val timeoutForBind = Timeout(5.seconds)
 
     IO(Tcp)  ? Tcp.Bind(sensorDataListener,

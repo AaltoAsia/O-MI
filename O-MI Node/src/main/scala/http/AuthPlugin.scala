@@ -6,26 +6,37 @@ import spray.http.HttpRequest
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.lang.{ Iterable => JavaIterable }
+import scala.util.{Try, Success, Failure}
 
+import Boot.system.log
 import types.Path
 import types.OmiTypes._
-import types.OdfTypes
+import types.OdfTypes._
 import Authorization.AuthorizationExtension
+import database._
 
 import scala.collection.mutable.Buffer
+
+
+sealed trait AuthorizationResult
+case object Authorized extends AuthorizationResult {def instance = this}
+case object Unauthorized extends AuthorizationResult {def instance = this}
+case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
 
 /**
  * Implement this interface and register the class through AuthApiProvider
  */
 trait AuthApi {
+
+
   /** This can be overridden or isAuthorizedForType can be overridden instead.
    *  @return True if user is authorized
    */
-  def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): Boolean = {
+  def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {
     omiRequest match {
       case odfRequest: OdfRequest =>
 
-        val paths = OdfTypes.getLeafs(odfRequest.odf) map (_.path) // todo: refactor getLeafs to member lazy to re-use later
+        val paths = getLeafs(odfRequest.odf) map (_.path) // todo: refactor getLeafs to member lazy to re-use later
 
         odfRequest match {
           case r: PermissiveRequest =>  // Write or Response
@@ -35,7 +46,7 @@ trait AuthApi {
             isAuthorizedForType(httpRequest, false, paths)
 
       }
-      case _ => false
+      case _ => Unauthorized
     }
   }
 
@@ -46,7 +57,7 @@ trait AuthApi {
    *  @param paths O-DF paths to all of the requested or to be written InfoItems.
    *  @return True if user is authorized, false if unauthorized
    */
-  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): Boolean
+  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult
 
 }
 
@@ -63,8 +74,55 @@ trait AuthApiProvider extends AuthorizationExtension {
   // AuthorizationExtension implementation
   abstract override def makePermissionTestFunction = combineWithPrevious(
     super.makePermissionTestFunction,
-    extract {context => context.request} map {(httpRequest: HttpRequest) => (omiRequest: OmiRequest) =>
-      authorizationSystems exists {_.isAuthorizedForRequest(httpRequest, omiRequest)}
+    extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: OmiRequest) =>
+
+      val currentTree = SingleStores.hierarchyStore execute GetTree()
+      //authorizationSystems exists {authApi =>
+
+      authorizationSystems.foldLeft[Option[OmiRequest]] (None) {(lastTest, nextAuthApi) =>
+        lastTest orElse (
+          Try{nextAuthApi.isAuthorizedForRequest(httpRequest, orgOmiRequest)} match {
+            case Success(Unauthorized) => None
+            case Success(Authorized) => Some(orgOmiRequest)
+            case Success(Partial(maybePaths)) => 
+
+              val newOdfOpt = for {
+                paths <- Option(maybePaths) // paths might be null
+
+                // Rebuild the request having only `paths`
+                pathTrees = paths collect {
+                  case path: Path =>              // filter nulls out
+                    currentTree.get(path) match { // figure out is it InfoItem or Object
+                      case Some(nodeType) => fromPath(nodeType)
+                      case None => OdfObjects()
+                    }
+                }
+
+              } yield pathTrees.fold(OdfObjects())(_ union _)
+
+              newOdfOpt match {
+                case Some(newOdf) if (newOdf.objects.nonEmpty) =>
+                  orgOmiRequest match {
+                    case r: ReadRequest         => Some(r.copy(odf = newOdf))
+                    case r: SubscriptionRequest => Some(r.copy(odf = newOdf))
+                    case r: WriteRequest        => Some(r.copy(odf = newOdf))
+                    case r: ResponseRequest     => Some(r.copy(results = 
+                      asJavaIterable(Iterable(r.results.head.copy(odf = Some(newOdf)))) // TODO: make better copy logic?
+                    ))
+                    case r: Product => throw new NotImplementedError(
+                      s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.productPrefix}' not yet implemented in O-MI node.")
+                    case m => 
+                      (new MatchError(m)).printStackTrace()
+                      None
+                  }
+                case _ => None
+              }
+            case Failure(exception) =>
+                log.error(exception, "While running AuthPlugins. => Unauthorized, trying next plugin")
+                None
+          }
+        )
+      }
     }
   )
 }

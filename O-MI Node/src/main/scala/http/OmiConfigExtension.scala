@@ -25,6 +25,8 @@ class OmiConfigExtension(config: Config) extends Extension {
 
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
+  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
+  val callbackTimeout: Long = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
 
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")

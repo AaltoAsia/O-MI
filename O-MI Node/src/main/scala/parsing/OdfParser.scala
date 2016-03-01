@@ -46,9 +46,10 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(file: File): OdfParseResult = {
     val root = Try(
       XML.loadFile(file)
-    ).getOrElse(
-      return  Left( Iterable( ParseError("Invalid XML") ) ) 
-    )
+    ) match {
+      case Success(s) => s
+      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
 
     parse(root)
   }
@@ -62,9 +63,10 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(xml_msg: String): OdfParseResult = {
     val root = Try(
       XML.loadString(xml_msg)
-    ).getOrElse(
-      return  Left( Iterable( ParseError("Invalid XML") ) ) 
-    )
+    ) match {
+      case Success(s) => s
+      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
 
     parse(root)
   }
@@ -76,7 +78,7 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(root: xml.Node): OdfParseResult = { 
-    val schema_err = schemaValitation(root)
+    val schema_err = schemaValidation(root)
     if (schema_err.nonEmpty) return Left(
       schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
     ) 

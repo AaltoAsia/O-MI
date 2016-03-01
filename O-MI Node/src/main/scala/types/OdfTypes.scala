@@ -175,8 +175,8 @@ case class OdfObjects(
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
   path: Path,
-  infoItems: OdfTreeCollection[OdfInfoItem],
-  objects: OdfTreeCollection[OdfObject],
+  infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
+  objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None
   ) extends OdfObjectImpl(path, infoItems, objects, description, typeValue) with OdfNode with Serializable{

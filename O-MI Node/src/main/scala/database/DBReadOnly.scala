@@ -216,10 +216,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // but it shouldn't be a big problem
     val metadataTree = SingleStores.hierarchyStore execute GetTree()
 
-    def processObjectI(path: Path): DBIO[Option[OdfObjects]] = {
+    def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
-        case Some(rootNode) => for {
-          subTreeData <- getSubTreeI(rootNode.path)
+        case Some(rootNode) => for { // DBIO
+
+          //subTreeData <- getSubTreeI(rootNode.path)
+          subTreeData <- getSubTreeQ(rootNode).result // TODO: don't get all values
 
           // NOTE: We can only apply "between" logic here because of the subtree query
           // basicly we fetch too much data if "newest" or "oldest" is set
@@ -229,11 +231,18 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             case (node, None)        => true // keep objects for their description etc.
           }
 
-          dbInfoItems: DBInfoItems = toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
+          dbInfoItems: DBInfoItems =
+            toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
 
-          results = odfConversion(dbInfoItems)
+          
+          results = (for {
+            odf <- odfConversion(dbInfoItems)
+            desc <-
+              if (attachObjectDescription) metadataTree.get(path) map fromPath
+              else None
+            } yield odf union desc).getOrElse(fromPath(OdfObject(path)))
 
-        } yield results
+        } yield Some(results)
 
         case None => // Requested object was not found, TODO: think about error handling
           DBIO.successful(None)
@@ -259,13 +268,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
 
-        runSync(processObjectI(obj.path))
+        runSync(processObjectI(obj.path, false))
 
-      case obj @ OdfObject(path, items, objects, _, _) =>
+      case obj @ OdfObject(path, items, objects, description, _) =>
         require(items.isEmpty && objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-        runSync(processObjectI(path))
+        runSync(processObjectI(path, description.nonEmpty))
 
       case OdfInfoItem(path, rvalues, _, metadataQuery) =>
 
@@ -274,7 +283,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           nodeO match {
             case Some(node @ DBNode(Some(nodeId), _, _, _, _, _, _, true)) => for {
 
-              odfInfoItem <- processObjectI(path)
+              odfInfoItem <- processObjectI(path, false)
 
 
               metaInfoItem: OdfInfoItem = getMetaInfoItem(metadataQuery, path)
@@ -352,7 +361,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       )
     }
 
-    // Optimizing basic read requests
+    // Optimizing basic read requests,
+    // TODO: optimize newest.exists(_ == 1) && (begin.nonEmpty || end.nonEmpty)
     val allResults = 
       if ((newest.isEmpty || newest.exists(_ == 1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
         getFromCache()

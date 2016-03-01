@@ -13,7 +13,8 @@
 **/
 package http
 
-import akka.actor.{Actor, ActorLogging}
+import accessControl.AuthAPIService
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingAdapter
 import http.Authorization._
 import parsing.OmiParser
@@ -167,11 +168,12 @@ trait OmiService
                                                  // O-MI supports multiple requests
               val (response, returnCode) = request match {
 
-                case Some(req : OmiRequest) => 
-                  if ( hasPermissionTest(req) ) {
-                    requestHandler.handleRequest(req)
-                  } else {
-                    (unauthorized, 401)
+                case Some(originalReq : OmiRequest) => 
+                  hasPermissionTest(originalReq) match {
+                    case Some(req) =>
+                      requestHandler.handleRequest(req)
+                    case None =>
+                      (unauthorized, 401)
                   }
                 case _ =>  (notImplemented, 501)
               }

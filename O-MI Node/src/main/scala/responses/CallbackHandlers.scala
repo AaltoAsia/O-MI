@@ -13,16 +13,16 @@
 **/
 package responses
 
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.{Try, Success, Failure}
-
-import akka.actor.ActorSystem
-import spray.http.{StatusCode, HttpResponse, HttpRequest, Uri}
-import spray.client.pipelining._
 import java.sql.Timestamp
 import java.util.Date
-import java.lang.Exception
+
+import akka.actor.ActorSystem
+import spray.client.pipelining._
+import spray.http.{HttpRequest, HttpResponse, StatusCode, Uri}
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.{Try, Failure, Success}
 
 
 /**
@@ -49,10 +49,10 @@ object CallbackHandlers {
     data: xml.NodeSeq,
     ttl: Duration): Future[CallbackResult] = Future{
 
-      val tryUntil = ttl match {
-        case f: FiniteDuration => new Timestamp( new Date().getTime + ttl.toMillis)
-        case _ => new Timestamp( new Date().getTime + 300 * 60000) // TODO: change this magical time constant
-      }
+      val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
+        case ttl: FiniteDuration => ttl.toMillis
+        case _ => http.Boot.settings.callbackTimeout
+      }))
       def currentTimestamp =  new Timestamp( new Date().getTime ) 
       def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
       val request = Post(address, data)

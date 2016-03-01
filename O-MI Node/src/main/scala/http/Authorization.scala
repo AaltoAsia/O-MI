@@ -16,6 +16,7 @@ package http
 import spray.http._
 import spray.routing._
 import Directives._
+import scala.util.{Try, Success, Failure}
 
 import types.OmiTypes._
 import Boot.system.log
@@ -55,7 +56,12 @@ import Boot.system.log
 
 
 object Authorization {
-  type PermissionTest = OmiRequest => Boolean
+  /**
+   * Permission tests return None if request is unauthorized or Some(sameOrNewRequest)
+   * if the user is authorized to make the `sameOrNewRequest` that can have some unauthorized
+   * objects removed or otherwise limit the original request.
+   */
+  type PermissionTest = OmiRequest => Option[OmiRequest]
 
   /** Simple private container for forcing the combination of previous authorization.
    *  Call the apply for the result.
@@ -90,7 +96,15 @@ object Authorization {
         ourTest   <- next
 
         combinedTest = (request: OmiRequest) =>
-          otherTest(request) || ourTest(request) // If any authentication method succeeds
+          otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
+            match {  // catch any exceptions, because we want to try other, possibly working extensions too
+
+              case Success(result) => result
+              case Failure(exception) =>
+                log.error(exception, "While running authorization extensions, trying next extension")
+                None
+            }
+          )
 
       } yield combinedTest)
   }
@@ -124,7 +138,7 @@ object Authorization {
      * working properly otherwise.
      */
     def makePermissionTestFunction = new CombinedTest(
-      provide(_ => false)
+      provide(_ => None)
     )
   }
 
@@ -145,7 +159,7 @@ import Authorization._
  */
 trait AllowAllAuthorization extends AuthorizationExtension {
   abstract override def makePermissionTestFunction = 
-    combineWithPrevious(super.makePermissionTestFunction, provide(_ => true))
+    combineWithPrevious(super.makePermissionTestFunction, provide(req => Some(req)))
 }
 
 
@@ -157,9 +171,9 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
     super.makePermissionTestFunction,
     provide{
       case r: PermissiveRequest =>
-        false
-      case _ =>
-        true
+        None
+      case r =>
+        Some(r)
     }
   )
 }
@@ -169,7 +183,7 @@ trait LogUnauthorized extends AuthorizationExtension {
     provide{
       case r =>
         log.warning(s"Unauthorized user: tried to use ${r.toString.take(130)}...")
-        false
+        None
     }
   )
 }

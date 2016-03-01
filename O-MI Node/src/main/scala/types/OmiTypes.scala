@@ -121,8 +121,11 @@ case class WriteRequest(
 case class ResponseRequest(
   results: Iterable[OmiResult],
   ttl: Duration = Duration.Inf
-) extends OmiRequest with PermissiveRequest{
+) extends OmiRequest with OdfRequest with PermissiveRequest{
       val callback = None
+      def odf = results.foldLeft(OdfObjects()){
+        _ union _.odf.getOrElse(OdfObjects())
+      }
    } 
 
 /** Cancel request, for cancelling subscription.
