@@ -115,17 +115,7 @@ object SingleStores {
           if (oldValue.timestamp before newValue.timestamp) {
             val onChangeData =
               if (oldValue.value != newValue.value) {
-
-                val oldInfoOpt = (hierarchyStore execute GetTree()).get(path)
-                oldInfoOpt match {
-                  case Some(oldInfo: OdfInfoItem) =>
-                    val newInfo = oldInfo.copy(values = Iterable(newValue))
-
-                    Some(ChangeEvent(newInfo))
-
-                  case thing => throw new RuntimeException(
-                    s"Problem in hierarchyStore, Some(OdfInfoItem) expected, actual: $thing")
-                }
+                    Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
               } else None  // Value is same as the previous
 
             // NOTE: This effectively discards incoming data that is older than the latest received value

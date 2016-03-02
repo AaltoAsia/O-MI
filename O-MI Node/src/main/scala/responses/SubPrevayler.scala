@@ -134,7 +134,10 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
         val emptyTree = pollSub
           .paths //get subscriptions paths
           .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
-          .map( oNode => fromPath(oNode)) //map OdfNodes to OdfObjects
+          .map{
+            case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
+            case o: OdfObject   => fromPath(OdfObject(o.path))
+            case o: OdfObjects  => fromPath(OdfObjects())} //map OdfNodes to OdfObjects
           .reduce(_.union(_)) //combine results
 
         //pollSubscription method removes the data from database and returns the requested data
