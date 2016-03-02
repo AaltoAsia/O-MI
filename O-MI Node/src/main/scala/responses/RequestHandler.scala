@@ -128,7 +128,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case Failure(e: IllegalArgumentException) =>
         (OmiGenerator.invalidRequest(e.getMessage), 400)
 
-      case Failure(e) =>
+      case Failure(e) => // all exception should be re-thrown here to log it consistently
         actionOnInternalError(e)
         (OmiGenerator.internalError(e), 500)
     }
@@ -223,7 +223,8 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
               else
                 Results.invalidRequest("Failed without exception.")
               case Failure(thro: Throwable) => 
-                Results.internalError(thro)
+                //Results.internalError(thro)
+                throw thro
             }
             case None => //noop?
               Results.success
@@ -285,8 +286,8 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         case Success(None) =>
           Results.notFoundSub(id.toString)
         case Failure(e) => 
-          (Results.internalError(
-            s"Error when trying to poll subscription: ${e.getMessage}"))
+          throw new RuntimeException(
+            s"Error when trying to poll subscription: ${e.getMessage}")
       }
     }
     val returnTuple = (
@@ -311,15 +312,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         case Failure(e: IllegalArgumentException) =>
           (Results.invalidRequest(e.getMessage), 400)
         case Failure(t) =>
-          (Results.internalError(
-            s"Error when trying to create subscription: ${t.getMessage}"),
-            500)
+          throw new RuntimeException(
+            s"Error when trying to create subscription: ${t.getMessage}", t)
         case Success(id: Long) =>
           (Results.subscription(id.toString), 200)
         case Success(received) =>
-          (Results.internalError(
-            s"Invalid response type from SubscriptionHandler: ${received.getClass().getName}"),
-            500)
+          throw new RuntimeException(
+            s"Invalid response type from SubscriptionHandler: ${received.getClass().getName}")
       }
     (
       xmlFromResults(
