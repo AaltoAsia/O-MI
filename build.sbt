@@ -45,7 +45,7 @@ lazy val omiNode = (project in file("O-MI Node")).
       cleanFiles <+= baseDirectory { base => base / "logs"},
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
       target in (Compile, doc) := baseDirectory.value / "html" / "api",
-      Revolver.settings,
+      //Revolver.settings,
       libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
 
 lazy val agents = (project in file("Agents")).
@@ -101,7 +101,10 @@ lazy val root = (project in file(".")).
           base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
           base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",
           base / "LICENSE.txt" -> "LICENSE.txt")
-      })): _*).
+      },
+      aggregate in reStart := false,
+      aggregate in reStop := false
+      )): _*).
     aggregate(omiNode, agents).
     dependsOn(agents)
 
