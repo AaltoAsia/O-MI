@@ -304,13 +304,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     for{
       data <- subData.result
       //_ <- subData.delete
-      lastValues = data.groupBy(_.path).flatMap{ //group by path
+      lastValues = data.groupBy(_.path).map{ //group by path
         case (iPath, pathData) =>
-          pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp
-            col.fold(Option(next)){c => //compare
-              if (c.timestamp.before(next.timestamp)) Option(next) else Option(c)
-            }
-          }
+          pathData.maxBy(_.timestamp.getTime)
+          //pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp
+          //  col.fold(Option(next)){c => //compare
+          //    if (c.timestamp.before(next.timestamp)) Option(next) else Option(c)
+           // }
+          //}
       }
       _ <- pollSubs ++= lastValues
       //_<- //(pollSubs ++= groupedData.map(_._2).flatten)

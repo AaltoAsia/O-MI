@@ -1,33 +1,29 @@
 package http
-import org.specs2.mutable._
-import spray.http._
-import spray.client.pipelining._
-import akka.actor.{ ActorRef, ActorSystem, Props }
-import scala.concurrent._
-import scala.xml._
-import scala.util.Try
-import parsing._
-import testHelpers.{ BeEqualFormatted, HTML5Parser, SystemTestCallbackServer }
-import database._
-import testHelpers.AfterAll
-import responses.{ SubscriptionHandler, RequestHandler }
-import agentSystem.ExternalAgentListener
-import scala.concurrent.duration._
-import akka.util.Timeout
-import akka.io.{ IO, Tcp }
-import akka.pattern.ask
 import java.net.InetSocketAddress
-import org.specs2.specification.Fragments
 import java.text.SimpleDateFormat
-import java.util.{ TimeZone, Locale }
-import akka.testkit.{TestProbe, EventFilter}
-import akka.testkit.TestEvent.{Mute, UnMute}
-import spray.can.Http
-import com.typesafe.config.ConfigFactory
-import org.xml.sax.InputSource
+import java.util.TimeZone
 
+import agentSystem.ExternalAgentListener
+import akka.actor.{ActorRef, Props}
+import akka.io.{IO, Tcp}
+import akka.pattern.ask
+import akka.testkit.TestProbe
+import akka.util.Timeout
+import database._
 import org.junit.runner.RunWith
+import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
+import org.specs2.specification.Fragments
+import responses.{SubscriptionHandler, RequestHandler}
+import spray.can.Http
+import spray.client.pipelining._
+import spray.http._
+import testHelpers.{AfterAll, BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.Try
+import scala.xml._
 
 @RunWith(classOf[JUnitRunner])
 class SystemTest extends Specification with Starter with AfterAll {
@@ -37,6 +33,7 @@ class SystemTest extends Specification with Starter with AfterAll {
   implicit val dbConnection = new TestDB("SystemTest")
 
   override protected val subHandlerDbConn = dbConnection
+  override val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler-test")
 
   override def start(dbConnection: DB): ActorRef = {
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
@@ -60,8 +57,6 @@ class SystemTest extends Specification with Starter with AfterAll {
   }
 
   sequential
-  
-  import system.dispatcher
 
 
 
