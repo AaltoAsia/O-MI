@@ -228,7 +228,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
           timeframedTreeData = subTreeData filter {
             case (node, Some(value)) => betweenLogic(begin, end)(value)
-            case (node, None)        => true // keep objects for their description etc. ??
+            case (node, None)        => false
           }
 
           dbInfoItems: DBInfoItems =
@@ -240,7 +240,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             desc = {
                 if (attachObjectDescription) metadataTree.get(path) map fromPath
                 else None
-              }.getOrElse(fromPath(OdfObject(path)))
+              }.getOrElse(OdfObjects())
             } yield odf union desc
 
         } yield results
@@ -252,13 +252,23 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     }
 
     // returns metadata if metadataQuery is Some
-    def getMetaInfoItem(metadataQuery: Option[OdfMetaData], path: Path): OdfInfoItem = {
-      metadataQuery flatMap {_ =>            // If metadataQuery.nonEmpty
-        metadataTree.get(path) match {   // and InfoItem exists in tree
-          case Some(found: OdfInfoItem) => Some(found)
+    def getMetaInfoItem(queryInfoItem: OdfInfoItem, path: Path): OdfInfoItem = {
+      (for {
+        // If metadata.nonEmpty || description.nonEmpty
+        _ <- queryInfoItem.metaData orElse queryInfoItem.description
+
+        res <- metadataTree.get(path) flatMap {
+          case found: OdfInfoItem => Some{   // and InfoItem exists in tree
+            if (queryInfoItem.description.isEmpty)
+              found.copy(description = None) // Remove description 
+            else if (queryInfoItem.metaData.isEmpty)
+              found.copy(metaData = None)
+            else
+              found
+          }
           case _ => None
         }
-      } getOrElse OdfInfoItem(path, Iterable(), None, None)
+      } yield res) getOrElse OdfInfoItem(path, Iterable(), None, None)
     }
 
 
@@ -277,7 +287,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
         runSync(processObjectI(path, description.nonEmpty))
 
-      case OdfInfoItem(path, rvalues, _, metadataQuery) =>
+      case qry @ OdfInfoItem(path, rvalues, _, _) =>
 
         val odfInfoItemI = getHierarchyNodeI(path) flatMap { nodeO =>
 
@@ -287,7 +297,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               odfInfoItem <- processObjectI(path, false)
 
 
-              metaInfoItem: OdfInfoItem = getMetaInfoItem(metadataQuery, path)
+              metaInfoItem: OdfInfoItem = getMetaInfoItem(qry, path)
               result = odfInfoItem.map {
                 infoItem => fromPath(infoItem) union fromPath(metaInfoItem)
               }
@@ -358,8 +368,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       objectData :+ Some(
         infoItems.foldLeft(resultOdf){(result, info) =>
           info match {
-            case OdfInfoItem(path, _, _, metadataQuery) if foundPaths contains path =>
-              result union fromPath(getMetaInfoItem(metadataQuery, path))
+            case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
+              result union fromPath(getMetaInfoItem(qry, path))
+            case _ => result // else discard
           }
         }
       )
