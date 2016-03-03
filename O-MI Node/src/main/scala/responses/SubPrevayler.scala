@@ -187,19 +187,21 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                 val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
                 var startTime = pollInterval.lastPolled.getTime()
                 val interval  = pollInterval.interval.toMillis
-                var i = 1
-                if(values.length >= 2){
 
-                var previousValue = values.head
-                while(i < values.length){
-                  if(values(i).timestamp.getTime >= (startTime + interval)){
-                    buffer += previousValue
-                    startTime += interval
-                  } else { //if timestmap.getTime < startime + interval
-                    previousValue = values(i)
-                    i += 1
+                if(values.length >= 2){
+                  var i = 1 //Intentionally 1 and not 0
+                  var previousValue = values.head
+
+                  while(i < values.length){
+                    if(values(i).timestamp.getTime >= (startTime + interval)){
+                      buffer += previousValue
+                      startTime += interval
+                    } else { //if timestmap.getTime < startime + interval
+                        previousValue = values(i)
+                        i += 1
+                    }
                   }
-                }
+
                   Some(buffer.toVector)
                 } else None
               }

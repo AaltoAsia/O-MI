@@ -32,7 +32,7 @@ class SystemTest extends Specification with Starter with AfterAll {
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
 
-  override protected val subHandlerDbConn = dbConnection
+  override val subHandlerDbConn = dbConnection
   override val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler-test")
 
   override def start(dbConnection: DB): ActorRef = {
@@ -164,7 +164,7 @@ class SystemTest extends Specification with Starter with AfterAll {
   }
   def getCallbackRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
-    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text.replaceAll("""callback\s*=\s*"(http:\/\/callbackAdrress\.com:5432)"""", """callback="http://localhost:20002/""""))))
+    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text.replaceAll("""callback\s*=\s*"(http:\/\/callbackAddress\.com:5432)"""", """callback="http://localhost:20002/""""))))
   }
 
   def setTimezoneToSystemLocale(in: String): String = {
