@@ -335,7 +335,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   private def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
     Try {
       val newId = SingleStores.idPrevayler execute getAndUpdateId
-      val newTime = subEndTimestamp(subscription.ttl)
+      val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)
 
@@ -349,7 +349,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               EventSub(
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
-                newTime,
+                endTime,
                 callback
               )
             )
@@ -362,7 +362,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             SingleStores.intervalPrevayler execute AddIntervalSub(
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
-                newTime,
+                endTime,
                 callback,
                 dur,
                 new Timestamp(currentTime + dur.toMillis),
@@ -371,6 +371,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             )
 
             log.debug(s"Successfully added interval subscription with id: $newId and callback $callback")
+            handleIntervals()
             newId
           }
           case dur => {
@@ -388,7 +389,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               SingleStores.pollPrevayler execute AddPollSub(
                 PollEventSub(
                   newId,
-                  newTime,
+                  endTime,
                   currentTimestamp,
                   currentTimestamp,
                   paths
@@ -404,7 +405,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               SingleStores.pollPrevayler execute AddPollSub(
                 PollIntervalSub(
                   newId,
-                  newTime,
+                  endTime,
                   dur,
                   currentTimestamp,
                   currentTimestamp,

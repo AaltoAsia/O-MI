@@ -13,8 +13,9 @@
 **/
 package http
 
-import accessControl.AuthAPIService
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+import java.nio.file.{Paths, Files}
+
+import akka.actor.{Actor, ActorLogging}
 import akka.event.LoggingAdapter
 import http.Authorization._
 import parsing.OmiParser
@@ -81,7 +82,10 @@ trait OmiService
 
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
-  val staticHtml = getFromDirectory("./html")
+  //this version words with 'sbt run' and 're-start' as well as the packaged version
+  val staticHtml = if(Files.exists(Paths.get("./html"))){
+    getFromDirectory("./html")
+  } else getFromDirectory("O-MI Node/html")
   //val staticHtml = getFromResourceDirectory("html")
 
 

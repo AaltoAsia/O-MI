@@ -198,12 +198,10 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
 
   case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {
     def executeOn(store: IntervalSubs, d: Date) = {
-      //val sId = subIDCounter.single.getAndTransform(_+1)
       val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
       if(scheduleTime > 0){
         store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
       }
-
     }
   }
 

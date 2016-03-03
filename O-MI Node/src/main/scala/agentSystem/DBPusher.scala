@@ -105,7 +105,8 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     sendCallback(
       callbackAddr,
       xmlMsg,
-      (esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds
+      Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
+        .toOption.getOrElse(Duration.Inf)
     ) onComplete {
       case Success(CallbackSuccess) =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")

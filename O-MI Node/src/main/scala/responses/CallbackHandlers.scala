@@ -82,7 +82,7 @@ object CallbackHandlers {
 
           result match{
             case cs: CallbackSuccess.type =>
-              system.log.debug(s"Successfully send POST request to $address")
+              system.log.debug(s"Successfully sent POST request to $address")
               keepTrying = false
             case _ =>
               attemps += 1 
