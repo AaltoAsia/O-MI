@@ -95,7 +95,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
   }
 
   scheduleTtls()
-
+  handleIntervals() //when server restarts
 
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
 
@@ -254,6 +254,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    */
   private def handleIntervals(): Unit = {
     //TODO add error messages from requesthandler
+    log.debug("handling infoitems")
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
@@ -261,48 +262,48 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
     // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
     if(iSubs.isEmpty) {
-      log.warning("HandleIntervals called when no interval subs existed")
-      return
-    }
+      log.warning("HandleIntervals called when no intervals passed")
+    } else {
 
-    //send new data to callback addresses
-    iSubs.foreach{iSub =>
-      log.info(s"Trying to send subscription data to ${iSub.callback}")
-      val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
-      val objectsAndFailures: Seq[Either[(Path, String),OdfObjects]] = datas.map{
-        case (iPath, oValue) =>
-          val odfInfoOpt = hTree.get(iPath)
-          odfInfoOpt match {
-            case Some(infoI: OdfInfoItem) =>
-              Right(fromPath(infoI.copy(values = Iterable(oValue))))
-            case thing => {
-              log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
-              Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
+      //send new data to callback addresses
+      iSubs.foreach { iSub =>
+        log.info(s"Trying to send subscription data to ${iSub.callback}")
+        val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
+        val objectsAndFailures: Seq[Either[(Path, String), OdfObjects]] = datas.map {
+          case (iPath, oValue) =>
+            val odfInfoOpt = hTree.get(iPath)
+            odfInfoOpt match {
+              case Some(infoI: OdfInfoItem) =>
+                Right(fromPath(infoI.copy(values = Iterable(oValue))))
+              case thing => {
+                log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
+                Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
+              }
             }
-          }
-      }
+        }
 
-      val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){ 
+        val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){
         (s, n) =>
         n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
       }
-      val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n))))//rights.reduce(_.combine(_))
-    val succResult = optionObjects.map(odfObjects => responses.Results.odf("200",None, Some(iSub.id.toString), odfObjects)).toSeq
-      val failedResults = lefts.map(fail => Results.simple("404", Some(s"Could not find path: ${fail._1}. ${fail._2}")))
-      val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
+        val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n)))) //rights.reduce(_.combine(_))
+      val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
+        val failedResults = lefts.map(fail => Results.simple("404", Some(s"Could not find path: ${fail._1}. ${fail._2}")))
+        val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
-      CallbackHandlers.sendCallback(iSub.callback,resultXml,iSub.interval)
-        .onComplete {
-          case Success(CallbackSuccess) =>
-            log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+        CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
+          .onComplete {
+            case Success(CallbackSuccess) =>
+              log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
 
-          case Success(fail: CallbackFailure) =>
-            log.warning(
-              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-          case Failure(e) =>
-            log.warning(
-              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
-        }
+            case Success(fail: CallbackFailure) =>
+              log.warning(
+                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
+            case Failure(e) =>
+              log.warning(
+                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+          }
+      }
     }
 
     nextRunTimeOption.foreach{ tStamp =>
@@ -370,7 +371,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               )
             )
 
-            log.debug(s"Successfully added interval subscription with id: $newId and callback $callback")
+            log.info(s"Successfully added interval subscription with id: $newId and callback $callback")
             handleIntervals()
             newId
           }
