@@ -27,11 +27,11 @@ Download the pre-compiled zip or tgz package from latest git releases [here](htt
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
-1. `o-mi-node.bat` for Windows
-2. `o-mi-node` for Unix and Mac
+1. `bin/o-mi-node.bat` for Windows
+2. `bin/o-mi-node` for Unix and Mac
 
 This will run O-MI Node with configuration in /conf/application.conf.
-By default it has some example and demo agents.
+By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.
 More Information in the 'Configuration' section.
 
 Compiling and packaging
