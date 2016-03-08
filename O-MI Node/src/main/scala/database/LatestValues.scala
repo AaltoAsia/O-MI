@@ -172,6 +172,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
           val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
           a.copy(nextRunTime = newTime)}
       store.intervalSubs = rest ++ newIntervals
+      //val nextRun = if(store.intervalSubs.isEmpty) None else {Some(store.intervalSubs.firstKey.nextRunTime)}
       (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
     }
 

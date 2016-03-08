@@ -78,7 +78,7 @@ object PolledSubs {
 case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
 object IntervalSubs {
   // type IntervalSubs = Prevayler[IntervalSubs]
-  def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering.reverse))
+  def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering))
 }
 
 case class LookupEventSubs(path: Path) extends Query[EventSubs, Vector[EventSub]] {
