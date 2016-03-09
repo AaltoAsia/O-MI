@@ -238,7 +238,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           results = for {
             odf <- odfConversion(dbInfoItems)
             desc = {
-                if (attachObjectDescription) metadataTree.get(path) map fromPath
+                if (attachObjectDescription)
+                  metadataTree.get(path) collect {
+                    case o: OdfObjects => o.copy(objects = OdfTreeCollection())
+                  } map fromPath
                 else None
               }.getOrElse(OdfObjects())
             } yield odf union desc
