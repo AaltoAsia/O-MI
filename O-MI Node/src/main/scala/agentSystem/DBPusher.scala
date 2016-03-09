@@ -63,7 +63,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   private val scheduler = context.system.scheduler
   private val interval = 60
   log.info(s"scheduling databse trimming every $interval seconds")
-  scheduler.schedule(interval seconds, interval seconds, self, TrimDB)
+  scheduler.schedule(interval.seconds, interval.seconds, self, TrimDB)
 
 
   /**
@@ -147,17 +147,19 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     // val data = getLeafs(objects)
     // if ( data.nonEmpty ) {
     val items = getInfoItems(objects)
-    if (items.nonEmpty) {
-      val writeValues : Try[Boolean] = handleInfoItems(items)
-      
-      // TODO: descriptions of objects
-      log.debug("Successfully saved Odfs to DB")
+    val other = getOdfNodes(objects) collect {case o: OdfObject if o.hasDescription => o}
+    val all = items ++ other
+    if (all.nonEmpty) {
 
+      log.info(s"OBJ DESC $other")
+      val writeValues : Try[Boolean] = handleInfoItems(items, other)
       
-      //writeValues match {
-      //  case Success(ret) => ret
-      //  case Failure(e) => throw e // TODO: better ideas to pass Try result?
-      //}
+      writeValues match {
+        case Success(ret) =>
+          log.debug("Successfully saved Odfs to DB")
+        case _ => //noop
+        //case Failure(e) => throw e // TODO: better ideas to pass Try result?
+      }
       writeValues
 
     } else {
@@ -196,7 +198,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
    * Function for handling sequences of OdfInfoItem.
    * @return true if the write was accepted.
    */
-  private def handleInfoItems(infoItems: Iterable[OdfInfoItem]): Try[Boolean] = Try{
+  private def handleInfoItems(infoItems: Iterable[OdfInfoItem], objectMetaDatas: Vector[OdfObject] = Vector()): Try[Boolean] = Try{
     // save only changed values
     val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
@@ -243,7 +245,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
       }
     }
 
-    val descriptions = infoItems filter { _.description.nonEmpty }
+    val descriptions = (infoItems filter { _.hasDescription }) ++ (objectMetaDatas filter { _.hasDescription })
 
     val updatedStaticItems = metas ++ descriptions ++ newItems
 

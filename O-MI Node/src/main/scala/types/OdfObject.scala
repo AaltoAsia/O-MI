@@ -34,6 +34,8 @@ class  OdfObjectImpl(
 require(path.length > 1,
   s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path(${path})")
 
+  def hasDescription: Boolean = description.nonEmpty
+
   /** Method for combining two OdfInfoItems with same path */
   def combine( another: OdfObject ) : OdfObject =  sharedAndUniques[OdfObject](another){(
       uniqueInfos : Seq[OdfInfoItem] ,

@@ -367,6 +367,14 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         returnCode)
   }
 
+  private sealed trait ODFRequest {def path: Path} // path is OdfNode path
+  private case class Value(path: Path)      extends ODFRequest
+  private case class MetaData(path: Path)   extends ODFRequest
+  private case class Description(path: Path)extends ODFRequest
+  private case class ObjId(path: Path)      extends ODFRequest
+  private case class InfoName(path: Path)   extends ODFRequest
+  private case class NodeReq(path: Path)    extends ODFRequest
+
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
@@ -376,28 +384,41 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    */
   def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
 
-    // Removes "/value" from the end; Returns (normalizedPath, isValueQuery)
-    def restNormalizePath(path: Path): (Path, Option[String]) = path.lastOption match {
-      case attr @ Some("value")    => (path.init, attr)
-      case attr @ Some("MetaData") => (path.init, attr)
-      case _                       => (path, None)
+    def getODFRequest(path: Path): ODFRequest = path.lastOption match {
+      case attr @ Some("value")      => Value(path.init)
+      case attr @ Some("MetaData")   => MetaData(path.init)
+      case attr @ Some("description")=> Description(path.init)
+      case attr @ Some("id")         => ObjId(path.init)
+      case attr @ Some("name")       => InfoName(path.init)
+      case _                         => NodeReq(path)
     }
 
     // safeguard
     assert(!orgPath.isEmpty, "Undefined url data discovery: empty path")
 
-    val (path, special) = restNormalizePath(orgPath)
+    val request = getODFRequest(orgPath)
 
-    special match {
-      case Some("value") =>
+    request match {
+      case Value(path) =>
         SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value }
 
-      case Some("MetaData") =>
+      case MetaData(path) =>
         SingleStores.getMetaData(path) map { metaData =>
           Right(XML.loadString(metaData.data))
         }
+      case ObjId(path) =>
+        Some(Right(<Object xmlns="odf.xsd"><id>{path.last}</id></Object>)) // TODO: support for multiple id
 
-      case None =>
+      case InfoName(path) =>
+        Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}><name>{path.last}</name></InfoItem>))
+        // TODO: support for multiple name
+
+      case Description(path) =>
+        SingleStores.hierarchyStore execute GetTree() get path flatMap (
+          _.description map (_.value)
+        ) map Left.apply _
+        
+      case NodeReq(path) =>
         val xmlReturn = SingleStores.getSingle(path) map {
 
           case odfObj: OdfObject =>
