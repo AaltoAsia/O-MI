@@ -61,14 +61,17 @@ Setup development environment
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
 5. You can (_optional step_)
-    - `sbt compile`: compile the project
+    - `sbt run`: run the project or better:
+    - `sbt` and then
+        - `re-start`: run the project in background (faster restart and sometimes works better than sbt run)
+        - `re-stop`: close the background process
+    - `sbt compile`: just compile the project
     - `sbt stage`: creates file structure used in packaged version to the ./target/universal/stage/ directory
+    - `sbt release`: create release tar and zip packages
+    - `sbt debian:packageBin`: create release debian package (requires dpkg)
     - `sbt doc`: compile api documentation
     - `sbt test`: run tests
-    - `sbt run`: run the project or better:
-    - `sbt systemTest`: run only integration tests
-    - `sbt re-start`:  run the project in background
-    - `sbt re-stop`: close the background process
+    - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
     - `sbt clean coverage test`: generate test coverage
 
     _extra info:_
@@ -92,7 +95,7 @@ for the defaults and configuration documentation.
 Library Config
 --------------
 
-NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
+`application.conf` can also have a lot of Akka (threading framework), Spray (HTTP server) and Slick (database) specific settings:
 
 - [Akka Actors](http://doc.akka.io/docs/akka/2.3.9/general/configuration.html)
 - [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)
