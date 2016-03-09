@@ -397,7 +397,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           Right(XML.loadString(metaData.data))
         }
 
-      case _ =>
+      case None =>
         val xmlReturn = SingleStores.getSingle(path) map {
 
           case odfObj: OdfObject =>

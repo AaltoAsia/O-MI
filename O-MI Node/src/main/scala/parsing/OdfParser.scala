@@ -128,6 +128,7 @@ object OdfParser extends Parser[OdfParseResult] {
   
   private[this] def parseInfoItem(item: InfoItemType, path: Path) : OdfInfoItem  = { 
 
+    // TODO: support many names from item.otherName
     val npath = path / validateId(item.name).getOrElse(
       throw new IllegalArgumentException("No name on infoItem")
     )
