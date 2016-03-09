@@ -50,7 +50,7 @@ object `package` {
       }
     else OdfTreeCollection(objects)
   }
-  /** Helper method for getting all OdfNodes found in given OdfNodes. Bascily get list of all nodes in tree.  */
+  /** Helper method for getting all OdfNodes found in given OdfNodes. Basically get list of all nodes in tree.  */
   def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {
     hasPaths.flatMap {
       case info: OdfInfoItem => Seq(info)
@@ -62,6 +62,20 @@ object `package` {
   /** Helper method for getting all OdfInfoItems found in OdfObjects */
   def getInfoItems( objects: OdfObjects ) : OdfTreeCollection[OdfInfoItem] = {
     getLeafs(objects).collect{ case info: OdfInfoItem => info}
+  }
+
+  def getInfoItems( _object: OdfObject ) : Vector[OdfInfoItem] = {
+    getLeafs(_object).collect{ case info: OdfInfoItem => info}
+
+    /*nodes.flatMap {
+   }.toVector*/
+  }
+  def getInfoItems( nodes: OdfNode*) : Vector[OdfInfoItem] ={
+    nodes.flatMap{
+      case info: OdfInfoItem => Vector(info)
+      case obj: OdfObject    => getInfoItems(obj)
+      case objs: OdfObjects  => getInfoItems(objs)
+    }.toVector
   }
 
   /**

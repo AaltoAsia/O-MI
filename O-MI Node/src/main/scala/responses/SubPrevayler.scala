@@ -129,7 +129,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
-        log.debug(s"Polling subcription with id: ${pollSub.id}")
+        log.info(s"Polling subcription with id: ${pollSub.id}")
         val odfTree = SingleStores.hierarchyStore execute GetTree()
         val emptyTree = pollSub
           .paths //get subscriptions paths
@@ -159,7 +159,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
           case pollInterval: PollIntervalSub => {
 
-            log.debug(s"Creating response message for Polled Interval Subscription")
+            log.info(s"Creating response message for Polled Interval Subscription")
 
             val interval: Duration = pollInterval.interval
 
@@ -167,17 +167,33 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               .groupBy(_.path)
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf))
 
-            val pollData: OdfObjects = intervalData.map( pathValuesTuple =>{
+            val combinedWithPaths = OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
+              .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
+              .map(_.path)
+              .map(_ -> Vector[OdfValue]()).toMap ++ intervalData
+
+            log.info(s"Data length for interval subscription is: ${intervalData.length}")
+
+            val pollData: OdfObjects = combinedWithPaths.map( pathValuesTuple =>{
 
               val (path, values) = pathValuesTuple match {
-                case (p, v) if (v.nonEmpty) => (p, v.:+(v.last.copy(timestamp = new Timestamp(pollTime)))) //add polltime
+                case (p, v) if (v.nonEmpty) => {
+                  log.info(s"Found previous values for intervalsubscription: ${v.last}")
+                  (p, v.:+(v.last.copy(timestamp = new Timestamp(pollTime))))
+                } //add polltime
                 case (p, v) => {
-                  log.debug(s"No values found for path: $p in Interval subscription poll for sub id ${pollSub.id}")
+                  log.info(s"No values found for path: $p in Interval subscription poll for sub id ${pollSub.id}")
                   val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {
                     //lookup latest value from latestStore, if exists use that
-                    case Some(value) => Vector(value,value.copy(timestamp = new Timestamp(pollTime)))
+                    case Some(value) => {
+                    log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
+                    Vector(value,value.copy(timestamp = new Timestamp(pollTime)))
+                    }
                     //no previous values v is empty
-                    case _ => v
+                    case _ => {
+                    log.info("No previous value found return empty values.")
+                    v
+                    }
                   }
                   (p, latestValue)
                 }
@@ -254,7 +270,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    */
   private def handleIntervals(): Unit = {
     //TODO add error messages from requesthandler
-    log.debug("handling infoitems")
+
+    log.info("handling infoitems")
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
@@ -268,27 +285,40 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
       //send new data to callback addresses
       iSubs.foreach { iSub =>
         log.info(s"Trying to send subscription data to ${iSub.callback}")
-        val datas = SingleStores.latestStore execute LookupSensorDatas(iSub.paths)
-        val objectsAndFailures: Seq[Either[(Path, String), OdfObjects]] = datas.map {
+        val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
+        val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
+            case (s, (_,Some(n))) => (s._1, s._2.:+(n))
+            case (s, (p, None))    => (s._1.:+(p), s._2)
+          }
+         // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r)))
+        //}
+        val subscribedInfoItems = OdfTypes
+          .getInfoItems(nodes:_*)
+          //.map(_.path)
+
+        val datas = SingleStores.latestStore execute LookupSensorDatas(subscribedInfoItems.map(_.path))
+        val objects: Vector[OdfObjects] = datas.map {
           case (iPath, oValue) =>
-            val odfInfoOpt = hTree.get(iPath)
-            odfInfoOpt match {
-              case Some(infoI: OdfInfoItem) =>
-                Right(fromPath(infoI.copy(values = Iterable(oValue))))
-              case thing => {
-                log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
-                Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
-              }
-            }
+
+            fromPath(OdfInfoItem(iPath, Iterable(oValue)))
+            //val odfInfoOpt = hTree.get(iPath)
+            //odfInfoOpt match {
+            //  case Some(infoI: OdfInfoItem) =>
+            //    Right(fromPath(infoI.copy(values = Iterable(oValue))))
+            //  case thing => {
+            //    log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
+            //    Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
+            //  }
+            //}
         }
 
-        val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){
-        (s, n) =>
-        n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
-      }
-        val optionObjects: Option[OdfObjects] = rights.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n)))) //rights.reduce(_.combine(_))
-      val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
-        val failedResults = lefts.map(fail => Results.simple("404", Some(s"Could not find path: ${fail._1}. ${fail._2}")))
+        //val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){
+        //(s, n) =>
+       // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
+      //}
+        val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n)))) //rights.reduce(_.combine(_))
+        val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
+        val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))
         val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
         CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
