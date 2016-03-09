@@ -313,7 +313,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
         }
 
         //val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){
-        //(s, n) =>
+        //(s, n) =>iSub.paths.map(path => hTree.get(path)):_*
        // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
       //}
         val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n)))) //rights.reduce(_.combine(_))
