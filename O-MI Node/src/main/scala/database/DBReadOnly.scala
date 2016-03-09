@@ -358,15 +358,15 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       }
 
       // And then get all InfoItems with the same call
-      val infoItems = requestsSeq collect {case ii: OdfInfoItem => ii}
-      val paths = infoItems map (_.path)
+      val reqInfoItems = requestsSeq collect {case ii: OdfInfoItem => ii}
+      val paths = reqInfoItems map (_.path)
 
       val infoItemData = SingleStores.latestStore execute LookupSensorDatas(paths)
       val foundPaths = (infoItemData map { case (path,_) => path }).toSet
 
       val resultOdf = SingleStores.buildOdfFromValues(infoItemData)
       objectData :+ Some(
-        infoItems.foldLeft(resultOdf){(result, info) =>
+        reqInfoItems.foldLeft(resultOdf){(result, info) =>
           info match {
             case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
               result union fromPath(getMetaInfoItem(qry, path))
