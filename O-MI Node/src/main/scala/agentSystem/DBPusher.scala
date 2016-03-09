@@ -238,7 +238,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
         case Success(_) => // noop: exception on failure instead of filtering the valid
         case Failure(exp) =>
-         log.error( exp, "InputPusher" )
+         log.error( exp, "InputPusher MetaData" )
          throw exp;
       }
     }

@@ -138,19 +138,23 @@ object SingleStores {
       case info : OdfInfoItem => info.metaData
     }.flatten
   }
-  def get(path: Path) : Option[OdfNode] ={
+
+  def getSingle(path: Path) : Option[OdfNode] ={
     (hierarchyStore execute GetTree()).get(path).map{
       case info : OdfInfoItem => 
         latestStore execute LookupSensorData(path) match {
           case Some(value) =>
-          info.copy( values = Iterable(value) ) 
+            OdfInfoItem(path, Iterable(value) ) 
           case None => 
-          info
+            info
         }
       case objs : OdfObjects => 
-        objs
+        objs.copy(objects = objs.objects map (o => OdfObject(o.path)))
       case obj : OdfObject => 
-        obj
+        obj.copy(
+          objects = obj.objects map (o => OdfObject(o.path)),
+          infoItems = obj.infoItems map (i => OdfInfoItem(i.path))
+          )
     }
   } 
 }

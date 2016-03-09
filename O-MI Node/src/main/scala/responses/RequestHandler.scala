@@ -13,36 +13,34 @@
 **/
 package responses
 
-import types._
-import OmiTypes._
-import OdfTypes._
-import parsing.xmlGen.{ xmlTypes, scalaxb }
-import database.DB
-import agentSystem.InputPusher
-import CallbackHandlers._
-import database.SingleStores
-
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
+//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
+//import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.breakOut
+import scala.xml.{ NodeSeq, XML }
+//import spray.http.StatusCode
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.util.Timeout
 import akka.pattern.ask
 
-import scala.collection.breakOut
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
 import java.util.Date
 import java.net.{ URL, InetAddress, UnknownHostException }
 
-import scala.xml.{ NodeSeq, XML }
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import types._
+import OmiTypes._
+import OdfTypes._
 import OmiGenerator._
-import parsing.xmlGen.defaultScope
+import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
+import agentSystem.InputPusher
+import CallbackHandlers._
+import database._
+
 /**
  * Actor for handling all request.
  *
@@ -388,43 +386,43 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     // safeguard
     assert(!orgPath.isEmpty, "Undefined url data discovery: empty path")
 
-    val (path, wasValue) = restNormalizePath(orgPath)
+    val (path, special) = restNormalizePath(orgPath)
 
-    SingleStores.get(path) match {
-      case Some(infoitem: OdfInfoItem) =>
+    special match {
+      case Some("value") =>
+        SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value }
 
-        wasValue match {
-          case Some("value") =>
-            Some(Left(
-              infoitem.values.headOption match {
-                case Some(value: OdfValue) => value.value
-                case None                  => "NO VALUE FOUND"
-              }))
-          case Some("MetaData") =>
-            val metaDataO = SingleStores.getMetaData(path)
-            metaDataO match {
-              case None =>
-                Some(Left("No metadata found."))
-              case Some(metaData) =>
-                Some(Right(XML.loadString(metaData.data)))
-            }
-
-          case _ =>
-            return Some(Right(
-              scalaxb.toXML[xmlTypes.InfoItemType](infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), defaultScope).headOption.getOrElse(
-                <error>Could not create from OdfInfoItem </error>)))
+      case Some("MetaData") =>
+        SingleStores.getMetaData(path) map { metaData =>
+          Right(XML.loadString(metaData.data))
         }
-      case Some(odfObj: OdfObject) =>
-        val xmlReturn = scalaxb.toXML[xmlTypes.ObjectType](odfObj.asObjectType, Some("odf"), Some("Object"), defaultScope).headOption.getOrElse(
-          <error>Could not create from OdfObject </error>)
-        Some(Right(xmlReturn))
 
-      case Some(odfObj: OdfObjects) =>
-        val xmlReturn = scalaxb.toXML[xmlTypes.ObjectsType](odfObj.asObjectsType, Some("odf"), Some("Objects"), defaultScope).headOption.getOrElse(
-          <error>Could not create from OdfObjects </error>)
-        Some(Right(xmlReturn))
+      case None =>
+        val xmlReturn = SingleStores.getSingle(path) map {
 
-      case None => None
+          case odfObj: OdfObject =>
+            scalaxb.toXML[xmlTypes.ObjectType](
+              odfObj.asObjectType, Some("odf"), Some("Object"), defaultScope
+            ).headOption.getOrElse(
+              <error>Could not create from OdfObject </error>
+            )
+
+          case odfObj: OdfObjects =>
+            scalaxb.toXML[xmlTypes.ObjectsType](
+              odfObj.asObjectsType, Some("odf"), Some("Objects"), defaultScope
+            ).headOption.getOrElse(
+              <error>Could not create from OdfObjects </error>
+            )
+
+          case infoitem: OdfInfoItem =>
+            scalaxb.toXML[xmlTypes.InfoItemType](
+              infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), defaultScope
+            ).headOption.getOrElse(
+              <error>Could not create from OdfInfoItem</error>
+            )
+        }
+
+        xmlReturn map Right.apply
     }
   }
 }

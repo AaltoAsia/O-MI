@@ -177,13 +177,35 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
     }
   )
 }
+
+/**
+ * Intended to be used at the bottom of trait stack to catch all unauthorized
+ * requests and log them. Never gives permissions.
+ */
 trait LogUnauthorized extends AuthorizationExtension {
   abstract override def makePermissionTestFunction = combineWithPrevious(
     super.makePermissionTestFunction,
     provide{
       case r =>
-        log.warning(s"Unauthorized user: tried to use ${r.toString.take(130)}...")
+        log.warning(s"Unauthorized user: tried to use ${r.toString.take(140)}...")
         None
+    }
+  )
+}
+
+/**
+ * Log the beginning of all permissive requests (e.g. write, response write).
+ * Intended to be used at the top of trait stack to catch all requests.
+ * Never gives any permissions.
+ */
+trait LogPermissiveRequestBeginning extends AuthorizationExtension {
+  abstract override def makePermissionTestFunction = combineWithPrevious(
+    super.makePermissionTestFunction,
+    provide{
+      case r: PermissiveRequest =>
+        log.info(s"Permissive request received: ${r.toString.take(110)}...")
+        None
+      case _ => None
     }
   )
 }

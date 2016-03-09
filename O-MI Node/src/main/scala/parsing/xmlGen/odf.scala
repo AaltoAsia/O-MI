@@ -12,11 +12,13 @@ package xmlGen
 package xmlTypes
 
 
-case class ObjectsType(Object: Seq[ObjectType] = Nil,
+case class ObjectsType(
+  Object: Seq[ObjectType] = Nil,
   version: Option[String] = None)
 
 
-case class ObjectType(id: Seq[QlmID] = Nil,
+case class ObjectType(
+  id: Seq[QlmID] = Nil,
   description: Option[Description] = None,
   InfoItem: Seq[InfoItemType] = Nil,
   Object: Seq[ObjectType] = Nil,
@@ -27,7 +29,8 @@ case class ObjectType(id: Seq[QlmID] = Nil,
 case class MetaData(InfoItem: InfoItemType*)
 
 
-case class InfoItemType(otherName: Seq[QlmID] = Nil,
+case class InfoItemType(
+  otherName: Seq[QlmID] = Nil,
   description: Option[Description] = None,
   MetaData: Option[MetaData] = None,
   value: Seq[ValueType] = Nil,
@@ -35,12 +38,14 @@ case class InfoItemType(otherName: Seq[QlmID] = Nil,
   attributes: Map[String, scalaxb.DataRecord[Any]])
 
 
-case class Description(value: String,
+case class Description(
+  value: String,
   lang: Option[String] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]])
 
 
-case class QlmID(value: String,
+case class QlmID(
+  value: String,
   idType: Option[String] = None,
   tagType: Option[String] = None,
   startDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
@@ -48,7 +53,8 @@ case class QlmID(value: String,
   attributes: Map[String, scalaxb.DataRecord[Any]])
 
 
-case class ValueType(value: String,
+case class ValueType(
+  value: String,
   typeValue: String = "xs:string",
   dateTime: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   unixTime: Option[Long] = None,

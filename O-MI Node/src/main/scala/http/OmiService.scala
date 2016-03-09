@@ -32,6 +32,7 @@ import scala.xml.NodeSeq
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
+     with LogPermissiveRequestBeginning // Log Permissive requests
      with IpAuthorization         // Write and Response requests for configured server IPs
      with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
      with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
