@@ -75,10 +75,10 @@ trait IpAuthorization extends AuthorizationExtension {
       )) Some(r)
       else None
 
-      if (result.isDefined) {
-        log.info(s"Authorized IP: $user for ${r.toString.take(80)}...")
-      } else {
+      if (result.isEmpty) {
         log.warning(s"Unauthorized IP: $user")
+      } else {
+        log.info(s"Authorized IP: $user")
       }
       
       result
