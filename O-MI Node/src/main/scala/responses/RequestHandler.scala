@@ -241,6 +241,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     log.debug("Handling read.")
 
     val leafs = getLeafs(read.odf)
+    val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
     val objectsO: Option[OdfObjects] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
     objectsO match {
