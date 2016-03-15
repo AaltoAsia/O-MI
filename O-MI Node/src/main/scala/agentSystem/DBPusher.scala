@@ -151,7 +151,6 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     val all = items ++ other
     if (all.nonEmpty) {
 
-      log.info(s"OBJ DESC $other")
       val writeValues : Try[Boolean] = handleInfoItems(items, other)
       
       writeValues match {

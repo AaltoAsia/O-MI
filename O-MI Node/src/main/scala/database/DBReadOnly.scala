@@ -216,6 +216,16 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // but it shouldn't be a big problem
     val metadataTree = SingleStores.hierarchyStore execute GetTree()
 
+    // NOTE: this discards currentData if attaching object description, requires refactoring
+    def getDescObject(path: Path, currentData: OdfObjects, attachObjectDescription: Boolean) =
+      if (attachObjectDescription)
+        {metadataTree.get(path) collect {
+              case o: OdfObject => http.Boot.system.log.warning(s"DESCI $o"); o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
+            } map fromPath
+        }.getOrElse(OdfObjects()) union currentData
+      else
+        currentData
+
     def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
         case Some(rootNode) => for { // DBIO
@@ -237,14 +247,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           
           results = for {
             odf <- odfConversion(dbInfoItems)
-            desc = {
-                if (attachObjectDescription)
-                  metadataTree.get(path) collect {
-                    case o: OdfObjects => o.copy(objects = OdfTreeCollection())
-                  } map fromPath
-                else None
-              }.getOrElse(OdfObjects())
-            } yield odf union desc
+            desc = getDescObject(path, odf, attachObjectDescription)
+            } yield desc
 
         } yield results
 
@@ -342,20 +346,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             paths = getLeafs(odfObject) map (_.path)
 
             pathValues = SingleStores.latestStore execute LookupSensorDatas(paths) 
-            _ = println(s"PATH VALUES $paths: $pathValues")
           } yield SingleStores.buildOdfFromValues(pathValues)
 
           // O-DF standard is a bit unclear about description field for objects
           // so we decided to put it in only when explicitly asked
-          resultsO map (_ union (for {
-            results <- resultsO
-
-            _ <- desc  //if desc.nonEmpty
-            meta <- metadataTree.get(path) collect {
-              case o: OdfObject => o
-            }
-            
-          } yield fromPath(meta)).getOrElse(OdfObjects()))
+          // FIXME: TODO: what if only description exists?, description not working
+          resultsO map (data => getDescObject(path, data, desc.nonEmpty))
 
         case _ => None // noop, infoitems are processed in the next lines
       }
