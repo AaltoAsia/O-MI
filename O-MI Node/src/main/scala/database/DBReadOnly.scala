@@ -478,6 +478,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         } yield result
       })
 
+
+  /*def getHierarchyIds = {
+    runSync(q.result)
+  }*/
  /* /**
    * Query to the database for given subscription id.
    * Data removing is done separately

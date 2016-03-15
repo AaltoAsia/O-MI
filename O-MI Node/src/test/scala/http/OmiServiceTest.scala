@@ -1,45 +1,31 @@
 package http
 
-import responses.RequestHandler
-import parsing._
-import types._
-import types.Path._
-
-import xml._
-
-import org.specs2.mutable.Specification
-import org.specs2.matcher.{ XmlMatchers, MatchResult }
-
-import spray.testkit.Specs2RouteTest
-import spray.httpx.marshalling.BasicMarshallers._
-import spray.http._
-import spray.http.HttpHeaders._
-import HttpMethods._
-import StatusCodes._
-import MediaTypes._
-
-import akka.testkit.TestActorRef
 import akka.actor._
-import responses.SubscriptionHandler
-
+import akka.testkit.TestActorRef
 import database._
-import http.Authorization._
-
-import scala.collection.JavaConverters._
-import java.net.InetAddress
-
-import testHelpers.BeforeAfterAll
-
 import org.junit.runner.RunWith
+import org.specs2.matcher.XmlMatchers
+import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
+import responses.{RequestHandler, SubscriptionHandler}
+import spray.http.HttpHeaders._
+import spray.http.MediaTypes._
+import spray.http.StatusCodes._
+import spray.http._
+import spray.httpx.marshalling.BasicMarshallers._
+import spray.testkit.Specs2RouteTest
+import testHelpers.BeforeAfterAll
+import types._
+
+import scala.xml._
 
 @RunWith(classOf[JUnitRunner])
 class OmiServiceTest extends Specification
-
   with XmlMatchers
   with Specs2RouteTest
   with OmiService
   with BeforeAfterAll {
+
   def actorRefFactory = system
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 

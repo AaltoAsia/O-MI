@@ -20,12 +20,10 @@ import slick.driver.H2Driver.api._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
 import types.OmiTypes.SubLike
 import types._
-
-import scala.collection.JavaConversions.asJavaIterable
 //import types.Path._
 
 
@@ -218,6 +216,7 @@ trait OmiNodeTables extends DBBase {
     def timestamp = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
     def value = column[String]("VALUE")
     def valueType = column[String]("VALUETYPE")
+    def idx = index("valueIdx", (hierarchyId, timestamp), unique = false)
 
     /** Primary Key: (hierarchyId, timestamp) */
     //def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))

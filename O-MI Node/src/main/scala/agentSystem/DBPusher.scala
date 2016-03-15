@@ -61,7 +61,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
   case object TrimDB
   private val scheduler = context.system.scheduler
-  private val interval = 60
+  private val interval = 30
   log.info(s"scheduling databse trimming every $interval seconds")
   scheduler.schedule(interval.seconds, interval.seconds, self, TrimDB)
 

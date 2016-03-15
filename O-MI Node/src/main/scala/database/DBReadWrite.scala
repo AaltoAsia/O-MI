@@ -20,7 +20,7 @@ import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
-
+import http.Boot.system.log
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 
@@ -323,10 +323,37 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
   def trimDB() = {
-  /*  val historyLen = database.historyLength
+    val historyLen = 50//database.historyLength
+    val hIdQuery = (for(h <- hierarchyNodes) yield h.id).result
+
     val startT = System.currentTimeMillis()
     log.info(s"trimming database to $historyLen newest values")
-    val qry = sqlu"""DELETE FROM SENSORVALUES
+
+    //val qry = for{
+    //  id <- hIdQuery
+    val test = runSync(hIdQuery)
+    val qry =test.map(id => sqlu"""DELETE FROM SENSORVALUES
+                   WHERE VALUEID <= (
+                     SELECT VALUEID
+                     FROM (
+                       SELECT VALUEID
+                       FROM SENSORVALUES
+                       WHERE HIERARCHYID = $id
+                       ORDER BY TIME DESC
+                       LIMIT 1 OFFSET $historyLen
+                     ) foo
+                    ) AND HIERARCHYID = $id;
+            """)
+
+
+    val runQ = runSync(DBIO.sequence(qry)).sum
+
+    val endT = System.currentTimeMillis()
+    log.info(s"Deleting took ${endT - startT} milliseconds")
+
+    runQ
+    /*val historyLen = 50//database.historyLength
+   val qry = sqlu"""DELETE FROM SENSORVALUES
                      WHERE VALUEID NOT IN (SELECT a.VALUEID FROM SENSORVALUES AS a
                        LEFT JOIN SENSORVALUES AS a2
                          ON a.HIERARCHYID = a2.HIERARCHYID AND a.TIME <= a2.TIME
@@ -334,9 +361,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                      HAVING COUNT(*) <= ${historyLen});"""
 
     val runQ = runSync(qry)
-    val endT = System.currentTimeMillis()
-    log.info(s"Deleting took ${endT - startT} milliseconds")
-    runQ
+   runQ
   */}
 
 }
