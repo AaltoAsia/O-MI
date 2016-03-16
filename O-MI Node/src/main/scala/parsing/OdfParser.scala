@@ -71,6 +71,7 @@ object OdfParser extends Parser[OdfParseResult] {
     parse(root)
   }
 
+
   /**
    * Public method for parsing the xml structure into OdfParseResults.
    *
@@ -83,6 +84,8 @@ object OdfParser extends Parser[OdfParseResult] {
       schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
     ) 
 
+    val requestProcessTime = currentTime
+
     Try{
       val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
       Right(
@@ -90,7 +93,7 @@ object OdfParser extends Parser[OdfParseResult] {
           if(objects.Object.isEmpty)
             Iterable.empty[OdfObject]
           else
-            objects.Object.map{ obj => parseObject( obj ) }.toIterable,
+            objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
           objects.version 
         )
       )
@@ -111,7 +114,7 @@ object OdfParser extends Parser[OdfParseResult] {
     validated <- validateId(head)
   } yield validated
 
-  private[this] def parseObject(obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
+  private[this] def parseObject(requestProcessTime: Timestamp, obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
 
     val npath = path / validateId(obj.id.headOption.map(_.value)).getOrElse(
       throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
@@ -119,14 +122,14 @@ object OdfParser extends Parser[OdfParseResult] {
 
     OdfObject(
       npath, 
-      obj.InfoItem.map{ item => parseInfoItem( item, npath ) }.toIterable,
-      obj.Object.map{ child => parseObject( child, npath ) }.toIterable,
+      obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
+      obj.Object.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
       obj.description.map{ des => OdfDescription( des.value, des.lang )
       }
     ) 
   }
   
-  private[this] def parseInfoItem(item: InfoItemType, path: Path) : OdfInfoItem  = { 
+  private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemType, path: Path) : OdfInfoItem  = { 
 
     // TODO: support many names from item.otherName
     val npath = path / validateId(item.name).getOrElse(
@@ -140,7 +143,7 @@ object OdfParser extends Parser[OdfParseResult] {
         OdfValue(
           value.value,
           value.typeValue,
-          timeSolver(value)
+          timeSolver(value, requestProcessTime)
         )
       },
       item.description.map{ des =>
@@ -157,9 +160,9 @@ object OdfParser extends Parser[OdfParseResult] {
 
   /** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
    */
-  private[this] def timeSolver(value: ValueType ) = value.dateTime match {
+  private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = value.dateTime match {
     case None => value.unixTime match {
-      case None => currentTime()
+      case None => requestProcessTime
       case Some(seconds) => new Timestamp(seconds.toLong * 1000)
     }
     case Some(cal) => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())

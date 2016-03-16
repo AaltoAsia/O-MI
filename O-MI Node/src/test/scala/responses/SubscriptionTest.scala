@@ -282,217 +282,218 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
       //      trim(xmlreturn.head) === trim(correctxml)
       xmlreturn._1.headOption must beSome.which(_ must beEqualToIgnoringSpace(correctxml))
     }
-    /** Subscription handling is inside actor now, testing through other tests
-    "Return polled data only once" in {
-      val testPath = Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest1")
-      //      dbConnection.setVal(testPath)
-
-      val testTime = new Date().getTime - 10000
-      //      db.saveSub(NewDBSub(1.seconds, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
-      //      val testSub = dbConnection.saveSub(NewDBSub(1.seconds, newTimestamp(testTime), -1, None), Array(testPath))
-      //      dbConnection.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
-
-      //      dbConnection.remove(testPath)
-      dbConnection.get(testPath) === None
-
-      (0 to 10).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 1000), n.toString()))
-      val testSub = dbConnection.saveSub(NewDBSub(1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
-      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-
-      //omiResponse(pollResponseGen.genResult(PollRequest(10.seconds, None, Seq(testSub))))
-
-      val dataLength = test.\\("value").length
-
-      dataLength must be_>=(10)
-      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      val newDataLength = test2.\\("value").length
-      newDataLength must be_<=(dataLength) and be_<=(3)
-
-      //      dbConnection.remove(testPath)
-
-      //      dbConnection.stopBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
-      dbConnection.removeSub(testSub)
-    }
-
-    //this test will be removed when db upgrade is ready
-    "TTL should decrease by some multiple of interval" in {
-      val testPath = Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest2")
-      //      dbConnection.setVal(testPath)
-
-      val testTime = new Date().getTime - 10000
-
-      //      val ttlFirst = dbConnection.getSub(testSub.id).map(_.ttl)
-      //      ttlFirst must beSome(60.0.seconds)
-      (0 to 10).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 1000), n.toString()))
-
-      val testSub = dbConnection.saveSub(NewDBSub(3.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
-      val ttlFirst = dbConnection.getSub(testSub.id).map(_.ttl)
-      ttlFirst must beSome(60.0.seconds)
-
-      requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))
-      requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))
-
-      val ttlEnd = dbConnection.getSub(testSub.id).map(_.ttl)
-      ttlFirst must beSome.which(first =>
-        ttlEnd must beSome.which(last =>
-          (first.toUnit(SECONDS) - last.toUnit(SECONDS)) % 3 === 0)) //(ttlFirst - ttlEnd) % 3 === 0
-
-      //      dbConnection.remove(testPath)
-      dbConnection.removeSub(testSub)
-    }
-    "Event based subscription without callback should return all the new values when polled" in {
-      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest1")
-      //      dbConnection.setVal(testPath)
-
-      val testTime = new Date().getTime - 10000
-      (0 to 10).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime - 4999 + n * 1000), n.toString()))
-
-      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
-
-      val test = requestHandler.handleRequest(PollRequest(60.seconds, None, Seq(testSub.id)))._1
-      //      dbConnection.remove(testPath)
-      dbConnection.removeSub(testSub)
-      test.\\("value").length === 6
-
-    }
-    "Event based subscription without callback should not return already polled data" in {
-      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest2")
-      //      dbConnection.setVal(testPath)
-
-      val testTime = new Date().getTime - 10000
-
-      (0 to 10).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime - 5000 + n * 1000), n.toString()))
-
-      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
-      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test.\\("value").length === 6
-      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test2.\\("value").length === 0
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
-      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test3.\\("value").length === 1
-
-      //      dbConnection.remove(testPath)
-      dbConnection.removeSub(testSub)
-    }
-    "Event based subscription should return new values only when the value changes" in {
-      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest3")
-      //      dbConnection.setVal(testPath)
-
-      val testTime = new Date().getTime - 10000
-      //      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
-      (0 to 10).zip(Array(1, 1, 1, 2, 3, 4, 3, 5, 5, 6, 7)).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n._1 * 900), n._2.toString()))
-
-      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
-      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test.\\("value").length === 8
-
-      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test2.\\("value").length === 0
-
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
-      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test3.\\("value").length === 1
-
-      //does not return same value twice
-      val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test4.\\("value").length === 0
-
-      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
-      val test5 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
-      test5.\\("value").length === 0
-
-      //      dbConnection.remove(testPath)
-      dbConnection.removeSub(testSub)
-    }
-    "Having 2 subs on same data should work without problems" in {
-      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
-      val testTime = new Date().getTime - 20000
-      (1 to 10).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
-
-      val testSub1 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime), Duration.Inf, None), Array(testPath))
-      val testSub2 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime + 5000), Duration.Inf, None), Array(testPath))
-
-      (11 to 20).foreach(n =>
-        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
-
-      val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-      test1.\\("value").length === 20
-
-      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-      test2.\\("value").length === 0
-
-      dbConnection.set(testPath, newTimestamp(), "21")
-
-      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
-      test3.\\("value").length === 1
-
-      val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub2.id)))._1
-      test4.\\("value").length === 16
-
-    }
-
-    "Subscriptions should be removed from database when their ttl expires" in {
-//      val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
-      val parserlist = OmiParser.parse(subscriptionRequest.replaceAll("""ttl="10.0"""", """ttl="1.0""""))
-      parserlist.isRight === true
-      val requestReturn = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])._1
-      val testSub = requestReturn.\\("requestID").text.toInt
-      //      val temp = dbConnection.getSub(testSub).get
-      dbConnection.getSub(testSub) must beSome
-      //      Thread.sleep(3000) //NOTE this might need to be uncommented 
-      dbConnection.getSub(testSub) must beNone.eventually(3, new org.specs2.time.Duration(1000))
-    }
-
-    /*
-     * 
-   case class SubscriptionRequest(
-  ttl: Duration,
-  interval: Duration,
-  odf: OdfObjects ,
-  newest: Option[ Int ] = None,
-  oldest: Option[ Int ] = None,
-  callback: Option[ String ] = None
-) extends OmiRequest with SubLike with OdfRequest
-     */
-
-    "Subscription removing logic should work with large number of subscriptions" in {
-      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
-      val testTime = new Date().getTime - 3000
-      dbConnection.set(testPath, new java.sql.Timestamp(testTime), "testValue")
-      val testOdfObjects = dbConnection.getNBetween(dbConnection.get(testPath), None, None, None, None)
-      
-      system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info()))
-//      system.eventStream.publish(Mute(EventFilter.info()))
-      
-      val start = System.currentTimeMillis()
-      val subscriptions = ((1 until 100).toList ::: List(10000)).map { a =>
-        //        println("saving sub with ttl " + a + " milliseconds")
-        Await.result((subscriptionHandlerRef ? NewSubscription(SubscriptionRequest(a milliseconds, -1 seconds, testOdfObjects.get))).mapTo[Try[Long]], Duration.Inf).get //dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(), a milliseconds, None), Array(testPath))
-        //        println(s"got $id")
-        //        id
-      }
-      
-      system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info()))
-      val stop = System.currentTimeMillis()
-      println("added 100 subs in: " + (stop-start) + "milliseconds")
-//      //      }
-//      println("sleepin 1000");
-      Thread.sleep(1000)
-
-      subscriptions.init.foreach { x =>
-        val das = dbConnection.getSub(x)
-        das must beNone
-      }
-      dbConnection.getSub(subscriptions.last) must beSome
-    }
-  */
+//    /*
+//      Subscription handling is inside actor now, testing through other tests
+//    "Return polled data only once" in {
+//      val testPath = Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest1")
+//      //      dbConnection.setVal(testPath)
+//
+//      val testTime = new Date().getTime - 10000
+//      //      db.saveSub(NewDBSub(1.seconds, newTs, 0, None), Array(Path("/Objects/path/to/sensor1"), Path("/Objects/path/to/sensor2")))
+//      //      val testSub = dbConnection.saveSub(NewDBSub(1.seconds, newTimestamp(testTime), -1, None), Array(testPath))
+//      //      dbConnection.startBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
+//
+//      //      dbConnection.remove(testPath)
+//      dbConnection.get(testPath) === None
+//
+//      (0 to 10).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 1000), n.toString()))
+//      val testSub = dbConnection.saveSub(NewDBSub(1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+//      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//
+//      //omiResponse(pollResponseGen.genResult(PollRequest(10.seconds, None, Seq(testSub))))
+//
+//      val dataLength = test.\\("value").length
+//
+//      dataLength must be_>=(10)
+//      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      val newDataLength = test2.\\("value").length
+//      newDataLength must be_<=(dataLength) and be_<=(3)
+//
+//      //      dbConnection.remove(testPath)
+//
+//      //      dbConnection.stopBuffering(Path("Objects/SubscriptionTest/SmartOven/pollingtest"))
+//      dbConnection.removeSub(testSub)
+//    }
+//
+//    //this test will be removed when db upgrade is ready
+//    "TTL should decrease by some multiple of interval" in {
+//      val testPath = Path("Objects/SubscriptionTest/intervalTest/SmartOven/pollingtest2")
+//      //      dbConnection.setVal(testPath)
+//
+//      val testTime = new Date().getTime - 10000
+//
+//      //      val ttlFirst = dbConnection.getSub(testSub.id).map(_.ttl)
+//      //      ttlFirst must beSome(60.0.seconds)
+//      (0 to 10).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 1000), n.toString()))
+//
+//      val testSub = dbConnection.saveSub(NewDBSub(3.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+//      val ttlFirst = dbConnection.getSub(testSub.id).map(_.ttl)
+//      ttlFirst must beSome(60.0.seconds)
+//
+//      requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))
+//      requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))
+//
+//      val ttlEnd = dbConnection.getSub(testSub.id).map(_.ttl)
+//      ttlFirst must beSome.which(first =>
+//        ttlEnd must beSome.which(last =>
+//          (first.toUnit(SECONDS) - last.toUnit(SECONDS)) % 3 === 0)) //(ttlFirst - ttlEnd) % 3 === 0
+//
+//      //      dbConnection.remove(testPath)
+//      dbConnection.removeSub(testSub)
+//    }
+//    "Event based subscription without callback should return all the new values when polled" in {
+//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest1")
+//      //      dbConnection.setVal(testPath)
+//
+//      val testTime = new Date().getTime - 10000
+//      (0 to 10).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime - 4999 + n * 1000), n.toString()))
+//
+//      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+//
+//      val test = requestHandler.handleRequest(PollRequest(60.seconds, None, Seq(testSub.id)))._1
+//      //      dbConnection.remove(testPath)
+//      dbConnection.removeSub(testSub)
+//      test.\\("value").length === 6
+//
+//    }
+//    "Event based subscription without callback should not return already polled data" in {
+//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest2")
+//      //      dbConnection.setVal(testPath)
+//
+//      val testTime = new Date().getTime - 10000
+//
+//      (0 to 10).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime - 5000 + n * 1000), n.toString()))
+//
+//      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+//      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test.\\("value").length === 6
+//      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test2.\\("value").length === 0
+//      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
+//      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test3.\\("value").length === 1
+//
+//      //      dbConnection.remove(testPath)
+//      dbConnection.removeSub(testSub)
+//    }
+//    "Event based subscription should return new values only when the value changes" in {
+//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest3")
+//      //      dbConnection.setVal(testPath)
+//
+//      val testTime = new Date().getTime - 10000
+//      //      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+//      (0 to 10).zip(Array(1, 1, 1, 2, 3, 4, 3, 5, 5, 6, 7)).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n._1 * 900), n._2.toString()))
+//
+//      val testSub = dbConnection.saveSub(NewDBSub(-1.seconds, newTimestamp(testTime), 60.0.seconds, None), Array(testPath))
+//      val test = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test.\\("value").length === 8
+//
+//      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test2.\\("value").length === 0
+//
+//      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
+//      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test3.\\("value").length === 1
+//
+//      //does not return same value twice
+//      val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test4.\\("value").length === 0
+//
+//      dbConnection.set(testPath, new java.sql.Timestamp(new Date().getTime), "1234")
+//      val test5 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub.id)))._1
+//      test5.\\("value").length === 0
+//
+//      //      dbConnection.remove(testPath)
+//      dbConnection.removeSub(testSub)
+//    }
+//    "Having 2 subs on same data should work without problems" in {
+//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
+//      val testTime = new Date().getTime - 20000
+//      (1 to 10).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
+//
+//      val testSub1 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime), Duration.Inf, None), Array(testPath))
+//      val testSub2 = dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(testTime + 5000), Duration.Inf, None), Array(testPath))
+//
+//      (11 to 20).foreach(n =>
+//        dbConnection.set(testPath, new java.sql.Timestamp(testTime + n * 900), n.toString()))
+//
+//      val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+//      test1.\\("value").length === 20
+//
+//      val test2 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+//      test2.\\("value").length === 0
+//
+//      dbConnection.set(testPath, newTimestamp(), "21")
+//
+//      val test3 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
+//      test3.\\("value").length === 1
+//
+//      val test4 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub2.id)))._1
+//      test4.\\("value").length === 16
+//
+//    }
+//
+//    "Subscriptions should be removed from database when their ttl expires" in {
+////      val simpletestfile = Source.fromURL(getClass.getClassLoader.getResource("SubscriptionRequest.xml")).getLines.mkString("\n").replaceAll("""ttl="10.0"""", """ttl="1.0"""")
+//      val parserlist = OmiParser.parse(subscriptionRequest.replaceAll("""ttl="10.0"""", """ttl="1.0""""))
+//      parserlist.isRight === true
+//      val requestReturn = requestHandler.handleRequest(parserlist.right.get.head.asInstanceOf[SubscriptionRequest])._1
+//      val testSub = requestReturn.\\("requestID").text.toInt
+//      //      val temp = dbConnection.getSub(testSub).get
+//      dbConnection.getSub(testSub) must beSome
+//      //      Thread.sleep(3000) //NOTE this might need to be uncommented 
+//      dbConnection.getSub(testSub) must beNone.eventually(3, new org.specs2.time.Duration(1000))
+//    }
+//
+//    
+//      
+//   case class SubscriptionRequest(
+//  ttl: Duration,
+//  interval: Duration,
+//  odf: OdfObjects ,
+//  newest: Option[ Int ] = None,
+//  oldest: Option[ Int ] = None,
+//  callback: Option[ String ] = None
+//) extends OmiRequest with SubLike with OdfRequest
+//     
+//
+//    "Subscription removing logic should work with large number of subscriptions" in {
+//      val testPath = Path("Objects/SubscriptionTest/eventTest/SmartOven/pollingtest4")
+//      val testTime = new Date().getTime - 3000
+//      dbConnection.set(testPath, new java.sql.Timestamp(testTime), "testValue")
+//      val testOdfObjects = dbConnection.getNBetween(dbConnection.get(testPath), None, None, None, None)
+//      
+//      system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info()))
+////      system.eventStream.publish(Mute(EventFilter.info()))
+//      
+//      val start = System.currentTimeMillis()
+//      val subscriptions = ((1 until 100).toList ::: List(10000)).map { a =>
+//        //        println("saving sub with ttl " + a + " milliseconds")
+//        Await.result((subscriptionHandlerRef ? NewSubscription(SubscriptionRequest(a milliseconds, -1 seconds, testOdfObjects.get))).mapTo[Try[Long]], Duration.Inf).get //dbConnection.saveSub(NewDBSub(-1 seconds, newTimestamp(), a milliseconds, None), Array(testPath))
+//        //        println(s"got $id")
+//        //        id
+//      }
+//      
+//      system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info()))
+//      val stop = System.currentTimeMillis()
+//      println("added 100 subs in: " + (stop-start) + "milliseconds")
+////      //      }
+////      println("sleepin 1000");
+//      Thread.sleep(1000)
+//
+//      subscriptions.init.foreach { x =>
+//        val das = dbConnection.getSub(x)
+//        das must beNone
+//      }
+//      dbConnection.getSub(subscriptions.last) must beSome
+//    }
+//  */
     
     
   }
