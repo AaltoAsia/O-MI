@@ -16,6 +16,7 @@ package responses
 
 import java.sql.Timestamp
 
+import http.CLICmds.ListSubsCmd
 import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
 import types.OdfTypes.{OdfInfoItem, OdfValue}
 
@@ -105,6 +106,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
+    case ListSubsCmd() => sender() ! getAllSubs()
     //case NewDataEvent(data) => handleNewData(data)
   }
 
@@ -356,6 +358,14 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
     }
     else if(SingleStores.eventPrevayler execute RemoveEventSub(id)) true
     else false
+  }
+
+  private def getAllSubs() = {
+    log.info("getting list of all subscriptions")
+    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()
+    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
+    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
+    (intervalSubs, eventSubs, pollSubs)
   }
 
   /**

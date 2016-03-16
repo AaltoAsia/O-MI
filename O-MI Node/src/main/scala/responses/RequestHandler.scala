@@ -447,4 +447,26 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         xmlReturn map Right.apply
     }
   }
+
+  def handlePathRemove(parentPath: Path): Boolean = {
+    val objects = SingleStores.hierarchyStore execute GetTree()
+    val node = objects.get(parentPath)
+
+    node match {
+      case Some(node) => {
+
+        val leafs = getInfoItems(node).map(_.path)
+        SingleStores.hierarchyStore execute TreeRemovePath(parentPath)
+
+        leafs.foreach{path =>
+          SingleStores.latestStore execute EraseSensorData(path)
+          dbConnection.remove(path)
+        }
+        true
+
+      }
+      case None => false
+    }
+  }
+
 }

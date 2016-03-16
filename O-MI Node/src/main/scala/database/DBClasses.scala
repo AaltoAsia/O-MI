@@ -216,8 +216,8 @@ trait OmiNodeTables extends DBBase {
     def timestamp = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
     def value = column[String]("VALUE")
     def valueType = column[String]("VALUETYPE")
-    def idx = index("valueIdx", (hierarchyId, timestamp), unique = false)
-
+    def idx1 = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
+    def idx2 = index("timestamp", timestamp, unique = false)  //index on timestmaps
     /** Primary Key: (hierarchyId, timestamp) */
     //def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))
 

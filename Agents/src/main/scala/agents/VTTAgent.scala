@@ -28,7 +28,7 @@ class VTTAgent extends InternalAgent {
   
   private var odfInfoItems : Option[Vector[(OdfInfoItem, String)]] = None   
   private var initialized = false
-  val t : FiniteDuration = Duration(5, SECONDS) 
+  val t : FiniteDuration = Duration(5, SECONDS)
   
   override def init(configPath : String) : Unit = {
     if(configPath.isEmpty){

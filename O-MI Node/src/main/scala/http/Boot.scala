@@ -94,9 +94,9 @@ trait Starter {
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
         )
-      ), new Timeout(5, SECONDS))
+      ), new Timeout(10, SECONDS))
 
-      Await.result(dataSaveTest, 5 seconds) match {
+      Await.result(dataSaveTest, 10 seconds) match {
         case Success(true) => system.log.info("O-MI InputPusher system working.")
         case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
         case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
@@ -123,15 +123,17 @@ trait Starter {
       "agent-loader"
     )
 
+    val requestHandler = new RequestHandler(subHandler)(dbConnection)
+
     val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
+      Props(new OmiNodeCLIListener(  agentLoader, subHandler, requestHandler)),
       "omi-node-cli-listener"
     )
 
     // create omi service actor
     val omiService = system.actorOf(Props(
       new OmiServiceActor(
-        new RequestHandler(subHandler)(dbConnection)
+        requestHandler
       )
     ), "omi-service")
 

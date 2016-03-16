@@ -234,7 +234,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
    */
-  @deprecated("For testing only.", "Since implemented.")
+  //@deprecated("For testing only.", "Since implemented.")
   def remove(path: Path): Boolean = {
     val hNode = runSync(hierarchyNodes.filter(_.path === path).result).headOption
     if (hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
@@ -323,16 +323,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
   def trimDB() = {
-    val historyLen = 50//database.historyLength
+    val historyLen = database.historyLength
     val hIdQuery = (for(h <- hierarchyNodes) yield h.id).result
 
     val startT = System.currentTimeMillis()
     log.info(s"trimming database to $historyLen newest values")
 
-    //val qry = for{
-    //  id <- hIdQuery
-    val test = runSync(hIdQuery)
-    val qry =test.map(id => sqlu"""DELETE FROM SENSORVALUES
+    val idList = runSync(hIdQuery)
+    val qry = idList.map(id => sqlu"""DELETE FROM SENSORVALUES
                    WHERE VALUEID <= (
                      SELECT VALUEID
                      FROM (

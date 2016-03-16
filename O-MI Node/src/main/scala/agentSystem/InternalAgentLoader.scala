@@ -13,25 +13,20 @@
 **/
 package agentSystem
 
-import http._
-import akka.actor.{ Props, Actor, ActorLogging, SupervisorStrategy, OneForOneStrategy, ActorInitializationException, ActorKilledException }
-import akka.actor.SupervisorStrategy._
-import akka.io.{ IO, Tcp }
-import scala.collection.mutable.Map
-import scala.collection.immutable
-import scala.collection.JavaConverters._
-import java.net.URLClassLoader
-import java.util.jar.JarFile
 import java.io.File
-import scala.concurrent._
-import scala.util.{ Try, Success, Failure }
-
-import java.util.Date
+import java.net.URLClassLoader
 import java.sql.Timestamp
+import java.util.Date
+import java.util.jar.JarFile
 
-import ExecutionContext.Implicits.global
-
+import akka.actor.SupervisorStrategy._
+import akka.actor.{Actor, ActorInitializationException, ActorKilledException, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy}
 import http.CLICmds._
+import http._
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.Map
+import scala.util.{Failure, Success, Try}
 /**
  * Helper Object for creating AgentLoader.
  *
@@ -53,7 +48,7 @@ object InternalAgentExceptions {
   /** InternalAgent initialisation failed. Exception was caught. Restart will not be attempted. */
   case class AgentInitializationException(agent: InternalAgent, exception: Exception)
 }
-import InternalAgentExceptions._
+import agentSystem.InternalAgentExceptions._
 
 /**
  * AgentLoader loads agents from jars and creates them. Also listens for InternalAgentCLI connections.
@@ -61,8 +56,6 @@ import InternalAgentExceptions._
  *
  */
 class InternalAgentLoader extends Actor with ActorLogging {
-
-  import Tcp._
   /** Simple immutable  class for containing information about a internal agent*/
   case class AgentInfo(name: String, config: String, agent: Option[InternalAgent], timestamp: Timestamp)
 
@@ -200,14 +193,14 @@ class InternalAgentLoader extends Actor with ActorLogging {
         }) {
           loadAndStart(classname, config)
         } else {
-          log.warning("Agent allready running: " + classname)
+          log.warning("Agent already running: " + classname)
         }
     }
   }
 
   def loadAndStart(classname: String, config: String) = {
     Try {
-      log.info("Instantitating agent: " + classname)
+      log.info("Instantiating agent: " + classname)
       val clazz = classLoader.loadClass(classname)
       val const = clazz.getConstructor()
       val agent: InternalAgent = const.newInstance().asInstanceOf[InternalAgent]

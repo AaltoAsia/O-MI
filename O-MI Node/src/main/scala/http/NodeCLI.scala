@@ -14,15 +14,18 @@
 **/
 package http
 
-import akka.actor.{ Props, ActorRef, Actor, ActorLogging, SupervisorStrategy, OneForOneStrategy, ActorInitializationException, ActorKilledException }
-import akka.io.{ IO, Tcp  }
-import akka.pattern.{ask}
-import scala.util.{Success, Failure}
 import java.net.InetSocketAddress
-import concurrent.duration._
-import concurrent.ExecutionContext.Implicits.global
-import akka.util.{ByteString,  Timeout}
-import database.DBSub
+
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.io.Tcp
+import akka.pattern.ask
+import akka.util.{ByteString, Timeout}
+import database.{EventSub, IntervalSub, PolledSub}
+import responses.{RequestHandler, RemoveSubscription}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -33,9 +36,10 @@ object CLICmds
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
   case class ListSubsCmd()
+  case class RemovePath(path: String)
 }
 
-import CLICmds._
+import http.CLICmds._
 /** Command Line Interface for internal agent management. 
   *
   */
@@ -82,15 +86,17 @@ remove path <path> -- NOT IMPLEMENTED
           log.info(s"Got list subs command from $ip")
           val trueSender = sender()
           (subscriptionHandler ? ListSubsCmd()).onComplete{
-            case Success( Tuple2(intervals: Set[DBSub], events: Set[DBSub]) ) => 
+            case Success((intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub])) =>
               log.info("Received list of Subscriptions. Sending ...")
               val intMsg= "Interval subscriptions:\n" ++ intervals.map{ sub=>
-                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | ttl: ${sub.ttl} | callback: ${ sub.callback }"
+                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | end time: ${sub.endTime} | callback: ${ sub.callback }"
               }.mkString("\n")
               val eventMsg = "Event subscriptions:\n" ++ events.map{ sub=>
-                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | ttl: ${sub.ttl} | callback: ${ sub.callback }"
+                 s" id: ${sub.id} | end time: ${sub.endTime} | callback: ${ sub.callback }"
               }.mkString("\n")
-              val pollMsg = "Polls currently not available for CLI.\n"
+              val pollMsg = "Poll subscriptions:\n" ++ polls.map{ sub=>
+                 s" id: ${sub.id} | started: ${sub.startTime} | end time: ${sub.endTime} | last polled: ${ sub.lastPolled }"
+              }.mkString("\n")
               trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
             case Failure(a) =>
               log.info("Failed to get list of Subscriptions.\n Sending ...")
@@ -115,6 +121,27 @@ remove path <path> -- NOT IMPLEMENTED
             case Failure(a) =>
               trueSender ! Write(ByteString("Command failure unknown.\n"))
           }
+
+        case Array("remove", pathOrId) => {
+          val trueSender = sender()
+          log.info(s"Got remove command from $ip with parameter $pathOrId")
+
+          if(pathOrId.forall(_.isDigit)){
+            val id = pathOrId.toInt
+            log.info(s"Removing subscription with id: $id")
+
+            (subscriptionHandler ? RemoveSubscription(id)).onComplete{
+              case Success(true) =>
+                trueSender ! Write(ByteString(s"Removed subscription with $id successfully."))
+              case Success(false)=>
+                trueSender ! Write(ByteString(s"Failed to remove subscription with $id. Subscription does not exist or it is already expired."))
+              case Failure(a) =>
+                trueSender ! Write(ByteString("Command failure unknown.\n"))
+            }
+          } else {
+
+          }
+        }
         case cmd: Array[String] => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
           sender() ! Write(ByteString(
@@ -130,7 +157,7 @@ remove path <path> -- NOT IMPLEMENTED
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RequestHandler)  extends Actor with ActorLogging{
 
   import Tcp._
 

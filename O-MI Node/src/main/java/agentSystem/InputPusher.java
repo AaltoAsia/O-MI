@@ -39,7 +39,7 @@ import scala.Tuple2;
 /** Interface for pushing data to InputPusher actor. 
  */
 public class InputPusher {
-    private static Timeout default_timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+    private static Timeout default_timeout = new Timeout(Duration.create(10, TimeUnit.SECONDS));
     public static ActorRef ipdb = null; 
      public static Future<Object> handleOdf( OdfObjects objs, Timeout t ) { 
     	if(ipdb != null)
@@ -61,7 +61,7 @@ public class InputPusher {
      }
     public static Future<Object> handleInfoItems( Iterable<OdfInfoItem> items,Timeout t ) { 
     	if(ipdb != null)
-        	return ask(ipdb,new HandleInfoItems(items), t ); 
+        	return ask(ipdb,new HandleInfoItems(items), t );
         else
             return Futures.failed(new Exception("ipdb is null for InputPusher."));
     }

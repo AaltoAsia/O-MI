@@ -241,6 +241,12 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
     }
   }
 
+  //case class RemovePathFromIntervalSubs(path: Path) extends Transaction[IntervalSubs] {
+  //  def executeOn(store:IntervalSubs, d: Date): Unit = {
+  //    store.intervalSubs = store.intervalSubs.
+  //  }
+  //}
+
   case class GetSubsForPath(path: Path) extends Query[PolledSubs, Set[PolledSub]] {
     def query(store: PolledSubs, d: Date): Set[PolledSub] = {
       val ids = path.inits.flatMap(path => store.pathToSubs.get(path)).toSet.flatten
