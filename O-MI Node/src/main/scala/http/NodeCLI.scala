@@ -22,6 +22,7 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
 import responses.{RequestHandler, RemoveSubscription}
+import types.Path
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -46,7 +47,8 @@ import http.CLICmds._
 class OmiNodeCLI(
     sourceAddress: InetSocketAddress,
     agentLoader: ActorRef,
-    subscriptionHandler: ActorRef
+    subscriptionHandler: ActorRef,
+    requestHandler: RequestHandler
   ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -54,8 +56,8 @@ start <agent classname>
 stop  <agent classname> 
 list agents 
 list subs 
-remove sub <subsription id> -- NOT IMPLEMENTED
-remove path <path> -- NOT IMPLEMENTED
+remove <subsription id>
+remove <path>
 """
   val ip = sourceAddress.toString.tail
   implicit val timeout : Timeout = 5.seconds
@@ -132,13 +134,24 @@ remove path <path> -- NOT IMPLEMENTED
 
             (subscriptionHandler ? RemoveSubscription(id)).onComplete{
               case Success(true) =>
-                trueSender ! Write(ByteString(s"Removed subscription with $id successfully."))
+                trueSender ! Write(ByteString(s"Removed subscription with $id successfully.\n"))
               case Success(false)=>
-                trueSender ! Write(ByteString(s"Failed to remove subscription with $id. Subscription does not exist or it is already expired."))
+                trueSender ! Write(ByteString(s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"))
               case Failure(a) =>
                 trueSender ! Write(ByteString("Command failure unknown.\n"))
             }
           } else {
+              log.info(s"Trying to remove path $pathOrId")
+            requestHandler.handlePathRemove(Path(pathOrId)) match {
+              case true => {
+                trueSender ! Write(ByteString(s"Successfully removed path $pathOrId\n"))
+                log.info(s"Successfully removed path")
+              }
+              case _    => {
+                trueSender ! Write(ByteString(s"Given path does not exist\n"))
+                log.info(s"Given path does not exist")
+              }
+            } //requestHandler isn't actor
 
           }
         }
@@ -175,7 +188,7 @@ class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, r
       log.info(s"CLI connected from $remote to $local")
 
       val cli = context.system.actorOf(
-        Props(new OmiNodeCLI( remote, agentLoader, subscriptionHandler )),
+        Props(new OmiNodeCLI( remote, agentLoader, subscriptionHandler, requestHandler )),
         "cli-" + remote.toString.tail)
       connection ! Register(cli)
     case _ => //noop?

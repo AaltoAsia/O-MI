@@ -14,14 +14,10 @@
 package types
 package OdfTypes
 
-import xml.XML
-import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
 
-import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
-import OdfTreeCollection._
+import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
@@ -96,6 +92,52 @@ require(path.length > 1,
         case (None, None) => None
       }
     )
+  }
+
+  /**
+   * Method for calculating the unique values to this object compared to the given object. This method calculates the
+   * relative component of given objects leafs in current object 'THIS \ THAT'
+   * @param another OdfObject to be removed from current Object
+   * @return
+   */
+  def --( another: OdfObject ): Option[OdfObject] = sharedAndUniques[Option[OdfObject]]( another: OdfObject){(
+      uniqueInfos : Seq[OdfInfoItem] ,
+      anotherUniqueInfos : Seq[OdfInfoItem] ,
+      sharedInfos : Map[Path, Seq[OdfInfoItem]],
+      uniqueObjs : Seq[OdfObject] ,
+      anotherUniqueObjs : Seq[OdfObject] ,
+      sharedObjs : Map[Path,Seq[OdfObject]]
+      ) =>
+
+      val uniquesAndShared = sharedObjs.flatMap{
+        case (path:Path, sobj: Seq[OdfObject]) =>
+        assert(sobj.length == 2)
+        sobj.headOption match{
+          case Some( head ) =>
+            sobj.lastOption match{
+              case Some(last) =>
+                head -- last
+              case None =>
+                throw new Exception("No last found when combining OdfObject")
+            }
+            case None =>
+              throw new Exception("No head found when combining OdfObject")
+          }
+      } ++ uniqueObjs
+
+      if(uniqueInfos.isEmpty && uniquesAndShared.isEmpty){
+        None
+      } else {
+      Option(
+        OdfObject(
+          path,
+          uniqueInfos,
+          uniquesAndShared,
+          description,
+          typeValue
+          )
+        )
+      }
   }
 
   /** Method to convert to scalaxb generated class. */

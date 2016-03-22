@@ -1,24 +1,22 @@
 package agents
 
-import agentSystem._
-import types._
-import types.Path._
-import types.OdfTypes._
-import parsing.OdfParser
-
 import java.io.File
-import scala.io.Source
-
 import java.sql.Timestamp
+
+import agentSystem._
+import parsing.OdfParser
+import types.OdfTypes._
+import types.Path._
+
 import scala.util.Random
 
 // Scala XML
-import scala.xml._
-
-import scala.concurrent.duration._
+import agentSystem.InternalAgentExceptions.{AgentException, AgentInterruption}
 import akka.util.Timeout
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
-import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
+
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.concurrent.duration._
+import scala.xml._
 
 
 /** Agent for the VTT
@@ -63,7 +61,7 @@ class VTTAgent extends InternalAgent {
       odfInfoItems match {
         case None =>
           InternalAgent.log.warning("Odf was empty, VTTAgent shutting down.")
-        case Some(infoItems) =>//Success.
+        case Some(infoItems) => //Success.
           initialized = true
       }
     }

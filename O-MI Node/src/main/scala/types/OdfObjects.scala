@@ -45,12 +45,30 @@ class OdfObjectsImpl(
     )
   }
 
+
+  def --(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
+    (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
+    OdfObjects(
+      sharedObjs.flatMap{
+        case (path:Path, sobj: Seq[OdfObject]) =>
+          sobj.headOption.flatMap{head => sobj.lastOption.flatMap(last =>
+            head -- last)}//.getOrElse(throw new UninitializedError())
+      }.toSeq ++ uniqueObjs,
+      (version, another.version) match{
+        case (Some(a), Some(b)) => Some(a)
+        case (None, Some(b)) => None
+        case (Some(a), None) => Some(a)
+        case (None, None) => None
+      }
+    )
+  }
+
   private[this] def sharedAndUniques[A]( another: OdfObjects )( constructor: (
     Seq[OdfObject],
     Seq[OdfObject],
     Map[Path,Seq[OdfObject]]) => A) = {
     val uniqueObjs : Seq[OdfObject]  = objects.filterNot( 
-        obj => another.objects.toSeq.exists( 
+        obj => another.objects.toSeq.exists(
           aobj => aobj.path  == obj.path 
         ) 
       ).toSeq  

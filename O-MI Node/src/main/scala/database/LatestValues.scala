@@ -77,11 +77,21 @@ case class Union(anotherRoot: OdfObjects) extends Transaction[OdfTree] {
 }
 
 case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
-  private def removeRecursion(elem: OdfNode) = {
-    ???
-  }
+
   def executeOn(t: OdfTree, d: Date) = {
-    ???
+    val nodeOption = t.root.get(path)
+    nodeOption match {
+      case Some(ob: OdfObject)   => {
+        t.root = t.root -- fromPath(OdfObject(path)).valuesRemoved
+      }
+      case Some(ii: OdfInfoItem) => {
+        t.root = t.root -- fromPath(OdfInfoItem(path)).valuesRemoved
+      }
+      case Some(objs: OdfObjects)  => {
+        t.root = OdfObjects()
+      } //remove whole tree
+      case _ => //noop
+    }
   }
 }
 case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs, Boolean] {
