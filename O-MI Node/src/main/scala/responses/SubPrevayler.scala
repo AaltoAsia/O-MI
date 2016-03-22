@@ -323,6 +323,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
         val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))
         val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
+
+
         CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
           .onComplete {
             case Success(CallbackSuccess) =>

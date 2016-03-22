@@ -82,10 +82,10 @@ case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
     val nodeOption = t.root.get(path)
     nodeOption match {
       case Some(ob: OdfObject)   => {
-        t.root = t.root -- fromPath(OdfObject(path)).valuesRemoved
+        t.root = (t.root -- fromPath(ob)).valuesRemoved
       }
       case Some(ii: OdfInfoItem) => {
-        t.root = t.root -- fromPath(OdfInfoItem(path)).valuesRemoved
+        t.root = (t.root -- fromPath(ii)).valuesRemoved
       }
       case Some(objs: OdfObjects)  => {
         t.root = OdfObjects()
