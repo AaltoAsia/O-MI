@@ -15,6 +15,7 @@ package http
 
 import java.nio.file.{Paths, Files}
 
+import accessControl.AuthAPIService
 import akka.actor.{Actor, ActorLogging}
 import akka.event.LoggingAdapter
 import http.Authorization._
@@ -49,6 +50,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
      with OmiService
      {
 
+  registerApi(new AuthAPIService())
   /**
    * the HttpService trait defines only one abstract member, which
    * connects the services environment to the enclosing actor or test
