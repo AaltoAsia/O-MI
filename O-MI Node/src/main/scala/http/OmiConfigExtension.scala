@@ -28,6 +28,9 @@ class OmiConfigExtension(config: Config) extends Extension {
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
   val callbackTimeout: Long = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
 
+  val trimInterval = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS)
+
+  val snapshotInterval = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS)
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
 

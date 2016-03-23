@@ -60,11 +60,29 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
 
   case object TrimDB
+  case object TakeSnapshot
   private val scheduler = context.system.scheduler
-  private val interval = 120
-  log.info(s"scheduling databse trimming every $interval seconds")
-  scheduler.schedule(interval.seconds, interval.seconds, self, TrimDB)
+  private val trimInterval = http.Boot.settings.trimInterval
+  private val snapshotInterval = http.Boot.settings.snapshotInterval
+  log.info(s"scheduling databse trimming every $trimInterval seconds")
+  scheduler.schedule(trimInterval.seconds, trimInterval.seconds, self, TrimDB)
+  log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
+  scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
 
+
+
+  private def takeSnapshot(): Long = {
+    log.info("Taking prevyaler snapshot")
+    val start = System.currentTimeMillis()
+    Try(SingleStores.latestStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
+    Try(SingleStores.hierarchyStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
+    Try(SingleStores.eventPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
+    Try(SingleStores.intervalPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
+    Try(SingleStores.pollPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
+    Try(SingleStores.idPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
+    val end = System.currentTimeMillis()
+    (end-start)
+  }
 
   /**
    * Function for handling InputPusherCmds.
@@ -77,6 +95,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) sender() ! handlePathValuePairs(pairs)
     case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
     case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
+    case TakeSnapshot                   => {val snapshotDur = takeSnapshot(); log.info(s"Taking Snapshot took $snapshotDur milliseconds")}
     case u                              => log.warning("Unknown message received.")
   }
 
