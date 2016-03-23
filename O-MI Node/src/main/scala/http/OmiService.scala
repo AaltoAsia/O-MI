@@ -26,6 +26,7 @@ import spray.http._
 import spray.routing._
 import types.OmiTypes._
 import types.Path
+import accessControl.AuthAPIService
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.xml.NodeSeq
@@ -48,6 +49,8 @@ class OmiServiceActor(reqHandler: RequestHandler)
      with ActorLogging
      with OmiService
      {
+
+  registerApi(new AuthAPIService())
 
   /**
    * the HttpService trait defines only one abstract member, which
