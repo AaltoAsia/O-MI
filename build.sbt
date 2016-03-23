@@ -66,7 +66,8 @@ lazy val root = (project in file(".")).
       cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
         base / "html" / "api",
         base / "lib",
-        base / "logs")},
+        base / "logs",
+        file("logs"))},
       serverLoading in Debian := SystemV,
       //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
       //  n / "html" / "api"},
