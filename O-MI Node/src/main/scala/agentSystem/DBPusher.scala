@@ -166,7 +166,11 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     // val data = getLeafs(objects)
     // if ( data.nonEmpty ) {
     val items = getInfoItems(objects)
-    val other = getOdfNodes(objects) collect {case o: OdfObject if o.hasDescription => o}
+
+    // Collect metadata 
+    val other = getOdfNodes(objects) collect {
+      case o @ OdfObject(_, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+    }
     val all = items ++ other
     if (all.nonEmpty) {
 
@@ -189,7 +193,9 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
    * Function for handling sequences of OdfObject.
    */
   private def handleObjects(objs: Iterable[OdfObject]): Try[Boolean] = {
-    handleOdf(OdfObjects(objs.asScala))
+    handleOdf(objs.asScala.foldLeft(OdfObjects()){
+      case (a, o) => a union fromPath(o)
+    })
   }
 
   /**
@@ -263,9 +269,9 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
       }
     }
 
-    val descriptions = (infoItems filter { _.hasDescription }) ++ (objectMetaDatas filter { _.hasDescription })
+    val iiDescriptions = infoItems filter { _.hasDescription }
 
-    val updatedStaticItems = metas ++ descriptions ++ newItems
+    val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetaDatas
 
     // Update our hierarchy data structures if needed
     if (updatedStaticItems.nonEmpty) {

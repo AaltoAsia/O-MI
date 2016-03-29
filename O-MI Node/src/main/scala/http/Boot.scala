@@ -88,15 +88,16 @@ trait Starter {
       val numDescription =
         "Number of latest values (per sensor) that will be saved to the DB"
       system.log.info(s"$numDescription: ${settings.numLatestValues}")
+      system.log.info("Testing InputPusher...")
       val dataSaveTest = InputPusher.handleInfoItems(Iterable(
         OdfInfoItem(
           Path(settings.settingsOdfPath + "num-latest-values-stored"), 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
         )
-      ), new Timeout(10, SECONDS))
+      ), new Timeout(60, SECONDS))
 
-      Await.result(dataSaveTest, 10 seconds) match {
+      Await.result(dataSaveTest, 60 seconds) match {
         case Success(true) => system.log.info("O-MI InputPusher system working.")
         case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
         case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
