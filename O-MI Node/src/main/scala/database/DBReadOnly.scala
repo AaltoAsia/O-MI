@@ -218,13 +218,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     // NOTE: this discards currentData if attaching object description, requires refactoring
     def getDescObject(path: Path, currentData: OdfObjects, attachObjectDescription: Boolean) =
-      if (attachObjectDescription)
-        {metadataTree.get(path) collect {
-              case o: OdfObject => http.Boot.system.log.warning(s"DESCI $o"); o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
-            } map fromPath
-        }.getOrElse(OdfObjects()) union currentData
-      else
-        currentData
+      {metadataTree.get(path) collect {
+            case o: OdfObject if (attachObjectDescription) =>
+              o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
+            case o: OdfObject =>
+              o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection(), description = None)
+          } map fromPath
+      }.getOrElse(OdfObjects()) union currentData
 
     def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
