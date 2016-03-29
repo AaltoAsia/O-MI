@@ -21,6 +21,7 @@ import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
+  id:                   Seq[QlmID],
   path:                 Path,
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
@@ -72,6 +73,7 @@ require(path.length > 1,
           }
       }
     OdfObject(
+      (id ++ another.id).distinct, //TODO keep only first ids?
       path, 
       sharedInfosOut ++
       uniqueInfos ++
@@ -130,6 +132,7 @@ require(path.length > 1,
       } else {
       Option(
         OdfObject(
+          id, //TODO remove ids of another object?
           path,
           uniqueInfos,
           uniquesAndShared,

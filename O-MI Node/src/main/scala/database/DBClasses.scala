@@ -154,7 +154,7 @@ trait OmiNodeTables extends DBBase {
 
     def toOdfObject: OdfObject = toOdfObject()
     def toOdfObject(infoitems: Iterable[OdfInfoItem] = Iterable(), objects: Iterable[OdfObject] = Iterable()) =
-      OdfObject(path, infoitems, objects, descriptionOdfOption, None)
+      OdfObject(Seq(),path, infoitems, objects, descriptionOdfOption, None)
 
     def toOdfObjects: OdfObjects = OdfObjects()
 

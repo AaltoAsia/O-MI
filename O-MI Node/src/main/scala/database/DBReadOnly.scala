@@ -288,7 +288,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
         runSync(processObjectI(obj.path, false))
 
-      case obj @ OdfObject(path, items, objects, description, typeVal) =>
+      case obj @ OdfObject(id, path, items, objects, description, typeVal) =>
         require(items.isEmpty && objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
@@ -335,7 +335,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           Some( SingleStores.buildOdfFromValues(
             SingleStores.latestStore execute LookupAllDatas()) )
 
-        case obj @ OdfObject(path, items, objects, desc, typeVal) =>
+        case obj @ OdfObject(id, path, items, objects, desc, typeVal) =>
           require(items.isEmpty && objects.isEmpty,
             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
           val resultsO = for {

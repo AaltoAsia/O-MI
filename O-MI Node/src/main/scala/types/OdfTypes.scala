@@ -87,14 +87,14 @@ object `package` {
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(Seq(), parentPath, OdfTreeCollection(info), OdfTreeCollection())
         fromPath(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(Seq(),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           fromPath(parent)
         }
 
@@ -109,13 +109,13 @@ object `package` {
     val parentPath = child.path.dropRight(1)
     child match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(Seq(), parentPath, OdfTreeCollection(info), OdfTreeCollection())
         parent
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(Seq(), parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           parent
         }
 
@@ -185,12 +185,13 @@ case class OdfObjects(
 }
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
+  id: Seq[QlmID],
   path: Path,
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None
-  ) extends OdfObjectImpl(path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
 
   def get(path: Path) : Option[OdfNode] ={
     if( path == this.path ) return Some(this)

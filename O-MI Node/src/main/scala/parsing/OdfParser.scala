@@ -121,6 +121,7 @@ object OdfParser extends Parser[OdfParseResult] {
     )
 
     OdfObject(
+      obj.id,
       npath, 
       obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
       obj.Object.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
