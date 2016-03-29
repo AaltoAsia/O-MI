@@ -1,15 +1,18 @@
 package testHelpers
-import org.specs2.mutable._
-import org.specs2.specification.{ Step, Fragments }
-import org.xml.sax.InputSource
-import akka.actor.ActorSystem
-import akka.testkit.{ TestKit, TestActorRef, TestProbe, ImplicitSender, EventFilter }
+
+import java.io.File
+
+import akka.actor.{ActorSystem, _}
+import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.specs2.specification.Scope
-import akka.actor._
+import database.SingleStores
+import org.specs2.mutable._
+import org.specs2.specification.{Fragments, Scope, Step}
+import org.xml.sax.InputSource
 import responses.RemoveSubscription
+
 import scala.xml._
-import parsing._
+import scala.xml.parsing._
 
 class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
 
@@ -17,7 +20,6 @@ class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with 
 }
 
 class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
-  import akka.io.IO
   import spray.can.Http
   import spray.http._
   import HttpMethods._
@@ -91,9 +93,9 @@ class HTML5Parser extends NoBindingFactoryAdapter {
   }
 
   def loadXML(source: InputSource) = {
-    import nu.validator.htmlparser.{ sax, common }
-    import sax.HtmlParser
+    import nu.validator.htmlparser.{common, sax}
     import common.XmlViolationPolicy
+    import sax.HtmlParser
 
     val reader = new HtmlParser
     reader.setXmlPolicy(XmlViolationPolicy.ALLOW)
@@ -110,6 +112,26 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
   val printer = new scala.xml.PrettyPrinter(80, 2)
   override def apply[S <: Seq[Node]](n: Expectable[S]) = {
     super.apply(n).updateMessage { x => n.description + "\nis not equal to correct:\n" + printer.format(node.head) }
+
+  }
+}
+package object utils {
+  def removeAllPrevaylers = {
+    def removeAll(path: String) = {
+      def getRecursively(f:File): Seq[File] ={
+        f.listFiles.filter(_.isDirectory).flatMap(getRecursively(_)) ++ f.listFiles()
+      }
+      getRecursively(new File(path)).foreach{
+        f => f.delete()
+      }
+    }
+   SingleStores.latestStore.close()
+   SingleStores.hierarchyStore.close()
+   SingleStores.eventPrevayler.close()
+   SingleStores.intervalPrevayler.close()
+   SingleStores.pollPrevayler.close()
+   SingleStores.idPrevayler.close()
+   removeAll(http.Boot.settings.journalsDirectory)
 
   }
 }

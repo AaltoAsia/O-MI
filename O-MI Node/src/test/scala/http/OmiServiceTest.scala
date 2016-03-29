@@ -11,7 +11,6 @@ import responses.{RequestHandler, SubscriptionHandler}
 import spray.http.HttpHeaders._
 import spray.http.MediaTypes._
 import spray.http.StatusCodes._
-import spray.http._
 import spray.httpx.marshalling.BasicMarshallers._
 import spray.testkit.Specs2RouteTest
 import testHelpers.BeforeAfterAll
@@ -84,18 +83,16 @@ class OmiServiceTest extends Specification
         responseAs[NodeSeq].headOption must beSome.which(_.label == "error") //head.label === "error"
       }
     }
+    val settingsPath = "/" + Path(Boot.settings.settingsOdfPath).toString
     "respond successfully to GET to some value" in {
-      dbConnection.set(Path("Objects/SystemTests/TestValue"), new java.sql.Timestamp(1000), "123")
-
-      Get("/Objects/SystemTests/TestValue/value") ~> myRoute ~> check {
+      Get(settingsPath + "/num-latest-values-stored/value") ~> myRoute ~> check {
         mediaType === `text/plain`
         status === OK
-        responseAs[String] === "123"
+        responseAs[String] === "10"
       }
 
     }
 
-    val settingsPath = "/" + Path(Boot.settings.settingsOdfPath).toString
 
     // Somewhat overcomplicated test; Serves as an example for other tests
     "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" in {
@@ -195,6 +192,7 @@ class OmiServiceTest extends Specification
 
       Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
         mediaType === `text/xml`
+        println("\n\n\n\n\n\n\n\n" + responseAs[String])
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))

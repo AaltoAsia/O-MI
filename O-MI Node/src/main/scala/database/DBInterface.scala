@@ -149,11 +149,12 @@ object SingleStores {
             info
         }
       case objs : OdfObjects => 
-        objs.copy(objects = objs.objects map (o => OdfObject(o.path)))
+        objs.copy(objects = objs.objects map (o => OdfObject(o.path,typeValue = o.typeValue)))
       case obj : OdfObject => 
         obj.copy(
-          objects = obj.objects map (o => OdfObject(o.path)),
-          infoItems = obj.infoItems map (i => OdfInfoItem(i.path))
+          objects = obj.objects map (o => OdfObject(o.path, typeValue = o.typeValue)),
+          infoItems = obj.infoItems map (i => OdfInfoItem(i.path)),
+          typeValue = obj.typeValue
           )
     }
   } 

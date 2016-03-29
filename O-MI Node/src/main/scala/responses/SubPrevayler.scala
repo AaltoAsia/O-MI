@@ -138,7 +138,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
           .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
           .map{
             case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
-            case o: OdfObject   => fromPath(OdfObject(o.path))
+            case o: OdfObject   => fromPath(OdfObject(o.path, typeValue = o.typeValue))
             case o: OdfObjects  => fromPath(OdfObjects())} //map OdfNodes to OdfObjects
           .reduce(_.union(_)) //combine results
 

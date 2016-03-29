@@ -138,7 +138,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, Some(3), None)
       val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
 
-      values1 must beSome.which(_ must have size (10))
+      values1 must beSome.which(_ must have size (12))
       values1 must beSome.which(_ must contain("21.1C", "21.6C"))
 
       values2 must beSome.which(_ must have size (3))
@@ -151,7 +151,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       val sensors2 = db.getNBetween(pathToInfoItemIterable(Path("/Objects/path/to/sensor3/temp")), None, None, None, Some(2))
       val values2: Option[Seq[String]] = sensors2.map { x => OdfObjectsToValues(x) }
 
-      values1 must beSome.which(_ must have size (10))
+      values1 must beSome.which(_ must have size (12))
       values1 must beSome.which(_ must contain("21.1C", "21.6C"))
 
       values2 must beSome.which(_ must have size (2))
@@ -507,7 +507,8 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       
       (1 to 30).foreach(n =>
         db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
-        
+
+      db.trimDB()
       val getDataForPath = db.get(testPath).map(fromPath(_))
       val dbValuesForPath = getDataForPath.map(OdfObjectsToValues(_))
       dbValuesForPath must beSome.which(_ must have size (10))
@@ -515,10 +516,11 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
       database.historyLength === 10
       database.setHistoryLength(20)
       database.historyLength === 20
-      
+
       (31 to 50).foreach(n =>
         db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
-        
+
+      db.trimDB()
       val getDataForPath1 = db.get(testPath).map(fromPath(_))
       val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))
       dbValuesForPath1 must beSome.which(_ must have size (20))

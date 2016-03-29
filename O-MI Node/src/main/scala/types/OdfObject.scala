@@ -203,7 +203,8 @@ require(path.length > 1,
         subobj: OdfObject =>
         subobj.asObjectType
       }.toSeq,
-      attributes = Map.empty
+      typeValue,
+      Map.empty
     )
   }
 }
