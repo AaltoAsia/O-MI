@@ -32,6 +32,16 @@ object `package` {
    * Collection type to be used as all children members in odf tree types
    */
   type OdfTreeCollection[T] = Vector[T]
+
+  def unionOption[T](a: Option[T], b: Option[T])(f: (T,T) => T): Option[T] = {
+    (a,b) match{
+        case (Some(a), Some(b)) => Some(f(a,b))
+        case (None, Some(b)) => Some(b)
+        case (Some(a), None) => Some(a)
+        case (None, None) => None
+    }
+  }
+
   
   /** Helper method for getting all leaf nodes of O-DF Structure */
   def getLeafs(obj: OdfObject): OdfTreeCollection[OdfNode] = {

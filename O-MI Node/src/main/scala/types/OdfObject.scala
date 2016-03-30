@@ -15,6 +15,7 @@ package types
 package OdfTypes
 
 import java.lang.{Iterable => JavaIterable}
+import javax.xml.datatype.{DatatypeConstants => XMLConst}
 
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
@@ -73,26 +74,32 @@ require(path.length > 1,
           }
       }
     OdfObject(
-      (id ++ another.id).distinct, //TODO keep only first ids?
-      path, 
-      sharedInfosOut ++
-      uniqueInfos ++
-      anotherUniqueInfos,
-      sharedObjsOut ++ 
-      uniqueObjs ++ 
-      anotherUniqueObjs ,
-      (description, another.description) match{
-        case (Some(a), Some(b)) => Some(b)
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
+      (id ++ another.id).groupBy(_.value).values.collect{
+        case Seq(single) => single
+        case Seq(QlmID(valueA, idTypeA, tagTypeA, startDateA, endDateA, attrA),
+                 QlmID(valueB, idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
+          QlmID(valueB, idTypeB orElse idTypeA, tagTypeB orElse tagTypeA,
+            unionOption(startDateB, startDateA){case (b, a) =>
+              a compare b match {
+                case XMLConst.LESSER => a // a < b
+                case _ => b
+              }
+            },
+            unionOption(endDateB, endDateA){case (b, a) =>
+              a compare b match {
+                case XMLConst.GREATER => a // a > b
+                case _ => b
+
+              }
+            },
+            attrA ++ attrB
+          )
       },
-      (typeValue, another.typeValue) match{
-        case (Some(a), Some(b)) => Some(b)
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
-      }
+      path, 
+      sharedInfosOut ++ uniqueInfos ++ anotherUniqueInfos,
+      sharedObjsOut ++ uniqueObjs ++ anotherUniqueObjs,
+      another.description orElse description,
+      another.typeValue orElse typeValue
     )
   }
 
