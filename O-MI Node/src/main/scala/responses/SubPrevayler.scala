@@ -424,7 +424,6 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
         }
         case None => {
           val paths = OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
-          //println(paths.mkString("\n"))
           //val subData = paths.map(path => SubValue(newId,path,currentTimestamp,"",""))
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {

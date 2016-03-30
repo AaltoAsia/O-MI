@@ -27,6 +27,7 @@ import scala.collection.SortedMap
 import types._
 import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import http.Boot.system.log
 
 /**
  * Read only restricted interface methods for db tables
@@ -312,7 +313,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             } yield result
 
             case n =>
-              println(s"Requested '$path' as InfoItem, found '$n'")
+              log.warning(s"Requested '$path' as InfoItem, found '$n'")
               DBIO.successful(None) // Requested object was not found or not infoitem, TODO: think about error handling
           }
         }

@@ -167,7 +167,6 @@ trait OmiService
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[NodeSeq]) { xml =>
         val eitherOmi = OmiParser.parse(xml.toString)
-        println(eitherOmi)
 
         respondWithMediaType(`text/xml`) {
           eitherOmi match {

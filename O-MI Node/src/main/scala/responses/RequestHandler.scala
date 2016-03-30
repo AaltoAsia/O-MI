@@ -138,8 +138,9 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    * @param request request is O-MI request to be handled
    */
   def actionOnInternalError: Throwable => Unit = { error =>
-    println("[ERROR] Internal Server error:")
-    error.printStackTrace()
+    //println("[ERROR] Internal Server error:")
+    //error.printStackTrace()
+    log.error("Internal server error: ", error)
   }
 
   /**
