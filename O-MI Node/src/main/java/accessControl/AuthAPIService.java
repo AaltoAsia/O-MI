@@ -30,6 +30,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Created by romanfilippov on 14/01/16.
@@ -40,6 +43,9 @@ public class AuthAPIService implements AuthApi {
     private final String authServiceURIScheme = "https://";
     private final String authServiceURI = authServiceURIScheme + "localhost" + "/security/PermissionService";
 
+    private final Logger logger = LoggerFactory.getLogger(AuthAPIService.class);
+
+
     static {
         //for localhost testing only
         javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
@@ -47,7 +53,6 @@ public class AuthAPIService implements AuthApi {
 
                     public boolean verify(String hostname,
                                           javax.net.ssl.SSLSession sslSession) {
-                        System.out.println("HOSTNAME:"+hostname);
                         if (hostname.equals("localhost")) {
                             return true;
                         }
@@ -61,7 +66,7 @@ public class AuthAPIService implements AuthApi {
 //                                boolean isWrite,
 //                                java.lang.Iterable<Path> paths) {
 //
-//        System.out.println("isAuthorizedForType EXECUTED!");
+//        logger.info("isAuthorizedForType EXECUTED!");
 //
 //        Iterator<Path> iterator = paths.iterator();
 //        while (iterator.hasNext()) {
@@ -69,21 +74,21 @@ public class AuthAPIService implements AuthApi {
 //
 //            // the very first query to read the tree
 //            if (nextObj.equalsIgnoreCase("Objects")) {
-//                System.out.println("Root tree requested. Allowed.");
+//                logger.info("Root tree requested. Allowed.");
 //                return true;
 //            }
 //        }
 //
 //        scala.collection.Iterator iter = httpRequest.cookies().iterator();
 //        if (!iter.hasNext()) {
-//            System.out.println("No cookies!");
+//            logger.info("No cookies!");
 //            return false;
 //        } else {
 //
 //            HttpCookie ck = null;
 //            while (iter.hasNext()) {
 //                HttpCookie nextCookie = (HttpCookie)iter.next();
-//                System.out.println(nextCookie.name() + ":" + nextCookie.content());
+//                logger.info(nextCookie.name() + ":" + nextCookie.content());
 //
 //                if (nextCookie.name().equalsIgnoreCase("JSESSIONID")) {
 //                    ck = nextCookie;
@@ -109,8 +114,8 @@ public class AuthAPIService implements AuthApi {
 //                }
 //                requestBody += "]}";
 //
-//                System.out.println("isWrite:"+isWrite);
-//                System.out.println("Paths:" +requestBody);
+//                logger.info("isWrite:"+isWrite);
+//                logger.info("Paths:" +requestBody);
 //                return sendPermissionRequest(isWrite, requestBody, ck.toString());
 //            } else
 //                return false;
@@ -122,7 +127,7 @@ public class AuthAPIService implements AuthApi {
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
 
-        System.out.println("isAuthorizedForType EXECUTED!");
+        logger.info("isAuthorizedForType EXECUTED!");
 
         boolean authenticated = false;
 
@@ -154,7 +159,7 @@ public class AuthAPIService implements AuthApi {
         authenticated = (subjectInfo != null) && success;
         if (authenticated)
         {
-            System.out.println("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
+            logger.info("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
         }
 
         // If there is not certificate present we try to find the session cookie
@@ -162,7 +167,7 @@ public class AuthAPIService implements AuthApi {
 
             iter = httpRequest.cookies().iterator();
             if (!iter.hasNext()) {
-                System.out.println("No cookies!");
+                logger.info("No cookies!");
 
                 // No cookies - deny request
                 return Unauthorized.instance();
@@ -171,7 +176,7 @@ public class AuthAPIService implements AuthApi {
                 HttpCookie ck = null;
                 while (iter.hasNext()) {
                     HttpCookie nextCookie = (HttpCookie) iter.next();
-                    System.out.println(nextCookie.name() + ":" + nextCookie.content());
+                    logger.info(nextCookie.name() + ":" + nextCookie.content());
 
                     if (nextCookie.name().equals("JSESSIONID")) {
                         ck = nextCookie;
@@ -197,7 +202,7 @@ public class AuthAPIService implements AuthApi {
 
                 // the very first query to read the tree
                 if (nextObj.equalsIgnoreCase("Objects")) {
-                    System.out.println("Root tree requested. forwarding to Partial API.");
+                    logger.info("Root tree requested. forwarding to Partial API.");
 
 
                     ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
@@ -237,8 +242,8 @@ public class AuthAPIService implements AuthApi {
             else
                 requestBody += "]}";
 
-            System.out.println("isWrite:" + isWrite);
-            System.out.println("Paths:" + requestBody);
+            logger.info("isWrite:" + isWrite);
+            logger.info("Paths:" + requestBody);
 
             return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
         } else {
@@ -257,7 +262,7 @@ public class AuthAPIService implements AuthApi {
         try {
             //Create connection
             String finalURL = authServiceURI + "?getPaths=true";
-            System.out.println("Sending request. URI:" + finalURL);
+            logger.info("Sending request. URI:" + finalURL);
             URL url = new URL(finalURL);
             connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
@@ -324,11 +329,11 @@ public class AuthAPIService implements AuthApi {
 
             ArrayList<Path> finalPaths = new ArrayList<>(json_paths.size());
 
-            System.out.println(json_paths.size()+" PATHS FOUND");
+            logger.info(json_paths.size()+" PATHS FOUND");
 
             for (int i = 0; i < json_paths.size(); i++) {
                 String pathString = json_paths.get(i).getAsString();
-                System.out.println(pathString);
+                logger.info(pathString);
                 Path nextPath = new Path(pathString);
                 finalPaths.add(nextPath);
             }
@@ -351,7 +356,7 @@ public class AuthAPIService implements AuthApi {
             //Create connection
             String writeURL = isWrite ? "true" : "false";
             String finalURL = authServiceURI + "?ac=true&write=" + writeURL;
-            System.out.println("Sending request. URI:" + finalURL);
+            logger.info("Sending request. URI:" + finalURL);
             URL url = new URL(finalURL);
             connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
@@ -381,12 +386,12 @@ public class AuthAPIService implements AuthApi {
             }
             rd.close();
 
-            System.out.println("RESPONSE:"+response.toString());
+            logger.info("RESPONSE:"+response.toString());
 
             return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("EXCEPTION!");
+            logger.info("EXCEPTION!");
             return Unauthorized.instance();
         } finally {
             if(connection != null) {
