@@ -39,9 +39,11 @@ import org.slf4j.LoggerFactory;
  */
 public class AuthAPIService implements AuthApi {
 
-    private final int authServicePort = 443;
-    private final String authServiceURIScheme = "https://";
-    private final String authServiceURI = authServiceURIScheme + "localhost" + "/security/PermissionService";
+    private final boolean useHTTPS = false;
+    private final int authServicePort = 8088;
+    private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
+    private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
+    private final String authServiceURI = authServiceURIScheme + mainURI + "/security/PermissionService";
 
     private final Logger logger = LoggerFactory.getLogger(AuthAPIService.class);
 
