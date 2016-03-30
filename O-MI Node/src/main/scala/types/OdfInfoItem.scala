@@ -41,18 +41,8 @@ class  OdfInfoItemImpl(
     OdfInfoItem(
       path,
       (values ++ another.values).toSeq,
-      (description, another.description) match{
-        case (Some(a), Some(b)) => Some(a)
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
-      },
-      (metaData, another.metaData) match{
-        case (Some(a), Some(b)) => Some(a)
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
-      }
+      another.description orElse description,
+      another.metaData orElse metaData
     )
   }
 

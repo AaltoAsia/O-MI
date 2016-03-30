@@ -36,11 +36,9 @@ class OdfObjectsImpl(
         sobj.headOption.flatMap{head =>sobj.lastOption.map(last=> 
           head.combine(last))}.getOrElse(throw new UninitializedError()) // .toList() might also work instead of getOrElse?
       }.toSeq ++ uniqueObjs ++ anotherUniqueObjs,
-      (version, another.version) match{
-        case (Some(a), Some(b)) => Some(a)
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
+      unionOption(version, another.version){
+        case (a,b) if a > b => a
+        case (a,b) => b
       }
     )
   }
@@ -54,12 +52,7 @@ class OdfObjectsImpl(
           sobj.headOption.flatMap{head => sobj.lastOption.flatMap(last =>
             head -- last)}//.getOrElse(throw new UninitializedError())
       }.toSeq ++ uniqueObjs,
-      (version, another.version) match{
-        case (Some(a), Some(b)) => Some(a)
-        case (None, Some(b)) => None
-        case (Some(a), None) => Some(a)
-        case (None, None) => None
-      }
+      version
     )
   }
 
@@ -72,20 +65,15 @@ class OdfObjectsImpl(
   def intersect(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
     (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
     OdfObjects(
-    sharedObjs.flatMap{
-    case (path: Path, sobj: Seq[OdfObject]) =>
-      for{
-        head <- sobj.headOption //first object
-        last <- sobj.lastOption //second object
-        res  <- head.intersect(last)  //intersection
-      } yield res
-    }.toSeq,
-    (version, another.version) match{
-      case (Some(a), Some(b)) => Some(a)
-      case (None, Some(b))    => Some(b)
-      case (Some(a), None)    => Some(a)
-      case (None, None)       => None
-    }
+      sharedObjs.flatMap{
+      case (path: Path, sobj: Seq[OdfObject]) =>
+        for{
+          head <- sobj.headOption //first object
+          last <- sobj.lastOption //second object
+          res  <- head.intersect(last)  //intersection
+        } yield res
+      }.toSeq,
+      version orElse another.version
     )
   }
 
