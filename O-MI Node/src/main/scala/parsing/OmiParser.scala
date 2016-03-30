@@ -110,7 +110,7 @@ object OmiParser extends Parser[OmiParseResult] {
   v match{
     case -1.0 =>  -1.seconds
     case w if w > 0 => w.seconds
-    case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
+    case _ => throw new IllegalArgumentException("Illegal interval, only positive or -1 are allowed.")
   }
   def parseTTL(v: Double)      =
   v match{
@@ -168,7 +168,7 @@ object OmiParser extends Parser[OmiParseResult] {
             case None =>
               Left(
                 Iterable(
-                  ParseError("Invalid Read request need either of \"omi:msg\" or \"omi:requestID\" nodes.")
+                  ParseError("Invalid Read request, needs either of \"omi:msg\" or \"omi:requestID\" elements.")
                 )
               )
           }

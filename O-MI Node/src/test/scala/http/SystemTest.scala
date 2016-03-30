@@ -129,7 +129,6 @@ class SystemTest extends Specification with Starter with AfterAll {
   }
 
   def afterAll = {
-    
     system.shutdown()
     dbConnection.destroy()
 

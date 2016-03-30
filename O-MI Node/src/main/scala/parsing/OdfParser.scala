@@ -94,7 +94,7 @@ object OdfParser extends Parser[OdfParseResult] {
             Iterable.empty[OdfObject]
           else
             objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
-          objects.version 
+          objects.version
         )
       )
     } match {
@@ -121,11 +121,12 @@ object OdfParser extends Parser[OdfParseResult] {
     )
 
     OdfObject(
+      obj.id,
       npath, 
       obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
       obj.Object.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
-      obj.description.map{ des => OdfDescription( des.value, des.lang )
-      }
+      obj.description.map{ des => OdfDescription( des.value, des.lang )},
+      obj.typeValue
     ) 
   }
   
