@@ -21,6 +21,7 @@ import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
+  id:                   Seq[QlmID],
   path:                 Path,
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
@@ -72,6 +73,7 @@ require(path.length > 1,
           }
       }
     OdfObject(
+      (id ++ another.id).distinct, //TODO keep only first ids?
       path, 
       sharedInfosOut ++
       uniqueInfos ++
@@ -94,6 +96,55 @@ require(path.length > 1,
     )
   }
 
+  /**
+   * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
+   * on the tree that should be added the data. another should be subset of this odfTree.
+   * @param another another Object to merge with
+   * @return
+   */
+  def intersect( another: OdfObject ): Option[OdfObject] = sharedAndUniques[Option[OdfObject]]( another: OdfObject){(
+    uniqueInfos: Seq[OdfInfoItem],
+    anotherUniqueInfos: Seq[OdfInfoItem],
+    sharedInfos: Map[Path, Seq[OdfInfoItem]],
+    uniqueObjs: Seq[OdfObject],
+    anotherUniqueObjs: Seq[OdfObject],
+    sharedObjs: Map[Path, Seq[OdfObject]]
+    )=>
+
+    val sharedInfosOut = sharedInfos.flatMap{
+        case (path: Path, sobj: Seq[OdfInfoItem]) =>
+          assert(sobj.length == 2)
+          for{
+            head <- sobj.headOption
+            last <- sobj.lastOption
+          } yield last
+    }
+
+    val sharedObjsOut = sharedObjs.flatMap{
+        case (path: Path, sobj: Seq[OdfObject]) =>
+          assert(sobj.length == 2)
+          for{
+            head <- sobj.headOption
+            last <- sobj.lastOption
+            res  <- head.intersect(last)
+          } yield res
+    }
+
+    if(sharedInfosOut.isEmpty && sharedObjsOut.isEmpty){
+      None
+    } else{
+      Option(
+        OdfObject(
+          id, //another.id should be set to empty
+          path,
+          sharedInfosOut,
+          sharedObjsOut,
+          another.description,
+          typeValue
+        )
+      )
+    }
+  }
   /**
    * Method for calculating the unique values to this object compared to the given object. This method calculates the
    * relative component of given objects leafs in current object 'THIS \ THAT'
@@ -130,6 +181,7 @@ require(path.length > 1,
       } else {
       Option(
         OdfObject(
+          id, //TODO remove ids of another object?
           path,
           uniqueInfos,
           uniquesAndShared,
@@ -190,10 +242,10 @@ require(path.length > 1,
   implicit def asObjectType : ObjectType = {
     require(path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
     ObjectType(
-      Seq( QlmID(
+      /*Seq( QlmID(
         path.last, // require checks (also in OdfObject)
         attributes = Map.empty
-      )),
+      )),*/id, //
       description.map( des => des.asDescription ),
       infoItems.map{ 
         info: OdfInfoItem =>
@@ -203,7 +255,8 @@ require(path.length > 1,
         subobj: OdfObject =>
         subobj.asObjectType
       }.toSeq,
-      attributes = Map.empty
+      typeValue,
+      Map.empty
     )
   }
 }

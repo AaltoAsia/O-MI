@@ -15,6 +15,7 @@ package http
 
 import java.nio.file.{Paths, Files}
 
+import accessControl.AuthAPIService
 import akka.actor.{Actor, ActorLogging}
 import akka.event.LoggingAdapter
 import http.Authorization._
@@ -26,7 +27,6 @@ import spray.http._
 import spray.routing._
 import types.OmiTypes._
 import types.Path
-import accessControl.AuthAPIService
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.xml.NodeSeq
@@ -51,7 +51,6 @@ class OmiServiceActor(reqHandler: RequestHandler)
      {
 
   registerApi(new AuthAPIService())
-
   /**
    * the HttpService trait defines only one abstract member, which
    * connects the services environment to the enclosing actor or test
@@ -168,6 +167,7 @@ trait OmiService
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[NodeSeq]) { xml =>
         val eitherOmi = OmiParser.parse(xml.toString)
+        println(eitherOmi)
 
         respondWithMediaType(`text/xml`) {
           eitherOmi match {

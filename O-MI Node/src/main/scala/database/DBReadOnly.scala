@@ -218,13 +218,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     // NOTE: this discards currentData if attaching object description, requires refactoring
     def getDescObject(path: Path, currentData: OdfObjects, attachObjectDescription: Boolean) =
-      if (attachObjectDescription)
-        {metadataTree.get(path) collect {
-              case o: OdfObject => http.Boot.system.log.warning(s"DESCI $o"); o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
-            } map fromPath
-        }.getOrElse(OdfObjects()) union currentData
-      else
-        currentData
+      {metadataTree.get(path) collect {
+            case o: OdfObject if (attachObjectDescription) =>
+              o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
+            case o: OdfObject =>
+              o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection(), description = None)
+          } map fromPath
+      }.getOrElse(OdfObjects()) union currentData
 
     def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
@@ -288,7 +288,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
         runSync(processObjectI(obj.path, false))
 
-      case obj @ OdfObject(path, items, objects, description, _) =>
+      case obj @ OdfObject(id, path, items, objects, description, typeVal) =>
         require(items.isEmpty && objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
@@ -335,10 +335,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           Some( SingleStores.buildOdfFromValues(
             SingleStores.latestStore execute LookupAllDatas()) )
 
-        case obj @ OdfObject(path, items, objects, desc, _) =>
+        case obj @ OdfObject(id, path, items, objects, desc, typeVal) =>
           require(items.isEmpty && objects.isEmpty,
             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
-
           val resultsO = for {
             odfObject <- metadataTree.get(path) collect {  // get all descendants
               case o: OdfObject => o
@@ -391,7 +390,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case (None, None)                        => None
     }
 
-    results
+    results match {
+      case Some(OdfObjects(x,_)) if x.isEmpty => None
+      case default                            => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
+    }
 
   }
 
