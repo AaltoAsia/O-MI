@@ -28,7 +28,7 @@ import scala.xml._
 @RunWith(classOf[JUnitRunner])
 class SystemTest extends Specification with Starter with AfterAll {
   
-            
+  //testHelpers.utils.removeAllPrevaylers
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
 
