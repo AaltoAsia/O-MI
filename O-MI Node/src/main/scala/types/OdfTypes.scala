@@ -87,14 +87,14 @@ object `package` {
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(Seq(), parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(Seq(QlmID(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
         fromPath(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(Seq(),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(Seq(QlmID(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           fromPath(parent)
         }
 

@@ -98,7 +98,7 @@ object CallbackHandlers {
           system.log.error(
             e,"CallbackHandler"
           )
-          e.printStackTrace()
+          // already done above?: e.printStackTrace()
           new CallbackFailure
       }
     }

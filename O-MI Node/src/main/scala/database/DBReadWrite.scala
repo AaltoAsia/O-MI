@@ -49,14 +49,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val existed = runSync(existingTables)
     if (existed.length > 0) {
       //noop
-      println(
+      log.info(
         "Found tables: " +
           existed.map { _.name.name }.mkString(", ") +
           "\n Not creating new tables.")
     } else {
       // run transactionally so there are all or no tables
 
-      println("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
+      log.info("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
       runSync(setup.transactionally)
     }
   }
@@ -160,7 +160,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     //Call hooks
     database.getSetHooks foreach { _(Seq(infoitem)) }
-    //    println(s"RUN with $path:  $run")
     returnId
   }
 
