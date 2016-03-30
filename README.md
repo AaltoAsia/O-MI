@@ -27,11 +27,11 @@ Download the pre-compiled zip or tgz package from latest git releases [here](htt
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
-1. `o-mi-node.bat` for Windows
-2. `o-mi-node` for Unix and Mac
+1. `bin/o-mi-node.bat` for Windows
+2. `bin/o-mi-node` for Unix and Mac
 
 This will run O-MI Node with configuration in /conf/application.conf.
-By default it has some example and demo agents.
+By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.
 More Information in the 'Configuration' section.
 
 Compiling and packaging
@@ -60,11 +60,17 @@ Setup development environment
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
 5. You can (_optional step_)
-    - `sbt compile`: compile the project
+    - `sbt run`: run the project or better:
+    - `sbt` and then
+        - `re-start`: run the project in background (faster restart and sometimes works better than sbt run)
+        - `re-stop`: close the background process
+    - `sbt compile`: just compile the project
     - `sbt stage`: creates file structure used in packaged version to the ./target/universal/stage/ directory
+    - `sbt release`: create release tar and zip packages
+    - `sbt debian:packageBin`: create release debian package (requires dpkg)
     - `sbt doc`: compile api documentation
     - `sbt test`: run tests
-    - `sbt systemTest`: run only integration tests
+    - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
     - `sbt clean coverage test`: generate test coverage
 <!-- not working atm: - `sbt run`: run the project or better: -->
     - `sbt`: enter sbt command line and then
@@ -91,7 +97,7 @@ for the defaults and configuration documentation.
 Library Config
 --------------
 
-NOTE: application.conf can also have a lot of Akka, Spray and Database (slick) specific settings:
+`application.conf` can also have a lot of Akka (threading framework), Spray (HTTP server) and Slick (database) specific settings:
 
 - [Akka Actors](http://doc.akka.io/docs/akka/2.3.9/general/configuration.html)
 - [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)
