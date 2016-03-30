@@ -392,7 +392,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     results match {
       case Some(OdfObjects(x,_)) if x.isEmpty => None
-      case default                            => default
+      case default                            => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
     }
 
   }

@@ -169,7 +169,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
     // Collect metadata 
     val other = getOdfNodes(objects) collect {
-      case o @ OdfObject(_, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
     }
     val all = items ++ other
     if (all.nonEmpty) {

@@ -63,6 +63,32 @@ class OdfObjectsImpl(
     )
   }
 
+  /**
+   * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
+   * on the tree that should be added the data. another should be subset of this odfTree.
+   * @param another another OdfObjects to intersect with
+   * @return
+   */
+  def intersect(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
+    (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
+    OdfObjects(
+    sharedObjs.flatMap{
+    case (path: Path, sobj: Seq[OdfObject]) =>
+      for{
+        head <- sobj.headOption //first object
+        last <- sobj.lastOption //second object
+        res  <- head.intersect(last)  //intersection
+      } yield res
+    }.toSeq,
+    (version, another.version) match{
+      case (Some(a), Some(b)) => Some(a)
+      case (None, Some(b))    => Some(b)
+      case (Some(a), None)    => Some(a)
+      case (None, None)       => None
+    }
+    )
+  }
+
   private[this] def sharedAndUniques[A]( another: OdfObjects )( constructor: (
     Seq[OdfObject],
     Seq[OdfObject],
