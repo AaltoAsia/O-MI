@@ -11,7 +11,7 @@ package xmlGen
   **/
 package xmlTypes
 
-import scala.collection.immutable.Map
+import scala.collection.immutable.ListMap
 
 case class ObjectsType(
   Object: Seq[ObjectType] = Nil,
@@ -51,7 +51,7 @@ case class QlmID(
   tagType: Option[String] = None,
   startDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   endDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
-  attributes: Map[String, scalaxb.DataRecord[Any]] = Map.empty)
+  attributes: ListMap[String, scalaxb.DataRecord[Any]] = ListMap.empty)
 
 
 case class ValueType(

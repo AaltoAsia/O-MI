@@ -22,7 +22,7 @@ import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
-  id:                   Seq[QlmID],
+  id:                   OdfTreeCollection[QlmID],
   path:                 Path,
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
