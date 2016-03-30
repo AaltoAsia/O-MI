@@ -390,8 +390,7 @@ public class AuthAPIService implements AuthApi {
 
             return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.info("EXCEPTION!");
+            logger.error("During http request", e);
             return Unauthorized.instance();
         } finally {
             if(connection != null) {
