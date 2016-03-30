@@ -60,7 +60,12 @@ class SystemTest extends Specification with Starter with AfterAll {
 
 
 
-  init(dbConnection)
+  //init(dbConnection)
+  // init without settings odf:
+
+  // Create input pusher actor
+  initInputPusher(dbConnection)
+
   val serviceActor = start(dbConnection)
   bindHttp(serviceActor)
 

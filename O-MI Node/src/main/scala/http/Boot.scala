@@ -69,8 +69,6 @@ trait Starter {
    * @param dbConnection Use a specific db connection for one-time db actions, intended for testing
    */
   def init(dbConnection: DB = new DatabaseConnection): Unit = {
-    database.setHistoryLength(settings.numLatestValues)
-
     // Create input pusher actor
     initInputPusher(dbConnection)
 
