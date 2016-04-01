@@ -10,7 +10,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.3.1",
+  version := "0.3.2",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -96,7 +96,7 @@ lazy val root = (project in file(".")).
       },
       mappings in Universal <++= baseDirectory map { base =>
         Seq(
-          base / "callbackTestServer.py" -> "callbackTestServer.py",
+          base / "tools" / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
           base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
           base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",

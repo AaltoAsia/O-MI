@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Send O-MI message from file to url
 
 usage() {

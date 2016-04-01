@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Send O-MI message from file to otaniemi3d using a client certificate
 
 CLIENTCERT=otaniemi3d-client.p12
