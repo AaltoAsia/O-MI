@@ -121,7 +121,7 @@ trait OmiService
             </li>
             <li style="color:gray;"><a style="text-decoration:line-through" href="html/old-webclient/form.html">Old WebApp</a>
               <p>
-                Very old version of the webapp. Use this if the new doesn't work.
+                Very old version of the webapp.
               </p>
             </li>
             <li><a href="html/ImplementationDetails.html">Implementation details, request-response examples</a>
@@ -165,8 +165,8 @@ trait OmiService
   /* Receives HTTP-POST directed to root */
   val postXMLRequest = post { // Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
-      entity(as[NodeSeq]) { xml =>
-        val eitherOmi = OmiParser.parse(xml.toString)
+      entity(as[String]) {requestString =>
+        val eitherOmi = OmiParser.parse(requestString)
 
         respondWithMediaType(`text/xml`) {
           eitherOmi match {
@@ -184,12 +184,12 @@ trait OmiService
                   }
                 case _ =>  (notImplemented, 501)
               }
-              if(returnCode != 200) log.warning(s"Errors with following request:\n${xml.toString}")
+              if(returnCode != 200) log.warning(s"Errors with following request:\n${requestString}")
               complete((returnCode, response))
 
             case Left(errors) =>  // Errors found
 
-              log.warning(s"${xml.toString}")
+              log.warning(s"${requestString}")
               log.warning("Parse Errors: {}", errors.mkString(", "))
 
               val errorResponse = parseError(errors.toSeq:_*)

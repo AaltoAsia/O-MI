@@ -24,6 +24,8 @@ import org.xml.sax.SAXException;
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
+import javax.xml.parsers.SAXParserFactory
+import scala.xml.XML
 
 /**
  * Parser trait that parsers inherit,
@@ -32,9 +34,22 @@ import javax.xml.validation.{Schema, SchemaFactory, Validator}
  */
 abstract trait Parser[Result] {
 
+  // Secure parser that has a fix for xml external entity attack (and xml bomb)
+  val XMLParser = {
+    val spf = SAXParserFactory.newInstance()
+    spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
+    spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+    val saxParser = spf.newSAXParser()
+    XML.withSAXParser(saxParser)
+  }
+
   def parse(xml_msg: String) : Result
-  def parse(xml_msg: xml.Node) : Result
+
+  //@deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
+  //def parse(xml_msg: xml.Node) : Result
+  
   def parse(xml_msg: File) : Result
+  
   protected[this] def schemaPath : javax.xml.transform.Source
   
   /**
