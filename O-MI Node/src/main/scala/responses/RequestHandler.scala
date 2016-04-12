@@ -13,6 +13,8 @@
 **/
 package responses
 
+import http.Boot
+
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
@@ -303,7 +305,13 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param subscription request
     * @return (xml response, HTTP status code)
     */
-  def handleSubscription(subscription: SubscriptionRequest): (NodeSeq, Int) = {
+  def handleSubscription(_subscription: SubscriptionRequest): (NodeSeq, Int) = {
+    //if interval is below allowed values, set it to minimum allowed value
+    val subscription: SubscriptionRequest = _subscription match {
+      case SubscriptionRequest( _, interval, _, _, _, _) if interval.toSeconds < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+        _subscription.copy(interval=Boot.settings.minSubscriptionInterval.seconds)
+      case s => s
+    }
     val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
@@ -314,6 +322,8 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         case Failure(t) =>
           throw new RuntimeException(
             s"Error when trying to create subscription: ${t.getMessage}", t)
+        case Success(id: Long) if _subscription.interval != subscription.interval =>
+          (Results.subscription(id.toString,subscription.interval.toSeconds), 200)
         case Success(id: Long) =>
           (Results.subscription(id.toString), 200)
         case Success(received) =>
@@ -408,8 +418,22 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         SingleStores.getMetaData(path) map { metaData =>
           Right(XML.loadString(metaData.data))
         }
-      case ObjId(path) =>
-        Some(Right(<Object xmlns="odf.xsd"><id>{path.last}</id></Object>)) // TODO: support for multiple id
+      case ObjId(path) =>{  //should this query return the id as plain text or inside Object node?
+        val xmlReturn = SingleStores.getSingle(path).map{
+          case odfObj: OdfObject =>
+            scalaxb.toXML[xmlTypes.ObjectType](
+              odfObj.copy(infoItems = OdfTreeCollection(),objects = OdfTreeCollection(), description = None)
+              .asObjectType, Some("odf"), Some("Object"), defaultScope
+            ).headOption.getOrElse(
+              <error>Could not create from OdfObject </error>
+            )
+          case odfObjs: OdfObjects => <error>Id query not supported for root Object</error>
+          case odfInfoItem: OdfInfoItem => <error>Id query not supported for InfoItem</error>
+        }
+
+        xmlReturn map Right.apply
+        //Some(Right(<Object xmlns="odf.xsd"><id>{path.last}</id></Object>)) // TODO: support for multiple id
+      }
 
       case InfoName(path) =>
         Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}><name>{path.last}</name></InfoItem>))

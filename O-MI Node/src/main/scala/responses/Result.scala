@@ -107,13 +107,28 @@ object Results{
   /**  for subscripton request, O-MI Read request with interval.
     *
     * @param requestID  requestID of created subscription
-    * @return  containing the requestID 
+    * @return  containing the requestID
     **/
   def subscription( requestID: String): RequestResultType ={
     omiResult(
       omiReturn(
         "200",
         Some("Successfully started subscription")
+      ),
+      Some(requestID)
+    )
+  }
+
+  /**  for subscripton request, O-MI Read request with interval where the interval has been adjusted to fit between allowed limits.
+    *
+    * @param requestID  requestID of created subscription
+    * @return  containing the requestID
+    **/
+  def subscription( requestID: String, newInterval: Long): RequestResultType ={
+    omiResult(
+      omiReturn(
+        "200",
+        Some(s"Successfully started subscription. Interval was set to $newInterval seconds.")
       ),
       Some(requestID)
     )
