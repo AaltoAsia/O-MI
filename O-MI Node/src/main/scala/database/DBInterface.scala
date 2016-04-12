@@ -15,6 +15,7 @@ package database
 
 import java.io.File
 
+import http.Boot
 import http.Boot.settings
 import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
@@ -35,7 +36,7 @@ package object database {
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
-  private[this] var histLength = 10
+  private[this] var histLength = Boot.settings.numLatestValues
   /**
    * Sets the historylength to desired length
    * default is 10
