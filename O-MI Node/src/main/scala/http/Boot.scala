@@ -86,6 +86,7 @@ trait Starter {
       val numDescription =
         "Number of latest values (per sensor) that will be saved to the DB"
       system.log.info(s"$numDescription: ${settings.numLatestValues}")
+      database.setHistoryLength(settings.numLatestValues)
       system.log.info("Testing InputPusher...")
       val dataSaveTest = InputPusher.handleInfoItems(Iterable(
         OdfInfoItem(
