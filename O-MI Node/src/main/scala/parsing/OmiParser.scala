@@ -23,7 +23,7 @@ import java.io.File
 
 import scala.concurrent.duration._
 
-import scala.xml._
+import scala.xml.{Elem, Node, NodeSeq}
 import scala.util.{Try, Success, Failure}
 import javax.xml.transform.stream.StreamSource
 
@@ -42,13 +42,13 @@ object OmiParser extends Parser[OmiParseResult] {
    */
   def parse(file: File): OmiParseResult = {
     val root = Try(
-      XML.loadFile(file)
+      XMLParser.loadFile(file)
     ) match {
       case Success(s) => s
       case Failure(f) => return Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
     }
 
-   parse( root )
+   parseOmi( root )
   }
 
 
@@ -61,13 +61,13 @@ object OmiParser extends Parser[OmiParseResult] {
   def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
     val root = Try(
-      XML.loadString(xml_msg)
+      XMLParser.loadString(xml_msg)
     ) match {
       case Success(s) => s
       case Failure(f) => return Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
     }
 
-    parse( root )
+    parseOmi( root )
   }
 
   /**
@@ -76,7 +76,10 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(root: xml.Node ): OmiParseResult = {
+  @deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
+  def parse(root: xml.Node): OmiParseResult = parseOmi(root)
+
+  private def parseOmi(root: xml.Node ): OmiParseResult = {
     val schema_err = schemaValidation(root)
     if (schema_err.nonEmpty)
       return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })

@@ -39,9 +39,11 @@ import org.slf4j.LoggerFactory;
  */
 public class AuthAPIService implements AuthApi {
 
-    private final int authServicePort = 443;
-    private final String authServiceURIScheme = "https://";
-    private final String authServiceURI = authServiceURIScheme + "localhost" + "/security/PermissionService";
+    private final boolean useHTTPS = false;
+    private final int authServicePort = 8088;
+    private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
+    private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
+    private final String authServiceURI = authServiceURIScheme + mainURI + "/security/PermissionService";
 
     private final Logger logger = LoggerFactory.getLogger(AuthAPIService.class);
 
@@ -341,7 +343,7 @@ public class AuthAPIService implements AuthApi {
             return finalPaths;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("During getAvailablePaths request", e);
             return null;
         } finally {
             if(connection != null) {
@@ -390,8 +392,7 @@ public class AuthAPIService implements AuthApi {
 
             return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.info("EXCEPTION!");
+            logger.error("During http request", e);
             return Unauthorized.instance();
         } finally {
             if(connection != null) {
