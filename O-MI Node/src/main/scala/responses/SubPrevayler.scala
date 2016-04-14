@@ -140,7 +140,8 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
             case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
             case o: OdfObject   => fromPath(OdfObject(o.id, o.path, typeValue = o.typeValue))
             case o: OdfObjects  => fromPath(OdfObjects())} //map OdfNodes to OdfObjects
-          .reduce(_.union(_)) //combine results
+          .reduceOption(_.union(_)) //combine results
+          .getOrElse(OdfObjects())
 
         //pollSubscription method removes the data from database and returns the requested data
         pollSub match {
