@@ -131,71 +131,70 @@ public class AuthAPIService implements AuthApi {
 
         logger.info("isAuthorizedForType EXECUTED!");
 
-        boolean authenticated = false;
-
-        scala.collection.Iterator iter = httpRequest.headers().iterator();
 
         String subjectInfo = null;
         boolean success = false;
+        boolean authenticated = false;
 
+        // First try authenticate user by cookies
+        scala.collection.Iterator  iter = httpRequest.cookies().iterator();
+        if (!iter.hasNext()) {
+            logger.info("No cookies!");
 
-        // First try authenticate user by certificate
-        while (iter.hasNext()) {
+        } else {
 
-            HttpHeader nextHeader = (HttpHeader)iter.next();
-            if (nextHeader.name().equals("X-SSL-CLIENT")) {
-                String allInfo = nextHeader.value();
-                subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
+            HttpCookie ck = null;
+            while (iter.hasNext()) {
+                HttpCookie nextCookie = (HttpCookie) iter.next();
+                logger.info(nextCookie.name() + ":" + nextCookie.content());
 
-                if (success)
+                if (nextCookie.name().equals("JSESSIONID")) {
+                    ck = nextCookie;
                     break;
-
-            } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
-                success = nextHeader.value().contains("SUCCESS");
-
-                if (subjectInfo != null)
-                    break;
+                }
             }
+
+            if (ck != null)
+            {
+                authenticated = true;
+                subjectInfo = ck.toString();
+            }
+
         }
 
-        authenticated = (subjectInfo != null) && success;
-        if (authenticated)
-        {
-            logger.info("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
-        }
 
-        // If there is not certificate present we try to find the session cookie
+        // If there is not certificate present we try to find the certificate
         if (!authenticated) {
 
-            iter = httpRequest.cookies().iterator();
-            if (!iter.hasNext()) {
-                logger.info("No cookies!");
+            iter = httpRequest.headers().iterator();
 
-                // No cookies - deny request
-                return Unauthorized.instance();
-            } else {
+            while (iter.hasNext()) {
 
-                HttpCookie ck = null;
-                while (iter.hasNext()) {
-                    HttpCookie nextCookie = (HttpCookie) iter.next();
-                    logger.info(nextCookie.name() + ":" + nextCookie.content());
+                HttpHeader nextHeader = (HttpHeader)iter.next();
+                if (nextHeader.name().equals("X-SSL-CLIENT")) {
+                    String allInfo = nextHeader.value();
+                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
 
-                    if (nextCookie.name().equals("JSESSIONID")) {
-                        ck = nextCookie;
+                    if (success)
                         break;
-                    }
-                }
 
-                if (ck != null)
-                {
-                    authenticated = true;
-                    subjectInfo = ck.toString();
-                }
+                } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
+                    success = nextHeader.value().contains("SUCCESS");
 
+                    if (subjectInfo != null)
+                        break;
+                }
+            }
+
+            authenticated = (subjectInfo != null) && success;
+            if (authenticated)
+            {
+                logger.info("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
             }
         }
 
-        // Check if we succeed to authenticate by session cookie
+
+        // Start parsing request
         if (authenticated) {
 
             Iterator<Path> iterator = paths.iterator();
@@ -206,7 +205,7 @@ public class AuthAPIService implements AuthApi {
                 if (nextObj.equalsIgnoreCase("Objects")) {
                     logger.info("Root tree requested. forwarding to Partial API.");
 
-
+                    //Getting paths according to the policies
                     ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
 
                     if (res_paths == null)
