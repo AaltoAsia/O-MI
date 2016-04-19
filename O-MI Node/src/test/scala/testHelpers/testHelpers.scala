@@ -115,26 +115,7 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
 
   }
 }
-package object utils {
-  def removeAllPrevaylers = {
-    def removeAll(path: String) = {
-      def getRecursively(f:File): Seq[File] ={
-        f.listFiles.filter(_.isDirectory).flatMap(getRecursively(_)) ++ f.listFiles()
-      }
-      getRecursively(new File(path)).foreach{
-        f => f.delete()
-      }
-    }
-   SingleStores.latestStore.close()
-   SingleStores.hierarchyStore.close()
-   SingleStores.eventPrevayler.close()
-   SingleStores.intervalPrevayler.close()
-   SingleStores.pollPrevayler.close()
-   SingleStores.idPrevayler.close()
-   removeAll(http.Boot.settings.journalsDirectory)
 
-  }
-}
 
 // Disable implicit from specs2 Specification so concurrent.Duration int.seconds etc can be used
 trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {
