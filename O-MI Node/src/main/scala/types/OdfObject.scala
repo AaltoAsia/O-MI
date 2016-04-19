@@ -43,9 +43,10 @@ require(path.length > 1,
       anotherUniqueObjs : Seq[OdfObject] ,
       sharedObjs : Map[Path,Seq[OdfObject]]
     ) =>
-    val sharedInfosOut = sharedInfos.map{
+    val sharedInfosOut = sharedInfos.map{ // Why is this not documented?!
         case (path:Path, sobj: Seq[OdfInfoItem]) =>
-        assert(sobj.length == 2)
+        assert(sobj.length < 2, s"Union/combine error, should have pairs, got less than 2")
+        assert(sobj.length > 2, s"Union error; There is (probably) multiple same path InfoItems")
         sobj.headOption match{
           case Some( head ) =>
             sobj.lastOption match{
