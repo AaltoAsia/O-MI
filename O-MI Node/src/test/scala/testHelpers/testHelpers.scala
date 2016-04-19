@@ -1,11 +1,8 @@
 package testHelpers
 
-import java.io.File
-
 import akka.actor.{ActorSystem, _}
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import database.SingleStores
 import org.specs2.mutable._
 import org.specs2.specification.{Fragments, Scope, Step}
 import org.xml.sax.InputSource
