@@ -36,7 +36,7 @@ class OmiConfigExtension(config: Config) extends Extension {
   val snapshotInterval = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS)
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
-
+  val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
