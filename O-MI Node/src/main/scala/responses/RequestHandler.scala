@@ -142,7 +142,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   def actionOnInternalError: Throwable => Unit = { error =>
     //println("[ERROR] Internal Server error:")
     //error.printStackTrace()
-    log.error("Internal server error: ", error)
+    log.error(error, "Internal server error: ")
   }
 
   /**
@@ -363,9 +363,10 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
                 returnCode = 404
                 Results.notFoundSub
               }
-              case _ => // shouldn't be possible but type is Any
+              case x => // shouldn't be possible but type is Any
+                log.error(s"Cancel returned something strange: $x")
                 returnCode = 501
-                Results.internalError()
+                Results.internalError(x.toString)
               }
           case Failure(n: NumberFormatException) => {
             returnCode = 400
@@ -373,7 +374,9 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           }
           case Failure(e) => {
             returnCode = 501
-            Results.internalError("Error when trying to cancel subscription: " + e.toString)
+            val error = 
+            log.error(e, "Error when trying to cancel subscription: ")
+            Results.internalError(error + e.toString)
           }
         }(breakOut): _*),
         returnCode)
