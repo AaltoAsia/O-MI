@@ -17,7 +17,6 @@ import scala.util.{Try, Success, Failure}
 import java.util.Date
 import java.io.File
 import scala.util.control.NonFatal
-import scala.xml.XML
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
@@ -45,7 +44,7 @@ object OdfParser extends Parser[OdfParseResult] {
    */
   def parse(file: File): OdfParseResult = {
     val root = Try(
-      XML.loadFile(file)
+      XMLParser.loadFile(file)
     ) match {
       case Success(s) => s
       case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
@@ -62,7 +61,7 @@ object OdfParser extends Parser[OdfParseResult] {
    */
   def parse(xml_msg: String): OdfParseResult = {
     val root = Try(
-      XML.loadString(xml_msg)
+      XMLParser.loadString(xml_msg)
     ) match {
       case Success(s) => s
       case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
@@ -150,10 +149,9 @@ object OdfParser extends Parser[OdfParseResult] {
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
       },
-      if(item.MetaData.isEmpty){
-        None
-      } else {
-        Some( OdfMetaData( scalaxb.toXML[MetaData](item.MetaData.get, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString) )
+      item.MetaData.map{ meta =>
+        // tests that conversion works before it is in the db and fails when in read request
+        OdfMetaData( scalaxb.toXML[MetaData](meta, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString)
       }
     ) 
   }

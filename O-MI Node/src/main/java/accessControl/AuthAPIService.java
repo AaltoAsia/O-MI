@@ -342,7 +342,7 @@ public class AuthAPIService implements AuthApi {
             return finalPaths;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("During getAvailablePaths request", e);
             return null;
         } finally {
             if(connection != null) {
