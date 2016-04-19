@@ -66,8 +66,12 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   private val snapshotInterval = http.Boot.settings.snapshotInterval
   log.info(s"scheduling databse trimming every $trimInterval seconds")
   scheduler.schedule(trimInterval.seconds, trimInterval.seconds, self, TrimDB)
-  log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
-  scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
+  if(http.Boot.settings.writeToDisk){
+    log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
+    scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
+  } else {
+    log.info("using transient prevayler, taking snapshots is not in use.")
+  }
 
 
 

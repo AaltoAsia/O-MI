@@ -1,37 +1,26 @@
 package responses
 
-import org.specs2.mutable._
-import org.specs2.matcher.XmlMatchers._
-import scala.io.Source
-import java.util.Date
-import java.util.Calendar
-import java.text.SimpleDateFormat
-import scala.xml.Utility.trim
-import scala.xml.XML
-import scala.xml.{Elem, NodeSeq}
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import akka.actor._
-import scala.util.Try
-import shapeless.headOption
-import akka.testkit.TestActorRef
-import java.util.TimeZone
 import java.lang.{Iterable => JavaIterable}
+import java.util.{Calendar, Date, TimeZone}
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-
-import responses._
-import parsing._
-import types._
-import types.Path._
-import types.OmiTypes._
-import database._
-import parsing.OdfParser._
 import agentSystem.InputPusher
+import akka.actor._
+import akka.testkit.TestActorRef
+import database._
+import org.junit.runner.RunWith
+import org.specs2.matcher.XmlMatchers._
+import org.specs2.mutable._
+import org.specs2.runner.JUnitRunner
+import parsing._
+import testHelpers.BeforeAfterAll
+import types.OdfTypes.OdfValue
+import types.OmiTypes._
+import types._
 
-import testHelpers.{ BeforeAfterAll, SubscriptionHandlerTestActor }
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.xml.{Elem, NodeSeq, XML}
 //
 @RunWith(classOf[JUnitRunner])
 class ReadTest extends Specification with BeforeAfterAll {
@@ -74,21 +63,26 @@ class ReadTest extends Specification with BeforeAfterAll {
 
     for ((path, value) <- testData) {
       dbConnection.remove(path)
-      dbConnection.set(path, testtime, value)
+      InputPusher.handlePathValuePairs(Iterable((path, OdfValue(value, "", testtime))))
+      //dbConnection.set(path, testtime, value)
     }
 
     var count = 0
 
     //for begin and end testing
     dbConnection.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
-    for (value <- intervaltestdata) {
-      dbConnection.set(Path("Objects/ReadTest/SmartOven/Temperature"), new java.sql.Timestamp(date.getTime + count), value)
+    val addFutures = intervaltestdata.map{ value => //for (value <- intervaltestdata) {
+      val addFuture = InputPusher.handlePathValuePairs(Iterable((Path("Objects/ReadTest/SmartOven/Temperature"), OdfValue(value, "", new java.sql.Timestamp(date.getTime + count)))))
+      //dbConnection.set(Path("Objects/ReadTest/SmartOven/Temperature"), new java.sql.Timestamp(date.getTime + count), value)
       count = count + 1000
+      addFuture
     }
 
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
     //    dbConnection.remove(Path("Objects/Metatest/Temperature"))
-    dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
+    val metaFuture = InputPusher.handlePathValuePairs(Iterable((Path("Objects/Metatest/Temperature"), OdfValue("asd", "", testtime))))
+    Await.ready(Future.sequence(addFutures :+ metaFuture), Duration.apply(5, "seconds"))
+    //dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
 
     // FIXME
     // dbConnection(JavaIterable(Path("Objects/Metatest/Temperature"),

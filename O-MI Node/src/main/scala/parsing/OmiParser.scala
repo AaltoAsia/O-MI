@@ -112,7 +112,7 @@ object OmiParser extends Parser[OmiParseResult] {
   def parseInterval(v: Double) =
   v match{
     case -1.0 =>  -1.seconds
-    case w if w > 0 => w.seconds
+    case w if w >= 0 => w.seconds
     case _ => throw new IllegalArgumentException("Illegal interval, only positive or -1 are allowed.")
   }
   def parseTTL(v: Double)      =

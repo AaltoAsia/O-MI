@@ -23,6 +23,9 @@ class OmiConfigExtension(config: Config) extends Extension {
   /** Save at least this much data per InfoItem */
   val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
 
+  /** Minimum supported interval for interval based subscriptions */
+  val minSubscriptionInterval = config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS)
+
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
@@ -33,7 +36,7 @@ class OmiConfigExtension(config: Config) extends Extension {
   val snapshotInterval = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS)
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
-
+  val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
