@@ -24,6 +24,7 @@ class SubscriptionSchedulerTest extends Specification with NoTimeConversions {
     "Be accurate to few a milliseconds" in new Actors {
       val probe = TestProbe()
       scheduler.scheduleOnce(3 seconds,probe.ref, "hello!")
+
       probe.receiveN(1,3010 milliseconds)
       probe.expectNoMsg(2990 milliseconds)
     }
