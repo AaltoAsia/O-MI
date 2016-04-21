@@ -2,13 +2,12 @@ package responses
 
 import akka.testkit.TestProbe
 import org.specs2.mutable._
-import org.specs2.time.NoTimeConversions
 import testHelpers.Actors
 import scala.concurrent.duration._
 /**
  * Created by satsuma on 19.4.2016.
  */
-class SubscriptionSchedulerTest extends Specification with NoTimeConversions {
+class SubscriptionSchedulerTest extends Specification {
   val scheduler = new SubscriptionScheduler
 
   "Subcscription scheduler" should {

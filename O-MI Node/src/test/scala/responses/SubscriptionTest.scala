@@ -1,7 +1,10 @@
 package responses
 
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
+import org.specs2.specification.BeforeAfterAll
+
 //import responses.Common._
 import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
@@ -10,7 +13,6 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import database._
 import parsing._
-import testHelpers.{BeforeAfterAll, DeactivatedTimeConversions}
 import types.OmiTypes._
 import types._
 
@@ -22,13 +24,10 @@ import scala.util.Try
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 
 //
 
-@RunWith(classOf[JUnitRunner])
-class SubscriptionTest extends Specification with BeforeAfterAll with DeactivatedTimeConversions {
+class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
   sequential
 //change akka.loglevel to DEBUG  and to see more info
   implicit val system = ActorSystem("on-core", ConfigFactory.parseString(

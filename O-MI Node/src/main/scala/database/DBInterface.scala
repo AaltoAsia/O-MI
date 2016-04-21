@@ -82,12 +82,12 @@ object SingleStores {
         PrevaylerFactory.createTransientPrevayler[P](in)
       }
     }
-    lazy val latestStore       = createPrevayler(LatestValues.empty, "latestStore")//PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
-    lazy val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")//PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
-    lazy val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")//PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
-    lazy val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")//PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
-    lazy val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")//PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
-    lazy val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")//)PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
+    val latestStore       = createPrevayler(LatestValues.empty, "latestStore")//PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
+    val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")//PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
+    val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")//PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
+    val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")//PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
+    val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")//PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
+    val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")//)PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
 
     def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
 

@@ -1,27 +1,24 @@
 package agentSystem
 
-import org.specs2.mutable._
-import akka.testkit.{ TestProbe, TestKit, EventFilter }
 import akka.actor._
+import akka.testkit.{EventFilter, TestProbe}
+import org.specs2.mutable._
+import testHelpers.Actors
+
 //import org.specs2.specification.Scope
 //import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
-import akka.io.Tcp._
-import scala.io.Source
-import database._
-import testHelpers.{ BeforeAll, Actors }
-import parsing._
-import types._
-import types.Path._
 
+import akka.io.Tcp._
+import database._
 import http.Boot
+import types._
 
 class AgentListenerTest extends Specification {
   //  sequential
 
   implicit val dbConnection = new TestDB("agent-listener")
   Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
-  import Boot.system
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("127.0.0.1", 4321)
   lazy val testOdf =

@@ -1,35 +1,15 @@
 package agentSystem
 
-import org.specs2.mutable._
-import org.specs2.specification.Scope
-import akka.actor.{ Props, ActorRef, ActorSystem }
-
-import testHelpers.{ AfterAll, Actorstest }
-import database._
-import java.net.InetSocketAddress
-import responses.{ SubscriptionHandler, RequestHandler }
-import parsing._
-import http._
-import scala.concurrent.duration._
-import scala.concurrent.Future
-import http.CLICmds._
-
-import akka.testkit.{ TestKit, TestActorRef, TestProbe, EventFilter }
+import akka.actor.ActorSystem
+import akka.testkit.{EventFilter, TestActorRef}
 import com.typesafe.config.ConfigFactory
+import http.CLICmds._
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.mutable._
+import testHelpers.Actorstest
 
-import akka.util.Timeout
-import akka.io.{ IO, Tcp }
-import akka.pattern.ask
-
-import scala.xml
-import scala.xml._
-
-
-
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-@RunWith(classOf[JUnitRunner])
-class InternalAgentLoaderTest extends Specification { // with AfterAll {
+import scala.concurrent.Future
+class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification { // with AfterAll {
 //  sequential
 
   "InternalAgentLoaderActor" should {

@@ -7,12 +7,11 @@ import agentSystem.InputPusher
 import akka.actor._
 import akka.testkit.TestActorRef
 import database._
-import org.junit.runner.RunWith
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
+import org.specs2.specification.BeforeAfterAll
 import parsing._
-import testHelpers.BeforeAfterAll
 import types.OdfTypes.OdfValue
 import types.OmiTypes._
 import types._
@@ -22,8 +21,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.xml.{Elem, NodeSeq, XML}
 //
-@RunWith(classOf[JUnitRunner])
-class ReadTest extends Specification with BeforeAfterAll {
+class ReadTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
   sequential
 
   //  val ReadResponseGen = new ReadResponseGen
