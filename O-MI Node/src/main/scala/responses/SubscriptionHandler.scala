@@ -204,10 +204,10 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               }
               def calcData = {
                 val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
-                val pollTimeOffset = (pollTime - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
                 val lastPolled = pollInterval.lastPolled.getTime()
-                var nextTick = lastPolled + pollTimeOffset
+                val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
                 val interval  = pollInterval.interval.toMillis
+                var nextTick = lastPolled + (interval - pollTimeOffset)
 
                 if(values.length >= 2){
                   var i = 1 //Intentionally 1 and not 0
@@ -225,7 +225,6 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
                   //overcomplicated??
                   if(previousValue.timestamp.getTime != pollTime && previousValue.timestamp.getTime() > lastPolled && previousValue.timestamp.getTime() > (nextTick - interval))
                     buffer += previousValue
-
                   Some(buffer.toVector)
                 } else None
               }
