@@ -288,7 +288,8 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     }
 
     // DB + Poll Subscriptions
-    val itemValues = (infoItems flatMap {item =>
+    val itemValues = (triggeringEvents flatMap {event =>
+      val item   = event.infoItem
       val values = item.values.toSeq
       values map {value => (item.path, value)}
     }).toSeq
