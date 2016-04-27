@@ -9,17 +9,18 @@ object Dependencies {
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
 
   //Spray
-  val sprayV = "1.3.2"
+  val sprayV = "1.3.3"
   val sprayCan     = "io.spray" %% "spray-can"     % sprayV //common
   val sprayRouting = "io.spray" %% "spray-routing" % sprayV //common
   val sprayClient  = "io.spray" %% "spray-client"  % sprayV //common
   val sprayServlet = "io.spray" %% "spray-servlet" % sprayV
 
   //Test dependencies
-  val specs2       = "org.specs2"              %% "specs2-core"   % "2.3.11" % "test"
+  val specs2       = "org.specs2"              %% "specs2-core"   % "3.7.2" % "test"
+  val specs2match  = "org.specs2"              %% "specs2-matcher-extra" % "3.7.2" % "test"
   val nuValidator  = "nu.validator.htmlparser"  % "htmlparser"    % "1.4" //html5 parser for systemtests
   val akkaTestkit  = "com.typesafe.akka"       %% "akka-testkit"  % akkaV    % "test"
-  val sprayTestkit = "io.spray"                %% "spray-testkit" % sprayV   % "test"
+  val sprayTestkit = "io.spray"                %% "spray-testkit" % sprayV   % "test" exclude("org.specs2", "specs2_2.11")
 
   //Slick
   val slickV = "3.0.0"
@@ -78,6 +79,7 @@ object Dependencies {
 
   val testDependencies: Seq[ModuleID] = Seq(
     specs2,
+    specs2match,
     nuValidator,
     akkaTestkit,
     sprayTestkit)

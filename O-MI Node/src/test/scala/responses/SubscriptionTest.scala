@@ -1,7 +1,15 @@
 package responses
 
-import org.specs2.matcher.XmlMatchers._
+import agentSystem.{DBPusher, InputPusher}
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
+import org.specs2.specification.BeforeAfterAll
+import testHelpers.Actors
+import types.OdfTypes.OdfValue
+
+import scala.concurrent.{Future, Await}
+import scala.util.Try
+
 //import responses.Common._
 import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
@@ -9,26 +17,223 @@ import java.util.{Calendar, TimeZone}
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import database._
-import parsing._
-import testHelpers.{BeforeAfterAll, DeactivatedTimeConversions}
 import types.OmiTypes._
 import types._
 
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
+import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList}
 import scala.concurrent.duration._
-import scala.util.Try
 
 // For eclipse:
-import java.util.GregorianCalendar
-import javax.xml.datatype.DatatypeFactory
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 
-//
+/*
+case class SubscriptionRequest(
+  ttl: Duration,
+  interval: Duration,
+  odf: OdfObjects ,
+  newest: Option[ Int ] = None,
+  oldest: Option[ Int ] = None,
+  callback: Option[ String ] = None
+) extends OmiRequest with SubLike with OdfRequest
 
-@RunWith(classOf[JUnitRunner])
-class SubscriptionTest extends Specification with BeforeAfterAll with DeactivatedTimeConversions {
+ */
+class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
+  implicit val dbConnection = new TestDB("subscription-test-db")
+  implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
+    """
+            akka.loggers = ["akka.testkit.TestEventListener"]
+            akka.stdout-loglevel = INFO
+            akka.loglevel = WARNING
+            akka.log-dead-letters-during-shutdown = off
+            akka.jvm-exit-on-fatal-error = off
+            """))
+  val subscriptionHandlerRef = system.actorOf((Props(new SubscriptionHandler())))
+  val requestHandler = new RequestHandler(subscriptionHandlerRef)
+  InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subscriptionHandlerRef)), "test-input-pusher")
+  val calendar = Calendar.getInstance()
+  // try to fix bug with travis
+  val timeZone = TimeZone.getTimeZone("Etc/GMT+2")
+  calendar.setTimeZone(timeZone)
+  val date = calendar.getTime
+  val testtime = new java.sql.Timestamp(date.getTime)
+
+  def beforeAll = Await.ready(initDB, 5 seconds)
+  def afterAll = cleanAndShutdown
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  "SubscrpitionHandler" should {
+    "return code 200 for successful subscription" >> {
+      val (_, code) = addSub(1,5, Seq("p/1"))
+
+      code === 200
+    }
+
+    "return incrementing id for new subscription" >> {
+      val (ns1, _) = addSub(1,5, Seq("p/1"))
+      val (ns2, _) = addSub(1,5, Seq("p/1"))
+      val (ns3, _) = addSub(1,5, Seq("p/1"))
+      val (ns4, _) = addSub(1,5, Seq("p/1"))
+
+      ns2.\\("requestID").text.toInt must be_>(ns1.\\("requestID").text.toInt)
+      ns3.\\("requestID").text.toInt must be_>(ns2.\\("requestID").text.toInt)
+      ns4.\\("requestID").text.toInt must be_>(ns3.\\("requestID").text.toInt)
+    }
+
+    "fail when trying to use invalid interval" in new Actors {
+      val actor = system.actorOf(Props(new SubscriptionHandler))
+
+      val dur = -5
+      val res = Try(addSub(1, dur, Seq("p/1")))
+
+      //this failure actually comes from the construction of SubscriptionRequest class
+      //invalid intervals are handled already in the parsing procedure
+      res must beFailedTry.withThrowable[java.lang.IllegalArgumentException](s"requirement failed: Invalid interval: $dur seconds")
+    }
+
+    //remove when support for interval -2 added
+    "fail when trying to use unsupported interval" >> {
+      val dur = -2
+      val res = Try(addSub(1, dur, Seq("p/1")))
+      //this failure actually comes from the construction of SubscriptionRequest class
+      res must beFailedTry.withThrowable[java.lang.IllegalArgumentException](s"requirement failed: Invalid interval: $dur seconds")
+    }
+
+    "be able to handle multiple event subscriptions on the same path" >> {
+      val sub1Id: Long = addSub(5,-1, Seq("p/2"))._1.\\("requestID").text.toInt
+      val sub2Id: Long = addSub(5,-1, Seq("p/2"))._1.\\("requestID").text.toInt
+      val sub3Id: Long = addSub(5,-1, Seq("p/1"))._1.\\("requestID").text.toInt
+
+      pollSub(sub1Id).\\("value").size === 0
+      pollSub(sub2Id).\\("value").size === 0
+      pollSub(sub3Id).\\("value").size === 0
+
+      val fut1 = addValue("p/2", nv("1"))
+      val fut2 = addValue("p/2", nv("2"))
+      val fut3 = addValue("p/2", nv("3"))
+
+      Await.ready(Future.sequence(Seq(fut1,fut2,fut3)), 2 seconds)
+
+      pollSub(sub1Id).\\("value").size === 3
+      pollSub(sub2Id).\\("value").size === 3
+      pollSub(sub3Id).\\("value").size === 0
+    }
+
+    "return no values for interval subscriptions if the interval has not passed" >> {
+      val subId: Long = addSub(5, 4, Seq("p/1"))._1.\\("requestID").text.toInt
+
+      Thread.sleep(2000)
+      pollSub(subId).\\("value").size === 0
+
+    }
+
+    "be able to 'remember' last poll time to correctly return values for intervalsubs" >> {
+      val subId: Long = addSub(5, 4, Seq("p/1"))._1.\\("requestID").text.toInt
+
+      Thread.sleep(2000)
+      pollSub(subId).\\("value").size === 0
+      Thread.sleep(2000)
+      pollSub(subId).\\("value").size === 1
+    }
+
+    "return copy of previous value for interval subs if previous value exists" >> {
+      Await.ready(addValue("p/3", nv("4")), 2 seconds)
+
+      val subId: Long = addSub(5, 1, Seq("p/3"))._1.\\("requestID").text.toInt
+
+      Thread.sleep(2000)
+
+      pollSub(subId).\\("value").size === 2
+
+      Thread.sleep(2000)
+
+      pollSub(subId).\\("value").size ===  2
+
+
+
+
+    }
+
+
+    
+
+
+
+  }
+
+
+
+  def initDB() = {
+    /*
+case class SubscriptionRequest(
+  ttl: Duration,
+  interval: Duration,
+  odf: OdfObjects ,
+  newest: Option[ Int ] = None,
+  oldest: Option[ Int ] = None,
+  callback: Option[ String ] = None
+) extends OmiRequest with SubLike with OdfRequest
+case class OdfValue(
+  value:                String,
+  typeValue:            String,
+  timestamp:            Timestamp
+)
+ */
+    //pathPrefix
+    val pp = Path("Objects/SubscriptionTest/")
+    val pathAndvalues: Iterable[(Path, OdfValue)] = Seq(
+      (pp / "p/1", nv("1")),
+      (pp / "p/2", nv("2")),
+      (pp / "p/3", nv("3")),
+      (pp / "r/4", nv("Closed")),
+      (pp / "r/5", nv("true")),
+      (pp / "r/6", nv("100")),
+      (pp / "u/7", nv("Off"))
+    )
+    InputPusher.handlePathValuePairs(pathAndvalues)
+  }
+
+  def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {
+    val hTree = SingleStores.hierarchyStore execute GetTree()
+    val p = paths.flatMap(p => hTree.get(Path("Objects/SubscriptionTest/" + p)))
+              .map(types.OdfTypes.fromPath(_))
+              .reduceOption(_.union(_))
+              .getOrElse(throw new Exception("subscription path did not exist"))
+
+    requestHandler.handleSubscription(SubscriptionRequest(ttl seconds, interval seconds, p))
+  }
+//  case class PollRequest(
+//  ttl: Duration,
+//  callback: Option[ String ] = None,
+//  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
+//) extends OmiRequest
+  def pollSub(id: Long) = {
+    requestHandler.handlePoll(PollRequest(0 seconds, None, Iterable(id)))._1
+  }
+  def cleanAndShutdown() = {
+    system.shutdown()
+    dbConnection.destroy()
+  }
+
+  //add new value easily
+  def addValue(path: String, nv: OdfValue) = {
+    val pp = Path("Objects/SubscriptionTest/")
+    InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
+  }
+
+  //create new odfValue value easily
+  def nv(value: String, timestamp: Long = 0L): OdfValue = {
+    OdfValue(
+    value,
+    "",
+    new Timestamp(testtime.getTime + timestamp)
+    )
+  }
+
+}
+
+/*
+class oldSubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
   sequential
 //change akka.loglevel to DEBUG  and to see more info
   implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
@@ -41,6 +246,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
             """))
   implicit val dbConnection = new TestDB("subscription-response-test")
   implicit val timeout = akka.util.Timeout.apply(5000)
+
   //  {
   //    def setVal(path: Path) = runSync(this.addObjectsI(path, true))
   //  }
@@ -557,5 +763,5 @@ class SubscriptionTest extends Specification with BeforeAfterAll with Deactivate
 
 
 
-
+*/
 

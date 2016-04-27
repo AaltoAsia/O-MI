@@ -10,23 +10,26 @@ import akka.pattern.ask
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import database._
-import org.junit.runner.RunWith
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.execute.Result
+import org.specs2.execute.AsResult
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
-import org.specs2.specification.Fragments
+//import org.specs2.specification.core.Fragment
+import org.specs2.specification.core.Fragments
+//import org.specs2.specification.Fragment
+import org.specs2.specification.{AfterAll}//, Fragments}
 import responses.{SubscriptionHandler, RequestHandler}
 import spray.can.Http
 import spray.client.pipelining._
 import spray.http._
-import testHelpers.{AfterAll, BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
+import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.xml._
 
-@RunWith(classOf[JUnitRunner])
-class SystemTest extends Specification with Starter with AfterAll {
+class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
   
   //testHelpers.utils.removeAllPrevaylers
   //start the program
@@ -222,33 +225,35 @@ class SystemTest extends Specification with Starter with AfterAll {
     })
     
     "Read Test" >> {
-      readTests.foldLeft(Fragments())((res, i) => {
+      //Fragment.foreach(readTests) { i => {
+      readTests.foldLeft(org.specs2.specification.core.Fragments.empty)((res, i) => {
         val (request, correctResponse, testDescription) = i
-        res.append(
-          (testDescription.trim + "\n") >> {
+        //res.append(
+        (testDescription.trim + "\n") in {
 
-            request aka "Read request message" must beSuccessfulTry
-            correctResponse aka "Correct read response message" must beSuccessfulTry
+          request aka "Read request message" must beSuccessfulTry
+          correctResponse aka "Correct read response message" must beSuccessfulTry
 
-            val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-            val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))
+          val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
+          val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))
 
-            responseXML must beSuccessfulTry
-            val response = XML.loadString(removeDateTime(responseXML.get.toString))
-            response showAs (n =>
-              "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
-          })
+          responseXML must beSuccessfulTry
+          val response = XML.loadString(removeDateTime(responseXML.get.toString))
+          response showAs (n =>
+            "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+        } //)
       })
     }
+    //}
 
     "Subscription Test" >> {
-      subsNoCallback.foldLeft(Fragments())((res, i) => {
+      subsNoCallback.foldLeft(org.specs2.specification.core.Fragments.empty)((res, i) => {
         val (reqrespwait, testDescription) = i
         (testDescription.trim() + "\n") >> {
-
-          reqrespwait.foldLeft(Fragments())((res, j) => {
+          //Fragment.foreach(reqrespwait.toSeq){j=>
+          reqrespwait.foldLeft(org.specs2.specification.core.Fragments.empty)((res, j) => {
             "step: " >> {
-
+//testDescription.trim() ! {
               val (request, correctResponse, responseWait) = j
               request aka "Subscription request message" must beSuccessfulTry
               correctResponse aka "Correct response message" must beSuccessfulTry
@@ -271,12 +276,12 @@ class SystemTest extends Specification with Starter with AfterAll {
       })
     }
     "Callback Test" >> {
-      sequentialTest.foldLeft(Fragments())((res, i) => {
+      sequentialTest.foldLeft(org.specs2.specification.core.Fragments.empty)((res, i) => {
 
         val (singleTest, testDescription) = i
 
         (testDescription.trim()) >> {
-          singleTest.foldLeft(Fragments())((res, j) => {
+          singleTest.foldLeft(org.specs2.specification.core.Fragments.empty)((res, j) => {
             "Step: " >> {
 
               require(j.length == 2 || j.length == 1)

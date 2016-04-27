@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, _}
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
 import org.specs2.mutable._
-import org.specs2.specification.{Fragments, Scope, Step}
+import org.specs2.specification.Scope
 import org.xml.sax.InputSource
 import responses.RemoveSubscription
 
@@ -41,7 +41,7 @@ class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLo
   }
 }
 
-trait BeforeAll extends Specification {
+/*trait BeforeAll extends Specification {
   override def map(fs: => Fragments) = {
     Step(beforeAll) ^ fs
   }
@@ -64,7 +64,7 @@ trait BeforeAfterAll extends Specification {
   protected[this] def beforeAll()
   protected[this] def afterAll()
 }
-
+*/
 abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """))) with After with Scope {
@@ -113,8 +113,8 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
   }
 }
 
-
+/* depracated
 // Disable implicit from specs2 Specification so concurrent.Duration int.seconds etc can be used
 trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {
   override def intToRichLong(v: Int) = super.intToRichLong(v)
-} 
+} */

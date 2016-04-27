@@ -3,6 +3,7 @@ package database
 import org.specs2.mutable._
 import database._
 import java.sql.Timestamp
+import org.specs2.specification.AfterAll
 import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection._
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -13,15 +14,11 @@ import akka.actor.{Props, ActorSystem}
 import responses.{RequestHandler, SubscriptionHandler}
 
 import scala.concurrent.duration._
-import testHelpers.{AfterAll, DeactivatedTimeConversions}
 
 import types._
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 //
-@RunWith(classOf[JUnitRunner])
-class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConversions {
+class DatabaseTest extends Specification with AfterAll {
   sequential
   
   def newTs = new Timestamp(new java.util.Date().getTime)
