@@ -238,6 +238,7 @@ requestsExt = (WebOmi) ->
                 # when request is write
                 maybeValues = $(node).data "values"
                 maybeDesc   = $(node).data "description"
+                maybeValues = if maybeValues? then maybeValues else [{value:"VALUE_PLACEHOLDER"}]
                 o.createOdfInfoItem odfDoc, id, maybeValues, maybeDesc
               else
                 o.createOdfInfoItem odfDoc, id
