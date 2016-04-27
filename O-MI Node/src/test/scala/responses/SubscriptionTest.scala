@@ -4,6 +4,7 @@ import agentSystem.{DBPusher, InputPusher}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
+import org.specs2.matcher.XmlMatchers._
 import testHelpers.Actors
 import types.OdfTypes.OdfValue
 
@@ -142,20 +143,46 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val subId: Long = addSub(5, 1, Seq("p/3"))._1.\\("requestID").text.toInt
 
       Thread.sleep(2000)
-
       pollSub(subId).\\("value").size === 2
-
       Thread.sleep(2000)
-
       pollSub(subId).\\("value").size ===  2
-
-
-
 
     }
 
+    "return failure notification with correct structure when polling a nonexistent subscription" >> {
+      val id = 5000
+      val returnMsg = pollSub(id)
 
-    
+      returnMsg must \("response") \ ("result") \ ("return",
+        "returnCode" -> "404",
+        "description" -> "A subscription with this id has expired or doesn't exist")
+
+      returnMsg must \("response") \ ("result") \ ("requestID") \> (s"$id")
+    }
+
+    "return no new values for event subscription if there are no new events" >> {
+      val (res, code) = addSub(5, -1, Seq("p/1"))
+      val subId = res.\\("requestID").text.toInt
+
+      code === 200
+      pollSub(subId).\\("value").size === 0
+    }
+
+    "return value for event sub when the value changes" >> {
+      val subId = addSub(5, -1, Seq("r/1"))._1.\\("requestID").text.toInt
+
+      Await.ready(addValue("r/1", nv("2")), 2 seconds)
+
+      pollSub(subId).\\("value").size === 1
+    }
+
+    "return no new value for event sub if the value is same as the old one" >> {
+      val subId = addSub(5, -1, Seq("r/2"))._1.\\("requestID").text.toInt
+
+      Await.ready(addValue("r/2", nv("0")), 2 seconds)
+
+      pollSub(subId).\\("value").size === 0
+    }
 
 
 
@@ -185,10 +212,10 @@ case class OdfValue(
       (pp / "p/1", nv("1")),
       (pp / "p/2", nv("2")),
       (pp / "p/3", nv("3")),
-      (pp / "r/4", nv("Closed")),
-      (pp / "r/5", nv("true")),
-      (pp / "r/6", nv("100")),
-      (pp / "u/7", nv("Off"))
+      (pp / "r/1", nv("0")),
+      (pp / "r/2", nv("0")),
+      (pp / "r/3", nv("0")),
+      (pp / "u/7", nv("0"))
     )
     InputPusher.handlePathValuePairs(pathAndvalues)
   }
