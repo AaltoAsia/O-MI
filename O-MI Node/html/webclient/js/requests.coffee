@@ -171,8 +171,11 @@ requestsExt = (WebOmi) ->
     # remove empty parents
     allOdfElems.reverse()
     for elem in allOdfElems
-      if elem? and not o.hasOdfChildren elem
-        elem.parentNode.removeChild elem
+      if elem?
+        if not o.hasOdfChildren elem
+          elem.parentNode.removeChild elem
+        else
+          break
 
     odfObjects
 

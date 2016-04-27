@@ -148,8 +148,12 @@
       allOdfElems.reverse();
       for (i = 0, len = allOdfElems.length; i < len; i++) {
         elem = allOdfElems[i];
-        if ((elem != null) && !o.hasOdfChildren(elem)) {
-          elem.parentNode.removeChild(elem);
+        if (elem != null) {
+          if (!o.hasOdfChildren(elem)) {
+            elem.parentNode.removeChild(elem);
+          } else {
+            break;
+          }
         }
       }
       return odfObjects;
