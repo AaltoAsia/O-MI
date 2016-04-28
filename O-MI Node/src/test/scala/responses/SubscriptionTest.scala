@@ -168,20 +168,30 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       pollSub(subId).\\("value").size === 0
     }
 
-    "return value for event sub when the value changes" >> {
+    "return value for event sub when the value changes and return no values after polling" >> {
       val subId = addSub(5, -1, Seq("r/1"))._1.\\("requestID").text.toInt
 
       Await.ready(addValue("r/1", nv("2")), 2 seconds)
 
       pollSub(subId).\\("value").size === 1
+      pollSub(subId).\\("value").size === 0
     }
 
     "return no new value for event sub if the value is same as the old one" >> {
       val subId = addSub(5, -1, Seq("r/2"))._1.\\("requestID").text.toInt
 
+
       Await.ready(addValue("r/2", nv("0")), 2 seconds)
 
       pollSub(subId).\\("value").size === 0
+
+    }
+
+    "subscription should be removed when the ttl expired" >> {
+      val subId = addSub(1, 5, Seq("p/1"))._1.\\("requestID").text.toInt
+      pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      Thread.sleep(2000)
+      pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "404")
     }
 
 
