@@ -171,8 +171,11 @@ requestsExt = (WebOmi) ->
     # remove empty parents
     allOdfElems.reverse()
     for elem in allOdfElems
-      if elem? and not o.hasOdfChildren elem
-        elem.parentNode.removeChild elem
+      if elem?
+        if not o.hasOdfChildren elem
+          elem.parentNode.removeChild elem
+        else
+          break
 
     odfObjects
 
@@ -238,6 +241,7 @@ requestsExt = (WebOmi) ->
                 # when request is write
                 maybeValues = $(node).data "values"
                 maybeDesc   = $(node).data "description"
+                maybeValues = if maybeValues? then maybeValues else [{value:"VALUE_PLACEHOLDER"}]
                 o.createOdfInfoItem odfDoc, id, maybeValues, maybeDesc
               else
                 o.createOdfInfoItem odfDoc, id

@@ -148,8 +148,12 @@
       allOdfElems.reverse();
       for (i = 0, len = allOdfElems.length; i < len; i++) {
         elem = allOdfElems[i];
-        if ((elem != null) && !o.hasOdfChildren(elem)) {
-          elem.parentNode.removeChild(elem);
+        if (elem != null) {
+          if (!o.hasOdfChildren(elem)) {
+            elem.parentNode.removeChild(elem);
+          } else {
+            break;
+          }
         }
       }
       return odfObjects;
@@ -203,7 +207,11 @@
                 siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingValue, meta);
               case "infoitem":
-                info = currentParams.request === "write" ? (maybeValues = $(node).data("values"), maybeDesc = $(node).data("description"), o.createOdfInfoItem(odfDoc, id, maybeValues, maybeDesc)) : o.createOdfInfoItem(odfDoc, id);
+                info = currentParams.request === "write" ? (maybeValues = $(node).data("values"), maybeDesc = $(node).data("description"), maybeValues = maybeValues != null ? maybeValues : [
+                  {
+                    value: "VALUE_PLACEHOLDER"
+                  }
+                ], o.createOdfInfoItem(odfDoc, id, maybeValues, maybeDesc)) : o.createOdfInfoItem(odfDoc, id);
                 siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingObject, info);
             }
