@@ -100,6 +100,25 @@ object SingleStores {
 
     }
 
+    /**
+     * Logic for updating values based on timestamps.
+     * If timestamp is same or the new value timestamp is after old value return true else false
+
+     */
+
+
+  /**
+   * Logic for updating values based on timestamps.
+   * If timestamp is same or the new value timestamp is after old value return true else false
+   *
+   * @param oldValue old value(from latestStore)
+   * @param newValue the new value to be added
+   * @return
+   */
+    def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
+      oldValue.timestamp before newValue.timestamp
+    }
+
 
     /**
      * Main function for handling incoming data and running all event-based subscriptions.
@@ -116,7 +135,7 @@ object SingleStores {
 
       oldValueOpt match {
         case Some(oldValue) =>
-          if (oldValue.timestamp before newValue.timestamp) {
+          if (valueShouldBeUpdated(oldValue, newValue)) {
             val onChangeData =
               if (oldValue.value != newValue.value) {
                     Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))

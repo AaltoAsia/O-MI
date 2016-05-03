@@ -63,7 +63,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   /////////////////////////////////////////////////////////////////////////////
 
-  "SubscrpitionHandler" should {
+  "SubscriptionHandler" should {
     "return code 200 for successful subscription" >> {
       val (_, code) = addSub(1,5, Seq("p/1"))
 
@@ -109,9 +109,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       pollSub(sub2Id).\\("value").size === 0
       pollSub(sub3Id).\\("value").size === 0
 
-      val fut1 = addValue("p/2", nv("1"))
-      val fut2 = addValue("p/2", nv("2"))
-      val fut3 = addValue("p/2", nv("3"))
+      val fut1 = addValue("p/2", nv("1", 10000))
+      val fut2 = addValue("p/2", nv("2", 20000))
+      val fut3 = addValue("p/2", nv("3", 30000))
 
       Await.ready(Future.sequence(Seq(fut1,fut2,fut3)), 2 seconds)
 
@@ -171,8 +171,10 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     "return value for event sub when the value changes and return no values after polling" >> {
       val subId = addSub(5, -1, Seq("r/1"))._1.\\("requestID").text.toInt
 
-      Await.ready(addValue("r/1", nv("2")), 2 seconds)
 
+      Await.ready(addValue("r/1", nv("2", 10000)), 2 seconds)
+      pollSub(subId).\\("value").size === 1
+      Await.ready(addValue("r/1", nv("3",20000)), 2 seconds)
       pollSub(subId).\\("value").size === 1
       pollSub(subId).\\("value").size === 0
     }
@@ -181,8 +183,11 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val subId = addSub(5, -1, Seq("r/2"))._1.\\("requestID").text.toInt
 
 
-      Await.ready(addValue("r/2", nv("0")), 2 seconds)
+      Await.ready(addValue("r/2", nv("0", 20000)), 2 seconds)
+      pollSub(subId).\\("value").size === 1
 
+      Await.ready(addValue("r/2", nv("0", 22000)), 2 seconds)
+      Await.ready(addValue("r/2", nv("0", 23000)), 2 seconds)
       pollSub(subId).\\("value").size === 0
 
     }
