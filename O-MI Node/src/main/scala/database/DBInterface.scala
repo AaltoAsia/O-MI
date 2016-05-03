@@ -98,12 +98,6 @@ object SingleStores {
       odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
     }
 
-    /**
-     * Logic for updating values based on timestamps.
-     * If timestamp is same or the new value timestamp is after old value return true else false
-
-     */
-
 
   /**
    * Logic for updating values based on timestamps.
