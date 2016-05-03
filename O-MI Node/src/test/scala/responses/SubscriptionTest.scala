@@ -1,7 +1,10 @@
 package responses
 
 import agentSystem.{DBPusher, InputPusher}
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent.{UnMute, Mute}
 import org.specs2.concurrent.ExecutionEnv
+import org.specs2.execute.Result
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import org.specs2.matcher.XmlMatchers._
@@ -58,8 +61,14 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   val date = calendar.getTime
   val testtime = new java.sql.Timestamp(date.getTime)
 
-  def beforeAll = Await.ready(initDB, 5 seconds)
-  def afterAll = cleanAndShutdown
+  def beforeAll = {
+    system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
+    Await.ready(initDB, 5 seconds)
+  }
+  def afterAll = {
+    system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
+    cleanAndShutdown
+  }
 
   /////////////////////////////////////////////////////////////////////////////
 
@@ -198,6 +207,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       Thread.sleep(2000)
       pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "404")
     }
+
+
+
 
 
 

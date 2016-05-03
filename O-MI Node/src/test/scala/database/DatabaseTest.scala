@@ -52,7 +52,7 @@ class DatabaseTest extends Specification with AfterAll {
 //  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, new java.sql.Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
-    //    sequential
+        sequential
     var data1 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(1000), "21.5C")
     var data2 = (Path("/Objects/path/to/sensor1/hum"), new java.sql.Timestamp(2000), "40%")
     var data3 = (Path("/Objects/path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")
