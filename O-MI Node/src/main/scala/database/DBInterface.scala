@@ -95,9 +95,7 @@ object SingleStores {
         val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
         fromPath(infoItem)
       }
-
-      odfObjectsTrees.reduceOption(_ union _).getOrElse(OdfObjects())
-
+      odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
     }
 
     /**
