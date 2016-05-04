@@ -151,7 +151,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    * @param request request is O-MI request to be handled
    * @return Tuple containing xml message and HTTP status code
    */
-  def xmlFromRequest(request: OmiRequest): (NodeSeq, Int) = request match {
+  def xmlFromRequest(request: OmiRequest): Future[(NodeSeq, Int)] = request match {
     case read: ReadRequest => {
       handleRead(read)
     }
@@ -240,14 +240,14 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param read request
     * @return (xml response, HTTP status code)
     */
-  def handleRead(read: ReadRequest): (NodeSeq, Int) = {
+  def handleRead(read: ReadRequest): Future[(NodeSeq, Int) = {
     log.debug("Handling read.")
 
     val leafs = getLeafs(read.odf)
     val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
-    val objectsO: Option[OdfObjects] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
+    val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-    objectsO match {
+    objectsO.map(res => res match {
       case Some(objects) =>
         val found = Results.read(objects)
         val requestsPaths = leafs.map { _.path }
@@ -266,46 +266,49 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case None =>
         (xmlFromResults(
           1.0, Results.notFound), 404)
-    }
+    })
   }
 
   /** Method for handling PollRequest.
     * @param poll request
     * @return (xml response, HTTP status code)
     */
-  def handlePoll(poll: PollRequest): (NodeSeq, Int) = {
+  def handlePoll(poll: PollRequest): Future[(NodeSeq, Int)] = {
     val ttl = handleTTL(poll.ttl)
     implicit val timeout = Timeout(ttl) 
     val time = date.getTime
-    val results =
-      poll.requestIDs.map { id =>
+    val resultsFut =
+      Future.sequence(poll.requestIDs.map { id =>
 
       val objectsF: Future[ Any /* Option[OdfObjects] */ ] = subscriptionHandler ? PollSubscription(id)
+      objectsF.recoverWith{case e => Future.failed(new RuntimeException(
+        s"Error when trying to poll subscription: ${e.getMessage}"))}
 
-      Await.ready(objectsF, Duration.Inf).value.get match {
-        case Success(Some(objects: OdfObjects)) =>
+      objectsF.map(res => res match {
+        case Some(objects: OdfObjects) =>
           Results.poll(id.toString, objects)
-        case Success(None) =>
+        case None =>
           Results.notFoundSub(id.toString)
-        case Failure(e) => 
-          throw new RuntimeException(
-            s"Error when trying to poll subscription: ${e.getMessage}")
-      }
-    }
-    val returnTuple = (
+        //case Failure(e) =>
+        //  throw new RuntimeException(
+        //    s"Error when trying to poll subscription: ${e.getMessage}")
+      })
+    })
+    val returnTuple = resultsFut.map(results => (
       xmlFromResults(
         1.0,
         results.toSeq: _*),
         if (results.exists(_.returnValue.returnCode == "404")) 404 else 200)
+    )
 
     returnTuple
   }
 
   /** Method for handling SubscriptionRequest.
-    * @param subscription request
+    * @param _subscription request
     * @return (xml response, HTTP status code)
     */
-  def handleSubscription(_subscription: SubscriptionRequest): (NodeSeq, Int) = {
+  def handleSubscription(_subscription: SubscriptionRequest): Future[(NodeSeq, Int)] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
       case SubscriptionRequest( _, interval, _, _, _, _) if interval.toSeconds < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
@@ -315,26 +318,25 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture = subscriptionHandler ? NewSubscription(subscription)
-    val (response, returnCode) =
-      Await.result(subFuture, Duration.Inf) match {
-        case Failure(e: IllegalArgumentException) =>
-          (Results.invalidRequest(e.getMessage), 400)
-        case Failure(t) =>
-          throw new RuntimeException(
-            s"Error when trying to create subscription: ${t.getMessage}", t)
-        case Success(id: Long) if _subscription.interval != subscription.interval =>
+    subFuture.recoverWith{
+      case e: IllegalArgumentException => Future.successful(Results.invalidRequest(e.getMessage()), 400))
+      case e => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
+    }
+    val responseAndReturnCode =
+      subFuture.map(res => res  match {
+        case id: Long if _subscription.interval != subscription.interval =>
           (Results.subscription(id.toString,subscription.interval.toSeconds), 200)
-        case Success(id: Long) =>
+        case id: Long =>
           (Results.subscription(id.toString), 200)
-        case Success(received) =>
-          throw new RuntimeException(
-            s"Invalid response type from SubscriptionHandler: ${received.getClass().getName}")
-      }
-    (
-      xmlFromResults(
-        1.0,
-        response),
-        returnCode)
+      })
+    responseAndReturnCode.map{ case (response, returnCode) =>{
+      (
+        xmlFromResults(
+          1.0,
+          response),
+        returnCode
+        )
+    }}
   }
 
   /** Method for handling CancelRequest.
