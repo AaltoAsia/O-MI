@@ -190,19 +190,28 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param write request
     * @return (xml response, HTTP status code)
     */
-  def handleWrite( write: WriteRequest ) : (NodeSeq,Int) ={
+  def handleWrite( write: WriteRequest ) : Future[(NodeSeq,Int)] ={
       val ttl = handleTTL(write.ttl)
       val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
-      //XXX:
-      val result = Await.result(future, ttl)
-      result match {
+      future.recoverWith{case e =>{
+        log.error(e, "Failure when writing")
+        Future.failed(e)
+      }}
+
+      //val result = Await.result(future, ttl)
+      future.flatMap(result => result match {
         case Success(b: Boolean ) =>
           if(b)
-            (success, 200)
-          else
-            throw new RuntimeException("Write failed without exception.")
-        case Failure(thro: Throwable) => throw thro
-      }
+            Future.successful((success, 200))
+          else{
+            log.warning("Write failed without exception")
+            Future.failed(new RuntimeException("Write failed without exception."))
+            }
+        case Failure(thro: Throwable) => {
+          log.error(thro, "Failure when writing")
+          Future.failed(thro)
+        }
+      })
   }
   /** Method for handling ResponseRequest.
     * @param response request
