@@ -118,15 +118,15 @@ trait Starter {
     // TODO: Maybe refactor to an internal agent!
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
-    val agentLoader = system.actorOf(
-      InternalAgentLoader.props(),
-      "agent-loader"
+    val agentManager = system.actorOf(
+      InternalAgentManager.props(),
+      "agent-manager"
     )
 
     val requestHandler = new RequestHandler(subHandler)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentLoader, subHandler, requestHandler)),
+      Props(new OmiNodeCLIListener(  agentManager, subHandler, requestHandler)),
       "omi-node-cli-listener"
     )
 
