@@ -86,4 +86,4 @@ case class LookupEventSubs(path: Path) extends Query[EventSubs, Vector[EventSub]
     (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 
-// Other transactions are in responses/SubPrevayler.scala or Subscription Handler
+// Other transactions are in responses/SubscriptionHandler.scala

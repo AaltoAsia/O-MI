@@ -219,7 +219,7 @@
               return requests.params.odf.remove(odfTreePath);
             });
             return $(jqesc(odfTreePath)).children(".jstree-children").find(".jstree-node").each(function(_, node) {
-              return consts.odfTree.deselect_node(node);
+              return consts.odfTree.deselect_node(node, true);
             });
         }
       });

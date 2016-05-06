@@ -208,7 +208,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
               .children ".jstree-children"
               .find ".jstree-node"
               .each (_, node) ->
-                consts.odfTree.deselect_node node
+                consts.odfTree.deselect_node node, true
 
 
     # Request select tree

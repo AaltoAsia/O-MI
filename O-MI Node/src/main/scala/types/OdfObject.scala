@@ -20,6 +20,8 @@ import javax.xml.datatype.{DatatypeConstants => XMLConst}
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
 
+import scala.collection.immutable.HashMap
+
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
   id:                   OdfTreeCollection[QlmID],
@@ -35,45 +37,11 @@ require(path.length > 1,
   def hasDescription: Boolean = description.nonEmpty
 
   /** Method for combining two OdfInfoItems with same path */
-  def combine( another: OdfObject ) : OdfObject =  sharedAndUniques[OdfObject](another){(
-      uniqueInfos : Seq[OdfInfoItem] ,
-      anotherUniqueInfos : Seq[OdfInfoItem] ,
-      sharedInfos : Map[Path, Seq[OdfInfoItem]],
-      uniqueObjs : Seq[OdfObject] ,
-      anotherUniqueObjs : Seq[OdfObject] ,
-      sharedObjs : Map[Path,Seq[OdfObject]]
-    ) =>
-    val sharedInfosOut = sharedInfos.map{ // Why is this not documented?!
-        case (path:Path, sobj: Seq[OdfInfoItem]) =>
-        assert(sobj.length < 2, s"Union/combine error, should have pairs, got less than 2")
-        assert(sobj.length > 2, s"Union error; There is (probably) multiple same path InfoItems")
-        sobj.headOption match{
-          case Some( head ) =>
-            sobj.lastOption match{
-              case Some(last) => 
-                head.combine(last)
-              case None =>
-                throw new Exception("No last found when combining OdfObject")
-            }
-            case None =>
-              throw new Exception("No head found when combining OdfObject")
-          }
-      }
-    val sharedObjsOut = sharedObjs.map{
-        case (path:Path, sobj: Seq[OdfObject]) =>
-        assert(sobj.length == 2)
-        sobj.headOption match{
-          case Some( head ) =>
-            sobj.lastOption match{
-              case Some(last) => 
-                head.combine(last)
-              case None =>
-                throw new Exception("No last found when combining OdfObject")
-            }
-            case None =>
-              throw new Exception("No head found when combining OdfObject")
-          }
-      }
+  def combine(another: OdfObject): OdfObject = {
+    val thisInfo: HashMap[Path, OdfInfoItem] = HashMap(infoItems.map(ii=> (ii.path, ii)):_*)
+    val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii=> (ii.path, ii)):_*)
+    val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o=>(o.path, o)):_*)
+    val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o=>(o.path, o)):_*)
     OdfObject(
       (id ++ another.id).groupBy(_.value).values.collect{
         case Seq(single) => single
@@ -96,11 +64,11 @@ require(path.length > 1,
             attrA ++ attrB
           )
       },
-      path, 
-      sharedInfosOut ++ uniqueInfos ++ anotherUniqueInfos,
-      sharedObjsOut ++ uniqueObjs ++ anotherUniqueObjs,
-      another.description orElse description,
-      another.typeValue orElse typeValue
+    path,
+    thisInfo.merged(thatInfo){ case ((k1,v1), (_, v2)) => (k1, v1.combine(v2))}.values,
+    thisObj.merged(thatObj){case ((k1,v1), (_, v2)) => (k1, v1.combine(v2))}.values,
+    another.description orElse description,
+    another.typeValue orElse typeValue
     )
   }
 

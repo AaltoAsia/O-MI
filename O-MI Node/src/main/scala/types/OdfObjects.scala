@@ -16,7 +16,9 @@ package OdfTypes
 
 
 import parsing.xmlGen.xmlTypes._
-import OdfTreeCollection._
+import types.OdfTypes.OdfTreeCollection._
+
+import scala.collection.immutable.HashMap
 
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
@@ -26,23 +28,20 @@ class OdfObjectsImpl(
 
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
-  
-  /** Method for combining two OdfObjects with same path */
-  def union( another: OdfObjects ): OdfObjects = sharedAndUniques[OdfObjects]( another ){
-    (uniqueObjs : Seq[OdfObject], anotherUniqueObjs : Seq[OdfObject], sharedObjs : Map[Path,Seq[OdfObject]]) =>
-    OdfObjects(
-      sharedObjs.map{
-        case (path:Path, sobj: Seq[OdfObject]) =>
-        sobj.headOption.flatMap{head =>sobj.lastOption.map(last=> 
-          head.combine(last))}.getOrElse(throw new UninitializedError()) // .toList() might also work instead of getOrElse?
-      }.toSeq ++ uniqueObjs ++ anotherUniqueObjs,
-      unionOption(version, another.version){
-        case (a,b) if a > b => a
-        case (a,b) => b
-      }
-    )
-  }
 
+  /** Method for combining two OdfObjects with same path */
+  def union(another: OdfObjects): OdfObjects = {
+    val thisObjs: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)):_*)
+    val anotherObjs: HashMap[Path, OdfObject] = HashMap(another.objects.map(ao => (ao.path, ao)):_*)
+    OdfObjects(
+      thisObjs.merged(anotherObjs){case ((k1, v1),(_, v2)) => (k1,v1.combine(v2))}.values,
+    unionOption(version,another.version){
+      case (a,b) if a > b =>a
+      case (a,b) => b
+    }
+    )
+
+  }
 
   def --(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
     (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
@@ -81,11 +80,11 @@ class OdfObjectsImpl(
     Seq[OdfObject],
     Seq[OdfObject],
     Map[Path,Seq[OdfObject]]) => A) = {
-    val uniqueObjs : Seq[OdfObject]  = objects.filterNot( 
+    val uniqueObjs : Seq[OdfObject]  = objects.filterNot(
         obj => another.objects.toSeq.exists(
           aobj => aobj.path  == obj.path 
         ) 
-      ).toSeq  
+      ).toSeq
      val anotherUniqueObjs =  another.objects.filterNot(
         aobj => objects.toSeq.exists(
           obj => aobj.path  == obj.path

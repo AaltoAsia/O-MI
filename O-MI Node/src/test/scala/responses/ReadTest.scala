@@ -7,21 +7,21 @@ import agentSystem.InputPusher
 import akka.actor._
 import akka.testkit.TestActorRef
 import database._
-import org.junit.runner.RunWith
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
+import org.specs2.specification.BeforeAfterAll
 import parsing._
-import testHelpers.BeforeAfterAll
 import types.OdfTypes.OdfValue
 import types.OmiTypes._
 import types._
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.xml.{Elem, NodeSeq, XML}
 //
-@RunWith(classOf[JUnitRunner])
-class ReadTest extends Specification with BeforeAfterAll {
+class ReadTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
   sequential
 
   //  val ReadResponseGen = new ReadResponseGen
@@ -69,15 +69,17 @@ class ReadTest extends Specification with BeforeAfterAll {
 
     //for begin and end testing
     dbConnection.remove(Path("Objects/ReadTest/SmartOven/Temperature"))
-    for (value <- intervaltestdata) {
-      InputPusher.handlePathValuePairs(Iterable((Path("Objects/ReadTest/SmartOven/Temperature"), OdfValue(value, "", new java.sql.Timestamp(date.getTime + count)))))
+    val addFutures = intervaltestdata.map{ value => //for (value <- intervaltestdata) {
+      val addFuture = InputPusher.handlePathValuePairs(Iterable((Path("Objects/ReadTest/SmartOven/Temperature"), OdfValue(value, "", new java.sql.Timestamp(date.getTime + count)))))
       //dbConnection.set(Path("Objects/ReadTest/SmartOven/Temperature"), new java.sql.Timestamp(date.getTime + count), value)
       count = count + 1000
+      addFuture
     }
 
     //for metadata testing (if i added metadata to existing infoitems the previous tests would fail..)
     //    dbConnection.remove(Path("Objects/Metatest/Temperature"))
-    InputPusher.handlePathValuePairs(Iterable((Path("Objects/Metatest/Temperature"), OdfValue("asd", "", testtime))))
+    val metaFuture = InputPusher.handlePathValuePairs(Iterable((Path("Objects/Metatest/Temperature"), OdfValue("asd", "", testtime))))
+    Await.ready(Future.sequence(addFutures :+ metaFuture), Duration.apply(5, "seconds"))
     //dbConnection.set(Path("Objects/Metatest/Temperature"), testtime, "asd")
 
     // FIXME

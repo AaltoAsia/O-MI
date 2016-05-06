@@ -1,3 +1,37 @@
+/*package responses
+
+import java.sql.Timestamp
+
+import database.{IntervalSub, AddIntervalSub, SingleStores}
+import org.specs2.mutable._
+import org.specs2.time.NoTimeConversions
+import testHelpers.Actors
+import types.Path
+
+import scala.concurrent.duration.Duration
+
+class SubscriptionHandlerTest extends Specification with NoTimeConversions {
+  "SubscriptionHandler" should {
+    "test" in new Actors {
+      //addIntervalSub(2)
+      1 === 1
+    }
+  }
+
+*/
+/*  def addIntervalSub(intervalInSeconds: Int) = {
+    SingleStores.intervalPrevayler execute AddIntervalSub(
+      IntervalSub(1,
+                  Vector.empty[Path],
+                  new Timestamp(System.currentTimeMillis() + 2000),
+                  "test/path",
+                  Duration(intervalInSeconds, "seconds"),
+                  new Timestamp(System.currentTimeMillis()),
+                  new Timestamp(System.currentTimeMillis())
+                  )
+    )
+  }
+}*/
 //package responses
 //
 //import org.specs2.mutable._

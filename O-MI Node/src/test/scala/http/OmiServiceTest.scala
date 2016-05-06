@@ -1,29 +1,28 @@
 package http
 
+import org.specs2.matcher.XmlMatchers
 import akka.actor._
 import akka.testkit.TestActorRef
 import database._
-import org.junit.runner.RunWith
-import org.specs2.matcher.XmlMatchers
+
 import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
+import org.specs2.specification.BeforeAfterAll
 import responses.{RequestHandler, SubscriptionHandler}
 import spray.http.HttpHeaders._
 import spray.http.MediaTypes._
 import spray.http.StatusCodes._
 import spray.httpx.marshalling.BasicMarshallers._
 import spray.testkit.Specs2RouteTest
-import testHelpers.BeforeAfterAll
 import types._
 
 import scala.xml._
 
-@RunWith(classOf[JUnitRunner])
 class OmiServiceTest extends Specification
   with XmlMatchers
   with Specs2RouteTest
   with OmiService
   with BeforeAfterAll {
+
 
   def actorRefFactory = system
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
@@ -52,9 +51,9 @@ class OmiServiceTest extends Specification
     system.shutdown()
   }
 
-  "Data discovery, GET: OmiService" should {
+  "Data discovery, GET: OmiService" >> {
 
-    "respond with hello message for GET request to the root path" in {
+    "respond with hello message for GET request to the root path" >> {
       Get() ~> myRoute ~> check {
         mediaType === `text/html`
         responseAs[String] must contain("Say hello to <i>O-MI Node service")
@@ -62,21 +61,21 @@ class OmiServiceTest extends Specification
       }
     }
 
-    "respond succesfully to GET to /Objects" in {
+    "respond succesfully to GET to /Objects" >> {
       Get("/Objects") ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
       }
     }
-    "respond succesfully to GET to /Objects/" in {
+    "respond succesfully to GET to /Objects/" >> {
       Get("/Objects/") ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects")
       }
     }
-    "respond with error to non existing path" in {
+    "respond with error to non existing path" >> {
       Get("/Objects/nonexsistent7864057") ~> myRoute ~> check {
         mediaType === `text/xml`
         status === NotFound
@@ -84,7 +83,7 @@ class OmiServiceTest extends Specification
       }
     }
     val settingsPath = "/" + Path(Boot.settings.settingsOdfPath).toString
-    "respond successfully to GET to some value" in {
+    "respond successfully to GET to some value" >> {
       Get(settingsPath + "/num-latest-values-stored/value") ~> myRoute ~> check {
         mediaType === `text/plain`
         status === OK
@@ -95,7 +94,7 @@ class OmiServiceTest extends Specification
 
 
     // Somewhat overcomplicated test; Serves as an example for other tests
-    "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" in {
+    "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" >> {
       Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
         status === OK
         mediaType === `text/xml`
@@ -103,7 +102,7 @@ class OmiServiceTest extends Specification
       }
     }
 
-    "reply its settings having num-latest-values-stored)" in {
+    "reply its settings having num-latest-values-stored)" >> {
       Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
         status === OK
         mediaType === `text/xml`
@@ -113,9 +112,9 @@ class OmiServiceTest extends Specification
 
   }
 
-  "request, POST: OmiService" should {
+  "request, POST: OmiService" >> {
     sequential
-    "respond correctly to read request with invalid omi" in {
+    "respond correctly to read request with invalid omi" >> {
       val request: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
@@ -138,7 +137,7 @@ class OmiServiceTest extends Specification
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
         //                    println(printer.format(resp))
         //          println("\n\n\n\n\n______________________________________")
-        //          status === BadRequest // TODO this test needs to be updated when error handling is correctly implemented
+        status === OK
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
         val description = resp.\("response").\("result").\("return").\@("description")
@@ -146,7 +145,7 @@ class OmiServiceTest extends Specification
       }
     }
 
-    "respond correctly to read request with invalid odf" in {
+    "respond correctly to read request with invalid odf" >> {
       val request: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
@@ -164,9 +163,11 @@ class OmiServiceTest extends Specification
 
       Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
         mediaType === `text/xml`
+        status === OK
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
         val description = resp.\("response").\("result").\("return").\@("description")
@@ -174,7 +175,7 @@ class OmiServiceTest extends Specification
       }
     }
 
-    "respond correctly to read request with non-existing path" in {
+    "respond correctly to read request with non-existing path" >> {
       val request: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
@@ -192,6 +193,7 @@ class OmiServiceTest extends Specification
 
       Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
         mediaType === `text/xml`
+        status === OK
         println("\n\n\n\n\n\n\n\n" + responseAs[String])
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
@@ -205,9 +207,9 @@ class OmiServiceTest extends Specification
       }
     }
 
-    "respond correctly to subscription poll with non existing requestId" in {
+    "respond correctly to subscription poll with non existing requestId" >> {
       val request: NodeSeq =
-        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
+        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
           <omi:read msgformat="odf">
             <omi:requestID>9999</omi:requestID>
           </omi:read>
@@ -215,6 +217,7 @@ class OmiServiceTest extends Specification
 
       Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
         mediaType === `text/xml`
+        status === OK
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -227,7 +230,7 @@ class OmiServiceTest extends Specification
       }
     }
 
-    "respond to permissive requests" in {
+    "respond to permissive requests" >> {
       val request: String = """
         <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
           <omi:write msgformat="odf">
@@ -244,9 +247,10 @@ class OmiServiceTest extends Specification
           </omi:write>
         </omi:omiEnvelope>"""
 
-      "respond correctly to write request with whitelisted IPv4-addresses" in {
+      "respond correctly to write request with whitelisted IPv4-addresses" >> {
         Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -258,6 +262,7 @@ class OmiServiceTest extends Specification
 
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor1"))).withHeaders(`Remote-Address`("127.255.255.255")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -268,9 +273,10 @@ class OmiServiceTest extends Specification
         }
       }
 
-      "respond correctly to write request with non-whitelisted IPv4-addresses" in {
+      "respond correctly to write request with non-whitelisted IPv4-addresses" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor2"))).withHeaders(`Remote-Address`("192.65.127.80")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -284,6 +290,7 @@ class OmiServiceTest extends Specification
 
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor3"))).withHeaders(`Remote-Address`("128.0.0.1")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -297,9 +304,10 @@ class OmiServiceTest extends Specification
 
       }
 
-      "respond correctly to write request with whitelisted IPv6-addresses" in {
+      "respond correctly to write request with whitelisted IPv6-addresses" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("0:0:0:0:0:0:0:1")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -310,6 +318,7 @@ class OmiServiceTest extends Specification
         }
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor5"))).withHeaders(`Remote-Address`("0:0:0:FFFF:FFFF:FFFF:FFFF:FFFF")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -319,9 +328,10 @@ class OmiServiceTest extends Specification
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
       }
-      "respond correctly to write request with non-whitelisted IPv6-addresses" in {
+      "respond correctly to write request with non-whitelisted IPv6-addresses" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("0:0:1:0:0:0:0:0")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -335,6 +345,7 @@ class OmiServiceTest extends Specification
 
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("2001:DB80:ABBA:BABB:A:0:FF:FF")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -344,7 +355,7 @@ class OmiServiceTest extends Specification
           description startsWith("Unauthorized")
         }
       }
-      "respond correctly to normal read with non-whitelisted address and user" in {
+      "respond correctly to normal read with non-whitelisted address and user" >> {
         val request: String = """
           <omi:omiEnvelope xmlns:omi="omi.xsd" version="1.0" ttl="0">
             <omi:read msgformat="odf">
@@ -356,6 +367,7 @@ class OmiServiceTest extends Specification
           </omi:omiEnvelope>"""
         Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("192.65.127.80")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -365,6 +377,7 @@ class OmiServiceTest extends Specification
         }
         Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("187.42.74.1"), RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -373,9 +386,10 @@ class OmiServiceTest extends Specification
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
         }
       }
-      "respond correctly to write request with non-whitelisted user" in {
+      "respond correctly to write request with non-whitelisted user" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor7"))).withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -385,9 +399,10 @@ class OmiServiceTest extends Specification
           description startsWith("Unauthorized")
         }
       }
-      "respond correctly to write request with whitelisted saml user" in {
+      "respond correctly to write request with whitelisted saml user" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor8"))).withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
           mediaType === `text/xml`
+          status === OK
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))

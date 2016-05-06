@@ -75,12 +75,19 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-    val latestStore       = PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
-    val hierarchyStore    = PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
-    val eventPrevayler    = PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
-    val intervalPrevayler = PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
-    val pollPrevayler     = PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
-    val idPrevayler       = PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
+    def createPrevayler[P](in: P, name: String) = {
+      if(settings.writeToDisk) {
+        PrevaylerFactory.createPrevayler[P](in, settings.journalsDirectory++s"/$name")
+      } else {
+        PrevaylerFactory.createTransientPrevayler[P](in)
+      }
+    }
+    val latestStore       = createPrevayler(LatestValues.empty, "latestStore")//PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
+    val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")//PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
+    val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")//PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
+    val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")//PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
+    val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")//PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
+    val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")//)PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
 
     def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
 
@@ -88,12 +95,20 @@ object SingleStores {
         val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
         fromPath(infoItem)
       }
-      // safe version of reduce, might be a bit slow way to construct the result
-      //val valueOdfTree =
-      odfObjectsTrees.headOption map { head =>
-        odfObjectsTrees.par.reduce(_ union _)
-      } getOrElse (OdfObjects())
+      odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
+    }
 
+
+  /**
+   * Logic for updating values based on timestamps.
+   * If timestamp is same or the new value timestamp is after old value return true else false
+   *
+   * @param oldValue old value(from latestStore)
+   * @param newValue the new value to be added
+   * @return
+   */
+    def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
+      oldValue.timestamp before newValue.timestamp
     }
 
 
@@ -112,7 +127,7 @@ object SingleStores {
 
       oldValueOpt match {
         case Some(oldValue) =>
-          if (oldValue.timestamp before newValue.timestamp) {
+          if (valueShouldBeUpdated(oldValue, newValue)) {
             val onChangeData =
               if (oldValue.value != newValue.value) {
                     Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))

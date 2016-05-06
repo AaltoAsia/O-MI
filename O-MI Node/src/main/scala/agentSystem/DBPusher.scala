@@ -24,6 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
+import database.SingleStores.valueShouldBeUpdated
 
 import database._
 import parsing.xmlGen
@@ -66,8 +67,12 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   private val snapshotInterval = http.Boot.settings.snapshotInterval
   log.info(s"scheduling databse trimming every $trimInterval seconds")
   scheduler.schedule(trimInterval.seconds, trimInterval.seconds, self, TrimDB)
-  log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
-  scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
+  if(http.Boot.settings.writeToDisk){
+    log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
+    scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
+  } else {
+    log.info("using transient prevayler, taking snapshots is not in use.")
+  }
 
 
 
@@ -200,6 +205,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
   /**
    * Creates values that are to be updated into the database for polled subscription.
+   * Polling removes the related data from database, this method creates new data if the old value.
    * @param path
    * @param newValue
    * @param oldValueOpt
@@ -212,7 +218,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
       case sub if(oldValueOpt.forall(oldValue =>
-        oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
+        valueShouldBeUpdated(oldValue, newValue) && (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
           SubValue(sub.id, path, newValue.timestamp, newValue.value,newValue.typeValue)
       }
     }
@@ -284,7 +290,8 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     }
 
     // DB + Poll Subscriptions
-    val itemValues = (infoItems flatMap {item =>
+    val itemValues = (triggeringEvents flatMap {event =>
+      val item   = event.infoItem
       val values = item.values.toSeq
       values map {value => (item.path, value)}
     }).toSeq

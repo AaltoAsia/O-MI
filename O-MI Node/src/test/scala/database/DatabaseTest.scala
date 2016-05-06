@@ -3,6 +3,7 @@ package database
 import org.specs2.mutable._
 import database._
 import java.sql.Timestamp
+import org.specs2.specification.AfterAll
 import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection._
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -13,15 +14,11 @@ import akka.actor.{Props, ActorSystem}
 import responses.{RequestHandler, SubscriptionHandler}
 
 import scala.concurrent.duration._
-import testHelpers.{AfterAll, DeactivatedTimeConversions}
 
 import types._
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 //
-@RunWith(classOf[JUnitRunner])
-class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConversions {
+class DatabaseTest extends Specification with AfterAll {
   sequential
   
   def newTs = new Timestamp(new java.util.Date().getTime)
@@ -55,7 +52,7 @@ class DatabaseTest extends Specification with AfterAll with DeactivatedTimeConve
 //  lazy val testSub2 = db.saveSub(NewDBSub(-1.seconds, new java.sql.Timestamp(0), Duration.Inf, None), Array(Path("/Objects/path/to/sensor3/temp")))
 
   "dbConnection" should {
-    //    sequential
+        sequential
     var data1 = (Path("/Objects/path/to/sensor1/temp"), new java.sql.Timestamp(1000), "21.5C")
     var data2 = (Path("/Objects/path/to/sensor1/hum"), new java.sql.Timestamp(2000), "40%")
     var data3 = (Path("/Objects/path/to/sensor2/temp"), new java.sql.Timestamp(3000), "24.5")

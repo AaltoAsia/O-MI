@@ -10,10 +10,9 @@ import types.OdfTypes.OdfTreeCollection._
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList, iterableAsScalaIterable}
 import scala.concurrent.duration._
 
-import testHelpers.DeactivatedTimeConversions
 
 /* Test class for testing ODF Types */
-class TypesTest extends Specification with DeactivatedTimeConversions{
+class TypesTest extends Specification {
 
   def is = s2"""
   This is Specification to check inheritance for Types. Also testing Path Object
