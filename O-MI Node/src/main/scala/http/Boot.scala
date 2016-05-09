@@ -119,8 +119,8 @@ trait Starter {
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
     val agentManager = system.actorOf(
-      InternalAgentManager.props(),
-      "agent-manager"
+      AgentSystem.props(),
+      "agent-system"
     )
 
     val requestHandler = new RequestHandler(subHandler)(dbConnection)
