@@ -32,6 +32,7 @@ import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
 import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 import scala.collection.mutable.Map
 import java.io.File
 import java.net.URLClassLoader
@@ -287,10 +288,16 @@ class InternalAgentManager extends Actor with ActorLogging {
    * Simple function for getting Agent's name and config string pairs.
    */
   private[agentSystem] def getClassnamesWithConfigPath: Array[AgentConfigEntry] = {
-    settings.internalAgents.unwrapped().asScala.map {
-      //TODO: find way to exract to strings from object, first classname, second config
-      case (name: String, config: Object) => new AgentConfigEntry(name, name, config.toString) 
-    }.toArray
+    val agents = settings.internalAgents
+    val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
+    names.map{ 
+      name =>
+      val tuple = agents.toConfig().getObject(name).unwrapped().asScala
+      for{
+        classname <- tuple.get("class")
+        config <- tuple.get("config")
+      } yield AgentConfigEntry(name, classname.toString, config.toString) 
+    }.flatten.toArray
   }
 
 }

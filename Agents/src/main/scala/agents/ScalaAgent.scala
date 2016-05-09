@@ -21,14 +21,15 @@ class ScalaAgent  extends InternalAgent{
   val interval : FiniteDuration = Duration(5, SECONDS) 
 	var pathO: Option[Path] = None
   def date = new java.util.Date();
+  def name = self.path.name
   protected def configure(config: String ) : InternalAgentResponse = {
       pathO = Some( new Path(config))
-      log.info("A ScalaAgent has been configured.");
+      log.info(s"$name has been configured.");
       CommandSuccessful("Successfully configured.")
   }
   var updateSchelude : Option[Cancellable] = None
   protected def start = {
-    log.info("A ScalaAgent has been started.");
+    log.info(s"$name has been started.");
     updateSchelude = Some(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
@@ -49,7 +50,7 @@ class ScalaAgent  extends InternalAgent{
         ) ) 
     }
     val values = Iterable(tuple).flatten
-    log.info("ScalaAgent pushing data.");
+    log.info(s"$name pushing data.");
     InputPusher.handlePathValuePairs(values, new Timeout(interval) )
 
   }     
