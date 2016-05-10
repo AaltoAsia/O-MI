@@ -22,7 +22,7 @@ import types.OdfTypes.{OdfInfoItem, OdfValue}
 
 import scala.collection.JavaConversions.{asJavaIterable, asScalaIterator}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration
+import scala.concurrent.{Future, duration}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
@@ -126,7 +126,7 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long) : Option[OdfObjects]= {
+  private def pollSubscription(id: Long) : Future[Option[OdfObjects]] = {
     val pollTime: Long = System.currentTimeMillis()
     val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
@@ -150,14 +150,14 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
             log.debug(s"Creating response message for Polled Event Subscription")
 
-            val eventData = dbConnection.pollEventSubscription(id).toVector //get data from database
+            val eventData = dbConnection.pollEventSubscription(id).map(_.toVector //get data from database
               .groupBy(_.path) //group data by the paths
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
               .map(n => OdfInfoItem(n._1, n._2)) // Map to Infoitems
               .map(i => fromPath(i)) //Map to OdfObjects
-              .fold(emptyTree)(_.union(_))//.reduceOption(_.union(_)) //Combine OdfObjects
+              .fold(emptyTree)(_.union(_)))//.reduceOption(_.union(_)) //Combine OdfObjects
 
-            Some(eventData)
+            eventData.map(eData => Some(eData))
           }
 
           case pollInterval: PollIntervalSub => {
@@ -166,18 +166,20 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
 
             val interval: Duration = pollInterval.interval
 
-            val intervalData: Map[Path, Vector[OdfValue]] = dbConnection.pollIntervalSubscription(id).toVector
+            val intervalData: Future[Map[Path, Vector[OdfValue]]] = dbConnection.pollIntervalSubscription(id).map(_.toVector
               .groupBy(_.path)
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf))
+              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)))
 
-            val combinedWithPaths = OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
+            val combinedWithPaths = intervalData.map(iData => {
+              log.info(s"Data length for interval subscription is: ${iData.length}")
+              OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
               .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
-              .map(_.path)
-              .map(_ -> Vector[OdfValue]()).toMap ++ intervalData
+                .map(_.path)
+                .map(_ -> Vector[OdfValue]()).toMap ++ iData
+            })
 
-            log.info(s"Data length for interval subscription is: ${intervalData.length}")
 
-            val pollData: OdfObjects = combinedWithPaths.map( pathValuesTuple =>{
+            val pollData: Future[OdfObjects] = combinedWithPaths.map(_.map( pathValuesTuple =>{
 
               val (path, values) = pathValuesTuple match {
                 case (p, v) if (v.nonEmpty) => {
@@ -255,19 +257,19 @@ class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with Acto
               }).flatMap{ n => //flatMap removes None values
               //create OdfObjects from InfoItems
               n.map(m => fromPath(OdfInfoItem(m._1, m._2)))
-            }
+            }).map(
             //combine OdfObjects to single optional OdfObject
-            .fold(emptyTree)(_.union(_))
+            _.fold(emptyTree)(_.union(_)))
             //.reduceOption(_.union(_))
-
-            Some(pollData)
+            pollData.map(pData => Some(pData))
+            //Some(pollData)
           }
 
           case unknown => log.error(s"unknown subscription type $unknown")
-            None
+            Future.successful(None)
         }
       }
-      case _ => None
+      case _ => Future.successful(None)
     }
     //dbConnection.getNBetween(temp,sub.get)
   }
