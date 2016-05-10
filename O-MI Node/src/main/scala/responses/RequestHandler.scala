@@ -293,7 +293,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id =>
 
-      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = subscriptionHandler ? PollSubscription(id)
+      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = (subscriptionHandler ? PollSubscription(id)).mapTo[Future[Option[OdfObjects]]].flatMap(n=>n)
       objectsF.recoverWith{case e => Future.failed(new RuntimeException(
         s"Error when trying to poll subscription: ${e.getMessage}"))}
 
@@ -329,11 +329,12 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
     val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val subFuture: Future[RequestResultType] = (subscriptionHandler ? NewSubscription(subscription)).mapTo[Long].map( res=>res  match {
-        case id: Long if _subscription.interval != subscription.interval =>
+    val subFuture: Future[RequestResultType] = (subscriptionHandler ? NewSubscription(subscription)).mapTo[Try[Long]].map( res=>res  match {
+        case Success(id: Long) if _subscription.interval != subscription.interval =>
           Results.subscription(id.toString,subscription.interval.toSeconds)
-        case id: Long =>
+        case Success(id: Long) =>
           Results.subscription(id.toString)
+        case Failure(ex) => throw ex
       }).recoverWith{
       case e: IllegalArgumentException => Future.successful(Results.invalidRequest(e.getMessage()))
       case e => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))

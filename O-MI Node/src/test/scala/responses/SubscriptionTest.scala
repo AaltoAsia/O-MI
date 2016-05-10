@@ -73,17 +73,17 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   /////////////////////////////////////////////////////////////////////////////
 
   "SubscriptionHandler" should {
-    "return code 200 for successful subscription" >> {
+   /* "return code 200 for successful subscription" >> {
       val (_, code) = addSub(1,5, Seq("p/1"))
 
       code === 200
-    }
+    }*/
 
     "return incrementing id for new subscription" >> {
-      val (ns1, _) = addSub(1,5, Seq("p/1"))
-      val (ns2, _) = addSub(1,5, Seq("p/1"))
-      val (ns3, _) = addSub(1,5, Seq("p/1"))
-      val (ns4, _) = addSub(1,5, Seq("p/1"))
+      val ns1 = addSub(1,5, Seq("p/1"))
+      val ns2 = addSub(1,5, Seq("p/1"))
+      val ns3 = addSub(1,5, Seq("p/1"))
+      val ns4 = addSub(1,5, Seq("p/1"))
 
       ns2.\\("requestID").text.toInt must be_>(ns1.\\("requestID").text.toInt)
       ns3.\\("requestID").text.toInt must be_>(ns2.\\("requestID").text.toInt)
@@ -110,9 +110,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "be able to handle multiple event subscriptions on the same path" >> {
-      val sub1Id: Long = addSub(5,-1, Seq("p/2"))._1.\\("requestID").text.toInt
-      val sub2Id: Long = addSub(5,-1, Seq("p/2"))._1.\\("requestID").text.toInt
-      val sub3Id: Long = addSub(5,-1, Seq("p/1"))._1.\\("requestID").text.toInt
+      val sub1Id: Long = addSub(5,-1, Seq("p/2")).\\("requestID").text.toInt
+      val sub2Id: Long = addSub(5,-1, Seq("p/2")).\\("requestID").text.toInt
+      val sub3Id: Long = addSub(5,-1, Seq("p/1")).\\("requestID").text.toInt
 
       pollSub(sub1Id).\\("value").size === 0
       pollSub(sub2Id).\\("value").size === 0
@@ -130,7 +130,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return no values for interval subscriptions if the interval has not passed" >> {
-      val subId: Long = addSub(5, 4, Seq("p/1"))._1.\\("requestID").text.toInt
+      val subId: Long = addSub(5, 4, Seq("p/1")).\\("requestID").text.toInt
 
       Thread.sleep(2000)
       pollSub(subId).\\("value").size === 0
@@ -138,7 +138,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "be able to 'remember' last poll time to correctly return values for intervalsubs" >> {
-      val subId: Long = addSub(5, 4, Seq("p/1"))._1.\\("requestID").text.toInt
+      val subId: Long = addSub(5, 4, Seq("p/1")).\\("requestID").text.toInt
 
       Thread.sleep(2000)
       pollSub(subId).\\("value").size === 0
@@ -149,7 +149,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     "return copy of previous value for interval subs if previous value exists" >> {
       Await.ready(addValue("p/3", nv("4")), 2 seconds)
 
-      val subId: Long = addSub(5, 1, Seq("p/3"))._1.\\("requestID").text.toInt
+      val subId: Long = addSub(5, 1, Seq("p/3")).\\("requestID").text.toInt
 
       Thread.sleep(2000)
       pollSub(subId).\\("value").size === 2
@@ -170,15 +170,14 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return no new values for event subscription if there are no new events" >> {
-      val (res, code) = addSub(5, -1, Seq("p/1"))
+      val res = addSub(5, -1, Seq("p/1"))
       val subId = res.\\("requestID").text.toInt
 
-      code === 200
       pollSub(subId).\\("value").size === 0
     }
 
     "return value for event sub when the value changes and return no values after polling" >> {
-      val subId = addSub(5, -1, Seq("r/1"))._1.\\("requestID").text.toInt
+      val subId = addSub(5, -1, Seq("r/1")).\\("requestID").text.toInt
 
 
       Await.ready(addValue("r/1", nv("2", 10000)), 2 seconds)
@@ -189,7 +188,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return no new value for event sub if the value is same as the old one" >> {
-      val subId = addSub(5, -1, Seq("r/2"))._1.\\("requestID").text.toInt
+      val subId = addSub(5, -1, Seq("r/2")).\\("requestID").text.toInt
 
 
       Await.ready(addValue("r/2", nv("0", 20000)), 2 seconds)
@@ -202,7 +201,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "subscription should be removed when the ttl expired" >> {
-      val subId = addSub(1, 5, Seq("p/1"))._1.\\("requestID").text.toInt
+      val subId = addSub(1, 5, Seq("p/1")).\\("requestID").text.toInt
       pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "200")
       Thread.sleep(2000)
       pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "404")
@@ -254,7 +253,7 @@ case class OdfValue(
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
 
-    requestHandler.handleSubscription(SubscriptionRequest(ttl seconds, interval seconds, p))
+    Await.result(requestHandler.handleSubscription(SubscriptionRequest(ttl seconds, interval seconds, p)), Duration.Inf)
   }
 //  case class PollRequest(
 //  ttl: Duration,
@@ -262,7 +261,7 @@ case class OdfValue(
 //  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 //) extends OmiRequest
   def pollSub(id: Long) = {
-    requestHandler.handlePoll(PollRequest(0 seconds, None, Iterable(id)))._1
+    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Iterable(id))), Duration.Inf)
   }
   def cleanAndShutdown() = {
     system.shutdown()
