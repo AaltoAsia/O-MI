@@ -48,7 +48,7 @@ class DBMaintainer(val dbobject: DB)
    *
    */
   override def receive = {
-    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
+    case TrimDB                         => {val numDel = dbobject.trimDB(); numDel.map(nd => log.info(s"DELETE returned ${nd.sum}"))}
     case TakeSnapshot                   => {val snapshotDur = takeSnapshot(); log.info(s"Taking Snapshot took $snapshotDur milliseconds")}
     case u                              => log.warning("Unknown message received.")
   }
