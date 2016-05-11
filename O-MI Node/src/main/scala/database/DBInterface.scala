@@ -58,6 +58,7 @@ sealed trait InfoItemEvent {
 
 /*
  * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
+ * Not a case class because pattern matching didn't work as expected.
  */
 class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
 object ChangeEvent {
