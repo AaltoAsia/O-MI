@@ -18,7 +18,6 @@ import java.sql.Timestamp
 import parsing.xmlGen.xmlTypes.QlmID
 import slick.driver.H2Driver.api._
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -41,15 +40,15 @@ trait DBBase{
    * We use a more synchronized api for db using these two functions.
    * Takes a DBIO as parameter and runs it returning the result.
    */
-  protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
-    io => Await.result(db.run(io), 5.minutes)
+  //protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
+  //  io => Await.result(db.run(io), 5.minutes)
     // db operations shouldn't last longer than 5 minutes TODO: make a config option
 
   /**
    * Takes a DBIO as parameter and runs it waiting for it to finish.
    */
-  protected def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
-    io => Await.ready(db.run(io), 5.minutes) // db operations shouldn't last longer than 5 minutes
+  //protected def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
+  //  io => Await.ready(db.run(io), 5.minutes) // db operations shouldn't last longer than 5 minutes
 
 }
 
@@ -263,12 +262,12 @@ trait OmiNodeTables extends DBBase {
    * Empties all the data from the database
    * 
    */
-  def clearDB() = runWait(
+  def clearDB() = db.run(
     DBIO.seq(
       (allTables map (_.delete)): _* 
     ).andThen(hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false))
   )
 
-  def dropDB() = runWait( allSchemas.drop )
+  def dropDB() = db.run( allSchemas.drop )
     
 }

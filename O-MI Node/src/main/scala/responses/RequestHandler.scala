@@ -14,6 +14,7 @@
 package responses
 
 import http.Boot
+import parsing.xmlGen.xmlTypes.RequestResultType
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
@@ -57,7 +58,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    *
    * @param request request is O-MI request to be handled
    */
-  def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
+  def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
 
     def checkCallback(address: String) = Try {
       val url = new URL(address)
@@ -76,27 +77,28 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             case sub: SubscriptionRequest => runGeneration(sub)
             case _ => {
               // TODO: Can't cancel this callback
-              Future { runGeneration(request) } map {
-                case (xml: NodeSeq, code: Int) =>
+              runGeneration(request)  map { xml =>
                   sendCallback(
                     address,
                     xml,
                     request.ttl
                   )
-              }
-              (
-                xmlFromResults(
+                 xmlFromResults(
                   1.0,
-                  Results.simple("200", Some("OK, callback job started"))),
-                  200)
-            }
+                  Results.simple("200", Some("OK, callback job started")))
+
+
+
+              }
+
+           }
           }
         } match {
           case Success(res)                               => res
-          case Failure(e: java.net.MalformedURLException) => (invalidCallback(e.getMessage), 200)
-          case Failure(e: UnknownHostException)           => (invalidCallback("Unknown host: " + e.getMessage), 200)
-          case Failure(e: SecurityException)              => (invalidCallback("Unauthorized " + e.getMessage), 200)
-          case Failure(e: java.net.ProtocolException)     => (invalidCallback(e.getMessage), 200)
+          case Failure(e: java.net.MalformedURLException) => Future.successful(invalidCallback(e.getMessage))
+          case Failure(e: UnknownHostException)           => Future.successful(invalidCallback("Unknown host: " + e.getMessage))
+          case Failure(e: SecurityException)              => Future.successful(invalidCallback("Unauthorized " + e.getMessage))
+          case Failure(e: java.net.ProtocolException)     => Future.successful(invalidCallback(e.getMessage))
           case Failure(t)                                 => throw t
         }
 
@@ -114,10 +116,16 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    *
    * @param request request is O-MI request to be handled
    */
-  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    val responseFuture = Future { xmlFromRequest(request) }
+  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
+    xmlFromRequest(request).recoverWith{
+      case e: TimeoutException => Future.successful(OmiGenerator.timeOutError(e.getMessage))
+      case e: IllegalArgumentException => Future.successful(OmiGenerator.invalidRequest(e.getMessage))
+      case e =>
+        log.error(e, "Internal Server Error: ")
+        Future.successful(OmiGenerator.internalError(e))
+    }
 
-    Try {
+    /*Try {
       Await.result(responseFuture, request.ttl)
     } match {
       case Success((xml: NodeSeq, code: Int)) => (xml, code)
@@ -131,7 +139,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       case Failure(e) => // all exception should be re-thrown here to log it consistently
         actionOnInternalError(e)
         (OmiGenerator.internalError(e), 500)
-    }
+    }*/
   }
 
   /**
@@ -151,7 +159,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
    * @param request request is O-MI request to be handled
    * @return Tuple containing xml message and HTTP status code
    */
-  def xmlFromRequest(request: OmiRequest): (NodeSeq, Int) = request match {
+  def xmlFromRequest(request: OmiRequest): Future[NodeSeq] = request match {
     case read: ReadRequest => {
       handleRead(read)
     }
@@ -173,7 +181,7 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
       handleCancel(cancel)
     }
     case _ => {
-      (xmlFromResults(1.0, Results.simple("500", Some("Unknown request."))), 500)
+      Future.successful(xmlFromResults(1.0, Results.simple("500", Some("Unknown request."))))
     }
   }
 
@@ -190,49 +198,55 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param write request
     * @return (xml response, HTTP status code)
     */
-  def handleWrite( write: WriteRequest ) : (NodeSeq,Int) ={
+  def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
       val ttl = handleTTL(write.ttl)
       val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
-      //XXX:
-      val result = Await.result(future, ttl)
-      result match {
+      future.recoverWith{case e =>{
+        log.error(e, "Failure when writing")
+        Future.failed(e)
+      }}
+
+      //val result = Await.result(future, ttl)
+      future.flatMap(result => result match {
         case Success(b: Boolean ) =>
           if(b)
-            (success, 200)
-          else
-            throw new RuntimeException("Write failed without exception.")
-        case Failure(thro: Throwable) => throw thro
-      }
+            Future.successful(success)
+          else{
+            log.warning("Write failed without exception")
+            Future.failed(new RuntimeException("Write failed without exception."))
+            }
+        case Failure(thro: Throwable) => {
+          log.error(thro, "Failure when writing")
+          Future.failed(thro)
+        }
+      })
   }
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)
     */
-  def handleResponse( response: ResponseRequest ) : (NodeSeq,Int) ={
+  def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={
       val ttl = handleTTL(response.ttl)
-      (xmlFromResults(
-        1.0,
-        response.results.map{
-          result => 
-          result.odf match {
+      val resultFuture = Future.sequence(response.results.map{ result =>
+           result.odf match {
             case Some(odf) =>
             val future =  InputPusher.handleObjects(odf.objects, new Timeout(ttl)).mapTo[Try[Boolean]]
-            Await.result(future, ttl) match{
-              case Success(b: Boolean ) =>
-              if(b)
-                Results.success
-              else
-                Results.invalidRequest("Failed without exception.")
-              case Failure(thro: Throwable) => 
-                //Results.internalError(thro)
-                throw thro
-            }
+              future.map{res => res match {
+                case Success(true) => Results.success
+                case Success(false) => Results.invalidRequest("Failed without exception.")
+                case Failure(thro: Throwable) => throw thro
+              }}
             case None => //noop?
-              Results.success
+              Future.successful(Results.success)
           }
-        }.toSeq:_*
-      ),
-      200
+        }.toSeq
+      )
+
+    resultFuture.map(results =>
+      xmlFromResults(
+        1.0,
+        results:_*
+      )
       )
   
   }
@@ -240,14 +254,14 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     * @param read request
     * @return (xml response, HTTP status code)
     */
-  def handleRead(read: ReadRequest): (NodeSeq, Int) = {
+  def handleRead(read: ReadRequest): Future[NodeSeq] = {
     log.debug("Handling read.")
 
     val leafs = getLeafs(read.odf)
     val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
-    val objectsO: Option[OdfObjects] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
+    val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-    objectsO match {
+    objectsO.map(res => res match {
       case Some(objects) =>
         val found = Results.read(objects)
         val requestsPaths = leafs.map { _.path }
@@ -258,54 +272,55 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
           results ++= Seq(Results.simple("404",
             Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
 
-        (
+
           xmlFromResults(
             1.0,
-            results: _*),
-            200)
+            results: _*)
       case None =>
-        (xmlFromResults(
-          1.0, Results.notFound), 404)
-    }
+        xmlFromResults(
+          1.0, Results.notFound)
+    })
   }
 
   /** Method for handling PollRequest.
     * @param poll request
     * @return (xml response, HTTP status code)
     */
-  def handlePoll(poll: PollRequest): (NodeSeq, Int) = {
+  def handlePoll(poll: PollRequest): Future[NodeSeq] = {
     val ttl = handleTTL(poll.ttl)
     implicit val timeout = Timeout(ttl) 
     val time = date.getTime
-    val results =
-      poll.requestIDs.map { id =>
+    val resultsFut =
+      Future.sequence(poll.requestIDs.map { id =>
 
-      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = subscriptionHandler ? PollSubscription(id)
+      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = (subscriptionHandler ? PollSubscription(id)).mapTo[Future[Option[OdfObjects]]].flatMap(n=>n)
+      objectsF.recoverWith{case e => Future.failed(new RuntimeException(
+        s"Error when trying to poll subscription: ${e.getMessage}"))}
 
-      Await.ready(objectsF, Duration.Inf).value.get match {
-        case Success(Some(objects: OdfObjects)) =>
+      objectsF.map(res => res match {
+        case Some(objects: OdfObjects) =>
           Results.poll(id.toString, objects)
-        case Success(None) =>
+        case None =>
           Results.notFoundSub(id.toString)
-        case Failure(e) => 
-          throw new RuntimeException(
-            s"Error when trying to poll subscription: ${e.getMessage}")
-      }
-    }
-    val returnTuple = (
+        //case Failure(e) =>
+        //  throw new RuntimeException(
+        //    s"Error when trying to poll subscription: ${e.getMessage}")
+      })
+    })
+    val returnTuple = resultsFut.map(results =>
       xmlFromResults(
         1.0,
-        results.toSeq: _*),
-        if (results.exists(_.returnValue.returnCode == "404")) 404 else 200)
+        results.toSeq: _*)
+    )
 
     returnTuple
   }
 
   /** Method for handling SubscriptionRequest.
-    * @param subscription request
+    * @param _subscription request
     * @return (xml response, HTTP status code)
     */
-  def handleSubscription(_subscription: SubscriptionRequest): (NodeSeq, Int) = {
+  def handleSubscription(_subscription: SubscriptionRequest): Future[NodeSeq] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
       case SubscriptionRequest( _, interval, _, _, _, _) if interval.toSeconds < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
@@ -314,72 +329,55 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
     val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val subFuture = subscriptionHandler ? NewSubscription(subscription)
-    val (response, returnCode) =
-      Await.result(subFuture, Duration.Inf) match {
-        case Failure(e: IllegalArgumentException) =>
-          (Results.invalidRequest(e.getMessage), 400)
-        case Failure(t) =>
-          throw new RuntimeException(
-            s"Error when trying to create subscription: ${t.getMessage}", t)
+    val subFuture: Future[RequestResultType] = (subscriptionHandler ? NewSubscription(subscription)).mapTo[Try[Long]].map( res=>res  match {
         case Success(id: Long) if _subscription.interval != subscription.interval =>
-          (Results.subscription(id.toString,subscription.interval.toSeconds), 200)
+          Results.subscription(id.toString,subscription.interval.toSeconds)
         case Success(id: Long) =>
-          (Results.subscription(id.toString), 200)
-        case Success(received) =>
-          throw new RuntimeException(
-            s"Invalid response type from SubscriptionHandler: ${received.getClass().getName}")
-      }
-    (
-      xmlFromResults(
-        1.0,
-        response),
-        returnCode)
+          Results.subscription(id.toString)
+        case Failure(ex) => throw ex
+      }).recoverWith{
+      case e: IllegalArgumentException => Future.successful(Results.invalidRequest(e.getMessage()))
+      case e => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
+    }
+    subFuture.map{ response =>{
+
+        xmlFromResults(
+          1.0,
+          response)
+
+    }}
   }
 
   /** Method for handling CancelRequest.
     * @param cancel request
-    * @return (xml response, HTTP status code)
+    * @return (xml response, HTTP status code) wrapped in a Future
     */
-  def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
+  def handleCancel(cancel: CancelRequest): Future[NodeSeq] = {
     log.debug("Handling cancel.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     var returnCode = 200
-    val jobs = cancel.requestID.map { id =>
-      Try {
-        val parsedId = id.toInt
-        subscriptionHandler ? RemoveSubscription(parsedId)
+    val jobs = Future.sequence(cancel.requestID.map { id =>
+      (subscriptionHandler ? RemoveSubscription(id)).mapTo[Boolean].map( res =>
+        if(res){
+          Results.success
+        }else{
+          Results.notFoundSub
+        }
+      ).recoverWith{
+        case e => {
+          val error = "Error when trying to cancel subcription: "
+          log.error(e, error)
+          Future.successful(Results.internalError(error + e.toString))
+        }
       }
-    }
+    })
+
+    jobs.map( res =>
     (
       xmlFromResults(
         1.0,
-        jobs.map {
-          case Success(removeFuture) =>
-            // NOTE: ttl will timeout from OmiService
-            Await.result(removeFuture, Duration.Inf) match {
-              case true => Results.success
-              case false => {
-                returnCode = 404
-                Results.notFoundSub
-              }
-              case x => // shouldn't be possible but type is Any
-                log.error(s"Cancel returned something strange: $x")
-                returnCode = 501
-                Results.internalError(x.toString)
-              }
-          case Failure(n: NumberFormatException) => {
-            returnCode = 400
-            Results.simple(returnCode.toString, Some("Invalid requestID"))
-          }
-          case Failure(e) => {
-            returnCode = 501
-            val error = 
-            log.error(e, "Error when trying to cancel subscription: ")
-            Results.internalError(error + e.toString)
-          }
-        }(breakOut): _*),
-        returnCode)
+      res.toSeq: _*
+        )))
   }
 
   private sealed trait ODFRequest {def path: Path} // path is OdfNode path

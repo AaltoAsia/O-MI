@@ -21,8 +21,10 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
 import http.Boot.system.log
+import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
+import scala.concurrent.duration._
 
 /**
  * Read-write interface methods for db tables.
@@ -46,7 +48,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false))
 
     val existingTables = MTable.getTables
-    val existed = runSync(existingTables)
+    val existed = Await.result(db.run(existingTables), 5 minutes)
     if (existed.length > 0) {
       //noop
       log.info(
@@ -57,7 +59,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       // run transactionally so there are all or no tables
 
       log.info("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
-      runSync(setup.transactionally)
+      Await.result(db.run(setup.transactionally), 5 minutes)
     }
   }
 
@@ -135,7 +137,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return hierarchy id
    */
-  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): (Path, Int) = {
+  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
 
       _ <- addObjectsI(path, true)
@@ -154,7 +156,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       }
     } yield updateResult
 
-    val returnId = runSync(updateAction.transactionally)
+    val returnId = db.run(updateAction.transactionally)
 
     val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) ) 
 
@@ -169,7 +171,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def setMany(data: Seq[(Path, OdfValue)]): Seq[(Path, Int)] = {
+  def setMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {
 
     val pathsData: Map[Path, Seq[OdfValue]] =
       data.groupBy(_._1).mapValues(
@@ -205,7 +207,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         
     } yield idMap.toSeq
 
-    val pathIdRelations = runSync(writeAction.transactionally)
+    val pathIdRelations = db.run(writeAction.transactionally)
 
     val infoitems = pathsData.collect{
       case (path: Path, values : Seq[OdfValue] ) if values.nonEmpty =>
@@ -234,37 +236,63 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether something was removed
    */
   //@deprecated("For testing only.", "Since implemented.")
-  def remove(path: Path): Boolean = {
-    val hNode = runSync(hierarchyNodes.filter(_.path === path).result).headOption
-    if (hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")  
+  def remove(path: Path) = {
+    val resultValue = for{
+      hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
+      resOpt =  hNode.map{ node =>
+        val removedLeft = node.leftBoundary
+        val removedRight = node.rightBoundary
+        for{
+          removedValues <- getSubTreeQ(node).result
+          removedIds = removedValues.map(_._1.id.getOrElse(throw new UninitializedError))
+          removeOp = DBIO.sequence(Seq(
+           latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
+           hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
+          ))
+          removedDistance = removedRight - removedLeft + 1
+          updateActions = DBIO.seq(
+            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
+              WHERE RIGHTBOUNDARY > ${removedLeft}""",
+            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
+              WHERE LEFTBOUNDARY > ${removedLeft}""")
 
-    val removedLeft = hNode.getOrElse(throw new UninitializedError).leftBoundary
-    val removedRight = hNode.getOrElse(throw new UninitializedError).rightBoundary
-    val subTreeQ = getSubTreeQ(hNode.get)
-    val subTree = runSync(subTreeQ.result)
-    val removedIds = subTree.map { _._1.id.getOrElse(throw new UninitializedError) }
-    val removeActions = DBIO.seq(
-      latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
-      hierarchyNodes.filter { _.id.inSet(removedIds) }.delete)
-    val removedDistance = removedRight - removedLeft + 1 // one added to fix distance to rigth most boundary before removed left ( 14-11=3, 15-3=12 is not same as removed 11 ) 
-    val updateActions = DBIO.seq(
-      sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
-        WHERE RIGHTBOUNDARY > ${removedLeft}""",
-      sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance} 
-        WHERE LEFTBOUNDARY > ${removedLeft}""")
-    runSync(DBIO.seq(removeActions, updateActions))
-    true
+
+        } yield DBIO.sequence(Seq(removeOp, updateActions))//FIX
+
+      }
+      res <- resOpt.getOrElse(DBIO.failed(new Exception))
+    } yield res
+    db.run(resultValue.transactionally)
+    //val hNode = db.run(hierarchyNodes.filter(_.path === path).result).headOption
+    //if (hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")
+
+    //val removedLeft = hNode.getOrElse(throw new UninitializedError).leftBoundary
+    //val removedRight = hNode.getOrElse(throw new UninitializedError).rightBoundary
+    //val subTreeQ = getSubTreeQ(hNode.get)
+    //val subTree = db.run(subTreeQ.result)
+    //val removedIds = subTree.map { _._1.id.getOrElse(throw new UninitializedError) }
+    //val removeActions = DBIO.seq(
+    //      latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
+    //  hierarchyNodes.filter { _.id.inSet(removedIds) }.delete)
+ //val removedDistance = removedRight - removedLeft + 1 // one added to fix distance to rigth most boundary before removed left ( 14-11=3, 15-3=12 is not same as removed 11 )
+   // val updateActions = DBIO.seq(
+   //   sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
+   //     WHERE RIGHTBOUNDARY > ${removedLeft}""",
+   //   sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
+   //     WHERE LEFTBOUNDARY > ${removedLeft}""")
+    //db.run(DBIO.seq(removeActions, updateActions))
+    //true
   }
 
-  def removePollSub(id: Long): Int = {
+  def removePollSub(id: Long): Future[Int] = {
     val q = pollSubs filter(_.subId === id)
     val action = q.delete
-    val result = runSync(action)
+    val result = db.run(action)
     result
   }
 
   /*def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
-    runSync(removeDataAndUpdateLastValuesI(id, lastValues))
+    db.run(removeDataAndUpdateLastValuesI(id, lastValues))
   }
   private def removeDataAndUpdateLastValuesI(id: Long, lastValues: Seq[SubValue]) = {
     val subData = pollSubs filter (_.subId === id)
@@ -280,11 +308,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param id
    * @return
    */
-  def pollEventSubscription(id: Long): Seq[SubValue] = {
-    runSync(pollEventSubscriptionI(id))
+  def pollEventSubscription(id: Long): Future[Seq[SubValue]] = {
+    db.run(pollEventSubscriptionI(id))
   }
   def debugMethod = {
-    runSync(pollSubs.result) //TODO remove
+    db.run(pollSubs.result) //TODO remove
   }
   private def pollEventSubscriptionI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)
@@ -294,8 +322,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield data
   }
   
-  def pollIntervalSubscription(id: Long): Seq[SubValue] = {
-    runSync(pollIntervalSubscriptionI(id))
+  def pollIntervalSubscription(id: Long): Future[Seq[SubValue]] = {
+    db.run(pollIntervalSubscriptionI(id))
   }
   
   private def pollIntervalSubscriptionI(id: Long) = {
@@ -318,7 +346,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
 
   def addNewPollData(newData: Seq[SubValue]) = {
-    runSync(pollSubs ++= newData)
+    db.run(pollSubs ++= newData)
   }
 
   def trimDB() = {
@@ -327,9 +355,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val startT = System.currentTimeMillis()
     log.info(s"trimming database to $historyLen newest values")
-
-    val idList = runSync(hIdQuery)
-    val qry = idList.map(id => sqlu"""DELETE FROM SENSORVALUES
+    val trimQuery = for{
+      idList <- hIdQuery
+      res <- DBIO.sequence(idList.map(id => sqlu"""DELETE FROM SENSORVALUES
                    WHERE VALUEID <= (
                      SELECT VALUEID
                      FROM (
@@ -340,15 +368,15 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                        LIMIT 1 OFFSET $historyLen
                      ) foo
                     ) AND HIERARCHYID = $id;
-            """)
+            """))
+    } yield res
 
+    db.run(trimQuery)
 
-    val runQ = runSync(DBIO.sequence(qry)).sum
+    //val endT = System.currentTimeMillis()
+    //log.info(s"Deleting took ${endT - startT} milliseconds")
 
-    val endT = System.currentTimeMillis()
-    log.info(s"Deleting took ${endT - startT} milliseconds")
-
-    runQ
+    //runQ
     /*val historyLen = 50//database.historyLength
    val qry = sqlu"""DELETE FROM SENSORVALUES
                      WHERE VALUEID NOT IN (SELECT a.VALUEID FROM SENSORVALUES AS a
@@ -357,7 +385,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
                      GROUP BY a.VALUEID
                      HAVING COUNT(*) <= ${historyLen});"""
 
-    val runQ = runSync(qry)
+    val runQ = db.run(qry)
    runQ
   */}
 

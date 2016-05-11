@@ -29,6 +29,8 @@ import types.OmiTypes._
 import types.Path
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -172,19 +174,28 @@ trait OmiService
             case Right(requests) =>
               val request = requests.headOption  // TODO: Only one request per xml is supported currently
                                                  // O-MI supports multiple requests
-              val (response, returnCode) = request match {
+              val response = request match {
 
                 case Some(originalReq : OmiRequest) => 
                   hasPermissionTest(originalReq) match {
                     case Some(req) =>
                       requestHandler.handleRequest(req)
                     case None =>
-                      (unauthorized, 401)
+                      Future.successful(unauthorized)
                   }
-                case _ =>  (notImplemented, 501)
+                case _ =>  Future.successful(notImplemented)
               }
-              if(returnCode != 200) log.warning(s"Errors with following request:\n${requestString}")
-              complete(response)
+              //if(returnCode != 200) log.warning(s"Errors with following request:\n${requestString}")
+              onComplete(response){
+                case Success(value) => {
+                  if(value.\\("return").map(_.\@("returnCode")).exists(_ != 200)){
+                    log.warning(s"Erros with following request:\n${requestString}")
+                  }
+
+                  complete(value)
+                }
+                case Failure(ex) => throw ex
+              }
 
             case Left(errors) =>  // Errors found
 
