@@ -27,7 +27,7 @@ import java.net.InetSocketAddress
 import scala.collection.JavaConversions.asJavaIterable
 
 import agentSystem._
-import responses.{RequestHandler, SubscriptionHandler}
+import responses.{RequestHandler, SubscriptionManager}
 import types.Path
 import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -52,7 +52,7 @@ trait Starter {
   val settings = Settings(system)
 
   val subHandlerDbConn: DB = new DatabaseConnection
-  val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler")
+  val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
   
 
   /**
@@ -60,7 +60,7 @@ trait Starter {
    * @param dbConnection Use a specific db connection for all agents, intended for testing
    */
   def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-db-pusher") = {
-    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subHandler)), actorname)
+    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subManager)), actorname)
   }
 
   /** 
@@ -124,10 +124,10 @@ trait Starter {
     )
     
     val dbmaintainer = DBMaintainer.props( dbConnection )
-    val requestHandler = new RequestHandler(subHandler)(dbConnection)
+    val requestHandler = new RequestHandler(subManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentManager, subHandler, requestHandler)),
+      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
       "omi-node-cli-listener"
     )
 
