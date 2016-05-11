@@ -99,7 +99,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     case HandleInfoItems(items)         => if (items.nonEmpty) sender() ! handleInfoItems(items)
     case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) sender() ! handlePathValuePairs(pairs)
     case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
-    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
+    case TrimDB                         => {val numDel = dbobject.trimDB(); numDel.map(nd => log.info(s"DELETE returned ${nd.sum}"))}
     case TakeSnapshot                   => {val snapshotDur = takeSnapshot(); log.info(s"Taking Snapshot took $snapshotDur milliseconds")}
     case u                              => log.warning("Unknown message received.")
   }
