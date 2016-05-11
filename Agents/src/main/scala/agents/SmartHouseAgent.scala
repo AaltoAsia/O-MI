@@ -15,7 +15,7 @@ import akka.util.Timeout
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 
 import agentSystem._
-import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
+//import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import types._
 import types.Path._
 import types.OdfTypes._
@@ -23,7 +23,6 @@ import types.OdfTypes._
 
 /** Agent for the SmartHouse
   * 
-  */
 class SmartHouseAgent extends InternalAgent {
   
   private var odfInfoItems : Option[Vector[(OdfInfoItem, String)]] = None   
@@ -106,3 +105,4 @@ class SmartHouseAgent extends InternalAgent {
   }
 
 }
+  */

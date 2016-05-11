@@ -24,6 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
+import database.SingleStores.valueShouldBeUpdated
 
 import database._
 import parsing.xmlGen
@@ -58,36 +59,6 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
   {
 
-
-  case object TrimDB
-  case object TakeSnapshot
-  private val scheduler = context.system.scheduler
-  private val trimInterval = http.Boot.settings.trimInterval
-  private val snapshotInterval = http.Boot.settings.snapshotInterval
-  log.info(s"scheduling databse trimming every $trimInterval seconds")
-  scheduler.schedule(trimInterval.seconds, trimInterval.seconds, self, TrimDB)
-  if(http.Boot.settings.writeToDisk){
-    log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
-    scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
-  } else {
-    log.info("using transient prevayler, taking snapshots is not in use.")
-  }
-
-
-
-  private def takeSnapshot(): Long = {
-    log.info("Taking prevyaler snapshot")
-    val start = System.currentTimeMillis()
-    Try(SingleStores.latestStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
-    Try(SingleStores.hierarchyStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
-    Try(SingleStores.eventPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
-    Try(SingleStores.intervalPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
-    Try(SingleStores.pollPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
-    Try(SingleStores.idPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
-    val end = System.currentTimeMillis()
-    (end-start)
-  }
-
   /**
    * Function for handling InputPusherCmds.
    *
@@ -98,8 +69,6 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
     case HandleInfoItems(items)         => if (items.nonEmpty) sender() ! handleInfoItems(items)
     case HandlePathValuePairs(pairs)    => if (pairs.nonEmpty) sender() ! handlePathValuePairs(pairs)
     case HandlePathMetaDataPairs(pairs) => if (pairs.nonEmpty) sender() ! handlePathMetaDataPairs(pairs)
-    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
-    case TakeSnapshot                   => {val snapshotDur = takeSnapshot(); log.info(s"Taking Snapshot took $snapshotDur milliseconds")}
     case u                              => log.warning("Unknown message received.")
   }
 
@@ -204,6 +173,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
 
   /**
    * Creates values that are to be updated into the database for polled subscription.
+   * Polling removes the related data from database, this method creates new data if the old value.
    * @param path
    * @param newValue
    * @param oldValueOpt
@@ -216,7 +186,7 @@ class DBPusher(val dbobject: DB, val subHandler: ActorRef)
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
       case sub if(oldValueOpt.forall(oldValue =>
-        oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
+        valueShouldBeUpdated(oldValue, newValue) && (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
           SubValue(sub.id, path, newValue.timestamp, newValue.value,newValue.typeValue)
       }
     }

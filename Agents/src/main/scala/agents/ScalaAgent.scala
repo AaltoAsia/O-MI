@@ -1,7 +1,7 @@
 package agents
 
-import agentSystem.InternalAgent
-import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
+import agentSystem._ 
+//import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import agentSystem.InputPusher
 import types._
 import types.OdfTypes._
@@ -11,55 +11,76 @@ import java.util.Date;
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
 import scala.concurrent.duration._
 import akka.util.Timeout
+import akka.actor.Cancellable
+import akka.pattern.ask
 
 class ScalaAgent  extends InternalAgent{
+  import scala.concurrent.ExecutionContext.Implicits._
+  case class Update()
 	val rnd: Random = new Random()
-  val t : FiniteDuration = Duration(5, SECONDS) 
+  val interval : FiniteDuration = Duration(5, SECONDS) 
 	var pathO: Option[Path] = None
   def date = new java.util.Date();
-  var initialised = false
-  override def init( config: String){
-    try{
+  def name = self.path.name
+  protected def configure(config: String ) : InternalAgentResponse = {
       pathO = Some( new Path(config))
-      initialised = true
-      InternalAgent.log.warning("ScalaAgent has been initialised.");
-    }catch{
-      case e : Exception =>
-      InternalAgent.log.warning("ScalaAgent has caucth exception turing initialisation.");
-      InternalAgent.loader ! AgentInitializationException(this,e) 
-      InternalAgent.log.warning("ScalaAgent has died.");
-    }finally{
+      log.info(s"$name has been configured.");
+      CommandSuccessful("Successfully configured.")
+  }
+  var updateSchelude : Option[Cancellable] = None
+  protected def start = {
+    log.info(s"$name has been started.");
+    updateSchelude = Some(context.system.scheduler.schedule(
+      Duration(0, SECONDS),
+      interval,
+      self,
+      Update
+    ))
+    CommandSuccessful("Successfully started.")
+  }
+
+  def update() : Unit = {
+    val tuple = pathO.map{
+      path => ( 
+        path,
+        OdfValue(
+          rnd.nextInt().toString, 
+          "xs:integer",
+          new Timestamp( date.getTime() )
+        ) ) 
+    }
+    val values = Iterable(tuple).flatten
+    log.info(s"$name pushing data.");
+    InputPusher.handlePathValuePairs(values, new Timeout(interval) )
+
+  }     
+  receiver{
+    case Update => update
+  }
+  protected def stop = updateSchelude match{
+      case Some(job) =>
+      job.cancel() 
+      job.isCancelled  match {
+      case true =>
+        CommandSuccessful("Successfully stopped.")
+      case false =>
+        CommandFailed("Failed to stop agent.")
+    }
+    case None => CommandFailed("Failed to stop agent.")
+  }
+  protected def restart = {
+    stop match{
+      case success  : InternalAgentSuccess => start
+      case error    : InternalAgentFailure => error
     }
   }
-  override def run(): Unit = {
-    try{
-      while(!Thread.interrupted() && pathO.nonEmpty && initialised){
-
-        val tuple = pathO.map{
-          path => 
-          ( 
-            path,
-            OdfValue(
-              rnd.nextInt().toString, 
-              "xs:integer",
-              new Timestamp( date.getTime() )
-            ) 
-          ) 
-        }
-        val values = Iterable(tuple).flatten
-        InternalAgent.log.info("ScalaAgent pushing data.");
-        InputPusher.handlePathValuePairs(values, new Timeout(t) )
-        Thread.sleep(10000);
-      }     
-    }catch{
-      case e : InterruptedException =>
-      InternalAgent.log.warning("ScalaAgent has been interrupted.")
-      InternalAgent.loader ! AgentInterruption(this,e) 
-      case e : Exception =>
-      InternalAgent.log.warning("ScalaAgent has caught an exception")
-      InternalAgent.loader ! AgentException(this,e) 
-    }finally{
-      InternalAgent.log.warning("ScalaAgent has died.")
+  protected def quit = {
+    stop match{
+      case error    : InternalAgentFailure => error
+      case success  : InternalAgentSuccess => 
+      sender() ! CommandSuccessful("Successfully quit.")
+      context.stop(self) 
+      CommandSuccessful("Successfully quit.")
     }
   }
 }

@@ -96,12 +96,20 @@ object SingleStores {
         val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
         fromPath(infoItem)
       }
-      // safe version of reduce, might be a bit slow way to construct the result
-      //val valueOdfTree =
-      odfObjectsTrees.headOption map { head =>
-        odfObjectsTrees.par.reduce(_ union _)
-      } getOrElse (OdfObjects())
+      odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
+    }
 
+
+  /**
+   * Logic for updating values based on timestamps.
+   * If timestamp is same or the new value timestamp is after old value return true else false
+   *
+   * @param oldValue old value(from latestStore)
+   * @param newValue the new value to be added
+   * @return
+   */
+    def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
+      oldValue.timestamp before newValue.timestamp
     }
 
 
@@ -120,7 +128,7 @@ object SingleStores {
 
       oldValueOpt match {
         case Some(oldValue) =>
-          if (oldValue.timestamp before newValue.timestamp) {
+          if (valueShouldBeUpdated(oldValue, newValue)) {
             val onChangeData =
               if (oldValue.value != newValue.value) {
                     Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))

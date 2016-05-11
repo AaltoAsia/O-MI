@@ -1,9 +1,11 @@
 package agents;
 
+/*
 import agentSystem.InternalAgent;
 import agentSystem.InternalAgentExceptions.AgentException;
 import agentSystem.InternalAgentExceptions.AgentInitializationException;
 import agentSystem.InternalAgentExceptions.AgentInterruption;
+*/
 import agentSystem.InputPusher;
 import java.util.concurrent.TimeUnit;
 import java.nio.file.Files;
@@ -30,6 +32,7 @@ import types.ParseError;
 import types.Path;
 import types.OdfTypes.package$;
 
+/*
 public class JavaHouseAgent extends InternalAgent{
     
     Iterable<Tuple2<Path,OdfValue>> path_value_pairs;
@@ -103,4 +106,4 @@ public class JavaHouseAgent extends InternalAgent{
             InternalAgent.log.warning( "JavaHouseAgent has died." );
         }
     }
-}
+}*/

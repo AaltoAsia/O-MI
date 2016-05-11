@@ -1,9 +1,13 @@
 package responses
 
 import agentSystem.{DBPusher, InputPusher}
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent.{UnMute, Mute}
 import org.specs2.concurrent.ExecutionEnv
+import org.specs2.execute.Result
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
+import org.specs2.matcher.XmlMatchers._
 import testHelpers.Actors
 import types.OdfTypes.OdfValue
 
@@ -57,12 +61,18 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   val date = calendar.getTime
   val testtime = new java.sql.Timestamp(date.getTime)
 
-  def beforeAll = Await.ready(initDB, 5 seconds)
-  def afterAll = cleanAndShutdown
+  def beforeAll = {
+    system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
+    Await.ready(initDB, 5 seconds)
+  }
+  def afterAll = {
+    system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
+    cleanAndShutdown
+  }
 
   /////////////////////////////////////////////////////////////////////////////
 
-  "SubscrpitionHandler" should {
+  "SubscriptionHandler" should {
     "return code 200 for successful subscription" >> {
       val (_, code) = addSub(1,5, Seq("p/1"))
 
@@ -108,9 +118,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       pollSub(sub2Id).\\("value").size === 0
       pollSub(sub3Id).\\("value").size === 0
 
-      val fut1 = addValue("p/2", nv("1"))
-      val fut2 = addValue("p/2", nv("2"))
-      val fut3 = addValue("p/2", nv("3"))
+      val fut1 = addValue("p/2", nv("1", 10000))
+      val fut2 = addValue("p/2", nv("2", 20000))
+      val fut3 = addValue("p/2", nv("3", 30000))
 
       Await.ready(Future.sequence(Seq(fut1,fut2,fut3)), 2 seconds)
 
@@ -142,20 +152,64 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val subId: Long = addSub(5, 1, Seq("p/3"))._1.\\("requestID").text.toInt
 
       Thread.sleep(2000)
-
       pollSub(subId).\\("value").size === 2
-
       Thread.sleep(2000)
-
       pollSub(subId).\\("value").size ===  2
-
-
-
 
     }
 
+    "return failure notification with correct structure when polling a nonexistent subscription" >> {
+      val id = 5000
+      val returnMsg = pollSub(id)
 
-    
+      returnMsg must \("response") \ ("result") \ ("return",
+        "returnCode" -> "404",
+        "description" -> "A subscription with this id has expired or doesn't exist")
+
+      returnMsg must \("response") \ ("result") \ ("requestID") \> (s"$id")
+    }
+
+    "return no new values for event subscription if there are no new events" >> {
+      val (res, code) = addSub(5, -1, Seq("p/1"))
+      val subId = res.\\("requestID").text.toInt
+
+      code === 200
+      pollSub(subId).\\("value").size === 0
+    }
+
+    "return value for event sub when the value changes and return no values after polling" >> {
+      val subId = addSub(5, -1, Seq("r/1"))._1.\\("requestID").text.toInt
+
+
+      Await.ready(addValue("r/1", nv("2", 10000)), 2 seconds)
+      pollSub(subId).\\("value").size === 1
+      Await.ready(addValue("r/1", nv("3",20000)), 2 seconds)
+      pollSub(subId).\\("value").size === 1
+      pollSub(subId).\\("value").size === 0
+    }
+
+    "return no new value for event sub if the value is same as the old one" >> {
+      val subId = addSub(5, -1, Seq("r/2"))._1.\\("requestID").text.toInt
+
+
+      Await.ready(addValue("r/2", nv("0", 20000)), 2 seconds)
+      pollSub(subId).\\("value").size === 1
+
+      Await.ready(addValue("r/2", nv("0", 22000)), 2 seconds)
+      Await.ready(addValue("r/2", nv("0", 23000)), 2 seconds)
+      pollSub(subId).\\("value").size === 0
+
+    }
+
+    "subscription should be removed when the ttl expired" >> {
+      val subId = addSub(1, 5, Seq("p/1"))._1.\\("requestID").text.toInt
+      pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      Thread.sleep(2000)
+      pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+    }
+
+
+
 
 
 
@@ -185,10 +239,10 @@ case class OdfValue(
       (pp / "p/1", nv("1")),
       (pp / "p/2", nv("2")),
       (pp / "p/3", nv("3")),
-      (pp / "r/4", nv("Closed")),
-      (pp / "r/5", nv("true")),
-      (pp / "r/6", nv("100")),
-      (pp / "u/7", nv("Off"))
+      (pp / "r/1", nv("0")),
+      (pp / "r/2", nv("0")),
+      (pp / "r/3", nv("0")),
+      (pp / "u/7", nv("0"))
     )
     InputPusher.handlePathValuePairs(pathAndvalues)
   }

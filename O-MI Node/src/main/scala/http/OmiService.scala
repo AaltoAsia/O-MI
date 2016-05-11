@@ -13,7 +13,7 @@
 **/
 package http
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
 import accessControl.AuthAPIService
 import akka.actor.{Actor, ActorLogging}
@@ -29,7 +29,6 @@ import types.OmiTypes._
 import types.Path
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.xml.NodeSeq
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -185,7 +184,7 @@ trait OmiService
                 case _ =>  (notImplemented, 501)
               }
               if(returnCode != 200) log.warning(s"Errors with following request:\n${requestString}")
-              complete((returnCode, response))
+              complete(response)
 
             case Left(errors) =>  // Errors found
 
@@ -194,7 +193,7 @@ trait OmiService
 
               val errorResponse = parseError(errors.toSeq:_*)
 
-              complete((400, errorResponse))
+              complete(errorResponse)
           }
         }
       }

@@ -14,14 +14,15 @@ import scala.Tuple2;
 
 import types.OdfTypes.OdfValue;
 import types.Path;
-
+/*
 import agentSystem.InternalAgent;
 import agentSystem.InternalAgentExceptions.AgentException;
 import agentSystem.InternalAgentExceptions.AgentInitializationException;
 import agentSystem.InternalAgentExceptions.AgentInterruption;
+*/
 import agentSystem.InputPusher;
 import java.util.concurrent.TimeUnit;
-
+/*
 public class JavaAgent extends InternalAgent{
     public JavaAgent() { }
 
@@ -90,4 +91,4 @@ public class JavaAgent extends InternalAgent{
             InternalAgent.log.warning( "JavaAgent has died." );
         }
     }
-}
+}*/

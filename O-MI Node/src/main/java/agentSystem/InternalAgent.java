@@ -23,45 +23,45 @@ import akka.event.LoggingAdapter;
  * Loader will only try to restart agent when exception is given outside of initialization. If exception occurs too often Loader will consider
  * internal agent unrestartable.
  *  
- */
 public abstract class InternalAgent extends Thread {
+     */
     
     /** ActorRef to InternalAgentLoader for communincation.
      *
-     */
     protected static ActorRef loader = null;
     
-    /**Log for logging agents, actions.
      */
+    /**Log for logging agents, actions.
     protected static LoggingAdapter log = null;
     
-    /**One-time setter for loader
      */
+    /**One-time setter for loader
     public static final void setLoader(ActorRef aloader) {
 	if(loader == null && aloader != null)
 	    loader = aloader;
     }
+     */
     
     /**One-time setter for log
-     */
     public static final void setLog(LoggingAdapter logger) {
 	if(log == null && logger != null)
 	    log = logger;
     }
     
-    /**Base conscrutcor
      */
+    /**Base conscrutcor
     public InternalAgent() {
         //noop?
     }
 
+     */
     /**Absctract method for initialisation and passing config to agent. Implement for your internal agents.
      * @param config Config string given in application.conf.
-     */
     public abstract void init( String config );
 
+     */
     /**Absctract method that is called when agent is started.
      * 
-     */
     public abstract void run();
 }
+ */

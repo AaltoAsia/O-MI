@@ -11,7 +11,7 @@ import types.Path._
 import scala.util.Random
 
 // Scala XML
-import agentSystem.InternalAgentExceptions.{AgentException, AgentInterruption}
+//import agentSystem.InternalAgentExceptions.{AgentException, AgentInterruption}
 import akka.util.Timeout
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
@@ -21,7 +21,6 @@ import scala.xml._
 
 /** Agent for the VTT
   * 
-  */
 class VTTAgent extends InternalAgent {
   
   private var odfInfoItems : Option[Vector[(OdfInfoItem, String)]] = None   
@@ -149,3 +148,4 @@ class VTTAgent extends InternalAgent {
     }
   }
 }
+  */
