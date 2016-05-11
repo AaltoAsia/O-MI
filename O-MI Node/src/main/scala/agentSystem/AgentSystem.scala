@@ -33,39 +33,45 @@ import http.CLICmds._
 object AgentSystem {
   def props(): Props = Props(new AgentSystem)
 }
-class AgentSystem extends CoreAgentSystem with InternalAgentLoader with InternalAgentManager
-
+class AgentSystem extends CoreAgentSystem 
+                  with InternalAgentLoader
+                  with InternalAgentManager
+                  with ResponsibleAgentManager
+object `package` {
+  type AgentName = String
+}
 
   sealed trait AAgent{
-    def name:       String
+    def name:       AgentName
     def classname:  String
     def config:     String
   }
   case class AgentConfigEntry(
-    val name:       String,
+    val name:       AgentName,
     val classname:  String,
     val config:     String
   ) extends AAgent
   case class AgentInfo(
-    name:       String,
+    name:       AgentName,
     classname:  String,
     config:     String,
     agent:      ActorRef,
     running:    Boolean
   ) extends AAgent
+
 trait Receiving { 
   var receivers: Actor.Receive = Actor.emptyBehavior 
   def receiver(next: Actor.Receive) { receivers = receivers orElse next }
-  final def receive = receivers // Actor.receive definition
+  final def receive = receivers
 }
 abstract class BaseAgentSystem extends Actor with ActorLogging with Receiving{
   /** Container for internal agents */
-  protected[this] def agents: scala.collection.mutable.Map[String, AgentInfo]
+  protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
   protected[this] def settings: OmiConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
 }
 class CoreAgentSystem extends BaseAgentSystem {
   /** Container for internal agents */
-  protected[this] val agents: scala.collection.mutable.Map[String, AgentInfo] = Map.empty
+  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
   protected[this] val settings = Settings(context.system)
 }

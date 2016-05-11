@@ -54,7 +54,7 @@ class ScalaAgent  extends InternalAgent{
     InputPusher.handlePathValuePairs(values, new Timeout(interval) )
 
   }     
-  def extendedReceive = {
+  receiver{
     case Update => update
   }
   protected def stop = updateSchelude match{

@@ -65,7 +65,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  def loadAndStart(name : String, classname : String, config : String) = {
+  def loadAndStart(name : AgentName, classname : String, config : String) = {
     Try {
       log.info("Instantiating agent: " + name + " of class " + classname)
       val classLoader = Thread.currentThread.getContextClassLoader
@@ -73,7 +73,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
       val interface =  classOf[AbstractInternalAgent]
       if( interface.isAssignableFrom(clazz) ){
         val prop  = Props(clazz)
-        val agent = context.actorOf( prop, name )
+        val agent = context.actorOf( prop, name.toString )
         val date = new Date()
         val timeout = Timeout(5 seconds) 
         log.warning(s"Configuration of agent $name.")
@@ -189,6 +189,4 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }.flatten.toArray
   }
   
-
-
 }
