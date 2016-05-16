@@ -63,7 +63,7 @@ trait OmiRequestHandler {
   def log: LoggingAdapter
   protected[this] def date = new Date()
 }
-class RequestHandler(val subscriptionManager: ActorRef)(implicit val dbConnection: DB) extends ReadHandler with WriteHandler with ResponseHandler with SubscriptionHandler with PollHandler with CancelHandler{
+class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRef)(implicit val dbConnection: DB) extends ReadHandler with WriteHandler with ResponseHandler with SubscriptionHandler with PollHandler with CancelHandler{
   import http.Boot.system.log
 
   implicit val logSource: LogSource[RequestHandler]= new LogSource[RequestHandler] {

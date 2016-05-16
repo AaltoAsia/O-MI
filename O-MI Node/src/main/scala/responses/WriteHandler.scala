@@ -5,7 +5,7 @@ import parsing.xmlGen.xmlTypes.RequestResultType
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
+import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException, Promise }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.asJavaIterable
@@ -25,11 +25,12 @@ import OmiTypes._
 import OdfTypes._
 import OmiGenerator._
 import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import agentSystem.InputPusher
+import agentSystem.{FutureResult, SuccessfulWrite, ResponsibleAgentResponse, PromiseWrite }
 import CallbackHandlers._
 import database._
 
 trait WriteHandler extends OmiRequestHandler{
+  def agentSystem : ActorRef
   handler{
     case write: WriteRequest => handleWrite(write)
   }
@@ -39,25 +40,35 @@ trait WriteHandler extends OmiRequestHandler{
     */
   def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
       val ttl = handleTTL(write.ttl)
-      val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
-      future.recoverWith{case e =>{
+
+      val promise = Promise[Iterable[Promise[ResponsibleAgentResponse]]]() 
+      agentSystem ! PromiseWrite(promise, write)
+      val future :Future[Iterable[ResponsibleAgentResponse]]  = promise.future.flatMap{
+        iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
+        Future.sequence( iterable.map{ pro => pro.future } ) 
+      }   
+      future.recoverWith{
+        case e =>{
         log.error(e, "Failure when writing")
         Future.failed(e)
       }}
 
-      //val result = Await.result(future, ttl)
-      future.flatMap(result => result match {
-        case Success(b: Boolean ) =>
-          if(b)
-            Future.successful(success)
-          else{
-            log.warning("Write failed without exception")
-            Future.failed(new RuntimeException("Write failed without exception."))
-            }
-        case Failure(thro: Throwable) => {
-          log.error(thro, "Failure when writing")
-          Future.failed(thro)
-        }
-      })
+      val results :Future[ResponsibleAgentResponse]  = future.map{ 
+        res : Iterable[ResponsibleAgentResponse] =>
+        res.foldLeft(SuccessfulWrite(Iterable.empty)){
+          (l, r) =>
+          r match{
+            case SuccessfulWrite( paths ) =>
+            SuccessfulWrite( paths ++ l.paths ) 
+            case _ =>  
+            throw new Exception(s"Unknown response")
+          }   
+        }   
+      }   
+
+      val response = results.map{
+        succ => success 
+      }
+      response
   }
 }

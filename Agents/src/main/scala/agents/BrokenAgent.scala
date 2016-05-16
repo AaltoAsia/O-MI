@@ -17,7 +17,7 @@ import akka.util.Timeout
 import akka.actor.Cancellable
 import akka.pattern.ask
 
-class ScalaAgent  extends ResponsibleInternalAgent{
+class BrokenAgent  extends ResponsibleInternalAgent{
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
 	val rnd: Random = new Random()
@@ -70,15 +70,14 @@ class ScalaAgent  extends ResponsibleInternalAgent{
       write = WriteRequest( interval, objects )
       f= context.parent ! PromiseWrite( promise, write ) 
     } yield write 
+    
     val future :Future[Iterable[ResponsibleAgentResponse]]  = promise.future.flatMap{
       iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
-      log.info(s"$name check 1")
       Future.sequence( iterable.map{ pro => pro.future } )
     }
 
     val result :Future[ResponsibleAgentResponse]  = future.map{ 
       res : Iterable[ResponsibleAgentResponse] =>
-      log.info(s"$name check 2")
       res.foldLeft(SuccessfulWrite(Iterable.empty)){
         (l, r) =>
         r match{
@@ -127,34 +126,6 @@ class ScalaAgent  extends ResponsibleInternalAgent{
     }
   }
   protected def handleWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-    val leafs = getLeafs(write.odf)
-    if( leafs.length == 1 ){
-      val same = leafs.headOption.exists{ i => pathOwned.contains(i.path) }
-      //if(same){
-        val subpromise = Promise[Iterable[Promise[ResponsibleAgentResponse]]]()
-        context.parent ! PromiseWrite( subpromise, write)
-        val future :Future[Iterable[ResponsibleAgentResponse]]  = subpromise.future.flatMap{
-          iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
-          Future.sequence( iterable.map{ pro => pro.future } )
-        }
-        val result :Future[ResponsibleAgentResponse]  = future.map{ 
-          res : Iterable[ResponsibleAgentResponse] =>
-          res.foldLeft(SuccessfulWrite(Iterable.empty)){
-            (l, r) =>
-            r match{
-              case SuccessfulWrite( paths ) =>
-              SuccessfulWrite( paths ++ l.paths ) 
-              case _ => 
-              throw new Exception(s"Unknown responseagent $name.")
-            }   
-          }
-        }
-        promise.completeWith( result ) 
-      //} else { 
-      //  promise.failure(new Exception(s"Tried to write unowned infoitem throught agent $name."))
-      //}
-    } else {
-        promise.failure(new Exception(s"Tried to write unowned infoitem throught agent $name."))
-    }
+        promise.failure(new Exception(s"Broken agent, could not write."))
   }
 }

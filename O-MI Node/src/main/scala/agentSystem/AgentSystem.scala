@@ -30,10 +30,11 @@ import java.sql.Timestamp
 import java.util.Date
 import java.util.jar.JarFile
 import http.CLICmds._
+import database.DB
 object AgentSystem {
-  def props(): Props = Props(new AgentSystem)
+  def props(dbobject: DB,subHandler: ActorRef): Props = Props(new AgentSystem(dbobject,subHandler))
 }
-class AgentSystem extends CoreAgentSystem 
+class AgentSystem(val dbobject: DB, val subHandler: ActorRef) extends CoreAgentSystem 
                   with InternalAgentLoader
                   with InternalAgentManager
                   with ResponsibleAgentManager

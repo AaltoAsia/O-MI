@@ -119,12 +119,12 @@ trait Starter {
     val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
     val agentManager = system.actorOf(
-      AgentSystem.props(),
+      AgentSystem.props(dbConnection, subManager),
       "agent-system"
     )
     
     val dbmaintainer = DBMaintainer.props( dbConnection )
-    val requestHandler = new RequestHandler(subManager)(dbConnection)
+    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(
       Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),

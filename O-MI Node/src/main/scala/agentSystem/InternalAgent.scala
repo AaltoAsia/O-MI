@@ -22,8 +22,10 @@ import akka.actor.{
   Props,
   ActorInitializationException
 }
-import scala.concurrent.{ Future,ExecutionContext, TimeoutException }
+import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 
+import scala.util.{Try}
+import scala.concurrent.duration._
   /**
     Commands that can be received from InternalAgentLoader.
   **/
@@ -40,18 +42,10 @@ trait InternalAgentSuccess                  extends InternalAgentResponse
   case class CommandSuccessful(msg : String ) extends InternalAgentSuccess 
 trait InternalAgentFailure                  extends InternalAgentResponse
   case class CommandFailed(msg : String ) extends InternalAgentFailure 
-sealed trait ResponsibilityCmd
-  case class Write(infos:OdfInfoItem*)                    extends ResponsibilityCmd
-  case class Read()                     extends ResponsibilityCmd
-
+sealed trait ResponsibleAgentMsg
+  case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
 sealed trait ResponsibleAgentResponse
-trait ResponsibleAgentSuccess                  extends ResponsibleAgentResponse 
-  //Used when agent to not need to write to paths that aren't owned by agent processing write
-  case class SuccessfulWrite(paths:Seq[Path]) extends ResponsibleAgentSuccess
-  //Used when agent needs to write to paths that aren't owned by itself
-  case class FutureResult(future: Future[ResponsibilityResponse] ) extends ResponsibleAgentSuccess
-trait ResponsibleAgentFailure                  extends ResponsibleAgentResponse 
-  case class FailedWrite(paths:Seq[Path]) extends ResponsibleAgentFailure
+  case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
 
 sealed trait AbstractInternalAgent extends Actor with ActorLogging with Receiving{
   protected def start   : InternalAgentResponse 
@@ -72,11 +66,17 @@ trait InternalAgent extends AbstractInternalAgent {
 }
 
 trait ResponsibleInternalAgent extends AbstractInternalAgent {
-  protected def write(infos:OdfInfoItem*) : InternalAgentResponse 
-  protected def read  : InternalAgentResponse
+  protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
   receiver {
-    case Write(infos)  =>  sender() ! write(infos)
-    case Read()         =>  sender() ! read
+    case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
   }
+  protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
+        if(ttl.toSeconds != 0)
+          FiniteDuration(ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
 }
 

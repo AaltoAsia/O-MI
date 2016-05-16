@@ -71,7 +71,6 @@ trait InternalAgentManager extends BaseAgentSystem {
     case  stop: StopAgentCmd  => handleStop( stop)
     case  restart: ReStartAgentCmd  => handleRestart( restart )
     case ListAgentsCmd() => sender() ! agents.values.toSeq
-    case _ => //noop?
   } 
   def handleStart( start: StartAgentCmd ) = {
      val agentName = start.agent
