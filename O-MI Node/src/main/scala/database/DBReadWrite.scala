@@ -43,7 +43,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val setup = DBIO.seq(
       allSchemas.create,
-      hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false))
+      addRoot)
 
     val existingTables = MTable.getTables
     val existed = runSync(existingTables)
@@ -54,7 +54,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
           existed.map { _.name.name }.mkString(", ") +
           "\n Not creating new tables.")
     } else {
-      // run transactionally so there are all or no tables
+      //run transactionally so there are all or no tables
 
       log.info("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
       runSync(setup.transactionally)
@@ -254,6 +254,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         WHERE LEFTBOUNDARY > ${removedLeft}""")
     runSync(DBIO.seq(removeActions, updateActions))
     true
+  }
+  //add root node when removed or when first started
+  private def addRoot = {
+    hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
+  }
+  def addRootR = {
+    db.run(addRoot)
   }
 
   def removePollSub(id: Long): Int = {

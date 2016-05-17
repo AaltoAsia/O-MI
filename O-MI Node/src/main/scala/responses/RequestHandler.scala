@@ -492,6 +492,9 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
         }
 
         dbConnection.remove(parentPath)
+        node match {
+          case objs: OdfObjects => Await.ready(dbConnection.addRootR, 2 seconds)
+        }
         true
 
       }
