@@ -29,12 +29,10 @@ class ScalaAgent  extends ResponsibleInternalAgent{
   protected def configure(config: String ) : InternalAgentResponse = {
       pathOwned = Some( new Path(config ++ "Owned"))
       pathPublic = Some( new Path(config ++ "Public"))
-      log.info(s"$name has been configured.");
       CommandSuccessful("Successfully configured.")
   }
   var updateSchelude : Option[Cancellable] = None
   protected def start = {
-    log.info(s"$name has been started.");
     updateSchelude = Some(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
@@ -45,8 +43,7 @@ class ScalaAgent  extends ResponsibleInternalAgent{
   }
 
   def update() : Unit = {
-    val promise = Promise[Iterable[Promise[ResponsibleAgentResponse]]]()
-    log.info(s"$name pushing data.")
+    val promiseResult = PromiseResult()
     for{
       ownedPath <- pathOwned
       publicPath <- pathPublic
@@ -68,32 +65,13 @@ class ScalaAgent  extends ResponsibleInternalAgent{
       ))
       objects = ownedItem.union(publicItem)
       write = WriteRequest( interval, objects )
-      f= context.parent ! PromiseWrite( promise, write ) 
+      u = context.parent ! PromiseWrite( promiseResult, write ) 
     } yield write 
-    val future :Future[Iterable[ResponsibleAgentResponse]]  = promise.future.flatMap{
-      iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
-      log.info(s"$name check 1")
-      Future.sequence( iterable.map{ pro => pro.future } )
-    }
-
-    val result :Future[ResponsibleAgentResponse]  = future.map{ 
-      res : Iterable[ResponsibleAgentResponse] =>
-      log.info(s"$name check 2")
-      res.foldLeft(SuccessfulWrite(Iterable.empty)){
-        (l, r) =>
-        r match{
-          case SuccessfulWrite( paths ) =>
-          SuccessfulWrite( paths ++ l.paths ) 
-          case _ => 
-          throw new Exception(s"Unknown responseagent $name.")
-        }   
-      }
-    }
     
-    result.onSuccess{
+    promiseResult.isSuccessful.onSuccess{
       //Check if failed promises
       case s =>
-      log.info(s"$name pushed data successfully.")
+      log.debug(s"$name pushed data successfully.")
     }
   }
 
@@ -128,33 +106,17 @@ class ScalaAgent  extends ResponsibleInternalAgent{
   }
   protected def handleWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
     val leafs = getLeafs(write.odf)
-    if( leafs.length == 1 ){
+    //if( leafs.length == 1 ){
       val same = leafs.headOption.exists{ i => pathOwned.contains(i.path) }
       //if(same){
-        val subpromise = Promise[Iterable[Promise[ResponsibleAgentResponse]]]()
-        context.parent ! PromiseWrite( subpromise, write)
-        val future :Future[Iterable[ResponsibleAgentResponse]]  = subpromise.future.flatMap{
-          iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
-          Future.sequence( iterable.map{ pro => pro.future } )
-        }
-        val result :Future[ResponsibleAgentResponse]  = future.map{ 
-          res : Iterable[ResponsibleAgentResponse] =>
-          res.foldLeft(SuccessfulWrite(Iterable.empty)){
-            (l, r) =>
-            r match{
-              case SuccessfulWrite( paths ) =>
-              SuccessfulWrite( paths ++ l.paths ) 
-              case _ => 
-              throw new Exception(s"Unknown responseagent $name.")
-            }   
-          }
-        }
-        promise.completeWith( result ) 
+        val promiseResult = PromiseResult()
+        context.parent ! PromiseWrite( promiseResult, write)
+        promise.completeWith( promiseResult.isSuccessful ) 
       //} else { 
       //  promise.failure(new Exception(s"Tried to write unowned infoitem throught agent $name."))
       //}
-    } else {
-        promise.failure(new Exception(s"Tried to write unowned infoitem throught agent $name."))
-    }
+    //} else {
+      //  promise.failure(new Exception(s"Tried to write unowned infoitem throught agent $name."))
+    //}
   }
 }

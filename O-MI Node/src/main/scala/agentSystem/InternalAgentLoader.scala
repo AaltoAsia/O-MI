@@ -76,13 +76,13 @@ trait InternalAgentLoader extends BaseAgentSystem {
         val agent = context.actorOf( prop, name.toString )
         val date = new Date()
         val timeout = Timeout(5 seconds) 
-        log.warning(s"Configuration of agent $name.")
         val configureF = ask(agent,Configure(config))(timeout)
         configureF.onSuccess{
           case error : InternalAgentFailure =>  
           log.warning(s"Agent $name failed at configuration. Terminating agent.")
           context.stop(agent)
           case success : InternalAgentSuccess =>  
+          log.info(s"Agent $name has been configured. Starting...");
           val startF = ask(agent,Start())(timeout)
           startF.onSuccess{
             case error : InternalAgentFailure =>  

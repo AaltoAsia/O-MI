@@ -29,12 +29,10 @@ class BrokenAgent  extends ResponsibleInternalAgent{
   protected def configure(config: String ) : InternalAgentResponse = {
       pathOwned = Some( new Path(config ++ "Owned"))
       pathPublic = Some( new Path(config ++ "Public"))
-      log.info(s"$name has been configured.");
       CommandSuccessful("Successfully configured.")
   }
   var updateSchelude : Option[Cancellable] = None
   protected def start = {
-    log.info(s"$name has been started.");
     updateSchelude = Some(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
@@ -45,8 +43,7 @@ class BrokenAgent  extends ResponsibleInternalAgent{
   }
 
   def update() : Unit = {
-    val promise = Promise[Iterable[Promise[ResponsibleAgentResponse]]]()
-    log.info(s"$name pushing data.")
+    val promiseResult = PromiseResult()
     for{
       ownedPath <- pathOwned
       publicPath <- pathPublic
@@ -68,31 +65,13 @@ class BrokenAgent  extends ResponsibleInternalAgent{
       ))
       objects = ownedItem.union(publicItem)
       write = WriteRequest( interval, objects )
-      f= context.parent ! PromiseWrite( promise, write ) 
+      u = context.parent ! PromiseWrite( promiseResult, write ) 
     } yield write 
     
-    val future :Future[Iterable[ResponsibleAgentResponse]]  = promise.future.flatMap{
-      iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
-      Future.sequence( iterable.map{ pro => pro.future } )
-    }
-
-    val result :Future[ResponsibleAgentResponse]  = future.map{ 
-      res : Iterable[ResponsibleAgentResponse] =>
-      res.foldLeft(SuccessfulWrite(Iterable.empty)){
-        (l, r) =>
-        r match{
-          case SuccessfulWrite( paths ) =>
-          SuccessfulWrite( paths ++ l.paths ) 
-          case _ => 
-          throw new Exception(s"Unknown responseagent $name.")
-        }   
-      }
-    }
-    
-    result.onSuccess{
+    promiseResult.isSuccessful.onSuccess{
       //Check if failed promises
       case s =>
-      log.info(s"$name pushed data successfully.")
+      log.debug(s"$name pushed data successfully.")
     }
   }
 

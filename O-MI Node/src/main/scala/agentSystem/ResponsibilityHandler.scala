@@ -43,9 +43,36 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 sealed trait ResponsibilityMessage
 case class RegisterOwnership( agent: AgentName, paths: Seq[Path])
-case class PromiseWrite( promise : Promise[Iterable[Promise[ResponsibleAgentResponse]]], write:WriteRequest )
+case class PromiseWrite(relult: PromiseResult, write:WriteRequest )
 sealed trait ResponsibilityResponse extends ResponsibilityMessage
-case class FutureResult( result: Iterable[Future[Try[ResponsibleAgentResponse]]] ) extends ResponsibilityResponse
+object PromiseResult{
+  def apply() = new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())
+}
+case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]] ){
+  def futures = {
+    promise.future.map{
+      promises => 
+      promises.map{ pro => pro.future }
+    }
+  }
+  def resultSequence = {
+    futures.flatMap{ results => Future.sequence(results) }
+  }
+  def isSuccessful = {
+    resultSequence.map{ 
+      res : Iterable[ResponsibleAgentResponse] =>
+      res.foldLeft(SuccessfulWrite(Iterable.empty)){
+        (l, r) =>
+        r match{
+          case SuccessfulWrite( paths ) =>
+          SuccessfulWrite( paths ++ l.paths ) 
+          case _ =>  
+          throw new Exception(s"Unknown response encountered.")
+        }   
+      }   
+    }
+  }
+}
 
 trait ResponsibleAgentManager extends BaseAgentSystem{
   def dbobject: DB
@@ -57,15 +84,25 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
   getConfigsOwnerships()
   receiver {
     //Write can be received either from RequestHandler or from InternalAgent
-    case PromiseWrite(promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]], write: WriteRequest) => handleWrite(promise,write)  
-    //Write received from an InternalAgent
-    case ResponsibleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest) => handleResponsibleWrite(promise,write)  
-    case registerOwnership: RegisterOwnership => sender() ! handleRegisterOwnership(registerOwnership)  
+    case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
+    //case registerOwnership: RegisterOwnership => sender() ! handleRegisterOwnership(registerOwnership)  
   }
   def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
-    paths.map{
-      path => pathOwners.get(path).map{ name => (name,path)}
-    }.flatten.groupBy{case (name, path) => name}.mapValues{seq => seq.map{case (name, path) => path}}
+    paths.collect{
+      case path  => 
+      val many = path.getParentsAndSelf
+      val key = pathOwners.keys.find{
+        key =>
+        many.contains(key)
+      }
+      key.map{ p => pathOwners.get(p).map{ 
+        name => (name,path)
+      }}
+    }.flatten.flatten.groupBy{
+      case (name, path) => name
+    }.mapValues{
+      seq => seq.map{case (name, path) => path}
+    }
   } 
   def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}
   protected def getConfigsOwnerships(): Unit = {
@@ -77,6 +114,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val agentConfig = agents.toConfig().getObject(name).toConfig()
       try{
         val ownedPaths = agentConfig.getStringList("owns")
+        log.info(s"Agent $name owns: " + ownedPaths.mkString("\n"))
         ownedPaths.map{ path => (Path(path), name)}
       } catch {
         case e: ConfigException.Missing   =>
@@ -88,73 +126,17 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       }
     }.flatten.toArray
     pathOwners ++= pathsToOwner
-    log.info(s"Path ownerships for Agents in config set.")
-  }
-  private def handleResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) : Unit = {
-    val senderName = sender().path.name
-    log.info( s"Received WriteRequest from $senderName.")
-    val odfObjects = write.odf
-    val allInfoItems = getInfoItems(odfObjects)
-
-    // Collect metadata 
-    val objectsWithMetaData = getOdfNodes(odfObjects) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
-    }
-    val allNodes = allInfoItems ++ objectsWithMetaData
-
-    val allPaths = allNodes.map( _.path )
-    val ownerToPath = getOwners(allPaths:_*)
-
-    val allOwnedPaths : Seq[Path] = ownerToPath.values.flatten.toSeq
-
-    //Get part that isn't owned by anyone
-
-    val writesToOwnerless:Future[SuccessfulWrite] = {
-      val paths = allPaths.filter{ path => !allOwnedPaths.contains(path) }
-      val objects= allNodes.collect{
-        case node if paths.contains(node.path) => fromPath(node) 
-      }.foldLeft(OdfObjects()){_.union(_)}
-      log.info( s"$senderName writing to paths not owned by anyone: $paths")
-      handleOdf( objects )
-    }
-    if( ownerToPath.isEmpty ){
-      promise.completeWith( writesToOwnerless )
-    } else if( ownerToPath.length == 1 && ownerToPath.get(senderName).nonEmpty ){
-      //Get part that is owned by sender()
-      val writesBySender:Future[SuccessfulWrite] ={
-        val pathsO = ownerToPath.get(senderName)
-        val objects= allNodes.collect{
-          case node if pathsO.exists{ paths => paths.contains(node.path)} => fromPath(node) 
-        }.foldLeft(OdfObjects()){_.union(_)}
-        log.info( s"$senderName writing to paths owned by it: $pathsO")
-        handleOdf( objects )
-      } 
-      val res = for{
-        owns <- writesBySender
-        pub  <- writesToOwnerless
-      } yield SuccessfulWrite( owns.paths ++ pub.paths )
-      
-      //Collect all futures and return
-      promise.completeWith( res )
-    } else {
-      val msg =s"$senderName tryed to write to paths owned by some other agent using ResponsibleWrite. Wrong message used. Use PromiseWrite. "
-      log.warning(msg)
-      promise.failure( new Exception(msg))
-
-    }
   }
 
+  private def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
 
-
-  private def handleWrite( promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]], write: WriteRequest ) : Unit={
-
-    def askOtherAgentToHandleObjectsOwnedByThem( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
+    def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
       ownerToObjects.flatMap{
         case (name: AgentName, objects: OdfObjects) =>
         agents.get(name).map{
           case AgentInfo( _, _, _, agent, _) => 
           val write = WriteRequest( ttl, objects) 
-          log.info( s"Asking $name to handle $write" )
+          log.debug( s"Asking $name to handle $write" )
           val promise = Promise[ResponsibleAgentResponse]()
           val future = agent ! ResponsibleWrite( promise, write)
           promise
@@ -162,7 +144,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       }
     }
     val senderName = sender().path.name
-    log.info( s"Received WriteRequest from $senderName.")
+    log.debug( s"Received WriteRequest from $senderName.")
     val odfObjects = write.odf
     val allInfoItems = getInfoItems(odfObjects)
 
@@ -178,26 +160,32 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     //Get part that is owned by sender()
     val writesBySender:Promise[ResponsibleAgentResponse] ={
       val pathsO = ownerToPath.get(senderName)
-      val objects= allNodes.collect{
-        case node if pathsO.exists{ paths => paths.contains(node.path)} => fromPath(node) 
-      }.foldLeft(OdfObjects()){_.union(_)}
-      log.info( s"$senderName writing to paths owned by it: $pathsO")
       val promise = Promise[ResponsibleAgentResponse]()
-      promise.completeWith(handleOdf( objects ))
+      val future = pathsO.map{
+        paths =>
+        val objects= allNodes.collect{
+          case node if paths.contains(node.path)=> fromPath(node) 
+        }.foldLeft(OdfObjects()){_.union(_)}
+        log.debug( s"$senderName writing to paths owned by it: $pathsO")
+        handleOdf( objects )
+      }.getOrElse{
+        Future.successful{SuccessfulWrite( Iterable.empty )}  
+      }
+      promise.completeWith(future)
     } 
     val allOwnedPaths : Seq[Path] = ownerToPath.values.flatten.toSeq
     
     //Get part that isn't owned by anyone
-
     val writesToOwnerless:Promise[ResponsibleAgentResponse] = {
       val paths = allPaths.filter{ path => !allOwnedPaths.contains(path) }
       val objects= allNodes.collect{
         case node if paths.contains(node.path) => fromPath(node) 
       }.foldLeft(OdfObjects()){_.union(_)}
-      log.info( s"$senderName writing to paths not owned by anyone: $paths")
+      log.debug( s"$senderName writing to paths not owned by anyone: $paths")
       val promise = Promise[ResponsibleAgentResponse]()
       promise.completeWith(handleOdf( objects ))
     }
+
     //Get part that is owned by other agents than sender()
     val writesToOthers: Iterable[Promise[ResponsibleAgentResponse]]={ 
       val ownerToPaths= ownerToPath - senderName
@@ -207,12 +195,12 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
           case node if paths.contains(node.path) => fromPath(node)
         }.foldLeft(OdfObjects()){_.union(_)} 
       }
-      log.info( s"$senderName writing to paths owned other agents, ask handling: $ownerToObjects")
-      askOtherAgentToHandleObjectsOwnedByThem( write.ttl, ownerToObjects)
+      log.debug( s"$senderName writing to paths owned other agents.")
+      callAgentsForResponsibility( write.ttl, ownerToObjects)
     }
     //Collect all futures and return
     val res : Iterable[Promise[ResponsibleAgentResponse]] = Iterable(writesToOwnerless, writesBySender) ++ writesToOthers
-    promise.success( Iterable(writesToOwnerless, writesBySender) ++ writesToOthers) 
+    result.promise.success( res ) 
   }
 
 

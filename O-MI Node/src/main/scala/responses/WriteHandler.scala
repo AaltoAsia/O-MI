@@ -25,7 +25,7 @@ import OmiTypes._
 import OdfTypes._
 import OmiGenerator._
 import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import agentSystem.{FutureResult, SuccessfulWrite, ResponsibleAgentResponse, PromiseWrite }
+import agentSystem.{SuccessfulWrite, ResponsibleAgentResponse, PromiseWrite, PromiseResult }
 import CallbackHandlers._
 import database._
 
@@ -41,32 +41,17 @@ trait WriteHandler extends OmiRequestHandler{
   def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
       val ttl = handleTTL(write.ttl)
 
-      val promise = Promise[Iterable[Promise[ResponsibleAgentResponse]]]() 
-      agentSystem ! PromiseWrite(promise, write)
-      val future :Future[Iterable[ResponsibleAgentResponse]]  = promise.future.flatMap{
-        iterable :Iterable[Promise[ResponsibleAgentResponse]] =>
-        Future.sequence( iterable.map{ pro => pro.future } ) 
-      }   
-      future.recoverWith{
+      val promiseResult = PromiseResult()
+      agentSystem ! PromiseWrite(promiseResult, write)
+      val successF = promiseResult.isSuccessful
+      successF.recoverWith{
         case e =>{
         log.error(e, "Failure when writing")
         Future.failed(e)
       }}
 
-      val results :Future[ResponsibleAgentResponse]  = future.map{ 
-        res : Iterable[ResponsibleAgentResponse] =>
-        res.foldLeft(SuccessfulWrite(Iterable.empty)){
-          (l, r) =>
-          r match{
-            case SuccessfulWrite( paths ) =>
-            SuccessfulWrite( paths ++ l.paths ) 
-            case _ =>  
-            throw new Exception(s"Unknown response")
-          }   
-        }   
-      }   
 
-      val response = results.map{
+      val response = successF.map{
         succ => success 
       }
       response
