@@ -58,11 +58,14 @@ lazy val agents = (project in file("Agents")).
 
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
+  enablePlugins(DockerPlugin).
   settings(
     (commonSettings("Node") ++ Seq(
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
+      packageName in Docker := "o-mi-node",
+      dockerExposedPorts := Seq(8080),
       cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
         base / "html" / "api",
         base / "lib",
