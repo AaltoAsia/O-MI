@@ -8,6 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
+import java.io.{File, FilenameFilter}
 
 object DBMaintainer{
   def props(dbobject: DB) = Props( new DBMaintainer(dbobject) )  
@@ -48,8 +49,37 @@ class DBMaintainer(val dbobject: DB)
    *
    */
   override def receive = {
-    case TrimDB                         => {val numDel = dbobject.trimDB(); numDel.map(nd => log.info(s"DELETE returned ${nd.sum}"))}
-    case TakeSnapshot                   => {val snapshotDur = takeSnapshot(); log.info(s"Taking Snapshot took $snapshotDur milliseconds")}
-    case u                              => log.warning("Unknown message received.")
+    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
+    case TakeSnapshot                   => {
+      val snapshotDur = takeSnapshot()
+      log.info(s"Taking Snapshot took $snapshotDur milliseconds")
+      // remove unnecessary files (might otherwise grow until disk is full)
+      val dirs = SingleStores.prevaylerDirectories
+      for (dir <- dirs) {
+        val prevaylerDir = new org.prevayler.implementation.PrevaylerDirectory(dir)
+        Try{prevaylerDir.necessaryFiles()} match {
+          case Failure(e) =>
+            log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
+          case Success(necessaryFiles) =>
+            val allFiles = dir.listFiles(new FilenameFilter {
+              def accept(dir: File, name: String) = name endsWith ".journal" // TODO: better filter
+            })
+            
+            val extraFiles = allFiles filterNot (necessaryFiles contains _)
+
+            extraFiles foreach {file =>
+              Try{file.delete} match {
+                case Success(true) => // noop
+                case Success(false) =>
+                  log.warning(s"File $file was listed unnecessary but couldn't be deleted")
+                case Failure(e) => 
+                  log.warning(s"Exception when trying to delete unnecessary file $file: $e")
+              }
+            }
+        }
+        
+      }
+    }
+    case u => log.warning("Unknown message received.")
   }
 }
