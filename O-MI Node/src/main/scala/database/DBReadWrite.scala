@@ -20,11 +20,11 @@ import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
-import http.Boot.system.log
 import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import scala.concurrent.duration._
+import org.slf4j.LoggerFactory;
 
 /**
  * Read-write interface methods for db tables.
@@ -32,6 +32,9 @@ import scala.concurrent.duration._
 trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
+
+  private val log = LoggerFactory.getLogger("DBReadWrite")
+
 
   /**
    * Initializing method, creates the file and tables.
