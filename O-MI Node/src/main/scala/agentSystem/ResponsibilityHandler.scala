@@ -1,45 +1,30 @@
 
 package agentSystem
 
-import agentSystem._
-import types.Path
-import types.OmiTypes.WriteRequest
-import types.OdfTypes._
-import akka.actor.SupervisorStrategy._
-import akka.pattern.ask
-import akka.util.Timeout
-import akka.actor.{
-  Actor, 
-  ActorRef, 
-  ActorInitializationException, 
-  ActorKilledException, 
-  ActorLogging, 
-  OneForOneStrategy, 
-  Props, 
-  SupervisorStrategy}
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import scala.concurrent.duration._
-import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-import scala.collection.immutable.Map
+import java.lang.{Iterable => JavaIterable}
+
+import akka.actor.ActorRef
 import com.typesafe.config.ConfigException
 import database.SingleStores.valueShouldBeUpdated
-import java.lang.{Iterable => JavaIterable}
-import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-import database.SingleStores.valueShouldBeUpdated
-
+import database._
 import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
-import database._
 import responses.CallbackHandlers._
 import responses.OmiGenerator.xmlFromResults
-import responses.Results
-import responses.NewDataEvent
+import responses.{NewDataEvent, Results}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
+import types.OmiTypes.WriteRequest
+import types.Path
+
+import scala.collection.JavaConversions._
+import scala.collection.immutable.Map
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success, Try}
+import scala.xml.XML
 
 sealed trait ResponsibilityMessage
 case class RegisterOwnership( agent: AgentName, paths: Seq[Path])
@@ -187,6 +172,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val allNodes = allInfoItems ++ objectsWithMetaData
 
     val allPaths = allNodes.map( _.path )
+
     val ownerToPath = getOwners(allPaths:_*)
     
     //Get part that is owned by sender()
@@ -308,6 +294,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val other = getOdfNodes(objects) collect {
       case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
     }
+
     val all = items ++ other
 
       val writeValues = handleInfoItems(items, other)
@@ -359,7 +346,8 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       oldValueOpt = SingleStores.latestStore execute LookupSensorData(path)
       value <- info.values
     } yield (path, value, oldValueOpt)
-
+    //for debugging
+    //log.debug(s"\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXxxx\n${pathValueOldValueTuples.map(n =>n._1.toString + "-> " + n._2.value + "old: " + n._3.map(_.value).toString()).mkString("\n")}")
     val newPollValues = pathValueOldValueTuples.flatMap{n =>
       handlePollData(n._1, n._2 ,n._3)}
       //handlePollData _ tupled n}
