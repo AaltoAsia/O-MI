@@ -63,73 +63,13 @@ public class AuthAPIService implements AuthApi {
                 });
     }
 
-//    @Override
-//    public boolean isAuthorizedForType(spray.http.HttpRequest httpRequest,
-//                                boolean isWrite,
-//                                java.lang.Iterable<Path> paths) {
-//
-//        logger.info("isAuthorizedForType EXECUTED!");
-//
-//        Iterator<Path> iterator = paths.iterator();
-//        while (iterator.hasNext()) {
-//            String nextObj = iterator.next().toString();
-//
-//            // the very first query to read the tree
-//            if (nextObj.equalsIgnoreCase("Objects")) {
-//                logger.info("Root tree requested. Allowed.");
-//                return true;
-//            }
-//        }
-//
-//        scala.collection.Iterator iter = httpRequest.cookies().iterator();
-//        if (!iter.hasNext()) {
-//            logger.info("No cookies!");
-//            return false;
-//        } else {
-//
-//            HttpCookie ck = null;
-//            while (iter.hasNext()) {
-//                HttpCookie nextCookie = (HttpCookie)iter.next();
-//                logger.info(nextCookie.name() + ":" + nextCookie.content());
-//
-//                if (nextCookie.name().equalsIgnoreCase("JSESSIONID")) {
-//                    ck = nextCookie;
-//                    break;
-//                }
-//            }
-//
-//            if (ck != null) {
-//
-//                String requestBody = "{\"paths\":[";
-//                Iterator<Path> it = paths.iterator();
-//                while (it.hasNext()) {
-//                    String nextObj = it.next().toString();
-//
-//                    // the very first query to read the tree
-//                    if (nextObj.equalsIgnoreCase("Objects"))
-//                        return true;
-//
-//                    requestBody += "\"" + nextObj + "\"";
-//
-//                    if (it.hasNext())
-//                        requestBody += ",";
-//                }
-//                requestBody += "]}";
-//
-//                logger.info("isWrite:"+isWrite);
-//                logger.info("Paths:" +requestBody);
-//                return sendPermissionRequest(isWrite, requestBody, ck.toString());
-//            } else
-//                return false;
-//        }
-//    }
 
     @Override
     public AuthorizationResult isAuthorizedForType(spray.http.HttpRequest httpRequest,
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
 
-        logger.info("isAuthorizedForType EXECUTED!");
+        logger.debug("isAuthorizedForType EXECUTED!");
 
 
         String subjectInfo = null;
@@ -139,14 +79,14 @@ public class AuthAPIService implements AuthApi {
         // First try authenticate user by cookies
         scala.collection.Iterator  iter = httpRequest.cookies().iterator();
         if (!iter.hasNext()) {
-            logger.info("No cookies!");
+            logger.debug("No cookies!");
 
         } else {
 
             HttpCookie ck = null;
             while (iter.hasNext()) {
                 HttpCookie nextCookie = (HttpCookie) iter.next();
-                logger.info(nextCookie.name() + ":" + nextCookie.content());
+                logger.debug(nextCookie.name() + ":" + nextCookie.content());
 
                 if (nextCookie.name().equals("JSESSIONID")) {
                     ck = nextCookie;
@@ -189,7 +129,7 @@ public class AuthAPIService implements AuthApi {
             authenticated = (subjectInfo != null) && success;
             if (authenticated)
             {
-                logger.info("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
+                logger.debug("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
             }
         }
 
@@ -203,7 +143,7 @@ public class AuthAPIService implements AuthApi {
 
                 // the very first query to read the tree
                 if (nextObj.equalsIgnoreCase("Objects")) {
-                    logger.info("Root tree requested. forwarding to Partial API.");
+                    logger.debug("Root tree requested. forwarding to Partial API.");
 
                     //Getting paths according to the policies
                     ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
@@ -243,8 +183,8 @@ public class AuthAPIService implements AuthApi {
             else
                 requestBody += "]}";
 
-            logger.info("isWrite:" + isWrite);
-            logger.info("Paths:" + requestBody);
+            logger.debug("isWrite:" + isWrite);
+            logger.debug("Paths:" + requestBody);
 
             return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
         } else {
@@ -263,7 +203,7 @@ public class AuthAPIService implements AuthApi {
         try {
             //Create connection
             String finalURL = authServiceURI + "?getPaths=true";
-            logger.info("Sending request. URI:" + finalURL);
+            logger.debug("Sending request. URI:" + finalURL);
             URL url = new URL(finalURL);
             connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
@@ -277,22 +217,6 @@ public class AuthAPIService implements AuthApi {
             connection.setDoOutput(true);
             connection.connect();
 
-            // KEYstore part
-//            InputStream trustStream = new FileInputStream("keystore.jks");
-//            char[] trustPassword = "1234567890".toCharArray();
-//
-//            // load keystore
-//            KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-//            trustStore.load(trustStream, trustPassword);
-//
-//            TrustManagerFactory trustFactory =
-//                    TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//            trustFactory.init(trustStore);
-//            TrustManager[] trustManagers = trustFactory.getTrustManagers();
-//
-//            SSLContext sslContext = SSLContext.getInstance("SSL");
-//            sslContext.init(null, trustManagers, null);
-//            SSLContext.setDefault(sslContext);
 
             if (isCertificate) {
                 DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
@@ -330,11 +254,11 @@ public class AuthAPIService implements AuthApi {
 
             ArrayList<Path> finalPaths = new ArrayList<>(json_paths.size());
 
-            logger.info(json_paths.size()+" PATHS FOUND");
+            logger.debug(json_paths.size()+" PATHS FOUND");
 
             for (int i = 0; i < json_paths.size(); i++) {
                 String pathString = json_paths.get(i).getAsString();
-                logger.info(pathString);
+                logger.debug(pathString);
                 Path nextPath = new Path(pathString);
                 finalPaths.add(nextPath);
             }
@@ -357,7 +281,7 @@ public class AuthAPIService implements AuthApi {
             //Create connection
             String writeURL = isWrite ? "true" : "false";
             String finalURL = authServiceURI + "?ac=true&write=" + writeURL;
-            logger.info("Sending request. URI:" + finalURL);
+            logger.debug("Sending request. URI:" + finalURL);
             URL url = new URL(finalURL);
             connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
@@ -387,7 +311,7 @@ public class AuthAPIService implements AuthApi {
             }
             rd.close();
 
-            logger.info("RESPONSE:"+response.toString());
+            logger.debug("RESPONSE:"+response.toString());
 
             return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
         } catch (Exception e) {
