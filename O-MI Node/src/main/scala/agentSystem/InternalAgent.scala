@@ -48,6 +48,7 @@ sealed trait ResponsibleAgentResponse
   case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
 
 trait InternalAgent extends Actor with ActorLogging with Receiving{
+  def name = self.path.name
   protected def start   : InternalAgentResponse 
   protected def restart : InternalAgentResponse
   protected def stop    : InternalAgentResponse
@@ -67,13 +68,5 @@ trait ResponsibleInternalAgent extends InternalAgent {
   receiver {
     case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
   }
-  protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
-        if(ttl.toSeconds != 0)
-          FiniteDuration(ttl.toSeconds, SECONDS)
-        else
-          FiniteDuration(2,MINUTES)
-      } else {
-        FiniteDuration(Int.MaxValue,MILLISECONDS)
-      }
 }
 

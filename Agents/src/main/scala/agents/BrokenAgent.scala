@@ -24,7 +24,6 @@ class BrokenAgent  extends InternalAgent{
 	var pathOwned: Option[Path] = None
 	var pathPublic: Option[Path] = None
   def date = new java.util.Date();
-  def name = self.path.name
   protected def configure(config: String ) : InternalAgentResponse = {
       pathOwned = Some( new Path(config ++ "Owned"))
       pathPublic = Some( new Path(config ++ "Public"))

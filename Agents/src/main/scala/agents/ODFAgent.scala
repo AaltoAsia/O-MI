@@ -31,7 +31,6 @@ class ODFAgent extends InternalAgent {
   val interval : FiniteDuration = Duration(60, SECONDS) 
 	var odf: Option[OdfObjects] = None
   def date = new java.util.Date();
-  def name = self.path.name
   protected def configure(configPath: String ) : InternalAgentResponse = {
         val file =  new File(configPath)
         if( file.exists() && file.canRead() ){
