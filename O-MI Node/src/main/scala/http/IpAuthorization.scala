@@ -21,7 +21,6 @@ import spray.routing.Directive1
 import types.OmiTypes._
 
 import Boot.settings
-import Boot.system.log
 import Authorization.AuthorizationExtension
 
 // TODO: maybe move to Authorization package

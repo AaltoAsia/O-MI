@@ -17,9 +17,9 @@ import spray.http._
 import spray.routing._
 import Directives._
 import scala.util.{Try, Success, Failure}
+import akka.event.LoggingAdapter
 
 import types.OmiTypes._
-import Boot.system.log
 
 
 //////////////////
@@ -77,6 +77,12 @@ object Authorization {
    *  Extend this for new authorization plugin traits
    */
   trait AuthorizationExtension {
+
+    /**
+     * For easy to access logging in extensions.
+     * Will get implemented on the service level anyways.
+     */
+    def log: LoggingAdapter
 
     def makePermissionTestFunction: CombinedTest // Directive1[PermissionTest]
 
@@ -202,8 +208,12 @@ trait LogPermissiveRequestBeginning extends AuthorizationExtension {
   abstract override def makePermissionTestFunction = combineWithPrevious(
     super.makePermissionTestFunction,
     provide{
+      case r: PermissiveRequest with OdfRequest =>
+        log.info(s"Permissive request received: ${r.getClass.getSimpleName}: " +
+          r.odf.paths.take(3).mkString(", ") + "...")
+        None
       case r: PermissiveRequest =>
-        log.info(s"Permissive request received: ${r.toString.take(110)}...")
+        log.info(s"Permissive request received: ${r.toString.take(80)}...")
         None
       case _ => None
     }
