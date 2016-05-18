@@ -123,7 +123,7 @@ trait Starter {
       "agent-system"
     )
     
-    val dbmaintainer = DBMaintainer.props( dbConnection )
+    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(
