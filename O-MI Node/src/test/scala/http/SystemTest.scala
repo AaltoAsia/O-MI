@@ -11,14 +11,11 @@ import akka.testkit.TestProbe
 import akka.util.Timeout
 import database._
 import org.specs2.concurrent.ExecutionEnv
-import org.specs2.execute.Result
-import org.specs2.execute.AsResult
 import org.specs2.mutable._
 //import org.specs2.specification.core.Fragment
-import org.specs2.specification.core.Fragments
 //import org.specs2.specification.Fragment
-import org.specs2.specification.{AfterAll}//, Fragments}
-import responses.{SubscriptionManager, SubscriptionHandler, RequestHandler}
+import org.specs2.specification.AfterAll
+import responses.{RequestHandler, SubscriptionManager}
 import spray.can.Http
 import spray.client.pipelining._
 import spray.http._
@@ -40,11 +37,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   override val subManager = system.actorOf(Props(new SubscriptionManager()(subHandlerDbConn)), "subscription-handler-test")
 
   override def start(dbConnection: DB): ActorRef = {
-    val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
     val agentManager = system.actorOf(
       AgentSystem.props(dbConnection, subManager),
       "agent-system"
     )
+    val sensorDataListener = system.actorOf(Props(new ExternalAgentListener(agentManager)), "agent-listener")//classOf[ExternalAgentListener]), "agent-listener")
     // do not start InternalAgents to keep database clean
     //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
     //
