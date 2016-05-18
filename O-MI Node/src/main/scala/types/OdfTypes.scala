@@ -191,6 +191,16 @@ case class OdfObjects(
     this.copy(objects = objects map (o => if (o.path == nextPath) o.withValues(p, v) else o))
   }
 
+  lazy val infoItems = getInfoItems(this)
+  lazy val paths = infoItems map (_.path)
+
+  /**
+   * Returns Object nodes that have metadata-like information.
+   * Includes nodes that have type or description
+   */
+  lazy val objectsWithMetadata = getOdfNodes(this) collect {
+      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+    } 
 
 }
 /** Class presenting O-DF Object structure*/

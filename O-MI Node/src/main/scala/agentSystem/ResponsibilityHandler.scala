@@ -163,13 +163,11 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val senderName = sender().path.name
     log.debug( s"Received WriteRequest from $senderName.")
     val odfObjects = write.odf
-    val allInfoItems = getInfoItems(odfObjects)
+    val allInfoItems = odfObjects.infoItems // getInfoItems(odfObjects)
 
     // Collect metadata 
-    val objectsWithMetaData = getOdfNodes(odfObjects) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
-    }
-    val allNodes = allInfoItems ++ objectsWithMetaData
+    val objectsWithMetadata = odfObjects.objectsWithMetadata
+    val allNodes = allInfoItems ++ objectsWithMetadata
 
     val allPaths = allNodes.map( _.path )
 
@@ -291,10 +289,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val items = getInfoItems(objects)
 
     // Collect metadata 
-    val other = getOdfNodes(objects) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
-    }
-
+    val other = objects.objectsWithMetadata
     val all = items ++ other
 
       val writeValues = handleInfoItems(items, other)
@@ -338,7 +333,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
    * Function for handling sequences of OdfInfoItem.
    * @return true if the write was accepted.
    */
-  private def handleInfoItems(infoItems: Iterable[OdfInfoItem], objectMetaDatas: Vector[OdfObject] = Vector()): Future[Iterable[Path]] = Future{
+  private def handleInfoItems(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[Iterable[Path]] = Future{
     // save only changed values
     val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
@@ -388,7 +383,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
     val iiDescriptions = infoItems filter { _.hasDescription }
 
-    val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetaDatas
+    val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetadatas
 
     // Update our hierarchy data structures if needed
     if (updatedStaticItems.nonEmpty) {
@@ -410,7 +405,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
     subHandler ! NewDataEvent(itemValues)
     
-    infoItems.map(_.path) ++ objectMetaDatas.map(_.path)
+    infoItems.map(_.path) ++ objectMetadatas.map(_.path)
     //log.debug("Successfully saved InfoItems to DB")
   }
 

@@ -7,8 +7,8 @@ import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.lang.{ Iterable => JavaIterable }
 import scala.util.{Try, Success, Failure}
+import org.slf4j.LoggerFactory
 
-import Boot.system.log
 import types.Path
 import types.OmiTypes._
 import types.OdfTypes._
@@ -62,7 +62,10 @@ trait AuthApi {
 }
 
 trait AuthApiProvider extends AuthorizationExtension {
+
+
   private[this] val authorizationSystems: Buffer[AuthApi] = Buffer()
+
 
   /**
    * Register authorization system that tells if the request is authorized.

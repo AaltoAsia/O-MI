@@ -20,7 +20,6 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import types.OmiTypes._
 import Boot.settings
-import Boot.system.log
 import Authorization.AuthorizationExtension
 
 // TODO: maybe move to Authorization package
