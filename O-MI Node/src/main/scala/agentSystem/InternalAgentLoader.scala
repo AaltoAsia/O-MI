@@ -70,7 +70,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
       log.info("Instantiating agent: " + name + " of class " + classname)
       val classLoader = Thread.currentThread.getContextClassLoader
       val clazz = classLoader.loadClass(classname)
-      val interface =  classOf[AbstractInternalAgent]
+      val interface =  classOf[InternalAgent]
       if( interface.isAssignableFrom(clazz) ){
         val prop  = Props(clazz)
         val agent = context.actorOf( prop, name.toString )
