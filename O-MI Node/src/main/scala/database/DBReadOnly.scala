@@ -27,9 +27,11 @@ import scala.collection.SortedMap
 import types._
 import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import http.Boot.system.log
 
 import scala.util.Success
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Read only restricted interface methods for db tables
@@ -44,6 +46,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       hierarchyNodes filter (_.path === Path(childPath.init))
   )
   
+  private val log = LoggerFactory.getLogger("DBReadOnly")
 
 
   /**
@@ -315,7 +318,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             } yield result
 
             case n =>
-              log.warning(s"Requested '$path' as InfoItem, found '$n'")
+              log.warn(s"Requested '$path' as InfoItem, found '$n'")
               DBIO.successful(None) // Requested object was not found or not infoitem, TODO: think about error handling
           }
         }
