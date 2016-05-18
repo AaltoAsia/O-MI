@@ -131,14 +131,46 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
   private def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
 
     def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
-      ownerToObjects.flatMap{
+      val allExists = ownerToObjects.map{
         case (name: AgentName, objects: OdfObjects) =>
+        (name,
         agents.get(name).map{
-          case AgentInfo( _, _, _, agent, _) => 
+          case agent : AgentInfo => 
           val write = WriteRequest( ttl, objects) 
+          (agent, write) 
+        })
+      }
+      val nonExistingOwner = allExists.find{ case (name, exists) => exists.isEmpty }
+      val agentsToWrite = allExists.values.flatten
+      val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }
+      if( nonExistingOwner.nonEmpty ){
+        var msg = ""
+        nonExistingOwner.foreach{
+          case (name, _) =>
+          msg = s"$name owns path but does not exists."
+          log.warning( msg  )
+        }
+        val promise = Promise[ResponsibleAgentResponse]()
+        promise.failure( new Exception(msg) )
+        Iterable( promise )
+      } else if( stoppedOwner.nonEmpty ){
+        var msg = ""
+        stoppedOwner.foreach{ case (agent, write) =>
+          val name = agent.name
+          val paths = getLeafs(write.odf).map(_.path)
+          msg = s"Received write for paths:\n" + paths.mkString("\n") + s"owned by not running agent $name." 
+          log.warning(msg)
+        }
+        val promise = Promise[ResponsibleAgentResponse]()
+        promise.failure( new Exception(msg) )
+        Iterable( promise )
+      } else {
+        agentsToWrite.map{ 
+          case ( agentInfo, write ) =>
+          val name = agentInfo.name
           log.debug( s"Asking $name to handle $write" )
           val promise = Promise[ResponsibleAgentResponse]()
-          val future = agent ! ResponsibleWrite( promise, write)
+          val future = agentInfo.agent ! ResponsibleWrite( promise, write)
           promise
         }
       }

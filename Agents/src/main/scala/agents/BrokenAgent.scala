@@ -2,7 +2,6 @@ package agents
 
 import agentSystem._ 
 //import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
-import agentSystem.InputPusher
 import types._
 import types.OdfTypes._
 import types.OmiTypes._
@@ -17,7 +16,7 @@ import akka.util.Timeout
 import akka.actor.Cancellable
 import akka.pattern.ask
 
-class BrokenAgent  extends ResponsibleInternalAgent{
+class BrokenAgent  extends InternalAgent{
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
 	val rnd: Random = new Random()

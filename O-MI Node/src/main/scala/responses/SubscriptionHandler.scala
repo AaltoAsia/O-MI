@@ -37,7 +37,6 @@ import OmiTypes._
 import OdfTypes._
 import OmiGenerator._
 import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import agentSystem.InputPusher
 import CallbackHandlers._
 import database._
 

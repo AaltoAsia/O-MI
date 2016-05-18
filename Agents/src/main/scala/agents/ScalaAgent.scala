@@ -2,7 +2,6 @@ package agents
 
 import agentSystem._ 
 //import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
-import agentSystem.InputPusher
 import types._
 import types.OdfTypes._
 import types.OmiTypes._
