@@ -47,7 +47,7 @@ sealed trait ResponsibleAgentMsg
 sealed trait ResponsibleAgentResponse
   case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
 
-sealed trait AbstractInternalAgent extends Actor with ActorLogging with Receiving{
+trait InternalAgent extends Actor with ActorLogging with Receiving{
   protected def start   : InternalAgentResponse 
   protected def restart : InternalAgentResponse
   protected def stop    : InternalAgentResponse
@@ -62,10 +62,7 @@ sealed trait AbstractInternalAgent extends Actor with ActorLogging with Receivin
   }
 }
 
-trait InternalAgent extends AbstractInternalAgent {
-}
-
-trait ResponsibleInternalAgent extends AbstractInternalAgent {
+trait ResponsibleInternalAgent extends InternalAgent {
   protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
   receiver {
     case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
