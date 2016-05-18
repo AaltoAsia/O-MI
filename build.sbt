@@ -64,8 +64,8 @@ lazy val root = (project in file(".")).
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
-      packageName in Docker := "o-mi-node",
-      dockerExposedPorts := Seq(8080),
+      packageName in Docker := "o-mi-reference",
+      dockerExposedPorts := Seq(8080, 8180),
       cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
         base / "html" / "api",
         base / "lib",
