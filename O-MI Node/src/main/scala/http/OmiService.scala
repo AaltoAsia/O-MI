@@ -186,7 +186,11 @@ trait OmiService
                   hasPermissionTest(originalReq) match {
                     case Some(req) =>{
                       req.ttl match{
-                        case ttl: FiniteDuration => ttlPromise.completeWith(akka.pattern.after(ttl, using = http.Boot.system.scheduler)(Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))))
+                        case ttl: FiniteDuration => ttlPromise.completeWith(
+                          akka.pattern.after(ttl, using = http.Boot.system.scheduler)(
+                            Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
+                          )
+                        )
                         case ttl => //noop
                       }
                       requestHandler.handleRequest(req)
