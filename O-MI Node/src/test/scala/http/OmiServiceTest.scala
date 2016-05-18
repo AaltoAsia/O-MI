@@ -1,13 +1,13 @@
 package http
 
-import org.specs2.matcher.XmlMatchers
+import agentSystem.AgentSystem
 import akka.actor._
 import akka.testkit.TestActorRef
 import database._
-
+import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
-import responses.{RequestHandler, SubscriptionHandler}
+import responses.{RequestHandler, SubscriptionManager}
 import spray.http.HttpHeaders._
 import spray.http.MediaTypes._
 import spray.http.StatusCodes._
@@ -29,14 +29,19 @@ class OmiServiceTest extends Specification
 
   implicit val dbConnection = new TestDB("system-test") // new DatabaseConnection
   implicit val dbobject = dbConnection
-  val subscriptionHandler = TestActorRef(Props(new SubscriptionHandler()(dbConnection)))
-  val requestHandler = new RequestHandler(subscriptionHandler)(dbConnection)
+  val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()(dbConnection)))
+
+  val agentManager = system.actorOf(
+      AgentSystem.props(dbConnection, subscriptionHandler),
+      "agent-system"
+  )
+  val requestHandler = new RequestHandler(subscriptionHandler, agentManager)(dbConnection)
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
   "System tests for features of OMI Node service".title
 
   def beforeAll() = {
-    Boot.init(dbConnection)
+    //Boot.init(dbConnection)
     Thread.sleep(1000)
     // clear if some other tests have left data
     //    dbConnection.clearDB()
