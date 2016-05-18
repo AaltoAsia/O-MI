@@ -18,6 +18,11 @@ html {
     cursor: pointer;
 }
 
+#nodetree {
+    /* fix too long tree (pushes other settings down) */
+    overflow: scroll;
+    max-height: 40em;
+}
 
 .requesttree .jstree-anchor {
     border: 1px solid;
