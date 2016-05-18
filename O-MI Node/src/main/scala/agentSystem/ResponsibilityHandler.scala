@@ -211,6 +211,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val objects= allNodes.collect{
         case node if paths.contains(node.path) => fromPath(node) 
       }.foldLeft(OdfObjects()){_.union(_)}
+
       log.debug( s"$senderName writing to paths not owned by anyone: $paths")
       val promise = Promise[ResponsibleAgentResponse]()
       promise.completeWith(handleOdf( objects ))

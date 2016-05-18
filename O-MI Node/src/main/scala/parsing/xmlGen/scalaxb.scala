@@ -312,7 +312,7 @@ trait XMLStandardTypes {
       case node: scala.xml.Node =>
         try {
           val xs = Helper.splitBySpace(node.text).toSeq
-          Right(xs map { x => fromXML[A](scala.xml.Elem(node.prefix, node.label, scala.xml.Null, node.scope, scala.xml.Text(x)), stack) })
+          Right(xs map { x => fromXML[A](scala.xml.Elem(node.prefix, node.label, scala.xml.Null, node.scope, true, scala.xml.Text(x)), stack) })
         } catch { case e: Exception => Left(e.toString) }
       case _ => Left("Node expected: " + seq.toString)
     }
@@ -605,7 +605,7 @@ object DataRecord extends XMLStandardTypes {
   }
 
   def unapply[A](record: DataRecord[A]): Option[(Option[String], Option[String], A)] =
-    Some(record.namespace, record.key, record.value)
+    Some((record.namespace, record.key, record.value))
 
   def toXML[A](obj: DataRecord[A], namespace: Option[String], elementLabel: Option[String],
       scope: scala.xml.NamespaceBinding, typeAttribute: Boolean): scala.xml.NodeSeq = obj match {
@@ -680,6 +680,7 @@ trait CanWriteChildNodes[A] extends CanWriteXML[A] {
       elementLabel getOrElse { sys.error("missing element label.") },
       writesAttribute(obj, scope),
       scope,
+      true,
       writesChildNodes(obj, scope): _*)
     if (typeAttribute && typeName.isDefined && scope.getPrefix(Helper.XSI_URL) != null)
       elem % scala.xml.Attribute(scope.getPrefix(Helper.XSI_URL), "type",
@@ -717,7 +718,7 @@ trait ElemNameParser[A] extends AnyElemNameParser with XMLFormat[A] with CanWrit
   def parser(node: scala.xml.Node, stack: List[ElemName]): Parser[A]
   def isMixed: Boolean = false
 
-  def parse[A](p: Parser[A], in: Seq[scala.xml.Node]): ParseResult[A] =
+  def parse[B](p: Parser[B], in: Seq[scala.xml.Node]): ParseResult[B] =
     p(new ElemNameSeqReader(elementNames(in)))
 
   def elementNames(in: Seq[scala.xml.Node]): Seq[ElemName] =
@@ -775,7 +776,7 @@ object HexBinary {
     apply(array: _*)
   }
 
-  def unapplySeq[Byte](x: HexBinary) = Some(x.vector)
+  def unapplySeq[ByteB](x: HexBinary) = Some(x.vector)
 }
 
 class Base64Binary(_vector: Vector[Byte]) extends scala.collection.IndexedSeq[Byte] {
@@ -797,7 +798,7 @@ object Base64Binary {
     apply(array: _*)
   }
 
-  def unapplySeq[Byte](x: Base64Binary) = Some(x.vector)
+  def unapplySeq[ByteB](x: Base64Binary) = Some(x.vector)
 }
 
 object XMLCalendar {
@@ -858,7 +859,8 @@ object Helper {
       scope: scala.xml.NamespaceBinding) =
     scala.xml.Elem(getPrefix(namespace, scope).orNull, elementLabel,
       scala.xml.Attribute(scope.getPrefix(XSI_URL), "nil", "true", scala.xml.Null),
-      scope)
+      scope,
+      true)
 
   def splitBySpace(text: String) = text.split(' ').filter("" !=)
 
@@ -903,7 +905,7 @@ object Helper {
     elementLabel map { label =>
       scala.xml.Elem(getPrefix(namespace, scope).orNull, label,
         scala.xml.Null,
-        scope, scala.xml.Text(obj.toString))
+        scope, true, scala.xml.Text(obj.toString))
     } getOrElse { scala.xml.Text(obj) }
   }
 
@@ -954,7 +956,7 @@ object Helper {
     val rule = new RewriteRule {
       override def transform(n: Node): Seq[Node] = n match {
         case x@Elem(prefix, label, attr, scope, _*) if attr exists(p => p.key == "href") =>
-          Elem(prefix, label, attr remove("href"), scope, lookupRef((x \ "@href").text.tail): _*)
+          Elem(prefix, label, attr remove("href"), scope, true, lookupRef((x \ "@href").text.tail): _*)
         case x@Elem(prefix, label, attr, scope, _*) if attr exists(p => p.key == "id") =>
           Nil
         case other => other
