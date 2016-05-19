@@ -93,20 +93,19 @@ trait InternalAgentManager extends BaseAgentSystem {
 def handleStop( stop: StopAgentCmd ) = {
   val agentName = stop.agent
   sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
-  agentInfo.running match{
-    case true =>
-    log.warning(s"Stopping: " + agentInfo.name)
-    val result = agentInfo.agent ? Stop()
-    agents += agentInfo.name -> AgentInfo(agentInfo.name,agentInfo.classname, agentInfo.config, agentInfo.agent, false)
-    val msg = s"Agent $agentName stopped succesfully."
-    log.info(msg)
-    msg
-    case true =>
-    val msg = s"Agent $agentName was already stopped."
-    log.info(msg)
-    msg
+  if (agentInfo.running) {
+      log.warning(s"Stopping: " + agentInfo.name)
+      val result = agentInfo.agent ? Stop()
+      agents += agentInfo.name -> AgentInfo(agentInfo.name,agentInfo.classname, agentInfo.config, agentInfo.agent, false)
+      val msg = s"Agent $agentName stopped succesfully."
+      log.info(msg)
+      msg
+  } else {
+      val msg = s"Agent $agentName was already stopped."
+      log.info(msg)
+      msg
+    }
   }
-}
 }
 
 def handleRestart( restart: ReStartAgentCmd ) = {
