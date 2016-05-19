@@ -27,6 +27,7 @@ import types.Path
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+import agentSystem.AgentInfo
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -41,6 +42,14 @@ object CLICmds
 }
 
 import http.CLICmds._
+object OmiNodeCLI{
+  def props(
+    sourceAddress: InetSocketAddress,
+    agentSystem: ActorRef,
+    subscriptionHandler: ActorRef,
+    requestHandler: RequestHandler
+  )= Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
+}
 /** Command Line Interface for internal agent management. 
   *
   */
@@ -74,11 +83,19 @@ remove <path>
         case Array("list", "agents") =>
           log.info(s"Got list agents command from $ip")
           val trueSender = sender()
-          (agentLoader ? ListAgentsCmd()).onComplete{
-            case Success(agents : Seq[String]) => 
+          val future = (agentLoader ? ListAgentsCmd())
+          future.map{
+            case agents: Seq[AgentInfo] => 
               log.info("Received list of Agents. Sending ...")
-              trueSender ! Write(ByteString("Agents:\n"+ agents.mkString("\n") + "\n"))
-            case Failure(a) =>
+              val colums = Vector("NAME","CLASS","RUNNING","CONFIG")
+              val msg = f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}\n"+ agents.map{
+                case AgentInfo(name, classname, config, ref, running) => 
+                f"$name%-20s | $classname%-40s | $running%-7s | $config " 
+              }.mkString("\n")
+              trueSender ! Write(ByteString(msg +"\n"))
+          }
+          future.recover{
+            case a =>
               log.info("Failed to get list of Agents.\n Sending ...")
               trueSender ! Write(ByteString("Failed to get list of Agents.\n"))
 
@@ -87,8 +104,9 @@ remove <path>
         case Array("list", "subs") =>
           log.info(s"Got list subs command from $ip")
           val trueSender = sender()
-          (subscriptionHandler ? ListSubsCmd()).onComplete{
-            case Success((intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub])) =>
+          val future = (subscriptionHandler ? ListSubsCmd())
+          future.map{
+            case (intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub]) =>
               log.info("Received list of Subscriptions. Sending ...")
               val intMsg= "Interval subscriptions:\n" ++ intervals.map{ sub=>
                  s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | end time: ${sub.endTime} | callback: ${ sub.callback }"
@@ -100,7 +118,9 @@ remove <path>
                  s" id: ${sub.id} | started: ${sub.startTime} | end time: ${sub.endTime} | last polled: ${ sub.lastPolled }"
               }.mkString("\n")
               trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
-            case Failure(a) =>
+            }
+            future.recover{
+            case a =>
               log.info("Failed to get list of Subscriptions.\n Sending ...")
               trueSender ! Write(ByteString("Failed to get list of subscriptions.\n"))
 
@@ -108,19 +128,25 @@ remove <path>
         case Array("start", agent) =>
           val trueSender = sender()
           log.info(s"Got start command from $ip for $agent")
-          (agentLoader ? StartAgentCmd(agent)).onComplete{
-            case Success( msg:String ) =>
+          val future = (agentLoader ? StartAgentCmd(agent))
+          future.map{
+            case msg:String  =>
             trueSender ! Write(ByteString(msg +"\n"))
-            case Failure(a) =>
+          }
+          future.recover{
+            case a =>
               trueSender ! Write(ByteString("Command failure unknown.\n"))
           }
         case Array("stop", agent) => 
           val trueSender = sender()
           log.info(s"Got stop command from $ip for $agent")
-          (agentLoader ? StopAgentCmd(agent)).onComplete{
-            case Success( msg:String ) => 
+          val future = (agentLoader ? StopAgentCmd(agent))
+          future.map{
+            case msg:String => 
               trueSender ! Write(ByteString(msg +"\n"))
-            case Failure(a) =>
+          }
+          future.recover{
+            case a =>
               trueSender ! Write(ByteString("Command failure unknown.\n"))
           }
 
@@ -132,12 +158,15 @@ remove <path>
             val id = pathOrId.toInt
             log.info(s"Removing subscription with id: $id")
 
-            (subscriptionHandler ? RemoveSubscription(id)).onComplete{
-              case Success(true) =>
+            val future = (subscriptionHandler ? RemoveSubscription(id))
+            future.map{
+              case true =>
                 trueSender ! Write(ByteString(s"Removed subscription with $id successfully.\n"))
-              case Success(false)=>
+              case false =>
                 trueSender ! Write(ByteString(s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"))
-              case Failure(a) =>
+            }
+            future.recover{
+              case a =>
                 trueSender ! Write(ByteString("Command failure unknown.\n"))
             }
           } else {
@@ -188,9 +217,9 @@ class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, r
       log.info(s"CLI connected from $remote to $local")
 
       val cli = context.system.actorOf(
-        Props(new OmiNodeCLI( remote, agentLoader, subscriptionHandler, requestHandler )),
+        OmiNodeCLI.props( remote, agentLoader, subscriptionHandler, requestHandler ),
         "cli-" + remote.toString.tail)
-      connection ! Register(cli)
+        connection ! Register(cli)
     case _ => //noop?
   }
 

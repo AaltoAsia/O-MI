@@ -20,8 +20,7 @@ import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Awaitable
+import scala.concurrent.{Await, Awaitable, Future}
 import java.util.Date
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions.asJavaIterable
@@ -79,16 +78,15 @@ trait Starter {
       val write = WriteRequest( 60  seconds, objects)
       var promiseResult = PromiseResult()
       agentSystem ! PromiseWrite( promiseResult, write )
-      val future = promiseResult.isSuccessful
+      val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
       future.onSuccess{
         case s =>
         system.log.info("O-MI InputPusher system working.")
         true
       }
 
-      future.recover{
+      future.onFailure{
         case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
-        false
       }
       Await.result(future, 60 seconds)
     }

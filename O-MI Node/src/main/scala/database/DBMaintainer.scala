@@ -32,17 +32,31 @@ class DBMaintainer(val dbobject: DB)
   } else {
     log.info("using transient prevayler, taking snapshots is not in use.")
   }
-  private def takeSnapshot(): Long = {
+  type Hole
+  private def takeSnapshot: FiniteDuration = {
     log.info("Taking prevyaler snapshot")
-    val start : Long = System.currentTimeMillis()
-    Try(SingleStores.latestStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
-    Try(SingleStores.hierarchyStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
-    Try(SingleStores.eventPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
-    Try(SingleStores.intervalPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
-    Try(SingleStores.pollPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
-    Try(SingleStores.idPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
-    val end : Long= System.currentTimeMillis()
-    (end-start)
+    val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
+    Try[File]{
+      SingleStores.latestStore.takeSnapshot()
+    }.recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
+    Try[File]{
+      SingleStores.hierarchyStore.takeSnapshot()
+    }.recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
+    Try[File]{
+      SingleStores.eventPrevayler.takeSnapshot()
+    }.recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
+    Try[File]{
+      SingleStores.intervalPrevayler.takeSnapshot()
+    }.recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
+    Try[File]{
+      SingleStores.pollPrevayler.takeSnapshot()
+    }.recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
+    Try[File]{
+      SingleStores.idPrevayler.takeSnapshot()
+    }.recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
+    val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
+    val duration : FiniteDuration = end - start
+    duration
   }
   /**
    * Function for handling InputPusherCmds.
@@ -51,7 +65,7 @@ class DBMaintainer(val dbobject: DB)
   override def receive = {
     case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
     case TakeSnapshot                   => {
-      val snapshotDur = takeSnapshot()
+      val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur milliseconds")
       // remove unnecessary files (might otherwise grow until disk is full)
       val dirs = SingleStores.prevaylerDirectories

@@ -44,7 +44,7 @@ object `package` {
   type AgentName = String
 }
 
-  sealed trait AAgent{
+  sealed trait AgentInfoBase{
     def name:       AgentName
     def classname:  String
     def config:     String
@@ -53,14 +53,16 @@ object `package` {
     val name:       AgentName,
     val classname:  String,
     val config:     String
-  ) extends AAgent
+  ) extends AgentInfoBase
   case class AgentInfo(
     name:       AgentName,
     classname:  String,
     config:     String,
     agent:      ActorRef,
     running:    Boolean
-  ) extends AAgent
+  ) extends AgentInfoBase {
+  
+  }
 
 trait Receiving { 
   var receivers: Actor.Receive = Actor.emptyBehavior 
