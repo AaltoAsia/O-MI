@@ -127,10 +127,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     }.flatten.toArray
     pathOwners ++= pathsToOwner
   }
-
-  private def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
-
-    def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
+  private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
       val allExists = ownerToObjects.map{
         case (name: AgentName, objects: OdfObjects) =>
         (name,
@@ -175,6 +172,8 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
         }
       }
     }
+
+  private def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
     val senderName = sender().path.name
     log.debug( s"Received WriteRequest from $senderName.")
     val odfObjects = write.odf
@@ -182,9 +181,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
     // Collect metadata 
     val objectsWithMetadata = odfObjects.objectsWithMetadata
-    val allNodes = allInfoItems ++ objectsWithMetadata
+    //val allNodes = allInfoItems ++ objectsWithMetadata
 
-    val allPaths = allNodes.map( _.path )
+    val allPaths = allInfoItems.map( _.path )
     val ownerToPath = getOwners(allPaths:_*)
     
     //Get part that is owned by sender()
@@ -193,11 +192,11 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val promise = Promise[ResponsibleAgentResponse]()
       val future = pathsO.map{
         paths =>
-        val objects= allNodes.collect{
-          case node if paths.contains(node.path)=> fromPath(node) 
-        }.foldLeft(OdfObjects()){_.union(_)}
+        val infoItems= allInfoItems.filter{
+          case infoItem  : OdfInfoItem => paths.contains(infoItem.path) 
+        }
         log.debug( s"$senderName writing to paths owned by it: $pathsO")
-        handleOdf( objects )
+        writeValues(infoItems)
       }.getOrElse{
         Future.successful{SuccessfulWrite( Iterable.empty )}  
       }
@@ -208,12 +207,12 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     //Get part that isn't owned by anyone
     val writesToOwnerless:Promise[ResponsibleAgentResponse] = {
       val paths = allPaths.filter{ path => !allOwnedPaths.contains(path) }
-      val objects= allNodes.collect{
-        case node if paths.contains(node.path) => fromPath(node) 
-      }.foldLeft(OdfObjects()){_.union(_)}
+      val infoItems= allInfoItems.filter{
+        case infoItem : OdfInfoItem => paths.contains(infoItem.path) 
+      }
       log.debug( s"$senderName writing to paths not owned by anyone: $paths")
       val promise = Promise[ResponsibleAgentResponse]()
-      promise.completeWith(handleOdf( objects ))
+      promise.completeWith(writeValues(infoItems, objectsWithMetadata))
     }
 
     //Get part that is owned by other agents than sender()
@@ -221,9 +220,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val ownerToPaths= ownerToPath - senderName
       val ownerToObjects = ownerToPaths.mapValues{ 
         paths => 
-        allNodes.collect{ 
-          case node if paths.contains(node.path) => fromPath(node)
-        }.foldLeft(OdfObjects()){_.union(_)} 
+        allInfoItems.collect{
+          case infoItem if paths.contains(infoItem.path) => fromPath(infoItem)
+        }.foldLeft(OdfObjects())(_.union(_))
       }
       log.debug( s"$senderName writing to paths owned other agents.")
       callAgentsForResponsibility( write.ttl, ownerToObjects)
@@ -296,23 +295,14 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
    * Function for handling OdfObjects.
    *
    */
-  private def handleOdf(objects: OdfObjects):  Future[SuccessfulWrite] ={
-    if( objects.objects.nonEmpty ) {
-    // val data = getLeafs(objects)
-    // if ( data.nonEmpty ) {
-    val items = getInfoItems(objects)
-
-    // Collect metadata 
-    val other = objects.objectsWithMetadata
-    val all = items ++ other
-
-      val writeValues = handleInfoItems(items, other)
-      
-      writeValues.onSuccess{
+  private def writeValues(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[SuccessfulWrite] ={
+    if( infoItems.nonEmpty || objectMetadatas.nonEmpty ) {
+      val future = handleInfoItems(infoItems, objectMetadatas)
+      future.onSuccess{
         case u =>
           log.debug("Successfully saved Odfs to DB")
       }
-      writeValues.map{ 
+      future.map{ 
           paths => SuccessfulWrite( paths )
       }
     } else {

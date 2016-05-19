@@ -31,6 +31,8 @@ import java.util.Date
 import java.util.jar.JarFile
 import http.CLICmds._
 import database.DB
+import scala.language.postfixOps
+
 object AgentSystem {
   def props(dbobject: DB,subHandler: ActorRef): Props = Props(new AgentSystem(dbobject,subHandler))
 }

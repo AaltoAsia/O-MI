@@ -41,6 +41,7 @@ import java.sql.Timestamp
 import java.util.Date
 import java.util.jar.JarFile
 import http.CLICmds._
+import scala.language.postfixOps
 
 trait InternalAgentLoader extends BaseAgentSystem {
   import context.dispatcher
@@ -103,9 +104,9 @@ trait InternalAgentLoader extends BaseAgentSystem {
           log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
         case e: ClassNotFoundException =>
           log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
-        case e: Exception =>
+        case e: Throwable =>
           log.warning(s"Class $classname could not be loaded, created, initialized or started. Because received $e.")
-          log.warning(e.getStackTraceString)
+          log.warning(e.getStackTrace.mkString("\n"))
         case t => throw t
       }
     }

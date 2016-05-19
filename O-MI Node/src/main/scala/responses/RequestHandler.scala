@@ -136,22 +136,6 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
         log.error(e, "Internal Server Error: ")
         Future.successful(OmiGenerator.internalError(e))
     }
-
-    /*Try {
-      Await.result(responseFuture, request.ttl)
-    } match {
-      case Success((xml: NodeSeq, code: Int)) => (xml, code)
-      case Success(a)                         => a //TODO does this fix default case not specified problem?
-
-      case Failure(e: TimeoutException) =>
-        (OmiGenerator.timeOutError(e.getMessage), 503)
-      case Failure(e: IllegalArgumentException) =>
-        (OmiGenerator.invalidRequest(e.getMessage), 400)
-
-      case Failure(e) => // all exception should be re-thrown here to log it consistently
-        actionOnInternalError(e)
-        (OmiGenerator.internalError(e), 500)
-    }*/
   }
 
   /**

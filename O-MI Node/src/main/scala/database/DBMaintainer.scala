@@ -34,14 +34,14 @@ class DBMaintainer(val dbobject: DB)
   }
   private def takeSnapshot(): Long = {
     log.info("Taking prevyaler snapshot")
-    val start = System.currentTimeMillis()
+    val start : Long = System.currentTimeMillis()
     Try(SingleStores.latestStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
     Try(SingleStores.hierarchyStore.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
     Try(SingleStores.eventPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
     Try(SingleStores.intervalPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
     Try(SingleStores.pollPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
     Try(SingleStores.idPrevayler.takeSnapshot()).recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
-    val end = System.currentTimeMillis()
+    val end : Long= System.currentTimeMillis()
     (end-start)
   }
   /**

@@ -56,9 +56,9 @@ trait Starter {
   val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
   
 
-  def saveSettingsOdf(agentSystem: ActorRef) = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    if (settings.settingsOdfPath.nonEmpty) {
+  import scala.concurrent.ExecutionContext.Implicits.global
+  def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
+    if ( settings.settingsOdfPath.nonEmpty ) {
       // Same timestamp for all OdfValues of the settings
       val date = new Date();
       val currentTime = new java.sql.Timestamp(date.getTime)
@@ -83,10 +83,12 @@ trait Starter {
       future.onSuccess{
         case s =>
         system.log.info("O-MI InputPusher system working.")
+        true
       }
 
       future.recover{
         case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        false
       }
       Await.result(future, 60 seconds)
     }

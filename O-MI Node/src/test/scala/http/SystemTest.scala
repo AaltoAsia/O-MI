@@ -34,24 +34,29 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   override val subHandlerDbConn = dbConnection
 
-  override val subManager = system.actorOf(Props(new SubscriptionManager()(subHandlerDbConn)), "subscription-handler-test")
+  override val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler-test")
 
   override def start(dbConnection: DB): ActorRef = {
     val agentManager = system.actorOf(
       AgentSystem.props(dbConnection, subManager),
       "agent-system"
     )
-    val sensorDataListener = system.actorOf(Props(new ExternalAgentListener(agentManager)), "agent-listener")//classOf[ExternalAgentListener]), "agent-listener")
-    // do not start InternalAgents to keep database clean
-    //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
-    //
-    // val omiNodeCLIListener =system.actorOf(
-    //   Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
-    //   "omi-node-cli-listener"
-    // )
+    
+    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
+    //val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
+    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
+    /*
+    val omiNodeCLIListener =system.actorOf(
+      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
+      "omi-node-cli-listener"
+    )*/
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subManager, agentManager)(dbConnection))), "omi-service")
+    val omiService = system.actorOf(Props(
+      new OmiServiceActor(
+        requestHandler
+      )
+    ), "omi-service")
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
