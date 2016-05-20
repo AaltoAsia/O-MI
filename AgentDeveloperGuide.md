@@ -7,9 +7,9 @@ O-MI Node.
 
 There are two kind of Agents using different interfaces: 
 - *External agents* that push O-DF formatted sensor data to a TCP port of O-MI Node.
-- *Internal agents* that can be loaded from .jar file and instantiated to be run inside same 
+- *Internal agents* that are loaded from .jar file and instantiated to be run inside same 
 JVM as O-MI Node. They can also own paths, and receive any authorized write to them for futher 
-handling. *Internal agents* that owns at least a path is called *responsible*.
+handling. *Internal agents* that owns any paths is called *responsible*.
 
 External Agent
 --------------
@@ -31,9 +31,9 @@ Internal Agent
 ----------------
 *Internal agents* are classes loaded from .jar files to `AgentSystem` by `InternalAgentLoader`.
 `InternalAgentLoader` instantiate *internal agents* and send `Configure` and `Start` commands
-to it. If all three step were successful, *internal agent* is added to `AgentSystem`. After 
+to it. If all three steps were successful, *internal agent* is added to `AgentSystem`. After 
 this *internal agent* can write data to O-MI node through `AgentSystem` by sending
-a `PromiseWrite` to `AgentSystem`. How *internal agent* get data is leaved for itself to
+a `PromiseWrite` to `AgentSystem`. How *internal agent* get data, is leaved for themself to
 implement. If *internal agent* is *responsible*, it also must be able to handle 
 `ResponsibleWrite` with `handleWrite` method.
 
@@ -44,15 +44,15 @@ Continue reading for more detailled explanitation of class structure of `Interna
 skip to `BasicAgent` for example implementation.
 
 `InternalAgent` is a trait extending `Actor` with `ActorLogging` and `Receiving`.
-It has helper two methods, `name` for accessing its name in `ActorSystem` and `parent` for
-getting  `ActorRef` of `AgentSystem`. It also has four abstract methods each handling received 
+It has two helper methods, `name` for accessing its name in `ActorSystem` and `parent` for
+getting  `ActorRef` of `AgentSystem`. It also has four abstract methods, each handling received
 respective command received from `AgentSystem`. `Receiving` trait is used to force handling of 
 commands, because Akka's ask pattern is used when commands are send from `AgentSystem`.
 
 `Receining` trait implements two 
 methods. Method `receiver` adds given `Actor.Receive` to `receivers` so that it is called if 
 there is not matching case statement for received message in any previously added 
-`Actor.Receive`. Another final method is receive that calls receivers. 
+`Actor.Receive`s. Another final method is receive that calls receivers. 
 
 `InternalAgent` calls `receiver` method adding Start, Restart, Stop and Configure 
 commands to handled commands so that command's respective method's return value is send back 
@@ -68,14 +68,15 @@ is called when *responsible internal agent* receives `ResponsibleWrite' from `Ag
 `ReponsibleWrite` contains a `Promise` that needs to be complete with 
 a `ResponsibleAgentResponse`. If received write in `ResponsibleWrite` was okay and no futher 
 processing is needed, *responsible internal agent* sends it with `PromiseWrite` to
-`AgentSystem`, that accepts writes to ownerless paths and paths owned by sender automaticly.
+`AgentSystem`, that accepts writes to ownerless paths and paths owned by sender.
 
 ###BasicAgent.scala
-We want to create simple *internal agent* that takes a path as config string and writes new 
+We want to create a simple *internal agent*, that takes a path as config string and writes new 
 values to it every specified interval. First we create `class BasicAgent` that 
 `extends InternalAgent`. We need to implement following methods: `start`, `restart`, `stop`
 and `configure(config: String)`. `AgentSystem` will first send `Configure(config: String)` so
-sets start with method `configure( config: String )`:
+lets start with method `configure( config: String )`:
+
 ```Scala
 package agents
 
@@ -103,11 +104,13 @@ class BasicAgent  extends InternalAgent{
       CommandSuccessful("Successfully configured.")
   }
 ```
+
 Because of straigth forward passing of `config` as `String`, `BasicAgent` can do anything it 
 wants for configuration. In this case  we will just create a `Path` from it and save it in 
-variable `pathO`. We must return a `CommandSuccessful` to `AgentSystem` so that it knows that c
-onfiguration was successful. After successful configuration `AgentSystem` will send `Start` 
+variable `pathO`. We must return a `CommandSuccessful` to `AgentSystem` so that it knows that 
+configuration was successful. After successful configuration `AgentSystem` will send `Start` 
 command to *internal agent*. So lets implement `start` method next.
+
 
 ```Scala
   //Message for updating values
@@ -128,6 +131,7 @@ command to *internal agent*. So lets implement `start` method next.
     CommandSuccessful("Successfully started.")
   }
 ```
+
 We want to update path value for every interval. Because *internal agents* are `Actor`s we can 
 use `system.scheluder` to schelude repeated sending of a message to `BasicAgent`. First we 
 create immutable message `Update()` and `interval` variable. We want to be able to stop 
@@ -139,6 +143,7 @@ a message to be send. Again we must return `CommandSuccessful` to `AgentSystem`.
 *internal agent* successfully `AgentSystem` will not send more messages with out receiving comm
 and to do so. Other commands still need to be implemented. `Stop` command is used by `restart` 
 command so lets implemented it first.
+
 
 ```Scala
   protected def stop = updateSchelude match{
@@ -155,10 +160,12 @@ command so lets implemented it first.
     case None => CommandFailed("Failed to stop agent, no job found.")
   }
 ```
+
 To stop `BasicAgent` from updating values, we need to cancel scheluded repeated message
 sending. Calling `cancel()` for `job` returns true if cancellation was successful, but job may
 have been cancelled allready and could return `false`. So we check `job`'s status with 
 `isCancelled` and return result to `AgentSystem`.
+
 
 ```Scala
 //Restart agent, first stop it and then start it
@@ -170,7 +177,7 @@ protected def restart = {
 }
 ```
 `BasicAgent now has all functionality required by `InternalAgent` trait, but it does not write
-any data to O-MI Node. Lets implement update method that writes dato to O-MI Node.
+any data to O-MI Node. Lets implement update method that writes data to O-MI Node.
 ```Scala
   //Random number generator for generating new values
   val rnd: Random = new Random()
@@ -210,24 +217,17 @@ any data to O-MI Node. Lets implement update method that writes dato to O-MI Nod
 ```
 First there is some helper methods for value generation. Method `update` will try to write
 new value only if `BasicAgent` has a O-DF path. First we create a O-DF structure to be writed 
-and then `WriteRequest` containin it and `ttl` parameter. We could use Akka's ask pattern to 
-send write to `AgentSystem` and receive result from a 'Future', but `AgentSystem` could need to
-wait confirmations from other *internal agents* when we are writing to paths owned by them. 
-This could block `AgentSystem` from processing other received messages. To avoid blocking, 
-a `Promise` is send along the write, `AgentSystem` will complete it with a `Future`. 
-Because single write can cause need for multiple corfirmations from *internal agents*, the 
-`Future` completing the `Promise` passed to `AgentSystem` will return iterable containing 
-`Promise`s for results from confirmations. Proccessing results from one write could be
-difficult without wrapping it into `PromiseResult` and it's methods for most common cases.
-So we create a `PromiseResult` and use `!` to send `PromiseWrite` to `AgentSystem` that handles
-things for us. Then we aggregate successful writes to single result, when all writes have a 
-result. If all writes were succellful we log it at debug level or if even one write failed, we 
-log it at warnnig level.
+and then `WriteRequest` containing it and `ttl` parameter. To avoid blocking `AgentSystem` from
+processing other messages, we create a `PromiseResult` and use `!` to send `PromiseWrite`,
+containing `PromiseResult`, to `AgentSystem` that handles responsibility checks and write
+values to database for us. `AgentSystem` will return results through `PromiseResult`. If all
+results were successful we log it at debug level, and if any of writes failed, we receive first
+failure and log it as warning. Other writes may have still been successful.
 
 `BasicAgent` will not yet call method `update` when `Update` is  received. We need to add 
-a match case for it. This is not done same way than with normal `Actor`. We used `Receiver`
-trait to force implementation of commands: `Start`, `Stop`, `Restart` and `Configure`. Now we
-have to use `receiver` to add new match case for message `Update`.
+a match case for it. This is not done same way than with normal `Actor`, because `Receiver`
+trait is used to force implementation of commands: `Start`, `Stop`, `Restart` and `Configure`.
+Now we have to use `receiver` to add new match case for message `Update`.
 ```
   receiver{
     case Update => update
@@ -288,9 +288,10 @@ We add new object to `agent-system.internal-agents` in `application.conf`:
 }
 ```
 Now restart O-MI Node to update its configuration.
+
 ODFAgent
 ---------------
 ODFAgent is also very simple agent that get path to .xml file as config string.
-This file contains a O-DF structure.
-ODFAgent parses xml file for O-DF, and start random generating values for OdfInfoItems.
+This file contains a O-DF structure. ODFAgent parses xml file for O-DF, and start random
+generating values for `OdfInfoItems` in O-DF Structure.
 
