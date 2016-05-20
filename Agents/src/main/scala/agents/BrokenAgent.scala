@@ -5,16 +5,15 @@ import agentSystem._
 import types._
 import types.OdfTypes._
 import types.OmiTypes._
+import akka.util.Timeout
+import akka.actor.Cancellable
+import akka.pattern.ask
 import java.sql.Timestamp;
-import java.util.Random;
-import java.util.Date;
+import java.util.{Random, Date};
 import scala.util.{Success, Failure}
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
 import scala.concurrent._
 import scala.concurrent.duration._
-import akka.util.Timeout
-import akka.actor.Cancellable
-import akka.pattern.ask
 
 class BrokenAgent  extends InternalAgent{
   import scala.concurrent.ExecutionContext.Implicits._
@@ -91,15 +90,6 @@ class BrokenAgent  extends InternalAgent{
     stop match{
       case success  : InternalAgentSuccess => start
       case error    : InternalAgentFailure => error
-    }
-  }
-  protected def quit = {
-    stop match{
-      case error    : InternalAgentFailure => error
-      case success  : InternalAgentSuccess => 
-      sender() ! CommandSuccessful("Successfully quit.")
-      context.stop(self) 
-      CommandSuccessful("Successfully quit.")
     }
   }
   protected def handleWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {

@@ -33,7 +33,6 @@ sealed trait InternalAgentCmd
   case class Start()                    extends InternalAgentCmd
   case class Restart()                  extends InternalAgentCmd
   case class Stop()                     extends InternalAgentCmd
-  case class Quit()                     extends InternalAgentCmd
   case class Configure(config: String)  extends InternalAgentCmd
 sealed trait InternalAgentResponse{
   def msg : String
@@ -48,17 +47,16 @@ sealed trait ResponsibleAgentResponse
   case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
 
 trait InternalAgent extends Actor with ActorLogging with Receiving{
-  def name = self.path.name
+  protected def parent = context.parent
+  protected def name = self.path.name
   protected def start   : InternalAgentResponse 
   protected def restart : InternalAgentResponse
   protected def stop    : InternalAgentResponse
-  protected def quit    : InternalAgentResponse
   protected def configure(config: String)  : InternalAgentResponse
   receiver{
     case Start()                    => sender() ! start
     case Restart()                  => sender() ! restart
     case Stop()                     => sender() ! stop
-    case Quit()                     => sender() ! quit
     case Configure(config: String)  => sender() ! configure(config)
   }
 }

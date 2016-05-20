@@ -14,18 +14,15 @@
 package types
 package OdfTypes
 
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
+import OdfTreeCollection._
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
+import scala.xml.XML
 import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
-
-
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable, seqAsJavaList}
-import scala.xml.XML
-
-import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes._
-import OdfTreeCollection._
 
 /** Class implementing OdfInfoItem. */
 class  OdfInfoItemImpl(

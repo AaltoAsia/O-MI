@@ -1,28 +1,22 @@
 package agents
 
-import java.io.File
-import scala.io.Source
-
-import java.sql.Timestamp
-import scala.util.Random
-
-// Scala XML contains also parsing package
-import parsing.OdfParser
-import scala.xml._
-
-import scala.concurrent.duration._
-import akka.util.Timeout
-import akka.actor.Cancellable
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
-
 import agentSystem._
-//import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import types._
 import types.OmiTypes.WriteRequest
 import types.Path._
 import types.OdfTypes._
+import parsing.OdfParser
+import akka.util.Timeout
+import akka.actor.Cancellable
+import scala.xml._
+import scala.io.Source
+import scala.util.Random
+import scala.concurrent.duration._
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
+import java.io.File
+import java.sql.Timestamp
 
-
+// Scala XML contains also parsing package
 class ODFAgent extends InternalAgent {
   
   import scala.concurrent.ExecutionContext.Implicits._
