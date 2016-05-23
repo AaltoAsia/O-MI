@@ -34,7 +34,10 @@ import database.DB
 import scala.language.postfixOps
 
 object AgentSystem {
-  def props(dbobject: DB,subHandler: ActorRef): Props = Props(new AgentSystem(dbobject,subHandler))
+  def props(dbobject: DB,subHandler: ActorRef): Props = Props(
+  {val as = new AgentSystem(dbobject,subHandler)
+  as.start()
+  as})
 }
 class AgentSystem(val dbobject: DB, val subHandler: ActorRef) extends CoreAgentSystem 
                   with InternalAgentLoader
@@ -78,5 +81,5 @@ abstract class BaseAgentSystem extends Actor with ActorLogging with Receiving{
 class CoreAgentSystem extends BaseAgentSystem {
   /** Container for internal agents */
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
-  protected[this] val settings = Settings(context.system)
+  protected[this] val settings = http.Boot.settings
 }
