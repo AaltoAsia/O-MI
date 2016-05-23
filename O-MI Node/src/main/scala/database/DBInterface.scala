@@ -35,7 +35,7 @@ package object database {
     setEventHooks = f :: setEventHooks
   def getSetHooks = setEventHooks
 
-  private[this] var histLength = 10
+  private[this] var histLength = 15 //http.Boot.settings.numLatestValues
   /**
    * Sets the historylength to desired length
    * default is 10
