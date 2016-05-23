@@ -41,7 +41,7 @@ class OmiServiceTest extends Specification
   "System tests for features of OMI Node service".title
 
   def beforeAll() = {
-    //Boot.init(dbConnection)
+    Boot.saveSettingsOdf(agentManager)//Boot.init(dbConnection)
     Thread.sleep(1000)
     // clear if some other tests have left data
     //    dbConnection.clearDB()
@@ -57,7 +57,7 @@ class OmiServiceTest extends Specification
   }
 
   "Data discovery, GET: OmiService" >> {
-
+    sequential
     "respond with hello message for GET request to the root path" >> {
       Get() ~> myRoute ~> check {
         mediaType === `text/html`

@@ -20,6 +20,7 @@ import spray.can.Http
 import spray.client.pipelining._
 import spray.http._
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -27,7 +28,13 @@ import scala.util.Try
 import scala.xml._
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
-  
+
+  val testSettings = new OmiConfigExtension(
+    ConfigFactory.load("testconfig")
+  )
+
+  override val settings = testSettings
+
   //testHelpers.utils.removeAllPrevaylers
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
@@ -38,7 +45,12 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   override def start(dbConnection: DB): ActorRef = {
     val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subManager),
+      //AgentSystem.props(dbConnection, subManager),
+      Props({val as = new AgentSystem(dbConnection,subManager) {
+        override val settings = testSettings
+      }
+      as.start()
+      as}),
       "agent-system"
     )
     
@@ -80,7 +92,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   val probe = TestProbe()
   lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
-  IO(Http) ! Http.Bind(testServer, interface = "localhost", port = 20002)
+  implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
+  IO(Http) ? Http.Bind(testServer, interface = "localhost", port = 20002)
 
   val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
   val printer = new scala.xml.PrettyPrinter(80, 2)

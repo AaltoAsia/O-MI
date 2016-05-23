@@ -65,8 +65,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
   /*
    * TODO: Use database and Authetication for responsible agents
    */
-  protected[this] val pathOwners: scala.collection.mutable.Map[Path,AgentName] = scala.collection.mutable.Map.empty
-  getConfigsOwnerships()
+  protected[this] lazy val pathOwners: scala.collection.mutable.Map[Path,AgentName] =
+    getConfigsOwnerships()
+  //getConfigsOwnerships()
   receiver {
     //Write can be received either from RequestHandler or from InternalAgent
     case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
@@ -90,7 +91,8 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     }
   } 
   def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}
-  protected def getConfigsOwnerships(): Unit = {
+
+  protected def getConfigsOwnerships() = {
     log.info(s"Setting path ownerships for Agents from config.")
     val agents = settings.internalAgents
     val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
@@ -109,8 +111,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
           log.warning(s"List of owned paths for $name couldn't converted to java.util.List<String>")
           List.empty
       }
-    }.flatten.toArray
-    pathOwners ++= pathsToOwner
+    }.flatten.toMap
+    //pathOwners ++= pathsToOwner
+    collection.mutable.Map(pathsToOwner: _*)
   }
   private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
       val allExists = ownerToObjects.map{

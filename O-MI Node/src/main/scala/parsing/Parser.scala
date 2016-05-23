@@ -35,7 +35,7 @@ import scala.xml.XML
 abstract trait Parser[Result] {
 
   // Secure parser that has a fix for xml external entity attack (and xml bomb)
-  val XMLParser = {
+  def XMLParser = {
     val spf = SAXParserFactory.newInstance()
     spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
     spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
