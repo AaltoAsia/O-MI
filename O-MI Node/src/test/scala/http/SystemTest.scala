@@ -3,7 +3,7 @@ import java.net.InetSocketAddress
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
-import agentSystem.ExternalAgentListener
+import agentSystem.{AgentSystem, ExternalAgentListener}
 import akka.actor.{ActorRef, Props}
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
@@ -11,18 +11,16 @@ import akka.testkit.TestProbe
 import akka.util.Timeout
 import database._
 import org.specs2.concurrent.ExecutionEnv
-import org.specs2.execute.Result
-import org.specs2.execute.AsResult
 import org.specs2.mutable._
 //import org.specs2.specification.core.Fragment
-import org.specs2.specification.core.Fragments
 //import org.specs2.specification.Fragment
-import org.specs2.specification.{AfterAll}//, Fragments}
-import responses.{SubscriptionHandler, RequestHandler}
+import org.specs2.specification.AfterAll
+import responses.{RequestHandler, SubscriptionManager}
 import spray.can.Http
 import spray.client.pipelining._
 import spray.http._
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -30,27 +28,47 @@ import scala.util.Try
 import scala.xml._
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
-  
+
+  val testSettings = new OmiConfigExtension(
+    ConfigFactory.load("testconfig")
+  )
+
+  override val settings = testSettings
+
   //testHelpers.utils.removeAllPrevaylers
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
 
   override val subHandlerDbConn = dbConnection
-  override val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler-test")
+
+  override val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler-test")
 
   override def start(dbConnection: DB): ActorRef = {
-    val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
-
-    // do not start InternalAgents to keep database clean
-    //    val agentLoader = system.actorOf(InternalAgentLoader.props() , "agent-loader")
-    //
-    // val omiNodeCLIListener =system.actorOf(
-    //   Props(new OmiNodeCLIListener(  agentLoader, subHandler)),
-    //   "omi-node-cli-listener"
-    // )
+    val agentManager = system.actorOf(
+      //AgentSystem.props(dbConnection, subManager),
+      Props({val as = new AgentSystem(dbConnection,subManager) {
+        override val settings = testSettings
+      }
+      as.start()
+      as}),
+      "agent-system"
+    )
+    
+    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
+    //val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
+    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
+    /*
+    val omiNodeCLIListener =system.actorOf(
+      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
+      "omi-node-cli-listener"
+    )*/
 
     // create omi service actor
-    val omiService = system.actorOf(Props(new OmiServiceActor(new RequestHandler(subHandler)(dbConnection))), "omi-service")
+    val omiService = system.actorOf(Props(
+      new OmiServiceActor(
+        requestHandler
+      )
+    ), "omi-service")
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
@@ -67,14 +85,15 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   // init without settings odf:
 
   // Create input pusher actor
-  initInputPusher(dbConnection)
+  //initInputPusher(dbConnection)
 
   val serviceActor = start(dbConnection)
   bindHttp(serviceActor)
 
   val probe = TestProbe()
   lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
-  IO(Http) ! Http.Bind(testServer, interface = "localhost", port = 20002)
+  implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
+  IO(Http) ? Http.Bind(testServer, interface = "localhost", port = 20002)
 
   val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
   val printer = new scala.xml.PrettyPrinter(80, 2)

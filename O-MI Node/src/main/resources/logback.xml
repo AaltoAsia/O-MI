@@ -4,32 +4,46 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
         <encoder>
-            <pattern>%X{akkaTimestamp} %-5level[%thread] %logger{0} - %msg%n</pattern>
+            <pattern>%date{ISO8601} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/omi.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>logs\omi.%i.log</fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>4</maxIndex>
-    </rollingPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>logs\omi.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>4</maxIndex>
+        </rollingPolicy>
 
-    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>10MB</maxFileSize>
-    </triggeringPolicy>
-       <append>true</append>
-    <encoder>
-      <pattern>%date{yyyy-MM-dd} %X{akkaTimestamp} %-5level[%thread] %logger{1} - %msg%n</pattern>
-    </encoder>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>10MB</maxFileSize>
+        </triggeringPolicy>
+        <append>true</append>
+        <encoder>
+            <pattern>%date{yyyy-MM-dd} %X{akkaTimestamp} %-5level %logger{0} - %msg%n</pattern>
+        </encoder>
     </appender>
 
-    <logger name="akka" level="DEBUG" />
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE" />
+    </appender>
 
-    <root level="INFO">
+
+
+    <logger name="akka" level="DEBUG" />
+    <logger name="slick" level="INFO" />
+    <logger name="com.zaxxer.hikari" level="INFO" />
+    <logger name="HikariPool" level="INFO" />
+
+    <logger name="agentSystem" level="INFO" />
+    <logger name="accessControl" level="INFO" />
+    <logger name="spray.can" level="INFO" />
+    <logger name="akka.io.TcpListener" level="INFO" />
+
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="ASYNC"/>
     </root>
 
 </configuration>

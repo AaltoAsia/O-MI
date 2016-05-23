@@ -338,7 +338,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
         __scope: scala.xml.NamespaceBinding, __typeAttribute: Boolean): scala.xml.NodeSeq =
       scala.xml.Elem(scalaxb.Helper.getPrefix(__namespace, __scope).orNull, 
         __elementLabel getOrElse { sys.error("missing element label.") },
-        scala.xml.Null, __scope, scala.xml.Text(__obj.toString))
+        scala.xml.Null, __scope, true, scala.xml.Text(__obj.toString))
   }
 
   trait DefaultRequestBaseTypableFormat extends scalaxb.XMLFormat[RequestBaseTypable] {
@@ -494,7 +494,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
         __scope: scala.xml.NamespaceBinding, __typeAttribute: Boolean): scala.xml.NodeSeq =
       scala.xml.Elem(scalaxb.Helper.getPrefix(__namespace, __scope).orNull, 
         __elementLabel getOrElse { sys.error("missing element label.") },
-        scala.xml.Null, __scope, scala.xml.Text(__obj.toString))
+        scala.xml.Null, __scope, true, scala.xml.Text(__obj.toString))
   }
 
   trait DefaultRequestResultTypeFormat extends scalaxb.ElemNameParser[RequestResultType] {

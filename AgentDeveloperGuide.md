@@ -1,183 +1,333 @@
-Agent Developer Guide
-=====================
+
 
 What are Agents?
-----------------
-Agents are small programs that connect to sensors and push received data to
+================
+
+Agents are small programs that are connect to devices and push received data to
 O-MI Node. 
 
-There are two kind of Agents using different interfaces: 
-* *External agents* that push O-DF formatted sensor data to a TCP port of O-MI
-Node.
-* *Internal agents* that can be loaded from .jar file and instantiated to be run
-inside same JVM as O-MI Node.
+There are two kinds of Agents using different interfaces: 
+- *External agents* that push O-DF formatted sensor data to a TCP port of O-MI Node.
+- *Internal agents* that are loaded from .jar file and instantiated to be run inside the same 
+JVM as O-MI Node. They can also own paths and receive any authorized write to them for futher 
+handling. *Internal agents* that owns any paths is called *responsible*.
 
 External Agent
---------------
-All you need to do is to write a program that pushes O-DF formatted data to the TCP
+==============
+
+The recommended option for writing data from outside of O-MI Node is to send O-MI write request to it. 
+This is prefered way because there are more security options. 
+
+Another way is to write a program that pushes O-DF formatted data to the TCP
 port defined by `application.conf`'s omi-service.external-agent-port parameter.
 Program can be written with any programming language. See
 [the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
 Starting and stopping of external agents are the user's responsibility.
 
-Another option for writing data from outside of O-MI Node is to send O-MI write request to it. 
-
-If your external agent is run on a different computer, you will need to add its IP-address to 
-`o-mi-service.input-whitelist-ips`. You can also accept input from subnets by adding 
-their masks to `o-mi-service.input-whitelist-subnets`.
-
-There is also possibility to use Shibboleth authentication to get permission for writing.
+If your external agent is run on a different computer, you will need to add its IP-address to
+`o-mi-service.input-whitelist-ips`. You can also accept input from subnets by adding their masks to
+`o-mi-service.input-whitelist-subnets`.
 
 Internal Agent
+================
+
+*Internal agents* are classes loaded from .jar files to `AgentSystem` by `InternalAgentLoader`.
+`InternalAgentLoader` instantiates *internal agents* and send `Configure` and `Start` commands to
+it. If all of the three steps were successful, the *internal agent* is added to `AgentSystem`. After
+this, *internal agent* can write data to O-MI node through `AgentSystem` by sending a `PromiseWrite`
+to `AgentSystem`. How *internal agent* gets data, is left for themself to implement. If *internal
+agent* is *responsible*, it also must be able to handle `ResponsibleWrite` with `handleWrite`
+method.
+
+*Internal agent*'s name, class and configuration is read from `applicantion.conf`.  If agent owns
+any paths, they are also read from `application.conf`.
+
+Continue reading for more detailed explanation of the class structure of `InternalAgent` or skip to
+`BasicAgent` for an example implementation.
+
+`InternalAgent` is a trait extending `Actor` with `ActorLogging` and `Receiving`.  It has two helper
+methods, `name` for accessing its name in `ActorSystem` and `parent` for getting  `ActorRef` of
+`AgentSystem`. It also has four abstract methods, each handling received respective command received
+from `AgentSystem`. `Receiving` trait is used to force handling of commands, because Akka's ask
+pattern is used when commands are sent from `AgentSystem`.
+
+`Receiving` trait implements two methods. Method `receiver` adds given `Actor.Receive` function to
+`receivers` so that it is called if there is no matching case statement for received message in any
+previously added `Actor.Receive`s. Another final method is `receive` that calls receivers. 
+
+`InternalAgent` calls `receiver` method adding Start, Restart, Stop and Configure commands to
+handled commands so that command's respective method's return value is sent back to the sender,
+`AgentSystem`. Now creating an InternalAgent means only creating a class extending `InternalAgent`
+and implementing metods: `start`, `stop`, `restart`, and `configure(config: String)`.
+
+To write data to O-MI Node, *internal agent* needs to send a `PromiseWrite` containing a
+`WriteRequest` to `AgentSystem`.
+
+`ResponsibleInternalAgent` trait extends `InternalAgent` trait with `handleWrite` method which is
+called when *responsible internal agent* receives `ResponsibleWrite` from `AgentSystem`.
+`ReponsibleWrite` contains a `Promise` that needs to be completed with a `ResponsibleAgentResponse`.
+If received write in `ResponsibleWrite` was okay and no futher processing is needed, *responsible
+internal agent* sends it with `PromiseWrite` to `AgentSystem`, that accepts writes to ownerless
+paths and paths owned by sender.
+
+BasicAgent.scala
 ----------------
-*InternalAgent* is an abstract class extending `Thread` class. They have two
-abstract methods: `init` and `run`. After an `InternalAgent` is created its `init`
-method is called with the string given for agent in `application.conf`. This string can
-contain anything, like a path to a config file. After this `InternalAgent`'s `start` method is
-called. This causes the `run` method to be run in an another thread. 
 
-InternalAgent have also two other members: 
-* `LoggingAdapter log` for logging and 
-* `ActorRef loader` for communication with the `InternalAgentLoader`. 
+We want to create a simple *internal agent*, that takes a path as config string and writes new
+values to it at every specified interval. First we create `class BasicAgent` that `extends
+InternalAgent`. We need to implement following methods: `start`, `restart`, `stop` and
+`configure(config: String)`. `AgentSystem` will at first call `Configure(config: String)` so let's
+start with method `configure( config: String )`:
 
-For pushing data to database `InputPusher`'s interface is used. It has five
-static public methods:
-- `handleOdf` that takes an `OdfObjects` as parameter,
-- `handleObjects` that takes an `Iterable` of `OdfObject` as parameter,
-- `handleInfoItems` that takes an `Iterable` of `OdfInfoItem` as parameter,
-- `handlePathValuePairs` that takes an `Iterable` of `(Path, OdfValue)` pairs as parameter,
-- `handlePathMetaDataPairs` that takes an `Iterable` of `(Path, OdfMetaData)` pairs as parameter,
+```Scala
+package agents
 
-To make internal agents you need to have 
-**o-mi-node.jar as a library and added to your classpath**.
+import agentSystem._ 
+import types._
+import types.OdfTypes._
+import types.OmiTypes._
+import akka.util.Timeout
+import akka.actor.Cancellable
+import akka.pattern.ask
+import scala.util.{Success, Failure}
+import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
+import scala.concurrent._
+import scala.concurrent.duration._
+import java.sql.Timestamp;
+import java.util.Random;
+import java.util.Date;
+import scala.concurrent.ExecutionContext.Implicits._
 
-`JavaAgent` and `ScalaAgent` both take an O-DF path as `config`
-parameter and start pushing random generated values to that path.
+class BasicAgent  extends InternalAgent{
 
-Lets look at JavaAgent.java:
-```java
-public class JavaAgent extends InternalAgent{
-    public JavaAgent() { 
+  //Path of owned O-DF InfoItem, Option because ugly mutable state
+  var pathO: Option[Path] = None
+
+  protected def configure(config: String ) : InternalAgentResponse = {
+      pathO  = Some( Path(config) )
+      CommandSuccessful("Successfully configured.")
+  }
+```
+
+Because of the straigthforward way of passing `config` as a `String`, `BasicAgent` can do anything
+it wants for configuration. In this case we will just create a `Path` from it and save it in
+variable `pathO`. We must return a `CommandSuccessful` to `AgentSystem` so that it knows that the
+configuration was successful. After a successful configuration `AgentSystem` will send `Start`
+command to the *internal agent*. So let's implement the `start` method next.
+
+
+```Scala
+  //Message for updating values
+  case class Update()
+
+  //Interval for scheduling generation of new values
+  val interval : FiniteDuration = Duration(60, SECONDS) 
+
+  //Cancellable update of values, Option because ugly mutable state
+  var updateSchedule : Option[Cancellable] = None
+
+  protected def start = {
+    // Schedule update and save job, for stopping
+    // Will send Update message to self every interval
+    updateSchedule = Some(context.system.scheduler.schedule(
+      Duration(0, SECONDS),
+      interval,
+      self,
+      Update
+    ))
+
+    CommandSuccessful("Successfully started.")
+  }
+```
+
+We want to update value of the path for every interval. Because *internal agents* are `Actor`s we
+can use `system.scheduler` to schedule repeated sending of a message to `BasicAgent`. First we
+create immutable message `Update()` and `interval` variable. We want to be able to stop `BasicAgent`
+from updating values. This is achieved by saving `Cancelable` created by scheduling. Scheduling is
+done by calling `context.system.scheduler.schedule(...)`. We are not interested with the first
+parameter defining delay. Second parameter is interval of which sending is repeated. Third parameter
+is `ActorRef` of the `Actor` that receives messages. Fourth parameter is a message to be sent. Again
+we must return `CommandSuccessful` to `AgentSystem`. After starting *internal agent* successfully
+`AgentSystem` will not send more messages without receiving command to do so. Other commands still
+need to be implemented. `Stop` command is used by `restart` command so let's implemented it first.
+
+
+```Scala
+  protected def stop = updateSchedule match{
+
+    //If agent has scheduled update, cancel job
+    case Some(job) =>
+      job.cancel() 
+
+      //Check if job was cancelled
+      if (job.isCancelled) {
+        CommandSuccessful("Successfully stopped.")
+      } else {
+        CommandFailed("Failed to stop agent.")
+      }
+
+    case None => CommandFailed("Failed to stop agent, no job found.")
+  }
+```
+
+To stop `BasicAgent` from updating values, we need to cancel scheduled repeated message sending.
+Calling `cancel()` for `job` returns true if cancellation was successful, but job may have been
+cancelled already and could return `false`. So we check `job`'s status with `isCancelled` and return
+result to `AgentSystem`.
+
+
+```Scala
+  //Restart agent, first stop it and then start it
+  protected def restart = {
+      stop match{
+          case success  : InternalAgentSuccess => start
+          case error    : InternalAgentFailure => error
+      }
+  }
+```
+
+`BasicAgent` now has all functionality required by `InternalAgent` trait, but it does not write any
+data to O-MI Node. Let's implement update method that writes data to O-MI Node.
+
+```Scala
+  //Random number generator for generating new values
+  val rnd: Random = new Random()
+
+  def newValueStr = rnd.nextInt().toString 
+
+  //Helper function for current timestamps
+  def currentTimestamp = new Timestamp(  new java.util.Date().getTime() )
+
+  //Update values in paths
+  def update() : Unit = {
+
+    //Only run if some path found 
+    pathO.foreach{ path => 
+      val timestamp = currentTimestamp
+      val typeStr = "xs:integer"
+
+      //Generate new values and create O-DF
+      val infoItem = OdfInfoItem(path,Vector(OdfValue(newValueStr,typeStr,timestamp)))
+
+      //fromPath generate O-DF structure from a node's path and returns OdfObjects
+      val objects : OdfObjects = fromPath(infoItem)
+
+      //interval as time to live
+      val write = WriteRequest( interval, objects )
+
+      //PromiseResults contains Promise containing Iterable of Promises and has some helper methods.
+      //The first level Promise is used for getting answer from AgentSystem and second level Promises are
+      //used to get results of actual writes and from agents that owned paths that this agent wanted to write.
+      val result = PromiseResult()
+
+      //Let's fire and forget our write, results will be received and handled through promiseResult
+      parent ! PromiseWrite( result, write )
+
+      //isSuccessful will return combined result or the first failed write.
+      val succ = result.isSuccessful
+
+      succ.onSuccess{
+        case s: SuccessfulWrite =>
+          log.debug(s"$name pushed data successfully.")
+      }
+      succ.onFailure{
+        case e => 
+          log.warning(s"$name failed to write all data, error: $e")
+      }
     }
-    private Path path;
-    private Random rnd;
-    private boolean initialised = false;
-    public void init( String config ){
-	try{
-	    rnd = new Random();
-            path = new Path( config );
-            initialised = true;
-            log.warning( "JavaAgent has been initialised." );
-        }catch( Exception e ){
-            log.warning( "JavaAgent has caught an exception during initialisation." );
-            loader.tell( new AgentInitializationException( this, e ), null );
-            InternalAgent.log.warning( "JavaAgent has died." );
-        }
-    }
-    public void run(){
-        try{
-            while( !interrupted() && !path.toString().isEmpty() ){
-                Date date = new java.util.Date();
-                LinkedList< Tuple2< Path, OdfValue > > values = new  LinkedList< Tuple2< Path, OdfValue > >();
-                Tuple2< Path, OdfValue > tuple = new Tuple2(
-                        path,
-                        new OdfValue(
-                            Integer.toString(rnd.nextInt()), 
-                            "xs:integer",
-                            Option.apply( 
-                                new Timestamp( 
-                                    date.getTime() 
-                                    ) 
-                                ) 
-                            ) 
-                        ); 
-                values.add( tuple );
-                log.info( "JavaAgent pushing data." );
-                InputPusher.handlePathValuePairs( values );
-                Thread.sleep( 10000 );
-            }
-        }catch( InterruptedException e ){
-            log.warning( "JavaAgent has been interrupted." );
-            loader.tell( new AgentInterruption( this, e), null );
-        }catch( Exception e ){
-            log.warning( "JavaAgent has caught an exception." );
-            loader.tell( new AgentException( this, e), null );
-        }finally{
-            InternalAgent.log.warning( "JavaAgent has died." );
-        }
-    }
+  }
+```
+
+First there are some helper methods for value generation. Method `update` will try to write a new
+value only if `BasicAgent` has an O-DF path. First we create an O-DF structure to be written and
+then `WriteRequest` containing it and `ttl` parameter. To avoid blocking `AgentSystem` from
+processing other messages, we create a `PromiseResult` and use `!` to send `PromiseWrite`,
+containing `PromiseResult`, to `AgentSystem` that handles responsibility checks and write values to
+database for us. `AgentSystem` will return results through `PromiseResult`. If all results were
+successful we log it at debug level, and if any of writes failed, we receive the first failure and
+log it at warning level. Other writes may have still been successful.
+
+`BasicAgent` will not yet call method `update` when `Update` is  received. We need to add a
+match-case for it. This is not done the same way than with normal `Actor`, because `Receiver` trait
+is used to force implementation of commands: `Start`, `Stop`, `Restart` and `Configure`.  Now we
+have to use `receiver` to add new match case for message `Update`.
+
+```
+  receiver{
+    case Update => update()
+  }
 }
 ```
 
-In the `init` mehtod we initialise `rnd` for random value generation and save the `config`
-as O-DF.
+Now we have an *internal agent*, but to get O-MI Node to run it, we need to compile it to a .jar
+file and put it to `deploy` directory, or if compiled with O-MI Node project, `InternalAgentLoader`
+will find it from project's .jar file.
 
-```java
-    public void init( String config ){
-        try{
-            rnd = new Random();
-            path = new Path( config );
-            initialised = true;
-            log.warning( "JavaAgent has been initialised." );
-        }catch( Exception e ){
-            log.warning( "JavaAgent has caucth exception turing initialisation." );
-            loader.tell( new ThreadInitialisationException( this, e ), null );
-            InternalAgent.log.warning( "JavaAgent has died." );
-        }
-    }
+After this we have the final step, open the `application.conf` and add new object to
+`agent-system.internal-agents`. Object's format is: 
+
+```
+"<name of agent>" = {
+    class = "<class of agent>"
+    config = "<config string>"
+    owns = ["<Path owned by agent>", ...]
+}
 ```
 
-In the `run` method we generate a new value and push it to the `path` every ten seconds.
-```java
-    public void run(){
-        try{
-            while( !interrupted() && !path.toString().isEmpty() ){
-                Date date = new java.util.Date();
-                LinkedList< Tuple2< Path, OdfValue > > values = new  LinkedList< Tuple2< Path, OdfValue > >();
-                Tuple2< Path, OdfValue > tuple = new Tuple2(
-                        path,
-                        new OdfValue(
-                            Integer.toString(rnd.nextInt()), 
-                            "xs:integer",
-                            Option.apply( 
-                                new Timestamp( 
-                                    date.getTime() 
-                                    ) 
-                                ) 
-                            ) 
-                        ); 
-                values.add( tuple );
-                log.info( "JavaAgent pushing data." );
-                InputPusher.handlePathValuePairs( values );
-                Thread.sleep( 10000 );
-            }
-        }catch( InterruptedException e ){
-            log.warning( "JavaAgent has been interrupted." );
-            loader.tell( new ThreadException( this, e), null );
-        }finally{
-            InternalAgent.log.warning( "JavaAgent has died." );
-        }
-    }
+Field `owns` is only needed for `ResponsibleInternalAgent`.
+
+Lines to add for our example:
+
+```
+"BAgent" = {
+    class  = "agents.BasicAgent"
+    config = "Objects/BAgent/sensor"
+}
 ```
 
-Because O-MI Node has been writen with Scala, you may need to call Scala
-code from Java. Also notice that agents need to [handle the interruption of thread
-by themself and terminate itself when interrupt happens](https://docs.oracle.com/javase/tutorial/essential/concurrency/interrupt.html).
+Finally you need to restart O-MI Node to update its configuration.
 
-Now we have an internal agent, but to get O-MI Node to run it, we need to
-compile it to a .jar file and put it to `deploy` directory. After this we have
-the final step, open the `application.conf` and add new line to
-`agent-system.internal-agents`: 
+ResponsibleAgent.scala
+----------------------
+
+We want to make `BasicAgent` to be *responsible* for it's path. Let's create class 
+`ResponsibleAgent` for this and implement method `handelWrite` for it.
+
 ```
-"<classname of agent>" = "<config string>"
-"agents.JavaAgent" = "Objects/JavaAgent/sensor"
+class ResponsibleAgent extends BasicAgent with ResponsibleInternalAgent {
+
+  protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+
+    val promiseResult = PromiseResult()
+    parent ! PromiseWrite( promiseResult, write)
+
+    promise.completeWith( promiseResult.isSuccessful ) 
+  }
+}
 ```
 
-Now you need to restart O-MI Node to update its configuration.
+Because of `AgentSystem` forwards only parts of O-DF struture that are owned by *internal agent* to
+the same *internal agent*, we do not need to check them. We are not doing any checks on data this
+time, so we write it and complete promise with result. `AgentSystem` writes data to database,
+because data was received from the owner of the paths in O-DF of the write request. 
 
-SmartHouseAgent
+A *responsible internal agent* is ready to be added to O-MI Node.  We add a new object to
+`agent-system.internal-agents` in `application.conf`:
+
+```
+"RAgent" = {
+    class  = "agents.ResponsibleAgent"
+    config = "Objects/RAgent/sensor"
+    owns = "Objects/RAgent/sensor"
+}
+```
+
+Now restart O-MI Node to update its configuration.
+
+ODFAgent.scala
 ---------------
-SmartHouseAgent is also very simple agent that get path to config file as config string.
-Config file has path to .xml file containing SmartHouse O-DF structure.
-SmartHouseAgent parses xml file for O-DF, and start random generating values for OdfInfoItems.
+
+ODFAgent is also very simple agent that gets path to .xml file as config string.  This file contains
+an O-DF structure. ODFAgent parses xml file for O-DF, and starts random generating values for
+`OdfInfoItems` in O-DF Structure.
 

@@ -27,7 +27,11 @@ import scala.collection.SortedMap
 import types._
 import types.OdfTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import http.Boot.system.log
+
+import scala.util.Success
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Read only restricted interface methods for db tables
@@ -42,6 +46,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       hierarchyNodes filter (_.path === Path(childPath.init))
   )
   
+  private val log = LoggerFactory.getLogger("DBReadOnly")
 
 
   /**
@@ -55,7 +60,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    *
    * @return either Some(OdfInfoItem),Some(OdfObject) or None based on where the path leads to
    */
-  def get(path: Path): Option[OdfNode] = runSync(getQ(path))
+  def get(path: Path): Future[Option[OdfNode]] = db.run(getQ(path))
 
   //def getQ(single: OdfElement): OdfElement = ???
   def getQ(path: Path): DBIOro[Option[OdfNode]] = for {
@@ -203,7 +208,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]): Option[OdfObjects] = {
+    oldest: Option[Int]): Future[Option[OdfObjects]] = {
 
     require(!(newest.isDefined && oldest.isDefined),
       "Both newest and oldest at the same time not supported!")
@@ -280,20 +285,20 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     }
 
 
-    def getFromDB(): Seq[Option[OdfObjects]] = requestsSeq map { // par
+    def getFromDB(): Seq[Future[Option[OdfObjects]]] = requestsSeq map { // par
 
       case obj @ OdfObjects(objects, _) =>
         require(objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
 
-        runSync(processObjectI(obj.path, false))
+        db.run(processObjectI(obj.path, false))
 
       case obj @ OdfObject(id, path, items, objects, description, typeVal) =>
         require(items.isEmpty && objects.isEmpty,
           s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-        runSync(processObjectI(path, description.nonEmpty))
+        db.run(processObjectI(path, description.nonEmpty))
 
       case qry @ OdfInfoItem(path, rvalues, _, _) =>
 
@@ -313,12 +318,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             } yield result
 
             case n =>
-              log.warning(s"Requested '$path' as InfoItem, found '$n'")
+              log.warn(s"Requested '$path' as InfoItem, found '$n'")
               DBIO.successful(None) // Requested object was not found or not infoitem, TODO: think about error handling
           }
         }
 
-        runSync(odfInfoItemI)
+        db.run(odfInfoItemI)
 
       //case odf: OdfElement =>
       //  throw new RuntimeException(s"Non-supported query parameter: $odf")
@@ -377,24 +382,24 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     // Optimizing basic read requests,
     // TODO: optimize newest.exists(_ == 1) && (begin.nonEmpty || end.nonEmpty)
-    val allResults = 
+    val allResults: Future[Seq[Option[OdfObjects]]] =
       if ((newest.isEmpty || newest.exists(_ == 1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
-        getFromCache()
+        Future(getFromCache())
       else
-        getFromDB()
+        Future.sequence(getFromDB())
 
     // Combine some Options
-    val results = allResults.fold(None){
+    val results = allResults.map(_.fold(None){
       case (Some(results), Some(otherResults)) => Some(results union otherResults)
       case (None, Some(results))               => Some(results)
       case (Some(results), None)               => Some(results)
       case (None, None)                        => None
-    }
+    })
 
-    results match {
+    results.map{opt => opt match {
       case Some(OdfObjects(x,_)) if x.isEmpty => None
       case default                            => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
-    }
+    }}
 
   }
 
@@ -406,7 +411,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 //    oldest: Option[Int]): OdfObjects =
 //    {
 //      val ids = infoItemIdTuples.map { case (id, info) => id }
-//      val betweenValues = runSync(
+//      val betweenValues = db.run(
 //        nBetweenLogicQ(
 //          latestValues.filter { _.hierarchyId.inSet(ids) },
 //          begin,
@@ -479,7 +484,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
 
   /*def getHierarchyIds = {
-    runSync(q.result)
+    db.run(q.result)
   }*/
  /* /**
    * Query to the database for given subscription id.
@@ -488,7 +493,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @return
    */
   def pollSubData(id: Long): Seq[SubValue] = {
-    runSync(pollSubDataI(id))
+    db.run(pollSubDataI(id))
   }
   private def pollSubDataI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)

@@ -20,16 +20,16 @@ import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Awaitable
+import scala.concurrent.{Await, Awaitable, Future}
 import java.util.Date
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions.asJavaIterable
 
 import agentSystem._
-import responses.{RequestHandler, SubscriptionHandler}
+import responses.{RequestHandler, SubscriptionManager}
 import types.Path
 import types.OdfTypes._
+import types.OmiTypes.WriteRequest
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import database._
 
@@ -52,32 +52,12 @@ trait Starter {
   val settings = Settings(system)
 
   val subHandlerDbConn: DB = new DatabaseConnection
-  val subHandler = system.actorOf(Props(new SubscriptionHandler()(subHandlerDbConn)), "subscription-handler")
+  val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
   
 
-  /**
-   * This is called in [[init]]. Create input pusher actor for handling agent input.
-   * @param dbConnection Use a specific db connection for all agents, intended for testing
-   */
-  def initInputPusher(dbConnection: DB = new DatabaseConnection, actorname: String = "input-db-pusher") = {
-    InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subHandler)), actorname)
-  }
-
-  /** 
-   * Setup database and apply config [[settings]].
-   *
-   * @param dbConnection Use a specific db connection for one-time db actions, intended for testing
-   */
-  def init(dbConnection: DB = new DatabaseConnection): Unit = {
-    // Create input pusher actor
-    initInputPusher(dbConnection)
-
-    // Save settings as sensors values
-    saveSettingsOdf()
-  }
-
-  def saveSettingsOdf() = {
-    if (settings.settingsOdfPath.nonEmpty) {
+  import scala.concurrent.ExecutionContext.Implicits.global
+  def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
+    if ( settings.settingsOdfPath.nonEmpty ) {
       // Same timestamp for all OdfValues of the settings
       val date = new Date();
       val currentTime = new java.sql.Timestamp(date.getTime)
@@ -89,19 +69,27 @@ trait Starter {
       database.setHistoryLength(settings.numLatestValues)
       system.log.info("Testing InputPusher...")
       database.setHistoryLength(settings.numLatestValues)
-      val dataSaveTest = InputPusher.handleInfoItems(Iterable(
+      val objects = fromPath(
         OdfInfoItem(
           Path(settings.settingsOdfPath + "num-latest-values-stored"), 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
-        )
-      ), new Timeout(60, SECONDS))
-
-      Await.result(dataSaveTest, 60 seconds) match {
-        case Success(true) => system.log.info("O-MI InputPusher system working.")
-        case Success(false) => system.log.error("O-MI InputPusher system returned false; problem with saving data")
-        case Failure(e) => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        ))
+      
+      val write = WriteRequest( 60  seconds, objects)
+      var promiseResult = PromiseResult()
+      agentSystem ! PromiseWrite( promiseResult, write )
+      val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
+      future.onSuccess{
+        case s =>
+        system.log.info("O-MI InputPusher system working.")
+        true
       }
+
+      future.onFailure{
+        case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
+      }
+      Await.result(future, 60 seconds)
     }
   }
 
@@ -117,17 +105,19 @@ trait Starter {
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
-    val sensorDataListener = system.actorOf(Props(classOf[ExternalAgentListener]), "agent-listener")
 
-    val agentLoader = system.actorOf(
-      InternalAgentLoader.props(),
-      "agent-loader"
+    val agentManager = system.actorOf(
+      AgentSystem.props(dbConnection, subManager),
+      "agent-system"
     )
-
-    val requestHandler = new RequestHandler(subHandler)(dbConnection)
+    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
+    
+    saveSettingsOdf(agentManager)
+    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
+    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentLoader, subHandler, requestHandler)),
+      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
       "omi-node-cli-listener"
     )
 
@@ -169,7 +159,6 @@ trait Starter {
 object Boot extends Starter {// with App{
   def main(args: Array[String]) = {
   Try {
-    init()
     val serviceActor = start()
     bindHttp(serviceActor)
   } match {
@@ -186,7 +175,6 @@ object Boot extends Starter {// with App{
  */
 class ServletBoot extends Starter with WebBoot {
   override implicit val system = Boot.system
-  init()
   val serviceActor = start()
   // bindHttp is not called
 }

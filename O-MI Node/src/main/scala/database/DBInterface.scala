@@ -21,6 +21,7 @@ import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.Path
+import collection.mutable.ArrayBuffer
 
 
 package object database {
@@ -58,6 +59,7 @@ sealed trait InfoItemEvent {
 
 /*
  * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
+ * Not a case class because pattern matching didn't work as expected.
  */
 class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
 object ChangeEvent {
@@ -77,17 +79,28 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
 object SingleStores {
     def createPrevayler[P](in: P, name: String) = {
       if(settings.writeToDisk) {
-        PrevaylerFactory.createPrevayler[P](in, settings.journalsDirectory++s"/$name")
+        val factory = new PrevaylerFactory[P]()
+
+        // Change size thereshold so we can remove the old journal files as we take snapshots.
+        // Otherwise it will continue to fill disk space
+        factory.configureJournalFileSizeThreshold(100000000) // about 100M
+
+        val directory = new File(settings.journalsDirectory++s"/$name")
+        prevaylerDirectories += directory
+        PrevaylerFactory.createPrevayler[P](in, directory.getAbsolutePath)
       } else {
         PrevaylerFactory.createTransientPrevayler[P](in)
       }
     }
-    val latestStore       = createPrevayler(LatestValues.empty, "latestStore")//PrevaylerFactory.createPrevayler(LatestValues.empty, settings.journalsDirectory++"/latestStore")
-    val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")//PrevaylerFactory.createPrevayler(OdfTree.empty,      settings.journalsDirectory++"/hierarchyStore")
-    val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")//PrevaylerFactory.createPrevayler(EventSubs.empty,    settings.journalsDirectory++"/eventPrevayler")
-    val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")//PrevaylerFactory.createPrevayler(IntervalSubs.empty, settings.journalsDirectory++"/intervalPrevayler")
-    val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")//PrevaylerFactory.createPrevayler(PolledSubs.empty,   settings.journalsDirectory++"/pollPrevayler")
-    val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")//)PrevaylerFactory.createPrevayler(SubIds(0),          settings.journalsDirectory++"/idPrevayler")
+    /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
+    val prevaylerDirectories = ArrayBuffer[File]()
+
+    val latestStore       = createPrevayler(LatestValues.empty, "latestStore")
+    val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
+    val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")
+    val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")
+    val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")
+    val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
 
     def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
 

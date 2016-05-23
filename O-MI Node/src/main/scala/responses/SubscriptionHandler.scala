@@ -11,485 +11,71 @@ Copyright (c) 2015 Aalto University.
   See the License for the specific language governing permissions and
   limitations under the License.
   **/
-
 package responses
 
-import java.sql.Timestamp
+import parsing.xmlGen.xmlTypes.RequestResultType
 
-import http.CLICmds.ListSubsCmd
-import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
-import types.OdfTypes.{OdfInfoItem, OdfValue}
-
-import scala.collection.JavaConversions.{asJavaIterable, asScalaIterator}
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.asJavaIterable
+//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
+//import scala.collection.JavaConversions.asJavaIterator
+import scala.collection.breakOut
+import scala.xml.{ NodeSeq, XML }
+//import spray.http.StatusCode
+
+import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.util.Timeout
+import akka.pattern.ask
 
 
-//import java.util.concurrent.ConcurrentSkipListSet
-import akka.actor.{Actor, ActorLogging}
-import database._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
-import types.OmiTypes.SubscriptionRequest
 import types._
+import OmiTypes._
+import OdfTypes._
+import OmiGenerator._
+import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
+import CallbackHandlers._
+import database._
 
-/**
- * Message for triggering handling of intervalsubscriptions
- */
-case object HandleIntervals
+trait SubscriptionHandler extends OmiRequestHandler{
+  import http.Boot
+  def subscriptionManager : ActorRef
+  handler{
+    case subscription: SubscriptionRequest => handleSubscription(subscription)
+  }
 
-/**
- * New subscription event
- * @param subscription Subscription to be added
- */
-case class NewSubscription(subscription: SubscriptionRequest)
-
-/**
- * Remove subscription event
- * @param id Id of the subscription to remove
- */
-case class RemoveSubscription(id: Long)
-
-case class NewDataEvent(data: Seq[(Path, OdfValue)])// TODO move to DB
-/**
- * Event for polling pollable subscriptions
- * @param id Id of the subscription to poll
- */
-case class PollSubscription(id: Long)
-
-/**
- * Class that handles event and interval based subscriptions.
- * Uses Akka scheduler to schedule ttl handling and intervalhandling
- * @param dbConnection
- */
-class SubscriptionHandler(implicit val dbConnection: DB) extends Actor with ActorLogging {
-
-  val minIntervalDuration = Duration(1, duration.SECONDS)
-  val ttlScheduler = new SubscriptionScheduler
-  val intervalScheduler = context.system.scheduler
-
-  /**
-   * Schedule remove operation for subscriptions that are in prevayler stores,
-   * only run at startup
-   */
-  private[this] def scheduleTtls() = {
-    log.debug("Scheduling removesubscriptions for the first time...")
-    val currentTime = System.currentTimeMillis()
-    //event subs
-    val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++
-      (SingleStores.intervalPrevayler execute GetAllIntervalSubs()) ++
-      (SingleStores.pollPrevayler execute GetAllPollSubs())
-    allSubs.foreach{ sub =>
-      if(sub.endTime.getTime() != Long.MaxValue ) {
-        val nextRun = Duration(sub.endTime.getTime() - currentTime, "milliseconds")
-
-        if (nextRun.toMillis > 0L) {
-          ttlScheduler.scheduleOnce(nextRun, self, RemoveSubscription(sub.id))
-        } else {
-          self ! RemoveSubscription(sub.id)
-        }
-      }
+  /** Method for handling SubscriptionRequest.
+    * @param _subscription request
+    * @return (xml response, HTTP status code)
+    */
+  def handleSubscription(_subscription: SubscriptionRequest): Future[NodeSeq] = {
+    //if interval is below allowed values, set it to minimum allowed value
+    val subscription: SubscriptionRequest = _subscription match {
+      case SubscriptionRequest( _, interval, _, _, _, _) if interval.toSeconds < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+        _subscription.copy(interval=Boot.settings.minSubscriptionInterval.seconds)
+      case s => s
     }
-    log.debug("Scheduling done")
-  }
-
-  scheduleTtls()
-  handleIntervals() //when server restarts
-
-  //  val pollPrevayler = PrevaylerFactory.createPrevayler()
-
-
-  def receive = {
-    case NewSubscription(subscription) => sender() ! setSubscription(subscription)
-    case HandleIntervals => handleIntervals()
-    case RemoveSubscription(id) => sender() ! removeSubscription(id)
-    case PollSubscription(id) => sender() ! pollSubscription(id)
-    case ListSubsCmd() => sender() ! getAllSubs()
-    //case NewDataEvent(data) => handleNewData(data)
-  }
-
-
-  /**
-   * Get pollsubscriptions data drom database
-   *
-   * This method is used to both 'event' and 'interval' based subscriptions.
-   *
-   * Event subscriptions remove all data from database related to the poll.
-   *
-   * Interval subscriptions leave one value in the database to serve as starting value for next poll.
-   * Database only stores changed values for subscriptions so values need to be interpolated for interval based subscriptions.
-   * If sensor updates happen faster than the interval of the subscription then only the newest sensor value is added and older values dropped,
-   * on the other hand if interval is shorter than the sensor updates then interpolated values will be generated between sensor values.
-   *
-   * @param id id of subscription to poll
-   * @return
-   */
-  private def pollSubscription(id: Long) : Option[OdfObjects]= {
-    val pollTime: Long = System.currentTimeMillis()
-    val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
-    sub match {
-      case Some(pollSub) =>{
-        log.info(s"Polling subcription with id: ${pollSub.id}")
-        val odfTree = SingleStores.hierarchyStore execute GetTree()
-        val emptyTree = pollSub
-          .paths //get subscriptions paths
-          .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
-          .map{
-            case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
-            case o: OdfObject   => fromPath(OdfObject(o.id, o.path, typeValue = o.typeValue))
-            case o: OdfObjects  => fromPath(OdfObjects())} //map OdfNodes to OdfObjects
-          .reduceOption(_.union(_)) //combine results
-          .getOrElse(OdfObjects())
-
-        //pollSubscription method removes the data from database and returns the requested data
-        pollSub match {
-          case pollEvent: PollEventSub => {
-
-
-            log.debug(s"Creating response message for Polled Event Subscription")
-
-            val eventData = dbConnection.pollEventSubscription(id).toVector //get data from database
-              .groupBy(_.path) //group data by the paths
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
-              .map(n => OdfInfoItem(n._1, n._2)) // Map to Infoitems
-              .map(i => fromPath(i)) //Map to OdfObjects
-              .fold(emptyTree)(_.union(_))//.reduceOption(_.union(_)) //Combine OdfObjects
-
-            Some(eventData)
-          }
-
-          case pollInterval: PollIntervalSub => {
-
-            log.info(s"Creating response message for Polled Interval Subscription")
-
-            val interval: Duration = pollInterval.interval
-
-            val intervalData: Map[Path, Vector[OdfValue]] = dbConnection.pollIntervalSubscription(id).toVector
-              .groupBy(_.path)
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf))
-
-            val combinedWithPaths = OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
-              .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
-              .map(_.path)
-              .map(_ -> Vector[OdfValue]()).toMap ++ intervalData
-
-            log.info(s"Data length for interval subscription is: ${intervalData.length}")
-
-            val pollData: OdfObjects = combinedWithPaths.map( pathValuesTuple =>{
-
-              val (path, values) = pathValuesTuple match {
-                case (p, v) if (v.nonEmpty) => {
-                  log.info(s"Found previous values for intervalsubscription: ${v.last}")
-                  (p, v.:+(v.last.copy(timestamp = new Timestamp(pollTime))))
-                } //add polltime
-                case (p, v) => {
-                  log.info(s"No values found for path: $p in Interval subscription poll for sub id ${pollSub.id}")
-                  val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {
-                    //lookup latest value from latestStore, if exists use that
-                    case Some(value) => {
-                    log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
-                    Vector(value,value.copy(timestamp = new Timestamp(pollTime)))
-                    }
-                    //no previous values v is empty
-                    case _ => {
-                    log.info("No previous value found return empty values.")
-                    v
-                    }
-                  }
-                  (p, latestValue)
-                }
-
-              }
-              def calcData = {
-                val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
-                val lastPolled = pollInterval.lastPolled.getTime()
-                val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
-                val interval  = pollInterval.interval.toMillis
-                var nextTick = lastPolled + (interval - pollTimeOffset)
-
-                if(values.length >= 2){
-                  var i = 1 //Intentionally 1 and not 0
-                  var previousValue = values.head
-
-                  while(i < values.length){
-                    if(values(i).timestamp.getTime >= (nextTick)){
-                      buffer += previousValue
-                      nextTick += interval
-                    } else { //if timestmap.getTime < startime + interval
-                        previousValue = values(i)
-                        i += 1
-                    }
-                  }
-                  //overcomplicated??
-                  if(previousValue.timestamp.getTime != pollTime && previousValue.timestamp.getTime() > lastPolled && previousValue.timestamp.getTime() > (nextTick - interval))
-                    buffer += previousValue
-                  Some(buffer.toVector)
-                } else None
-              }
-              val calculatedData = calcData
-              /*val calculatedData: Option[IndexedSeq[OdfValue]] = if (values.size < 2) None else {
-              //values size is atleast 2 if there is any data found for sub because the last value is added with pollTime timestamp
-                  val newValues: IndexedSeq[OdfValue] = values
-                    .tail
-                    .foldLeft[(IndexedSeq[OdfValue], Long)]((Vector(values.head), pollInterval.lastPolled.getTime))
-                    { (col, nextSensorValue) =>
-                    //produces tuple with the values in the first variable, second variable is to keep track of passed intervals
-                    val tempTime = System.currentTimeMillis()
-                    if (nextSensorValue.timestamp.getTime() < col._2) {
-                      //If sensor value updates are faster than the interval of the Subscription
-                      (col._1.updated(col._1.length - 1, nextSensorValue), col._2)
-                    } else {
-                      //If there are multiple intervals between sensor updates
-                      val timeBetweenSensorUpdates = nextSensorValue.timestamp.getTime - col._1.last.timestamp.getTime() - 1
-                      //-1 is to prevent cases where new sensor value is created exactly at interval from being overwritten
-                      val intervalsPassed: Int = (timeBetweenSensorUpdates / interval.toMillis).toInt
-                      (col._1 ++ Seq.fill(intervalsPassed)(col._1.last) :+ nextSensorValue, col._2 + interval.toMillis) //Create values between timestamps if necessary
-                    }
-                  }._1.tail.init //Remove last and first values that were used to generate intermediate values
-                  Option(newValues)
-                  }*/
-
-                calculatedData.map(cData => path -> cData)
-              }).flatMap{ n => //flatMap removes None values
-              //create OdfObjects from InfoItems
-              n.map(m => fromPath(OdfInfoItem(m._1, m._2)))
-            }
-            //combine OdfObjects to single optional OdfObject
-            .fold(emptyTree)(_.union(_))
-            //.reduceOption(_.union(_))
-
-            Some(pollData)
-          }
-
-          case unknown => log.error(s"unknown subscription type $unknown")
-            None
-        }
-      }
-      case _ => None
+    val ttl = handleTTL(subscription.ttl)
+    implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
+    val subFuture: Future[RequestResultType] = (subscriptionManager ? NewSubscription(subscription)).mapTo[Try[Long]].map( res=>res  match {
+        case Success(id: Long) if _subscription.interval != subscription.interval =>
+          Results.subscription(id.toString,subscription.interval.toSeconds)
+        case Success(id: Long) =>
+          Results.subscription(id.toString)
+        case Failure(ex) => throw ex
+      }).recoverWith{
+      case e: IllegalArgumentException => Future.successful(Results.invalidRequest(e.getMessage()))
+      case e => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }
-    //dbConnection.getNBetween(temp,sub.get)
+    subFuture.map{ response =>{
+
+        xmlFromResults(
+          1.0,
+          response)
+
+    }}
   }
-
-  /**
-   * Method called when the interval of an interval subscription has passed
-   */
-  private def handleIntervals(): Unit = {
-    //TODO add error messages from requesthandler
-
-    log.info("handling infoitems")
-    val currentTime = System.currentTimeMillis()
-    val hTree = SingleStores.hierarchyStore execute GetTree()
-    val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
-
-    //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
-    // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
-    if(iSubs.isEmpty) {
-      log.warning("HandleIntervals called when no intervals passed")
-    } else {
-
-      //send new data to callback addresses
-      iSubs.foreach { iSub =>
-        log.info(s"Trying to send subscription data to ${iSub.callback}")
-        val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
-        val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
-            case (s, (_,Some(n))) => (s._1, s._2.:+(n))
-            case (s, (p, None))    => (s._1.:+(p), s._2)
-          }
-         // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r)))
-        //}
-        val subscribedInfoItems = OdfTypes
-          .getInfoItems(nodes:_*)
-          //.map(_.path)
-
-        val datas = SingleStores.latestStore execute LookupSensorDatas(subscribedInfoItems.map(_.path))
-        val objects: Vector[OdfObjects] = datas.map {
-          case (iPath, oValue) =>
-
-            fromPath(OdfInfoItem(iPath, Iterable(oValue)))
-            //val odfInfoOpt = hTree.get(iPath)
-            //odfInfoOpt match {
-            //  case Some(infoI: OdfInfoItem) =>
-            //    Right(fromPath(infoI.copy(values = Iterable(oValue))))
-            //  case thing => {
-            //    log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
-            //    Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
-            //  }
-            //}
-        }
-
-        //val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){
-        //(s, n) =>iSub.paths.map(path => hTree.get(path)):_*
-       // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
-      //}
-        val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None)((s, n) => Some(s.fold(n)(prev=> prev.union(n)))) //rights.reduce(_.combine(_))
-        val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
-        val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))
-        val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
-
-
-
-        CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
-          .onComplete {
-            case Success(CallbackSuccess) =>
-              log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-
-            case Success(fail: CallbackFailure) =>
-              log.warning(
-                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-            case Failure(e) =>
-              log.warning(
-                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
-          }
-      }
-    }
-
-    nextRunTimeOption.foreach{ tStamp =>
-      val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")
-      intervalScheduler.scheduleOnce(nextRun, self, HandleIntervals)
-    }
-  }
-
-
-  /**
-   * Method used for removing subscriptions using their Id
-   * @param id Id of the subscription to remove
-   * @return Boolean indicating if the removing was successful
-   */
-  private def removeSubscription(id: Long): Boolean = {
-    if(SingleStores.intervalPrevayler execute RemoveIntervalSub(id)) true
-    else if(SingleStores.pollPrevayler execute RemovePollSub(id)){
-      dbConnection.removePollSub(id)
-      true
-    }
-    else if(SingleStores.eventPrevayler execute RemoveEventSub(id)) true
-    else false
-  }
-
-  private def getAllSubs() = {
-    log.info("getting list of all subscriptions")
-    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()
-    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
-    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
-    (intervalSubs, eventSubs, pollSubs)
-  }
-
-  /**
-   * Method used to add subcriptions to Prevayler database
-   * @param subscription SubscriptionRequest of the subscription to add
-   * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
-   */
-  private def setSubscription(subscription: SubscriptionRequest): Try[Long] = {
-    Try {
-      val newId = SingleStores.idPrevayler execute getAndUpdateId
-      val endTime = subEndTimestamp(subscription.ttl)
-      val currentTime = System.currentTimeMillis()
-      val currentTimestamp = new Timestamp(currentTime)
-
-      val subId = subscription.callback match {
-        case cb @ Some(callback) => subscription.interval match {
-          case Duration(-1, duration.SECONDS) => {
-            //normal event subscription
-
-
-            SingleStores.eventPrevayler execute AddEventSub(
-              EventSub(
-                newId,
-                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
-                endTime,
-                callback
-              )
-            )
-            log.debug(s"Successfully added event subscription with id: $newId and callback: $callback")
-            newId
-          }
-          case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported")//subscription for new node
-          case dur: FiniteDuration if dur.gteq(minIntervalDuration)=> {
-
-            SingleStores.intervalPrevayler execute AddIntervalSub(
-              IntervalSub(newId,
-                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
-                endTime,
-                callback,
-                dur,
-                new Timestamp(currentTime + dur.toMillis),
-                currentTimestamp
-              )
-            )
-
-            log.info(s"Successfully added interval subscription with id: $newId and callback $callback")
-            handleIntervals()
-            newId
-          }
-          case dur => {
-            log.error(s"Duration $dur is unsupported")
-            throw new Exception(s"Duration $dur is unsupported")
-          }
-        }
-        case None => {
-          val paths = OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
-          //val subData = paths.map(path => SubValue(newId,path,currentTimestamp,"",""))
-          subscription.interval match{
-            case Duration(-1, duration.SECONDS) => {
-              //event poll sub
-              SingleStores.pollPrevayler execute AddPollSub(
-                PollEventSub(
-                  newId,
-                  endTime,
-                  currentTimestamp,
-                  currentTimestamp,
-                  paths
-                )
-              )
-              //dbConnection.addNewPollData(subData)
-
-              log.debug(s"Successfully added polled event subscription with id: $newId")
-              newId
-            }
-            case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
-              //interval poll
-              SingleStores.pollPrevayler execute AddPollSub(
-                PollIntervalSub(
-                  newId,
-                  endTime,
-                  dur,
-                  currentTimestamp,
-                  currentTimestamp,
-                  paths
-                )
-              )
-              //dbConnection.addNewPollData(subData)
-              newId
-            }
-            case dur => {
-              log.error(s"Duration $dur is unsupported")
-              throw new Exception(s"Duration $dur is unsupported")
-            }
-
-          }
-        }
-      }
-      subscription.ttl match {
-        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
-        case _ =>
-      }
-      subId
-    }
-  }
-
-  /**
-   * Helper method to get the Timestamp for removing the subscription
-   * @param subttl time to live of the subscription
-   * @return endTime of subscription as Timestamp
-   */
-  private def subEndTimestamp(subttl: Duration): Timestamp ={
-    if (subttl.isFinite()) {
-      new Timestamp(System.currentTimeMillis() + subttl.toMillis)
-    } else {
-      new Timestamp(Long.MaxValue)
-    }
-  }
-
-
 }

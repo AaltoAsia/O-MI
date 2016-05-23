@@ -14,6 +14,7 @@
 package responses
 
 import http.Boot
+import parsing.xmlGen.xmlTypes.RequestResultType
 
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
@@ -27,7 +28,8 @@ import scala.collection.breakOut
 import scala.xml.{ NodeSeq, XML }
 //import spray.http.StatusCode
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.event.{ LoggingAdapter, Logging, LogSource}
+import akka.actor.{ Actor,  ActorLogging, ActorRef }
 import akka.util.Timeout
 import akka.pattern.ask
 
@@ -39,25 +41,35 @@ import OmiTypes._
 import OdfTypes._
 import OmiGenerator._
 import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import agentSystem.InputPusher
 import CallbackHandlers._
 import database._
 
-/**
- * Actor for handling all request.
- *
- */
-class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnection: DB) {
+trait OmiRequestHandler { 
 
-  import http.Boot.system.log
-  private[this] def date = new Date()
+  type Handle = PartialFunction[OmiRequest, Future[NodeSeq]]
+  var handles: Handle = PartialFunction.empty 
+  def handler(next: Handle) { handles = handles orElse next }
+  final def handle = handles
+  protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
+        if(ttl.toSeconds != 0)
+          FiniteDuration(ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
+  implicit def  dbConnection: DB
+  def log: LoggingAdapter
+  protected[this] def date = new Date()
+}
+class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRef)(implicit val dbConnection: DB) extends ReadHandler with WriteHandler with ResponseHandler with SubscriptionHandler with PollHandler with CancelHandler{
 
-  /**
-   * Main interface for hanling O-MI request
-   *
-   * @param request request is O-MI request to be handled
-   */
-  def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
+  implicit val logSource: LogSource[RequestHandler]= new LogSource[RequestHandler] {
+      def genString(requestHandler: RequestHandler ) = requestHandler.toString
+    }
+  def log = Logging( http.Boot.system, this)
+
+  def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
 
     def checkCallback(address: String) = Try {
       val url = new URL(address)
@@ -76,27 +88,28 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
             case sub: SubscriptionRequest => runGeneration(sub)
             case _ => {
               // TODO: Can't cancel this callback
-              Future { runGeneration(request) } map {
-                case (xml: NodeSeq, code: Int) =>
+              runGeneration(request)  map { xml =>
                   sendCallback(
                     address,
                     xml,
                     request.ttl
                   )
-              }
-              (
-                xmlFromResults(
+                 xmlFromResults(
                   1.0,
-                  Results.simple("200", Some("OK, callback job started"))),
-                  200)
-            }
+                  Results.simple("200", Some("OK, callback job started")))
+
+
+
+              }
+
+           }
           }
         } match {
           case Success(res)                               => res
-          case Failure(e: java.net.MalformedURLException) => (invalidCallback(e.getMessage), 200)
-          case Failure(e: UnknownHostException)           => (invalidCallback("Unknown host: " + e.getMessage), 200)
-          case Failure(e: SecurityException)              => (invalidCallback("Unauthorized " + e.getMessage), 200)
-          case Failure(e: java.net.ProtocolException)     => (invalidCallback(e.getMessage), 200)
+          case Failure(e: java.net.MalformedURLException) => Future.successful(invalidCallback(e.getMessage))
+          case Failure(e: UnknownHostException)           => Future.successful(invalidCallback("Unknown host: " + e.getMessage))
+          case Failure(e: SecurityException)              => Future.successful(invalidCallback("Unauthorized " + e.getMessage))
+          case Failure(e: java.net.ProtocolException)     => Future.successful(invalidCallback(e.getMessage))
           case Failure(t)                                 => throw t
         }
 
@@ -109,28 +122,19 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     }
   }
 
+
   /**
    * Method for running response generation. Handles tiemout etc. upper level failures.
    *
    * @param request request is O-MI request to be handled
    */
-  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): (NodeSeq, Int) = {
-    val responseFuture = Future { xmlFromRequest(request) }
-
-    Try {
-      Await.result(responseFuture, request.ttl)
-    } match {
-      case Success((xml: NodeSeq, code: Int)) => (xml, code)
-      case Success(a)                         => a //TODO does this fix default case not specified problem?
-
-      case Failure(e: TimeoutException) =>
-        (OmiGenerator.timeOutError(e.getMessage), 503)
-      case Failure(e: IllegalArgumentException) =>
-        (OmiGenerator.invalidRequest(e.getMessage), 400)
-
-      case Failure(e) => // all exception should be re-thrown here to log it consistently
-        actionOnInternalError(e)
-        (OmiGenerator.internalError(e), 500)
+  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
+    handles(request).recoverWith{
+      case e: TimeoutException => Future.successful(OmiGenerator.timeOutError(e.getMessage))
+      case e: IllegalArgumentException => Future.successful(OmiGenerator.invalidRequest(e.getMessage))
+      case e =>
+        log.error(e, "Internal Server Error: ")
+        Future.successful(OmiGenerator.internalError(e))
     }
   }
 
@@ -143,243 +147,6 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
     //println("[ERROR] Internal Server error:")
     //error.printStackTrace()
     log.error(error, "Internal server error: ")
-  }
-
-  /**
-   * Generates xml from request, match request and call specific method for generation.
-   *
-   * @param request request is O-MI request to be handled
-   * @return Tuple containing xml message and HTTP status code
-   */
-  def xmlFromRequest(request: OmiRequest): (NodeSeq, Int) = request match {
-    case read: ReadRequest => {
-      handleRead(read)
-    }
-    case poll: PollRequest => {
-      //When sender wants to poll data of some subscription
-      handlePoll(poll)
-    }
-    case subscription: SubscriptionRequest => {
-      //When subscription is created
-      handleSubscription(subscription)
-    }
-    case write: WriteRequest => {
-      handleWrite(write)
-    }
-    case response: ResponseRequest => {
-      handleResponse(response)
-    }
-    case cancel: CancelRequest => {
-      handleCancel(cancel)
-    }
-    case _ => {
-      (xmlFromResults(1.0, Results.simple("500", Some("Unknown request."))), 500)
-    }
-  }
-
-  private def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
-        if(ttl.toSeconds != 0)
-          FiniteDuration(ttl.toSeconds, SECONDS)
-        else
-          FiniteDuration(2,MINUTES)
-      } else {
-        FiniteDuration(Int.MaxValue,MILLISECONDS)
-      }
-
-  /** Method for handling WriteRequest.
-    * @param write request
-    * @return (xml response, HTTP status code)
-    */
-  def handleWrite( write: WriteRequest ) : (NodeSeq,Int) ={
-      val ttl = handleTTL(write.ttl)
-      val future : Future[Try[Boolean]] = InputPusher.handleObjects(write.odf.objects, new Timeout(ttl.toSeconds, SECONDS)).mapTo[Try[Boolean]]
-      //XXX:
-      val result = Await.result(future, ttl)
-      result match {
-        case Success(b: Boolean ) =>
-          if(b)
-            (success, 200)
-          else
-            throw new RuntimeException("Write failed without exception.")
-        case Failure(thro: Throwable) => throw thro
-      }
-  }
-  /** Method for handling ResponseRequest.
-    * @param response request
-    * @return (xml response, HTTP status code)
-    */
-  def handleResponse( response: ResponseRequest ) : (NodeSeq,Int) ={
-      val ttl = handleTTL(response.ttl)
-      (xmlFromResults(
-        1.0,
-        response.results.map{
-          result => 
-          result.odf match {
-            case Some(odf) =>
-            val future =  InputPusher.handleObjects(odf.objects, new Timeout(ttl)).mapTo[Try[Boolean]]
-            Await.result(future, ttl) match{
-              case Success(b: Boolean ) =>
-              if(b)
-                Results.success
-              else
-                Results.invalidRequest("Failed without exception.")
-              case Failure(thro: Throwable) => 
-                //Results.internalError(thro)
-                throw thro
-            }
-            case None => //noop?
-              Results.success
-          }
-        }.toSeq:_*
-      ),
-      200
-      )
-  
-  }
-  /** Method for handling ReadRequest.
-    * @param read request
-    * @return (xml response, HTTP status code)
-    */
-  def handleRead(read: ReadRequest): (NodeSeq, Int) = {
-    log.debug("Handling read.")
-
-    val leafs = getLeafs(read.odf)
-    val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
-    val objectsO: Option[OdfObjects] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
-
-    objectsO match {
-      case Some(objects) =>
-        val found = Results.read(objects)
-        val requestsPaths = leafs.map { _.path }
-        val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
-        val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-        var results = Seq(found)
-        if (notFound.nonEmpty)
-          results ++= Seq(Results.simple("404",
-            Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
-
-        (
-          xmlFromResults(
-            1.0,
-            results: _*),
-            200)
-      case None =>
-        (xmlFromResults(
-          1.0, Results.notFound), 404)
-    }
-  }
-
-  /** Method for handling PollRequest.
-    * @param poll request
-    * @return (xml response, HTTP status code)
-    */
-  def handlePoll(poll: PollRequest): (NodeSeq, Int) = {
-    val ttl = handleTTL(poll.ttl)
-    implicit val timeout = Timeout(ttl) 
-    val time = date.getTime
-    val results =
-      poll.requestIDs.map { id =>
-
-      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = subscriptionHandler ? PollSubscription(id)
-
-      Await.ready(objectsF, Duration.Inf).value.get match {
-        case Success(Some(objects: OdfObjects)) =>
-          Results.poll(id.toString, objects)
-        case Success(None) =>
-          Results.notFoundSub(id.toString)
-        case Failure(e) => 
-          throw new RuntimeException(
-            s"Error when trying to poll subscription: ${e.getMessage}")
-      }
-    }
-    val returnTuple = (
-      xmlFromResults(
-        1.0,
-        results.toSeq: _*),
-        if (results.exists(_.returnValue.returnCode == "404")) 404 else 200)
-
-    returnTuple
-  }
-
-  /** Method for handling SubscriptionRequest.
-    * @param subscription request
-    * @return (xml response, HTTP status code)
-    */
-  def handleSubscription(_subscription: SubscriptionRequest): (NodeSeq, Int) = {
-    //if interval is below allowed values, set it to minimum allowed value
-    val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest( _, interval, _, _, _, _) if interval.toSeconds < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
-        _subscription.copy(interval=Boot.settings.minSubscriptionInterval.seconds)
-      case s => s
-    }
-    val ttl = handleTTL(subscription.ttl)
-    implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val subFuture = subscriptionHandler ? NewSubscription(subscription)
-    val (response, returnCode) =
-      Await.result(subFuture, Duration.Inf) match {
-        case Failure(e: IllegalArgumentException) =>
-          (Results.invalidRequest(e.getMessage), 400)
-        case Failure(t) =>
-          throw new RuntimeException(
-            s"Error when trying to create subscription: ${t.getMessage}", t)
-        case Success(id: Long) if _subscription.interval != subscription.interval =>
-          (Results.subscription(id.toString,subscription.interval.toSeconds), 200)
-        case Success(id: Long) =>
-          (Results.subscription(id.toString), 200)
-        case Success(received) =>
-          throw new RuntimeException(
-            s"Invalid response type from SubscriptionHandler: ${received.getClass().getName}")
-      }
-    (
-      xmlFromResults(
-        1.0,
-        response),
-        returnCode)
-  }
-
-  /** Method for handling CancelRequest.
-    * @param cancel request
-    * @return (xml response, HTTP status code)
-    */
-  def handleCancel(cancel: CancelRequest): (NodeSeq, Int) = {
-    log.debug("Handling cancel.")
-    implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    var returnCode = 200
-    val jobs = cancel.requestID.map { id =>
-      Try {
-        val parsedId = id.toInt
-        subscriptionHandler ? RemoveSubscription(parsedId)
-      }
-    }
-    (
-      xmlFromResults(
-        1.0,
-        jobs.map {
-          case Success(removeFuture) =>
-            // NOTE: ttl will timeout from OmiService
-            Await.result(removeFuture, Duration.Inf) match {
-              case true => Results.success
-              case false => {
-                returnCode = 404
-                Results.notFoundSub
-              }
-              case x => // shouldn't be possible but type is Any
-                log.error(s"Cancel returned something strange: $x")
-                returnCode = 501
-                Results.internalError(x.toString)
-              }
-          case Failure(n: NumberFormatException) => {
-            returnCode = 400
-            Results.simple(returnCode.toString, Some("Invalid requestID"))
-          }
-          case Failure(e) => {
-            returnCode = 501
-            val error = 
-            log.error(e, "Error when trying to cancel subscription: ")
-            Results.internalError(error + e.toString)
-          }
-        }(breakOut): _*),
-        returnCode)
   }
 
   private sealed trait ODFRequest {def path: Path} // path is OdfNode path
@@ -503,3 +270,4 @@ class RequestHandler(val subscriptionHandler: ActorRef)(implicit val dbConnectio
   }
 
 }
+

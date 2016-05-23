@@ -15,25 +15,32 @@ package agentSystem
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, Props, ActorRef}
 import akka.io.Tcp
 import akka.util.Timeout
 import http.Authorization.ExtensibleAuthorization
 import http.IpAuthorization
 import parsing.OdfParser
 import types.OdfTypes._
+import types.OmiTypes.WriteRequest
 import types._
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.duration._
 
+object  ExternalAgentListener{
+  def props( agentSystem: ActorRef ) = {
+          Props(new ExternalAgentListener( agentSystem))
+  }
+}
 /** AgentListener handles connections from agents.
   */
-class ExternalAgentListener
+class ExternalAgentListener( agentSystem: ActorRef )
   extends Actor with ActorLogging
   with ExtensibleAuthorization with IpAuthorization
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
+  
   
   import Tcp._
   //Orginally a hack for getting different names for actors.
@@ -64,7 +71,7 @@ class ExternalAgentListener
         log.info(s"Agent connected from $remote to $local")
 
         val handler = context.actorOf(
-          Props(classOf[ExternalAgentHandler], remote),
+          ExternalAgentHandler.props( remote, agentSystem),
           "agent-handler-"+agentCounter
         )
         agentCounter += 1
@@ -77,12 +84,22 @@ class ExternalAgentListener
   }
 }
 
+object ExternalAgentHandler{
+  def props(
+    sourceAddress: InetSocketAddress,
+    agentSystem: ActorRef
+  ) = {
+          Props(new ExternalAgentHandler( sourceAddress, agentSystem))
+  }
+
+}
 
 /** A handler for data received from a agent.
   * @param sourceAddress Agent's adress 
   */
 class ExternalAgentHandler(
-    sourceAddress: InetSocketAddress
+    sourceAddress: InetSocketAddress,
+    agentSystem: ActorRef
   ) extends Actor with ActorLogging {
 
   import Tcp._
@@ -114,8 +131,10 @@ class ExternalAgentHandler(
           case Left(errors) =>
             log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
           case Right(odf) =>
-            InputPusher.handleOdf(odf, new Timeout(5, SECONDS))
-            log.info(s"External agent sent data from $sender to InputPusher")
+            val write = WriteRequest( Duration(5,SECONDS), odf)
+            val promiseResult = PromiseResult()
+            agentSystem ! PromiseWrite( promiseResult, write) 
+            log.info(s"External agent sent data from $sender to AgentSystem")
           case _ => // not possible
         }
       }

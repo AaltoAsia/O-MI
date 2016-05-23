@@ -21,7 +21,6 @@ import spray.routing.Directive1
 import types.OmiTypes._
 
 import Boot.settings
-import Boot.system.log
 import Authorization.AuthorizationExtension
 
 // TODO: maybe move to Authorization package
@@ -60,7 +59,7 @@ trait IpAuthorization extends AuthorizationExtension {
   log.debug("Totally " + whiteMasks.keys.size + "masks")
 
 
-  // XXX: NOTE: This will fail if there isn't setting "remote-address-header = on"
+  // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"
   private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
 
   def ipHasPermission: UserData => OmiRequest => Option[OmiRequest] = user => {
@@ -75,10 +74,8 @@ trait IpAuthorization extends AuthorizationExtension {
       )) Some(r)
       else None
 
-      if (result.isEmpty) {
-        log.warning(s"Unauthorized IP: $user")
-      } else {
-        log.info(s"Authorized IP: $user")
+      if (result.nonEmpty) {
+        log.debug(s"Authorized IP: $user")
       }
       
       result

@@ -21,7 +21,7 @@ import akka.event.LoggingAdapter
 import http.Authorization._
 import parsing.OmiParser
 import responses.OmiGenerator._
-import responses.RequestHandler
+import responses.{Results, RequestHandler}
 import spray.http.MediaTypes._
 import spray.http._
 import spray.routing._
@@ -29,6 +29,10 @@ import types.OmiTypes._
 import types.Path
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.concurrent.{Promise, Future}
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
+import scala.xml.NodeSeq
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -162,29 +166,52 @@ trait OmiService
     }
 
   /* Receives HTTP-POST directed to root */
-  val postXMLRequest = post { // Handle POST requests from the client
+  val postXMLRequest = post { try {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>
+
         val eitherOmi = OmiParser.parse(requestString)
+
 
         respondWithMediaType(`text/xml`) {
           eitherOmi match {
             case Right(requests) =>
-              val request = requests.headOption  // TODO: Only one request per xml is supported currently
-                                                 // O-MI supports multiple requests
-              val (response, returnCode) = request match {
 
-                case Some(originalReq : OmiRequest) => 
+              val ttlPromise = Promise[NodeSeq]()
+
+              val request = requests.headOption  // TODO: Only one request per xml is supported currently
+              val response = request match {
+
+                case Some(originalReq : OmiRequest) =>
                   hasPermissionTest(originalReq) match {
-                    case Some(req) =>
+                    case Some(req) =>{
+                      req.ttl match{
+                        case ttl: FiniteDuration => ttlPromise.completeWith(
+                          akka.pattern.after(ttl, using = http.Boot.system.scheduler)(
+                            Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
+                          )
+                        )
+                        case ttl => //noop
+                      }
                       requestHandler.handleRequest(req)
+                    }
                     case None =>
-                      (unauthorized, 401)
+                      Future.successful(unauthorized)
                   }
-                case _ =>  (notImplemented, 501)
+                case _ =>  Future.successful(notImplemented)
               }
-              if(returnCode != 200) log.warning(s"Errors with following request:\n${requestString}")
-              complete(response)
+
+              //if timeoutfuture completes first then timeout is returned
+              onComplete(Future.firstCompletedOf(Seq(response, ttlPromise.future))){
+                case Success(value) => {
+                  if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
+                    log.warning(s"Errors with following request:\n${requestString}")
+                  }
+
+                  complete(value)
+                }
+                case Failure(ex) => throw ex
+              }
 
             case Left(errors) =>  // Errors found
 
@@ -197,6 +224,9 @@ trait OmiService
           }
         }
       }
+    }
+    }catch {
+        case ex: Throwable => {log.error(ex, "Fatal server error"); throw ex}
     }
   }
 
