@@ -2,13 +2,13 @@
 
 What are Agents?
 ----------------
-Agents are small programs that connect to sensors and push received data to
+Agents are small programs that are connect to sensors and push received data to
 O-MI Node. 
 
-There are two kind of Agents using different interfaces: 
+There are two kinds of Agents using different interfaces: 
 - *External agents* that push O-DF formatted sensor data to a TCP port of O-MI Node.
-- *Internal agents* that are loaded from .jar file and instantiated to be run inside same 
-JVM as O-MI Node. They can also own paths, and receive any authorized write to them for futher 
+- *Internal agents* that are loaded from .jar file and instantiated to be run inside the same 
+JVM as O-MI Node. They can also own paths and receive any authorized write to them for futher 
 handling. *Internal agents* that owns any paths is called *responsible*.
 
 External Agent
@@ -33,11 +33,11 @@ Internal Agent
 `InternalAgentLoader` instantiate *internal agents* and send `Configure` and `Start` commands
 to it. If all three steps were successful, *internal agent* is added to `AgentSystem`. After 
 this *internal agent* can write data to O-MI node through `AgentSystem` by sending
-a `PromiseWrite` to `AgentSystem`. How *internal agent* get data, is leaved for themself to
+a `PromiseWrite` to `AgentSystem`. How *internal agent* get data, is left for themself to
 implement. If *internal agent* is *responsible*, it also must be able to handle 
 `ResponsibleWrite` with `handleWrite` method.
 
-*Internal agent*'s name, class and configuration is read from 'applicantion.conf`. 
+*Internal agent*'s name, class and configuration is read from `applicantion.conf`. 
 If agent owns any paths, are they also read from `application.conf`. 
 
 Continue reading for more detailled explanitation of class structure of `InternalAgent` or 
@@ -47,24 +47,24 @@ skip to `BasicAgent` for example implementation.
 It has two helper methods, `name` for accessing its name in `ActorSystem` and `parent` for
 getting  `ActorRef` of `AgentSystem`. It also has four abstract methods, each handling received
 respective command received from `AgentSystem`. `Receiving` trait is used to force handling of 
-commands, because Akka's ask pattern is used when commands are send from `AgentSystem`.
+commands, because Akka's ask pattern is used when commands are sent from `AgentSystem`.
 
-`Receining` trait implements two 
+`Receiving` trait implements two 
 methods. Method `receiver` adds given `Actor.Receive` to `receivers` so that it is called if 
 there is not matching case statement for received message in any previously added 
-`Actor.Receive`s. Another final method is receive that calls receivers. 
+`Actor.Receive`s. Another final method is `receive` that calls receivers. 
 
 `InternalAgent` calls `receiver` method adding Start, Restart, Stop and Configure 
-commands to handled commands so that command's respective method's return value is send back 
-to sender, `AgentSystem`. Now creating an InternalAgent means only creating a class 
+commands to handled commands so that command's respective method's return value is sent back 
+to the sender, `AgentSystem`. Now creating an InternalAgent means only creating a class 
 extending `InternalAgent` and implementing metods: `start`, `stop`, `restart`, and 
 `configure(config: String)`.
 
-To write data to O-MI Node, *internal agent* send a `PromiseWrite` containing a `WriteRequest` 
+To write data to O-MI Node, *internal agent* needs to send a `PromiseWrite` containing a `WriteRequest` 
 to `AgentSystem`.
 
-`ResponsibleInternalAgent` trait extends `InternalAgent` trait with `handleWrite` method witch
-is called when *responsible internal agent* receives `ResponsibleWrite' from `AgentSystem`.
+`ResponsibleInternalAgent` trait extends `InternalAgent` trait with `handleWrite` method which
+is called when *responsible internal agent* receives `ResponsibleWrite` from `AgentSystem`.
 `ReponsibleWrite` contains a `Promise` that needs to be complete with 
 a `ResponsibleAgentResponse`. If received write in `ResponsibleWrite` was okay and no futher 
 processing is needed, *responsible internal agent* sends it with `PromiseWrite` to
@@ -163,7 +163,7 @@ command so lets implemented it first.
 
 To stop `BasicAgent` from updating values, we need to cancel scheluded repeated message
 sending. Calling `cancel()` for `job` returns true if cancellation was successful, but job may
-have been cancelled allready and could return `false`. So we check `job`'s status with 
+have been cancelled already and could return `false`. So we check `job`'s status with 
 `isCancelled` and return result to `AgentSystem`.
 
 
@@ -222,7 +222,7 @@ processing other messages, we create a `PromiseResult` and use `!` to send `Prom
 containing `PromiseResult`, to `AgentSystem` that handles responsibility checks and write
 values to database for us. `AgentSystem` will return results through `PromiseResult`. If all
 results were successful we log it at debug level, and if any of writes failed, we receive first
-failure and log it as warning. Other writes may have still been successful.
+failure and log it at warning level. Other writes may have still been successful.
 
 `BasicAgent` will not yet call method `update` when `Update` is  received. We need to add 
 a match case for it. This is not done same way than with normal `Actor`, because `Receiver`
