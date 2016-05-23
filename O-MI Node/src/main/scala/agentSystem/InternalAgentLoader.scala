@@ -50,8 +50,6 @@ trait InternalAgentLoader extends BaseAgentSystem {
   Thread.currentThread.setContextClassLoader( createClassLoader())
   /** Settings for getting list of internal agents and their configs from application.conf */
 
-  start()
-
 
   def start() = {
     val classnames = getAgentConfigurations
@@ -120,6 +118,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
   private[this] def createClassLoader(): URLClassLoader = {
     val deploy = new File("O-MI Node/deploy")
     lazy val ideDeploy = new File("deploy")
+
     if (deploy.exists) {
       val urls = loadDirectoryJars(deploy)
       urls foreach { url => log.info("Deploying " + url) }
@@ -178,16 +177,20 @@ trait InternalAgentLoader extends BaseAgentSystem {
   }
 
   private[agentSystem] def getAgentConfigurations: Array[AgentConfigEntry] = {
-    val agents = settings.internalAgents
-    val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
-    names.map{ 
-      name =>
-      val tuple = agents.toConfig().getObject(name).unwrapped().asScala
-      for{
-        classname <- tuple.get("class")
-        config <- tuple.get("config")
-      } yield AgentConfigEntry(name, classname.toString, config.toString) 
-    }.flatten.toArray
+    val agentsO = Option(settings.internalAgents)
+    agentsO match {
+      case Some(agents) => 
+        val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
+        names.map{ 
+          name =>
+          val tuple = agents.toConfig().getObject(name).unwrapped().asScala
+          for{
+            classname <- tuple.get("class")
+            config <- tuple.get("config")
+          } yield AgentConfigEntry(name, classname.toString, config.toString) 
+        }.flatten.toArray
+      case None =>
+        Array.empty
+    }
   }
-  
 }

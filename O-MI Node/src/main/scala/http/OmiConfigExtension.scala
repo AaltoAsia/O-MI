@@ -16,6 +16,9 @@ package http
 import akka.actor.{ActorSystem, Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem}
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
+
+import org.slf4j.LoggerFactory
+
  
 class OmiConfigExtension(config: Config) extends Extension {
   // Node special settings
@@ -62,6 +65,9 @@ class OmiConfigExtension(config: Config) extends Extension {
 
   val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
   val inputWhiteListSubnets = config.getStringList("omi-service.input-whitelist-subnets") 
+
+  //val log = LoggerFactory.getLogger(classOf[OmiConfigExtension])
+  //log.info(config.root().render())
 }
 
 
