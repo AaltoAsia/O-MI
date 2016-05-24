@@ -37,10 +37,9 @@ class ODFAgent extends InternalAgent {
           }
           case Right(odfObjects) => {
             odf = Some( odfObjects )
+            CommandSuccessful("Successfully configured.")
         }
-        case _ => // not possible?
       }
-      CommandSuccessful("Successfully configured.")
       } else {
             log.warning(s"File $configPath did not exists or could not read it. $name could not be configured.")
             CommandFailed("Problem with config, view log.")

@@ -54,8 +54,8 @@ trait SubscriptionHandler extends OmiRequestHandler{
   def handleSubscription(_subscription: SubscriptionRequest): Future[NodeSeq] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest( _, interval, _, _, _, _) if interval.toSeconds < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
-        _subscription.copy(interval=Boot.settings.minSubscriptionInterval.seconds)
+      case SubscriptionRequest( _, interval, _, _, _, _) if interval < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+        _subscription.copy(interval=Boot.settings.minSubscriptionInterval)
       case s => s
     }
     val ttl = handleTTL(subscription.ttl)

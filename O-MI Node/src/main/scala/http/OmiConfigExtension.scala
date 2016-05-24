@@ -15,6 +15,7 @@ package http
 
 import akka.actor.{ActorSystem, Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem}
 import com.typesafe.config.Config
+import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 
 import org.slf4j.LoggerFactory
@@ -27,16 +28,16 @@ class OmiConfigExtension(config: Config) extends Extension {
   val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
 
   /** Minimum supported interval for interval based subscriptions */
-  val minSubscriptionInterval = config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS)
+  val minSubscriptionInterval = config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
 
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
-  val callbackTimeout: Long = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
+  val callbackTimeout = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
 
-  val trimInterval = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS)
+  val trimInterval = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
 
-  val snapshotInterval = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS)
+  val snapshotInterval = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS).seconds
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
@@ -52,11 +53,12 @@ class OmiConfigExtension(config: Config) extends Extension {
   // Agents
 
   val internalAgents = config.getObject("agent-system.internal-agents") 
+  val internalAgentsStartTimout = config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
 
   /**
    * Time in milliseconds how long an actor has to at least run before trying
    * to restart in case of ThreadException */
-  val timeoutOnThreadException: Int = config.getDuration("agent-system.timeout-on-threadexception", TimeUnit.MILLISECONDS).toInt
+ // val timeoutOnThreadException= config.getDuration("agent-system.timeout-on-threadexception", TimeUnit.MILLISECONDS).milliseconds
 
 
   // Authorization
