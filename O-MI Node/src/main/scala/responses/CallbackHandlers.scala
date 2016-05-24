@@ -51,7 +51,7 @@ object CallbackHandlers {
 
       val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
         case ttl: FiniteDuration => ttl.toMillis
-        case _ => http.Boot.settings.callbackTimeout
+        case _ => http.Boot.settings.callbackTimeout.toMillis
       }))
       def currentTimestamp =  new Timestamp( new Date().getTime ) 
       def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )

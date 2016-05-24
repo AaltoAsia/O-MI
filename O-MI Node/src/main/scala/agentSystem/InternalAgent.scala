@@ -66,5 +66,16 @@ trait ResponsibleInternalAgent extends InternalAgent {
   receiver {
     case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
   }
+  final protected def passWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+    val result = PromiseResult()
+    parent ! PromiseWrite( result, write)
+    promise.completeWith( result.isSuccessful ) 
+  }
+  final protected def incorrectWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+    promise.failure(new Exception(s"Write incorrect. Tryed to write incorrect value."))
+  }
+  final protected def forbiddenWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+    promise.failure(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen."))
+  }
 }
 

@@ -24,11 +24,11 @@ class DBMaintainer(val dbobject: DB)
   private val scheduler = context.system.scheduler
   private val trimInterval = http.Boot.settings.trimInterval
   private val snapshotInterval = http.Boot.settings.snapshotInterval
-  log.info(s"scheduling databse trimming every $trimInterval seconds")
-  scheduler.schedule(trimInterval.seconds, trimInterval.seconds, self, TrimDB)
+  log.info(s"scheduling databse trimming every $trimInterval")
+  scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
   if(http.Boot.settings.writeToDisk){
-    log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
-    scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
+    log.info(s"scheduling prevayler snapshot every $snapshotInterval")
+    scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
   } else {
     log.info("using transient prevayler, taking snapshots is not in use.")
   }

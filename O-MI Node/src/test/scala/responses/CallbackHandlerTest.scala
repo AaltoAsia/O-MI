@@ -4,10 +4,8 @@ import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 import akka.testkit.TestProbe
 import org.specs2.concurrent.ExecutionEnv
-import org.specs2.matcher.Matchers
 import org.specs2.mutable._
 import spray.can.Http
-import org.specs2.specification.core._
 import testHelpers.{Actors, SystemTestCallbackServer}
 
 import scala.concurrent.Future
@@ -19,7 +17,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val port = 20003
       val probe = initCallbackServer(port)
       val msg  = <msg>success1</msg>
-
+      Thread.sleep(1000)
       CallbackHandlers.sendCallback(s"http://localhost:$port",msg,Duration(2, "seconds"))
 
       probe.expectMsg(2 seconds, Option(msg))
@@ -28,7 +26,6 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
     "Try to keep sending message until ttl is over" in new Actors {
       val port = 20004
       val msg  = <msg>success2</msg>
-      import Matchers._
       Future{CallbackHandlers.sendCallback(s"http://localhost:$port", msg, Duration(10, "seconds"))}
 
       Future{

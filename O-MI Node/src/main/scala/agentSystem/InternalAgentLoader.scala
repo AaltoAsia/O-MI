@@ -74,7 +74,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
         val prop  = Props(clazz)
         val agent = context.actorOf( prop, name.toString )
         val date = new Date()
-        val timeout = Timeout(5 seconds) 
+        val timeout = settings.internalAgentsStartTimout
         val configureF = ask(agent,Configure(config))(timeout)
         configureF.onSuccess{
           case error : InternalAgentFailure =>  
@@ -91,6 +91,14 @@ trait InternalAgentLoader extends BaseAgentSystem {
             log.info(s"Agent $name started successfully.")
             agents += name -> AgentInfo(name,classname, config, agent, true)
           }
+          startF.onFailure{ 
+            case e => 
+            log.warning( s"Starting $name failed with: " + e )
+          }
+        }
+        configureF.onFailure{ 
+          case e => 
+          log.warning( s"Configuration $name failed with: " + e )
         }
       } else {
         log.warning(s"Class $classname did not implement AbstractInternalAgent.")
