@@ -18,7 +18,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 
-import org.slf4j.LoggerFactory
+import com.typesafe.config.Config
 
  
 class OmiConfigExtension(config: Config) extends Extension {
