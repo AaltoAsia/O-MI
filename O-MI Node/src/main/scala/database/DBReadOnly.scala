@@ -114,7 +114,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     // NOTE: duplicate code: takeLogic
     val query = (begin, end, oldest, newest) match {
-      case (_, _, Some(_oldest), _) => timeFrame sortBy (_.timestamp.asc) take (oldest.get)
+      case (_, _, Some(_oldest), _) => timeFrame sortBy (_.timestamp.asc) take (_oldest)
       case (_, _, _, Some(_newest)) => timeFrame sortBy (_.timestamp.desc) take (_newest) sortBy (_.timestamp.asc)
       case (None, None, _, _)       => timeFrame sortBy (_.timestamp.desc) take 1
       case _                        => timeFrame

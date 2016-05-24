@@ -26,16 +26,6 @@ import collection.mutable.ArrayBuffer
 
 package object database {
 
-  private[this] var setEventHooks: List[Seq[OdfInfoItem] => Unit] = List()
-
-  /**
-   * Set hooks are run when new data is saved to database.
-   * @param f Function that takes the updated paths as parameter.
-   */
-  def attachSetHook(f: Seq[OdfInfoItem] => Unit) =
-    setEventHooks = f :: setEventHooks
-  def getSetHooks = setEventHooks
-
   private[this] var histLength = 15 //http.Boot.settings.numLatestValues
   /**
    * Sets the historylength to desired length
@@ -250,12 +240,5 @@ trait DB extends DBReadWrite with DBBase {
   def asReadOnly: DBReadOnly = this
   def asReadWrite: DBReadWrite = this
 
-  /**
-   * Fast latest values storage interface
-   */
-  //val latestStore: LatestStore = SingleStores.latestStore
-  //val eventPrevayler = SingleStores.eventPrevayler
-  //val intervalPrevayler = SingleStores.intervalPrevayler
-  //val idPrevayler: LatestStore = SingleStores.idPrevayler
 
 }

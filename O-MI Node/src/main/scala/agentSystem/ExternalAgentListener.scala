@@ -15,9 +15,8 @@ package agentSystem
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorLogging, Props, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
-import akka.util.Timeout
 import http.Authorization.ExtensibleAuthorization
 import http.IpAuthorization
 import parsing.OdfParser
@@ -112,13 +111,16 @@ class ExternalAgentHandler(
     { 
       val dataString = data.decodeString("UTF-8")
 
-      val beginning = dataString.dropWhile(_.isWhitespace).take(8)
+      val beginning = dataString.dropWhile(_.isWhitespace).take("<Objects".length())
 
       log.debug(s"Got following data from $sender:\n$dataString")
-      if(beginning.startsWith("<?xml") || beginning.startsWith("<Objects")){
-        storage = dataString.dropWhile(_.isWhitespace)
-      }else if(storage.nonEmpty) {
-        storage += dataString
+
+      beginning match {
+        case b if b.startsWith("<?xml") || b.startsWith("<Objects") =>
+          storage = dataString.dropWhile(_.isWhitespace)
+        case b if storage.nonEmpty =>
+          storage += dataString
+        case _ => //noop
       }
 
       val lastCharIndex = storage.lastIndexWhere(!_.isWhitespace) //find last whiteSpace location

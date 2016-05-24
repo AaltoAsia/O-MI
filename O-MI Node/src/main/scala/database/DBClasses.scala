@@ -262,11 +262,14 @@ trait OmiNodeTables extends DBBase {
    * Empties all the data from the database
    * 
    */
-  def clearDB() = db.run(
-    DBIO.seq(
-      (allTables map (_.delete)): _* 
-    ).andThen(hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false))
-  )
+  def clearDB() = {
+    val rootPath = Path("/Objects")
+    db.run(
+      DBIO.seq(
+        (allTables map (_.delete)): _*
+      ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, false))
+    )
+  }
 
   def dropDB() = db.run( allSchemas.drop )
     

@@ -41,7 +41,7 @@ trait IpAuthorization extends AuthorizationExtension {
     ip
   }.toVector
 
-  log.debug("Totally " + whiteIPs.length + " IPs")
+  log.debug(s"Totally ${whiteIPs.length} IPs")
 
   /** Contains masks of white listed subnets.
     *
@@ -56,7 +56,7 @@ trait IpAuthorization extends AuthorizationExtension {
     log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
     (ip, bits.toInt )
   }.toMap 
-  log.debug("Totally " + whiteMasks.keys.size + "masks")
+  log.debug(s"Totally ${whiteMasks.keys.size} masks")
 
 
   // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"

@@ -75,7 +75,7 @@ abstract trait Parser[Result] {
           Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
         case e: Exception=>
           Seq(ParseError("Unknown exception: " + e.getMessage))
-        case t => throw t
+        case _ => throw e
       }
     }
   }

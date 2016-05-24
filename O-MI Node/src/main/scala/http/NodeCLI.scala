@@ -16,18 +16,17 @@ package http
 
 import java.net.InetSocketAddress
 
+import agentSystem.AgentInfo
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
-import responses.{RequestHandler, RemoveSubscription}
+import responses.{RemoveSubscription, RequestHandler}
 import types.Path
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-import agentSystem.AgentInfo
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -108,14 +107,16 @@ remove <path>
           future.map{
             case (intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub]) =>
               log.info("Received list of Subscriptions. Sending ...")
-              val intMsg= "Interval subscriptions:\n" ++ intervals.map{ sub=>
-                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | end time: ${sub.endTime} | callback: ${ sub.callback }"
+              val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
+                ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
+              val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +intervals.map{ sub=>
+                 f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback }"
               }.mkString("\n")
-              val eventMsg = "Event subscriptions:\n" ++ events.map{ sub=>
-                 s" id: ${sub.id} | end time: ${sub.endTime} | callback: ${ sub.callback }"
+              val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
+                 f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback }"
               }.mkString("\n")
-              val pollMsg = "Poll subscriptions:\n" ++ polls.map{ sub=>
-                 s" id: ${sub.id} | started: ${sub.startTime} | end time: ${sub.endTime} | last polled: ${ sub.lastPolled }"
+              val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" + polls.map{ sub=>
+                 f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
               }.mkString("\n")
               trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
             }

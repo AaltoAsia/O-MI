@@ -164,7 +164,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) ) 
 
     //Call hooks
-    database.getSetHooks foreach { _(Seq(infoitem)) }
     returnId
   }
 
@@ -177,8 +176,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def setMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {
 
     val pathsData: Map[Path, Seq[OdfValue]] =
-      data.groupBy(_._1).mapValues(
-        v => v.map(_._2).sortBy(
+      data.groupBy{case (path, _) => path}.mapValues(
+        pathValues => pathValues.map{case (_, odfValue) => odfValue}.sortBy(
           _.timestamp.getTime
         ))
 
@@ -226,7 +225,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       )
     }
     //Call hooks
-    database.getSetHooks foreach { _(infoitems.toSeq) }
 
     pathIdRelations
   }
@@ -266,25 +264,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       res <- resOpt.getOrElse(DBIO.failed(new Exception))
     } yield res
     db.run(resultValue.transactionally)
-    //val hNode = db.run(hierarchyNodes.filter(_.path === path).result).headOption
-    //if (hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")
-
-    //val removedLeft = hNode.getOrElse(throw new UninitializedError).leftBoundary
-    //val removedRight = hNode.getOrElse(throw new UninitializedError).rightBoundary
-    //val subTreeQ = getSubTreeQ(hNode.get)
-    //val subTree = db.run(subTreeQ.result)
-    //val removedIds = subTree.map { _._1.id.getOrElse(throw new UninitializedError) }
-    //val removeActions = DBIO.seq(
-    //      latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
-    //  hierarchyNodes.filter { _.id.inSet(removedIds) }.delete)
- //val removedDistance = removedRight - removedLeft + 1 // one added to fix distance to rigth most boundary before removed left ( 14-11=3, 15-3=12 is not same as removed 11 )
-   // val updateActions = DBIO.seq(
-   //   sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
-   //     WHERE RIGHTBOUNDARY > ${removedLeft}""",
-   //   sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
-   //     WHERE LEFTBOUNDARY > ${removedLeft}""")
-    //db.run(DBIO.seq(removeActions, updateActions))
-    //true
   }
   //add root node when removed or when first started
   private def addRoot = {
@@ -301,18 +280,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     result
   }
 
-  /*def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
-    db.run(removeDataAndUpdateLastValuesI(id, lastValues))
-  }
-  private def removeDataAndUpdateLastValuesI(id: Long, lastValues: Seq[SubValue]) = {
-    val subData = pollSubs filter (_.subId === id)
-    val updateAction = for {
-      _ <- subData.delete
-      added <- pollSubs ++= lastValues
-    } yield added
-    updateAction
-  }*/
-  /**
+ /**
    * Method used for polling subsription data from database.
    * Returns and removes
    * @param id
