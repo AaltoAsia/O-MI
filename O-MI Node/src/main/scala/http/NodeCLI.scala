@@ -109,13 +109,13 @@ remove <path>
               log.info("Received list of Subscriptions. Sending ...")
               val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
                 ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
-              val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +intervals.map{ sub=>
+              val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +intervals.map{ sub=>
                  f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback }"
               }.mkString("\n")
               val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
                  f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback }"
               }.mkString("\n")
-              val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" + polls.map{ sub=>
+              val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" + polls.map{ sub=>
                  f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
               }.mkString("\n")
               trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))

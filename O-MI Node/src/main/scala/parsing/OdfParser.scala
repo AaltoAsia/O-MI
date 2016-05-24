@@ -25,6 +25,7 @@ import types._
 
 import scala.collection.JavaConversions.asJavaIterable
 import scala.util.{Failure, Success, Try}
+import scala.xml.Elem
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
@@ -39,12 +40,11 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(file: File): OdfParseResult = {
-    Try(
+    val parsed = Try(
       XMLParser.loadFile(file)
-    ) match {
-      case Success(root) => parse(root)
-      case Failure(f) => Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
-    }
+    )
+    parseTry(parsed)
+
   }
 
   /**
@@ -54,16 +54,19 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(xml_msg: String): OdfParseResult = {
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadString(xml_msg)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
-    }
+    )
 
-    parse(root)
+    parseTry(parsed)
   }
 
+  private def parseTry(parsed: Try[Elem]): OdfParseResult = {
+    parsed match {
+      case Success(root) => parse(root)
+      case Failure(f) => Left(Iterable(ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
+  }
 
   /**
    * Public method for parsing the xml structure into OdfParseResults.

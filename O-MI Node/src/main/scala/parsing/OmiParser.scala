@@ -39,12 +39,11 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @return OmiParseResults
    */
   def parse(file: File): OmiParseResult = {
-    Try(
+    val parsed = Try(
       XMLParser.loadFile(file)
-    ) match {
-      case Success(root) => parseOmi(root)
-      case Failure(f) => Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
-    }
+    )
+
+    parseTry(parsed)
   }
 
 
@@ -56,13 +55,18 @@ object OmiParser extends Parser[OmiParseResult] {
    */
   def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    Try(
+    val parsed = Try(
       XMLParser.loadString(xml_msg)
-    ) match {
-      case Success(root) => parseOmi(root)
-      case Failure(e) => Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${e.getMessage}")))
-    }
+    )
+    parseTry(parsed)
 
+  }
+
+  private def parseTry(parsed: Try[Elem]): OmiParseResult = {
+    parsed match {
+      case Success(root) => parseOmi(root)
+      case Failure(f) => Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
+    }
   }
 
   /**

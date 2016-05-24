@@ -110,13 +110,14 @@ class ExternalAgentHandler(
     case Received(data) =>
     { 
       val dataString = data.decodeString("UTF-8")
+      val odfPrefix = "<Objects"
 
-      val beginning = dataString.dropWhile(_.isWhitespace).take("<Objects".length())
+      val beginning = dataString.dropWhile(_.isWhitespace).take(odfPrefix.length())
 
       log.debug(s"Got following data from $sender:\n$dataString")
 
       beginning match {
-        case b if b.startsWith("<?xml") || b.startsWith("<Objects") =>
+        case b if b.startsWith("<?xml") || b.startsWith(odfPrefix) =>
           storage = dataString.dropWhile(_.isWhitespace)
         case b if storage.nonEmpty =>
           storage += dataString
