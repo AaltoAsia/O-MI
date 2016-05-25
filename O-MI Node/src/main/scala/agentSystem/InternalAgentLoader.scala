@@ -51,7 +51,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
   /** Settings for getting list of internal agents and their configs from application.conf */
 
 
-  protected def start() = {
+  def start() : Unit= {
     val classnames = getAgentConfigurations
     classnames.foreach {
       case configEntry : AgentConfigEntry =>
