@@ -13,21 +13,19 @@
 **/
 package parsing
 
-import types._
-import OmiTypes._
-import OdfTypes._
-
-import xmlGen.xmlTypes
-import java.sql.Timestamp
 import java.io.File
-
-import scala.concurrent.duration._
-
-import scala.xml.{Elem, Node, NodeSeq}
-import scala.util.{Try, Success, Failure}
+import java.sql.Timestamp
 import javax.xml.transform.stream.StreamSource
 
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import parsing.xmlGen.xmlTypes
+import types.OdfTypes._
+import types.OmiTypes._
+import types._
+
+import scala.collection.JavaConversions.asJavaIterable
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
+import scala.xml.{Elem, Node}
 
 /** Parser for messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
@@ -37,18 +35,15 @@ object OmiParser extends Parser[OmiParseResult] {
   /**
    * Public method for parsing the xml file into OmiParseResults.
    *
-   *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
+   *  @param file XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
   def parse(file: File): OmiParseResult = {
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadFile(file)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
-    }
+    )
 
-   parseOmi( root )
+    parseTry(parsed)
   }
 
 
@@ -60,20 +55,24 @@ object OmiParser extends Parser[OmiParseResult] {
    */
   def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadString(xml_msg)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
-    }
+    )
+    parseTry(parsed)
 
-    parseOmi( root )
+  }
+
+  private def parseTry(parsed: Try[Elem]): OmiParseResult = {
+    parsed match {
+      case Success(root) => parseOmi(root)
+      case Failure(f) => Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
+    }
   }
 
   /**
    * Public method for parsing the xml root node into OmiParseResults.
    *
-   *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
+   *  @param root XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
   @deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
@@ -126,15 +125,14 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
   
   private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
-    read.requestID.nonEmpty match {
-      case true =>
+    if(read.requestID.nonEmpty) {
         Right(Iterable(
           PollRequest(
             ttl,
             uriToStringOption(read.callback),
             read.requestID map parseRequestID
           )))
-        case false =>
+    } else{
           read.msg match {
             case Some(msg) =>
               val odfParseResult = parseMsg(read.msg, read.msgformat)
@@ -202,7 +200,7 @@ object OmiParser extends Parser[OmiParseResult] {
     Right(Iterable(
       ResponseRequest(
         response.result.map {
-          case result =>
+          result =>
             OmiResult(
               result.returnValue.value,
               result.returnValue.returnCode,

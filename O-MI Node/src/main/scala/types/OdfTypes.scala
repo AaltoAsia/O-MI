@@ -66,6 +66,7 @@ object `package` {
       case info: OdfInfoItem => Seq(info)
       case obj:  OdfObject   => Seq(obj) ++ getOdfNodes((obj.objects.toSeq ++ obj.infoItems.toSeq): _*)
       case objs: OdfObjects  => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
+      case unknown: OdfNode => throw new Exception(s"unknown type received in OdfTypes: $unknown")
     }.toSeq
   }
 

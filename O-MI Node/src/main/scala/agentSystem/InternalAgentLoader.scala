@@ -19,8 +19,6 @@ import http.CLICmds._
 import http._
 import types.Path
 import akka.actor.SupervisorStrategy._
-import akka.pattern.ask
-import akka.util.Timeout
 import akka.actor.{
   Actor, 
   ActorRef, 
@@ -30,19 +28,20 @@ import akka.actor.{
   OneForOneStrategy, 
   Props, 
   SupervisorStrategy}
+import akka.pattern.ask
+import akka.util.Timeout
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
 import scala.collection.JavaConverters._
+import scala.language.postfixOps
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Map
 import java.io.File
 import java.net.URLClassLoader
-import java.sql.Timestamp
 import java.util.Date
 import java.util.jar.JarFile
-import http.CLICmds._
-import scala.language.postfixOps
+
 
 trait InternalAgentLoader extends BaseAgentSystem {
   import context.dispatcher
@@ -52,7 +51,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
   /** Settings for getting list of internal agents and their configs from application.conf */
 
 
-  def start() = {
+  protected def start() = {
     val classnames = getAgentConfigurations
     classnames.foreach {
       case configEntry : AgentConfigEntry =>
@@ -65,7 +64,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  def loadAndStart(name : AgentName, classname : String, config : String) = {
+  protected def loadAndStart(name : AgentName, classname : String, config : String) = {
     Try {
       log.info("Instantiating agent: " + name + " of class " + classname)
       val classLoader = Thread.currentThread.getContextClassLoader
@@ -107,18 +106,16 @@ trait InternalAgentLoader extends BaseAgentSystem {
     } match {
       case Success(_) => ()
       case Failure(e) => e match {
-        case e: NoClassDefFoundError =>
-          log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
-        case e: ClassNotFoundException =>
+        case _:NoClassDefFoundError | _:ClassNotFoundException =>
           log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
         case e: Throwable =>
           log.warning(s"Class $classname could not be loaded, created, initialized or started. Because received $e.")
           log.warning(e.getStackTrace.mkString("\n"))
-        case t => throw t
+        case _ => throw e
       }
     }
   }
-  def loadAndStart(configEntry: AgentConfigEntry) : Unit = loadAndStart( configEntry.name,configEntry.classname, configEntry.config)
+  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit = loadAndStart( configEntry.name,configEntry.classname, configEntry.config)
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.

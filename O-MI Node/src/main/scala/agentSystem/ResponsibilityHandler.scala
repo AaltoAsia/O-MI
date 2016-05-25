@@ -31,19 +31,19 @@ case class RegisterOwnership( agent: AgentName, paths: Seq[Path])
 case class PromiseWrite(relult: PromiseResult, write:WriteRequest )
 sealed trait ResponsibilityResponse extends ResponsibilityMessage
 object PromiseResult{
-  def apply() = new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())
+  def apply(): PromiseResult= new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())
 }
 case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]] ){
-  def futures = {
+  def futures : Future[Iterable[Future[ResponsibleAgentResponse]]]= {
     promise.future.map{
       promises => 
       promises.map{ pro => pro.future }
     }
   }
-  def resultSequence = {
+  def resultSequence : Future[Iterable[ResponsibleAgentResponse]]= {
     futures.flatMap{ results => Future.sequence(results) }
   }
-  def isSuccessful = {
+  def isSuccessful : Future[ResponsibleAgentResponse]= {
     resultSequence.map{ 
       res : Iterable[ResponsibleAgentResponse] =>
       res.foldLeft(SuccessfulWrite(Iterable.empty)){
@@ -73,7 +73,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
     //case registerOwnership: RegisterOwnership => sender() ! handleRegisterOwnership(registerOwnership)  
   }
-  def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
+  protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
     paths.collect{
       case path  => 
       val many = path.getParentsAndSelf
@@ -90,7 +90,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       seq => seq.map{case (name, path) => path}
     }
   } 
-  def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}
+  protected def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}
 
   protected def getConfigsOwnerships() = {
     log.info(s"Setting path ownerships for Agents from config.")
@@ -99,22 +99,28 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val pathsToOwner =names.map{ 
       name =>
       val agentConfig = agents.toConfig().getObject(name).toConfig()
-      try{
+      Try{
         val ownedPaths = agentConfig.getStringList("owns")
         log.info(s"Agent $name owns: " + ownedPaths.mkString("\n"))
         ownedPaths.map{ path => (Path(path), name)}
-      } catch {
+      }.recover{
         case e: ConfigException.Missing   =>
           //Not a ResponsibleAgent
           List.empty
         case e: ConfigException.WrongType =>
           log.warning(s"List of owned paths for $name couldn't converted to java.util.List<String>")
           List.empty
+        case e =>
+          log.warning(s"List of owned paths, resulted: $e")
+          List.empty
+      }.getOrElse{
+          List.empty
       }
     }.flatten.toMap
     //pathOwners ++= pathsToOwner
     collection.mutable.Map(pathsToOwner: _*)
   }
+
   private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
       val allExists = ownerToObjects.map{
         case (name: AgentName, objects: OdfObjects) =>
@@ -165,7 +171,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val senderName = sender().path.name
     log.debug( s"Received WriteRequest from $senderName.")
     val odfObjects = write.odf
-    val allInfoItems = odfObjects.infoItems // getInfoItems(odfObjects)
+    val allInfoItems : Seq[OdfInfoItem] = odfObjects.infoItems // getInfoItems(odfObjects)
 
     // Collect metadata 
     val objectsWithMetadata = odfObjects.objectsWithMetadata
@@ -194,9 +200,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     
     //Get part that isn't owned by anyone
     val writesToOwnerless:Promise[ResponsibleAgentResponse] = {
-      val paths = allPaths.filter{ path => !allOwnedPaths.contains(path) }
-      val infoItems= allInfoItems.filter{
-        case infoItem : OdfInfoItem => paths.contains(infoItem.path) 
+      val paths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }
+      val infoItems = allInfoItems.filter{
+        case infoItem => paths.contains(infoItem.path) 
       }
       log.debug( s"$senderName writing to paths not owned by anyone: $paths")
       val promise = Promise[ResponsibleAgentResponse]()
@@ -334,7 +340,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       value <- info.values
     } yield (path, value, oldValueOpt)
     //for debugging
-    //log.debug(s"\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXxxx\n${pathValueOldValueTuples.map(n =>n._1.toString + "-> " + n._2.value + "old: " + n._3.map(_.value).toString()).mkString("\n")}")
+    //log.debug(s"\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXxxx\n${
+    //pathValueOldValueTuples.map(n =>n._1.toString + "-> " + n._2.value + "old: " + n._3.map(_.value).toString()).mkString("\n")
+    //}")
     val newPollValues = pathValueOldValueTuples.flatMap{n =>
       handlePollData(n._1, n._2 ,n._3)}
       //handlePollData _ tupled n}

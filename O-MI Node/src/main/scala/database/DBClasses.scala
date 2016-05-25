@@ -17,7 +17,9 @@ import java.sql.Timestamp
 
 import parsing.xmlGen.xmlTypes.QlmID
 import slick.driver.H2Driver.api._
+import slick.lifted.{ForeignKeyQuery, ProvenShape, Index}
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -101,7 +103,7 @@ case class DBValue(
   valueType: String,
     valueId: Option[Long] = None
 ) {
-  def toOdf = OdfValue(value, valueType, timestamp)
+  def toOdf: OdfValue = OdfValue(value, valueType, timestamp)
 }
 
 case class SubValue(
@@ -111,7 +113,7 @@ case class SubValue(
                      value: String,
                      valueType: String
                      ) {
-  def toOdf = OdfValue(value, valueType, timestamp)
+  def toOdf: OdfValue = OdfValue(value, valueType, timestamp)
 }
 
 
@@ -147,20 +149,20 @@ trait OmiNodeTables extends DBBase {
     pollRefCount: Int,
     isInfoItem: Boolean 
   ) {
-    def descriptionOdfOption =
+    def descriptionOdfOption: Option[OdfDescription] =
       if (description.nonEmpty) Some(OdfDescription(description))
       else None
 
 
     def toOdfObject: OdfObject = toOdfObject()
-    def toOdfObject(infoitems: Iterable[OdfInfoItem] = Iterable(), objects: Iterable[OdfObject] = Iterable()) =
+    def toOdfObject(infoitems: Iterable[OdfInfoItem] = Iterable(), objects: Iterable[OdfObject] = Iterable()): OdfObject =
       OdfObject(Seq(QlmID(path.last)),path, infoitems, objects, descriptionOdfOption, None)
 
     def toOdfObjects: OdfObjects = OdfObjects()
 
 
     def toOdfInfoItem: OdfInfoItem = toOdfInfoItem()
-    def toOdfInfoItem(values: Iterable[OdfValue] = Iterable()) =
+    def toOdfInfoItem(values: Iterable[OdfValue] = Iterable()): OdfInfoItem =
       OdfInfoItem(path, values, descriptionOdfOption, None)
   }
 
@@ -172,19 +174,19 @@ trait OmiNodeTables extends DBBase {
   class DBNodesTable(tag: Tag)
     extends Table[DBNode](tag, "HIERARCHYNODES") {
     /** This is the PrimaryKey */
-    def id            = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
-    def path          = column[Path]("PATH")
-    def leftBoundary  = column[Int]("LEFTBOUNDARY")
-    def rightBoundary = column[Int]("RIGHTBOUNDARY")
-    def depth         = column[Int]("DEPTH")
-    def description   = column[String]("DESCRIPTION")
-    def pollRefCount  = column[Int]("POLLREFCOUNT")
-    def isInfoItem    = column[Boolean]("ISINFOITEM")
+    def id: Column[Int] = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
+    def path: Column[Path] = column[Path]("PATH")
+    def leftBoundary: Column[Int] = column[Int]("LEFTBOUNDARY")
+    def rightBoundary: Column[Int] = column[Int]("RIGHTBOUNDARY")
+    def depth: Column[Int] = column[Int]("DEPTH")
+    def description: Column[String] = column[String]("DESCRIPTION")
+    def pollRefCount: Column[Int] = column[Int]("POLLREFCOUNT")
+    def isInfoItem: Column[Boolean] = column[Boolean]("ISINFOITEM")
 
-    def pathIndex = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
+    def pathIndex: Index = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
 
     // Every table needs a * projection with the same type as the table's type parameter
-    def * = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
+    def * : ProvenShape[DBNode] = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
       DBNode.tupled,
       DBNode.unapply
     )
@@ -194,8 +196,8 @@ trait OmiNodeTables extends DBBase {
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
-    def hierarchyId = column[Int]("HIERARCHYID")
-    def hierarchy = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)(
+    def hierarchyId: Column[Int] = column[Int]("HIERARCHYID")
+    def hierarchy: ForeignKeyQuery[DBNodesTable, DBNode] = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
   }
 
@@ -212,16 +214,16 @@ trait OmiNodeTables extends DBBase {
     val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
     //def hierarchyId = column[Int]("HIERARCHYID")
-    def id            = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
-    def timestamp = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
-    def value = column[String]("VALUE")
-    def valueType = column[String]("VALUETYPE")
-    def idx1 = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
-    def idx2 = index("timestamp", timestamp, unique = false)  //index on timestmaps
+    def id: Column[Long] = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
+    def timestamp: Column[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
+    def value: Column[String] = column[String]("VALUE")
+    def valueType: Column[String] = column[String]("VALUETYPE")
+    def idx1: Index = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
+    def idx2: Index = index("timestamp", timestamp, unique = false)  //index on timestmaps
     /** Primary Key: (hierarchyId, timestamp) */
     //def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))
 
-    def * = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)
+    def * : ProvenShape[DBValue] = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)
   }
 
   protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data
@@ -232,14 +234,14 @@ trait OmiNodeTables extends DBBase {
   class PollSubsTable(tag: Tag)
     extends Table[SubValue](tag, "POLLSUBVALUES") {
     /** This is the PrimaryKey */
-    def subId         = column[Long]("SUBID")
-    def path          = column[Path]("PATH")
-    def timestamp     = column[Timestamp]("TIME")
-    def value         = column[String]("VALUE")
-    def valueType     = column[String]("VALUETYPE")
+    def subId: Column[Long] = column[Long]("SUBID")
+    def path: Column[Path] = column[Path]("PATH")
+    def timestamp: Column[Timestamp] = column[Timestamp]("TIME")
+    def value: Column[String] = column[String]("VALUE")
+    def valueType: Column[String] = column[String]("VALUETYPE")
 
     // Every table needs a * projection with the same type as the table's type parameter
-    def * = ( subId, path, timestamp, value, valueType) <> (
+    def * : ProvenShape[SubValue] = ( subId, path, timestamp, value, valueType) <> (
       SubValue.tupled,
       SubValue.unapply
       )
@@ -262,12 +264,15 @@ trait OmiNodeTables extends DBBase {
    * Empties all the data from the database
    * 
    */
-  def clearDB() = db.run(
-    DBIO.seq(
-      (allTables map (_.delete)): _* 
-    ).andThen(hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false))
-  )
+  def clearDB(): Future[Int] = {
+    val rootPath = Path("/Objects")
+    db.run(
+      DBIO.seq(
+        (allTables map (_.delete)): _*
+      ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, false))
+    )
+  }
 
-  def dropDB() = db.run( allSchemas.drop )
+  def dropDB(): Future[Unit] = db.run( allSchemas.drop )
     
 }

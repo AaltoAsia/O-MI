@@ -10,7 +10,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.3.2",
+  version := "0.4.0",
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -58,11 +58,14 @@ lazy val agents = (project in file("Agents")).
 
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
+  enablePlugins(DockerPlugin).
   settings(
     (commonSettings("Node") ++ Seq(
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
+      packageName in Docker := "o-mi-reference",
+      dockerExposedPorts := Seq(8080, 8180),
       cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
         base / "html" / "api",
         base / "lib",

@@ -13,44 +13,38 @@
 **/
 package parsing
 
-import scala.util.{Try, Success, Failure}
-import java.util.Date
 import java.io.File
-import scala.util.control.NonFatal
 import java.sql.Timestamp
-import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
-import scala.xml.Utility.trim
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 
-import types._
-import OmiTypes._
-import OdfTypes._
-import xmlGen._
-import xmlGen.xmlTypes._
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
+import types._
+
+import scala.collection.JavaConversions.asJavaIterable
+import scala.util.{Failure, Success, Try}
+import scala.xml.Elem
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
-
-  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+  val schemaName = "odf.xsd"
+  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream(schemaName))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
   /**
    * Public method for parsing the xml file into OdfParseResults.
    *
-   *  @param xml_msg XML formatted file to be parsed. Should be in O-DF format.
+   *  @param file XML formatted file to be parsed. Should be in O-DF format.
    *  @return OdfParseResults
    */
   def parse(file: File): OdfParseResult = {
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadFile(file)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
-    }
+    )
+    parseTry(parsed)
 
-    parse(root)
   }
 
   /**
@@ -60,16 +54,19 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(xml_msg: String): OdfParseResult = {
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadString(xml_msg)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
-    }
+    )
 
-    parse(root)
+    parseTry(parsed)
   }
 
+  private def parseTry(parsed: Try[Elem]): OdfParseResult = {
+    parsed match {
+      case Success(root) => parse(root)
+      case Failure(f) => Left(Iterable(ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
+  }
 
   /**
    * Public method for parsing the xml structure into OdfParseResults.
@@ -151,7 +148,7 @@ object OdfParser extends Parser[OdfParseResult] {
       },
       item.MetaData.map{ meta =>
         // tests that conversion works before it is in the db and fails when in read request
-        OdfMetaData( scalaxb.toXML[MetaData](meta, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString)
+        OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
       }
     ) 
   }

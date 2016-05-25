@@ -28,9 +28,8 @@ import scala.language.existentials
  *
  */
 object `package` {
-
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
-  def getPaths(request: OdfRequest) = getLeafs(request.odf).map{ _.path }.toSeq
+  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
 }
 
   /**
@@ -40,7 +39,7 @@ object `package` {
   sealed trait OmiRequest {
     def ttl: Duration
     def callback: Option[String]
-    def hasCallback = callback.isDefined && callback.getOrElse("").nonEmpty
+    def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
   }
   sealed trait PermissiveRequest
   sealed trait OdfRequest {
@@ -54,11 +53,11 @@ object `package` {
     // Note: defs can be implemented also as val and lazy val
     def interval: Duration
     def ttl: Duration
-    def isIntervalBased  = interval >= 0.milliseconds
-    def isEventBased = interval == -1.seconds
+    def isIntervalBased : Boolean  = interval >= 0.milliseconds
+    def isEventBased: Boolean = interval == -1.seconds
     def ttlToMillis: Long = ttl.toMillis
     def intervalToMillis: Long = interval.toMillis
-    def isImmortal = ! ttl.isFinite
+    def isImmortal: Boolean  = ! ttl.isFinite
     require(interval == -1.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
     require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
   }
@@ -67,8 +66,8 @@ object `package` {
   * Used for subscription callbacks.
   **/
   case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-    def ttl = sub.ttl
-    def callback = sub.callback
+    def ttl: Duration = sub.ttl
+    def callback: Option[String] = sub.callback
   }
 
 /** One-time-read request
@@ -77,11 +76,11 @@ object `package` {
 case class ReadRequest(
   ttl: Duration,
   odf: OdfObjects ,
-  begin: Option[ Timestamp ] = None,
-  end: Option[ Timestamp ] = None,
-  newest: Option[ Int ] = None,
-  oldest: Option[ Int ] = None,
-  callback: Option[ String ] = None
+  begin: Option[Timestamp ] = None,
+  end: Option[Timestamp ] = None,
+  newest: Option[Int ] = None,
+  oldest: Option[Int ] = None,
+  callback: Option[String ] = None
 ) extends OmiRequest with OdfRequest
 
 /** Poll request
@@ -89,8 +88,8 @@ case class ReadRequest(
   **/
 case class PollRequest(
   ttl: Duration,
-  callback: Option[ String ] = None,
-  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
+  callback: Option[String ] = None,
+  requestIDs: Iterable[Long ] = asJavaIterable(Seq.empty[Long])
 ) extends OmiRequest
 
 /** Subscription request for starting subscription
@@ -99,10 +98,10 @@ case class PollRequest(
 case class SubscriptionRequest(
   ttl: Duration,
   interval: Duration,
-  odf: OdfObjects ,
-  newest: Option[ Int ] = None,
-  oldest: Option[ Int ] = None,
-  callback: Option[ String ] = None
+  odf: OdfObjects,
+  newest: Option[Int ] = None,
+  oldest: Option[Int ] = None,
+  callback: Option[String ] = None
 ) extends OmiRequest with SubLike with OdfRequest
 
 /** Write request
@@ -111,7 +110,7 @@ case class SubscriptionRequest(
 case class WriteRequest(
   ttl: Duration,
   odf: OdfObjects,
-  callback: Option[ String ] = None
+  callback: Option[String ] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest
 
 
@@ -122,8 +121,8 @@ case class ResponseRequest(
   results: Iterable[OmiResult],
   ttl: Duration = Duration.Inf
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
-      val callback = None
-      def odf = results.foldLeft(OdfObjects()){
+      val callback : Option[String] = None
+      def odf : OdfObjects= results.foldLeft(OdfObjects()){
         _ union _.odf.getOrElse(OdfObjects())
       }
    } 
@@ -133,9 +132,9 @@ case class ResponseRequest(
   **/
 case class CancelRequest(
   ttl: Duration,
-  requestID: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
+  requestID: Iterable[Long ] = asJavaIterable(Seq.empty[Long])
 ) extends OmiRequest {
-      def callback = None
+      def callback : Option[String] = None
     }
 
 /** Result of a O-MI request
@@ -145,7 +144,7 @@ case class OmiResult(
   value: String,
   returnCode: String,
   description: Option[String] = None,
-  requestID: Iterable[ Long ] = asJavaIterable(Seq.empty[Long]),
+  requestID: Iterable[Long ] = asJavaIterable(Seq.empty[Long]),
   odf: Option[OdfTypes.OdfObjects] = None
 ) 
 
