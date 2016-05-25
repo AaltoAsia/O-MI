@@ -1,6 +1,7 @@
 package agents
 
 import agentSystem._ 
+import agentSystem.AgentTypes._ 
 //import agentSystem.InternalAgentExceptions.{AgentException, AgentInitializationException, AgentInterruption}
 import types._
 import types.OdfTypes._
@@ -18,11 +19,11 @@ import scala.concurrent.duration._
 class BrokenAgent  extends InternalAgent{
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
-	val rnd: Random = new Random()
-  val interval : FiniteDuration = Duration(60, SECONDS) 
-	var pathOwned: Option[Path] = None
-	var pathPublic: Option[Path] = None
-  def date = new java.util.Date();
+	protected val rnd: Random = new Random()
+  protected val interval : FiniteDuration = Duration(60, SECONDS) 
+	protected var pathOwned: Option[Path] = None
+	protected var pathPublic: Option[Path] = None
+  protected def date = new java.util.Date();
   protected def configure(config: String ) : InternalAgentResponse = {
       pathOwned = Some( new Path(config ++ "Owned"))
       pathPublic = Some( new Path(config ++ "Public"))
@@ -39,7 +40,7 @@ class BrokenAgent  extends InternalAgent{
     CommandSuccessful("Successfully started.")
   }
 
-  def update() : Unit = {
+  protected def update() : Unit = {
     val promiseResult = PromiseResult()
     for{
       ownedPath <- pathOwned
@@ -72,7 +73,7 @@ class BrokenAgent  extends InternalAgent{
     }
   }
 
-  receiver{
+  protected def receiver = {
     case Update => update
   }
   protected def stop = updateSchelude match{

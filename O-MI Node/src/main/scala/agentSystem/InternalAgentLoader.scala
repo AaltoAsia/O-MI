@@ -14,6 +14,7 @@
 package agentSystem
 
 import agentSystem._
+import agentSystem.AgentTypes._
 import http.CLICmds._
 import http._
 import types.Path
@@ -71,7 +72,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
       val clazz = classLoader.loadClass(classname)
       val interface =  classOf[InternalAgent]
       if( interface.isAssignableFrom(clazz) ){
-        val prop  = Props(clazz)
+        val prop  = Props( clazz )
         val agent = context.actorOf( prop, name.toString )
         val date = new Date()
         val timeout = settings.internalAgentsStartTimout

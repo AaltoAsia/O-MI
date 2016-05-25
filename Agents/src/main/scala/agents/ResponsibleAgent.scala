@@ -1,6 +1,7 @@
 package agents
 
 import agentSystem._ 
+import agentSystem.AgentTypes._ 
 import types._
 import types.OdfTypes._
 import types.OmiTypes._

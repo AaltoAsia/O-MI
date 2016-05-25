@@ -1,6 +1,7 @@
 package agents
 
 import agentSystem._
+import agentSystem.AgentTypes._ 
 import types._
 import types.OmiTypes.WriteRequest
 import types.Path._
@@ -21,10 +22,10 @@ class ODFAgent extends InternalAgent {
   
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
-	val rnd: Random = new Random()
-  val interval : FiniteDuration = Duration(60, SECONDS) 
-	var odf: Option[OdfObjects] = None
-  def date = new java.util.Date();
+	protected val rnd: Random = new Random()
+  protected val interval : FiniteDuration = Duration(60, SECONDS) 
+	protected var odf: Option[OdfObjects] = None
+  protected def date = new java.util.Date();
   protected def configure(configPath: String ) : InternalAgentResponse = {
         val file =  new File(configPath)
         if( file.exists() && file.canRead() ){
@@ -45,7 +46,7 @@ class ODFAgent extends InternalAgent {
             CommandFailed("Problem with config, view log.")
       }
   }
-  var updateSchelude : Option[Cancellable] = None
+  protected var updateSchelude : Option[Cancellable] = None
   protected def start = {
     updateSchelude = Some(context.system.scheduler.schedule(
       Duration(0, SECONDS),
@@ -56,7 +57,7 @@ class ODFAgent extends InternalAgent {
     CommandSuccessful("Successfully started.")
   }
 
-  def update() : Unit = {
+  protected def update() : Unit = {
     odf.map{
       objects =>
       val promiseResult = PromiseResult()
@@ -97,7 +98,7 @@ class ODFAgent extends InternalAgent {
     } 
   }
 
-  receiver{
+  protected def receiver={
     case Update => update
   }
   protected def stop = updateSchelude match{

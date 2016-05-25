@@ -1,11 +1,12 @@
 package agents
 
+import agentSystem.AgentTypes._ 
 import agentSystem._ 
 import types._
 import types.OdfTypes._
 import types.OmiTypes._
 import akka.util.Timeout
-import akka.actor.Cancellable
+import akka.actor.{Cancellable, Props}
 import akka.pattern.ask
 import scala.util.{Success, Failure}
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
@@ -15,10 +16,15 @@ import java.sql.Timestamp;
 import java.util.Random;
 import java.util.Date;
 import scala.concurrent.ExecutionContext.Implicits._
+import com.typesafe.config.Config
 
+object BasicAgent extends PropsCreator {
+  def props( config: Config ) : Props = { Props(new BasicAgent) }  
+
+}
 class BasicAgent  extends InternalAgent{
   //Path of owned O-DF InfoItem, Option because ugly mutable state
-	var pathO: Option[Path] = None
+	protected var pathO: Option[Path] = None
   protected def configure(config: String ) : InternalAgentResponse = {
       pathO  = Some( Path(config) )
       CommandSuccessful("Successfully configured.")
@@ -27,9 +33,9 @@ class BasicAgent  extends InternalAgent{
   //Message for updating values
   case class Update()
   //Interval for scheluding generation of new values
-  val interval : FiniteDuration = Duration(60, SECONDS) 
+  protected val interval : FiniteDuration = Duration(60, SECONDS) 
   //Cancellable update of values, Option because ugly mutable state
-  var updateSchelude : Option[Cancellable] = None
+  protected var updateSchelude : Option[Cancellable] = None
   protected def start = {
     // Schelude update and save job, for stopping
     // Will send Update message to self every interval
@@ -64,12 +70,12 @@ class BasicAgent  extends InternalAgent{
   }
   
   //Random number generator for generating new values
-  val rnd: Random = new Random()
-  def newValueStr = rnd.nextInt().toString 
+  protected val rnd: Random = new Random()
+  protected def newValueStr = rnd.nextInt().toString 
   //Helper function for current timestamps
-  def currentTimestamp = new Timestamp(  new java.util.Date().getTime() )
+  protected def currentTimestamp = new Timestamp(  new java.util.Date().getTime() )
   //Update values in paths
-  def update() : Unit = {
+  protected def update() : Unit = {
     pathO.foreach{ //Only run if some path found 
       path => 
       val timestamp = currentTimestamp
@@ -99,7 +105,7 @@ class BasicAgent  extends InternalAgent{
     }
   }
 
-  receiver{
+  protected def receiver = {
     case Update => update
   }
 }

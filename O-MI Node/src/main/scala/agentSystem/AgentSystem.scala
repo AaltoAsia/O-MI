@@ -1,6 +1,7 @@
 
 package agentSystem
 
+import agentSystem.AgentTypes._
 import agentSystem._
 import http.CLICmds._
 import http._

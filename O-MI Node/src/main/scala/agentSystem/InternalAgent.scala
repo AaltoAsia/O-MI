@@ -12,6 +12,7 @@
   limitations under the License.
 **/
 package agentSystem
+import agentSystem.AgentTypes._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
@@ -24,6 +25,7 @@ import akka.actor.{
 }
 import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 
+import com.typesafe.config.Config
 import scala.util.{Try}
 import scala.concurrent.duration._
   /**
@@ -45,37 +47,43 @@ sealed trait ResponsibleAgentMsg
   case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
 sealed trait ResponsibleAgentResponse
   case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
+object AgentTypes {
+  trait InternalAgent extends Actor with ActorLogging {
+    protected def parent = context.parent
+    protected def name = self.path.name
+    protected def start   : InternalAgentResponse 
+    protected def restart : InternalAgentResponse
+    protected def stop    : InternalAgentResponse
+    protected def configure(config: String)  : InternalAgentResponse
+    private[AgentTypes] def forcer : Actor.Receive = {
+      case Start()                    => sender() ! start
+      case Restart()                  => sender() ! restart
+      case Stop()                     => sender() ! stop
+      case Configure(config: String)  => sender() ! configure(config)
+    }
+    protected def receiver : Actor.Receive 
+    final def receive : Actor.Receive= forcer orElse receiver
+  }
 
-trait InternalAgent extends Actor with ActorLogging with Receiving{
-  protected def parent = context.parent
-  protected def name = self.path.name
-  protected def start   : InternalAgentResponse 
-  protected def restart : InternalAgentResponse
-  protected def stop    : InternalAgentResponse
-  protected def configure(config: String)  : InternalAgentResponse
-  receiver{
-    case Start()                    => sender() ! start
-    case Restart()                  => sender() ! restart
-    case Stop()                     => sender() ! stop
-    case Configure(config: String)  => sender() ! configure(config)
+  trait ResponsibleInternalAgent extends InternalAgent {
+    protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
+    override private[AgentTypes] def forcer: Actor.Receive = super.forcer orElse {
+      case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
+    }
+
+    final protected def passWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+      val result = PromiseResult()
+      parent ! PromiseWrite( result, write)
+      promise.completeWith( result.isSuccessful ) 
+    }
+    final protected def incorrectWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+      promise.failure(new Exception(s"Write incorrect. Tryed to write incorrect value."))
+    }
+    final protected def forbiddenWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
+      promise.failure(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen."))
+    }
+  }
+  trait PropsCreator{
+    def props( config: Config ) : Props
   }
 }
-
-trait ResponsibleInternalAgent extends InternalAgent {
-  protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
-  receiver {
-    case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
-  }
-  final protected def passWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-    val result = PromiseResult()
-    parent ! PromiseWrite( result, write)
-    promise.completeWith( result.isSuccessful ) 
-  }
-  final protected def incorrectWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-    promise.failure(new Exception(s"Write incorrect. Tryed to write incorrect value."))
-  }
-  final protected def forbiddenWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-    promise.failure(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen."))
-  }
-}
-

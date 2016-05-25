@@ -66,7 +66,7 @@ object Authorization {
   /** Simple private container for forcing the combination of previous authorization.
    *  Call the apply for the result.
    */
-  class CombinedTest private[Authorization] (test: Directive1[PermissionTest]) {
+  final class CombinedTest private[Authorization] (test: Directive1[PermissionTest]) {
     def apply(): Directive1[PermissionTest] = test
   }
 
@@ -92,7 +92,7 @@ object Authorization {
      * @param next Should be a new implementation of authorization.
      * @return Combined test
      */
-    protected def combineWithPrevious(
+    final protected def combineWithPrevious(
       prev: CombinedTest,
       next: Directive1[PermissionTest]
          ): CombinedTest = 
