@@ -320,15 +320,16 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
 
 
-        CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
-          .onComplete {
-            case Success(CallbackSuccess) =>
+        val callbackF = CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
+          callbackF.onSuccess {
+            case CallbackSuccess() =>
               log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-
-            case Success(fail: CallbackFailure) =>
+            }
+            callbackF.onFailure{
+            case fail: CallbackFailure =>
               log.warning(
                 s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-            case Failure(e) =>
+            case e =>
               log.warning(
                 s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
           }

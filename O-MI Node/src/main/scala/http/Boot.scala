@@ -147,7 +147,7 @@ trait Starter {
 
     implicit val timeoutForBind = Timeout(5.seconds)
 
-    IO(Http) ? Http.Bind(service, interface = settings.interface, port = settings.port)
+    IO(Http) ? Http.Bind(service, interface = settings.interface, port = settings.webclientPort)
   }
 }
 

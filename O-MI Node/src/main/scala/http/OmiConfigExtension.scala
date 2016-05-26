@@ -17,6 +17,7 @@ import akka.actor.{ActorSystem, Extension, ExtensionId, ExtensionIdProvider, Ext
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
+import scala.collection.JavaConversions._
 
 import com.typesafe.config.Config
 
@@ -24,36 +25,42 @@ import com.typesafe.config.Config
 class OmiConfigExtension(config: Config) extends Extension {
   // Node special settings
 
+  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
+    case port : java.lang.Integer => port.toInt
+  }.toMap
+  val webclientPort: Int = config.getInt("omi-service.ports.webclient")
+  val externalAgentPort: Int = ports("external-agents")
+  val cliPort: Int = config.getInt("omi-service.ports.cli")
   /** Save at least this much data per InfoItem */
   val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
 
   /** Minimum supported interval for interval based subscriptions */
-  val minSubscriptionInterval = config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
+  val minSubscriptionInterval : FiniteDuration= config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
 
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
-  val callbackTimeout = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
+  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
 
-  val trimInterval = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
+  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
 
-  val snapshotInterval = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS).seconds
+  val snapshotInterval: FiniteDuration  = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS).seconds
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
-  val port: Int = config.getInt("omi-service.port")
+  //val port: Int = config.getInt("omi-service.port")
   val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
-  val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
-  val cliPort: Int = config.getInt("omi-service.agent-cli-port")
+  //val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
+  //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
 
   // Agents
 
   val internalAgents = config.getObject("agent-system.internal-agents") 
-  val internalAgentsStartTimout = config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
+  val internalAgentsStartTimout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
 
   /**
    * Time in milliseconds how long an actor has to at least run before trying
@@ -68,8 +75,7 @@ class OmiConfigExtension(config: Config) extends Extension {
   val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
   val inputWhiteListSubnets = config.getStringList("omi-service.input-whitelist-subnets") 
 
-  //val log = LoggerFactory.getLogger(classOf[OmiConfigExtension])
-  //log.info(config.root().render())
+  val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds 
 }
 
 

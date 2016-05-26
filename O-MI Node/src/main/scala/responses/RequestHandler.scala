@@ -83,7 +83,8 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
     request.callback match {
       
       case Some(address) => {
-        checkCallback(address).map { x =>
+        val callbackCheck = CallbackHandlers.checkCallback(address)
+        callbackCheck.flatMap { uri =>
           request match {
             case sub: SubscriptionRequest => runGeneration(sub)
             case _ => {
@@ -104,13 +105,14 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
 
            }
           }
-        } match {
-          case Success(res)                               => res
-          case Failure(e: java.net.MalformedURLException) => Future.successful(invalidCallback(e.getMessage))
-          case Failure(e: UnknownHostException)           => Future.successful(invalidCallback("Unknown host: " + e.getMessage))
-          case Failure(e: SecurityException)              => Future.successful(invalidCallback("Unauthorized " + e.getMessage))
-          case Failure(e: java.net.ProtocolException)     => Future.successful(invalidCallback(e.getMessage))
-          case Failure(t)                                 => throw t
+        } recover {
+          case e: ProtocolNotSupported => invalidCallback(e.getMessage)
+          case e: ForbiddenLocalhostPort => invalidCallback(e.getMessage)
+          case e: java.net.MalformedURLException => invalidCallback(e.getMessage)
+          case e: UnknownHostException           => invalidCallback("Unknown host: " + e.getMessage)
+          case e: SecurityException              => invalidCallback("Unauthorized " + e.getMessage)
+          case e: java.net.ProtocolException     => invalidCallback(e.getMessage)
+          case t                                 => throw t
         }
 
       }

@@ -248,18 +248,20 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
 
-    sendCallback(
+    val callbackF = sendCallback(
       callbackAddr,
       xmlMsg,
       Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
         .toOption.getOrElse(Duration.Inf)
-    ) onComplete {
-      case Success(CallbackSuccess) =>
+    ) 
+    callbackF.onSuccess {
+      case CallbackSuccess() =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
-
-      case Success(fail: CallbackFailure) =>
+    }
+    callbackF.onFailure{
+      case fail: CallbackFailure =>
         failed(fail.toString)
-      case Failure(e) =>
+      case e =>
         failed(e.getMessage)
     }
   }
