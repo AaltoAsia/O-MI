@@ -76,10 +76,12 @@ trait OdfConversions extends OmiNodeTables {
    * @param items input data for single object (objects and infoitems for the first level of children)
    * @return Single object or infoItem extracted from items
    */
-  protected[this] def singleObjectConversion(items: DBInfoItems): Option[OdfNode] = {
-    //require(items.size > 0, "singleObjectConversion requires data!")
-    if (items.size == 0) return None
+  protected[this] def singleObjectConversion(
+    items: DBInfoItems
+  ): Option[OdfNode] = items.size match {
+      case 0 => None
 
+      case pos if pos > 0 =>
     val nodes = items.keys
 
     // search element with the lowest depth and take only the node
@@ -112,6 +114,9 @@ trait OdfConversions extends OmiNodeTables {
 
       case matchError => throw new MatchError(matchError)
     }
+  
+      case default: Int => 
+      None
   }
 
   protected[this] def odfConversion: DBInfoItem => OdfObjects =

@@ -89,18 +89,6 @@ object CallbackHandlers {
           
     }
 
-    private def retrySendingUntilWithCheck[T,U]( message: HttpRequest, check: PartialFunction[HttpResponse,U], delay: FiniteDuration, tryUntil: Timestamp ) : Future[U] = {
-      val future = httpHandler(message)
-    future.map{ check }.recoverWith{
-      case e if tryUntil.after( currentTimestamp ) => 
-        system.log.debug(
-          s"Retrying after $delay."
-        ) 
-        Thread.sleep(delay.toMillis)
-        retrySendingUntilWithCheck[T,U](message, check, delay,tryUntil)  
-    }
-  }
-
   private def retryUntilWithCheck[T,U]( creator: => Future[T] , check: PartialFunction[T,U], delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 ) : Future[U] = {
     val future = creator
     future.map{ check }.recoverWith{

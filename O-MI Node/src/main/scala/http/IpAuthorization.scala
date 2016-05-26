@@ -103,40 +103,46 @@ trait IpAuthorization extends AuthorizationExtension {
     * @return Boolean, true if connection is in allowed suybnet.
     **/
   private[this] def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
-    if( subnet.length == ip.length){
-      // TODO: bytes should be printed as unsigned
-      log.debug("Whitelist check for IPv" + ip.length +
-        " address: " + ip.map{b => b.toHexString}.mkString(":") +
-        " against " + subnet.map{b => b.toHexString}.mkString(":")
-      )
-      ip.length match{
-        case 4 =>{
-          val mask = -1 << (32 - bits)  
-          return (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
-        }
-        case 16 =>{
+    // TODO: bytes should be printed as unsigned
+    log.debug("Whitelist check for IPv" + ip.length +
+      " address: " + ip.map{b => b.toHexString}.mkString(":") +
+    " against " + subnet.map{b => b.toHexString}.mkString(":")
+    )
+    (subnet.length, ip.length) match { 
+      case (4,4) =>
+      val mask = -1 << (32 - bits)  
+
+      val check = (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
+
+      check
+      case (16,16)  =>
           val mask = -1 << (64 - bits)
           val ipArea = bytesToInt( List( ip(4), ip(5), ip(6), ip(7) ) )
           val subnetArea = bytesToInt( List( subnet(4), subnet(5), subnet(6), subnet(7) ) )
-          /*if( bits > 56 )
-            List[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
-          else 
-            List[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
-          */
-          return ( subnet(0)   & 0xFF  ) == (  ip(0)   & 0xFF     ) && 
-          ( subnet(1)   & 0xFF  ) == (  ip(1)   & 0xFF     ) &&
-          ( subnet(2)   & 0xFF  ) == (  ip(2)   & 0xFF     ) && 
-          ( subnet(3)   & 0xFF  ) == (  ip(3)   & 0xFF     ) &&
-          ( subnet(4)   & 0xFF  ) == (  ip(4)   & 0xFF     ) && 
-          ( subnet(5)   & 0xFF  ) == (  ip(5)   & 0xFF     ) &&
-          ( subnetArea  & mask  ) == (  ipArea  & mask )
-          //( subnet(6) & mask(0) ) == ( ip(6) & mask(0)  ) && 
-          //( subnet(7) & mask(1) ) == ( ip(7) & mask(1)  )
-        }
-      }
-    }
-    log.debug("Tried to compare IPv4 with IPv6, address: " + subnet.mkString(":") + " ip: " + ip.mkString(":") )
+
+      /*if( bits > 56 )
+       List[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
+       else 
+         List[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
+       */
+      val check = {( subnet(0)   & 0xFF  ) == (  ip(0)   & 0xFF     ) && 
+      ( subnet(1)   & 0xFF  ) == (  ip(1)   & 0xFF     ) &&
+      ( subnet(2)   & 0xFF  ) == (  ip(2)   & 0xFF     ) && 
+      ( subnet(3)   & 0xFF  ) == (  ip(3)   & 0xFF     ) &&
+      ( subnet(4)   & 0xFF  ) == (  ip(4)   & 0xFF     ) && 
+      ( subnet(5)   & 0xFF  ) == (  ip(5)   & 0xFF     ) &&
+      ( subnetArea  & mask  ) == (  ipArea  & mask )}
+      //( subnet(6) & mask(0) ) == ( ip(6) & mask(0)  ) && 
+      //( subnet(7) & mask(1) ) == ( ip(7) & mask(1)  )
+      check
+
+      case ( a, b) if a != b && (a == 4 || a == 16 )&& (b == 4 || b == 16 ) => 
+      log.debug(s"Tried to compare IPv$a with IPv$b, address: " + subnet.mkString(":") + " ip: " + ip.mkString(":") )
     false
+      case ( a, b) => 
+      log.debug(s"Tried to compare IPs with unrecognized versions, lengths: $a, $b")
+      false
+    }
   }
 
   /** Helper method for converting byte array to Int

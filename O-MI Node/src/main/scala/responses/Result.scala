@@ -14,12 +14,11 @@
 package responses
 
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.scalaxb
+import parsing.xmlGen.{scalaxb, defaultScope}
 import types.OdfTypes.OdfObjects
 import scala.xml.{XML, Node}
 import scala.language.existentials
 import OmiGenerator.{omiResult, omiReturn, odfMsg}
-import parsing.xmlGen.defaultScope
 
 /** 
   * Object containing helper methods for generating RequestResultTypes. Used to generate results  for requests.

@@ -3,8 +3,7 @@ package http
 import spray.routing.Directives.extract
 import spray.routing.Directive1
 import spray.http.HttpRequest
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import java.lang.{ Iterable => JavaIterable }
 import scala.util.{Try, Success, Failure}
 import org.slf4j.LoggerFactory

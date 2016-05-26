@@ -13,8 +13,7 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 import scala.concurrent._
 import scala.concurrent.duration._
 import java.sql.Timestamp;
-import java.util.Random;
-import java.util.Date;
+import java.util.{Random, Date}
 import scala.concurrent.ExecutionContext.Implicits._
 import com.typesafe.config.Config
 

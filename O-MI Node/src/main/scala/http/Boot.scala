@@ -136,7 +136,7 @@ trait Starter {
     IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
       new InetSocketAddress("localhost", settings.cliPort))
 
-    return omiService
+    omiService
   }
 
 

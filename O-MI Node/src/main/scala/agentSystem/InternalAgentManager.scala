@@ -17,9 +17,6 @@ import agentSystem._
 import http.CLICmds._
 import http._
 import types.Path
-import akka.actor.SupervisorStrategy._
-import akka.pattern.ask
-import akka.util.Timeout
 import akka.actor.{
   Actor, 
   ActorRef, 
@@ -30,6 +27,8 @@ import akka.actor.{
   Props, 
   SupervisorStrategy
 }
+import akka.pattern.ask
+import akka.util.Timeout
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
@@ -41,11 +40,10 @@ import java.net.URLClassLoader
 import java.sql.Timestamp
 import java.util.Date
 import java.util.jar.JarFile
-import http.CLICmds._
 
 
 trait InternalAgentManager extends BaseAgentSystem {
-  import context.dispatcher
+  //import context.dispatcher
 
   /** Helper method for checking is agent even stored. If was handle will be processed.
     *

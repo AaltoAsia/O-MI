@@ -30,8 +30,7 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 
 import scala.util.Success
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
  * Read only restricted interface methods for db tables

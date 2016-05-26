@@ -214,8 +214,9 @@ case class OdfObject(
   typeValue: Option[String] = None
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
 
-  def get(path: Path) : Option[OdfNode] ={
-    if( path == this.path ) return Some(this)
+  def get(path: Path) : Option[OdfNode] = path match{
+      case this.path => Some(this)
+      case default : Path =>
     val haspaths = infoItems.toSeq.map{ item => item : OdfNode} ++ objects.toSeq.map{ item => item : OdfNode}
     val grouped = haspaths.groupBy(_.path).mapValues{_.headOption.getOrElse(OdfObjects())}
     grouped.get(path) match {

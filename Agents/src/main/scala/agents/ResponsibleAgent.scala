@@ -2,19 +2,8 @@ package agents
 
 import agentSystem._ 
 import agentSystem.AgentTypes._ 
-import types._
-import types.OdfTypes._
-import types.OmiTypes._
-import akka.util.Timeout
-import akka.actor.Cancellable
-import akka.pattern.ask
-import scala.util.{Success, Failure}
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
-import scala.concurrent._
-import scala.concurrent.duration._
-import java.sql.Timestamp;
-import java.util.Random;
-import java.util.Date;
+import types.OmiTypes.WriteRequest
+import scala.concurrent.Promise
 
 class ResponsibleAgent  extends BasicAgent with ResponsibleInternalAgent{
   protected def handleWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {

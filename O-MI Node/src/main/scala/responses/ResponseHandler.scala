@@ -8,8 +8,7 @@ import agentSystem.{SuccessfulWrite, ResponsibleAgentResponse, PromiseWrite, Pro
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.{ iterableAsScalaIterable, asJavaIterable}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.collection.breakOut

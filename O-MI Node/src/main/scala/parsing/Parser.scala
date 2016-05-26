@@ -15,17 +15,16 @@ package parsing
 
 import types.ParseError
 
-import scala.xml.Node
-import scala.util.{Try, Success, Failure}
-import java.util.Date
-import java.sql.Timestamp
-import java.io.{StringReader, IOException, File}
 import org.xml.sax.SAXException;
 import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
 import javax.xml.parsers.SAXParserFactory
-import scala.xml.XML
+import scala.xml.{XML, Node}
+import scala.util.{Try, Success, Failure}
+import java.util.Date
+import java.sql.Timestamp
+import java.io.{StringReader, IOException, File}
 
 /**
  * Parser trait that parsers inherit,

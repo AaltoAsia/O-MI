@@ -21,7 +21,12 @@ import java.sql.Timestamp
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */
-  case class ParseError(msg: String) 
+  case class ParseError(msg: String) extends Exception(msg) 
+  object ParseError{
+    def combineErrors( errors: Iterable[ParseError] ) = ParseError(
+      errors.map{ e => e.msg }.mkString("\n")
+    )
+  }
 
   /**
    * Path is a wrapper for Seq[String] representing path to an O-DF Object

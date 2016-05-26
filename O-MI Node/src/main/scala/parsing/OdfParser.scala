@@ -75,35 +75,36 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(root: xml.Node): OdfParseResult = { 
-    val schema_err = schemaValidation(root)
-    if (schema_err.nonEmpty) return Left(
-      schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
-    ) 
+    schemaValidation(root) match {
+      case errors : Seq[ParseError] if errors.nonEmpty => Left(
+        errors.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
+      ) 
+      case empty : Seq[ParseError] if empty.isEmpty =>
 
-    val requestProcessTime = currentTime
+      val requestProcessTime = currentTime
 
-    Try{
-      val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
-      Right(
-        OdfObjects( 
-          if(objects.Object.isEmpty)
-            Iterable.empty[OdfObject]
-          else
-            objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
-          objects.version
-        )
-      )
-    } match {
-      case Success(res) => res
-      case Failure(e) => 
-        Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+      Try{
+        val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
+        Right(
+          OdfObjects( 
+            if(objects.Object.isEmpty)
+              Iterable.empty[OdfObject]
+            else
+              objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
+            objects.version
+          ))
+      } match {
+        case Success(res) => res
+        case Failure(e) => Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+      }
     }
   }
 
   private[this] def validateId(stringId: String): Option[String] = {
-    val trimmedName = stringId.trim
-    if (trimmedName.isEmpty) None
-    else Some(trimmedName)
+    stringId.trim match{ 
+      case "" => None 
+      case trimmedName: String => Some(trimmedName)
+    }
   }
   private[this] def validateId(optionId: Option[String]): Option[String] = for {
     head <- optionId

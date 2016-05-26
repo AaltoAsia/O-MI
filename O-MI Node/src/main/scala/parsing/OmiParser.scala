@@ -21,8 +21,9 @@ import parsing.xmlGen.xmlTypes
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
+import types.ParseError._
 
-import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConversions.{ iterableAsScalaIterable, asJavaIterable}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, Node}
@@ -78,10 +79,10 @@ object OmiParser extends Parser[OmiParseResult] {
   @deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
   def parse(root: xml.Node): OmiParseResult = parseOmi(root)
 
-  private def parseOmi(root: xml.Node ): OmiParseResult = {
-    val schema_err = schemaValidation(root)
-    if (schema_err.nonEmpty)
-      return Left(schema_err.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
+  private def parseOmi(root: xml.Node ): OmiParseResult = schemaValidation(root) match {
+      case errors : Seq[ParseError] if errors.nonEmpty=>
+      Left(errors.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
+      case empty : Seq[ParseError] if empty.isEmpty =>
     Try{
       val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
 
@@ -101,8 +102,7 @@ object OmiParser extends Parser[OmiParseResult] {
       }
     } match {
       case Success(res) => res
-      case Failure(e) => 
-        return Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+      case Failure(e) => Left( Iterable( ParseError(e + " thrown when parsed.") ) )
       case _ => throw new Exception("Unknown end state from OmiParser.")
     }
   }
@@ -196,8 +196,8 @@ object OmiParser extends Parser[OmiParseResult] {
       )
     ))
   }
-  private[this] def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = {
-    Right(Iterable(
+  private[this] def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = Try{
+    Iterable(
       ResponseRequest(
         response.result.map {
           result =>
@@ -205,28 +205,30 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              result.requestID.map(parseRequestID).toIterable,
-              if (result.msg.isEmpty)
-                None
-              else {
+              result.requestID.map(parseRequestID).toIterable, 
+              result.msg.map{
+                case msg =>
                 val odfParseResult = parseMsg(result.msg, result.msgformat)
                 odfParseResult match {
-                  case Left(errors)  => return Left(errors)
-                  case Right(odf) => Some(odf)
+                  case Left(errors)  => throw combineErrors(iterableAsScalaIterable(errors))
+                  case Right(odf) => odf
                 }
               }
           )
         }.toIterable
       , ttl)
-    ))
+    )
+  } match {
+    case Success( requests: Iterable[OmiRequest] ) => Right(requests)
+    case Failure(error : ParseError) =>  Left(Iterable(error))
   }
 
   private[this] def parseMsg(msgO: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = msgO match{
       case None =>
         Left(Iterable(ParseError("OmiParser: No msg element found in write request.")))
-      case Some(msg) =>
-    if (format.isEmpty) 
-      return Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
+      case Some(msg) if format.isEmpty =>
+        Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
+      case Some(msg) if format.nonEmpty =>
 
     val data = msg.as[Elem]
     format match {
