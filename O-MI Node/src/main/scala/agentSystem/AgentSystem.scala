@@ -63,14 +63,12 @@ object `package` {
     config:     String,
     agent:      ActorRef,
     running:    Boolean
-  ) extends AgentInfoBase {
-  
-  }
+  ) extends AgentInfoBase 
 
 trait Receiving { 
   var receivers: Actor.Receive = Actor.emptyBehavior 
-  def receiver(next: Actor.Receive) { receivers = receivers orElse next }
-  final def receive = receivers
+  def receiver(next: Actor.Receive) : Unit = { receivers = receivers orElse next }
+  final def receive : Actor.Receive = receivers
 }
 abstract class BaseAgentSystem extends Actor with ActorLogging with Receiving{
   /** Container for internal agents */

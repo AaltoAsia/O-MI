@@ -29,9 +29,6 @@ import akka.pattern.ask
 
 trait CancelHandler extends OmiRequestHandler{
   def subscriptionManager : ActorRef
-  handler{
-    case cancel: CancelRequest => handleCancel(cancel)
-  }
 
   /** Method for handling CancelRequest.
     * @param cancel request

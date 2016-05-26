@@ -11,7 +11,7 @@ import scala.xml.XML
 import java.io.{File, FilenameFilter}
 
 object DBMaintainer{
-  def props(dbobject: DB) = Props( new DBMaintainer(dbobject) )  
+  def props(dbobject: DB) : Props = Props( new DBMaintainer(dbobject) )  
 }
 class DBMaintainer(val dbobject: DB)
   extends Actor
@@ -38,22 +38,22 @@ class DBMaintainer(val dbobject: DB)
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
     Try[File]{
       SingleStores.latestStore.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
+    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of lateststore")}
     Try[File]{
       SingleStores.hierarchyStore.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
+    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of hierarchystore")}
     Try[File]{
       SingleStores.eventPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
+    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of eventPrevayler")}
     Try[File]{
       SingleStores.intervalPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
+    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
     Try[File]{
       SingleStores.pollPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
+    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of pollPrevayler")}
     Try[File]{
       SingleStores.idPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
+    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of idPrevayler")}
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
     val duration : FiniteDuration = end - start
     duration
@@ -62,7 +62,7 @@ class DBMaintainer(val dbobject: DB)
    * Function for handling InputPusherCmds.
    *
    */
-  override def receive = {
+  override def receive: Actor.Receive = {
     case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
@@ -94,6 +94,6 @@ class DBMaintainer(val dbobject: DB)
         
       }
     }
-    case u => log.warning("Unknown message received.")
+    case _ => log.warning("Unknown message received.")
   }
 }

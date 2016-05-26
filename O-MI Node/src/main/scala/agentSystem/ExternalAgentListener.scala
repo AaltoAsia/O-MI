@@ -28,7 +28,7 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.duration._
 
 object  ExternalAgentListener{
-  def props( agentSystem: ActorRef ) = {
+  def props( agentSystem: ActorRef ): Props = {
           Props(new ExternalAgentListener( agentSystem))
   }
 }
@@ -47,10 +47,10 @@ class ExternalAgentListener( agentSystem: ActorRef )
   /** Get function for count of all ever connected agents.
     * Check that can't be modified via this.
     */
-  def agentCount = agentCounter
+  def agentCount: Int  = agentCounter
   /** Partial function for handling received messages.
     */
-  def receive = {
+  def receive : Actor.Receive = {
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?
@@ -87,7 +87,7 @@ object ExternalAgentHandler{
   def props(
     sourceAddress: InetSocketAddress,
     agentSystem: ActorRef
-  ) = {
+  ) : Props = {
           Props(new ExternalAgentHandler( sourceAddress, agentSystem))
   }
 

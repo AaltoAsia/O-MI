@@ -28,9 +28,6 @@ import database._
 
 trait PollHandler extends OmiRequestHandler{
   def subscriptionManager : ActorRef
-  handler{
-    case poll: PollRequest => handlePoll(poll)
-  }
 
   /** Method for handling PollRequest.
     * @param poll request

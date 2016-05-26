@@ -207,7 +207,8 @@ object OmiParser extends Parser[OmiParseResult] {
               result.returnValue.description,
               result.requestID.map(parseRequestID).toIterable, 
               result.msg.map{
-                case msg =>
+                case msg : xmlGen.scalaxb.DataRecord[Any] => 
+                //TODO: figure right type parameter
                 val odfParseResult = parseMsg(result.msg, result.msgformat)
                 odfParseResult match {
                   case Left(errors)  => throw combineErrors(iterableAsScalaIterable(errors))

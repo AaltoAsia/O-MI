@@ -15,9 +15,6 @@ import types.OmiTypes._
 
 trait WriteHandler extends OmiRequestHandler{
   def agentSystem : ActorRef
-  handler{
-    case write: WriteRequest => handleWrite(write)
-  }
   /** Method for handling WriteRequest.
     * @param write request
     * @return (xml response, HTTP status code)

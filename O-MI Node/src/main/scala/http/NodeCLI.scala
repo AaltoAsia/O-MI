@@ -47,7 +47,7 @@ object OmiNodeCLI{
     agentSystem: ActorRef,
     subscriptionHandler: ActorRef,
     requestHandler: RequestHandler
-  )= Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
+  ) : Props = Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
 }
 /** Command Line Interface for internal agent management. 
   *
@@ -70,7 +70,7 @@ remove <path>
   val ip = sourceAddress.toString.tail
   implicit val timeout : Timeout = 5.seconds
   import Tcp._
-  def receive = {
+  def receive : Actor.Receive = {
     case Received(data) =>{ 
       val dataString : String = data.decodeString("UTF-8")
 
@@ -92,9 +92,13 @@ remove <path>
                 f"$name%-20s | $classname%-40s | $running%-7s | $config " 
               }.mkString("\n")
               trueSender ! Write(ByteString(msg +"\n"))
+            case agents: Seq[AgentInfo] => 
+              log.warning("Could not receive list of Agents. Sending ...")
+              val msg = "Something went wrong. Could not get list of Agents."
+              trueSender ! Write(ByteString(msg +"\n"))
           }
           future.recover{
-            case a =>
+            case a : Throwable =>
               log.info("Failed to get list of Agents.\n Sending ...")
               trueSender ! Write(ByteString("Failed to get list of Agents.\n"))
 
@@ -190,7 +194,10 @@ remove <path>
           sender() ! Write(ByteString(
             "Unknown command. Use help to get information of current commands.\n" 
           ))
-        case a => log.warning(s"Unknown message from $ip: "+ a) 
+        case _ => log.warning(s"Unknown message from $ip: ") 
+          sender() ! Write(ByteString(
+            "Unknown message. Use help to get information of current commands.\n" 
+          ))
       }
     }
     case PeerClosed =>{

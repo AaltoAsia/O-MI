@@ -138,8 +138,8 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
             case o: OdfObject   => fromPath(OdfObject(o.id, o.path, typeValue = o.typeValue))
             case o: OdfObjects  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
-            case o  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
-          }.reduceOption(_.union(_)).getOrElse(OdfObjects())
+            case o: OdfNode  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
+          }.reduceOption[OdfObjects]{case (l,r) => l.union(r)}.getOrElse(OdfObjects())
 
         //pollSubscription method removes the data from database and returns the requested data
         pollSub match {
@@ -209,7 +209,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                 }
 
               }
-              def calcData = {
+              def calcData = {//Refactor
                 val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
                 val lastPolled = pollInterval.lastPolled.getTime()
                 val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
@@ -251,7 +251,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             //Some(pollData)
           }
 
-          case un => log.error(s"unknown subscription type $un")
+          case unknown:SavedSub => log.error(s"unknown subscription type $unknown")
             Future.successful(None)
         }
       }
@@ -324,12 +324,14 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
           callbackF.onSuccess {
             case CallbackSuccess() =>
               log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+              case _ =>
+                log.warning( s"Callback success, default case should not happen; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
             }
             callbackF.onFailure{
             case fail: CallbackFailure =>
               log.warning(
                 s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-            case e =>
+            case e : Throwable=>
               log.warning(
                 s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
           }
@@ -352,13 +354,12 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     lazy val removeIS = SingleStores.intervalPrevayler execute RemoveIntervalSub(id)
     lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)
     lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)
-    if(removeIS) true
-    else if(removePS){
+    removePS match {
+      case true =>
       dbConnection.removePollSub(id)
       true
+      case false => removeIS || removeES 
     }
-    else if(removeES) true
-    else false
   }
 
   private def getAllSubs() = {
@@ -457,7 +458,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
               //dbConnection.addNewPollData(subData)
               newId
             }
-            case dur => {
+            case dur: Duration => {
               log.error(s"Duration $dur is unsupported")
               throw new Exception(s"Duration $dur is unsupported")
             }

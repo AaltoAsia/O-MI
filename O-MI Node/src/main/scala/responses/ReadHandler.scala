@@ -28,9 +28,6 @@ import CallbackHandlers._
 import database._
 
 trait ReadHandler extends OmiRequestHandler{
-  handler{
-    case read: ReadRequest => handleRead(read)
-  }
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)

@@ -23,7 +23,7 @@ import java.sql.Timestamp
    */
   case class ParseError(msg: String) extends Exception(msg) 
   object ParseError{
-    def combineErrors( errors: Iterable[ParseError] ) = ParseError(
+    def combineErrors( errors: Iterable[ParseError] ) : ParseError = ParseError(
       errors.map{ e => e.msg }.mkString("\n")
     )
   }

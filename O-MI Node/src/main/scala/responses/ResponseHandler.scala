@@ -30,9 +30,6 @@ import database._
 
 trait ResponseHandler extends OmiRequestHandler{
   def agentSystem : ActorRef
-  handler{
-    case response: ResponseRequest => handleResponse(response)
-  }
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)

@@ -42,9 +42,6 @@ import database._
 trait SubscriptionHandler extends OmiRequestHandler{
   import http.Boot
   def subscriptionManager : ActorRef
-  handler{
-    case subscription: SubscriptionRequest => handleSubscription(subscription)
-  }
 
   /** Method for handling SubscriptionRequest.
     * @param _subscription request

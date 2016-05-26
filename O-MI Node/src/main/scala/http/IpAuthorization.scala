@@ -104,19 +104,28 @@ trait IpAuthorization extends AuthorizationExtension {
     **/
   private[this] def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
     // TODO: bytes should be printed as unsigned
-    log.debug("Whitelist check for IPv" + ip.length +
+    def compareLog() = log.debug("Whitelist check for IPv" + ip.length +
       " address: " + ip.map{b => b.toHexString}.mkString(":") +
     " against " + subnet.map{b => b.toHexString}.mkString(":")
     )
+    val ipv4 = 4
+    val ipv6 = 16
     (subnet.length, ip.length) match { 
-      case (4,4) =>
-      val mask = -1 << (32 - bits)  
+      case (a, b) if a == ipv4 && b == a =>{
+        compareLog()
+        val maxBits = 32
+        val allOnes = -1
+        val mask = allOnes << (maxBits - bits)  
 
-      val check = (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
+        val check = (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
 
-      check
-      case (16,16)  =>
-          val mask = -1 << (64 - bits)
+        check
+      }
+      case (a, b) if a == ipv6 && b == a =>{
+        compareLog()
+          val maxBits = 64
+          val allOnes = -1
+          val mask = allOnes << (maxBits - bits)  
           val ipArea = bytesToInt( List( ip(4), ip(5), ip(6), ip(7) ) )
           val subnetArea = bytesToInt( List( subnet(4), subnet(5), subnet(6), subnet(7) ) )
 
@@ -125,23 +134,27 @@ trait IpAuthorization extends AuthorizationExtension {
        else 
          List[Byte]( (0xFF << ( 56 - bits)).toByte , 0x00.toByte )
        */
-      val check = {( subnet(0)   & 0xFF  ) == (  ip(0)   & 0xFF     ) && 
-      ( subnet(1)   & 0xFF  ) == (  ip(1)   & 0xFF     ) &&
-      ( subnet(2)   & 0xFF  ) == (  ip(2)   & 0xFF     ) && 
-      ( subnet(3)   & 0xFF  ) == (  ip(3)   & 0xFF     ) &&
-      ( subnet(4)   & 0xFF  ) == (  ip(4)   & 0xFF     ) && 
-      ( subnet(5)   & 0xFF  ) == (  ip(5)   & 0xFF     ) &&
-      ( subnetArea  & mask  ) == (  ipArea  & mask )}
+
+      def check( subnet: Seq[Byte], ip: Seq[Byte], n : Int): Boolean = n match {
+          case v if v > -1 =>
+          val masker = 0xFF 
+          check(subnet, ip, n - 1) && ( subnet(n)   & masker  ) == (  ip(n)   & masker  )
+          case v if v < 0 =>  true
+      }
+      val n = 5
+      val checked = check(subnet, ip,  n) && (( subnetArea  & mask  ) == (  ipArea  & mask ))
       //( subnet(6) & mask(0) ) == ( ip(6) & mask(0)  ) && 
       //( subnet(7) & mask(1) ) == ( ip(7) & mask(1)  )
-      check
-
-      case ( a, b) if a != b && (a == 4 || a == 16 )&& (b == 4 || b == 16 ) => 
-      log.debug(s"Tried to compare IPv$a with IPv$b, address: " + subnet.mkString(":") + " ip: " + ip.mkString(":") )
-    false
-      case ( a, b) => 
-      log.debug(s"Tried to compare IPs with unrecognized versions, lengths: $a, $b")
+        checked
+      }
+      case ( a, b) if (( a == ipv4 ) && ( b == ipv6 ) )|| (( a == ipv6 ) && ( b == ipv4 )) => {
+      log.debug(
+        s"Tried to compare IPv$a with IPv$b, address: " + 
+        subnet.map{b => b.toHexString}.mkString(":") + 
+        " ip: " + ip.map{b => b.toHexString}.mkString(":") )
       false
+      }
+      case (_,_) => false
     }
   }
 

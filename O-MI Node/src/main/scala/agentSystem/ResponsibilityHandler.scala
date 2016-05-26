@@ -110,7 +110,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
         case e: ConfigException.WrongType =>
           log.warning(s"List of owned paths for $name couldn't converted to java.util.List<String>")
           List.empty
-        case e =>
+        case e: Throwable  =>
           log.warning(s"List of owned paths, resulted: $e")
           List.empty
       }.getOrElse{
@@ -126,7 +126,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
         case (name: AgentName, objects: OdfObjects) =>
         (name,
         agents.get(name).map{
-          case agent : AgentInfo => 
+          agent : AgentInfo => 
           val write = WriteRequest( ttl, objects) 
           (agent, write) 
         })
@@ -135,12 +135,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val agentsToWrite = allExists.values.flatten
       val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }
       if( nonExistingOwner.nonEmpty ){
-        var msg = ""
-        nonExistingOwner.foreach{
-          case (name, _) =>
-          msg = s"$name owns path but does not exists."
-          log.warning( msg  )
-        }
+        var msg = s"Owner does not exists."
         val promise = Promise[ResponsibleAgentResponse]()
         promise.failure( new Exception(msg) )
         Iterable( promise )
@@ -185,9 +180,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val pathsO = ownerToPath.get(senderName)
       val promise = Promise[ResponsibleAgentResponse]()
       val future = pathsO.map{
-        paths =>
+        paths: Seq[Path] =>
         val infoItems= allInfoItems.filter{
-          case infoItem  : OdfInfoItem => paths.contains(infoItem.path) 
+          infoItem  : OdfInfoItem => paths.contains(infoItem.path) 
         }
         log.debug( s"$senderName writing to paths owned by it: $pathsO")
         writeValues(infoItems)
@@ -202,7 +197,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     val writesToOwnerless:Promise[ResponsibleAgentResponse] = {
       val paths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }
       val infoItems = allInfoItems.filter{
-        case infoItem => paths.contains(infoItem.path) 
+        infoItem : OdfInfoItem => paths.contains(infoItem.path) 
       }
       log.debug( s"$senderName writing to paths not owned by anyone: $paths")
       val promise = Promise[ResponsibleAgentResponse]()
@@ -257,6 +252,8 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     callbackF.onSuccess {
       case CallbackSuccess() =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
+      case success : CallbackResult =>
+        log.error(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1, default math, The impossible happened?")
     }
     callbackF.onFailure{
       case fail: CallbackFailure =>
@@ -295,7 +292,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     if( infoItems.nonEmpty || objectMetadatas.nonEmpty ) {
       val future = handleInfoItems(infoItems, objectMetadatas)
       future.onSuccess{
-        case u =>
+         case u : Iterable[Path] =>
           log.debug("Successfully saved Odfs to DB")
       }
       future.map{ 
@@ -345,8 +342,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     //log.debug(s"\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXxxx\n${
     //pathValueOldValueTuples.map(n =>n._1.toString + "-> " + n._2.value + "old: " + n._3.map(_.value).toString()).mkString("\n")
     //}")
-    val newPollValues = pathValueOldValueTuples.flatMap{n =>
-      handlePollData(n._1, n._2 ,n._3)}
+    val newPollValues = pathValueOldValueTuples.flatMap{
+      case (path, oldValue, value) =>
+      handlePollData(path, oldValue ,value)}
       //handlePollData _ tupled n}
     if(!newPollValues.isEmpty) {
       dbobject.addNewPollData(newPollValues)

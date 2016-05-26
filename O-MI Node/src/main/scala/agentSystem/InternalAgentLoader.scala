@@ -54,7 +54,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
   def start() : Unit= {
     val classnames = getAgentConfigurations
     classnames.foreach {
-      case configEntry : AgentConfigEntry =>
+      configEntry : AgentConfigEntry =>
       agents.get( configEntry.name ) match{
         case None =>
           loadAndStart(configEntry)
@@ -90,14 +90,20 @@ trait InternalAgentLoader extends BaseAgentSystem {
             case success : InternalAgentSuccess =>  
             log.info(s"Agent $name started successfully.")
             agents += name -> AgentInfo(name,classname, config, agent, true)
+            case _ =>  
+            log.warning(s"Agent $name failed to start. Terminating agent.")
+            context.stop(agent)
           }
           startF.onFailure{ 
-            case e => 
+            case e: Throwable => 
             log.warning( s"Starting $name failed with: " + e )
           }
+          case _ =>  
+            log.warning(s"Agent $name failed to configure. Terminating agent.")
+            context.stop(agent)
         }
         configureF.onFailure{ 
-          case e => 
+          case e: Throwable => 
           log.warning( s"Configuration $name failed with: " + e )
         }
       } else {
@@ -155,7 +161,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
 
   }
 
-  private[this] def loadJar( jar: File) : Option[ Array[ File ] ]= {
+  private[this] def loadJar( jar: File) : Option[Array[File ] ]= {
     if( jar.getName.endsWith(".jar") && jar.exists() ){
         val jarFile = new JarFile(jar)
         val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))

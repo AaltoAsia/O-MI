@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 
 
 object IntervalSubOrdering extends Ordering[IntervalSub] {
-  def compare(a: IntervalSub, b: IntervalSub) =
+  def compare(a: IntervalSub, b: IntervalSub) : Int =
     a.nextRunTime.getTime compare b.nextRunTime.getTime
 }
 
@@ -66,19 +66,19 @@ case class EventSub(
 case class EventSubs(var eventSubs: HashMap[Path, Vector[EventSub]])
 object EventSubs {
   //type EventSubsStore = Prevayler[EventSubs]
-  def empty = EventSubs(HashMap.empty)
+  def empty : EventSubs = EventSubs(HashMap.empty)
 }
 
 case class PolledSubs(var idToSub: HashMap[Long, PolledSub], var pathToSubs: HashMap[Path, Set[Long]])
 
 object PolledSubs {
-  def empty = PolledSubs(HashMap.empty, HashMap.empty)
+  def empty : PolledSubs = PolledSubs(HashMap.empty, HashMap.empty)
 }
 
 case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
 object IntervalSubs {
   // type IntervalSubs = Prevayler[IntervalSubs]
-  def empty = IntervalSubs(SortedSet.empty(IntervalSubOrdering))
+  def empty : IntervalSubs = IntervalSubs(SortedSet.empty(IntervalSubOrdering))
 }
 
 case class LookupEventSubs(path: Path) extends Query[EventSubs, Vector[EventSub]] {

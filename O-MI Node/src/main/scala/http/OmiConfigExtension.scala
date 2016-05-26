@@ -26,6 +26,8 @@ class OmiConfigExtension(config: Config) extends Extension {
 
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
     case port : java.lang.Integer => port.toInt
+    case port : java.lang.Object => 
+    throw new Exception("Configs omi-service.ports contain non integer values") 
   }.toMap
   val webclientPort: Int = config.getInt("omi-service.ports.webclient")
   val externalAgentPort: Int = ports("external-agents")
@@ -81,9 +83,9 @@ class OmiConfigExtension(config: Config) extends Extension {
 
 object Settings extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {
  
-  override def lookup = Settings
+  override def lookup : Settings.type = Settings
    
-  override def createExtension(system: ExtendedActorSystem) =
+  override def createExtension(system: ExtendedActorSystem) : OmiConfigExtension =
     new OmiConfigExtension(system.settings.config)
    
   /**

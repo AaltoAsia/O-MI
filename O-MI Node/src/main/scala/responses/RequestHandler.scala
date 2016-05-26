@@ -44,11 +44,6 @@ import CallbackHandlers._
 import database._
 
 trait OmiRequestHandler { 
-
-  type Handle = PartialFunction[OmiRequest, Future[NodeSeq]]
-  var handles: Handle = PartialFunction.empty 
-  def handler(next: Handle) { handles = handles orElse next }
-  final def handle = handles
   protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
         if(ttl.toSeconds != 0)
           FiniteDuration(ttl.toSeconds, SECONDS)
@@ -58,29 +53,34 @@ trait OmiRequestHandler {
         FiniteDuration(Int.MaxValue,MILLISECONDS)
       }
   implicit def  dbConnection: DB
-  def log: LoggingAdapter
+  protected def log: LoggingAdapter
   protected[this] def date = new Date()
 }
-class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRef)(implicit val dbConnection: DB) extends ReadHandler with WriteHandler with ResponseHandler with SubscriptionHandler with PollHandler with CancelHandler{
+class RequestHandler(
+  val subscriptionManager: ActorRef,
+  val agentSystem: ActorRef
+)(implicit val dbConnection: DB) extends ReadHandler 
+with WriteHandler
+with ResponseHandler
+with SubscriptionHandler
+with PollHandler
+with CancelHandler{
+  protected def handle: PartialFunction[OmiRequest,Future[NodeSeq]] = {
+    case subscription: SubscriptionRequest => handleSubscription(subscription)
+    case read: ReadRequest => handleRead(read)
+    case write: WriteRequest => handleWrite(write)
+    case cancel: CancelRequest => handleCancel(cancel)
+    case poll: PollRequest => handlePoll(poll)
+    case response: ResponseRequest => handleResponse(response)
+  }
 
   implicit val logSource: LogSource[RequestHandler]= new LogSource[RequestHandler] {
       def genString(requestHandler: RequestHandler ) = requestHandler.toString
     }
-  def log = Logging( http.Boot.system, this)
+  protected def log = Logging( http.Boot.system, this)
 
   def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
-
-    def checkCallback(address: String) = Try {
-      val url = new URL(address)
-      val addr = InetAddress.getByName(url.getHost)
-      val protocol = url.getProtocol()
-      if (protocol != "http" && protocol != "https")
-        throw new java.net.ProtocolException(s"Unsupported protocol: $protocol")
-
-    }
-
     request.callback match {
-      
       case Some(address) => {
         val callbackCheck = CallbackHandlers.checkCallback(address)
         callbackCheck.flatMap { uri =>
@@ -97,11 +97,7 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
                  xmlFromResults(
                   1.0,
                   Results.simple("200", Some("OK, callback job started")))
-
-
-
               }
-
            }
           }
         } recover {
@@ -111,9 +107,8 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
           case e: UnknownHostException           => invalidCallback("Unknown host: " + e.getMessage)
           case e: SecurityException              => invalidCallback("Unauthorized " + e.getMessage)
           case e: java.net.ProtocolException     => invalidCallback(e.getMessage)
-          case t                                 => throw t
+          case t: Throwable                      => throw t
         }
-
       }
       case None => {
         request match {
@@ -130,10 +125,10 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
    * @param request request is O-MI request to be handled
    */
   def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
-    handles(request).recoverWith{
+    handle(request).recoverWith{
       case e: TimeoutException => Future.successful(OmiGenerator.timeOutError(e.getMessage))
       case e: IllegalArgumentException => Future.successful(OmiGenerator.invalidRequest(e.getMessage))
-      case e =>
+      case e: Throwable =>
         log.error(e, "Internal Server Error: ")
         Future.successful(OmiGenerator.internalError(e))
     }
@@ -166,7 +161,6 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
   def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
-
     def getODFRequest(path: Path): ODFRequest = path.lastOption match {
       case attr @ Some("value")      => Value(path.init)
       case attr @ Some("MetaData")   => MetaData(path.init)
@@ -175,12 +169,10 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
       case attr @ Some("name")       => InfoName(path.init)
       case _                         => NodeReq(path)
     }
-
     // safeguard
     assert(!orgPath.isEmpty, "Undefined url data discovery: empty path")
 
     val request = getODFRequest(orgPath)
-
     request match {
       case Value(path) =>
         SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value }
@@ -200,16 +192,15 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
             )
           case odfObjs: OdfObjects => <error>Id query not supported for root Object</error>
           case odfInfoItem: OdfInfoItem => <error>Id query not supported for InfoItem</error>
+          case _ => <error>Matched default case. The impossible happened?</error>
         }
 
         xmlReturn map Right.apply
         //Some(Right(<Object xmlns="odf.xsd"><id>{path.last}</id></Object>)) // TODO: support for multiple id
       }
-
       case InfoName(path) =>
         Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}><name>{path.last}</name></InfoItem>))
         // TODO: support for multiple name
-
       case Description(path) =>
         SingleStores.hierarchyStore execute GetTree() get path flatMap (
           _.description map (_.value)
@@ -238,6 +229,7 @@ class RequestHandler(val subscriptionManager: ActorRef, val agentSystem: ActorRe
             ).headOption.getOrElse(
               <error>Could not create from OdfInfoItem</error>
             )
+          case _ => <error>Matched default case. The impossible happened?</error>
         }
 
         xmlReturn map Right.apply
