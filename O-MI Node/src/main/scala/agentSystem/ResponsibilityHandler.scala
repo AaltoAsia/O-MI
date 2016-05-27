@@ -93,31 +93,12 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
   protected def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}
 
   protected def getConfigsOwnerships() = {
-    log.info(s"Setting path ownerships for Agents from config.")
-    val agents = settings.internalAgents
-    val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
-    val pathsToOwner =names.map{ 
-      name =>
-      val agentConfig = agents.toConfig().getObject(name).toConfig()
-      Try{
-        val ownedPaths = agentConfig.getStringList("owns")
-        log.info(s"Agent $name owns: " + ownedPaths.mkString("\n"))
-        ownedPaths.map{ path => (Path(path), name)}
-      }.recover{
-        case e: ConfigException.Missing   =>
-          //Not a ResponsibleAgent
-          List.empty
-        case e: ConfigException.WrongType =>
-          log.warning(s"List of owned paths for $name couldn't converted to java.util.List<String>")
-          List.empty
-        case e: Throwable  =>
-          log.warning(s"List of owned paths, resulted: $e")
-          List.empty
-      }.getOrElse{
-          List.empty
+    val pathsToOwner =agents.values.collect{ 
+      case agentInfo : AgentInfo if agentInfo.ownedPaths.nonEmpty => 
+      agentInfo.ownedPaths.map{ 
+        path => (path -> agentInfo.name) 
       }
     }.flatten.toMap
-    //pathOwners ++= pathsToOwner
     collection.mutable.Map(pathsToOwner: _*)
   }
 

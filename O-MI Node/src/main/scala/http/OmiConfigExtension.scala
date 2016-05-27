@@ -18,6 +18,10 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.JavaConversions._
 import java.util.concurrent.TimeUnit
+import scala.util.Try
+import agentSystem.AgentConfigEntry
+import types.Path
+import com.typesafe.config.ConfigException._
 
 
  
@@ -60,7 +64,6 @@ class OmiConfigExtension(config: Config) extends Extension {
 
   // Agents
 
-  val internalAgents = config.getObject("agent-system.internal-agents") 
   val internalAgentsStartTimout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
 
   /**
@@ -77,6 +80,23 @@ class OmiConfigExtension(config: Config) extends Extension {
   val inputWhiteListSubnets = config.getStringList("omi-service.input-whitelist-subnets") 
 
   val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds 
+  val agentConfigurations: Array[AgentConfigEntry] = {
+    val internalAgents = config.getObject("agent-system.internal-agents") 
+    val names : Set[String] = asScalaSet(internalAgents.keySet()).toSet // mutable -> immutable
+    names.map{ 
+      name =>
+      val conf = internalAgents.toConfig()
+      val classname : String= conf.getString(s"$name.class")
+
+      val ownedPaths : Seq[Path] = Try{
+        conf.getStringList(s"$name.owns").map{ str => Path(str)}
+      }.recover{
+        case e : Missing => Seq.empty 
+      }.get
+      val config = conf.getObject(s"$name.config").toConfig
+      AgentConfigEntry(name, classname.toString, config, ownedPaths) 
+    }.toArray
+  }
 }
 
 

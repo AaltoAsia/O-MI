@@ -31,6 +31,7 @@ import java.net.URLClassLoader
 import java.sql.Timestamp
 import java.util.Date
 import java.util.jar.JarFile
+import com.typesafe.config.Config
 import scala.language.postfixOps
 
 object AgentSystem {
@@ -50,19 +51,22 @@ object `package` {
   sealed trait AgentInfoBase{
     def name:       AgentName
     def classname:  String
-    def config:     String
+    def config:     Config
+    def ownedPaths: Seq[Path]
   }
   case class AgentConfigEntry(
-    val name:       AgentName,
-    val classname:  String,
-    val config:     String
+    name:       AgentName,
+    classname:  String,
+    config:     Config,
+    ownedPaths: Seq[Path]
   ) extends AgentInfoBase
   case class AgentInfo(
     name:       AgentName,
     classname:  String,
-    config:     String,
+    config:     Config,
     agent:      ActorRef,
-    running:    Boolean
+    running:    Boolean,
+    ownedPaths: Seq[Path]
   ) extends AgentInfoBase 
 
 trait Receiving { 

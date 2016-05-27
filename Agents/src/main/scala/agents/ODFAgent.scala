@@ -1,60 +1,63 @@
 package agents
 
-import agentSystem._
 import agentSystem.AgentTypes._ 
-import types._
-import types.OmiTypes.WriteRequest
+import agentSystem._ 
+import parsing.OdfParser
+import types.Path
 import types.Path._
 import types.OdfTypes._
-import parsing.OdfParser
-import akka.util.Timeout
-import akka.actor.Cancellable
-import scala.xml._
-import scala.io.Source
-import scala.util.Random
+import types.OmiTypes.WriteRequest
+import akka.actor.{Cancellable, Props}
+import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits._
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
+import scala.xml._
+import scala.util.{Random, Try}
+import java.util.concurrent.TimeUnit
+import java.util.Date
+import java.sql.Timestamp;
 import java.io.File
-import java.sql.Timestamp
+import com.typesafe.config.Config
 
+object ODFAgent extends PropsCreator{
+  def props(config: Config) : InternalAgentProps = InternalAgentProps( new ODFAgent(config) )
+}
 // Scala XML contains also parsing package
-class ODFAgent extends InternalAgent {
-  
-  import scala.concurrent.ExecutionContext.Implicits._
-  case class Update()
-	protected val rnd: Random = new Random()
-  protected val interval : FiniteDuration = Duration(60, SECONDS) 
-	protected var odf: Option[OdfObjects] = None
-  protected def date = new java.util.Date();
-  protected def configure(configPath: String ) : InternalAgentResponse = {
-        val file =  new File(configPath)
-        if( file.exists() && file.canRead() ){
+class ODFAgent( override val config: Config) extends InternalAgent {
+  protected val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
+	protected val odf : Option[OdfObjects]={
+      val file =  new File(config.getString("file"))
+      if( file.exists() && file.canRead() ){
         val xml = XML.loadFile(file)
         OdfParser.parse( xml) match {
           case Left( errors ) =>{
             log.warning(s"Odf has errors, $name could not be configured.")
             log.warning("ParseError: "+errors.mkString("\n"))
-            CommandFailed("ParserErrer, view log.")
+            throw CommandFailed("ParserErrer, view log.")
           }
           case Right(odfObjects) => {
-            odf = Some( odfObjects )
-            CommandSuccessful("Successfully configured.")
+            Some(odfObjects ) 
         }
       }
       } else {
-            log.warning(s"File $configPath did not exists or could not read it. $name could not be configured.")
-            CommandFailed("Problem with config, view log.")
+            log.warning(s"File $config did not exists or could not read it. $name could not be configured.")
+            throw CommandFailed("ParserErrer, view log.")
       }
-  }
+    }
+  import scala.concurrent.ExecutionContext.Implicits._
+  case class Update()
+	protected val rnd: Random = new Random()
+  protected def date = new java.util.Date();
   protected var updateSchelude : Option[Cancellable] = None
-  protected def start = {
+  protected def start = Try{
     updateSchelude = Some(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
       self,
       Update
     ))
-    CommandSuccessful("Successfully started.")
+    CommandSuccessful()
   }
 
   protected def update() : Unit = {
@@ -101,32 +104,18 @@ class ODFAgent extends InternalAgent {
   protected def receiver={
     case Update => update
   }
-  protected def stop = updateSchelude match{
+  protected def stop = Try{updateSchelude match{
       case Some(job) =>
       job.cancel() 
       job.isCancelled  match {
       case true =>
-        CommandSuccessful("Successfully stopped.")
+        CommandSuccessful()
       case false =>
-        CommandFailed("Failed to stop agent.")
+        throw CommandFailed("Failed to stop agent.")
     }
-    case None => CommandFailed("Failed to stop agent.")
-  }
-  protected def restart = {
-    stop match{
-      case success  : InternalAgentSuccess => start
-      case error    : InternalAgentFailure => error
-    }
-  }
-  protected def quit = {
-    stop match{
-      case error    : InternalAgentFailure => error
-      case success  : InternalAgentSuccess => 
-      sender() ! CommandSuccessful("Successfully quit.")
-      context.stop(self) 
-      CommandSuccessful("Successfully quit.")
-    }
-  }
+    case None =>throw  CommandFailed("Failed to stop agent.")
+  }}
+  
   private def genValue(sensorType: String, oldval: Double ) : String = {
     val newval = (sensorType match {
       case "temperature" => between( 18, oldval + Random.nextGaussian * 0.3, 26)

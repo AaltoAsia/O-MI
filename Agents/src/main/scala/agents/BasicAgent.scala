@@ -2,40 +2,33 @@ package agents
 
 import agentSystem.AgentTypes._ 
 import agentSystem._ 
-import types._
+import types.Path
 import types.OdfTypes._
-import types.OmiTypes._
-import akka.util.Timeout
+import types.OmiTypes.WriteRequest
 import akka.actor.{Cancellable, Props}
-import akka.pattern.ask
-import scala.util.{Success, Failure}
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
-import scala.concurrent._
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import java.sql.Timestamp;
-import java.util.{Random, Date}
+import java.util.Date
+import scala.util.{Random, Try}
 import scala.concurrent.ExecutionContext.Implicits._
 import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit
 
 object BasicAgent extends PropsCreator {
-  def props( config: Config ) : Props = { Props(new BasicAgent) }  
-
+  def props( config: Config) : InternalAgentProps = { InternalAgentProps(new BasicAgent(config)) }  
 }
-class BasicAgent  extends InternalAgent{
+class BasicAgent( override val config: Config)  extends InternalAgent{
   //Path of owned O-DF InfoItem, Option because ugly mutable state
-	protected var pathO: Option[Path] = None
-  protected def configure(config: String ) : InternalAgentResponse = {
-      pathO  = Some( Path(config) )
-      CommandSuccessful("Successfully configured.")
-  }
+  protected val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
+	protected val path : Path = Path(config.getString("path"))
 
   //Message for updating values
   case class Update()
   //Interval for scheluding generation of new values
-  protected val interval : FiniteDuration = Duration(60, SECONDS) 
   //Cancellable update of values, Option because ugly mutable state
   protected var updateSchelude : Option[Cancellable] = None
-  protected def start = {
+  protected def start = Try{
     // Schelude update and save job, for stopping
     // Will send Update message to self every interval
     updateSchelude = Some(context.system.scheduler.schedule(
@@ -44,29 +37,22 @@ class BasicAgent  extends InternalAgent{
       self,
       Update
     ))
-    CommandSuccessful("Successfully started.")
+    CommandSuccessful()
   }
   
-  protected def stop = updateSchelude match{
+  protected def stop = Try{updateSchelude match{
       //If agent has scheluded update, cancel job
       case Some(job) =>
       job.cancel() 
       //Check if job was cancelled
       job.isCancelled  match {
       case true =>
-        CommandSuccessful("Successfully stopped.")
+        CommandSuccessful()
       case false =>
-        CommandFailed("Failed to stop agent.")
+        throw CommandFailed("Failed to stop agent.")
     }
-    case None => CommandFailed("Failed to stop agent, no job found.")
-  }
-  //Restart agent, first stop it and then start it
-  protected def restart = {
-    stop match{
-      case success  : InternalAgentSuccess => start
-      case error    : InternalAgentFailure => error
-    }
-  }
+    case None => throw CommandFailed("Failed to stop agent, no job found.")
+  }}
   
   //Random number generator for generating new values
   protected val rnd: Random = new Random()
@@ -75,8 +61,6 @@ class BasicAgent  extends InternalAgent{
   protected def currentTimestamp = new Timestamp(  new java.util.Date().getTime() )
   //Update values in paths
   protected def update() : Unit = {
-    pathO.foreach{ //Only run if some path found 
-      path => 
       val timestamp = currentTimestamp
       val typeStr = "xs:integer"
       //Generate new values and create O-DF
@@ -101,7 +85,6 @@ class BasicAgent  extends InternalAgent{
         case e => 
         log.warning(s"$name failed to write all data, error: $e")
       }
-    }
   }
 
   protected def receiver = {

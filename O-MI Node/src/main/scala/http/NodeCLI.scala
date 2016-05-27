@@ -86,10 +86,10 @@ remove <path>
           future.map{
             case agents: Seq[AgentInfo] => 
               log.info("Received list of Agents. Sending ...")
-              val colums = Vector("NAME","CLASS","RUNNING","CONFIG")
-              val msg = f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}\n"+ agents.map{
-                case AgentInfo(name, classname, config, ref, running) => 
-                f"$name%-20s | $classname%-40s | $running%-7s | $config " 
+              val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
+              val msg = f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n"+ agents.map{
+                case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
+                f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
               }.mkString("\n")
               trueSender ! Write(ByteString(msg +"\n"))
             case agents: Seq[AgentInfo] => 

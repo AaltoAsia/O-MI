@@ -28,6 +28,7 @@ import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 import com.typesafe.config.Config
 import scala.util.{Try}
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
   /**
     Commands that can be received from InternalAgentLoader.
   **/
@@ -35,31 +36,29 @@ sealed trait InternalAgentCmd
   case class Start()                    extends InternalAgentCmd
   case class Restart()                  extends InternalAgentCmd
   case class Stop()                     extends InternalAgentCmd
-  case class Configure(config: String)  extends InternalAgentCmd
-sealed trait InternalAgentResponse{
-  def msg : String
-}
-trait InternalAgentSuccess                  extends InternalAgentResponse 
-  case class CommandSuccessful(msg : String ) extends InternalAgentSuccess 
-trait InternalAgentFailure                  extends InternalAgentResponse
-  case class CommandFailed(msg : String ) extends InternalAgentFailure 
+sealed trait InternalAgentResponse
+trait InternalAgentSuccess     extends InternalAgentResponse 
+  case class CommandSuccessful() extends InternalAgentSuccess 
+abstract class InternalAgentFailure(msg : String )                 extends  Exception(msg) with InternalAgentResponse
+  case class CommandFailed(msg : String ) extends InternalAgentFailure(msg) 
 sealed trait ResponsibleAgentMsg
   case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
 sealed trait ResponsibleAgentResponse
   case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
 object AgentTypes {
   trait InternalAgent extends Actor with ActorLogging {
+    protected def config : Config
     protected def parent = context.parent
     protected def name = self.path.name
-    protected def start   : InternalAgentResponse 
-    protected def restart : InternalAgentResponse
-    protected def stop    : InternalAgentResponse
-    protected def configure(config: String)  : InternalAgentResponse
+    protected def start   : Try[InternalAgentSuccess ]
+    protected def restart : Try[InternalAgentSuccess ] = stop flatMap{
+      case success  : InternalAgentSuccess => start
+    }
+    protected def stop    : Try[InternalAgentSuccess ]
     private[AgentTypes] def forcer : Actor.Receive = {
       case Start()                    => sender() ! start
       case Restart()                  => sender() ! restart
       case Stop()                     => sender() ! stop
-      case Configure(config: String)  => sender() ! configure(config)
     }
     protected def receiver : Actor.Receive 
     final def receive : Actor.Receive= forcer orElse receiver
@@ -83,7 +82,20 @@ object AgentTypes {
       promise.failure(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen."))
     }
   }
+
   trait PropsCreator{
-    def props( config: Config ) : Props
+    def props( config: Config ) : InternalAgentProps
+  }
+  final case class InternalAgentProps private[InternalAgentProps](props: Props)
+  object InternalAgentProps{
+    final def apply[T <: InternalAgent: ClassTag](creator: =>T): InternalAgentProps ={
+      new InternalAgentProps( Props( creator ))
+    }
+    final def apply[T <: InternalAgent]()(implicit arg0: ClassTag[T]): InternalAgentProps ={
+      new InternalAgentProps( Props()(arg0))
+    }
+    final def apply[T <: InternalAgent](clazz: Class[T], args: Any*): InternalAgentProps ={
+      new InternalAgentProps( Props( clazz, args) )
+    } 
   }
 }

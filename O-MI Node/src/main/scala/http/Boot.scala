@@ -158,6 +158,7 @@ trait Starter {
  */
 object Boot extends Starter {// with App{
   def main(args: Array[String]) = {
+  system.log.info(this.getClass.toString)
   Try {
     val serviceActor = start()
     bindHttp(serviceActor)

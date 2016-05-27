@@ -41,7 +41,7 @@ import java.io.File
 import java.net.URLClassLoader
 import java.util.Date
 import java.util.jar.JarFile
-
+import com.typesafe.config.Config
 
 trait InternalAgentLoader extends BaseAgentSystem {
   import context.dispatcher
@@ -52,7 +52,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
 
 
   def start() : Unit= {
-    val classnames = getAgentConfigurations
+    val classnames = settings.agentConfigurations
     classnames.foreach {
       configEntry : AgentConfigEntry =>
       agents.get( configEntry.name ) match{
@@ -64,53 +64,50 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  protected def loadAndStart(name : AgentName, classname : String, config : String) = {
+  protected def loadAndStart(name : AgentName, classname : String, config : Config, ownedPaths: Seq[Path]) = {
     Try {
       log.info("Instantiating agent: " + name + " of class " + classname)
-      val classLoader = Thread.currentThread.getContextClassLoader
-      val clazz = classLoader.loadClass(classname)
-      val interface =  classOf[InternalAgent]
-      if( interface.isAssignableFrom(clazz) ){
-        val prop  = Props( clazz )
-        val agent = context.actorOf( prop, name.toString )
-        val date = new Date()
-        val timeout = settings.internalAgentsStartTimout
-        val configureF = ask(agent,Configure(config))(timeout)
-        configureF.onSuccess{
-          case error : InternalAgentFailure =>  
-          log.warning(s"Agent $name failed at configuration. Terminating agent.")
-          context.stop(agent)
-          case success : InternalAgentSuccess =>  
-          log.info(s"Agent $name has been configured. Starting...");
-          val startF = ask(agent,Start())(timeout)
-          startF.onSuccess{
-            case error : InternalAgentFailure =>  
-            log.warning(s"Agent $name failed to start. Terminating agent.")
-            context.stop(agent)
-            case success : InternalAgentSuccess =>  
-            log.info(s"Agent $name started successfully.")
-            agents += name -> AgentInfo(name,classname, config, agent, true)
-            case _ =>  
-            log.warning(s"Agent $name failed to start. Terminating agent.")
-            context.stop(agent)
+      val classLoader     = Thread.currentThread.getContextClassLoader
+      val actorClazz      = classLoader.loadClass(classname)
+      val objectInterface  = classOf[PropsCreator]
+      val agentInterface  = classOf[InternalAgent]
+      val responsibleInterface  = classOf[ResponsibleInternalAgent]
+      actorClazz match {
+        //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
+        case actorClass if agentInterface.isAssignableFrom(actorClass) =>
+        val objectClazz = classLoader.loadClass(classname + "$")
+        objectClazz match { 
+          case objectClass if objectInterface.isAssignableFrom(objectClass) =>
+          //Static field MODULE$ contains Object it self
+          //Method get is used to get value of field for a Object.
+          //Because field MODULE$ is static, it return  the companion object recardles of argument
+          //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
+          val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
+          //Get props and create agent
+          val props = propsCreator.props(config).props
+          props.actorClass match {
+            case clazz if clazz == actorClazz =>
+            val agent = context.actorOf( props, name.toString )
+            startAgent(agent)
+            case clazz: Class[_] =>
+            log.warning(s"Object $classname does created Props for $clazz, should create for $actorClazz.")
+            Future.failed( new Exception(" asdf"))
           }
-          startF.onFailure{ 
-            case e: Throwable => 
-            log.warning( s"Starting $name failed with: " + e )
-          }
-          case _ =>  
-            log.warning(s"Agent $name failed to configure. Terminating agent.")
-            context.stop(agent)
+          case clazz: Class[_] =>
+          log.warning(s"Object  $classname does not implement PropsCreator trait.")
+          Future.failed( new Exception(" asdf"))
         }
-        configureF.onFailure{ 
-          case e: Throwable => 
-          log.warning( s"Configuration $name failed with: " + e )
-        }
-      } else {
-        log.warning(s"Class $classname did not implement AbstractInternalAgent.")
+        case clazz: Class[_] =>
+        log.warning(s"Class  $classname does not implement InternalAgent trait.")
+          Future.failed( new Exception(" asdf"))
       }
     } match {
-      case Success(_) => ()
+      case Success(startF: Future[ActorRef]) => ()
+        startF.onSuccess{ 
+          case agentRef: ActorRef =>
+          log.info( s"Started agent $name successfully.")
+          agents += name -> AgentInfo(name,classname, config, agentRef, true, ownedPaths)
+        }
       case Failure(e) => e match {
         case _:NoClassDefFoundError | _:ClassNotFoundException =>
           log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
@@ -121,7 +118,21 @@ trait InternalAgentLoader extends BaseAgentSystem {
       }
     }
   }
-  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit = loadAndStart( configEntry.name,configEntry.classname, configEntry.config)
+  protected def startAgent(agent: ActorRef) = { 
+    val timeout = settings.internalAgentsStartTimout
+    val startF = ask(agent,Start())(timeout)
+    val resultF = startF.flatMap{ 
+      case result : Try[InternalAgentSuccess] =>  Future.fromTry(result)
+    }.map{
+      case success : InternalAgentSuccess => agent
+    }
+    resultF.onFailure{ 
+      case e: Throwable => 
+      context.stop(agent)
+    }
+    resultF
+  }
+  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit = loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.ownedPaths)
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.
@@ -188,21 +199,4 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  private[agentSystem] def getAgentConfigurations: Array[AgentConfigEntry] = {
-    val agentsO = Option(settings.internalAgents)
-    agentsO match {
-      case Some(agents) => 
-        val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
-        names.map{ 
-          name =>
-          val tuple = agents.toConfig().getObject(name).unwrapped().asScala
-          for{
-            classname <- tuple.get("class")
-            config <- tuple.get("config")
-          } yield AgentConfigEntry(name, classname.toString, config.toString) 
-        }.flatten.toArray
-      case None =>
-        Array.empty
-    }
-  }
 }
