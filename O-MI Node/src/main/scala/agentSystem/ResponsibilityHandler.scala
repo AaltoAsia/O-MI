@@ -116,21 +116,24 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val agentsToWrite = allExists.values.flatten
       val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }
       if( nonExistingOwner.nonEmpty ){
-        var msg = s"Owner does not exists."
-        val promise = Promise[ResponsibleAgentResponse]()
-        promise.failure( new Exception(msg) )
-        Iterable( promise )
+        nonExistingOwner.map{ 
+          case (agent, write) =>
+          val name = agent
+          val msg = s"Received write for nonexistent agent." 
+          log.warning(msg + s"Agent $name.")
+          val promise = Promise[ResponsibleAgentResponse]()
+          promise.failure( new Exception(msg) )
+        }.toIterable
       } else if( stoppedOwner.nonEmpty ){
-        var msg = ""
-        stoppedOwner.foreach{ case (agent, write) =>
+        stoppedOwner.map{
+          case (agent, write) =>
           val name = agent.name
           val paths = getLeafs(write.odf).map(_.path)
-          msg = s"Received write for paths:\n" + paths.mkString("\n") + s"owned by not running agent $name." 
-          log.warning(msg)
-        }
-        val promise = Promise[ResponsibleAgentResponse]()
-        promise.failure( new Exception(msg) )
-        Iterable( promise )
+          val msg = s"Received write for paths:\n" + paths.mkString("\n") + s"owned by stopped agent." 
+          log.warning(msg + s"Agent $name.")
+          val promise = Promise[ResponsibleAgentResponse]()
+          promise.failure( new Exception(msg) )
+        }.toIterable
       } else {
         agentsToWrite.map{ 
           case ( agentInfo, write ) =>

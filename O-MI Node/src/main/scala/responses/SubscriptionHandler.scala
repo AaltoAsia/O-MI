@@ -56,13 +56,15 @@ trait SubscriptionHandler extends OmiRequestHandler{
     }
     val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val subFuture: Future[RequestResultType] = (subscriptionManager ? NewSubscription(subscription)).mapTo[Try[Long]].map( res=>res  match {
+    val subFuture: Future[RequestResultType] = (subscriptionManager ? NewSubscription(subscription))
+      .mapTo[Try[Long]]
+      .map{
         case Success(id: Long) if _subscription.interval != subscription.interval =>
           Results.subscription(id.toString,subscription.interval.toSeconds)
         case Success(id: Long) =>
           Results.subscription(id.toString)
         case Failure(ex) => throw ex
-      }).recoverWith{
+      }.recoverWith{
       case e: IllegalArgumentException => Future.successful(Results.invalidRequest(e.getMessage()))
       case e : Throwable => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }

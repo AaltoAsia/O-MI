@@ -39,17 +39,17 @@ trait ReadHandler extends OmiRequestHandler{
     val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
     val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-    objectsO.map(res => res match {
+    objectsO.map{
       case Some(objects) =>
         val found = Results.read(objects)
         val requestsPaths = leafs.map { _.path }
         val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
         val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-        var results = Seq(found)
-        if (notFound.nonEmpty)
-          results ++= Seq(Results.simple("404",
-            Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
-
+        val results = Seq(found) ++ {
+          if (notFound.nonEmpty)
+            Seq(Results.simple("404", Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
+          else Seq.empty
+        }
 
           xmlFromResults(
             1.0,
@@ -57,6 +57,6 @@ trait ReadHandler extends OmiRequestHandler{
       case None =>
         xmlFromResults(
           1.0, Results.notFound)
-    })
+    }
   }
 }

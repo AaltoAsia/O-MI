@@ -42,12 +42,6 @@ class ExternalAgentListener( agentSystem: ActorRef )
   
   
   import Tcp._
-  //Orginally a hack for getting different names for actors.
-  private[this] var agentCounter : Int = 0 
-  /** Get function for count of all ever connected agents.
-    * Check that can't be modified via this.
-    */
-  def agentCount: Int  = agentCounter
   /** Partial function for handling received messages.
     */
   def receive : Actor.Receive = {
@@ -71,9 +65,8 @@ class ExternalAgentListener( agentSystem: ActorRef )
 
         val handler = context.actorOf(
           ExternalAgentHandler.props( remote, agentSystem),
-          "agent-handler-"+agentCounter
+          "agent-handler-"+remote.toString
         )
-        agentCounter += 1
         connection ! Register(handler)
 
       } else {

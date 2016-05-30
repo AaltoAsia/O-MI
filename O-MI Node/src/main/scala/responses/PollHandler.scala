@@ -46,7 +46,7 @@ trait PollHandler extends OmiRequestHandler{
         s"Error when trying to poll subscription: ${e.getMessage}"))
       }
 
-      objectsF.map(res => res match {
+      objectsF.map{
         case Some(objects: OdfObjects) =>
           Results.poll(id.toString, objects)
         case None =>
@@ -54,7 +54,7 @@ trait PollHandler extends OmiRequestHandler{
         //case Failure(e) =>
         //  throw new RuntimeException(
         //    s"Error when trying to poll subscription: ${e.getMessage}")
-      })
+      }
     })
     val returnTuple = resultsFut.map(results =>
       xmlFromResults(

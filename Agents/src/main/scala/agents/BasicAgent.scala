@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 import java.util.Date
 import scala.util.{Random, Try}
 import scala.concurrent.ExecutionContext.Implicits._
+import scala.collection.mutable.{Queue => MutableQueue}
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
 
@@ -27,11 +28,11 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
   case class Update()
   //Interval for scheluding generation of new values
   //Cancellable update of values, Option because ugly mutable state
-  private var updateSchelude : Option[Cancellable] = None
+  private val  updateSchelude : MutableQueue[Cancellable] = MutableQueue.empty
   protected def start = Try{
     // Schelude update and save job, for stopping
     // Will send Update message to self every interval
-    updateSchelude = Some(context.system.scheduler.schedule(
+    updateSchelude.enqueue(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
       self,
@@ -40,7 +41,7 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
     CommandSuccessful()
   }
   
-  protected def stop = Try{updateSchelude match{
+  protected def stop = Try{updateSchelude.dequeueFirst{ j => true } match{
       //If agent has scheluded update, cancel job
       case Some(job) =>
       job.cancel() 

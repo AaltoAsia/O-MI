@@ -74,11 +74,9 @@ object CallbackHandlers {
           }
           def trySend = httpHandler(request)
           val retry = retryUntilWithCheck[HttpResponse, CallbackResult](
-            trySend,
-            check,
             settings.callbackDelay,
-            tryUntil 
-          )
+            tryUntil
+          )(check )(trySend)
           retry.onFailure{
             case e : Throwable=>
             system.log.warning(
@@ -89,7 +87,7 @@ object CallbackHandlers {
           
     }
 
-  private def retryUntilWithCheck[T,U]( creator: => Future[T] , check: PartialFunction[T,U], delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 ) : Future[U] = {
+  private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] ) : Future[U] = {
     val future = creator
     future.map{ check }.recoverWith{
       case e if tryUntil.after( currentTimestamp ) => 
@@ -97,7 +95,7 @@ object CallbackHandlers {
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
         ) 
         Thread.sleep(delay.toMillis)
-        retryUntilWithCheck[T,U](creator, check, delay,tryUntil, attempt + 1 )  
+        retryUntilWithCheck[T,U](delay,tryUntil, attempt + 1 )(check )(creator )  
     }
   }
   /**
