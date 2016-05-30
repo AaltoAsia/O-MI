@@ -135,10 +135,10 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
           .paths //get subscriptions paths
           .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
           .map{
-            case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
-            case o: OdfObject   => fromPath(OdfObject(o.id, o.path, typeValue = o.typeValue))
-            case o: OdfObjects  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
-            //case o: OdfNode  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
+            case i: OdfInfoItem => createAncestors(OdfInfoItem(i.path))
+            case o: OdfObject   => createAncestors(OdfObject(o.id, o.path, typeValue = o.typeValue))
+            case o: OdfObjects  => createAncestors(OdfObjects())//map OdfNodes to OdfObjects
+            //case o: OdfNode  => createAncestors(OdfObjects())//map OdfNodes to OdfObjects
           }.reduceOption[OdfObjects]{case (l,r) => l.union(r)}.getOrElse(OdfObjects())
 
         //pollSubscription method removes the data from database and returns the requested data
@@ -152,7 +152,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
               .groupBy(_.path) //group data by the paths
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
               .map(n => OdfInfoItem(n._1, n._2)) // Map to Infoitems
-              .map(i => fromPath(i)) //Map to OdfObjects
+              .map(i => createAncestors(i)) //Map to OdfObjects
               .fold(emptyTree)(_.union(_)))//.reduceOption(_.union(_)) //Combine OdfObjects
 
             eventData.map(eData => Some(eData))
@@ -242,7 +242,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                 calculatedData.map(cData => path -> cData)
               }).flatMap{ n => //flatMap removes None values
               //create OdfObjects from InfoItems
-              n.map{case ( path, values) => fromPath(OdfInfoItem(path, values))}
+              n.map{case ( path, values) => createAncestors(OdfInfoItem(path, values))}
             }).map(
             //combine OdfObjects to single optional OdfObject
             _.fold(emptyTree)(_.union(_)))
@@ -293,11 +293,11 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         val objects: Vector[OdfObjects] = datas.map {
           case (iPath, oValue) =>
 
-            fromPath(OdfInfoItem(iPath, Iterable(oValue)))
+            createAncestors(OdfInfoItem(iPath, Iterable(oValue)))
             //val odfInfoOpt = hTree.get(iPath)
             //odfInfoOpt match {
             //  case Some(infoI: OdfInfoItem) =>
-            //    Right(fromPath(infoI.copy(values = Iterable(oValue))))
+            //    Right(createAncestors(infoI.copy(values = Iterable(oValue))))
             //  case thing => {
             //    log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
             //    Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))

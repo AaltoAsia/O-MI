@@ -97,7 +97,7 @@ object SingleStores {
 
     val odfObjectsTrees = items map { case (path, value) =>
       val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
-      fromPath(infoItem)
+      createAncestors(infoItem)
     }
   odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
   }

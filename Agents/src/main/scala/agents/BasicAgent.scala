@@ -66,8 +66,8 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
       val typeStr = "xs:integer"
       //Generate new values and create O-DF
       val infoItem = OdfInfoItem(path,Vector(OdfValue(newValueStr,typeStr,timestamp)))
-      //fromPath generate O-DF structure from a ode's path and retuns OdfObjects
-      val objects : OdfObjects = fromPath(infoItem)
+      //createAncestors generate O-DF structure from a ode's path and retuns OdfObjects
+      val objects : OdfObjects = createAncestors(infoItem)
       //Updates interval as time to live
       val write = WriteRequest( interval, objects )
       //PromiseResults contains Promise containing Iterable of Promises and has some helper methods.

@@ -58,18 +58,6 @@ trait InternalAgentManager extends BaseAgentSystem {
     }
   }
 
-  /**
-    * Method for handling received messages.
-    * Should handle:
-    *   -- ConfigUpdate with updating running AgentActors.
-    *   -- Terminated with trying to restart AgentActor.
-    */
-  receiver {
-    case  start: StartAgentCmd  => handleStart( start)
-    case  stop: StopAgentCmd  => handleStop( stop)
-    case  restart: ReStartAgentCmd  => handleRestart( restart )
-    case ListAgentsCmd() => sender() ! agents.values.toSeq
-  } 
   protected def handleStart( start: StartAgentCmd ) = {
     val agentName = start.agent
     sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>

@@ -249,7 +249,7 @@ case class OdfValue(
   def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val p = paths.flatMap(p => hTree.get(Path("Objects/SubscriptionTest/" + p)))
-              .map(types.OdfTypes.fromPath(_))
+              .map(types.OdfTypes.createAncestors(_))
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
 

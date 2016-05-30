@@ -67,12 +67,6 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
    */
   protected[this] lazy val pathOwners: scala.collection.mutable.Map[Path,AgentName] =
     getConfigsOwnerships()
-  //getConfigsOwnerships()
-  receiver {
-    //Write can be received either from RequestHandler or from InternalAgent
-    case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
-    //case registerOwnership: RegisterOwnership => sender() ! handleRegisterOwnership(registerOwnership)  
-  }
   protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
     paths.collect{
       case path  => 
@@ -146,7 +140,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       }
     }
 
-  private def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
+  protected def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
     val senderName = sender().path.name
     log.debug( s"Received WriteRequest from $senderName.")
     val odfObjects = write.odf
@@ -194,7 +188,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val ownerToObjects = ownerToPaths.mapValues{ 
         paths => 
         allInfoItems.collect{
-          case infoItem if paths.contains(infoItem.path) => fromPath(infoItem)
+          case infoItem if paths.contains(infoItem.path) => createAncestors(infoItem)
         }.foldLeft(OdfObjects())(_.union(_))
       }
       log.debug( s"$senderName writing to paths owned other agents.")
@@ -208,7 +202,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
-      (infoItems map fromPath).foldLeft(OdfObjects())(_ union _)
+      (infoItems map createAncestors).foldLeft(OdfObjects())(_ union _)
     )
   }
 
@@ -374,7 +368,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
         // aggregate all updates to single odf tree
         val updateTree: OdfObjects =
-          (updatedStaticItems map fromPath).foldLeft(OdfObjects())(_ union _)
+          (updatedStaticItems map createAncestors).foldLeft(OdfObjects())(_ union _)
 
         SingleStores.hierarchyStore execute Union(updateTree)
     }

@@ -50,11 +50,10 @@ trait InternalAgentLoader extends BaseAgentSystem {
   Thread.currentThread.setContextClassLoader( createClassLoader())
   /** Settings for getting list of internal agents and their configs from application.conf */
 
-
-  def start() : Unit= {
+  def start() : Unit = {
     val classnames = settings.agentConfigurations
     classnames.foreach {
-      configEntry : AgentConfigEntry =>
+      case configEntry : AgentConfigEntry =>
       agents.get( configEntry.name ) match{
         case None =>
           loadAndStart(configEntry)
@@ -64,7 +63,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  protected def loadAndStart(name : AgentName, classname : String, config : Config, ownedPaths: Seq[Path]) = {
+  protected def loadAndStart(name : AgentName, classname : String, config : Config, ownedPaths: Seq[Path]):Unit = {
     Try {
       log.info("Instantiating agent: " + name + " of class " + classname)
       val classLoader     = Thread.currentThread.getContextClassLoader

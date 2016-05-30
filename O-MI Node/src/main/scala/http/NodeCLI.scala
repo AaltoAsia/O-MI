@@ -230,7 +230,7 @@ class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, r
 
   import Tcp._
 
-  def receive ={
+  def receive : Actor.Receive={
     case Bound(localAddress) =>
     // TODO: do something?
     // It seems that this branch was not executed?

@@ -23,14 +23,6 @@ import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable
 import scala.concurrent.duration._
 import scala.language.existentials
 
-/**
- * Package containing classes presenting O-MI request interanlly. 
- *
- */
-object `package` {
-  type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
-  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
-}
 
 /**
   * Trait that represents any Omi request. Provides some data that are common
