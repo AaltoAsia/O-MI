@@ -32,10 +32,10 @@ package object database {
    * default is 10
    * @param newLength new length to be used
    */
-  def setHistoryLength(newLength: Int) {
+  def changeHistoryLength(newLength: Int): Unit = {
     histLength = newLength
   }
-  def historyLength = histLength
+  def historyLength: Int = histLength
 
   val dbConfigName = "h2-conf"
 
@@ -53,8 +53,8 @@ sealed trait InfoItemEvent {
  */
 class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
 object ChangeEvent {
-  def apply(ii: OdfInfoItem) = new ChangeEvent(ii)
-  def unapply(ce: ChangeEvent) = Some(ce.infoItem)
+  def apply(ii: OdfInfoItem): ChangeEvent = new ChangeEvent(ii)
+  def unapply(ce: ChangeEvent): Option[OdfInfoItem] = Some(ce.infoItem)
 }
 
 
@@ -67,39 +67,40 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-    def createPrevayler[P](in: P, name: String) = {
-      if(settings.writeToDisk) {
-        val factory = new PrevaylerFactory[P]()
+  val journalFileSizeLimit = 100 * 1000000 // TODO: Config variable?
+  private[this] def createPrevayler[P](in: P, name: String) = {
+    if(settings.writeToDisk) {
+      val factory = new PrevaylerFactory[P]()
 
-        // Change size thereshold so we can remove the old journal files as we take snapshots.
-        // Otherwise it will continue to fill disk space
-        factory.configureJournalFileSizeThreshold(100000000) // about 100M
+      // Change size thereshold so we can remove the old journal files as we take snapshots.
+      // Otherwise it will continue to fill disk space
+      factory.configureJournalFileSizeThreshold(journalFileSizeLimit) // about 100M
 
-        val directory = new File(settings.journalsDirectory++s"/$name")
-        prevaylerDirectories += directory
-        PrevaylerFactory.createPrevayler[P](in, directory.getAbsolutePath)
-      } else {
-        PrevaylerFactory.createTransientPrevayler[P](in)
-      }
+      val directory = new File(settings.journalsDirectory++s"/$name")
+      prevaylerDirectories += directory
+      PrevaylerFactory.createPrevayler[P](in, directory.getAbsolutePath)
+    } else {
+      PrevaylerFactory.createTransientPrevayler[P](in)
     }
-    /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
-    val prevaylerDirectories = ArrayBuffer[File]()
+  }
+  /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
+  val prevaylerDirectories = ArrayBuffer[File]()
 
-    val latestStore       = createPrevayler(LatestValues.empty, "latestStore")
-    val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
-    val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")
-    val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")
-    val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")
-    val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
+  val latestStore       = createPrevayler(LatestValues.empty, "latestStore")
+  val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
+  val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")
+  val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")
+  val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")
+  val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
 
-    def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
+  def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
 
-      val odfObjectsTrees = items map { case (path, value) =>
-        val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
-        fromPath(infoItem)
-      }
-      odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
+    val odfObjectsTrees = items map { case (path, value) =>
+      val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
+      fromPath(infoItem)
     }
+  odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
+  }
 
 
   /**
@@ -110,45 +111,45 @@ object SingleStores {
    * @param newValue the new value to be added
    * @return
    */
-    def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
-      oldValue.timestamp before newValue.timestamp
-    }
+  def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
+    oldValue.timestamp before newValue.timestamp
+  }
 
 
-    /**
-     * Main function for handling incoming data and running all event-based subscriptions.
-     *  As a side effect, updates the internal latest value store.
-     *  Event callbacks are not sent for each changed value, instead event results are returned 
-     *  for aggregation and other extra functionality.
-     * @param path Path to incoming data
-     * @param newValue Actual incoming data
-     * @return Triggered responses
-     */
-    def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
+  /**
+   * Main function for handling incoming data and running all event-based subscriptions.
+   *  As a side effect, updates the internal latest value store.
+   *  Event callbacks are not sent for each changed value, instead event results are returned 
+   *  for aggregation and other extra functionality.
+   * @param path Path to incoming data
+   * @param newValue Actual incoming data
+   * @return Triggered responses
+   */
+  def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
 
-      // TODO: Replace metadata and description if given
+    // TODO: Replace metadata and description if given
 
-      oldValueOpt match {
-        case Some(oldValue) =>
-          if (valueShouldBeUpdated(oldValue, newValue)) {
-            val onChangeData =
-              if (oldValue.value != newValue.value) {
-                    Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
-              } else None  // Value is same as the previous
+    oldValueOpt match {
+      case Some(oldValue) =>
+        if (valueShouldBeUpdated(oldValue, newValue)) {
+          val onChangeData =
+            if (oldValue.value != newValue.value) {
+              Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
+            } else None  // Value is same as the previous
 
-            // NOTE: This effectively discards incoming data that is older than the latest received value
-            latestStore execute SetSensorData(path, newValue)
-
-            onChangeData
-          } else None  // Newer data found
-
-        case None =>  // no data was found => new sensor
+          // NOTE: This effectively discards incoming data that is older than the latest received value
           latestStore execute SetSensorData(path, newValue)
-          val newInfo = OdfInfoItem(path, Iterable(newValue))
-          Some(AttachEvent(newInfo))
-      }
 
+          onChangeData
+        } else None  // Newer data found
+
+      case None =>  // no data was found => new sensor
+        latestStore execute SetSensorData(path, newValue)
+        val newInfo = OdfInfoItem(path, Iterable(newValue))
+        Some(AttachEvent(newInfo))
     }
+
+  }
 
 
   def getMetaData(path: Path) : Option[OdfMetaData] = {
@@ -166,14 +167,14 @@ object SingleStores {
           case None => 
             info
         }
-      case objs : OdfObjects => 
-        objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
-      case obj : OdfObject => 
-        obj.copy(
-          objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
-          infoItems = obj.infoItems map (i => OdfInfoItem(i.path)),
-          typeValue = obj.typeValue
-          )
+          case objs : OdfObjects => 
+            objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
+          case obj : OdfObject => 
+            obj.copy(
+              objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
+              infoItems = obj.infoItems map (i => OdfInfoItem(i.path)),
+              typeValue = obj.typeValue
+            )
     }
   } 
 }
@@ -187,7 +188,7 @@ class DatabaseConnection extends DB {
   val db = Database.forConfig(dbConfigName)
   initialize()
 
-  def destroy() = {
+  def destroy(): Unit = {
      dropDB()
      db.close()
 

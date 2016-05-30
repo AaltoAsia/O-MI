@@ -66,9 +66,11 @@ trait Starter {
       val numDescription =
         "Number of latest values (per sensor) that will be saved to the DB"
       system.log.info(s"$numDescription: ${settings.numLatestValues}")
-      database.setHistoryLength(settings.numLatestValues)
+
+      database.changeHistoryLength(settings.numLatestValues)
+
       system.log.info("Testing InputPusher...")
-      database.setHistoryLength(settings.numLatestValues)
+
       val objects = fromPath(
         OdfInfoItem(
           Path(settings.settingsOdfPath + "num-latest-values-stored"), 

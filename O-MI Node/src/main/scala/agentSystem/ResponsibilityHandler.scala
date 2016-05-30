@@ -382,7 +382,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val values = item.values.toSeq
       values map {value => (item.path, value)}
     }).toSeq
-    dbobject.setMany(itemValues)
+    dbobject.writeMany(itemValues)
 
     subHandler ! NewDataEvent(itemValues)
     

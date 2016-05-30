@@ -395,10 +395,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       case (None, None)                        => None
     })
 
-    results.map{opt => opt match {
+    results.map{
       case Some(OdfObjects(x,_)) if x.isEmpty => None
       case default : Option[OdfObjects ]  => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
-    }}
+    }
 
   }
 
@@ -430,7 +430,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    */
   protected[this] def getSubTreeQ(
     root: DBNode,
-    depth: Option[Int] = None): Query[(DBNodesTable, Rep[Option[DBValuesTable]]), (DBNode, Option[DBValue]), Seq] = {
+    depth: Option[Int] = None): Query[(DBNodesTable, Rep[Option[DBValuesTable]]), DBValueTuple, Seq] = {
 
     val depthConstraint: DBNodesTable => Rep[Boolean] = node =>
       depth match {
@@ -448,7 +448,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     val nodesWithValuesQ =
       nodesQ joinLeft latestValues on (_.id === _.hierarchyId)
 
-    nodesWithValuesQ sortBy (_._1.leftBoundary.asc)
+    nodesWithValuesQ sortBy {case (nodes, _) => nodes.leftBoundary.asc}
   }
 
   protected[this] def getSubTreeI(

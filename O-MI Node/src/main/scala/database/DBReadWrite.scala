@@ -44,7 +44,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * This gives false-positive only when there is other tables present. In that case
    * manually clean the database.
    */
-  def initialize() = this.synchronized {
+  def initialize(): Unit = this.synchronized {
 
     val setup = DBIO.seq(
       allSchemas.create,
@@ -133,14 +133,15 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
   /**
-   * Used to set values to database. If data already exists for the path, appends until historyLength
+   * NOTE: This function is not used at the moment - 2016/06.
+   * Used to write values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
    *  Does not remove excess rows if path is set or buffer
    *
    *  @param data sensordata, of type DBSensor to be stored to database.
    *  @return hierarchy id
    */
-  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
+  def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
 
       _ <- addObjectsI(path, true)
@@ -173,7 +174,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def setMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {
+  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {
 
     val pathsData: Map[Path, Seq[OdfValue]] =
       data.groupBy{case (path, _) => path}.mapValues(
@@ -237,7 +238,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether something was removed
    */
   //@deprecated("For testing only.", "Since implemented.")
-  def remove(path: Path) = {
+  trait Hole
+  def remove(path: Path): Future[Any] = {// : Future[DBIOrw[Seq[Any]]] ?
     val resultValue = for{
       hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
       resOpt =  hNode.map{ node =>
@@ -245,7 +247,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         val removedRight = node.rightBoundary
         for{
           removedValues <- getSubTreeQ(node).result
-          removedIds = removedValues.map(_._1.id.getOrElse(throw new UninitializedError))
+          removedIds = removedValues.map{case (node, _) => node.id.getOrElse(throw new UninitializedError)}
           removeOp = DBIO.sequence(Seq(
            latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
            hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
@@ -269,7 +271,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   private def addRoot = {
     hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
   }
-  def addRootR = {
+  def addRootR: Future[Int] = {
     db.run(addRoot)
   }
 
@@ -289,9 +291,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def pollEventSubscription(id: Long): Future[Seq[SubValue]] = {
     db.run(pollEventSubscriptionI(id))
   }
-  def debugMethod = {
-    db.run(pollSubs.result) //TODO remove
-  }
+
   private def pollEventSubscriptionI(id: Long) = {
     val subData = pollSubs filter (_.subId === id)
     for{
@@ -323,11 +323,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield data
   }
 
-  def addNewPollData(newData: Seq[SubValue]) = {
+  def addNewPollData(newData: Seq[SubValue]): Future[Option[Int]] = {
     db.run(pollSubs ++= newData)
   }
 
-  def trimDB() = {
+  def trimDB(): Future[Seq[Int]] = {
     val historyLen = database.historyLength
     val hIdQuery = (for(h <- hierarchyNodes) yield h.id).result
 
