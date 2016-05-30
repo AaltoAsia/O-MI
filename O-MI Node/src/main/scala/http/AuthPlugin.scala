@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 import types.Path
 import types.OmiTypes._
 import types.OdfTypes._
-import Authorization.AuthorizationExtension
+import Authorization.{AuthorizationExtension, CombinedTest}
 import database._
 
 import scala.collection.mutable.Buffer
@@ -74,7 +74,7 @@ trait AuthApiProvider extends AuthorizationExtension {
 
 
   // AuthorizationExtension implementation
-  abstract override def makePermissionTestFunction = combineWithPrevious(
+  abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
     extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: OmiRequest) =>
 

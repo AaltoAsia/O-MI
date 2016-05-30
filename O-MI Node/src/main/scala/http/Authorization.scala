@@ -143,7 +143,7 @@ object Authorization {
      * NOTE: Put this as up in routing DSL as possible because some extractors seem to not
      * working properly otherwise.
      */
-    def makePermissionTestFunction = new CombinedTest(
+    def makePermissionTestFunction: CombinedTest = new CombinedTest(
       provide(_ => None)
     )
   }
@@ -164,7 +164,7 @@ import Authorization._
  *  temporarily and serves as an example of how to extend [[Authorization]] as a Stackable trait.
  */
 trait AllowAllAuthorization extends AuthorizationExtension {
-  abstract override def makePermissionTestFunction = 
+  abstract override def makePermissionTestFunction: CombinedTest = 
     combineWithPrevious(super.makePermissionTestFunction, provide(req => Some(req)))
 }
 
@@ -173,7 +173,7 @@ trait AllowAllAuthorization extends AuthorizationExtension {
  *  but not write and response). Intended to be used as a last catch-all test (due to logging).
  */
 trait AllowNonPermissiveToAll extends AuthorizationExtension {
-  abstract override def makePermissionTestFunction = combineWithPrevious(
+  abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
     provide{
       case r: PermissiveRequest =>
@@ -192,13 +192,13 @@ trait LogUnauthorized extends AuthorizationExtension {
   private type UserInfo = Option[java.net.InetAddress]
   private def extractIp: Directive1[UserInfo] = clientIP map (_.toOption)
   private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {
-      case r : OmiRequest =>
-        log.warning(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
-        None
-    }}
+    case r : OmiRequest =>
+      log.warning(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
+      None
+  }}
 
 
-  abstract override def makePermissionTestFunction = combineWithPrevious(
+  abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
     extractIp map logFunc
   )
@@ -210,7 +210,7 @@ trait LogUnauthorized extends AuthorizationExtension {
  * Never gives any permissions.
  */
 trait LogPermissiveRequestBeginning extends AuthorizationExtension {
-  abstract override def makePermissionTestFunction = combineWithPrevious(
+  abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
     provide{
       case r: PermissiveRequest with OdfRequest =>

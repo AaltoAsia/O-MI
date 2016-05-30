@@ -20,7 +20,7 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import types.OmiTypes._
 import Boot.settings
-import Authorization.AuthorizationExtension
+import Authorization.{AuthorizationExtension, CombinedTest}
 
 // TODO: maybe move to Authorization package
 
@@ -81,7 +81,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
       {_ =>  None}
   }
 
-  abstract override def makePermissionTestFunction =
+  abstract override def makePermissionTestFunction: CombinedTest =
     combineWithPrevious(
       super.makePermissionTestFunction,
       extractUserData map hasPermission)
