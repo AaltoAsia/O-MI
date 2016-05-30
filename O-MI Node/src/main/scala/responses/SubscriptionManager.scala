@@ -138,7 +138,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             case i: OdfInfoItem => fromPath(OdfInfoItem(i.path))
             case o: OdfObject   => fromPath(OdfObject(o.id, o.path, typeValue = o.typeValue))
             case o: OdfObjects  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
-            case o: OdfNode  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
+            //case o: OdfNode  => fromPath(OdfObjects())//map OdfNodes to OdfObjects
           }.reduceOption[OdfObjects]{case (l,r) => l.union(r)}.getOrElse(OdfObjects())
 
         //pollSubscription method removes the data from database and returns the requested data
@@ -251,8 +251,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             //Some(pollData)
           }
 
-          case unknown:SavedSub => log.error(s"unknown subscription type $unknown")
-            Future.successful(None)
         }
       }
       case _ => Future.successful(None)
@@ -377,7 +375,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
    */
   private def subscribe(subscription: SubscriptionRequest): Try[Long] = {
     Try {
-      val newId = SingleStores.idPrevayler execute getAndUpdateId
+      val newId = SingleStores.idPrevayler execute GetAndUpdateId
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)
