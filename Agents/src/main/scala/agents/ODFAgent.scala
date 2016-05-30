@@ -94,7 +94,7 @@ class ODFAgent( override val config: Config) extends InternalAgent {
       context.parent ! PromiseWrite( promiseResult, write ) 
       promiseResult.isSuccessful.onSuccess{
         //Check if failed promises
-        case s =>
+        case _ =>
         log.debug(s"$name pushed data successfully.")
       }
       newObjects

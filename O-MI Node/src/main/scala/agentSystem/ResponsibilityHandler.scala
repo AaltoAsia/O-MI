@@ -239,7 +239,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
     callbackF.onFailure{
       case fail: CallbackFailure =>
         failed(fail.toString)
-      case e =>
+      case e: Throwable =>
         failed(e.getMessage)
     }
   }

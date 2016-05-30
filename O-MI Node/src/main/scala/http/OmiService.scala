@@ -191,7 +191,7 @@ trait OmiService
                             Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
                           )
                         )
-                        case ttl => //noop
+                        case ttl: Duration => //noop
                       }
                       requestHandler.handleRequest(req)
                     }

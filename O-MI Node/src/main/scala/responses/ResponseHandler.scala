@@ -45,7 +45,7 @@ trait ResponseHandler extends OmiRequestHandler{
         agentSystem ! PromiseWrite(promiseResult, write)
         val successF = promiseResult.isSuccessful
         successF.recoverWith{
-          case e =>{
+          case e : Throwable=>{
             log.error(e, "Failure when writing")
             Future.failed(e)
           }}

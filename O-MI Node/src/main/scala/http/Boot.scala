@@ -81,13 +81,12 @@ trait Starter {
       agentSystem ! PromiseWrite( promiseResult, write )
       val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
       future.onSuccess{
-        case s =>
+        case _=>
         system.log.info("O-MI InputPusher system working.")
-        true
       }
 
       future.onFailure{
-        case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        case e: Throwable => system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, 60 seconds)
     }

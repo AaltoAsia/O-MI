@@ -46,7 +46,7 @@ trait CancelHandler extends OmiRequestHandler{
           Results.notFoundSub
         }
       ).recoverWith{
-        case e => {
+        case e : Throwable => {
           val error = "Error when trying to cancel subcription: "
           log.error(e, error)
           Future.successful(Results.internalError(error + e.toString))

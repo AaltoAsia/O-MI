@@ -125,7 +125,7 @@ remove <path>
               trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
             }
             future.recover{
-            case a =>
+            case a: Throwable  =>
               log.info("Failed to get list of Subscriptions.\n Sending ...")
               trueSender ! Write(ByteString("Failed to get list of subscriptions.\n"))
 

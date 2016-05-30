@@ -27,7 +27,7 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
   case class Update()
   //Interval for scheluding generation of new values
   //Cancellable update of values, Option because ugly mutable state
-  protected var updateSchelude : Option[Cancellable] = None
+  private var updateSchelude : Option[Cancellable] = None
   protected def start = Try{
     // Schelude update and save job, for stopping
     // Will send Update message to self every interval
@@ -82,7 +82,7 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
         log.debug(s"$name pushed data successfully.")
       }
       succ.onFailure{
-        case e => 
+        case e: Throwable => 
         log.warning(s"$name failed to write all data, error: $e")
       }
   }

@@ -36,9 +36,12 @@ object CallbackHandlers {
   //Success
   case class  CallbackSuccess()               extends CallbackResult
   // Errors
-  case class   HttpError(status: StatusCode, callback: Uri )  extends CallbackFailure(s"Received HTTP status $status from $callback.", callback)
-  case class  ProtocolNotSupported(protocol: String, callback: Uri)          extends CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
-  case class  ForbiddenLocalhostPort( callback: Uri)        extends CallbackFailure(s"Callback address is forbidden.", callback)
+  case class   HttpError(status: StatusCode, callback: Uri )  extends 
+    CallbackFailure(s"Received HTTP status $status from $callback.", callback)
+  case class  ProtocolNotSupported(protocol: String, callback: Uri) extends 
+    CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
+  case class  ForbiddenLocalhostPort( callback: Uri)  extends 
+    CallbackFailure(s"Callback address is forbidden.", callback)
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime ) 
   implicit val system = ActorSystem()
@@ -61,9 +64,6 @@ object CallbackHandlers {
           ) 
           val check : PartialFunction[HttpResponse, CallbackResult] = { 
             case response: HttpResponse =>
-              system.log.info(
-                s"Successful send POST request to $address."
-              ) 
             if (response.status.isSuccess){
               //TODO: Handle content of response, possible piggypacking
               system.log.info(
@@ -80,7 +80,7 @@ object CallbackHandlers {
             tryUntil 
           )
           retry.onFailure{
-            case e =>
+            case e : Throwable=>
             system.log.warning(
               s"Failed to send POST request to $address after trying until ttl ended."
             ) 
