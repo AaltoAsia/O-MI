@@ -187,7 +187,7 @@ class DatabaseTest extends Specification with AfterAll {
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(25000), "21.6C")
       db.set(Path("/Objects/path/to/sensor3/temp"), new java.sql.Timestamp(26000), "21.6C")
 
-      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
+      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(createAncestors(_))
       val temp2 = temp1.map(OdfObjectsToValues(_))
       temp2 must beSome.which(_ must have size (21))
 
@@ -292,14 +292,14 @@ class DatabaseTest extends Specification with AfterAll {
 
 //    "should not revert to historyLength if other are still buffering" in {
 //      db.removeSub(testSub1)
-//      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
+//      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(createAncestors(_))
 //      val temp2 = temp1.map(OdfObjectsToValues(_))
 //      temp2 must beSome.which(_ must have size (21))
 //    }
 
 //    "be able to stop buffering and revert to using historyLenght" in {
 //      db.removeSub(testSub2)
-//      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(fromPath(_))
+//      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(createAncestors(_))
 //      val temp2 = temp1.map(OdfObjectsToValues(_))
 //      temp2 must beSome.which(_ must have size (10))
 //    }
@@ -434,11 +434,11 @@ class DatabaseTest extends Specification with AfterAll {
 //      val pathValuePairs = testdata.map(n => (Path(n._1), n._2))
 //      db.setMany(pathValuePairs)
 //
-//      val temp1 = db.get(Path("/Objects/path/to/setmany/test1")).map(fromPath(_))
+//      val temp1 = db.get(Path("/Objects/path/to/setmany/test1")).map(createAncestors(_))
 //      val values1 = temp1.map(OdfObjectsToValues(_))
 //      values1 must beSome.which(_ must have size (13))
 //
-//      val temp2 = db.get(Path("/Objects/path/to/setmany/test2")).map(fromPath(_))
+//      val temp2 = db.get(Path("/Objects/path/to/setmany/test2")).map(createAncestors(_))
 //      val values2 = temp2.map(OdfObjectsToValues(_))
 //      values2 must beSome.which(_ must have size (10))
 //
@@ -470,14 +470,14 @@ class DatabaseTest extends Specification with AfterAll {
 //      (11 to 30).foreach(n =>
 //        db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
 //        
-//        val getDataForPath1 = db.get(testPath).map(fromPath(_))
+//        val getDataForPath1 = db.get(testPath).map(createAncestors(_))
 //        val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))
 //        
 //        dbValuesForPath1 must beSome.which(_ must have size (30))
 //        
 //        val test1 = requestHandler.handleRequest(PollRequest(10.seconds, None, Seq(testSub1.id)))._1
 //        test1.\\("value").length === 30
-//        val getDataForPath2 = db.get(testPath).map(fromPath(_))
+//        val getDataForPath2 = db.get(testPath).map(createAncestors(_))
 //        val dbValuesForPath2 = getDataForPath2.map(OdfObjectsToValues(_))
 //        dbValuesForPath2 must beSome.which(_ must have size (25))
 //        
@@ -487,7 +487,7 @@ class DatabaseTest extends Specification with AfterAll {
 //        
 //        //revert to history length
 //        
-//        val getDataForPath3 = db.get(Path("/Objects/DatabaseTest/EventSubTest")).map(fromPath(_))
+//        val getDataForPath3 = db.get(Path("/Objects/DatabaseTest/EventSubTest")).map(createAncestors(_))
 //        val dbValuesForPath3 = getDataForPath3.map(OdfObjectsToValues(_))
 //        
 //        dbValuesForPath3 must beSome.which(_ must have size (10))
@@ -507,7 +507,7 @@ class DatabaseTest extends Specification with AfterAll {
         db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
 
       db.trimDB()
-      val getDataForPath = db.get(testPath).map(fromPath(_))
+      val getDataForPath = db.get(testPath).map(createAncestors(_))
       val dbValuesForPath = getDataForPath.map(OdfObjectsToValues(_))
       dbValuesForPath must beSome.which(_ must have size (10))
       
@@ -519,7 +519,7 @@ class DatabaseTest extends Specification with AfterAll {
         db.set(testPath, new java.sql.Timestamp(startTime + n * 900), n.toString()))
 
       db.trimDB()
-      val getDataForPath1 = db.get(testPath).map(fromPath(_))
+      val getDataForPath1 = db.get(testPath).map(createAncestors(_))
       val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))
       dbValuesForPath1 must beSome.which(_ must have size (20))
     }

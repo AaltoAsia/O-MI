@@ -95,7 +95,7 @@ trait AuthApiProvider extends AuthorizationExtension {
                 pathTrees = paths collect {
                   case path: Path =>              // filter nulls out
                     currentTree.get(path) match { // figure out is it InfoItem or Object
-                      case Some(nodeType) => fromPath(nodeType)
+                      case Some(nodeType) => createAncestors(nodeType)
                       case None => OdfObjects()
                     }
                 }

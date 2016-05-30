@@ -120,7 +120,7 @@ trait OdfConversions extends OmiNodeTables {
   }
 
   protected[this] def odfConversion: DBInfoItem => OdfObjects =
-    fromPath _ compose hasPathConversion
+    createAncestors _ compose hasPathConversion
 
   protected[this] def odfConversion(treeData: DBInfoItems): Option[OdfObjects] = {
     val odfObjectsTrees = treeData map odfConversion

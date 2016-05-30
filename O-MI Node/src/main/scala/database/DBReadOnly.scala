@@ -228,7 +228,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
             case o: OdfObject =>
               o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection(), description = None)
-          } map fromPath
+          } map createAncestors
       }.getOrElse(OdfObjects()) union currentData
 
     def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
@@ -311,7 +311,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
               metaInfoItem: OdfInfoItem = getMetaInfoItem(qry, path)
               result = odfInfoItem.map {
-                infoItem => fromPath(infoItem) union fromPath(metaInfoItem)
+                infoItem => createAncestors(infoItem) union createAncestors(metaInfoItem)
               }
 
             } yield result
@@ -372,7 +372,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         reqInfoItems.foldLeft(resultOdf){(result, info) =>
           info match {
             case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
-              result union fromPath(getMetaInfoItem(qry, path))
+              result union createAncestors(getMetaInfoItem(qry, path))
             case _ => result // else discard
           }
         }
@@ -419,7 +419,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 //          oldest).result)
 //      infoItemIdTuples.map {
 //        case (id, info) =>
-//          fromPath(info.copy(values = betweenValues.collect { case dbval if dbval.hierarchyId == id => dbval.toOdf }))
+//          createAncestors(info.copy(values = betweenValues.collect { case dbval if dbval.hierarchyId == id => dbval.toOdf }))
 //      }.foldLeft(OdfObjects())(_.union(_))
 //    }
     

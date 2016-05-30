@@ -1,4 +1,3 @@
-
 package agentSystem
 
 import database.DB
@@ -55,9 +54,6 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
     case ListAgentsCmd() => sender() ! agents.values.toSeq
     case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
   }  
-}
-object `package` {
-  type AgentName = String
 }
 
   sealed trait AgentInfoBase{

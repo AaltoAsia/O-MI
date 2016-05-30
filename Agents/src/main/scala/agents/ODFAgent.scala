@@ -90,7 +90,7 @@ class ODFAgent( override val config: Config) extends InternalAgent {
         )))
       }
       val allNodes = updated ++ objectsWithMetaData
-      val newObjects = allNodes.map(fromPath(_)).foldLeft(OdfObjects())(_.union(_))
+      val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
       
       val write = WriteRequest( interval, newObjects )
       context.parent ! PromiseWrite( promiseResult, write ) 

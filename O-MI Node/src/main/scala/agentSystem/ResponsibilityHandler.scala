@@ -188,7 +188,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       val ownerToObjects = ownerToPaths.mapValues{ 
         paths => 
         allInfoItems.collect{
-          case infoItem if paths.contains(infoItem.path) => fromPath(infoItem)
+          case infoItem if paths.contains(infoItem.path) => createAncestors(infoItem)
         }.foldLeft(OdfObjects())(_.union(_))
       }
       log.debug( s"$senderName writing to paths owned other agents.")
@@ -202,7 +202,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
-      (infoItems map fromPath).foldLeft(OdfObjects())(_ union _)
+      (infoItems map createAncestors).foldLeft(OdfObjects())(_ union _)
     )
   }
 
@@ -368,7 +368,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
 
         // aggregate all updates to single odf tree
         val updateTree: OdfObjects =
-          (updatedStaticItems map fromPath).foldLeft(OdfObjects())(_ union _)
+          (updatedStaticItems map createAncestors).foldLeft(OdfObjects())(_ union _)
 
         SingleStores.hierarchyStore execute Union(updateTree)
     }
