@@ -122,7 +122,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     val timeout = settings.internalAgentsStartTimout
     val startF = ask(agent,Start())(timeout)
     val resultF = startF.flatMap{ 
-      case result : Try[InternalAgentSuccess] =>  Future.fromTry(result)
+      case result : Try[InternalAgentSuccess @unchecked] =>  Future.fromTry(result) // internal type is unchecked
     }.map{
       case success : InternalAgentSuccess => agent
     }

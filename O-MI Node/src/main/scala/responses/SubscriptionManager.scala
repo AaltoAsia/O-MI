@@ -352,11 +352,11 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     lazy val removeIS = SingleStores.intervalPrevayler execute RemoveIntervalSub(id)
     lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)
     lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)
-    removePS match {
-      case true =>
+    if (removePS) {
       dbConnection.removePollSub(id)
-      true
-      case false => removeIS || removeES 
+      removePS
+    } else {
+      removeIS || removeES 
     }
   }
 

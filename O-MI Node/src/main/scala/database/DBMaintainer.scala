@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 import java.io.{File, FilenameFilter}
+import org.prevayler.Prevayler
 
 object DBMaintainer{
   def props(dbobject: DB) : Props = Props( new DBMaintainer(dbobject) )  
@@ -34,26 +35,22 @@ class DBMaintainer(val dbobject: DB)
   }
   type Hole
   private def takeSnapshot: FiniteDuration = {
+    def trySnapshot[T](p: Prevayler[T], errorName: String): Unit = {
+      Try[File]{
+        p.takeSnapshot()
+      }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
+    }
+
     log.info("Taking prevyaler snapshot")
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
-    Try[File]{
-      SingleStores.latestStore.takeSnapshot()
-    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of lateststore")}
-    Try[File]{
-      SingleStores.hierarchyStore.takeSnapshot()
-    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of hierarchystore")}
-    Try[File]{
-      SingleStores.eventPrevayler.takeSnapshot()
-    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of eventPrevayler")}
-    Try[File]{
-      SingleStores.intervalPrevayler.takeSnapshot()
-    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
-    Try[File]{
-      SingleStores.pollPrevayler.takeSnapshot()
-    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of pollPrevayler")}
-    Try[File]{
-      SingleStores.idPrevayler.takeSnapshot()
-    }.recover{case a : Throwable => log.error(a,"Failed to take Snapshot of idPrevayler")}
+
+    trySnapshot(SingleStores.latestStore, "latestStore")
+    trySnapshot(SingleStores.hierarchyStore, "hierarchySrtore")
+    trySnapshot(SingleStores.eventPrevayler, "eventPrevayler")
+    trySnapshot(SingleStores.intervalPrevayler, "intervalPrevayler")
+    trySnapshot(SingleStores.pollPrevayler, "pollPrevayler")
+    trySnapshot(SingleStores.idPrevayler, "idPrevayler")
+
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
     val duration : FiniteDuration = end - start
     duration

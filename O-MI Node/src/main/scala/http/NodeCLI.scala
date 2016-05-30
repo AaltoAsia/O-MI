@@ -16,9 +16,10 @@ package http
 
 import java.net.InetSocketAddress
 
-import agentSystem.AgentInfo
+import agentSystem.{AgentInfo,AgentName}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
+import Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
@@ -27,6 +28,7 @@ import types.Path
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.Await
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -68,136 +70,153 @@ remove <subsription id>
 remove <path>
 """
   val ip = sourceAddress.toString.tail
-  implicit val timeout : Timeout = 5.seconds
-  import Tcp._
+  implicit val timeout : Timeout = 1.minute
+
+  val commandTimeout = 1.minute
+
+  private def help(): String = {
+    log.info(s"Got help command from $ip")
+    commands
+  }
+  private def listAgents(): String = {
+    log.info(s"Got list agents command from $ip")
+    val result = (agentLoader ? ListAgentsCmd())
+      .map[String]{
+        case agents: Seq[AgentInfo @unchecked] =>  // internal type 
+          log.info("Received list of Agents. Sending ...")
+
+          val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
+          val msg =
+            f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
+            agents.map{
+              case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
+                f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
+            }.mkString("\n")
+
+          msg +"\n"
+        case _ => ""
+      }
+      .recover[String]{
+        case a : Throwable =>
+          log.warning("Failed to get list of Agents. Sending error message.")
+          "Something went wrong. Could not get list of Agents.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+  private def listSubs(): String = {
+    log.info(s"Got list subs command from $ip")
+    val result = (subscriptionHandler ? ListSubsCmd())
+      .map{
+        case (intervals: Set[IntervalSub @unchecked],
+              events: Set[EventSub] @unchecked,
+              polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
+          log.info("Received list of Subscriptions. Sending ...")
+
+          val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
+            ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
+
+          val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +
+            intervals.map{ sub=>
+              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback }"
+            }.mkString("\n")
+
+          val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
+              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback }"
+            }.mkString("\n")
+
+          val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" +
+            polls.map{ sub=>
+              f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
+            }.mkString("\n")
+
+          s"$intMsg\n$eventMsg\n$pollMsg\n"
+      }
+      .recover{
+        case a: Throwable  =>
+          log.info("Failed to get list of Subscriptions.\n Sending ...")
+          "Failed to get list of subscriptions.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+  private def startAgent(agent: AgentName): String = {
+    log.info(s"Got start command from $ip for $agent")
+    val result = (agentLoader ? StartAgentCmd(agent))
+      .map{
+        case msg: String =>
+          msg +"\n"
+      }
+      .recover{
+        case a : Throwable =>
+          "Command failure unknown.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+
+  private def stopAgent(agent: AgentName): String = {
+    log.info(s"Got stop command from $ip for $agent")
+    val result = (agentLoader ? StopAgentCmd(agent))
+      .map{
+        case msg:String => 
+          msg +"\n"
+      }
+      .recover{
+        case a : Throwable =>
+          "Command failure unknown.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+
+  private def remove(pathOrId: String): String = {
+    log.info(s"Got remove command from $ip with parameter $pathOrId")
+
+    if(pathOrId.forall(_.isDigit)){
+      val id = pathOrId.toInt
+      log.info(s"Removing subscription with id: $id")
+
+      val result = (subscriptionHandler ? RemoveSubscription(id))
+        .map{
+          case true =>
+            s"Removed subscription with $id successfully.\n"
+          case false =>
+            s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
+        }
+        .recover{
+          case a : Throwable =>
+            "Command failure unknown.\n"
+        }
+      Await.result(result, commandTimeout)
+    } else {
+      log.info(s"Trying to remove path $pathOrId")
+      if (requestHandler.handlePathRemove(Path(pathOrId))) {
+          log.info(s"Successfully removed path")
+          s"Successfully removed path $pathOrId\n"
+      } else {
+          log.info(s"Given path does not exist")
+          s"Given path does not exist\n"
+      }
+    } //requestHandler isn't actor
+
+  }
+
+  private def send(receiver: ActorRef)(msg: String): Unit =
+    receiver ! Write(ByteString(msg)) 
+
+
   def receive : Actor.Receive = {
     case Received(data) =>{ 
       val dataString : String = data.decodeString("UTF-8")
 
-      val args : Array[String] = dataString.split("( |\n)")
+      val args = dataString.split("( |\n)").toVector
       args match {
-        case Array("help") =>
-          log.info(s"Got help command from $ip")
-          sender ! Write(ByteString( commands )) 
-        case Array("list", "agents") =>
-          log.info(s"Got list agents command from $ip")
-          val trueSender = sender()
-          val future = (agentLoader ? ListAgentsCmd())
-          future.map{
-            case agents: Seq[AgentInfo] => 
-              log.info("Received list of Agents. Sending ...")
-              val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
-              val msg = f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n"+ agents.map{
-                case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
-                f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
-              }.mkString("\n")
-              trueSender ! Write(ByteString(msg +"\n"))
-            case agents: Seq[AgentInfo] => 
-              log.warning("Could not receive list of Agents. Sending ...")
-              val msg = "Something went wrong. Could not get list of Agents."
-              trueSender ! Write(ByteString(msg +"\n"))
-          }
-          future.recover{
-            case a : Throwable =>
-              log.info("Failed to get list of Agents.\n Sending ...")
-              trueSender ! Write(ByteString("Failed to get list of Agents.\n"))
-
-          }
-
-        case Array("list", "subs") =>
-          log.info(s"Got list subs command from $ip")
-          val trueSender = sender()
-          val future = (subscriptionHandler ? ListSubsCmd())
-          future.map{
-            case (intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub]) =>
-              log.info("Received list of Subscriptions. Sending ...")
-              val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
-                ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
-              val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +intervals.map{ sub=>
-                 f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback }"
-              }.mkString("\n")
-              val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
-                 f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback }"
-              }.mkString("\n")
-              val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" + polls.map{ sub=>
-                 f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
-              }.mkString("\n")
-              trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
-            }
-            future.recover{
-            case a: Throwable  =>
-              log.info("Failed to get list of Subscriptions.\n Sending ...")
-              trueSender ! Write(ByteString("Failed to get list of subscriptions.\n"))
-
-          }
-        case Array("start", agent) =>
-          val trueSender = sender()
-          log.info(s"Got start command from $ip for $agent")
-          val future = (agentLoader ? StartAgentCmd(agent))
-          future.map{
-            case msg:String  =>
-            trueSender ! Write(ByteString(msg +"\n"))
-          }
-          future.recover{
-            case a : Throwable =>
-              trueSender ! Write(ByteString("Command failure unknown.\n"))
-          }
-        case Array("stop", agent) => 
-          val trueSender = sender()
-          log.info(s"Got stop command from $ip for $agent")
-          val future = (agentLoader ? StopAgentCmd(agent))
-          future.map{
-            case msg:String => 
-              trueSender ! Write(ByteString(msg +"\n"))
-          }
-          future.recover{
-            case a : Throwable=>
-              trueSender ! Write(ByteString("Command failure unknown.\n"))
-          }
-
-        case Array("remove", pathOrId) => {
-          val trueSender = sender()
-          log.info(s"Got remove command from $ip with parameter $pathOrId")
-
-          if(pathOrId.forall(_.isDigit)){
-            val id = pathOrId.toInt
-            log.info(s"Removing subscription with id: $id")
-
-            val future = (subscriptionHandler ? RemoveSubscription(id))
-            future.map{
-              case true =>
-                trueSender ! Write(ByteString(s"Removed subscription with $id successfully.\n"))
-              case false =>
-                trueSender ! Write(ByteString(s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"))
-            }
-            future.recover{
-              case a =>
-                trueSender ! Write(ByteString("Command failure unknown.\n"))
-            }
-          } else {
-              log.info(s"Trying to remove path $pathOrId")
-            requestHandler.handlePathRemove(Path(pathOrId)) match {
-              case true => {
-                trueSender ! Write(ByteString(s"Successfully removed path $pathOrId\n"))
-                log.info(s"Successfully removed path")
-              }
-              case _    => {
-                trueSender ! Write(ByteString(s"Given path does not exist\n"))
-                log.info(s"Given path does not exist")
-              }
-            } //requestHandler isn't actor
-
-          }
-        }
-        case cmd: Array[String] => 
+        case Vector("help") => send(sender)(help())
+        case Vector("list", "agents") => send(sender)(listAgents())
+        case Vector("list", "subs") => send(sender)(listSubs())
+        case Vector("start", agent) => send(sender)(startAgent(agent))
+        case Vector("stop", agent)  => send(sender)(stopAgent(agent))
+        case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
+        case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
-          sender() ! Write(ByteString(
-            "Unknown command. Use help to get information of current commands.\n" 
-          ))
-        case _ => log.warning(s"Unknown message from $ip: ") 
-          sender() ! Write(ByteString(
-            "Unknown message. Use help to get information of current commands.\n" 
-          ))
+          send(sender)("Unknown command. Use help to get information of current commands.\n") 
       }
     }
     case PeerClosed =>{
