@@ -115,7 +115,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
         val newStore: HashMap[Path, Vector[EventSub]] =
           store.eventSubs
             .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
-            .filterNot( kv => kv._2.isEmpty ) //remove keys with empty values
+            .filterNot{case (_, subs) => subs.isEmpty } //remove keys with empty values
             .map(identity)(collection.breakOut) //map to HashMap //TODO create helper method for matching
         store.eventSubs = newStore
         true
@@ -132,8 +132,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
           store.idToSub = store.idToSub - id
           pSub.paths.foreach{ path =>
             store.pathToSubs(path) match {
-              case ids if ids.size <= 1 => store.pathToSubs = store.pathToSubs - path
-              case ids : Seq[Long]      => store.pathToSubs = store.pathToSubs.updated(path, ids - id)
+              case Seq(single)   => store.pathToSubs = store.pathToSubs - path
+              case ids @ Seq(_*) => store.pathToSubs = store.pathToSubs.updated(path, ids - id)
             }
           }
           true
@@ -163,7 +163,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
     }
   }
 
-  case object getAndUpdateId extends TransactionWithQuery[SubIds, Long] {
+  case object GetAndUpdateId extends TransactionWithQuery[SubIds, Long] {
     override def executeAndQuery(p: SubIds, date: Date): Long = {
       p.id = p.id + 1
       p.id
@@ -198,7 +198,9 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
 
       if(scheduleTime > 0L){
         val newSubs: HashMap[Path, Vector[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Vector(eventSub))): _*)
-        store.eventSubs = store.eventSubs.merged[Vector[EventSub]](newSubs)((a, b) => (a._1, a._2 ++ b._2))
+        store.eventSubs = store.eventSubs.merged[Vector[EventSub]](newSubs){
+          case ((path, subsA), (_, subsB)) => (path, subsA ++ subsB)
+        }
       }
     }
   }

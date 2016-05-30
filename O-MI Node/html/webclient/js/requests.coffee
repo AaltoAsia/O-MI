@@ -406,7 +406,6 @@ requestsExt = (WebOmi) ->
       add : (path) ->
         # imports
         o = WebOmi.omi
-        fl = WebOmi.formLogic
 
         odfTreeNode = $ jqesc path
         req = currentParams.requestDoc
@@ -436,7 +435,6 @@ requestsExt = (WebOmi) ->
       remove : (path) ->
         # imports
         o = WebOmi.omi
-        fl = WebOmi.formLogic
 
         req = currentParams.requestDoc
         if currentParams.msg and req?

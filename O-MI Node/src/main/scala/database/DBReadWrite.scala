@@ -238,7 +238,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether something was removed
    */
   //@deprecated("For testing only.", "Since implemented.")
-  trait Hole
   def remove(path: Path): Future[Any] = {// : Future[DBIOrw[Seq[Any]]] ?
     val resultValue = for{
       hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
