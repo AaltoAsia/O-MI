@@ -266,6 +266,6 @@ case class OdfInfoItem(
 case class OdfDescription(
     value: String,
     lang: Option[String] = None) {
-  implicit def asDescription = Description(value, lang, Map.empty)
+  implicit def asDescription : Description= Description(value, lang, Map.empty)
 }
 

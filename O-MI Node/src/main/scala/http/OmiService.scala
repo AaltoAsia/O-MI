@@ -16,7 +16,7 @@ package http
 import java.nio.file.{Files, Paths}
 
 import accessControl.AuthAPIService
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, ActorContext}
 import akka.event.LoggingAdapter
 import http.Authorization._
 import parsing.OmiParser
@@ -58,7 +58,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
    * the HttpService trait defines only one abstract member, which
    * connects the services environment to the enclosing actor or test
    */
-  def actorRefFactory = context
+  def actorRefFactory : ActorContext= context
 
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
@@ -68,7 +68,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
    * other things here, like request stream processing
    * or timeout handling
    */
-  def receive = runRoute(myRoute)
+  def receive : Actor.Receive = runRoute(myRoute)
 
 
 }

@@ -67,12 +67,6 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
    */
   protected[this] lazy val pathOwners: scala.collection.mutable.Map[Path,AgentName] =
     getConfigsOwnerships()
-  //getConfigsOwnerships()
-  receiver {
-    //Write can be received either from RequestHandler or from InternalAgent
-    case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
-    //case registerOwnership: RegisterOwnership => sender() ! handleRegisterOwnership(registerOwnership)  
-  }
   protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
     paths.collect{
       case path  => 
@@ -146,7 +140,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem{
       }
     }
 
-  private def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
+  protected def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
     val senderName = sender().path.name
     log.debug( s"Received WriteRequest from $senderName.")
     val odfObjects = write.odf
