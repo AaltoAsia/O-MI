@@ -222,6 +222,7 @@ object OmiParser extends Parser[OmiParseResult] {
   } match {
     case Success( requests: Iterable[OmiRequest] ) => Right(requests)
     case Failure(error : ParseError) =>  Left(Iterable(error))
+    case Failure(t: Throwable) => throw t
   }
 
   private[this] def parseMsg(msgO: Option[xmlGen.scalaxb.DataRecord[Any]], format: Option[String]): OdfParseResult = msgO match{

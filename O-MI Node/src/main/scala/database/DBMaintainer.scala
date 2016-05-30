@@ -36,8 +36,8 @@ class DBMaintainer(val dbobject: DB)
   type Hole
   private def takeSnapshot: FiniteDuration = {
     def trySnapshot[T](p: Prevayler[T], errorName: String): Unit = {
-      Try[File]{
-        p.takeSnapshot()
+      Try[Unit]{
+        p.takeSnapshot() // returns snapshot File
       }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
     }
 

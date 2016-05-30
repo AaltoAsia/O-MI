@@ -174,14 +174,14 @@ trait OmiNodeTables extends DBBase {
   class DBNodesTable(tag: Tag)
     extends Table[DBNode](tag, "HIERARCHYNODES") {
     /** This is the PrimaryKey */
-    def id: Column[Int] = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
-    def path: Column[Path] = column[Path]("PATH")
-    def leftBoundary: Column[Int] = column[Int]("LEFTBOUNDARY")
-    def rightBoundary: Column[Int] = column[Int]("RIGHTBOUNDARY")
-    def depth: Column[Int] = column[Int]("DEPTH")
-    def description: Column[String] = column[String]("DESCRIPTION")
-    def pollRefCount: Column[Int] = column[Int]("POLLREFCOUNT")
-    def isInfoItem: Column[Boolean] = column[Boolean]("ISINFOITEM")
+    def id: Rep[Int] = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
+    def path: Rep[Path] = column[Path]("PATH")
+    def leftBoundary: Rep[Int] = column[Int]("LEFTBOUNDARY")
+    def rightBoundary: Rep[Int] = column[Int]("RIGHTBOUNDARY")
+    def depth: Rep[Int] = column[Int]("DEPTH")
+    def description: Rep[String] = column[String]("DESCRIPTION")
+    def pollRefCount: Rep[Int] = column[Int]("POLLREFCOUNT")
+    def isInfoItem: Rep[Boolean] = column[Boolean]("ISINFOITEM")
 
     def pathIndex: Index = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
 
@@ -196,7 +196,7 @@ trait OmiNodeTables extends DBBase {
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
-    def hierarchyId: Column[Int] = column[Int]("HIERARCHYID")
+    def hierarchyId: Rep[Int] = column[Int]("HIERARCHYID")
     def hierarchy: ForeignKeyQuery[DBNodesTable, DBNode] = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
   }
@@ -214,10 +214,10 @@ trait OmiNodeTables extends DBBase {
     val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
     //def hierarchyId = column[Int]("HIERARCHYID")
-    def id: Column[Long] = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
-    def timestamp: Column[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
-    def value: Column[String] = column[String]("VALUE")
-    def valueType: Column[String] = column[String]("VALUETYPE")
+    def id: Rep[Long] = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
+    def timestamp: Rep[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
+    def value: Rep[String] = column[String]("VALUE")
+    def valueType: Rep[String] = column[String]("VALUETYPE")
     def idx1: Index = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
     def idx2: Index = index("timestamp", timestamp, unique = false)  //index on timestmaps
     /** Primary Key: (hierarchyId, timestamp) */
@@ -234,11 +234,11 @@ trait OmiNodeTables extends DBBase {
   class PollSubsTable(tag: Tag)
     extends Table[SubValue](tag, "POLLSUBVALUES") {
     /** This is the PrimaryKey */
-    def subId: Column[Long] = column[Long]("SUBID")
-    def path: Column[Path] = column[Path]("PATH")
-    def timestamp: Column[Timestamp] = column[Timestamp]("TIME")
-    def value: Column[String] = column[String]("VALUE")
-    def valueType: Column[String] = column[String]("VALUETYPE")
+    def subId: Rep[Long] = column[Long]("SUBID")
+    def path: Rep[Path] = column[Path]("PATH")
+    def timestamp: Rep[Timestamp] = column[Timestamp]("TIME")
+    def value: Rep[String] = column[String]("VALUE")
+    def valueType: Rep[String] = column[String]("VALUETYPE")
 
     // Every table needs a * projection with the same type as the table's type parameter
     def * : ProvenShape[SubValue] = ( subId, path, timestamp, value, valueType) <> (

@@ -41,7 +41,7 @@ sealed trait OdfRequest {
 /**
   * Trait for subscription like classes. Offers a common interface for subscription types.
   */
-trait SubLike extends OmiRequest {
+trait SubLike {
   // Note: defs can be implemented also as val and lazy val
   def interval: Duration
   def ttl: Duration
@@ -52,14 +52,6 @@ trait SubLike extends OmiRequest {
   def isImmortal: Boolean  = ! ttl.isFinite
   require(interval == -1.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
-}
-
-/** Request for getting data for current interval.
-  * Used for subscription callbacks.
-  **/
-case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-  def ttl: Duration = sub.ttl
-  def callback: Option[String] = sub.callback
 }
 
 /** One-time-read request

@@ -253,7 +253,8 @@ with CancelHandler{
 
         dbConnection.remove(parentPath)
         node match {
-          case objs: OdfObjects => Await.ready(dbConnection.addRootR, 2 seconds)
+          case objs: OdfObjects => Await.ready(dbConnection.addRootR, 2.seconds)
+          case _ => //noop
         }
         true
 
