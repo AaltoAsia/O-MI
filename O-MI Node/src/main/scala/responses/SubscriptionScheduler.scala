@@ -48,7 +48,7 @@ class SubscriptionScheduler {
 
   private def createRunnable(message: Any): Runnable = new Runnable() {def run() = println(message)}
 
-  def scheduleOnce(timeout: Int, message: Any) = {
+  def scheduleOnce(timeout: Int, message: Any) : Cancelable= {
     val task: Runnable = createRunnable(message)
     scheduler.schedule(task, timeout, SECONDS)
   }

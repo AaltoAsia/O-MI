@@ -20,7 +20,8 @@ import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
 import javax.xml.parsers.SAXParserFactory
-import scala.xml.{XML, Node}
+import scala.xml.{XML, Node, Elem }
+import scala.xml.factory.XMLLoader
 import scala.util.{Try, Success, Failure}
 import java.util.Date
 import java.sql.Timestamp
@@ -34,7 +35,7 @@ import java.io.{StringReader, IOException, File}
 abstract trait Parser[Result] {
 
   // Secure parser that has a fix for xml external entity attack (and xml bomb)
-  def XMLParser = {
+  def XMLParser : XMLLoader[Elem] = {
     val spf = SAXParserFactory.newInstance()
     spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
     spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -79,5 +80,5 @@ abstract trait Parser[Result] {
     }
   }
 
-  def currentTime() = new Timestamp( new Date().getTime ) 
+  def currentTime() : Timestamp= new Timestamp( new Date().getTime ) 
 }

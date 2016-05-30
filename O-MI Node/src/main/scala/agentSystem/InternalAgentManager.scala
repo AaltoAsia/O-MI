@@ -70,8 +70,8 @@ trait InternalAgentManager extends BaseAgentSystem {
     case  restart: ReStartAgentCmd  => handleRestart( restart )
     case ListAgentsCmd() => sender() ! agents.values.toSeq
   } 
-  def handleStart( start: StartAgentCmd ) = {
-     val agentName = start.agent
+  protected def handleStart( start: StartAgentCmd ) = {
+    val agentName = start.agent
     sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
     agentInfo.running match{
       case false=>
@@ -87,40 +87,40 @@ trait InternalAgentManager extends BaseAgentSystem {
         true,
         agentInfo.ownedPaths
       )
-      msg
-      case true =>
-      val msg = s"Agent $agentName was already Running. 're-start' should be used to restart running Agents"
-      log.info(msg)
-      msg
-    }
+    msg
+    case true =>
+    val msg = s"Agent $agentName was already Running. 're-start' should be used to restart running Agents"
+    log.info(msg)
+    msg
   }
 }
-def handleStop( stop: StopAgentCmd ) = {
+}
+protected def handleStop( stop: StopAgentCmd ) = {
   val agentName = stop.agent
   sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
   if (agentInfo.running) {
-      log.warning(s"Stopping: " + agentInfo.name)
-      val result = agentInfo.agent ? Stop()
-      agents += agentInfo.name -> AgentInfo(
-        agentInfo.name,
-        agentInfo.classname,
-        agentInfo.config,
-        agentInfo.agent,
-        false,
-        agentInfo.ownedPaths
-      )
-      val msg = s"Agent $agentName stopped succesfully."
-      log.info(msg)
-      msg
-  } else {
-      val msg = s"Agent $agentName was already stopped."
-      log.info(msg)
-      msg
-    }
+    log.warning(s"Stopping: " + agentInfo.name)
+    val result = agentInfo.agent ? Stop()
+    agents += agentInfo.name -> AgentInfo(
+      agentInfo.name,
+      agentInfo.classname,
+      agentInfo.config,
+      agentInfo.agent,
+      false,
+      agentInfo.ownedPaths
+    )
+  val msg = s"Agent $agentName stopped succesfully."
+  log.info(msg)
+  msg
+} else {
+  val msg = s"Agent $agentName was already stopped."
+  log.info(msg)
+  msg
+}
   }
 }
 
-def handleRestart( restart: ReStartAgentCmd ) = {
+protected def handleRestart( restart: ReStartAgentCmd ) = {
   val agentName = restart.agent
   sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
   agentInfo.running match{

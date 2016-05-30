@@ -31,10 +31,10 @@ object Results{
     **/
   def internalError(msg: String = "Internal error") : RequestResultType = 
       Results.simple("500", Some("Internal server error: " + msg))
-  def internalError(e: Throwable) =
+    def internalError(e: Throwable): RequestResultType =
       Results.simple("500", Some("Internal server error: " + e.getMessage()))
 
-  def timeOutError(message: String = "") = 
+  def timeOutError(message: String = ""): RequestResultType = 
     Results.simple("503",
       Some(s"TTL timeout, consider increasing TTL or is the server overloaded? $message"))
 
