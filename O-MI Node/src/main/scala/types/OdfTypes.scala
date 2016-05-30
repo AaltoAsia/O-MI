@@ -130,7 +130,6 @@ object `package` {
       case objs: OdfObjects =>
         objs
 
-      case newType => throw new MatchError(newType)
     }
   }
 

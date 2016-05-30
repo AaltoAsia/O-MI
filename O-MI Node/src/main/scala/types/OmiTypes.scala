@@ -32,43 +32,43 @@ object `package` {
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
 }
 
-  /**
-   * Trait that represents any Omi request. Provides some data that are common
-   * for all omi requests.
-   */
-  sealed trait OmiRequest {
-    def ttl: Duration
-    def callback: Option[String]
-    def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
-  }
-  sealed trait PermissiveRequest
-  sealed trait OdfRequest {
-    def odf : OdfObjects
-  }
+/**
+  * Trait that represents any Omi request. Provides some data that are common
+  * for all omi requests.
+  */
+sealed trait OmiRequest {
+  def ttl: Duration
+  def callback: Option[String]
+  def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
+}
+sealed trait PermissiveRequest
+sealed trait OdfRequest {
+  def odf : OdfObjects
+}
 
-  /**
-   * Trait for subscription like classes. Offers a common interface for subscription types.
-   */
-  trait SubLike extends OmiRequest {
-    // Note: defs can be implemented also as val and lazy val
-    def interval: Duration
-    def ttl: Duration
-    def isIntervalBased : Boolean  = interval >= 0.milliseconds
-    def isEventBased: Boolean = interval == -1.seconds
-    def ttlToMillis: Long = ttl.toMillis
-    def intervalToMillis: Long = interval.toMillis
-    def isImmortal: Boolean  = ! ttl.isFinite
-    require(interval == -1.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
-    require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
-  }
+/**
+  * Trait for subscription like classes. Offers a common interface for subscription types.
+  */
+trait SubLike extends OmiRequest {
+  // Note: defs can be implemented also as val and lazy val
+  def interval: Duration
+  def ttl: Duration
+  def isIntervalBased : Boolean  = interval >= 0.milliseconds
+  def isEventBased: Boolean = interval == -1.seconds
+  def ttlToMillis: Long = ttl.toMillis
+  def intervalToMillis: Long = interval.toMillis
+  def isImmortal: Boolean  = ! ttl.isFinite
+  require(interval == -1.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
+  require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
+}
 
 /** Request for getting data for current interval.
   * Used for subscription callbacks.
   **/
-  case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
-    def ttl: Duration = sub.ttl
-    def callback: Option[String] = sub.callback
-  }
+case class SubDataRequest(sub: database.DBSub) extends OmiRequest {
+  def ttl: Duration = sub.ttl
+  def callback: Option[String] = sub.callback
+}
 
 /** One-time-read request
   *

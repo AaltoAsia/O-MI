@@ -41,7 +41,7 @@ trait AuthApi {
           case r: PermissiveRequest =>  // Write or Response
             isAuthorizedForType(httpRequest, true, paths)
 
-          case r => // All else odf containing requests (reads)
+          case r : OdfRequest => // All else odf containing requests (reads)
             isAuthorizedForType(httpRequest, false, paths)
 
       }
@@ -111,11 +111,8 @@ trait AuthApiProvider extends AuthorizationExtension {
                     case r: ResponseRequest     => Some(r.copy(results = 
                       asJavaIterable(Iterable(r.results.head.copy(odf = Some(newOdf)))) // TODO: make better copy logic?
                     ))
-                    case r: Product => throw new NotImplementedError(
-                      s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.productPrefix}' not yet implemented in O-MI node.")
-                    case m => 
-                      (new MatchError(m)).printStackTrace()
-                      None
+                    case r: AnyRef => throw new NotImplementedError(
+                      s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.getClass.getSimpleName}' not yet implemented in O-MI node.")
                   }
                 case _ => None
               }

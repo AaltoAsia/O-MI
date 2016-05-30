@@ -178,7 +178,7 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
     provide{
       case r: PermissiveRequest =>
         None
-      case r =>
+      case r: OmiRequest =>
         Some(r)
     }
   )
