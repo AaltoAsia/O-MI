@@ -316,7 +316,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
             } yield result
 
-            case n =>
+            case n : Option[DBNode ]=>
               log.warn(s"Requested '$path' as InfoItem, found '$n'")
               DBIO.successful(None) // Requested object was not found or not infoitem, TODO: think about error handling
           }
@@ -397,7 +397,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     results.map{opt => opt match {
       case Some(OdfObjects(x,_)) if x.isEmpty => None
-      case default                            => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
+      case default : Option[OdfObjects ]  => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
     }}
 
   }

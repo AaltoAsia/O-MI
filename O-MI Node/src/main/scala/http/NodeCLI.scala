@@ -139,7 +139,7 @@ remove <path>
             trueSender ! Write(ByteString(msg +"\n"))
           }
           future.recover{
-            case a =>
+            case a : Throwable =>
               trueSender ! Write(ByteString("Command failure unknown.\n"))
           }
         case Array("stop", agent) => 
