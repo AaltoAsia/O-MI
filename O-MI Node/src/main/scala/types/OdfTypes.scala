@@ -161,6 +161,7 @@ sealed trait OdfNode {
 }
 
 /** Class presenting O-DF Objects structure*/
+@SerialVersionUID(-8474206640435798172L)
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode {

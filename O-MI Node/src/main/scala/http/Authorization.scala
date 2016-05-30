@@ -118,7 +118,7 @@ object Authorization {
   /** 
    *  Core trait for authorization support in Stackable trait pattern.
    *  One of these need to be extended before stackable extension traits.
-   *  Doesn't grant any permissions to anyone.
+   *  Doesn't grant permissions to anyone.
    */
   trait ExtensibleAuthorization extends AuthorizationExtension {
     /**

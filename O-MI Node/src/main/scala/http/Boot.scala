@@ -76,7 +76,8 @@ trait Starter {
           Some(OdfDescription(numDescription))
         ))
       
-      val write = WriteRequest( 60  seconds, objects)
+      val writeTestTTL = 10 minutes
+      val write = WriteRequest( writeTestTTL, objects)
       var promiseResult = PromiseResult()
       agentSystem ! PromiseWrite( promiseResult, write )
       val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
@@ -89,7 +90,7 @@ trait Starter {
       future.onFailure{
         case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
-      Await.result(future, 60 seconds)
+      Await.result(future, writeTestTTL)
     }
   }
 
