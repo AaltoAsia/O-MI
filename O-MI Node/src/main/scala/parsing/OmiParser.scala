@@ -108,13 +108,13 @@ object OmiParser extends Parser[OmiParseResult] {
   }
 
   // fixes problem with duration: -1.0.seconds == -999999999 nanoseconds
-  def parseInterval(v: Double) =
+  protected def parseInterval(v: Double) =
   v match{
     case -1.0 =>  -1.seconds
     case w if w >= 0 => w.seconds
     case _ => throw new IllegalArgumentException("Illegal interval, only positive or -1 are allowed.")
   }
-  def parseTTL(v: Double)      =
+  protected def parseTTL(v: Double)      =
   v match{
     case -1.0 => Duration.Inf
     case 0.0 => Duration.Inf

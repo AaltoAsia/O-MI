@@ -99,7 +99,7 @@ class ExternalAgentHandler(
 
   /** Partial function for handling received messages.
     */
-  def receive = {
+  def receive : Actor.Receive = {
     case Received(data) =>
     { 
       val dataString = data.decodeString("UTF-8")
