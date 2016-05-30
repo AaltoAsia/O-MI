@@ -12,6 +12,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
+import scala.collection.mutable.{Queue => MutableQueue}
 import scala.xml._
 import scala.util.{Random, Try}
 import java.util.concurrent.TimeUnit
@@ -26,20 +27,18 @@ object ODFAgent extends PropsCreator{
 // Scala XML contains also parsing package
 class ODFAgent( override val config: Config) extends InternalAgent {
   protected val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
-	protected val odf : Option[OdfObjects]={
+	protected val odfQueue : MutableQueue[OdfObjects]= MutableQueue{
       val file =  new File(config.getString("file"))
       if( file.exists() && file.canRead() ){
         val xml = XML.loadFile(file)
         OdfParser.parse( xml) match {
-          case Left( errors ) =>{
+          case Left( errors ) =>
             log.warning(s"Odf has errors, $name could not be configured.")
             log.warning("ParseError: "+errors.mkString("\n"))
             throw CommandFailed("ParserErrer, view log.")
-          }
-          case Right(odfObjects) => {
-            Some(odfObjects ) 
+            
+          case Right(odfObjects) => odfObjects  
         }
-      }
       } else {
             log.warning(s"File $config did not exists or could not read it. $name could not be configured.")
             throw CommandFailed("ParserErrer, view log.")
@@ -49,9 +48,11 @@ class ODFAgent( override val config: Config) extends InternalAgent {
   case class Update()
 	protected val rnd: Random = new Random()
   protected def date = new java.util.Date();
-  protected var updateSchelude : Option[Cancellable] = None
+  private val  updateSchelude : MutableQueue[Cancellable] = MutableQueue.empty
   protected def start = Try{
-    updateSchelude = Some(context.system.scheduler.schedule(
+    // Schelude update and save job, for stopping
+    // Will send Update message to self every interval
+    updateSchelude.enqueue(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
       self,
@@ -61,7 +62,8 @@ class ODFAgent( override val config: Config) extends InternalAgent {
   }
 
   protected def update() : Unit = {
-    odf.map{
+    odfQueue.dequeueFirst{o: OdfObjects => true}
+    .foreach{
       objects =>
       val promiseResult = PromiseResult()
       val infoItems = getInfoItems(objects)
@@ -97,23 +99,25 @@ class ODFAgent( override val config: Config) extends InternalAgent {
         case _ =>
         log.debug(s"$name pushed data successfully.")
       }
-      newObjects
+      odfQueue.enqueue(newObjects)
     } 
   }
 
   protected def receiver={
     case Update => update
   }
-  protected def stop = Try{updateSchelude match{
+  protected def stop = Try{updateSchelude.dequeueFirst{ j => true } match{
+      //If agent has scheluded update, cancel job
       case Some(job) =>
       job.cancel() 
+      //Check if job was cancelled
       job.isCancelled  match {
       case true =>
         CommandSuccessful()
       case false =>
         throw CommandFailed("Failed to stop agent.")
     }
-    case None =>throw  CommandFailed("Failed to stop agent.")
+    case None => throw CommandFailed("Failed to stop agent, no job found.")
   }}
   
   private def genValue(sensorType: String, oldval: Double ) : String = {

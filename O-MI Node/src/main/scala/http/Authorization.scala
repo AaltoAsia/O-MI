@@ -192,11 +192,10 @@ trait LogUnauthorized extends AuthorizationExtension {
   private type UserInfo = Option[java.net.InetAddress]
   private def extractIp: Directive1[UserInfo] = clientIP map (_.toOption)
   private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {
-    case r =>
+    case r : OmiRequest =>
       log.warning(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
       None
-    }
-  }
+  }}
 
 
   abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(

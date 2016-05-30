@@ -79,7 +79,7 @@ trait Starter {
         ))
       
       val write = WriteRequest( 60  seconds, objects)
-      var promiseResult = PromiseResult()
+      val promiseResult = PromiseResult()
       agentSystem ! PromiseWrite( promiseResult, write )
       val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
       future.onSuccess{
