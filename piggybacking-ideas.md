@@ -3,20 +3,27 @@ Strategies
 
 Piggybacking requires at least:
 
-1. Target user (or other way to identify the target, IP can change but it can be a dynamic DNS address)
-2. Request or some way to tell which requests to send to the target
+1. Target user (or other way to identify the target, IP can change but it can be a dynamic DNS address).
+2. Request or some way to tell what to send to the target.
+3. Some way to return the result from piggybacking.
+
+Strategies:
 
 A. Per request
-  - Some new O-MI attribute?
+  - The whole request is forwarded to the piggybacking target
 
 B. Per path
-  - Some O-DF paths are marked to be piggybacked to some user
-  - How marking happens?
-  - What interface is used to change the configuration? Is it needed "at runtime"
+  - Some O-DF paths are marked to be piggybacked to some piggybacking target.
+  - How marking happens? What interface is used to change the configuration?
+  - Is it needed to be changed at run time "on-demand"?
+
+Results can be sent as the result to the original piggybacking request such that the user needs to leave the connection open (http keepalive might work). This causes problems only in the case of mobile original sender where connection might be lost momentarily. Result might not be possible to send back but it we could piggyback the results also if user is known.
 
 
 Escaped O-MI message inside of an InfoItem value
 ================================================
+
+Strategy A.
 
 Send
 ----
@@ -73,11 +80,15 @@ Problems
 2. Requires some naming convention for InfoItems
 
 
-Responsible agent piggybacking
-==============================
+Path/requestID mapping to piggyback targets
+===========================================
 
-Send Write
-----------
+Strategy B.
+
+Could use some of the code from responsible internal agents:
+
+Responsible agent piggybacking: Send Write
+------------------------------------------
 
 1. Write to paths that are marked as piggybackable in the O-MI node configuration.
 2. Behind the scenes the configuration is actually an Intrnal Agent that is responsible for the piggybackable InfoItems.
@@ -89,17 +100,31 @@ Send Write
 Good
 ----
 
-1. Clean interface and straightforward configuration.
+1. Clean interface and straightforward usage. Just send O-MI messages as normal the responses might just have more latency.
+2. Other requests can use the same path-target mapping to figure out the need of piggybacking and Subscription related messages could save the piggy-backed requestIDs to be mapped also.
 
 Problems
 --------
 
-1. No support for other requests than write at the moment.
+1. How the configuration happens? Does it need to be done "on-demand"?
+
 
 
 New argument for piggybacking
------------------------------
+=============================
 
+Good
+----
+
+1. Clear indication where the request is wanted to be sent. Works like a relay (like `nodeList` but takes user instead).
+2. Request can be independent of the O-DF tree of our O-MI node if needed.
+
+Bad
+---
+
+Depends on the use cases.
+1. User needs to know the target user identifier (vs. strategy B: per path piggybacking, where targets can be saved to the O-MI Node)
+2. Requires a new (custom) attribute to O-MI.
 
 
 
