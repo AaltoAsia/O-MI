@@ -49,6 +49,7 @@
 	<script type="text/javascript" src="js/formlogic.js"></script>
 	<script type="text/javascript" src="js/omi.js"></script>
 	<script type="text/javascript" src="js/newInfoItemForm.js"></script>
+	<script type="text/javascript" src="js/usermenu.js"></script>
 
 </head>
 <body>
@@ -88,6 +89,14 @@
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">User<span class="caret"></span></a>
+            <ul class="dropdown-menu" id="user_menu">
+              <!-- <li id="username_label"> <a>Username</a> </li>
+							<li role="separator" class="divider"></li>
+              <li> <a href="../" id="user_action_link">Logout</a> </li> -->
+            </ul>
+          </li>
+					<li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation<span class="caret"></span></a>
             <ul class="dropdown-menu">
               <li> <a target="_blank" href="../ImplementationDetails.html">Example requests and results</a> </li>
@@ -99,7 +108,7 @@
             </ul>
           </li>
           <li>
-            <a class="navbar-brand" href="#" style="display:none;">Subscriptions 
+            <a class="navbar-brand" href="#" style="display:none;">Subscriptions
               <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
             </a>
           </li>
@@ -385,50 +394,50 @@
                     <label class="control-label col-md-6">Type
                       <select name="valuetype" class="form-control"
                         data-toggle="tooltip" title="Optionally select xml type to be saved as a metadata for this value." data-placement="top">
-                        <option value="">[no type]</option>               
-                        <option>int</option>               
-                        <option>byte</option>              
-                        <option>short</option>             
-                        <option>long</option>              
-                        <option>float</option>             
-                        <option>double</option>            
-                        <option>integer</option>           
+                        <option value="">[no type]</option>
+                        <option>int</option>
+                        <option>byte</option>
+                        <option>short</option>
+                        <option>long</option>
+                        <option>float</option>
+                        <option>double</option>
+                        <option>integer</option>
                         <option>nonPositiveInteger</option>
-                        <option>negativeInteger</option>   
+                        <option>negativeInteger</option>
                         <option>nonNegativeInteger</option>
-                        <option>positiveInteger</option>   
-                        <option>unsignedLong</option>      
-                        <option>unsignedInt</option>       
-                        <option>unsignedShort</option>     
-                        <option>unsignedByte</option>      
-                        <option>decimal</option>           
-                        <option>boolean</option>           
-                        <option selected>string</option>            
-                        <option>normalizedString</option>  
-                        <option>token</option>             
-                        <option>language</option>          
-                        <option>Name</option>              
-                        <option>NCName</option>            
-                        <option>NMTOKEN</option>           
-                        <option>NMTOKENS</option>          
-                        <option>ID</option>                
-                        <option>IDREF</option>             
-                        <option>IDREFS</option>            
-                        <option>ENTITY</option>            
-                        <option>ENTITIES</option>          
-                        <option>hexBinary</option>         
-                        <option>base64Binary</option>      
-                        <option>anyURI</option>            
-                        <option>QName</option>             
-                        <option>NOTATION</option>          
-                        <option>duration</option>          
-                        <option>dateTime</option>          
-                        <option>time</option>              
-                        <option>gYearMonth</option>        
-                        <option>gYear</option>             
-                        <option>gMonthDay</option>         
-                        <option>gDay</option>              
-                        <option>gMonth</option>            
+                        <option>positiveInteger</option>
+                        <option>unsignedLong</option>
+                        <option>unsignedInt</option>
+                        <option>unsignedShort</option>
+                        <option>unsignedByte</option>
+                        <option>decimal</option>
+                        <option>boolean</option>
+                        <option selected>string</option>
+                        <option>normalizedString</option>
+                        <option>token</option>
+                        <option>language</option>
+                        <option>Name</option>
+                        <option>NCName</option>
+                        <option>NMTOKEN</option>
+                        <option>NMTOKENS</option>
+                        <option>ID</option>
+                        <option>IDREF</option>
+                        <option>IDREFS</option>
+                        <option>ENTITY</option>
+                        <option>ENTITIES</option>
+                        <option>hexBinary</option>
+                        <option>base64Binary</option>
+                        <option>anyURI</option>
+                        <option>QName</option>
+                        <option>NOTATION</option>
+                        <option>duration</option>
+                        <option>dateTime</option>
+                        <option>time</option>
+                        <option>gYearMonth</option>
+                        <option>gYear</option>
+                        <option>gMonthDay</option>
+                        <option>gDay</option>
+                        <option>gMonth</option>
                       </select>
                     </label>
                     <div class="col-md-6">
@@ -469,50 +478,50 @@
                   <label class="control-label col-md-12">Type
                     <select name="metadatatype" class="form-control"
                       data-toggle="tooltip" title="Optionally select a type for metadata value. It will just be extra metadata." data-placement="top">
-                      <option value="">[no type]</option>               
-                      <option>int</option>               
-                      <option>byte</option>              
-                      <option>short</option>             
-                      <option>long</option>              
-                      <option>float</option>             
-                      <option>double</option>            
-                      <option>integer</option>           
+                      <option value="">[no type]</option>
+                      <option>int</option>
+                      <option>byte</option>
+                      <option>short</option>
+                      <option>long</option>
+                      <option>float</option>
+                      <option>double</option>
+                      <option>integer</option>
                       <option>nonPositiveInteger</option>
-                      <option>negativeInteger</option>   
+                      <option>negativeInteger</option>
                       <option>nonNegativeInteger</option>
-                      <option>positiveInteger</option>   
-                      <option>unsignedLong</option>      
-                      <option>unsignedInt</option>       
-                      <option>unsignedShort</option>     
-                      <option>unsignedByte</option>      
-                      <option>decimal</option>           
-                      <option>boolean</option>           
-                      <option selected>string</option>            
-                      <option>normalizedString</option>  
-                      <option>token</option>             
-                      <option>language</option>          
-                      <option>Name</option>              
-                      <option>NCName</option>            
-                      <option>NMTOKEN</option>           
-                      <option>NMTOKENS</option>          
-                      <option>ID</option>                
-                      <option>IDREF</option>             
-                      <option>IDREFS</option>            
-                      <option>ENTITY</option>            
-                      <option>ENTITIES</option>          
-                      <option>hexBinary</option>         
-                      <option>base64Binary</option>      
-                      <option>anyURI</option>            
-                      <option>QName</option>             
-                      <option>NOTATION</option>          
-                      <option>duration</option>          
-                      <option>dateTime</option>          
-                      <option>time</option>              
-                      <option>gYearMonth</option>        
-                      <option>gYear</option>             
-                      <option>gMonthDay</option>         
-                      <option>gDay</option>              
-                      <option>gMonth</option>            
+                      <option>positiveInteger</option>
+                      <option>unsignedLong</option>
+                      <option>unsignedInt</option>
+                      <option>unsignedShort</option>
+                      <option>unsignedByte</option>
+                      <option>decimal</option>
+                      <option>boolean</option>
+                      <option selected>string</option>
+                      <option>normalizedString</option>
+                      <option>token</option>
+                      <option>language</option>
+                      <option>Name</option>
+                      <option>NCName</option>
+                      <option>NMTOKEN</option>
+                      <option>NMTOKENS</option>
+                      <option>ID</option>
+                      <option>IDREF</option>
+                      <option>IDREFS</option>
+                      <option>ENTITY</option>
+                      <option>ENTITIES</option>
+                      <option>hexBinary</option>
+                      <option>base64Binary</option>
+                      <option>anyURI</option>
+                      <option>QName</option>
+                      <option>NOTATION</option>
+                      <option>duration</option>
+                      <option>dateTime</option>
+                      <option>time</option>
+                      <option>gYearMonth</option>
+                      <option>gYear</option>
+                      <option>gMonthDay</option>
+                      <option>gDay</option>
+                      <option>gMonth</option>
                     </select>
                   </label>
                   <label class="control-label col-md-12">description
