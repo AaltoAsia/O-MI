@@ -1,13 +1,14 @@
-Strategies
-==========
+Requirements?
+============
 
 Piggybacking requires at least:
 
-1. Target user (or other way to identify the target, IP can change but it can be a dynamic DNS address).
-2. Request or some way to tell what to send to the target.
-3. Some way to return the result from piggybacking.
+1. _Target_ user (or other way to identify the target, IP can change but it can be a dynamic DNS address).
+2. _Request_ or some way to tell what to send to the target.
+3. Some _way to return the result_ from piggybacking.
 
-Strategies:
+Strategies
+----------
 
 **A) Per request**
   - The whole request is forwarded to the piggybacking target
@@ -17,13 +18,16 @@ Strategies:
   - How marking happens? What interface is used to change the configuration?
   - Is it needed to be changed at run time "on-demand"?
 
+Results
+-------
+
 Results can be sent as the result to the original piggybacking request such that the user needs to leave the connection open (http keepalive might work). This causes problems only in the case of mobile original sender where connection might be lost momentarily. Result might not be possible to send back but it we could piggyback the results also if user is known.
 
 
 Escaped O-MI message inside of an InfoItem value
 ================================================
 
-Strategy A.
+**Strategy A.**
 
 Send
 ----
@@ -80,10 +84,10 @@ Problems
 2. Requires some naming convention for InfoItems
 
 
-Path/requestID mapping to piggyback targets
-===========================================
+Configured Path/requestID mapping to piggyback targets
+======================================================
 
-Strategy B.
+**Strategy B.**
 
 Could use some of the code from responsible internal agents:
 
@@ -112,6 +116,8 @@ Problems
 
 New argument for piggybacking
 =============================
+
+**Strategy A.**
 
 Good
 ----
