@@ -1,3 +1,17 @@
+Strategies
+==========
+
+Piggybacking requires at least:
+1. Target user (or other way to identify the target, IP can change but it can be a dynamic DNS address)
+2. Request or some way to tell which requests to send to the target
+
+A. Per request
+  - Some new O-MI attribute?
+B. Per path
+  - Some O-DF paths are marked to be piggybacked to some user
+  - How marking happens?
+  - What interface is used to change the configuration? Is it needed "at runtime"
+
 
 Escaped O-MI message inside of an InfoItem value
 ================================================
