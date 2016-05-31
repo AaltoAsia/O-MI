@@ -129,6 +129,7 @@ Bad
 ---
 
 Depends on the use cases.
+
 1. User needs to know the target user identifier (vs. strategy B: per path piggybacking, where targets can be saved to the O-MI Node)
 2. Requires a new (custom) attribute to O-MI.
 
