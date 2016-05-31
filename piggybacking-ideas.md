@@ -9,10 +9,10 @@ Piggybacking requires at least:
 
 Strategies:
 
-A. Per request
+**A) Per request**
   - The whole request is forwarded to the piggybacking target
 
-B. Per path
+**B) Per path**
   - Some O-DF paths are marked to be piggybacked to some piggybacking target.
   - How marking happens? What interface is used to change the configuration?
   - Is it needed to be changed at run time "on-demand"?
