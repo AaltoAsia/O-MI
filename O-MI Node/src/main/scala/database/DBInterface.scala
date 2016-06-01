@@ -221,7 +221,7 @@ class TestDB(val name:String = "") extends DB
   /**
   * Should be called after tests.
   */
-  def destroy() = {
+  def destroy(): Unit = {
     println("Removing TestDB: " + name)
     db.close()
   }

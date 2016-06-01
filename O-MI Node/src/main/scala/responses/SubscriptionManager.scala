@@ -99,7 +99,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
 
 
-  def receive : Actor.Receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
@@ -209,7 +209,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                 }
 
               }
-              def calcData = {//Refactor
+              val calculatedData = {//Refactor
                 val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
                 val lastPolled = pollInterval.lastPolled.getTime()
                 val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
@@ -237,7 +237,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                   Some(buffer.toVector)
                 } else None
               }
-              val calculatedData = calcData
 
                 calculatedData.map(cData => path -> cData)
               }).flatMap{ n => //flatMap removes None values
@@ -356,7 +355,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
       dbConnection.removePollSub(id)
       removePS
     } else {
-      removeIS || removeES 
+      removeIS || removeES
     }
   }
 

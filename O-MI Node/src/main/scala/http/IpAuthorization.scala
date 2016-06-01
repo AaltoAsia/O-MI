@@ -21,7 +21,7 @@ import spray.routing.Directive1
 import types.OmiTypes._
 
 import Boot.settings
-import Authorization.AuthorizationExtension
+import http.Authorization.{CombinedTest, AuthorizationExtension}
 
 // TODO: maybe move to Authorization package
 
@@ -83,7 +83,7 @@ trait IpAuthorization extends AuthorizationExtension {
     case _ => None
    }
 
-  abstract override def makePermissionTestFunction =
+  abstract override def makePermissionTestFunction: CombinedTest =
     combineWithPrevious(
       super.makePermissionTestFunction,
       extractIp map ipHasPermission)

@@ -103,7 +103,7 @@ class OmiConfigExtension(config: Config) extends Extension {
 
 object Settings extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {
  
-  override def lookup : Settings.type = Settings
+  override def lookup: Settings.type = Settings
    
   override def createExtension(system: ExtendedActorSystem) : OmiConfigExtension =
     new OmiConfigExtension(system.settings.config)

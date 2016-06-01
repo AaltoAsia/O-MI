@@ -1,15 +1,14 @@
 package database
 
+import java.io.{File, FilenameFilter}
+
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.collection.JavaConverters._
+import org.prevayler.Prevayler
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-import java.io.{File, FilenameFilter}
-import org.prevayler.Prevayler
 
 object DBMaintainer{
   def props(dbobject: DB) : Props = Props( new DBMaintainer(dbobject) )  
@@ -23,7 +22,7 @@ class DBMaintainer(val dbobject: DB)
   case object TrimDB
   case object TakeSnapshot
   private val scheduler = context.system.scheduler
-  private val trimInterval = http.Boot.settings.trimInterval
+  private val trimInterval: FiniteDuration = http.Boot.settings.trimInterval
   private val snapshotInterval = http.Boot.settings.snapshotInterval
   log.info(s"scheduling databse trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)

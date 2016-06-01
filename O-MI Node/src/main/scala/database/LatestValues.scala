@@ -132,8 +132,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
           store.idToSub = store.idToSub - id
           pSub.paths.foreach{ path =>
             store.pathToSubs(path) match {
-              case Seq(single)   => store.pathToSubs = store.pathToSubs - path
-              case ids @ Seq(_*) => store.pathToSubs = store.pathToSubs.updated(path, ids - id)
+              case ids if ids.size <= 1 => store.pathToSubs = store.pathToSubs - path
+              case ids => store.pathToSubs = store.pathToSubs.updated(path, ids - id)
             }
           }
           true
