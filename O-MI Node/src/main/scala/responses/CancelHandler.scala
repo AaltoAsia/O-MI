@@ -27,7 +27,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 
 
-trait CancelHandler extends OmiRequestHandler{
+trait CancelHandler extends OmiRequestHandlerBase{
   def subscriptionManager : ActorRef
 
   /** Method for handling CancelRequest.

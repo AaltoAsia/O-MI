@@ -13,7 +13,7 @@ import akka.actor.ActorRef
 import responses.OmiGenerator._
 import types.OmiTypes._
 
-trait WriteHandler extends OmiRequestHandler{
+trait WriteHandler extends OmiRequestHandlerBase{
   def agentSystem : ActorRef
   /** Method for handling WriteRequest.
     * @param write request
@@ -21,7 +21,6 @@ trait WriteHandler extends OmiRequestHandler{
     */
   def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
       handleTTL(write.ttl)
-
 
       val promiseResult = PromiseResult()
       agentSystem ! PromiseWrite(promiseResult, write)

@@ -28,7 +28,7 @@ import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
 import CallbackHandlers._
 import database._
 
-trait ResponseHandler extends OmiRequestHandler{
+trait ResponseHandler extends OmiRequestHandlerBase{
   def agentSystem : ActorRef
   /** Method for handling ResponseRequest.
     * @param response request

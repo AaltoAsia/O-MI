@@ -39,7 +39,7 @@ import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
 import CallbackHandlers._
 import database._
 
-trait SubscriptionHandler extends OmiRequestHandler{
+trait SubscriptionHandler extends OmiRequestHandlerBase{
   import http.Boot
   def subscriptionManager : ActorRef
 

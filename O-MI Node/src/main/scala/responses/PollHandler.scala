@@ -26,7 +26,7 @@ import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
 import CallbackHandlers._
 import database._
 
-trait PollHandler extends OmiRequestHandler{
+trait PollHandler extends OmiRequestHandlerBase{
   def subscriptionManager : ActorRef
 
   /** Method for handling PollRequest.
