@@ -1,5 +1,8 @@
 package responses
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 import akka.testkit.TestProbe
@@ -7,9 +10,6 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import spray.can.Http
 import testHelpers.{Actors, SystemTestCallbackServer}
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
   "CallbackHandler" should {

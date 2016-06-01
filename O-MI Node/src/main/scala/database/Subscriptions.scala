@@ -3,11 +3,11 @@ package database
 import java.sql.Timestamp
 import java.util.Date
 
-import org.prevayler._
-import types._
-
 import scala.collection.immutable.{HashMap, SortedSet}
 import scala.concurrent.duration.Duration
+
+import org.prevayler._
+import types._
 
 
 object IntervalSubOrdering extends Ordering[IntervalSub] {

@@ -13,24 +13,17 @@
 **/
 package database
 
-import scala.language.postfixOps
-
-import slick.driver.H2Driver.api._
 import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.collection.JavaConversions.{ asJavaIterable, iterableAsScalaIterable }
-import scala.collection.SortedMap
+import scala.language.postfixOps
 
-import types._
-import types.OdfTypes._
+import org.slf4j.LoggerFactory
+import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-
-import scala.util.Success
-
-import org.slf4j.{Logger, LoggerFactory}
+import types.OdfTypes._
+import types._
 
 /**
  * Read only restricted interface methods for db tables

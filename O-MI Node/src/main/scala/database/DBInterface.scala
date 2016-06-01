@@ -15,13 +15,14 @@ package database
 
 import java.io.File
 
+import scala.collection.mutable.ArrayBuffer
+
 import http.Boot.settings
 import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.Path
-import collection.mutable.ArrayBuffer
 
 
 package object database {
@@ -41,8 +42,8 @@ package object database {
 
 }
 //import database.database._
+//import database.database.dbConfigName
 import database.dbConfigName
-
 sealed trait InfoItemEvent {
   val infoItem: OdfInfoItem
 }

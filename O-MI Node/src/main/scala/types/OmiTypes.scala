@@ -17,11 +17,11 @@ package OmiTypes
 import java.lang.Iterable
 import java.sql.Timestamp
 
-import types.OdfTypes._
-
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
 import scala.language.existentials
+
+import types.OdfTypes._
 
 
 /**

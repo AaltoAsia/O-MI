@@ -2,6 +2,10 @@ package http
 
 import java.lang.{Iterable => JavaIterable}
 
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.collection.mutable.Buffer
+import scala.util.{Failure, Success, Try}
+
 import database._
 import http.Authorization.{AuthorizationExtension, CombinedTest}
 import spray.http.HttpRequest
@@ -9,10 +13,6 @@ import spray.routing.Directives.extract
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
-
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.collection.mutable.Buffer
-import scala.util.{Failure, Success, Try}
 
 
 sealed trait AuthorizationResult

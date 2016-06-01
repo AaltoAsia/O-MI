@@ -13,19 +13,20 @@
 **/
 package parsing
 
-import types.ParseError
-
-import org.xml.sax.SAXException;
+import java.io.{File, IOException, StringReader}
+import java.sql.Timestamp
+import java.util.Date
 import javax.xml.XMLConstants
+import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
-import javax.xml.parsers.SAXParserFactory
-import scala.xml.{XML, Node, Elem }
+
+import scala.util.{Failure, Success, Try}
 import scala.xml.factory.XMLLoader
-import scala.util.{Try, Success, Failure}
-import java.util.Date
-import java.sql.Timestamp
-import java.io.{StringReader, IOException, File}
+import scala.xml.{Elem, Node, XML}
+
+import org.xml.sax.SAXException
+import types.ParseError
 
 /**
  * Parser trait that parsers inherit,

@@ -17,10 +17,10 @@ package OdfTypes
 import java.lang.{Iterable => JavaIterable}
 import javax.xml.datatype.{DatatypeConstants => XMLConst}
 
+import scala.collection.immutable.HashMap
+
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
-
-import scala.collection.immutable.HashMap
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(

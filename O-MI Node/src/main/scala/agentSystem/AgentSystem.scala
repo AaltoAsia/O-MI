@@ -1,38 +1,17 @@
 package agentSystem
 
+import scala.collection.mutable.Map
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.util.Timeout
+import com.typesafe.config.Config
 import database.DB
-import agentSystem.AgentTypes._
-import agentSystem._
 import http.CLICmds._
 import http._
-import types.Path
 import types.OmiTypes.WriteRequest
-import akka.pattern.ask
-import akka.util.Timeout
-import akka.actor.Actor.Receive
-import akka.actor.{
-  Actor, 
-  ActorRef, 
-  ActorInitializationException, 
-  ActorKilledException, 
-  ActorLogging, 
-  OneForOneStrategy, 
-  Props, 
-  SupervisorStrategy
-}
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-import scala.collection.mutable.Map
-import java.io.File
-import java.net.URLClassLoader
-import java.sql.Timestamp
-import java.util.Date
-import java.util.jar.JarFile
-import com.typesafe.config.Config
-import scala.language.postfixOps
+import types.Path
 
 object AgentSystem {
   def props(dbobject: DB,subHandler: ActorRef): Props = Props(

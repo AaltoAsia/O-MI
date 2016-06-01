@@ -11,21 +11,22 @@
 **/
 package responses
 
-import database._
-import types.OdfTypes._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OmiTypes.SubscriptionRequest
-import types._
-import http.CLICmds.ListSubsCmd
-import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
-import akka.actor.{Actor, ActorLogging, Props}
-import scala.collection.JavaConversions.{asJavaIterable, asScalaIterator}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, duration}
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Failure, Success, Try}
 import java.sql.Timestamp
 import java.util.concurrent.TimeUnit._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.{Future, duration}
+import scala.util.Try
+
+import akka.actor.{Actor, ActorLogging, Props}
+import database._
+import http.CLICmds.ListSubsCmd
+import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
+import types.OmiTypes.SubscriptionRequest
+import types._
 //import java.util.concurrent.ConcurrentSkipListSet
 
 /**
@@ -388,7 +389,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             SingleStores.eventPrevayler execute AddEventSub(
               EventSub(
                 newId,
-                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
                 callback
               )
@@ -401,7 +402,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
             SingleStores.intervalPrevayler execute AddIntervalSub(
               IntervalSub(newId,
-                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
                 callback,
                 dur,
@@ -421,7 +422,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
           }
         }
         case None => {
-          val paths = OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
+          val paths = OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq
           //val subData = paths.map(path => SubValue(newId,path,currentTimestamp,"",""))
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {

@@ -13,14 +13,14 @@
 **/
 package http
 
-import spray.routing.Directives.optionalHeaderValue
-import spray.routing.Directive1
-import spray.http.HttpHeader
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
+import http.Authorization.{AuthorizationExtension, CombinedTest}
+import http.Boot.settings
+import spray.http.HttpHeader
+import spray.routing.Directive1
+import spray.routing.Directives.optionalHeaderValue
 import types.OmiTypes._
-import Boot.settings
-import Authorization.{AuthorizationExtension, CombinedTest}
 
 // TODO: maybe move to Authorization package
 

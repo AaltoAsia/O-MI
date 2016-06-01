@@ -17,15 +17,15 @@ import java.io.File
 import java.sql.Timestamp
 import javax.xml.transform.stream.StreamSource
 
+import scala.collection.JavaConversions.asJavaIterable
+import scala.util.{Failure, Success, Try}
+import scala.xml.Elem
+
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
-
-import scala.collection.JavaConversions.asJavaIterable
-import scala.util.{Failure, Success, Try}
-import scala.xml.Elem
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {

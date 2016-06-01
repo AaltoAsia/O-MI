@@ -14,12 +14,12 @@
 
 package responses
 
-import java.util.concurrent.{ScheduledFuture, Executors}
 import java.util.concurrent.TimeUnit.SECONDS
-
-import akka.actor.ActorRef
+import java.util.concurrent.{Executors, ScheduledFuture}
 
 import scala.concurrent.duration.Duration
+
+import akka.actor.ActorRef
 
 /**
  * Created by satsuma on 8.1.2016.

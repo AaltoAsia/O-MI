@@ -1,31 +1,17 @@
 
 package responses
 
-import parsing.xmlGen.xmlTypes.RequestResultType
-
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConversions.{ iterableAsScalaIterable, asJavaIterable}
+import scala.concurrent.Future
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.collection.breakOut
-import scala.xml.{ NodeSeq, XML }
+import scala.xml.NodeSeq
 //import spray.http.StatusCode
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.util.Timeout
-import akka.pattern.ask
-
-
+import responses.OmiGenerator._
+import types.OdfTypes._
+import types.OmiTypes._
 import types._
-import OmiTypes._
-import OdfTypes._
-import OmiGenerator._
-import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import CallbackHandlers._
-import database._
 
 trait ReadHandler extends OmiRequestHandler{
   /** Method for handling ReadRequest.

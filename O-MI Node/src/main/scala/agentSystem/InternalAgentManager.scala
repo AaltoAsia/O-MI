@@ -13,33 +13,8 @@
   **/
 package agentSystem
 
-import agentSystem._
-import http.CLICmds._
-import http._
-import types.Path
-import akka.actor.{
-  Actor, 
-  ActorRef, 
-  ActorInitializationException, 
-  ActorKilledException, 
-  ActorLogging, 
-  OneForOneStrategy, 
-  Props, 
-  SupervisorStrategy
-}
 import akka.pattern.ask
-import akka.util.Timeout
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-import scala.collection.mutable.Map
-import java.io.File
-import java.net.URLClassLoader
-import java.sql.Timestamp
-import java.util.Date
-import java.util.jar.JarFile
+import http.CLICmds._
 
 
 trait InternalAgentManager extends BaseAgentSystem {

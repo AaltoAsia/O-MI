@@ -3,11 +3,10 @@ package types
 
 import java.lang.{Iterable => JavaIterable}
 
-import parsing.xmlGen.xmlTypes._
-
-import scala.collection.JavaConverters._
 import scala.language.existentials
-import OdfTypes._
+
+import parsing.xmlGen.xmlTypes._
+import types.OdfTypes._
 /**
  * Package containing classes presenting O-MI request interanlly. 
  *

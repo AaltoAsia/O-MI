@@ -15,12 +15,12 @@ package database
 
 import java.sql.Timestamp
 
-import parsing.xmlGen.xmlTypes.QlmID
-import slick.driver.H2Driver.api._
-import slick.lifted.{ForeignKeyQuery, ProvenShape, Index}
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import parsing.xmlGen.xmlTypes.QlmID
+import slick.driver.H2Driver.api._
+import slick.lifted.{ForeignKeyQuery, Index, ProvenShape}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._

@@ -1,37 +1,24 @@
 package accessControl;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import http.AuthApi;
-import http.AuthApi$class;
-import http.AuthorizationResult;
-import http.Authorized;
-import http.Unauthorized;
-import http.Partial;
-import http.AuthorizationResult;
-import scala.collection.immutable.List;
+import http.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spray.http.HttpCookie;
 import spray.http.HttpHeader;
-import types.Path;
 import types.OmiTypes.OmiRequest;
-import scala.collection.JavaConverters.*;
+import types.Path;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**

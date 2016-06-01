@@ -1,5 +1,7 @@
 package http
 
+import scala.xml._
+
 import agentSystem.AgentSystem
 import akka.actor._
 import akka.testkit.TestActorRef
@@ -14,8 +16,6 @@ import spray.http.StatusCodes._
 import spray.httpx.marshalling.BasicMarshallers._
 import spray.testkit.Specs2RouteTest
 import types._
-
-import scala.xml._
 
 class OmiServiceTest extends Specification
   with XmlMatchers

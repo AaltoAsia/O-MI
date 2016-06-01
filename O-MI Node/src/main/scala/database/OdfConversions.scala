@@ -14,12 +14,8 @@
 package database
 
 import scala.language.postfixOps
-
-import slick.driver.H2Driver.api._
-
-import scala.collection.JavaConversions.{asJavaIterable,iterableAsScalaIterable}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.{ SortedMap, breakOut }
+import scala.collection.{SortedMap, breakOut}
 
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._

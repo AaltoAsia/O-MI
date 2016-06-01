@@ -3,7 +3,7 @@
 package parsing
 package xmlGen
 
-import xmlTypes._
+import parsing.xmlGen.xmlTypes._
 /**
   usage:
   val obj = scalaxb.fromXML[.Foo](node)
@@ -172,7 +172,6 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
 
   trait DefaultDescriptionFormat extends scalaxb.XMLFormat[Description] with scalaxb.CanWriteChildNodes[Description] {
     val targetNamespace: Option[String] = Some("odf.xsd")
-    import scalaxb.ElemName._
     
     def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, Description] = seq match {
       case node: scala.xml.Node => Right(Description(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
@@ -209,7 +208,6 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
 
   trait DefaultQlmIDFormat extends scalaxb.XMLFormat[QlmID] with scalaxb.CanWriteChildNodes[QlmID] {
     val targetNamespace: Option[String] = Some("odf.xsd")
-    import scalaxb.ElemName._
     
     def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, QlmID] = seq match {
       case node: scala.xml.Node => Right(QlmID(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
@@ -255,7 +253,6 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
 
   trait DefaultValueTypeFormat extends scalaxb.XMLFormat[ValueType] with scalaxb.CanWriteChildNodes[ValueType] {
     val targetNamespace: Option[String] = Some("odf.xsd")
-    import scalaxb.ElemName._
     
     def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, ValueType] = seq match {
       case node: scala.xml.Node => Right(ValueType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
@@ -535,7 +532,6 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
 
   trait DefaultReturnTypeFormat extends scalaxb.XMLFormat[ReturnType] with scalaxb.CanWriteChildNodes[ReturnType] {
     val targetNamespace: Option[String] = Some("omi.xsd")
-    import scalaxb.ElemName._
     
     def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, ReturnType] = seq match {
       case node: scala.xml.Node => Right(ReturnType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
@@ -597,7 +593,6 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
 
   trait DefaultIdTypeFormat extends scalaxb.XMLFormat[IdType] with scalaxb.CanWriteChildNodes[IdType] {
     val targetNamespace: Option[String] = Some("omi.xsd")
-    import scalaxb.ElemName._
     
     def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, IdType] = seq match {
       case node: scala.xml.Node => Right(IdType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),

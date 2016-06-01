@@ -16,8 +16,6 @@
   *
   **/
 package types
-
-import java.sql.Timestamp
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */

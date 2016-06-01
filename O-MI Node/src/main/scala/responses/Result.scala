@@ -13,12 +13,12 @@
 **/
 package responses
 
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{scalaxb, defaultScope}
-import types.OdfTypes.OdfObjects
-import scala.xml.{XML, Node}
 import scala.language.existentials
-import OmiGenerator.{omiResult, omiReturn, odfMsg}
+
+import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.{defaultScope, scalaxb}
+import responses.OmiGenerator.{odfMsg, omiResult, omiReturn}
+import types.OdfTypes.OdfObjects
 
 /** 
   * Object containing helper methods for generating RequestResultTypes. Used to generate results  for requests.
@@ -167,6 +167,5 @@ object Results{
   }
 
 }
-import Results._
     /** Package needs one class to have documentation, sbt doc fails*/
     case class DocumentationForcer()

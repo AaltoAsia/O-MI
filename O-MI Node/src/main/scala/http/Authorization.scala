@@ -13,12 +13,11 @@
 **/
 package http
 
-import spray.http._
-import spray.routing._
-import Directives._
-import scala.util.{Try, Success, Failure}
-import akka.event.LoggingAdapter
+import scala.util.{Failure, Success, Try}
 
+import akka.event.LoggingAdapter
+import spray.routing.Directives._
+import spray.routing._
 import types.OmiTypes._
 
 
@@ -158,7 +157,7 @@ object Authorization {
   //}
 
 }
-import Authorization._
+import http.Authorization._
 
 /** Dummy authorization, allows everything. Can be used for testing, disabling authorization
  *  temporarily and serves as an example of how to extend [[Authorization]] as a Stackable trait.

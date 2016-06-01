@@ -16,19 +16,19 @@ package http
 
 import java.net.InetSocketAddress
 
-import agentSystem.{AgentInfo,AgentName}
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+import agentSystem.{AgentInfo, AgentName}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
-import Tcp._
+import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
 import responses.{RemoveSubscription, RequestHandler}
 import types.Path
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 /** Object that contains all commands of InternalAgentCLI.
  */

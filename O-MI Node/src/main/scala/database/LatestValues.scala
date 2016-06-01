@@ -3,11 +3,11 @@ package database
 import java.sql.Timestamp
 import java.util.Date
 
+import scala.collection.immutable.HashMap
+
 import org.prevayler._
 import types.OdfTypes._
 import types.Path
-
-import scala.collection.immutable.HashMap
 
 // TODO: save the whole InfoItem
 /*case class LatestInfoItemData(

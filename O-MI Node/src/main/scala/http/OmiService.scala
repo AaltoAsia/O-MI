@@ -15,24 +15,23 @@ package http
 
 import java.nio.file.{Files, Paths}
 
+import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success}
+import scala.xml.NodeSeq
+
 import accessControl.AuthAPIService
-import akka.actor.{Actor, ActorLogging, ActorContext}
+import akka.actor.{Actor, ActorContext, ActorLogging}
 import akka.event.LoggingAdapter
 import http.Authorization._
 import parsing.OmiParser
 import responses.OmiGenerator._
-import responses.{Results, RequestHandler}
+import responses.{RequestHandler, Results}
 import spray.http.MediaTypes._
 import spray.http._
 import spray.routing._
 import types.OmiTypes._
 import types.Path
-
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.concurrent.{Promise, Future}
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-import scala.xml.NodeSeq
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization

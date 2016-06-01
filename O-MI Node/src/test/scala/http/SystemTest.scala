@@ -14,18 +14,18 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 //import org.specs2.specification.core.Fragment
 //import org.specs2.specification.Fragment
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.Try
+import scala.xml._
+
+import com.typesafe.config.ConfigFactory
 import org.specs2.specification.AfterAll
 import responses.{RequestHandler, SubscriptionManager}
 import spray.can.Http
 import spray.client.pipelining._
 import spray.http._
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.Try
-import scala.xml._
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
 

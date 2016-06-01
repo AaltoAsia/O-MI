@@ -15,16 +15,17 @@ package database
 
 import java.sql.Timestamp
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+
+import org.slf4j.LoggerFactory
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types._
-import scala.concurrent.{Future, Await}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.postfixOps
-import scala.concurrent.duration._
-import org.slf4j.LoggerFactory;
+import types._;
 
 /**
  * Read-write interface methods for db tables.

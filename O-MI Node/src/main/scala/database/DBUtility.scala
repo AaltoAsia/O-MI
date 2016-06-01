@@ -13,12 +13,12 @@
 **/
 package database
 
-import slick.driver.H2Driver.api._
-import types._
-
 import scala.collection.SortedMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
+
+import slick.driver.H2Driver.api._
+import types._
 
 trait DBUtility extends OmiNodeTables with OdfConversions {
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]

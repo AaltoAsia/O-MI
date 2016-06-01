@@ -12,23 +12,14 @@
   limitations under the License.
 **/
 package agentSystem
-import agentSystem.AgentTypes._
-import types.OdfTypes._
+import scala.concurrent.Promise
+import scala.reflect.ClassTag
+import scala.util.Try
+
+import akka.actor.{Actor, ActorLogging, Props}
+import com.typesafe.config.Config
 import types.OmiTypes._
 import types.Path
-import akka.pattern.ask
-import akka.actor.{
-  Actor,
-  ActorLogging,
-  Props,
-  ActorInitializationException
-}
-import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
-
-import com.typesafe.config.Config
-import scala.util.{Try}
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
   /**
     Commands that can be received from InternalAgentLoader.
   **/

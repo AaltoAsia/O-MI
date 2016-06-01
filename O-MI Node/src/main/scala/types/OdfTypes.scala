@@ -16,10 +16,10 @@ package OdfTypes
 
 import java.lang.{Iterable => JavaIterable}
 
-import parsing.xmlGen.xmlTypes._
-
 import scala.collection.JavaConverters._
 import scala.language.existentials
+
+import parsing.xmlGen.xmlTypes._
 
 object OdfTreeCollection {
   def apply[T](): OdfTreeCollection[T] = Vector()

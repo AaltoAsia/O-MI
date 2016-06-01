@@ -13,15 +13,15 @@
 **/
 package http
 
-import scala.collection.JavaConverters._
 import java.net.InetAddress
-import spray.routing.Directives.clientIP
+
+import scala.collection.JavaConverters._
+
+import http.Authorization.{AuthorizationExtension, CombinedTest}
+import http.Boot.settings
 import spray.routing.Directive1
-
+import spray.routing.Directives.clientIP
 import types.OmiTypes._
-
-import Boot.settings
-import http.Authorization.{CombinedTest, AuthorizationExtension}
 
 // TODO: maybe move to Authorization package
 

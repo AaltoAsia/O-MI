@@ -15,6 +15,9 @@ package agentSystem
 
 import java.net.InetSocketAddress
 
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.concurrent.duration._
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
 import http.Authorization.ExtensibleAuthorization
@@ -23,9 +26,6 @@ import parsing.OdfParser
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
 import types._
-
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.concurrent.duration._
 
 object  ExternalAgentListener{
   def props( agentSystem: ActorRef ): Props = {

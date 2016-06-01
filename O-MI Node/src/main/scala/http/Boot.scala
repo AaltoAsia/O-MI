@@ -13,30 +13,27 @@
 **/
 package http
 
-import akka.actor.{ActorSystem, Props, ActorRef}
-import akka.io.{IO, Tcp}
-import spray.can.Http
-import spray.servlet.WebBoot
-import akka.pattern.ask
-import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Awaitable, Future}
-import java.util.Date
 import java.net.InetSocketAddress
-import scala.collection.JavaConversions.asJavaIterable
+import java.util.Date
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 import agentSystem._
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.io.{IO, Tcp}
+import akka.pattern.ask
+import akka.util.Timeout
+import database._
 import responses.{RequestHandler, SubscriptionManager}
-import types.Path
+import spray.can.Http
+import spray.servlet.WebBoot
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import database._
-
-import scala.util.{Try, Failure, Success}
-import xml._
-
-import scala.language.postfixOps
+import types.Path
 
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],

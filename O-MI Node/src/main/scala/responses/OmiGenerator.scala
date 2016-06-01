@@ -13,13 +13,13 @@
   **/
 package responses
 
-import types._
-import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.scalaxb._
-import scala.xml.NodeSeq
 import scala.language.existentials
-import OmiGenerator._
+import scala.xml.NodeSeq
+
+import parsing.xmlGen._
+import parsing.xmlGen.scalaxb._
+import parsing.xmlGen.xmlTypes._
+import types._
 /** 
   * Object containing helper mehtods for generating scalaxb generated O-MI types.
   * Used to generate response messages when received a request.

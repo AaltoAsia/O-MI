@@ -3,8 +3,14 @@ package agentSystem
 
 import java.lang.{Iterable => JavaIterable}
 
+import scala.collection.immutable.Map
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success, Try}
+import scala.xml.XML
+
 import akka.actor.ActorRef
-import com.typesafe.config.ConfigException
 import database.SingleStores.valueShouldBeUpdated
 import database._
 import parsing.xmlGen
@@ -17,14 +23,6 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
 import types.Path
-
-import scala.collection.JavaConversions._
-import scala.collection.immutable.Map
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
-import scala.xml.XML
 
 sealed trait ResponsibilityMessage
 case class RegisterOwnership( agent: AgentName, paths: Seq[Path])

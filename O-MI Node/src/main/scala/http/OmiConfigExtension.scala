@@ -13,15 +13,17 @@
 **/
 package http
 
-import akka.actor.{ActorSystem, Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem}
-import com.typesafe.config.Config
-import scala.concurrent.duration._
-import scala.collection.JavaConversions._
 import java.util.concurrent.TimeUnit
+
+import scala.collection.JavaConversions._
+import scala.concurrent.duration._
 import scala.util.Try
+
 import agentSystem.AgentConfigEntry
-import types.Path
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
+import types.Path
 
 
  
