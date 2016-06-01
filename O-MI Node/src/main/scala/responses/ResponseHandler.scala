@@ -30,7 +30,7 @@ import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
 
-trait ResponseHandler extends OmiRequestHandler{
+trait ResponseHandler extends OmiRequestHandlerBase{
   def agentSystem : ActorRef
   /** Method for handling ResponseRequest.
     * @param response request

@@ -26,7 +26,7 @@ import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
 
-trait ReadHandler extends OmiRequestHandler{
+trait ReadHandler extends OmiRequestHandlerBase{
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)

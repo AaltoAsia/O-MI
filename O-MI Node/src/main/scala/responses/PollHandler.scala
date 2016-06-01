@@ -30,7 +30,7 @@ import types.OdfTypes._
 import types.OmiTypes._
 import types._
 
-trait PollHandler extends OmiRequestHandler{
+trait PollHandler extends OmiRequestHandlerBase{
   def subscriptionManager : ActorRef
 
   /** Method for handling PollRequest.

@@ -53,38 +53,38 @@ trait InternalAgentLoader extends BaseAgentSystem {
       log.info("Instantiating agent: " + name + " of class " + classname)
       val classLoader     = Thread.currentThread.getContextClassLoader
       val actorClazz      = classLoader.loadClass(classname)
+      val objectClazz = classLoader.loadClass(classname + "$")
       val objectInterface  = classOf[PropsCreator]
       val agentInterface  = classOf[InternalAgent]
       val responsibleInterface  = classOf[ResponsibleInternalAgent]
       actorClazz match {
         //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
         case actorClass if agentInterface.isAssignableFrom(actorClass) =>
-        val objectClazz = classLoader.loadClass(classname + "$")
-        objectClazz match { 
-          case objectClass if objectInterface.isAssignableFrom(objectClass) =>
-          //Static field MODULE$ contains Object it self
-          //Method get is used to get value of field for a Object.
-          //Because field MODULE$ is static, it return  the companion object recardles of argument
-          //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
-          val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
-          //Get props and create agent
-          val props = propsCreator.props(config).props
-          props.actorClass match {
-            case clazz if clazz == actorClazz =>
-            val agent = context.actorOf( props, name.toString )
-            startAgent(agent)
+          objectClazz match { 
+            case objectClass if objectInterface.isAssignableFrom(objectClass) =>
+              //Static field MODULE$ contains Object it self
+              //Method get is used to get value of field for a Object.
+              //Because field MODULE$ is static, it return  the companion object recardles of argument
+              //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
+              val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
+              //Get props and create agent
+              val props = propsCreator.props(config).props
+              props.actorClass match {
+                case clazz if clazz == actorClazz =>
+                  val agent = context.actorOf( props, name.toString )
+                  startAgent(agent)
+                case clazz: Class[_] =>
+                  log.warning(s"Object $classname does created Props for $clazz, should create for $actorClazz.")
+                  Future.failed( new Exception(" asdf"))
+              }
             case clazz: Class[_] =>
-            log.warning(s"Object $classname does created Props for $clazz, should create for $actorClazz.")
-            Future.failed( new Exception(" asdf"))
+              log.warning(s"Object  $classname does not implement PropsCreator trait.")
+              Future.failed( new Exception(" asdf"))
           }
           case clazz: Class[_] =>
-          log.warning(s"Object  $classname does not implement PropsCreator trait.")
-          Future.failed( new Exception(" asdf"))
+            log.warning(s"Class  $classname does not implement InternalAgent trait.")
+            Future.failed( new Exception(" asdf"))
         }
-        case clazz: Class[_] =>
-        log.warning(s"Class  $classname does not implement InternalAgent trait.")
-          Future.failed( new Exception(" asdf"))
-      }
     } match {
       case Success(startF: Future[ActorRef]) => ()
         startF.onSuccess{ 
@@ -102,6 +102,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
       }
     }
   }
+
   protected def startAgent(agent: ActorRef) = { 
     val timeout = settings.internalAgentsStartTimout
     val startF = ask(agent,Start())(timeout)

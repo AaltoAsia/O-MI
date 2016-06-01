@@ -31,7 +31,7 @@ import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
 
-trait SubscriptionHandler extends OmiRequestHandler{
+trait SubscriptionHandler extends OmiRequestHandlerBase{
   import http.Boot
   def subscriptionManager : ActorRef
 

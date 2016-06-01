@@ -45,7 +45,7 @@ object OmiGenerator {
     ResponseListType(
       results:_*
     )
-}
+  }
 
   /** Generates O-MI RequestResultType.
     * @param returnType O-MI return tag.

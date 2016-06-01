@@ -103,7 +103,7 @@ class ODFAgent( override val config: Config) extends InternalAgent {
     } 
   }
 
-  protected def receiver={
+  override protected def receiver={
     case Update => update
   }
   protected def stop = Try{updateSchelude.dequeueFirst{ j => true } match{
