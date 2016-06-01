@@ -23,6 +23,7 @@ import akka.actor.{
   Props,
   ActorInitializationException
 }
+import akka.actor.Actor.Receive
 import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 
 import com.typesafe.config.Config
@@ -49,6 +50,7 @@ object AgentTypes {
   trait InternalAgent extends Actor with ActorLogging {
     protected def config : Config
     protected def parent = context.parent
+    protected def agentSystem = context.parent
     protected def name = self.path.name
     protected def start   : Try[InternalAgentSuccess ]
     protected def restart : Try[InternalAgentSuccess ] = stop flatMap{
@@ -60,7 +62,7 @@ object AgentTypes {
       case Restart()                  => sender() ! restart
       case Stop()                     => sender() ! stop
     }
-    protected def receiver : Actor.Receive 
+    protected def receiver : Actor.Receive = Actor.emptyBehavior 
     final def receive : Actor.Receive= forcer orElse receiver
   }
 
