@@ -25,7 +25,6 @@ import scala.xml.NodeSeq
 import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
-import types._
 
 trait ReadHandler extends OmiRequestHandler{
   /** Method for handling ReadRequest.
