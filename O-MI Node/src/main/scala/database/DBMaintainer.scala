@@ -1,14 +1,27 @@
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
+
 package database
 
-import akka.actor._
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.collection.JavaConverters._
+import java.io.{File, FilenameFilter}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-import java.io.{File, FilenameFilter}
+
+import akka.actor._
+import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
 
 object DBMaintainer{
@@ -23,7 +36,7 @@ class DBMaintainer(val dbobject: DB)
   case object TrimDB
   case object TakeSnapshot
   private val scheduler = context.system.scheduler
-  private val trimInterval = http.Boot.settings.trimInterval
+  private val trimInterval: FiniteDuration = http.Boot.settings.trimInterval
   private val snapshotInterval = http.Boot.settings.snapshotInterval
   log.info(s"scheduling databse trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)

@@ -1,30 +1,31 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package database
 
 import java.sql.Timestamp
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+
+import org.slf4j.LoggerFactory
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types._
-import scala.concurrent.{Future, Await}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.postfixOps
-import scala.concurrent.duration._
-import org.slf4j.LoggerFactory;
+import types._;
 
 /**
  * Read-write interface methods for db tables.

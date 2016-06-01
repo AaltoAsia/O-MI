@@ -1,37 +1,38 @@
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
+
 package accessControl;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import http.AuthApi;
-import http.AuthApi$class;
-import http.AuthorizationResult;
-import http.Authorized;
-import http.Unauthorized;
-import http.Partial;
-import http.AuthorizationResult;
-import scala.collection.immutable.List;
+import http.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spray.http.HttpCookie;
 import spray.http.HttpHeader;
-import types.Path;
 import types.OmiTypes.OmiRequest;
-import scala.collection.JavaConverters.*;
+import types.Path;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**

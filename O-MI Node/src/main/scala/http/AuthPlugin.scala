@@ -1,20 +1,32 @@
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
+
 package http
 
-import spray.routing.Directives.extract
-import spray.routing.Directive1
-import spray.http.HttpRequest
+import java.lang.{Iterable => JavaIterable}
+
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import java.lang.{ Iterable => JavaIterable }
-import scala.util.{Try, Success, Failure}
-import org.slf4j.LoggerFactory
-
-import types.Path
-import types.OmiTypes._
-import types.OdfTypes._
-import Authorization.{AuthorizationExtension, CombinedTest}
-import database._
-
 import scala.collection.mutable.Buffer
+import scala.util.{Failure, Success, Try}
+
+import database._
+import http.Authorization.{AuthorizationExtension, CombinedTest}
+import spray.http.HttpRequest
+import spray.routing.Directives.extract
+import types.OdfTypes._
+import types.OmiTypes._
+import types.Path
 
 
 sealed trait AuthorizationResult

@@ -1,46 +1,39 @@
-/**
-  Copyright (c) 2015 Aalto University.
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
 package responses
 
-import http.Boot
-import parsing.xmlGen.xmlTypes.RequestResultType
-
-import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConversions.{ iterableAsScalaIterable, asJavaIterable}
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.collection.breakOut
-import scala.xml.{ NodeSeq, XML }
+import scala.xml.{NodeSeq, XML}
 //import spray.http.StatusCode
 
-import akka.event.{ LoggingAdapter, Logging, LogSource}
-import akka.actor.{ Actor,  ActorLogging, ActorRef }
-import akka.util.Timeout
-import akka.pattern.ask
-
+import java.net.UnknownHostException
 import java.util.Date
-import java.net.{ URL, InetAddress, UnknownHostException }
 
-import types._
-import OmiTypes._
-import OdfTypes._
-import OmiGenerator._
-import CallbackHandlers._
+import akka.actor.ActorRef
+import akka.event.{LogSource, Logging, LoggingAdapter}
 import database._
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import responses.CallbackHandlers._
+import responses.OmiGenerator._
+import types.OdfTypes._
+import types.OmiTypes._
+import types._
 
 trait OmiRequestHandlerBase { 
   protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {

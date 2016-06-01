@@ -1,27 +1,29 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package http
 
-import akka.actor.{ActorSystem, Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem}
-import com.typesafe.config.Config
-import scala.concurrent.duration._
-import scala.collection.JavaConversions._
 import java.util.concurrent.TimeUnit
+
+import scala.collection.JavaConversions._
+import scala.concurrent.duration._
 import scala.util.Try
+
 import agentSystem.AgentConfigEntry
-import types.Path
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
+import types.Path
 
 
  
@@ -103,7 +105,7 @@ class OmiConfigExtension(config: Config) extends Extension {
 
 object Settings extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {
  
-  override def lookup : Settings.type = Settings
+  override def lookup: Settings.type = Settings
    
   override def createExtension(system: ExtendedActorSystem) : OmiConfigExtension =
     new OmiConfigExtension(system.settings.config)

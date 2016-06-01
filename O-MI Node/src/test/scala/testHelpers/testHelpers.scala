@@ -1,5 +1,8 @@
 package testHelpers
 
+import scala.xml._
+import scala.xml.parsing._
+
 import akka.actor.{ActorSystem, _}
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
@@ -7,9 +10,6 @@ import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
 import responses.RemoveSubscription
-
-import scala.xml._
-import scala.xml.parsing._
 
 class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
 

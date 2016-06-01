@@ -1,42 +1,39 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package http
 
-import akka.actor.{ActorSystem, Props, ActorRef}
-import akka.io.{IO, Tcp}
-import spray.can.Http
-import spray.servlet.WebBoot
-import akka.pattern.ask
-import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Awaitable, Future}
-import java.util.Date
 import java.net.InetSocketAddress
-import scala.collection.JavaConversions.asJavaIterable
+import java.util.Date
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 import agentSystem._
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.io.{IO, Tcp}
+import akka.pattern.ask
+import akka.util.Timeout
+import database._
 import responses.{RequestHandler, SubscriptionManager}
-import types.Path
+import spray.can.Http
+import spray.servlet.WebBoot
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import database._
-
-import scala.util.{Try, Failure, Success}
-import xml._
-
-import scala.language.postfixOps
+import types.Path
 
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],

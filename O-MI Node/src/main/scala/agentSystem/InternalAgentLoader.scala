@@ -1,47 +1,32 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package agentSystem
 
-import agentSystem._
-import agentSystem.AgentTypes._
-import http.CLICmds._
-import http._
-import types.Path
-import akka.actor.SupervisorStrategy._
-import akka.actor.{
-  Actor, 
-  ActorRef, 
-  ActorInitializationException, 
-  ActorKilledException, 
-  ActorLogging, 
-  OneForOneStrategy, 
-  Props, 
-  SupervisorStrategy}
-import akka.pattern.ask
-import akka.util.Timeout
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.collection.JavaConverters._
-import scala.language.postfixOps
-import scala.collection.JavaConversions._
-import scala.collection.mutable.Map
 import java.io.File
 import java.net.URLClassLoader
-import java.util.Date
 import java.util.jar.JarFile
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
+
+import agentSystem.AgentTypes._
+import akka.actor.ActorRef
+import akka.pattern.ask
 import com.typesafe.config.Config
+import types.Path
 
 trait InternalAgentLoader extends BaseAgentSystem {
   import context.dispatcher

@@ -1,25 +1,25 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  **/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package responses
 
-import types._
-import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.scalaxb._
-import scala.xml.NodeSeq
 import scala.language.existentials
-import OmiGenerator._
+import scala.xml.NodeSeq
+
+import parsing.xmlGen._
+import parsing.xmlGen.scalaxb._
+import parsing.xmlGen.xmlTypes._
+import types._
 /** 
   * Object containing helper mehtods for generating scalaxb generated O-MI types.
   * Used to generate response messages when received a request.

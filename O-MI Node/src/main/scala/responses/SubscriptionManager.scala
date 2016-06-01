@@ -1,3 +1,17 @@
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
+
 /**
   Licensed under the 4-clause BSD (the "License");
   you may not use this file except in compliance with the License.
@@ -11,21 +25,22 @@
 **/
 package responses
 
-import database._
-import types.OdfTypes._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OmiTypes.SubscriptionRequest
-import types._
-import http.CLICmds.ListSubsCmd
-import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
-import akka.actor.{Actor, ActorLogging, Props}
-import scala.collection.JavaConversions.{asJavaIterable, asScalaIterator}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, duration}
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Failure, Success, Try}
 import java.sql.Timestamp
 import java.util.concurrent.TimeUnit._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.{Future, duration}
+import scala.util.Try
+
+import akka.actor.{Actor, ActorLogging, Props}
+import database._
+import http.CLICmds.ListSubsCmd
+import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
+import types.OmiTypes.SubscriptionRequest
+import types._
 //import java.util.concurrent.ConcurrentSkipListSet
 
 /**
@@ -99,7 +114,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
   //  val pollPrevayler = PrevaylerFactory.createPrevayler()
 
 
-  def receive : Actor.Receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals => handleIntervals()
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
@@ -209,7 +224,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                 }
 
               }
-              def calcData = {//Refactor
+              val calculatedData = {//Refactor
                 val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
                 val lastPolled = pollInterval.lastPolled.getTime()
                 val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
@@ -237,7 +252,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                   Some(buffer.toVector)
                 } else None
               }
-              val calculatedData = calcData
 
                 calculatedData.map(cData => path -> cData)
               }).flatMap{ n => //flatMap removes None values
@@ -356,7 +370,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
       dbConnection.removePollSub(id)
       removePS
     } else {
-      removeIS || removeES 
+      removeIS || removeES
     }
   }
 
@@ -389,7 +403,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             SingleStores.eventPrevayler execute AddEventSub(
               EventSub(
                 newId,
-                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
                 callback
               )
@@ -402,7 +416,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
             SingleStores.intervalPrevayler execute AddIntervalSub(
               IntervalSub(newId,
-                OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq,
+                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
                 callback,
                 dur,
@@ -422,7 +436,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
           }
         }
         case None => {
-          val paths = OdfTypes.getLeafs(subscription.odf).iterator().map(_.path).toSeq
+          val paths = OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq
           //val subData = paths.map(path => SubValue(newId,path,currentTimestamp,"",""))
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {

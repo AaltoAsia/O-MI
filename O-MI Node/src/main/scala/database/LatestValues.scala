@@ -1,13 +1,27 @@
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
+
 package database
 
 import java.sql.Timestamp
 import java.util.Date
 
+import scala.collection.immutable.HashMap
+
 import org.prevayler._
 import types.OdfTypes._
 import types.Path
-
-import scala.collection.immutable.HashMap
 
 // TODO: save the whole InfoItem
 /*case class LatestInfoItemData(
@@ -132,8 +146,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs
           store.idToSub = store.idToSub - id
           pSub.paths.foreach{ path =>
             store.pathToSubs(path) match {
-              case Seq(single)   => store.pathToSubs = store.pathToSubs - path
-              case ids @ Seq(_*) => store.pathToSubs = store.pathToSubs.updated(path, ids - id)
+              case ids if ids.size <= 1 => store.pathToSubs = store.pathToSubs - path
+              case ids => store.pathToSubs = store.pathToSubs.updated(path, ids - id)
             }
           }
           true

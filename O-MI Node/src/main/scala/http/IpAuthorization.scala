@@ -1,27 +1,27 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package http
 
-import scala.collection.JavaConverters._
 import java.net.InetAddress
-import spray.routing.Directives.clientIP
+
+import scala.collection.JavaConverters._
+
+import http.Authorization.{AuthorizationExtension, CombinedTest}
+import http.Boot.settings
 import spray.routing.Directive1
-
+import spray.routing.Directives.clientIP
 import types.OmiTypes._
-
-import Boot.settings
-import Authorization.AuthorizationExtension
 
 // TODO: maybe move to Authorization package
 
@@ -83,7 +83,7 @@ trait IpAuthorization extends AuthorizationExtension {
     case _ => None
    }
 
-  abstract override def makePermissionTestFunction =
+  abstract override def makePermissionTestFunction: CombinedTest =
     combineWithPrevious(
       super.makePermissionTestFunction,
       extractIp map ipHasPermission)

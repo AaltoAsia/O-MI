@@ -1,34 +1,34 @@
 
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/**********************************************************************************
+ *    Copyright (c) 2015 Aalto University.                                        *
+ *                                                                                *
+ *    Licensed under the 4-clause BSD (the "License");                            *
+ *    you may not use this file except in compliance with the License.            *
+ *    You may obtain a copy of the License at top most directory of project.      *
+ *                                                                                *
+ *    Unless required by applicable law or agreed to in writing, software         *
+ *    distributed under the License is distributed on an "AS IS" BASIS,           *
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
+ *    See the License for the specific language governing permissions and         *
+ *    limitations under the License.                                              *
+ **********************************************************************************/
 package http
 
 import java.net.InetSocketAddress
 
-import agentSystem.{AgentInfo,AgentName}
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+import agentSystem.{AgentInfo, AgentName}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
-import Tcp._
+import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
 import responses.{RemoveSubscription, RequestHandler}
 import types.Path
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 /** Object that contains all commands of InternalAgentCLI.
  */
