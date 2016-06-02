@@ -40,7 +40,7 @@ import types.Path
 
 sealed trait ResponsibilityMessage
 case class RegisterOwnership( agent: AgentName, paths: Seq[Path])
-case class PromiseWrite(relult: PromiseResult, write:WriteRequest )
+case class PromiseWrite(result: PromiseResult, write:WriteRequest )
 sealed trait ResponsibilityResponse extends ResponsibilityMessage
 object PromiseResult{
   def apply(): PromiseResult= new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())
