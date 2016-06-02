@@ -231,6 +231,37 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     pathIdRelations
   }
 
+
+  //@deprecated("For testing only.", "Since implemented.")
+  private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Any]]] ?
+    val resultAction = for{
+      hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
+      resOpt =  hNode.map{ node =>
+        val removedLeft = node.leftBoundary
+        val removedRight = node.rightBoundary
+        for{
+          removedValues <- getSubTreeQ(node).result
+          removedIds = removedValues.map{case (node, _) => node.id.getOrElse(throw new UninitializedError)}.distinct
+          removeOp = DBIO.fold(Seq(
+           latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
+           hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
+          ), 0)((delete1, delete2) => delete1 + delete2)
+          removedDistance = removedRight - removedLeft + 1
+          updateActions = DBIO.seq(
+            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
+              WHERE RIGHTBOUNDARY > ${removedLeft}""",
+            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
+              WHERE LEFTBOUNDARY > ${removedLeft}""").map(_ => 0)
+          numDel <- DBIO.fold(Seq(removeOp, updateActions), 0)((start, next) => start + next)
+
+        } yield numDel//FIX
+
+      }
+      res <- resOpt.getOrElse(DBIO.failed(new Exception))
+    } yield res
+    resultAction
+  }
+
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
    *
@@ -238,34 +269,18 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
    */
-  //@deprecated("For testing only.", "Since implemented.")
-  def remove(path: Path): Future[Any] = {// : Future[DBIOrw[Seq[Any]]] ?
-    val resultValue = for{
-      hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
-      resOpt =  hNode.map{ node =>
-        val removedLeft = node.leftBoundary
-        val removedRight = node.rightBoundary
-        for{
-          removedValues <- getSubTreeQ(node).result
-          removedIds = removedValues.map{case (node, _) => node.id.getOrElse(throw new UninitializedError)}
-          removeOp = DBIO.sequence(Seq(
-           latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
-           hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
-          ))
-          removedDistance = removedRight - removedLeft + 1
-          updateActions = DBIO.seq(
-            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
-              WHERE RIGHTBOUNDARY > ${removedLeft}""",
-            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
-              WHERE LEFTBOUNDARY > ${removedLeft}""")
+  def remove(path: Path): Future[Int] = {
+    db.run(removeQ(path).transactionally)
+  }
 
-
-        } yield DBIO.sequence(Seq(removeOp, updateActions))//FIX
-
-      }
-      res <- resOpt.getOrElse(DBIO.failed(new Exception))
-    } yield res
-    db.run(resultValue.transactionally)
+  /**
+   * remove the root Objects from the database and add empty root  back to database
+   * this is to help executing the removing and adding operation transactionally
+   */
+  def removeRoot(path: Path): Future[Int] = {
+    db.run(
+      DBIO.sequence(Seq(removeQ(path),addRoot.map(res => 0))).transactionally
+    ).map(_.sum)
   }
   //add root node when removed or when first started
   private def addRoot = {
