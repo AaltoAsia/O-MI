@@ -16,10 +16,7 @@ import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import scala.concurrent.duration._
-import testHelpers.DeactivatedTimeConversions
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 /*
  * Test class for testing parsing parsing package
  * tests e1   - e99 are for testing OmiParser general methods
@@ -29,8 +26,7 @@ import org.specs2.runner.JUnitRunner
  * tests e400 - e499 are for testing OdfParser class
  */
 
-@RunWith(classOf[JUnitRunner])
-class ParserTest extends Specification with DeactivatedTimeConversions {
+class ParserTest extends Specification {
   //  lazy val omi_subscription_test_file = Source.fromFile("src/test/resources/parsing/omi_subscription_test.xml").getLines.mkString("\n")
   //  lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
   //  lazy val omi_write_test_file = Source.fromFile("src/test/resources/parsing/omi_write_test.xml").getLines.mkString("\n")
@@ -1004,6 +1000,6 @@ class ParserTest extends Specification with DeactivatedTimeConversions {
     </omi:omiEnvelope>"""
 
 }
-
-
 */
+
+

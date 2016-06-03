@@ -1,8 +1,16 @@
-/*package agentSystem
+/* REDO
+package agentSystem
+
+
+import scala.concurrent.Await
 
 import akka.actor._
+import akka.io.{IO, Tcp}
+import akka.pattern.ask
 import akka.testkit.{EventFilter, TestProbe}
+import com.typesafe.config.ConfigFactory
 import org.specs2.mutable._
+import responses.SubscriptionManager
 import testHelpers.Actors
 
 //import org.specs2.specification.Scope
@@ -11,13 +19,20 @@ import java.net.InetSocketAddress
 
 import akka.io.Tcp._
 import database._
-import http.Boot
 
 class AgentListenerTest extends Specification {
   //  sequential
-
+  implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
+    """
+            akka.loggers = ["akka.testkit.TestEventListener"]
+            akka.log-dead-letters-during-shutdown = off
+            akka.jvm-exit-on-fatal-error = off
+            """))
   implicit val dbConnection = new TestDB("agent-listener")
-  Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
+  val subscriptionManager = system.actorOf((Props(new SubscriptionManager)))
+  val agentManager = system.actorOf(Props(new AgentSystem(dbConnection, subscriptionManager)))
+  //Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
+  val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("127.0.0.1", 4321)
   lazy val testOdf =
@@ -40,22 +55,27 @@ class AgentListenerTest extends Specification {
     </Objects>"""
 
   def beforeAll() = {
-    dbConnection.clearDB()
+    val dur = scala.concurrent.duration.Duration(2, "seconds")
+    implicit val timeout = akka.util.Timeout.apply(dur)
+    Await.ready((IO(Tcp) ? Tcp.Bind(sensorDataListener,
+      new InetSocketAddress("localhost", 1234))), dur)
   }
 
   //  println("External Listener Test Started")
   "ExternalAgentListener" should {
     sequential
-    "reply with Register message when it receives Connected message" in new Actors {
-      val actor = system.actorOf(Props[ExternalAgentListener])
+    "reply with Register message when it receives Connected message" in new Actors(system) {
+      val actor =
+        sensorDataListener//system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
 
       actor.tell(Connected(local, remote), probe.ref)
       probe.expectMsgType[Register]
     }
 
-    "log Connected event with ActorLogging" in new Actors {
-      val actor = system.actorOf(Props[ExternalAgentListener])
+
+    "log Connected event with ActorLogging" in new Actors(system) {
+      val actor = sensorDataListener//system.actorOf(Props[ExternalAgentListener])
       val probe = TestProbe()
 
       EventFilter.info(s"Agent connected from $local to $remote", occurrences = 1) intercept {
@@ -63,28 +83,28 @@ class AgentListenerTest extends Specification {
       }
     }
 
-    "be terminated when receive CommandFailed message" in new Actors {
-      val actor = system.actorOf(Props[ExternalAgentListener])
-      val probe = TestProbe()
-      val bind = new Bind(probe.ref, remote)
+    //"be terminated when receive CommandFailed message" in new Actors {
+    //  val actor = sensorDataListener//system.actorOf(Props[ExternalAgentListener])
+    //  val probe = TestProbe()
+    //  val bind = new Bind(probe.ref, remote)
+//
+//      probe watch actor
+//
+ //     actor.tell(CommandFailed(bind), probe.ref)
+  //    probe.expectTerminated(actor)
+    //}
 
-      probe watch actor
-
-      actor.tell(CommandFailed(bind), probe.ref)
-      probe.expectTerminated(actor)
-    }
-
-    "log CommandFailed message with ActorLogging" in new Actors {
-      val actor = system.actorOf(Props[ExternalAgentListener])
-      val probe = TestProbe()
-      val bind = new Bind(probe.ref, remote)
-
-      EventFilter.warning(s"Agent connection failed: $bind", occurrences = 1) intercept {
-        actor.tell(CommandFailed(bind), probe.ref)
-      }
-    }
-    "reply with Register messages to multiple actors" in new Actors {
-      val actor = system.actorOf(Props[ExternalAgentListener])
+   // "log CommandFailed message with ActorLogging" in new Actors {
+//      val actor = system.actorOf(Props[ExternalAgentListener])
+  //    val probe = TestProbe()
+    //  val bind = new Bind(probe.ref, remote)
+//
+  //    EventFilter.warning(s"Agent connection failed: $bind", occurrences = 1) intercept {
+    //    actor.tell(CommandFailed(bind), probe.ref)
+      //}
+   // }
+    "reply with Register messages to multiple actors" in new Actors(system) {
+      val actor = sensorDataListener
       val probe1 = TestProbe()
       val probe2 = TestProbe()
       val probe3 = TestProbe()
@@ -166,7 +186,7 @@ class AgentListenerTest extends Specification {
       }
     }
 */
-    "write info to log when it receives PeerClosed message" in new Actors {
+    "write info to log when it receives PeerClosed message" in new Actors(system) {
       val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
 
@@ -176,7 +196,7 @@ class AgentListenerTest extends Specification {
 
     }
 
-    "be terminated when it receives PeerClosed message" in new Actors {
+    "be terminated when it receives PeerClosed message" in new Actors(system) {
       val actor = system.actorOf(Props(classOf[ExternalAgentHandler], local))
       val probe = TestProbe()
 
