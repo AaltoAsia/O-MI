@@ -55,10 +55,7 @@ public class AuthAPIService implements AuthApi {
 
                     public boolean verify(String hostname,
                                           javax.net.ssl.SSLSession sslSession) {
-                        if (hostname.equals("localhost")) {
-                            return true;
-                        }
-                        return false;
+                        return (hostname.equals("localhost"));
                     }
                 });
     }
@@ -146,7 +143,7 @@ public class AuthAPIService implements AuthApi {
                     logger.debug("Root tree requested. forwarding to Partial API.");
 
                     //Getting paths according to the policies
-                    ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
+                    ArrayList<Path> res_paths = (ArrayList) getPaths(subjectInfo, success);
 
                     if (res_paths == null)
                         return Unauthorized.instance();
@@ -197,7 +194,7 @@ public class AuthAPIService implements AuthApi {
         return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
 
-    public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
+    public java.lang.Iterable<Path> getPaths(String subjectInfo, boolean isCertificate) {
 
         HttpURLConnection connection = null;
         try {
@@ -266,7 +263,7 @@ public class AuthAPIService implements AuthApi {
             return finalPaths;
 
         } catch (Exception e) {
-            logger.error("During getAvailablePaths request", e);
+            logger.error("During getPaths request", e);
             return null;
         } finally {
             if(connection != null) {
