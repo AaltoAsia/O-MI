@@ -16,10 +16,9 @@ package agentSystem
 
 import java.lang.{Iterable => JavaIterable}
 
-import scala.collection.immutable.Map
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
@@ -32,9 +31,7 @@ import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
 import responses.OmiGenerator.xmlFromResults
 import responses.{NewDataEvent, Results}
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
 import types.Path
 
 trait  DBPusher  extends BaseAgentSystem{
@@ -92,11 +89,11 @@ trait  DBPusher  extends BaseAgentSystem{
     }
     // Aggregate events under same subscriptions (for optimized callbacks)
     val esubAggregation /*: Map[EventSub, Seq[(EventSub, OdfInfoItem)]]*/ =
-        esubLists groupBy {_._1}
+        esubLists groupBy { case (eventSub, _) => eventSub }
 
     for ((esub, infoSeq) <- esubAggregation) {
 
-        val infoItems = infoSeq map {_._2}
+        val infoItems = infoSeq map { case (_, infoItem) =>  infoItem}
 
         sendEventCallback(esub, infoItems)
     }

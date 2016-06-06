@@ -14,12 +14,12 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package responses
-import types._
-import OdfTypes._
-import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import scala.xml.{ NodeSeq, XML }
-import OdfTypes._
+import scala.xml.XML
+
 import database._
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import types.OdfTypes._
+import types._
 
 trait RESTHandler extends OmiRequestHandlerBase{
   private sealed trait ODFRequest {def path: Path} // path is OdfNode path

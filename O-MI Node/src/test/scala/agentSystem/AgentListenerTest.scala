@@ -1,5 +1,4 @@
-/* REDO
-package agentSystem
+/*package agentSystem
 
 
 import scala.concurrent.Await
@@ -7,9 +6,10 @@ import scala.concurrent.Await
 import akka.actor._
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
-import akka.testkit.{EventFilter, TestProbe}
+import akka.testkit.{TestKit, EventFilter, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.specs2.mutable._
+import org.specs2.mock.Mockito
 import responses.SubscriptionManager
 import testHelpers.Actors
 
@@ -20,19 +20,20 @@ import java.net.InetSocketAddress
 import akka.io.Tcp._
 import database._
 
-class AgentListenerTest extends Specification {
+class AgentListenerTest(_system: ActorSystem) extends TestKit(_system) with Mockito with Specification {
   //  sequential
-  implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
+  /*implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
-            """))
+            """))*/
   implicit val dbConnection = new TestDB("agent-listener")
   val subscriptionManager = system.actorOf((Props(new SubscriptionManager)))
   val agentManager = system.actorOf(Props(new AgentSystem(dbConnection, subscriptionManager)))
+  val m = mock[ActorRef]
   //Boot.initInputPusher(dbConnection, "agent-listener-test-input-pusher")
-  val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
+  val sensorDataListener = system.actorOf(ExternalAgentListener.props(m), "agent-listener")
   val local = new InetSocketAddress("localhost", 1234)
   val remote = new InetSocketAddress("127.0.0.1", 4321)
   lazy val testOdf =

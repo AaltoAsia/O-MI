@@ -14,23 +14,20 @@
 package types
 package OmiTypes
 
-import javax.xml.datatype.XMLGregorianCalendar
-import javax.xml.datatype.DatatypeFactory
-import java.util.GregorianCalendar
 import java.lang.Iterable
 import java.sql.Timestamp
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
 
-import scala.xml.NodeSeq
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
 import scala.language.existentials
+import scala.xml.NodeSeq
 
-import parsing.xmlGen.xmlTypes
-import parsing.xmlGen.{defaultScope, scalaxb}
-import parsing.xmlGen.xmlTypes.{OmiEnvelope,ObjectsType}
-import parsing.xmlGen.scalaxb
-import types.OdfTypes._
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
 import responses.OmiGenerator.odfMsg
+import types.OdfTypes._
 
 
 /**
@@ -82,7 +79,13 @@ case class ReadRequest(
     xmlTypes.ReadRequest(
       None,
       Nil,
-      Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
+      Some(
+        scalaxb.DataRecord(
+          Some("omi.xsd"),
+          Some("msg"),
+          odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope))
+        )
+      ),
       callback.map{ 
         addr => 
           new java.net.URI(addr)

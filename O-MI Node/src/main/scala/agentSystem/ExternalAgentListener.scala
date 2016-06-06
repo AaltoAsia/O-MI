@@ -65,17 +65,14 @@ class ExternalAgentListener( agentSystem: ActorRef )
 
         val handler = context.actorOf(
           ExternalAgentHandler.props( remote, agentSystem),
-          ("handler-"
-            + remote.toString
-            + "-" )
-            .filter(c =>
-              c == 45 ||
-              c == 46 ||
-              c >= 48  && c < 60 ||
-              c >= 65 && c < 91 ||
-              c >= 97 && c <123)
-            + System.nanoTime()
+          "handler-"
+            + remote.getHostString
+            + ":"
+            + remote.getPort()
+            //+ "-"
+            //+ System.nanoTime()
         )
+        //log.info(s"created handler: $handler")
         connection ! Register(handler)
 
       } else {

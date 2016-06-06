@@ -18,6 +18,7 @@ import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
@@ -226,7 +227,10 @@ trait OmiService
       }
     }
     }catch {
-        case ex: Throwable => {log.error(ex, "Fatal server error"); throw ex}
+        case NonFatal(e) => {
+          log.error(e, "internal server error")
+          respondWithMediaType(`text/xml`){complete(internalError(e))}
+        }
     }
   }
 

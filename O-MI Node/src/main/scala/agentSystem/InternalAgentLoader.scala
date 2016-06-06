@@ -117,7 +117,8 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
     resultF
   }
-  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit = loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.ownedPaths)
+  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit =
+    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.ownedPaths)
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.

@@ -18,6 +18,7 @@ object Dependencies {
   //Test dependencies
   val specs2       = "org.specs2"              %% "specs2-core"   % "3.7.2" % "test"
   val specs2match  = "org.specs2"              %% "specs2-matcher-extra" % "3.7.2" % "test"
+  val mockito	   = "org.specs2"              %% "specs2-mock"   % "3.7.2" % "test"
   val nuValidator  = "nu.validator.htmlparser"  % "htmlparser"    % "1.4" //html5 parser for systemtests
   val akkaTestkit  = "com.typesafe.akka"       %% "akka-testkit"  % akkaV    % "test"
   val sprayTestkit = "io.spray"                %% "spray-testkit" % sprayV   % "test" exclude("org.specs2", "specs2_2.11")
@@ -80,6 +81,7 @@ object Dependencies {
   val testDependencies: Seq[ModuleID] = Seq(
     specs2,
     specs2match,
+    mockito,
     nuValidator,
     akkaTestkit,
     sprayTestkit)
