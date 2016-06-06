@@ -64,11 +64,11 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   def beforeAll = {
     //comment line below for detailed debug information
-    system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
+    //system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
     initDB()
   }
   def afterAll = {
-    system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
+    //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
     cleanAndShutdown
   }
 
@@ -80,6 +80,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       code === 200
     }*/
+    sequential
 
     "return incrementing id for new subscription" >> {
       val ns1 = addSub(1,5, Seq("p/1"))
