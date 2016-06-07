@@ -18,7 +18,6 @@ import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import scala.concurrent.duration._
-//import testHelpers.DeactivatedTimeConversions
 
 import org.specs2.matcher._
 import org.specs2.matcher.XmlMatchers._
@@ -31,7 +30,7 @@ import org.specs2.matcher.XmlMatchers._
  * tests e400 - e499 are for testing OdfParser class
  */
 
-class ParserTest extends Specification /* with DeactivatedTimeConversions */ {
+class ParserTest extends Specification {
   //  lazy val omi_subscription_test_file = Source.fromFile("src/test/resources/parsing/omi_subscription_test.xml").getLines.mkString("\n")
   //  lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
   //  lazy val omi_write_test_file = Source.fromFile("src/test/resources/parsing/omi_write_test.xml").getLines.mkString("\n")

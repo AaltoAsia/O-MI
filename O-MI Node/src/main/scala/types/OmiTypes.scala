@@ -1,36 +1,33 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package OmiTypes
 
-import javax.xml.datatype.XMLGregorianCalendar
-import javax.xml.datatype.DatatypeFactory
-import java.util.GregorianCalendar
 import java.lang.Iterable
 import java.sql.Timestamp
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
 
-import scala.xml.NodeSeq
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
 import scala.language.existentials
+import scala.xml.NodeSeq
 
-import parsing.xmlGen.xmlTypes
-import parsing.xmlGen.{defaultScope, scalaxb}
-import parsing.xmlGen.xmlTypes.{OmiEnvelope,ObjectsType}
-import parsing.xmlGen.scalaxb
-import types.OdfTypes._
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
 import responses.OmiGenerator.odfMsg
+import types.OdfTypes._
 
 
 /**
@@ -82,7 +79,13 @@ case class ReadRequest(
     xmlTypes.ReadRequest(
       None,
       Nil,
-      Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
+      Some(
+        scalaxb.DataRecord(
+          Some("omi.xsd"),
+          Some("msg"),
+          odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope))
+        )
+      ),
       callback.map{ 
         addr => 
           new java.net.URI(addr)

@@ -1,6 +1,6 @@
-/*package responses
+package responses
 
-import agentSystem.{DBPusher, InputPusher}
+import agentSystem.{PromiseResult, PromiseWrite, AgentSystem, DBPusher}
 import akka.testkit.EventFilter
 import akka.testkit.TestEvent.{UnMute, Mute}
 import org.specs2.concurrent.ExecutionEnv
@@ -9,7 +9,7 @@ import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import org.specs2.matcher.XmlMatchers._
 import testHelpers.Actors
-import types.OdfTypes.OdfValue
+import types.OdfTypes.{OdfInfoItem, OdfValue}
 
 import scala.concurrent.{Future, Await}
 import scala.util.Try
@@ -51,9 +51,10 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
             """))
-  val subscriptionHandlerRef = system.actorOf((Props(new SubscriptionHandler())))
-  val requestHandler = new RequestHandler(subscriptionHandlerRef)
-  InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subscriptionHandlerRef)), "test-input-pusher")
+  val subscriptionManager = system.actorOf((Props(new SubscriptionManager)))
+  val agentManager = system.actorOf(Props(new AgentSystem(dbConnection, subscriptionManager)))
+  val requestHandler = new RequestHandler(subscriptionManager,agentManager)
+  //InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subscriptionHandlerRef)), "test-input-pusher")
   val calendar = Calendar.getInstance()
   // try to fix bug with travis
   val timeZone = TimeZone.getTimeZone("Etc/GMT+2")
@@ -62,11 +63,12 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   val testtime = new java.sql.Timestamp(date.getTime)
 
   def beforeAll = {
-    system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
-    Await.ready(initDB, 5 seconds)
+    //comment line below for detailed debug information
+    //system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
+    initDB()
   }
   def afterAll = {
-    system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
+    //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
     cleanAndShutdown
   }
 
@@ -78,6 +80,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       code === 200
     }*/
+    sequential
 
     "return incrementing id for new subscription" >> {
       val ns1 = addSub(1,5, Seq("p/1"))
@@ -91,7 +94,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "fail when trying to use invalid interval" in new Actors {
-      val actor = system.actorOf(Props(new SubscriptionHandler))
+      //val actor = system.actorOf(Props(new SubscriptionHandler))
 
       val dur = -5
       val res = Try(addSub(1, dur, Seq("p/1")))
@@ -118,11 +121,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       pollSub(sub2Id).\\("value").size === 0
       pollSub(sub3Id).\\("value").size === 0
 
-      val fut1 = addValue("p/2", nv("1", 10000))
-      val fut2 = addValue("p/2", nv("2", 20000))
-      val fut3 = addValue("p/2", nv("3", 30000))
-
-      Await.ready(Future.sequence(Seq(fut1,fut2,fut3)), 2 seconds)
+      addValue("p/2", nv("1", 10000))
+      addValue("p/2", nv("2", 20000))
+      addValue("p/2", nv("3", 30000))
 
       pollSub(sub1Id).\\("value").size === 3
       pollSub(sub2Id).\\("value").size === 3
@@ -147,7 +148,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return copy of previous value for interval subs if previous value exists" >> {
-      Await.ready(addValue("p/3", nv("4")), 2 seconds)
+      addValue("p/3", nv("4"))
 
       val subId: Long = addSub(5, 1, Seq("p/3")).\\("requestID").text.toInt
 
@@ -180,9 +181,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val subId = addSub(5, -1, Seq("r/1")).\\("requestID").text.toInt
 
 
-      Await.ready(addValue("r/1", nv("2", 10000)), 2 seconds)
+      addValue("r/1", nv("2", 10000))
       pollSub(subId).\\("value").size === 1
-      Await.ready(addValue("r/1", nv("3",20000)), 2 seconds)
+      addValue("r/1", nv("3",20000))
       pollSub(subId).\\("value").size === 1
       pollSub(subId).\\("value").size === 0
     }
@@ -191,11 +192,11 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val subId = addSub(5, -1, Seq("r/2")).\\("requestID").text.toInt
 
 
-      Await.ready(addValue("r/2", nv("0", 20000)), 2 seconds)
+      addValue("r/2", nv("0", 20000))
       pollSub(subId).\\("value").size === 1
 
-      Await.ready(addValue("r/2", nv("0", 22000)), 2 seconds)
-      Await.ready(addValue("r/2", nv("0", 23000)), 2 seconds)
+      addValue("r/2", nv("0", 22000))
+      addValue("r/2", nv("0", 23000))
       pollSub(subId).\\("value").size === 0
 
     }
@@ -234,16 +235,17 @@ case class OdfValue(
  */
     //pathPrefix
     val pp = Path("Objects/SubscriptionTest/")
-    val pathAndvalues: Iterable[(Path, OdfValue)] = Seq(
-      (pp / "p/1", nv("1")),
-      (pp / "p/2", nv("2")),
-      (pp / "p/3", nv("3")),
-      (pp / "r/1", nv("0")),
-      (pp / "r/2", nv("0")),
-      (pp / "r/3", nv("0")),
-      (pp / "u/7", nv("0"))
+    val pathAndvalues: Iterable[(String, Vector[OdfValue])] = Seq(
+      ("p/1", nv("1")),
+      ("p/2", nv("2")),
+      ("p/3", nv("3")),
+      ("r/1", nv("0")),
+      ("r/2", nv("0")),
+      ("r/3", nv("0")),
+      ("u/7", nv("0"))
     )
-    InputPusher.handlePathValuePairs(pathAndvalues)
+
+    pathAndvalues.foreach{case (path, values) => addValue(path,values)}//InputPusher.handlePathValuePairs(pathAndvalues)
   }
 
   def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {
@@ -261,7 +263,7 @@ case class OdfValue(
 //  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 //) extends OmiRequest
   def pollSub(id: Long) = {
-    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Iterable(id))), Duration.Inf)
+    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Vector(id))), Duration.Inf)
   }
   def cleanAndShutdown() = {
     system.shutdown()
@@ -269,18 +271,22 @@ case class OdfValue(
   }
 
   //add new value easily
-  def addValue(path: String, nv: OdfValue) = {
+  def addValue(path: String, nv: Vector[OdfValue]): Unit = {
     val pp = Path("Objects/SubscriptionTest/")
-    InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
+    val promiseResult = PromiseResult()
+    val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
+    val writeReq = WriteRequest(0 seconds, odf)
+    agentManager ! PromiseWrite(promiseResult, writeReq)
+    Await.ready(promiseResult.futures, 2 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
 
   //create new odfValue value easily
-  def nv(value: String, timestamp: Long = 0L): OdfValue = {
-    OdfValue(
+  def nv(value: String, timestamp: Long = 0L): Vector[OdfValue] = {
+    Vector(OdfValue(
     value,
     "",
     new Timestamp(testtime.getTime + timestamp)
-    )
+    ))
   }
 
 }
@@ -817,4 +823,4 @@ class oldSubscriptionTest(implicit ee: ExecutionEnv) extends Specification with 
 
 
 */
-*/
+

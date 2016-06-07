@@ -1,11 +1,25 @@
 
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package responses
-import types._
-import OdfTypes._
-import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import scala.xml.{ NodeSeq, XML }
-import OdfTypes._
+import scala.xml.XML
+
 import database._
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import types.OdfTypes._
+import types._
 
 trait RESTHandler extends OmiRequestHandlerBase{
   private sealed trait ODFRequest {def path: Path} // path is OdfNode path

@@ -1,25 +1,24 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package agentSystem
 
 import java.lang.{Iterable => JavaIterable}
 
-import scala.collection.immutable.Map
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
@@ -32,9 +31,7 @@ import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
 import responses.OmiGenerator.xmlFromResults
 import responses.{NewDataEvent, Results}
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
 import types.Path
 
 trait  DBPusher  extends BaseAgentSystem{
@@ -92,11 +89,11 @@ trait  DBPusher  extends BaseAgentSystem{
     }
     // Aggregate events under same subscriptions (for optimized callbacks)
     val esubAggregation /*: Map[EventSub, Seq[(EventSub, OdfInfoItem)]]*/ =
-        esubLists groupBy {_._1}
+        esubLists groupBy { case (eventSub, _) => eventSub }
 
     for ((esub, infoSeq) <- esubAggregation) {
 
-        val infoItems = infoSeq map {_._2}
+        val infoItems = infoSeq map { case (_, infoItem) =>  infoItem}
 
         sendEventCallback(esub, infoItems)
     }

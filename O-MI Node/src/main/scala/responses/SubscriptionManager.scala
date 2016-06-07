@@ -1,16 +1,16 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /**
   Licensed under the 4-clause BSD (the "License");
@@ -166,7 +166,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             val eventData = dbConnection.pollEventSubscription(id).map(_.toVector //get data from database
               .groupBy(_.path) //group data by the paths
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
-              .map(n => OdfInfoItem(n._1, n._2)) // Map to Infoitems
+              .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
               .map(i => createAncestors(i)) //Map to OdfObjects
               .fold(emptyTree)(_.union(_)))//.reduceOption(_.union(_)) //Combine OdfObjects
 
@@ -294,8 +294,8 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         log.info(s"Trying to send subscription data to ${iSub.callback}")
         val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
         val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
-            case (s, (p,Some(n))) => (s._1, s._2.:+(n))
-            case (s, (p, None))    => (s._1.:+(p), s._2)
+            case ((paths, nodes), (p,Some(node))) => (paths, nodes.:+(node))
+            case ((paths, nodes), (p, None))    => (paths.:+(p), nodes)
           }
          // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r)))
         //}

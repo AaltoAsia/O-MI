@@ -65,9 +65,9 @@ trait BeforeAfterAll extends Specification {
   protected[this] def afterAll()
 }
 */
-abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
+abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
-  """))) with After with Scope {
+  """)))extends TestKit(as) with After with Scope {
   def after = system.shutdown()
 }
 
