@@ -24,7 +24,7 @@ object Dependencies {
   val sprayTestkit = "io.spray"                %% "spray-testkit" % sprayV   % "test" exclude("org.specs2", "specs2_2.11")
 
   //Slick
-  val slickV = "3.0.0"
+  val slickV = "3.1.1"
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val slf4jNop     = "org.slf4j"           % "slf4j-nop"      % "1.6.4" //common
