@@ -20,7 +20,7 @@ import javax.xml.transform.stream.StreamSource
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.{Elem, Node}
+import scala.xml.{Elem, Node,UnprefixedAttribute }
 
 import parsing.xmlGen.xmlTypes
 import types.OdfTypes._
@@ -130,7 +130,7 @@ object OmiParser extends Parser[OmiParseResult] {
           PollRequest(
             ttl,
             uriToStringOption(read.callback),
-            read.requestID map parseRequestID
+            OdfTreeCollection(read.requestID.map(parseRequestID):_*)
           )))
     } else{
           read.msg match {
@@ -192,20 +192,20 @@ object OmiParser extends Parser[OmiParseResult] {
     Right(Iterable(
       CancelRequest(
         ttl,
-        cancel.requestID.map(parseRequestID).toIterable
+        OdfTreeCollection(cancel.requestID.map(parseRequestID):_*)
       )
     ))
   }
   private[this] def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = Try{
     Iterable(
       ResponseRequest(
-        response.result.map {
+        OdfTreeCollection(response.result.map{
           result =>
             OmiResult(
               result.returnValue.value,
               result.returnValue.returnCode,
               result.returnValue.description,
-              result.requestID.map(parseRequestID).toIterable, 
+              OdfTreeCollection( result.requestID.map(parseRequestID).toSeq : _* ), 
               result.msg.map{
                 case msg : xmlGen.scalaxb.DataRecord[Any] => 
                 //TODO: figure right type parameter
@@ -216,7 +216,7 @@ object OmiParser extends Parser[OmiParseResult] {
                 }
               }
           )
-        }.toIterable
+        }:_*)
       , ttl)
     )
   } match {
@@ -238,7 +238,7 @@ object OmiParser extends Parser[OmiParseResult] {
         val odf = (data \ "Objects")
         odf.headOption match {
           case Some(head) =>
-            parseOdf(head)
+            parseOdf(head/*.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns", "odf.xsd",Node.NoAttributes)*/)
           case None =>
             Left(Iterable(ParseError("No Objects child found in msg.")))
         }

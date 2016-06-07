@@ -87,7 +87,7 @@ case class ReadRequest(
         addr => 
           new java.net.URI(addr)
       },
-      Some("odf.xsd"),
+      Some("odf"),
       xmlTypes.Node,
       None,
       oldest,
@@ -118,7 +118,7 @@ case class ReadRequest(
 case class PollRequest(
   ttl: Duration,
   callback: Option[String ] = None,
-  requestIDs: Iterable[Long ] = asJavaIterable(Seq.empty[Long])
+  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
 ) extends OmiRequest{
   
   implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
@@ -156,7 +156,7 @@ case class SubscriptionRequest(
     Nil,
       Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
     callback.map{ addr => new java.net.URI(addr)},
-    Some("odf.xsd"),
+    Some("odf"),
     xmlTypes.Node,
     Some(interval.toSeconds)
   )
@@ -180,7 +180,7 @@ case class WriteRequest(
     Nil,
       Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
     callback.map{ addr => new java.net.URI(addr)},
-    Some("odf.xsd")
+    Some("odf")
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ 
     xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.WriteRequest](Some("omi.xsd"), Some("write"), asWriteRequest), "1.0", ttl.toSeconds)
@@ -193,17 +193,17 @@ case class WriteRequest(
   *
   **/
 case class ResponseRequest(
-  results: Iterable[OmiResult],
+  results: OdfTreeCollection[OmiResult],
   ttl: Duration = Duration.Inf
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   val callback : Option[String] = None
   def odf : OdfObjects= results.foldLeft(OdfObjects()){
     _ union _.odf.getOrElse(OdfObjects())
   }
-  implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toSeq:_*)
+  implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toVector.toSeq: _*)
    
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelope ={ 
-    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.ResponseListType](Some("omi.xsd"), Some("cancel"), asResponseListType), "1.0", ttl.toSeconds)
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.ResponseListType](Some("omi.xsd"), Some("response"), asResponseListType), "1.0", ttl.toSeconds)
   }
   implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
 } 
@@ -213,7 +213,7 @@ case class ResponseRequest(
   **/
 case class CancelRequest(
   ttl: Duration,
-  requestID: Iterable[Long ] = asJavaIterable(Seq.empty[Long])
+  requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty
 ) extends OmiRequest {
   implicit def asCancelRequest : xmlTypes.CancelRequest = xmlTypes.CancelRequest(
     None,
@@ -236,7 +236,7 @@ case class OmiResult(
   value: String,
   returnCode: String,
   description: Option[String] = None,
-  requestID: Iterable[Long ] = asJavaIterable(Seq.empty[Long]),
+  requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   odf: Option[OdfTypes.OdfObjects] = None
 ){
     
@@ -256,7 +256,7 @@ case class OmiResult(
     },
     None,
     None,
-    odf.map{ objs => "odf.xsd" }
+    odf.map{ objs => "odf" }
   )
 } 
 

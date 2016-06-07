@@ -87,7 +87,7 @@ case class OdfMetaData(
 /** Class presenting Value tag of O-DF format. */
 case class OdfValue(
   value:                String,
-  typeValue:            String,
+  typeValue:            String = "xs:string",
   timestamp:            Timestamp
 ) {
   /** Method to convert to scalaxb generated class. */

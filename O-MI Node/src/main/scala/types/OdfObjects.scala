@@ -18,7 +18,9 @@ package OdfTypes
 import scala.collection.immutable.HashMap
 
 import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.{defaultScope, xmlTypes, scalaxb}
 import types.OdfTypes.OdfTreeCollection._
+import scala.xml.{Elem, NodeSeq, Node,UnprefixedAttribute }
 
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
@@ -109,5 +111,9 @@ class OdfObjectsImpl(
       }.toSeq,
       version
     )
+  }
+  implicit def asXML : NodeSeq= {
+    val xml  = scalaxb.toXML[ObjectsType](asObjectsType, Some("odf.xsd"), Some("Objects"), defaultScope)
+    xml//.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 }    

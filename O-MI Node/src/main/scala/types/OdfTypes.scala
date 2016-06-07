@@ -23,6 +23,7 @@ import parsing.xmlGen.xmlTypes._
 
 object OdfTreeCollection {
   def apply[T](): OdfTreeCollection[T] = Vector()
+  def empty[T]: OdfTreeCollection[T] = Vector()
   def apply[T](elems: T*): OdfTreeCollection[T] = Vector(elems:_*)
   def fromIterable[T](elems: Iterable[T]): OdfTreeCollection[T] = elems.toVector
   def toJava[T](c: OdfTreeCollection[T]): java.util.List[T] = c.toBuffer.asJava
@@ -84,6 +85,7 @@ case class OdfObjects(
     } 
 
 }
+
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
   id: OdfTreeCollection[QlmID],
@@ -93,6 +95,7 @@ case class OdfObject(
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+
 
   def get(path: Path) : Option[OdfNode] = path match{
       case this.path => Some(this)
