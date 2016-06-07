@@ -262,7 +262,7 @@ case class OdfValue(
 //  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 //) extends OmiRequest
   def pollSub(id: Long) = {
-    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Iterable(id))), Duration.Inf)
+    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Vector(id))), Duration.Inf)
   }
   def cleanAndShutdown() = {
     system.shutdown()
