@@ -30,7 +30,7 @@ import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
 import responses.OmiGenerator.xmlFromResults
-import responses.{NewDataEvent, Results}
+import responses.Results
 import types.OdfTypes._
 import types.Path
 
@@ -146,7 +146,7 @@ trait  DBPusher  extends BaseAgentSystem{
    * Function for handling sequences of OdfInfoItem.
    * @return true if the write was accepted.
    */
-  private def handleInfoItems(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[Iterable[Path]] = Future{
+  private def handleInfoItems(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[Iterable[Path]] = {
     // save only changed values
     val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
@@ -211,17 +211,18 @@ trait  DBPusher  extends BaseAgentSystem{
         SingleStores.hierarchyStore execute Union(updateTree)
     }
 
-    // DB + Poll Subscriptions
-    val itemValues = (triggeringEvents flatMap {event =>
+    // DB + Poll Subscriptionst
+    val itemValues = triggeringEvents flatMap {event =>
       val item   = event.infoItem
       val values = item.values.toSeq
       values map {value => (item.path, value)}
-    }).toSeq
-    dbobject.writeMany(itemValues)
+    }
 
-    subHandler ! NewDataEvent(itemValues)
+    dbobject.writeMany(itemValues)//.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path))
+
+    //subHandler ! NewDataEvent(itemValues)
     
-    infoItems.map(_.path) ++ objectMetadatas.map(_.path)
+    Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
     //log.debug("Successfully saved InfoItems to DB")
   }
 

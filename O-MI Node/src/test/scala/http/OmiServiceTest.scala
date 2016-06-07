@@ -1,5 +1,6 @@
 package http
 
+import scala.concurrent.duration.DurationInt
 import scala.xml._
 
 import agentSystem.AgentSystem
@@ -25,6 +26,7 @@ class OmiServiceTest extends Specification
 
 
   def actorRefFactory = system
+  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
   implicit val dbConnection = new TestDB("system-test") // new DatabaseConnection
@@ -39,6 +41,7 @@ class OmiServiceTest extends Specification
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
   "System tests for features of OMI Node service".title
+
 
   def beforeAll() = {
     Boot.saveSettingsOdf(agentManager)//Boot.init(dbConnection)
@@ -57,7 +60,7 @@ class OmiServiceTest extends Specification
   }
 
   "Data discovery, GET: OmiService" >> {
-    sequential
+
     "respond with hello message for GET request to the root path" >> {
       Get() ~> myRoute ~> check {
         mediaType === `text/html`
