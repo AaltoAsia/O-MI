@@ -20,15 +20,16 @@ import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 
-import agentSystem.AgentConfigEntry
+import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
 
 
+
  
-class OmiConfigExtension(config: Config) extends Extension {
+class OmiConfigExtension( val config: Config) extends Extension with AgentSystemConfigExtension{
   // Node special settings
 
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
@@ -65,15 +66,6 @@ class OmiConfigExtension(config: Config) extends Extension {
   //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
 
-  // Agents
-
-  val internalAgentsStartTimout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
-
-  /**
-   * Time in milliseconds how long an actor has to at least run before trying
-   * to restart in case of ThreadException */
- // val timeoutOnThreadException= config.getDuration("agent-system.timeout-on-threadexception", TimeUnit.MILLISECONDS).milliseconds
-
 
   // Authorization
   
@@ -83,23 +75,6 @@ class OmiConfigExtension(config: Config) extends Extension {
   val inputWhiteListSubnets = config.getStringList("omi-service.input-whitelist-subnets") 
 
   val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds 
-  val agentConfigurations: Array[AgentConfigEntry] = {
-    val internalAgents = config.getObject("agent-system.internal-agents") 
-    val names : Set[String] = asScalaSet(internalAgents.keySet()).toSet // mutable -> immutable
-    names.map{ 
-      name =>
-      val conf = internalAgents.toConfig()
-      val classname : String= conf.getString(s"$name.class")
-
-      val ownedPaths : Seq[Path] = Try{
-        conf.getStringList(s"$name.owns").map{ str => Path(str)}
-      }.recover{
-        case e : Missing => Seq.empty 
-      }.get
-      val config = conf.getObject(s"$name.config").toConfig
-      AgentConfigEntry(name, classname.toString, config, ownedPaths) 
-    }.toArray
-  }
 }
 
 
