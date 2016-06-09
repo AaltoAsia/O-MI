@@ -80,7 +80,6 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       code === 200
     }*/
-    sequential
 
     "return incrementing id for new subscription" >> {
       val ns1 = addSub(1,5, Seq("p/1"))

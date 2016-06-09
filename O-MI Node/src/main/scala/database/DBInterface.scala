@@ -215,7 +215,7 @@ class DatabaseConnection extends DB {
 class TestDB(val name:String = "") extends DB
 {
   println("Creating TestDB: " + name)
-  val db = Database.forURL(s"jdbc:h2:mem:$name;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver",
+  val db = Database.forURL(s"jdbc:h2:mem:$name;MVCC=true", driver = "org.h2.Driver",
     keepAliveConnection=true)
   initialize()
 
