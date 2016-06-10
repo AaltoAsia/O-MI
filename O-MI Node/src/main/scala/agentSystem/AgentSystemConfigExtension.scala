@@ -4,10 +4,9 @@ import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
 
-import agentSystem.AgentConfigEntry
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.Extension
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
@@ -28,9 +27,11 @@ trait AgentSystemConfigExtension  extends Extension {
 
       val ownedPaths : Seq[Path] = Try{
         conf.getStringList(s"$name.owns").map{ str => Path(str)}
-      }.recover{
-        case e : Missing => Seq.empty 
-      }.get
+      } match {
+        case Success(s) => s
+        case Failure(e: Missing) => Seq.empty
+        case Failure(e) => throw e
+      }
       val config = conf.getObject(s"$name.config").toConfig
       AgentConfigEntry(name, classname.toString, config, ownedPaths) 
     }.toArray

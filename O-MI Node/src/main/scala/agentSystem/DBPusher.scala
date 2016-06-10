@@ -149,7 +149,10 @@ trait  DBPusher  extends BaseAgentSystem{
    * Function for handling sequences of OdfInfoItem.
    * @return true if the write was accepted.
    */
-  private def handleInfoItems(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[Iterable[Path]] = {
+  private def handleInfoItems(
+                               infoItems: Iterable[OdfInfoItem],
+                               objectMetadatas: Vector[OdfObject] = Vector()
+                               ): Future[Iterable[Path]] = {
     // save only changed values
     val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
@@ -172,7 +175,7 @@ trait  DBPusher  extends BaseAgentSystem{
       }
 
     pollFuture.onFailure{
-        case e => log.error(e, "Error when adding poll values to database")
+        case t: Throwable => log.error(t, "Error when adding poll values to database")
       }
 
     val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)
@@ -230,7 +233,7 @@ trait  DBPusher  extends BaseAgentSystem{
     val writeFuture = dbobject.writeMany(itemValues)
 
     writeFuture.onFailure{
-      case ex => log.error(ex, "Error when writing values for paths $paths")
+      case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
     //return when futures have been completed
