@@ -53,9 +53,9 @@ trait IpAuthorization extends AuthorizationExtension {
     require(parts.length == 2)
     val mask = parts.head
     val bits = parts.last
-    val ip = inetAddrToBytes(InetAddress.getByName(mask)) 
-    log.debug("Mask IPv" + ip.length + " : " + ip.mkString(".")) // TODO: bytes should be printed as unsigned
-    (ip, bits.toInt )
+    val ip = InetAddress.getByName(mask)//inetAddrToBytes(InetAddress.getByName(mask))
+    log.debug("Mask IP: " + ip.getHostAddress) // TODO: bytes should be printed as unsigned
+    (ip, bits.toInt)
   }.toMap 
   log.debug(s"Totally ${whiteMasks.keys.size} masks")
 
@@ -69,8 +69,8 @@ trait IpAuthorization extends AuthorizationExtension {
       val result = if (user.exists( addr =>
         whiteIPs.contains( inetAddrToBytes( addr ) ) ||
         whiteMasks.exists{
-          case (subnet : Seq[Byte], bits : Int) =>
-          isInSubnet(subnet, bits, inetAddrToBytes( addr ))
+          case (subnet : InetAddress, bits : Int) =>
+          isInSubnet(subnet, bits, addr)
         }
       )) Some(r)
       else None
@@ -100,25 +100,26 @@ trait IpAuthorization extends AuthorizationExtension {
   
   /** Helper method for checkking if connection is in allowed subnets.
     *
-    * @param addr addr is InetAddress of connector.
+    * @param ip addr is InetAddress of connector.
     * @return Boolean, true if connection is in allowed suybnet.
     **/
-  private[this] def isInSubnet(subnet: Seq[Byte], bits: Int, ip: Seq[Byte]) : Boolean = {
+  private[this] def isInSubnet(subnet: InetAddress, bits: Int, ip: InetAddress) : Boolean = {
     // TODO: bytes should be printed as unsigned
-    def compareLog() = log.debug("Whitelist check for IPv" + ip.length +
-      " address: " + ip.map{b => b.toHexString}.mkString(":") +
-    " against " + subnet.map{b => b.toHexString}.mkString(":")
+    def compareLog() = log.debug("Whitelist check for IP address: " + ip.getHostAddress +
+    " against " + subnet.getHostAddress
     )
     val ipv4 = 4
     val ipv6 = 16
-    (subnet.length, ip.length) match { 
+    val subnetBytes = inetAddrToBytes(subnet)
+    val ipBytes = inetAddrToBytes(ip)
+    (subnetBytes.length, ipBytes.length) match {
       case (a, b) if a == ipv4 && b == a =>{
         compareLog()
         val maxBits = 32
         val allOnes = -1
         val mask = allOnes << (maxBits - bits)  
 
-        val check = (bytesToInt(subnet) & mask) == (bytesToInt(ip) & mask)
+        val check = (bytesToInt(subnetBytes) & mask) == (bytesToInt(ipBytes) & mask)
 
         check
       }
@@ -127,8 +128,8 @@ trait IpAuthorization extends AuthorizationExtension {
           val maxBits = 64
           val allOnes = -1
           val mask = allOnes << (maxBits - bits)  
-          val ipArea = bytesToInt( List( ip(4), ip(5), ip(6), ip(7) ) )
-          val subnetArea = bytesToInt( List( subnet(4), subnet(5), subnet(6), subnet(7) ) )
+          val ipArea = bytesToInt( List( ipBytes(4), ipBytes(5), ipBytes(6), ipBytes(7) ) )
+          val subnetArea = bytesToInt( List( subnetBytes(4), subnetBytes(5), subnetBytes(6), subnetBytes(7) ) )
 
       /*if( bits > 56 )
        List[Byte]( 0xFF.toByte, (0xFF << ( 64 - bits)).toByte)
@@ -143,16 +144,12 @@ trait IpAuthorization extends AuthorizationExtension {
           case v if v < 0 =>  true
       }
       val n = 5
-      val checked = check(subnet, ip,  n) && (( subnetArea  & mask  ) == (  ipArea  & mask ))
+      val checked = check(subnetBytes, ipBytes,  n) && (( subnetArea  & mask  ) == (  ipArea  & mask ))
       //( subnet(6) & mask(0) ) == ( ip(6) & mask(0)  ) && 
       //( subnet(7) & mask(1) ) == ( ip(7) & mask(1)  )
         checked
       }
       case ( a, b) if (( a == ipv4 ) && ( b == ipv6 ) )|| (( a == ipv6 ) && ( b == ipv4 )) => {
-      log.debug(
-        s"Tried to compare IPv$a with IPv$b, address: " + 
-        subnet.map{b => b.toHexString}.mkString(":") + 
-        " ip: " + ip.map{b => b.toHexString}.mkString(":") )
       false
       }
       case (_,_) => false

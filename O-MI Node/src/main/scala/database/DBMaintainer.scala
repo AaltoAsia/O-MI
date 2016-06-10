@@ -73,7 +73,9 @@ class DBMaintainer(val dbobject: DB)
    *
    */
   override def receive: Actor.Receive = {
-    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
+    case TrimDB                         => {
+      val numDel = dbobject.trimDB()
+      numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur milliseconds")
