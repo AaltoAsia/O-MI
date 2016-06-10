@@ -58,7 +58,7 @@ case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResp
   def isSuccessful : Future[ResponsibleAgentResponse]= {
     resultSequence.map{ 
       res : Iterable[ResponsibleAgentResponse] =>
-      res.foldLeft(SuccessfulWrite(Iterable.empty)){
+      res.foldLeft(SuccessfulWrite(Vector.empty)){
         (l, r) =>
         r match{
           case SuccessfulWrite( paths ) =>
@@ -71,9 +71,7 @@ case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResp
   }
 }
 
-trait ResponsibleAgentManager extends BaseAgentSystem with DBPusher{
-  def dbobject: DB
-  def subHandler: ActorRef
+trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
   /*
    * TODO: Use database and Authetication for responsible agents
    */
@@ -177,7 +175,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with DBPusher{
         log.debug( s"$senderName writing to paths owned by it: $pathsO")
         writeValues(infoItems)
       }.getOrElse{
-        Future.successful{SuccessfulWrite( Iterable.empty )}  
+        Future.successful{SuccessfulWrite( Vector.empty )}  
       }
       promise.completeWith(future)
     } 

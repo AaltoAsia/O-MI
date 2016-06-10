@@ -39,12 +39,12 @@ sealed trait InternalAgentCmd
 sealed trait InternalAgentResponse
 trait InternalAgentSuccess     extends InternalAgentResponse 
   case class CommandSuccessful() extends InternalAgentSuccess 
-abstract class InternalAgentFailure(msg : String )                 extends  Exception(msg) with InternalAgentResponse
+abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse
   case class CommandFailed(msg : String ) extends InternalAgentFailure(msg) 
 sealed trait ResponsibleAgentMsg
   case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
 sealed trait ResponsibleAgentResponse
-  case class SuccessfulWrite( paths: Iterable[Path] ) extends ResponsibleAgentResponse 
+  case class SuccessfulWrite( paths: Vector[Path] ) extends ResponsibleAgentResponse 
 object AgentTypes {
   trait InternalAgent extends Actor with ActorLogging {
     protected def config : Config

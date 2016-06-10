@@ -34,6 +34,9 @@ import responses.Results
 import types.OdfTypes._
 import types.Path
 
+trait  InputPusher  extends BaseAgentSystem{
+  protected def writeValues(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[SuccessfulWrite] 
+}
 trait  DBPusher  extends BaseAgentSystem{
   def dbobject: DB
   def subHandler: ActorRef
@@ -112,11 +115,11 @@ trait  DBPusher  extends BaseAgentSystem{
           log.debug("Successfully saved Odfs to DB")
       }
       future.map{ 
-          paths => SuccessfulWrite( paths )
+          paths => SuccessfulWrite( paths.toVector )
       }
     } else {
       Future.successful{
-         SuccessfulWrite( Iterable.empty )
+         SuccessfulWrite( Vector.empty )
       }  
     }
   }

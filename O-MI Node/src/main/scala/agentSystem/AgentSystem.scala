@@ -37,14 +37,15 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
   extends BaseAgentSystem 
   with InternalAgentLoader
   with InternalAgentManager
-  with ResponsibleAgentManager{
+  with ResponsibleAgentManager
+  with DBPusher{
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
   protected[this] val settings = http.Boot.settings
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
     case  restart: ReStartAgentCmd  => handleRestart( restart )
-    case ListAgentsCmd() => sender() ! agents.values.toSeq
+    case ListAgentsCmd() => sender() ! agents.values.toVector
     case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
   }  
 }
@@ -73,6 +74,6 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
 abstract class BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
   protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
-  protected[this] def settings: OmiConfigExtension 
+  protected[this] def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
 }

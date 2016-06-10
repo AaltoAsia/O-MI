@@ -23,10 +23,26 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 import agentSystem.AgentTypes._
-import akka.actor.ActorRef
+import akka.actor.{Props, ActorRef}
 import akka.pattern.ask
 import com.typesafe.config.Config
 import types.Path
+
+sealed trait InternalAgentLoadFailure{ def msg : String }
+abstract class InternalAgentLoadException(val msg: String)  extends  Exception(msg) with InternalAgentLoadFailure
+final case class PropsCreatorNotImplemented(clazz : Class[_] ) extends InternalAgentLoadException({ 
+  val start = clazz.toString.replace( "class", "Object" ).replace( "$", "")
+    start + " does not implement PropsCreator trait."
+  })
+final case class InternalAgentNotImplemented(clazz: Class[_]) extends InternalAgentLoadException({ 
+  val start = clazz.toString.replace( "class", "Class" )
+  start + " does not implement InternalAgent trait."
+})
+final case class WrongPropsCreated(props : Props, classname: String ) extends InternalAgentLoadException({
+  val created = props.actorClass
+  s"Object $classname creates InternalAgentProps for $created,"+
+  s" but should create for class $classname."
+})
 
 trait InternalAgentLoader extends BaseAgentSystem {
   import context.dispatcher
@@ -48,14 +64,18 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  protected def loadAndStart(name : AgentName, classname : String, config : Config, ownedPaths: Seq[Path]):Unit = {
-    Try {
+  protected[agentSystem] def loadAndStart(
+    name : AgentName,
+    classname : String,
+    config : Config,
+    ownedPaths: Seq[Path]
+  ) : Unit = Try {
       log.info("Instantiating agent: " + name + " of class " + classname)
-      val classLoader     = Thread.currentThread.getContextClassLoader
-      val actorClazz      = classLoader.loadClass(classname)
-      val objectClazz = classLoader.loadClass(classname + "$")
-      val objectInterface  = classOf[PropsCreator]
-      val agentInterface  = classOf[InternalAgent]
+      val classLoader           = Thread.currentThread.getContextClassLoader
+      val actorClazz            = classLoader.loadClass(classname)
+      val objectClazz           = classLoader.loadClass(classname + "$")
+      val objectInterface       = classOf[PropsCreator]
+      val agentInterface        = classOf[InternalAgent]
       val responsibleInterface  = classOf[ResponsibleInternalAgent]
       actorClazz match {
         //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
@@ -73,35 +93,36 @@ trait InternalAgentLoader extends BaseAgentSystem {
                 case clazz if clazz == actorClazz =>
                   val agent = context.actorOf( props, name.toString )
                   startAgent(agent)
-                case clazz: Class[_] =>
-                  log.warning(s"Object $classname does created Props for $clazz, should create for $actorClazz.")
-                  Future.failed( new Exception(" asdf"))
+                case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
               }
-            case clazz: Class[_] =>
-              log.warning(s"Object  $classname does not implement PropsCreator trait.")
-              Future.failed( new Exception(" asdf"))
+            case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
           }
-          case clazz: Class[_] =>
-            log.warning(s"Class  $classname does not implement InternalAgent trait.")
-            Future.failed( new Exception(" asdf"))
-        }
+          case clazz: Class[_] => throw new InternalAgentNotImplemented(clazz)
+      }
     } match {
-      case Success(startF: Future[ActorRef]) => ()
+      case Success(startF: Future[ActorRef]) => 
         startF.onSuccess{ 
           case agentRef: ActorRef =>
           log.info( s"Started agent $name successfully.")
           agents += name -> AgentInfo(name,classname, config, agentRef, true, ownedPaths)
         }
-      case Failure(e) => e match {
-        case _:NoClassDefFoundError | _:ClassNotFoundException =>
-          log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
-        case e: Throwable =>
-          log.warning(s"Class $classname could not be loaded, created, initialized or started. Because received $e.")
+        startF.onFailure{ 
+          case e : Throwable =>
+          log.warning(s"Class $classname could not be started. Received $e")
           log.warning(e.getStackTrace.mkString("\n"))
-        case _ => throw e
-      }
+        }
+      case Failure( e : InternalAgentLoadFailure ) =>
+        log.warning( e.msg ) 
+      case Failure(e:NoClassDefFoundError) => 
+        log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+      case Failure(e:ClassNotFoundException ) =>
+        log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+      case Failure(e: Throwable) =>
+        log.warning(s"Class $classname could not be loaded or created. Received $e")
+        log.warning(e.getStackTrace.mkString("\n"))
     }
-  }
+    
+  
 
   protected def startAgent(agent: ActorRef) = { 
     val timeout = settings.internalAgentsStartTimout
