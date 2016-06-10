@@ -162,9 +162,15 @@ trait  DBPusher  extends BaseAgentSystem{
       case (path, oldValue, value) =>
       handlePollData(path, oldValue ,value)}
       //handlePollData _ tupled n}
-    if(!newPollValues.isEmpty) {
+    val pollFuture: Future[Option[Int]] = if(!newPollValues.isEmpty) {
       dbobject.addNewPollData(newPollValues)
-    }
+      } else {
+        Future.successful(Option(0))
+      }
+
+    pollFuture.onFailure{
+        case e => log.error(e, "Error when adding poll values to database")
+      }
 
     val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)
     val triggeringEvents = callbackDataOptions.flatten
@@ -218,12 +224,24 @@ trait  DBPusher  extends BaseAgentSystem{
       values map {value => (item.path, value)}
     }
 
-    dbobject.writeMany(itemValues)//.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path))
+    val writeFuture = dbobject.writeMany(itemValues)
 
+    writeFuture.onFailure{
+      case ex => log.error(ex, "Error when writing values for paths $paths")
+    }
+
+    //return when futures have been completed
+    //OmiServiceTest fails when value is returned after items have been written in database
+    /*
+    for {
+      _ <- pollFuture
+      _ <- writeFuture
+      res = infoItems.map(_.path) ++ objectMetadatas.map(_.path)
+    } yield res
     //subHandler ! NewDataEvent(itemValues)
-    
-    Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
+    */
     //log.debug("Successfully saved InfoItems to DB")
+    Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
   }
 
   /**

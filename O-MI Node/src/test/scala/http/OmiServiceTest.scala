@@ -29,8 +29,7 @@ class OmiServiceTest extends Specification
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
   lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
 
-  implicit val dbConnection = new TestDB("system-test") // new DatabaseConnection
-  implicit val dbobject = dbConnection
+  implicit val dbConnection = new TestDB("system-test")
   val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()(dbConnection)))
 
   val agentManager = system.actorOf(
@@ -45,7 +44,7 @@ class OmiServiceTest extends Specification
 
   def beforeAll() = {
     Boot.saveSettingsOdf(agentManager)//Boot.init(dbConnection)
-    Thread.sleep(1000)
+    //Thread.sleep(300)
     // clear if some other tests have left data
     //    dbConnection.clearDB()
 
@@ -102,7 +101,7 @@ class OmiServiceTest extends Specification
 
 
     // Somewhat overcomplicated test; Serves as an example for other tests
-    "reply its settings as odf from path `settingsOdfPath` (with \"Settings\" id)" >> {
+    "reply its settings as odf frorm path `settingsOdfPath` (with \"Settings\" id)" >> {
       Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
         status === OK
         mediaType === `text/xml`
@@ -202,7 +201,6 @@ class OmiServiceTest extends Specification
       Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
-        println("\n\n\n\n\n\n\n\n" + responseAs[String])
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -408,9 +406,12 @@ class OmiServiceTest extends Specification
         }
       }
       "respond correctly to write request with whitelisted saml user" >> {
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor8"))).withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor8")))
+          .withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
+
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))

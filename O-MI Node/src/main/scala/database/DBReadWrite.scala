@@ -163,7 +163,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val returnId = db.run(updateAction.transactionally)
 
-    val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) ) 
+    //val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) )
 
     //Call hooks
     returnId
