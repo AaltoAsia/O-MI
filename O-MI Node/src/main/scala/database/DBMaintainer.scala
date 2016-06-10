@@ -78,7 +78,7 @@ class DBMaintainer(val dbobject: DB)
       numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
-      log.info(s"Taking Snapshot took $snapshotDur milliseconds")
+      log.info(s"Taking Snapshot took $snapshotDur")
       // remove unnecessary files (might otherwise grow until disk is full)
       val dirs = SingleStores.prevaylerDirectories
       for (dir <- dirs) {
