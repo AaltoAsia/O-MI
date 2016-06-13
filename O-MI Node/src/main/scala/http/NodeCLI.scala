@@ -17,7 +17,7 @@ package http
 
 import java.net.InetSocketAddress
 
-import scala.concurrent.Await
+import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
@@ -79,9 +79,11 @@ remove <path>
     log.info(s"Got help command from $ip")
     commands
   }
+
   private def listAgents(): String = {
     log.info(s"Got list agents command from $ip")
-    val result = (agentLoader ? ListAgentsCmd())
+    val result = (agentLoader ? ListAgentsCmd()).mapTo[Future[Vector[AgentInfo]]]
+      .flatMap{ case future : Future[Vector[AgentInfo]] => future }
       .map[String]{
         case agents: Seq[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
@@ -104,6 +106,7 @@ remove <path>
       }
     Await.result(result, commandTimeout)
   }
+
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
     val result = (subscriptionHandler ? ListSubsCmd())
@@ -139,9 +142,11 @@ remove <path>
       }
     Await.result(result, commandTimeout)
   }
+  
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
-    val result = (agentLoader ? StartAgentCmd(agent))
+    val result = (agentLoader ? StartAgentCmd(agent)).mapTo[Future[String]]
+      .flatMap{ case future : Future[String] => future }
       .map{
         case msg: String =>
           msg +"\n"
@@ -155,7 +160,8 @@ remove <path>
 
   private def stopAgent(agent: AgentName): String = {
     log.info(s"Got stop command from $ip for $agent")
-    val result = (agentLoader ? StopAgentCmd(agent))
+    val result = (agentLoader ? StopAgentCmd(agent)).mapTo[Future[String]]
+      .flatMap{ case future : Future[String] => future }
       .map{
         case msg:String => 
           msg +"\n"

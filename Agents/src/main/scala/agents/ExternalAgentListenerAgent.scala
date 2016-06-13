@@ -11,40 +11,72 @@
  +    See the License for the specific language governing permissions and         +
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-package agentSystem
+package agents
 
 import java.net.InetSocketAddress
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.util.Try
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.io.Tcp
+import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.pattern.ask
+import akka.io.{IO, Tcp}
+import akka.util.Timeout
 import http.Authorization.ExtensibleAuthorization
 import http.IpAuthorization
 import parsing.OdfParser
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
 import types._
+import agentSystem._
+import agentSystem.AgentTypes._
+import com.typesafe.config.Config
+import scala.concurrent.ExecutionContext.Implicits.global
 
-object  ExternalAgentListener{
-  def props( agentSystem: ActorRef ): Props = {
-          Props(new ExternalAgentListener( agentSystem))
+object  ExternalAgentListener extends PropsCreator{
+  def props( config: Config ): InternalAgentProps = {
+          InternalAgentProps(new ExternalAgentListener(config))
   }
 }
 /** AgentListener handles connections from agents.
   */
-class ExternalAgentListener( agentSystem: ActorRef )
-  extends Actor with ActorLogging
+class ExternalAgentListener(override val config: Config)
+  extends InternalAgent
   with ExtensibleAuthorization with IpAuthorization
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
-  
-  
+  protected implicit val timeout = config.getDuration("timeout", SECONDS).seconds
+  protected val port = config.getInt("port")
+  protected val interface = config.getString("interface")
   import Tcp._
+  implicit def actorSystem : ActorSystem = context.system
+  protected def start : Try[InternalAgentSuccess ] = Try{
+    val binding = (IO(Tcp)  ? Tcp.Bind(self,
+      new InetSocketAddress(interface, port)))(timeout)
+    Await.result(
+      binding.map{
+        case Bound(localAddress: InetSocketAddress) =>
+        CommandSuccessful()
+      }, timeout
+    )
+  
+  }
+  protected def stop : Try[InternalAgentSuccess ] = Try{
+    val unbinding = (IO(Tcp)  ? Tcp.Unbind)(timeout)
+    Await.result(
+      unbinding.map{
+        case Tcp.Unbound =>
+        CommandSuccessful()
+      }, timeout
+    )
+  
+  }
+  
   /** Partial function for handling received messages.
     */
-  def receive : Actor.Receive = {
+  override protected def receiver : Actor.Receive = {
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?

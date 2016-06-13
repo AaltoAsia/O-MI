@@ -24,21 +24,24 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
         akka.loggers = ["akka.testkit.TestEventListener"]
         """).withFallback(ConfigFactory.load()))
   )
-  "InternalAgentLoader" should { 
-    val whenLoading = "log warnings when loading fails when "
-    whenLoading + "agent's class is not found" in missingAgentTest
-    whenLoading + "agent's companion object is not found" in missingObjectTest
+  "InternalAgentLoader should " >> { 
+    "log warnings when loading fails when " >> {
+      "agent's class is not found" >> missingAgentTest
+      "agent's companion object is not found" >> missingObjectTest
+    }
 
-    val whenInvalidClasses = "log warnings when loaded classes are invalid when "
-    whenInvalidClasses + "agent's class does not implement trait InternalAgent" in unimplementedIATest
-    whenInvalidClasses + "agent's companion object does not implement trait PropsCreator" in unimplementedPCTest
-    whenInvalidClasses + "agent's companion object creates props for something else than agent" in wrongPropsTest
-    whenInvalidClasses + "agent's companion object is actually something else" in oddObjectTest 
-    val exceptionsThrown = "log warnings when loaded classes throw exceptions when "
-    exceptionsThrown + "props are created " in propsTest 
-    exceptionsThrown + "agent is started  " in startTest
+    "log warnings when loaded classes are invalid when " >> {
+      "agent's class does not implement trait InternalAgent" >> unimplementedIATest
+      "agent's companion object does not implement trait PropsCreator" >> unimplementedPCTest
+      "agent's companion object creates props for something else than agent">> wrongPropsTest
+      "agent's companion object is actually something else" >> oddObjectTest 
+    }
+    "log warnings when loaded classes throw exceptions when " >> {
+      "props are created " >> propsTest 
+      "agent is started  " >> startTest
+    }
 
-    "store successfully started agents to agents " in successfulAgents 
+    "store successfully started agents to agents " >> successfulAgents 
   }
  class TestLoader( testConfig : AgentSystemConfigExtension) extends BaseAgentSystem with InternalAgentLoader{
    protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
@@ -271,6 +274,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      correctAgents must contain(t) 
    }.await
  }
+
  def logWarningTest(
    config: AgentSystemConfigExtension,
    warnings : Vector[String]
