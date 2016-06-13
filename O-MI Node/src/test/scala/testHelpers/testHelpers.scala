@@ -13,7 +13,10 @@ import responses.RemoveSubscription
 
 class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
 
-  def after = TestKit.shutdownActorSystem(system)
+  def after = {
+    _system.log.info("SHUTTING DOWN SYSTE ++++++++++++++++++++++++")
+    TestKit.shutdownActorSystem(system)
+  }
 }
 
 class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
@@ -68,7 +71,11 @@ trait BeforeAfterAll extends Specification {
 abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """)))extends TestKit(as) with After with Scope {
-  def after = system.shutdown()
+  //def after = system.shutdown()
+  def after = {
+    as.log.info("SHUTTING DOWN SYSTE ++++++++++++++++++++++++")
+    TestKit.shutdownActorSystem(system)
+  }
 }
 
 class SubscriptionHandlerTestActor extends Actor {

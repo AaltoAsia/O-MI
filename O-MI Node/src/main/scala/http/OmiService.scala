@@ -23,7 +23,7 @@ import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
 import accessControl.AuthAPIService
-import akka.actor.{Actor, ActorContext, ActorLogging}
+import akka.actor.{Actor, ActorSystem, ActorContext, ActorLogging}
 import akka.event.LoggingAdapter
 import http.Authorization._
 import parsing.OmiParser
@@ -55,6 +55,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
      {
 
   registerApi(new AuthAPIService())
+  val system = context.system
   /**
    * the HttpService trait defines only one abstract member, which
    * connects the services environment to the enclosing actor or test
@@ -83,8 +84,9 @@ trait OmiService
      with OmiServiceAuthorization
      {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   def log: LoggingAdapter
+  val system : ActorSystem
+  import system.dispatcher
   val requestHandler: RequestHandler
 
 
@@ -188,14 +190,14 @@ trait OmiService
                     case Some(req) =>{
                       req.ttl match{
                         case ttl: FiniteDuration => ttlPromise.completeWith(
-                          akka.pattern.after(ttl, using = http.Boot.system.scheduler) {
+                          akka.pattern.after(ttl, using = system.scheduler) {
                             log.info(s"TTL timed out after $ttl");
                             Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
                           }
                         )
                         case ttl: Duration => //noop
                       }
-                      requestHandler.handleRequest(req)
+                      requestHandler.handleRequest(req)(system)
                     }
                     case None =>
                       Future.successful(unauthorized)

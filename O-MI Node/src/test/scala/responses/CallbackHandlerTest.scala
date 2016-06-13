@@ -37,6 +37,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
       val probe = Await.result(testProbeFuture, 5 seconds)
       probe.expectMsg(5 seconds, Option(msg))
+
     }
   }
 

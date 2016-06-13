@@ -16,7 +16,7 @@
 package responses
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
+import scala.concurrent.{Await, Future, TimeoutException,  ExecutionContext}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.{NodeSeq, XML}
@@ -25,7 +25,7 @@ import scala.xml.{NodeSeq, XML}
 import java.net.UnknownHostException
 import java.util.Date
 
-import akka.actor.ActorRef
+import akka.actor.{ActorSystem, ActorRef}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
@@ -54,7 +54,8 @@ trait OmiRequestHandlerCore {
       def genString(requestHandler:  OmiRequestHandlerCore) = requestHandler.toString
     }
   protected def log = Logging( http.Boot.system, this)
-  def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {
+  def handleRequest(request: OmiRequest)(implicit system: ActorSystem): Future[NodeSeq] = {
+    import system.dispatcher // execution context for futures
     request.callback match {
       case Some(address) => {
         val callbackCheck = CallbackHandlers.checkCallback(address)

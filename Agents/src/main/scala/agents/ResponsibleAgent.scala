@@ -12,6 +12,7 @@ object ResponsibleAgent extends PropsCreator{
 }
 
 class ResponsibleAgent(config: Config )  extends BasicAgent(config) with ResponsibleInternalAgent{
+  import context.dispatcher
   protected def handleWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
     val result = PromiseResult()
     parent ! PromiseWrite( result, write)

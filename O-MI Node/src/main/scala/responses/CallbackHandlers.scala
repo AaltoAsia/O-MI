@@ -43,29 +43,30 @@ object CallbackHandlers {
     CallbackFailure(s"Callback address is forbidden.", callback)
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime ) 
-  implicit val system = ActorSystem()
-  import system.dispatcher // execution context for futures
   val settings = http.Boot.settings 
-  private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
 
+  def log(implicit system: ActorSystem) = system.log
   private[this] def sendHttp(
     address: Uri,
     data: xml.NodeSeq,
-    ttl: Duration): Future[CallbackResult] = {
+    ttl: Duration)(implicit system: ActorSystem) : Future[CallbackResult] = {
+    import system.dispatcher // execution context for futures
+      
+      val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
       val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
         case ttl: FiniteDuration => ttl.toMillis
         case _ => http.Boot.settings.callbackTimeout.toMillis
       }))
       def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
       val request = Post(address, data)
-          system.log.info(
+          log.info(
             s"Trying to send POST request to $address, will keep trying until $tryUntil."
           ) 
           val check : PartialFunction[HttpResponse, CallbackResult] = { 
             case response: HttpResponse =>
             if (response.status.isSuccess){
               //TODO: Handle content of response, possible piggypacking
-              system.log.info(
+              log.info(
                 s"Successful send POST request to $address."
               ) 
               CallbackSuccess()
@@ -78,7 +79,7 @@ object CallbackHandlers {
           )(check )(trySend)
           retry.onFailure{
             case e : Throwable=>
-            system.log.warning(
+            log.warning(
               s"Failed to send POST request to $address after trying until ttl ended."
             ) 
           }
@@ -86,11 +87,12 @@ object CallbackHandlers {
           
     }
 
-  private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] ) : Future[U] = {
+  private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] )(implicit system: ActorSystem) : Future[U] = {
+    import system.dispatcher // execution context for futures
     val future = creator
     future.map{ check }.recoverWith{
       case e if tryUntil.after( currentTimestamp ) => 
-        system.log.debug(
+        log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
         ) 
         Thread.sleep(delay.toMillis)
@@ -107,14 +109,16 @@ object CallbackHandlers {
     address: String,
     data: xml.NodeSeq,
     ttl: Duration
-  ): Future[CallbackResult] = {
-
+  )(implicit system: ActorSystem) : Future[CallbackResult] = {
+    import system.dispatcher // execution context for futures
     checkCallback(address).flatMap{ uri =>
           sendHttp(uri, data, ttl)
     }
   }
 
-  def checkCallback( callback: String ): Future[Uri]= Future{
+  def checkCallback( callback: String )(implicit system: ActorSystem): Future[Uri]= {
+    import system.dispatcher // execution context for futures
+    Future{
     
     val uri = Uri(callback)
     val hostAddress = uri.authority.host.address
@@ -132,6 +136,7 @@ object CallbackHandlers {
         throw ProtocolNotSupported(uri.scheme,uri)
       case ( true, false ) =>
         throw ForbiddenLocalhostPort(uri)
+    }
     }
   }
 }

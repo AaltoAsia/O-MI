@@ -66,6 +66,7 @@ object AgentTypes {
   }
 
   trait ResponsibleInternalAgent extends InternalAgent {
+      import context.dispatcher
     protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
     override private[AgentTypes] def forcer: Actor.Receive = super.forcer orElse {
       case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)

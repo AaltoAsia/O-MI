@@ -18,9 +18,8 @@ package agentSystem
 import java.lang.{Iterable => JavaIterable}
 
 import scala.collection.immutable.Map
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
@@ -46,16 +45,16 @@ object PromiseResult{
   def apply(): PromiseResult= new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())
 }
 case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]] ){
-  def futures : Future[Iterable[Future[ResponsibleAgentResponse]]]= {
+  def futures(implicit ec: ExecutionContext) : Future[Iterable[Future[ResponsibleAgentResponse]]]= {
     promise.future.map{
       promises => 
       promises.map{ pro => pro.future }
     }
   }
-  def resultSequence : Future[Iterable[ResponsibleAgentResponse]]= {
+  def resultSequence(implicit ec: ExecutionContext) : Future[Iterable[ResponsibleAgentResponse]]= {
     futures.flatMap{ results => Future.sequence(results) }
   }
-  def isSuccessful : Future[ResponsibleAgentResponse]= {
+  def isSuccessful(implicit ec: ExecutionContext) : Future[ResponsibleAgentResponse]= {
     resultSequence.map{ 
       res : Iterable[ResponsibleAgentResponse] =>
       res.foldLeft(SuccessfulWrite(Vector.empty)){
@@ -72,6 +71,7 @@ case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResp
 }
 
 trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
+  import context.{system, dispatcher}
   /*
    * TODO: Use database and Authetication for responsible agents
    */

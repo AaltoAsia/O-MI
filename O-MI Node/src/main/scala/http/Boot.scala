@@ -109,7 +109,6 @@ trait Starter {
       AgentSystem.props(dbConnection, subManager),
       "agent-system"
     )
-//    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
 
     saveSettingsOdf(agentManager)
     val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
@@ -130,8 +129,6 @@ trait Starter {
 
     implicit val timeoutForBind = Timeout(5.seconds)
 
-//    IO(Tcp)  ? Tcp.Bind(sensorDataListener,
-//      new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
     IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
       new InetSocketAddress("localhost", settings.cliPort))
 

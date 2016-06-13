@@ -16,13 +16,12 @@ package agentSystem
 
 import java.lang.{Iterable => JavaIterable}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
-import akka.actor.ActorRef
+import akka.actor.{ActorSystem, ActorRef}
 import database.SingleStores.valueShouldBeUpdated
 import database._
 import parsing.xmlGen
@@ -35,11 +34,16 @@ import types.OdfTypes._
 import types.Path
 
 trait  InputPusher  extends BaseAgentSystem{
-  protected def writeValues(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[SuccessfulWrite] 
+  import context.dispatcher
+  protected def writeValues(
+    infoItems: Iterable[OdfInfoItem],
+    objectMetadatas: Vector[OdfObject] = Vector()
+  )(implicit system: ActorSystem): Future[SuccessfulWrite] 
 }
 trait  DBPusher  extends BaseAgentSystem{
   def dbobject: DB
   def subHandler: ActorRef
+  import context.{system, dispatcher}
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
@@ -47,7 +51,7 @@ trait  DBPusher  extends BaseAgentSystem{
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odf: OdfObjects): Unit = {
+  private def sendEventCallback(esub: EventSub, odf: OdfObjects) : Unit = {
     val id = esub.id
     val callbackAddr = esub.callback
     log.debug(s"Sending data to event sub: $id.")
@@ -107,7 +111,10 @@ trait  DBPusher  extends BaseAgentSystem{
    * Function for handling OdfObjects.
    *
    */
-  protected def writeValues(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[SuccessfulWrite] ={
+  protected def writeValues(
+    infoItems: Iterable[OdfInfoItem],
+    objectMetadatas: Vector[OdfObject] = Vector()
+  )(implicit system: ActorSystem): Future[SuccessfulWrite] ={
     if( infoItems.nonEmpty || objectMetadatas.nonEmpty ) {
       val future = handleInfoItems(infoItems, objectMetadatas)
       future.onSuccess{
@@ -152,7 +159,7 @@ trait  DBPusher  extends BaseAgentSystem{
   private def handleInfoItems(
                                infoItems: Iterable[OdfInfoItem],
                                objectMetadatas: Vector[OdfObject] = Vector()
-                               ): Future[Iterable[Path]] = {
+                               )(implicit system: ActorSystem): Future[Iterable[Path]] = {
     // save only changed values
     val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
