@@ -1,26 +1,32 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package OmiTypes
 
 import java.lang.Iterable
 import java.sql.Timestamp
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
 import scala.language.existentials
+import scala.xml.NodeSeq
 
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
+import responses.OmiGenerator.odfMsg
 import types.OdfTypes._
 
 
@@ -32,6 +38,8 @@ sealed trait OmiRequest {
   def ttl: Duration
   def callback: Option[String]
   def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
+  implicit def asXML : NodeSeq
 }
 sealed trait PermissiveRequest
 sealed trait OdfRequest {
@@ -65,7 +73,47 @@ case class ReadRequest(
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
   callback: Option[String ] = None
-) extends OmiRequest with OdfRequest
+) extends OmiRequest with OdfRequest{
+  
+  implicit def asReadRequest : xmlTypes.ReadRequest = {
+    xmlTypes.ReadRequest(
+      None,
+      Nil,
+      Some(
+        scalaxb.DataRecord(
+          Some("omi.xsd"),
+          Some("msg"),
+          odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope))
+        )
+      ),
+      callback.map{ 
+        addr => 
+          new java.net.URI(addr)
+      },
+      Some("odf"),
+      xmlTypes.Node,
+      None,
+      oldest,
+      begin.map{
+        timestamp => 
+        val cal = new GregorianCalendar();
+        cal.setTime(timestamp)
+        DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+      },
+      end.map{
+        timestamp => 
+        val cal = new GregorianCalendar();
+        cal.setTime(timestamp)
+        DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+      },
+      newest
+    )
+  }
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ 
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.ReadRequest](Some("omi.xsd"), Some("read"), asReadRequest), "1.0", ttl.toSeconds)
+  }
+  implicit def asXML : NodeSeq = scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+}
 
 /** Poll request
   *
@@ -73,8 +121,26 @@ case class ReadRequest(
 case class PollRequest(
   ttl: Duration,
   callback: Option[String ] = None,
-  requestIDs: Iterable[Long ] = asJavaIterable(Seq.empty[Long])
-) extends OmiRequest
+  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
+) extends OmiRequest{
+  
+  implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
+    None,
+    requestIDs.map{ 
+      id =>
+      xmlTypes.IdType(id.toString)
+    }.toSeq,
+    None,
+    callback.map{ addr => new java.net.URI(addr)},
+    None,
+    xmlTypes.Node,
+    None
+  )
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ 
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.ReadRequest](Some("omi.xsd"), Some("read"), asReadRequest), "1.0", ttl.toSeconds)
+  }
+  implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+}
 
 /** Subscription request for starting subscription
   *
@@ -86,7 +152,23 @@ case class SubscriptionRequest(
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
   callback: Option[String ] = None
-) extends OmiRequest with SubLike with OdfRequest
+) extends OmiRequest with SubLike with OdfRequest{
+  
+  implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
+    None,
+    Nil,
+      Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
+    callback.map{ addr => new java.net.URI(addr)},
+    Some("odf"),
+    xmlTypes.Node,
+    Some(interval.toSeconds)
+  )
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ 
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.ReadRequest](Some("omi.xsd"), Some("read"), asReadRequest), "1.0", ttl.toSeconds)
+  }
+  implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+}
+
 
 /** Write request
   *
@@ -95,31 +177,60 @@ case class WriteRequest(
   ttl: Duration,
   odf: OdfObjects,
   callback: Option[String ] = None
-) extends OmiRequest with OdfRequest with PermissiveRequest
+) extends OmiRequest with OdfRequest with PermissiveRequest{
+  implicit def asWriteRequest : xmlTypes.WriteRequest = xmlTypes.WriteRequest(
+    None,
+    Nil,
+      Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
+    callback.map{ addr => new java.net.URI(addr)},
+    Some("odf")
+  )
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ 
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.WriteRequest](Some("omi.xsd"), Some("write"), asWriteRequest), "1.0", ttl.toSeconds)
+  }
+  implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+}
 
 
 /** Response request, contains result for other requests
   *
   **/
 case class ResponseRequest(
-  results: Iterable[OmiResult],
+  results: OdfTreeCollection[OmiResult],
   ttl: Duration = Duration.Inf
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
-      val callback : Option[String] = None
-      def odf : OdfObjects= results.foldLeft(OdfObjects()){
-        _ union _.odf.getOrElse(OdfObjects())
-      }
-   } 
+  val callback : Option[String] = None
+  def odf : OdfObjects= results.foldLeft(OdfObjects()){
+    _ union _.odf.getOrElse(OdfObjects())
+  }
+  implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toVector.toSeq: _*)
+   
+  implicit def asOmiEnvelope: xmlTypes.OmiEnvelope ={ 
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.ResponseListType](Some("omi.xsd"), Some("response"), asResponseListType), "1.0", ttl.toSeconds)
+  }
+  implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+} 
 
 /** Cancel request, for cancelling subscription.
   *
   **/
 case class CancelRequest(
   ttl: Duration,
-  requestID: Iterable[Long ] = asJavaIterable(Seq.empty[Long])
+  requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty
 ) extends OmiRequest {
-      def callback : Option[String] = None
-    }
+  implicit def asCancelRequest : xmlTypes.CancelRequest = xmlTypes.CancelRequest(
+    None,
+    requestID.map{ 
+      id =>
+      xmlTypes.IdType(id.toString)
+    }.toSeq
+  )
+  def callback : Option[String] = None
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ 
+    xmlTypes.OmiEnvelope( scalaxb.DataRecord[xmlTypes.CancelRequest](Some("omi.xsd"), Some("cancel"), asCancelRequest), "1.0", ttl.toSeconds)
+  }
+  implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+}
 
 /** Result of a O-MI request
   *
@@ -128,7 +239,27 @@ case class OmiResult(
   value: String,
   returnCode: String,
   description: Option[String] = None,
-  requestID: Iterable[Long ] = asJavaIterable(Seq.empty[Long]),
+  requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   odf: Option[OdfTypes.OdfObjects] = None
-) 
+){
+    
+  implicit def asRequestResultType : xmlTypes.RequestResultType = xmlTypes.RequestResultType(
+    xmlTypes.ReturnType(
+      value,
+      returnCode,
+      description,
+      Map.empty
+    ),
+    requestID.headOption.map{
+      id => xmlTypes.IdType(id.toString)
+    },
+    odf.map{ 
+      objects =>
+        scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), defaultScope ) ) ) 
+    },
+    None,
+    None,
+    odf.map{ objs => "odf" }
+  )
+} 
 

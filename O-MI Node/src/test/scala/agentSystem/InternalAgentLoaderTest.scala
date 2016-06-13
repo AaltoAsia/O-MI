@@ -1,158 +1,289 @@
-/*package agentSystem
+package agentSystem
 
-import akka.actor.ActorSystem
-import akka.testkit.{EventFilter, TestActorRef}
-import com.typesafe.config.ConfigFactory
+import scala.collection.mutable.{Map => MutableMap }
+import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.pattern.ask
+
+import akka.testkit._
+import com.typesafe.config.{ConfigFactory, Config}
 import http.CLICmds._
 import org.specs2.concurrent.ExecutionEnv
+import org.specs2.specification.create.InterpolatedFragment
 import org.specs2.mutable._
 import testHelpers.Actorstest
-
 import scala.concurrent.Future
-class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification { // with AfterAll {
-//  sequential
+import http.OmiConfigExtension
 
-  "InternalAgentLoaderActor" should {
-    "contain external agents in the bootables" in new Actorstest(ActorSystem()) {
-
-      val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
-      val actor = actorRef.underlyingActor
-      val agents = actor.getAgents
-      agents must haveKey("agents.SmartHouseAgent")
-      agents must haveKey("agents.JavaAgent")
-      val actors= actor.getAgents.keys
-      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
-    }
-
-    "be able to start and stop agents with start and stop messages" in new Actorstest(
-      ActorSystem("startstop",
-        ConfigFactory.load(
-          ConfigFactory.parseString(
-            """
-            akka.loggers = ["akka.testkit.TestEventListener"]
-            """).withFallback(ConfigFactory.load())))) {
-      val agentName = "agents.JavaAgent"
-      val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
-      val actor = actorRef.underlyingActor
-      val agents = actor.getAgents
-      val actors= actor.getAgents.keys
-      agents must haveKey(agentName)
-      val eActor = agents(agentName).agent
-      eActor must beSome.which { agent => agent.isAlive must beTrue }
-      EventFilter.warning(message = ("Stopping: " + agentName), occurrences = 1) intercept {
-        actorRef.receive(StopAgentCmd(agentName))
-      }
-      eActor must beSome.which { _.isAlive must beFalse }
-      //agent still there but agent in AgentInfo is None
-      actor.getAgents must haveKey(agentName)
-      actor.getAgents(agentName).agent must beNone
-
-      EventFilter.warning(message = ("Starting: " + agentName), occurrences = 1) intercept {
-        actorRef.receive(StartAgentCmd(agentName))
-      }
-
-      Future { actor.getAgents(agentName).agent must beSome.which { agent => agent.isAlive must beTrue } }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
-      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
-    }
-
-    "be able to restart agents with restart command" in new Actorstest(
-      ActorSystem("restart",
-        ConfigFactory.load(  // Override default configuration for these tests
-          ConfigFactory.parseString(
-            """
-            akka.loggers = ["akka.testkit.TestEventListener"]
-            """).withFallback(ConfigFactory.load())))) {
-      val agentName = "agents.JavaAgent"
-      val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
-      val actor = actorRef.underlyingActor
-      val actors= actor.getAgents.keys
-
-      val eActor = actor.getAgents(agentName).agent
-      actor.getAgents must haveKey(agentName)
-      EventFilter.warning("Re-Starting: " + agentName, occurrences = 1) intercept {
-        actorRef.receive(ReStartAgentCmd(agentName))
-      }
-
-      eActor must beSome.which { _.isAlive must beFalse }
-
-      Future { actor.getAgents(agentName).agent must beSome.which(_.isAlive must beTrue) }.await(retries = 4, timeout = scala.concurrent.duration.Duration.apply(1000, "ms"))
-      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
-    }
-
-    "handle exceptions if trying to load non-existing agents" in new Actorstest(
-      ActorSystem("loadnonexisting",
-        ConfigFactory.load(
-          ConfigFactory.parseString(
-            """
-            akka.loggers = ["akka.testkit.TestEventListener"]
-            """).withFallback(ConfigFactory.load())))) {
-      val agentName = "agents.nonExisting"
-      val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
-      val actor = actorRef.underlyingActor
-      val actors= actor.getAgents.keys
-      EventFilter.warning(start = "Classloading failed. Could not load: " + agentName, occurrences = 1) intercept {
-        actor.loadAndStart(agentName, s"configs/$agentName")
-      }
-      actors.foreach(n=> actorRef.receive(StopAgentCmd(n)))
-    }
-//Test below works but gives primary key error on database
-    /*"be able to handle ThreadExceptions from agents" in new Actorstest(
-      ActorSystem("loadnonexisting",
-        ConfigFactory.load(
-          ConfigFactory.parseString(
-            """
-            akka.loggers = ["akka.testkit.TestEventListener"]
-            agent-system.timeout-on-threadexception = 0
-            """).withFallback(ConfigFactory.load())))) {
-      
-      val agentName = "agents.SmartHouseAgent"
-      val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
-      val actor = actorRef.underlyingActor
-      val agents = actor.getAgents
-      agents must haveKey(agentName)
-      val eActor = agents(agentName).agent
-      eActor must beSome.which { agent => agent.isAlive must beTrue }
-      EventFilter.warning(pattern=
-          """InternalAgent caugth exception: java\.lang\.Exception: test|Trying to relaunch: agents\.SmartHouseAgent"""
-          , occurrences = 2) intercept{
-        actorRef.receive(ThreadException(eActor.get, new Exception("test")))
-      }
-      val agents2 = actor.getAgents
-      agents2 must haveKey(agentName)
-      agents2(agentName).agent must beSome.which(_.isAlive must beTrue) 
-//      eActor(agentName) must beSome.which { agent => agent.isAlive must beTrue }
-    }*/
-    
-    
-    
-    
-    
-////does not work
-    
-//    "be able to load new agents and handle expectations that they throw" in new Actorstest(
-//      ActorSystem("loadnew",
-//        ConfigFactory.load(
-//          ConfigFactory.parseString(
-//            """
-//            akka.loggers = ["akka.testkit.TestEventListener"]
-//            """).withFallback(ConfigFactory.load())))) {
-//
-//    
-//    class TestAgent(cp: String) extends InternalAgent(cp) {
-//      def init() = ()
-//      def loopOnce() = Thread.sleep(2000)
-//      def finish() = ()
-//    }
-//
-//    val agentName = "TestAgent"
-//    val actorRef = TestActorRef[InternalAgentLoader](InternalAgentLoader.props(), "agent-loader")
-//    val actor = actorRef.underlyingActor
-//    actor.loadAndStart(s"agentsystem.$agentName" + "$","")
-//     1===1
-//  }
-    
-    
-  }
-}
+class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification { 
   
-*/
+  def logTestActorSystem =ActorSystem(
+    "startstop",
+    ConfigFactory.load(
+      ConfigFactory.parseString(
+        """
+        akka.loggers = ["akka.testkit.TestEventListener"]
+        """).withFallback(ConfigFactory.load()))
+  )
+  "InternalAgentLoader should " >> { 
+    "log warnings when loading fails when " >> {
+      "agent's class is not found" >> missingAgentTest
+      "agent's companion object is not found" >> missingObjectTest
+    }
+
+    "log warnings when loaded classes are invalid when " >> {
+      "agent's class does not implement trait InternalAgent" >> unimplementedIATest
+      "agent's companion object does not implement trait PropsCreator" >> unimplementedPCTest
+      "agent's companion object creates props for something else than agent">> wrongPropsTest
+      "agent's companion object is actually something else" >> oddObjectTest 
+    }
+    "log warnings when loaded classes throw exceptions when " >> {
+      "props are created " >> propsTest 
+      "agent is started  " >> startTest
+    }
+
+    "store successfully started agents to agents " >> successfulAgents 
+  }
+ class TestLoader( testConfig : AgentSystemConfigExtension) extends BaseAgentSystem with InternalAgentLoader{
+   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
+   override protected[this] val settings = testConfig
+   def receive : Actor.Receive = {
+     case ListAgentsCmd() => sender() ! agents.values.toVector
+   }
+ }
+ object TestLoader{
+   def props( testConfig: AgentSystemConfigExtension) : Props = Props({
+    val loader = new TestLoader(testConfig)
+    loader.start()
+    loader
+   })
+ }
+ class AgentSystemSettings( val config : Config ) extends AgentSystemConfigExtension
+
+ def missingAgentTest      = new Actorstest(logTestActorSystem){
+   val classname = "unexisting"
+   val exception = new java.lang.ClassNotFoundException(classname)
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+      "Missing" ={
+        class = "$classname"
+        config = {}
+      }
+    }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Classloading failed. Could not load: $classname. Received $exception"
+   )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+ }
+ def missingObjectTest     = new Actorstest(logTestActorSystem){
+   val classname = "agentSystem.CompanionlessAgent"
+   val exception = new java.lang.ClassNotFoundException(classname+"$")
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "Missing" ={
+         class = "$classname"
+         config = {}
+       }
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Classloading failed. Could not load: $classname. Received $exception"
+   )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+ }
+ def unimplementedIATest   = new Actorstest(logTestActorSystem){
+   val classname = "agentSystem.WrongInterfaceAgent"
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "UnimplementedIA" ={
+         class = "$classname"
+         config = {}
+       }
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Class $classname does not implement InternalAgent trait."
+   )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+ }
+ def unimplementedPCTest   = new Actorstest(logTestActorSystem){
+   val classname = "agentSystem.NotPropsCreatorAgent"
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "UnimplementedPC" ={
+         class = "$classname"
+         config = {}
+       }
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Object $classname does not implement PropsCreator trait."
+   )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+ }
+ def wrongPropsTest       = new Actorstest(logTestActorSystem){
+   val classname = "agentSystem.WrongPropsAgent"
+   val created = "agentSystem.FFAgent"
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "WrongProps" ={
+         class = "$classname"
+         config = {}
+       }
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Object $classname creates InternalAgentProps for class $created, but should create for class $classname."
+   )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+  after
+ }
+
+ def oddObjectTest        = new Actorstest(logTestActorSystem){
+  after
+ }
+ def propsTest            = new Actorstest(logTestActorSystem){
+   val exception : Throwable = CommandFailed("Test failure.") 
+   val classname = "agentSystem.FailurePropsAgent"
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "FailureProps" ={
+         class = "$classname"
+         config = {}
+       }
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Class $classname could not be loaded or created. Received $exception"
+  )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+ }
+ 
+ def startTest            = new Actorstest(logTestActorSystem/*ActorSystem()*/){
+   val exception : Throwable = CommandFailed("Test failure.") 
+   val classname = "agentSystem.FFAgent"
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "FailureAgent" ={
+         class = "$classname"
+         config = {}
+       }
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val warnings = Vector(
+     s"Class $classname could not be started. Received $exception"
+    )
+   logWarningTest(new AgentSystemSettings(config), warnings )
+ }
+ def successfulAgents     = new Actorstest(ActorSystem()){
+   val emptyConfig = ConfigFactory.empty()
+   val classname = "agentSystem.SSAgent"
+   val classname2 = "unexisting"
+   val classname3 = "agentSystem.SFAgent"
+   val matchAll = ActorRef.noSender
+   val correctAgents = Vector(
+     AgentInfo("A1", classname, emptyConfig, matchAll , true, Seq.empty),
+     AgentInfo("A2", classname, emptyConfig, matchAll , true, Seq.empty),
+     AgentInfo("A3", classname, emptyConfig, matchAll , true, Seq.empty),
+     //4 and 6, should fail without causing problem
+     AgentInfo("A5", classname3, emptyConfig, matchAll , true, Seq.empty),
+     AgentInfo("A7", classname3, emptyConfig, matchAll , true, Seq.empty)
+   )
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+       "A1" ={
+         class = "$classname"
+         config = {}
+       }
+       "A2" ={
+         class = "$classname"
+         config = {}
+       }
+       "A3" ={
+         class = "$classname"
+         config = {}
+       }
+       "A4" ={
+         class = "$classname2"
+         config = {}
+       }
+       "A5" ={
+         class = "$classname3"
+         config = {}
+       }
+       "A6" ={
+         class = "$classname2"
+         config = {}
+       }
+       "A7" ={
+         class = "$classname3"
+         config = {}
+       }
+     }
+   }
+   """
+   val config =new AgentSystemSettings( ConfigFactory.parseString(configStr) )
+   val timeout = config.internalAgentsStartTimout
+   val loader = system.actorOf(TestLoader.props(config), "agent-loader") 
+   val res = (loader ? ListAgentsCmd())(timeout).mapTo[Vector[AgentInfo]].map{ 
+     vec : Vector[AgentInfo] =>
+      vec.map{
+       agentInfo => agentInfo.copy( agent = matchAll )
+     }
+   }
+   res must contain{
+     t: AgentInfo =>
+     correctAgents must contain(t) 
+   }.await
+ }
+
+ def logWarningTest(
+   config: AgentSystemConfigExtension,
+   warnings : Vector[String]
+ )(
+  implicit _system: ActorSystem 
+  ) ={
+    val filters = warnings.map{ msg => EventFilter.warning(message = msg, occurrences = 1)}
+    filterEvents(filters){
+      val loader = _system.actorOf(TestLoader.props(config), "agent-loader") 
+    }
+ }
+}

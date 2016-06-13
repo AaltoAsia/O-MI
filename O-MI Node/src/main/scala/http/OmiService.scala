@@ -1,22 +1,24 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package http
 
 import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
@@ -180,9 +182,10 @@ trait OmiService
                 case Some(req) =>{
                   req.ttl match{
                     case ttl: FiniteDuration => ttlPromise.completeWith(
-                      akka.pattern.after(ttl, using = http.Boot.system.scheduler)(
+                      akka.pattern.after(ttl, using = http.Boot.system.scheduler) {
+                        log.info(s"TTL timed out after $ttl");
                         Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
-                      )
+                      }
                     )
                     case _ => //noop
                   }
@@ -216,7 +219,10 @@ trait OmiService
         }
       }
     } catch {
-        case ex: Throwable => {log.error(ex, "Fatal server error"); throw ex}
+      case ex: Throwable => { // Catch fatal errors for logging
+        log.error(ex, "Fatal server error")
+        respondWithMediaType(`text/xml`){complete(internalError(e))}
+      }
     }
   }
 

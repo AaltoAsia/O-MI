@@ -1,16 +1,16 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package agentSystem
 
@@ -37,14 +37,15 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
   extends BaseAgentSystem 
   with InternalAgentLoader
   with InternalAgentManager
-  with ResponsibleAgentManager{
+  with ResponsibleAgentManager
+  with DBPusher{
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
   protected[this] val settings = http.Boot.settings
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
     case  restart: ReStartAgentCmd  => handleRestart( restart )
-    case ListAgentsCmd() => sender() ! agents.values.toSeq
+    case ListAgentsCmd() => sender() ! agents.values.toVector
     case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
   }  
 }
@@ -73,6 +74,6 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
 abstract class BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
   protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
-  protected[this] def settings: OmiConfigExtension 
+  protected[this] def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
 }

@@ -44,7 +44,8 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val probe = TestProbe()
       val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
       implicit val timeout = Timeout(1 seconds)
-      IO(Http) ? Http.Bind(testServer, interface = "localhost", port = port)
+      val bindFuture = IO(Http) ? Http.Bind(testServer, interface = "localhost", port = port)
+      Await.ready(bindFuture, 2 seconds) //wait for bind to complete
       probe
   }
 }

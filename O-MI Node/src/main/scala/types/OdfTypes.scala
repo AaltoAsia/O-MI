@@ -1,16 +1,16 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package OdfTypes
 
@@ -23,6 +23,7 @@ import parsing.xmlGen.xmlTypes._
 
 object OdfTreeCollection {
   def apply[T](): OdfTreeCollection[T] = Vector()
+  def empty[T]: OdfTreeCollection[T] = Vector()
   def apply[T](elems: T*): OdfTreeCollection[T] = Vector(elems:_*)
   def fromIterable[T](elems: Iterable[T]): OdfTreeCollection[T] = elems.toVector
   def toJava[T](c: OdfTreeCollection[T]): java.util.List[T] = c.toBuffer.asJava
@@ -84,6 +85,7 @@ case class OdfObjects(
     } 
 
 }
+
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
   id: OdfTreeCollection[QlmID],
@@ -93,6 +95,7 @@ case class OdfObject(
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+
 
   def get(path: Path) : Option[OdfNode] = path match{
       case this.path => Some(this)

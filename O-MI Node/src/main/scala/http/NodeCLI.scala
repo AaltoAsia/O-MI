@@ -1,22 +1,23 @@
 
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package http
 
 import java.net.InetSocketAddress
 
-import scala.concurrent.Await
+import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
@@ -78,9 +79,11 @@ remove <path>
     log.info(s"Got help command from $ip")
     commands
   }
+
   private def listAgents(): String = {
     log.info(s"Got list agents command from $ip")
-    val result = (agentLoader ? ListAgentsCmd())
+    val result = (agentLoader ? ListAgentsCmd()).mapTo[Future[Vector[AgentInfo]]]
+      .flatMap{ case future : Future[Vector[AgentInfo]] => future }
       .map[String]{
         case agents: Seq[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
@@ -103,6 +106,7 @@ remove <path>
       }
     Await.result(result, commandTimeout)
   }
+
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
     val result = (subscriptionHandler ? ListSubsCmd())
@@ -138,9 +142,11 @@ remove <path>
       }
     Await.result(result, commandTimeout)
   }
+  
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
-    val result = (agentLoader ? StartAgentCmd(agent))
+    val result = (agentLoader ? StartAgentCmd(agent)).mapTo[Future[String]]
+      .flatMap{ case future : Future[String] => future }
       .map{
         case msg: String =>
           msg +"\n"
@@ -154,7 +160,8 @@ remove <path>
 
   private def stopAgent(agent: AgentName): String = {
     log.info(s"Got stop command from $ip for $agent")
-    val result = (agentLoader ? StopAgentCmd(agent))
+    val result = (agentLoader ? StopAgentCmd(agent)).mapTo[Future[String]]
+      .flatMap{ case future : Future[String] => future }
       .map{
         case msg:String => 
           msg +"\n"

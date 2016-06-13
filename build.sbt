@@ -90,8 +90,8 @@ lazy val root = (project in file(".")).
         val conf = src / "main" / "resources" / "application.conf"
         conf -> "configs/application.conf"
       },
-      mappings in Universal <++= (doc in Compile in omiNode, target in omiNode) map { (_, target) =>
-        directory(target / "scala-2.11" / "api").map(n => (n._1, "html/" + n._2))
+      mappings in Universal <++= (doc in Compile in omiNode, baseDirectory in omiNode) map { (_, base) =>
+        directory(base / "html" / "api").map(n => (n._1, "html/" + n._2))
       },
       mappings in Universal <++= (baseDirectory in omiNode) map { base =>
         Seq(

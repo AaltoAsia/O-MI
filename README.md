@@ -7,18 +7,20 @@ O-MI Node Server
 
 
 Internet of Things data server.
-Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard.
+Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard. It is intended to be as reference implementation that shows how these standards work in more detail.
+
 
 See `development` branch for latest progress.
 
-[API Documentation ScalaDoc](http://pesutykki.mooo.com/dump/O-MI-ScalaApi/)
-[API Documentation JavaDoc](http://pesutykki.mooo.com/dump/O-MI-JavaApi/)
-
-[Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
+Resources
+---------
+* [API Documentation ScalaDoc](http://pesutykki.mooo.com/dump/O-MI-ScalaApi/)
+* [API Documentation JavaDoc](http://pesutykki.mooo.com/dump/O-MI-JavaApi/)
+* [Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
 
 Dependencies
 ------------
-java-1.7
+* Java 1.7
 
 Running
 -------
@@ -27,8 +29,8 @@ Download the pre-compiled zip or tgz package from latest git releases [here](htt
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
-1. `bin/o-mi-node.bat` for Windows
-2. `bin/o-mi-node` for Unix and Mac
+* `bin/o-mi-node.bat` for Windows
+* `bin/o-mi-node` for Unix and Mac
 
 This will run O-MI Node with configuration in /conf/application.conf.
 By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.

@@ -1,28 +1,17 @@
-/**********************************************************************************
- *    Copyright (c) 2015 Aalto University.                                        *
- *                                                                                *
- *    Licensed under the 4-clause BSD (the "License");                            *
- *    you may not use this file except in compliance with the License.            *
- *    You may obtain a copy of the License at top most directory of project.      *
- *                                                                                *
- *    Unless required by applicable law or agreed to in writing, software         *
- *    distributed under the License is distributed on an "AS IS" BASIS,           *
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    *
- *    See the License for the specific language governing permissions and         *
- *    limitations under the License.                                              *
- **********************************************************************************/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-/**
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
 package responses
 
 import java.sql.Timestamp
@@ -41,7 +30,6 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.SubscriptionRequest
 import types._
-//import java.util.concurrent.ConcurrentSkipListSet
 
 /**
  * Message for triggering handling of intervalsubscriptions
@@ -60,7 +48,6 @@ case class NewSubscription(subscription: SubscriptionRequest)
  */
 case class RemoveSubscription(id: Long)
 
-case class NewDataEvent(data: Seq[(Path, OdfValue)])// TODO move to DB
 /**
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
@@ -111,7 +98,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
   scheduleTtls()
   handleIntervals() //when server restarts
 
-  //  val pollPrevayler = PrevaylerFactory.createPrevayler()
 
 
   def receive: PartialFunction[Any, Unit] = {
@@ -120,7 +106,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
-    //case NewDataEvent(data) => handleNewData(data)
   }
 
 
@@ -166,7 +151,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             val eventData = dbConnection.pollEventSubscription(id).map(_.toVector //get data from database
               .groupBy(_.path) //group data by the paths
               .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
-              .map(n => OdfInfoItem(n._1, n._2)) // Map to Infoitems
+              .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
               .map(i => createAncestors(i)) //Map to OdfObjects
               .fold(emptyTree)(_.union(_)))//.reduceOption(_.union(_)) //Combine OdfObjects
 
@@ -258,18 +243,14 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
               //create OdfObjects from InfoItems
               n.map{case ( path, values) => createAncestors(OdfInfoItem(path, values))}
             }).map(
-            //combine OdfObjects to single optional OdfObject
             _.fold(emptyTree)(_.union(_)))
-            //.reduceOption(_.union(_))
             pollData.map(pData => Some(pData))
-            //Some(pollData)
           }
 
         }
       }
       case _ => Future.successful(None)
     }
-    //dbConnection.getNBetween(temp,sub.get)
   }
 
   /**
@@ -283,8 +264,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
 
-    //val (iSubscription: Option[IntervalSub], nextRunTime: Option[Timestamp]) = SubWithNextRunTimeOption
-    // .fold[(Option[IntervalSub], Option[Timestamp])]((None,None))(a => (Some(a._1), Some(a._2)))
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no intervals passed")
     } else {
@@ -294,38 +273,22 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         log.info(s"Trying to send subscription data to ${iSub.callback}")
         val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
         val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
-            case (s, (p,Some(n))) => (s._1, s._2.:+(n))
-            case (s, (p, None))    => (s._1.:+(p), s._2)
+            case ((paths, nodes), (p,Some(node))) => (paths, nodes.:+(node))
+            case ((paths, nodes), (p, None))    => (paths.:+(p), nodes)
           }
-         // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r)))
-        //}
         val subscribedInfoItems = OdfTypes
           .getInfoItems(nodes:_*)
-          //.map(_.path)
 
         val datas = SingleStores.latestStore execute LookupSensorDatas(subscribedInfoItems.map(_.path))
         val objects: Vector[OdfObjects] = datas.map {
           case (iPath, oValue) =>
 
             createAncestors(OdfInfoItem(iPath, Iterable(oValue)))
-            //val odfInfoOpt = hTree.get(iPath)
-            //odfInfoOpt match {
-            //  case Some(infoI: OdfInfoItem) =>
-            //    Right(createAncestors(infoI.copy(values = Iterable(oValue))))
-            //  case thing => {
-            //    log.warning(s"Could not find requested InfoItem($iPath) for subscription with id: ${iSub.id}")
-            //    Left((iPath, s"Problem in hierarchyStore, Some(OdfInfoItem) expected actual: $thing"))
-            //  }
-            //}
         }
 
-        //val (lefts, rights) = objectsAndFailures.foldLeft[(Seq[(Path,String)], Seq[OdfObjects])]((Seq(), Seq())){
-        //(s, n) =>iSub.paths.map(path => hTree.get(path)):_*
-       // n.fold(l => (s._1.:+(l), s._2), r => (s._1, s._2.:+(r))) //Split the either seq into two separate lists
-      //}
         val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None){
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
-        } //rights.reduce(_.combine(_))
+        }
         val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
         val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))
         val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
@@ -437,7 +400,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         }
         case None => {
           val paths = OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq
-          //val subData = paths.map(path => SubValue(newId,path,currentTimestamp,"",""))
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
@@ -450,7 +412,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                   paths
                 )
               )
-              //dbConnection.addNewPollData(subData)
 
               log.debug(s"Successfully added polled event subscription with id: $newId")
               newId
@@ -467,7 +428,6 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
                   paths
                 )
               )
-              //dbConnection.addNewPollData(subData)
               newId
             }
             case dur: Duration => {

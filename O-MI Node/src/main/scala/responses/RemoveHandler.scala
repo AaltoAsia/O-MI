@@ -1,4 +1,5 @@
 
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  +    Copyright (c) 2015 Aalto University.                                        +
  +                                                                                +
@@ -17,38 +18,43 @@ package responses
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
-//import spray.http.StatusCode
+import scala.util.{Failure, Success}
 
-import agentSystem.{PromiseResult, PromiseWrite}
-import akka.actor.ActorRef
-import responses.OmiGenerator._
-import types.OmiTypes._
+import database._
+import types.OdfTypes._
+import types._
 
-trait WriteHandler extends OmiRequestHandlerBase{
-  def agentSystem : ActorRef
-  /** Method for handling WriteRequest.
-    * @param write request
-    * @return (xml response, HTTP status code)
-    */
-  def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
-      handleTTL(write.ttl)
+trait RemoveHandler extends OmiRequestHandlerBase{
+  def handlePathRemove(parentPath: Path): Boolean = {
+    val objects = SingleStores.hierarchyStore execute GetTree()
+    val node = objects.get(parentPath)
+    node match {
+      case Some(node) => {
 
-      val promiseResult = PromiseResult()
-      agentSystem ! PromiseWrite(promiseResult, write)
-      val successF = promiseResult.isSuccessful
-      successF.recoverWith{
-        case e : Throwable =>{
-        log.error(e, "Failure when writing")
-        Future.failed(e)
-      }}
+        val leafs = getInfoItems(node).map(_.path)
 
+        SingleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
-      val response = successF.map{
-        succ => success 
+        leafs.foreach{path =>
+          log.info(s"removing $path")
+          SingleStores.latestStore execute EraseSensorData(path)
+        }
+
+        val dbRemoveFuture: Future[Int] = node match {
+          case objs: OdfObjects => dbConnection.removeRoot(parentPath)
+          case _ => dbConnection.remove(parentPath)
+        }
+
+        dbRemoveFuture.onComplete{
+          case Success(res) => log.info(s"Database successfully deleted $res nodes")
+          case Failure(error) => log.error(error, s"Failure when trying to remove $parentPath")
+        }
+
+        true
+
       }
-      response
+      case None => false
+    }
   }
 }
+

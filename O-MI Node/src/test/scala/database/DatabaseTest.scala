@@ -1,4 +1,4 @@
-/* outdated
+/*
 package database
 
 import org.specs2.mutable._

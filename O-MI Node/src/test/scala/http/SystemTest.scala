@@ -3,7 +3,7 @@ import java.net.InetSocketAddress
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
-import agentSystem.{AgentSystem, ExternalAgentListener}
+import agentSystem.AgentSystem
 import akka.actor.{ActorRef, Props}
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
@@ -54,7 +54,6 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
       "agent-system"
     )
     
-    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
     //val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
     /*
@@ -72,7 +71,6 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
-    IO(Tcp) ? Tcp.Bind(sensorDataListener, new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
 
     return omiService
   }
