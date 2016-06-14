@@ -14,10 +14,10 @@
 
 package http
 
-import spray.http.HttpHeaders._
-import spray.http.HttpMethods.OPTIONS
-import spray.http.{AllOrigins, HttpMethod, HttpMethods, HttpResponse}
-import spray.routing._
+import akka.http.HttpHeaders._
+import akka.http.HttpMethods.OPTIONS
+import akka.http.{AllOrigins, HttpMethod, HttpMethods, HttpResponse}
+import akka.routing._
  
 /**
 * Cors headers and OPTIONS method response.

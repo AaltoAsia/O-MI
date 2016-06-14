@@ -21,8 +21,8 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
-import spray.client.pipelining._
-import spray.http.{HttpRequest, HttpResponse, StatusCode, Uri}
+import akka.client.pipelining._
+import akka.http.{HttpRequest, HttpResponse, StatusCode, Uri}
 
 /**
  * Handles sending data to callback addresses 

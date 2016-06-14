@@ -20,8 +20,8 @@ import scala.collection.JavaConverters._
 
 import http.Authorization.{AuthorizationExtension, CombinedTest}
 import http.Boot.settings
-import spray.routing.Directive1
-import spray.routing.Directives.clientIP
+import akka.routing.Directive1
+import akka.routing.Directives.clientIP
 import types.OmiTypes._
 
 // TODO: maybe move to Authorization package

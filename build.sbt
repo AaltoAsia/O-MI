@@ -46,7 +46,7 @@ lazy val omiNode = (project in file("O-MI Node")).
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
       target in (Compile, doc) := baseDirectory.value / "html" / "api",
       //Revolver.settings,
-      libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
+      libraryDependencies ++= commonDependencies ++ testDependencies)): _*) //  ++ servletDependencies
 
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).

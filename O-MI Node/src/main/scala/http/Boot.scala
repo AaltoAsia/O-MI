@@ -29,8 +29,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import database._
 import responses.{RequestHandler, SubscriptionManager}
-import spray.can.Http
-import spray.servlet.WebBoot
+import akka.can.Http
+import akka.servlet.WebBoot
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest

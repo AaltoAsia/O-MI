@@ -29,9 +29,10 @@ import http.Authorization._
 import parsing.OmiParser
 import responses.OmiGenerator._
 import responses.{RequestHandler, Results}
-import spray.http.MediaTypes._
-import spray.http._
-import spray.routing._
+import akka.http.MediaTypes._
+import akka.http._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.Directives._
 import types.OmiTypes._
 import types.Path
 
@@ -49,8 +50,8 @@ trait OmiServiceAuthorization
  * @param reqHandler ActorRef that is used in subscription handling
  */
 class OmiServiceActor(reqHandler: RequestHandler)
-  extends Actor
-     with ActorLogging
+//  extends Actor
+//     with ActorLogging
      with OmiService
      {
 
@@ -97,7 +98,7 @@ trait OmiService
 
 
   /** Some trickery to extract the _decoded_ uri path in current version of spray: */
-  def pathToString: spray.http.Uri.Path => String = {
+  def pathToString: akka.http.Uri.Path => String = {
     case Uri.Path.Empty              => ""
     case Uri.Path.Slash(tail)        => "/"  + pathToString(tail)
     case Uri.Path.Segment(head, tail)=> head + pathToString(tail)

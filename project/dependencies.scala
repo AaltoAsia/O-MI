@@ -4,24 +4,22 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.3.6"
+  val akkaV = "2.4.7"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
 
   //Spray
-  val sprayV = "1.3.3"
-  val sprayCan     = "io.spray" %% "spray-can"     % sprayV //common
-  val sprayRouting = "io.spray" %% "spray-routing" % sprayV //common
-  val sprayClient  = "io.spray" %% "spray-client"  % sprayV //common
-  val sprayServlet = "io.spray" %% "spray-servlet" % sprayV
+  //val sprayV = "1.3.3"
+  val http         = "com.typesafe.akka" %% "akka-http-core" % akkaV
+  val httpExperimnt= "com.typesafe.akka" %% "akka-http-experimental" % akkaV
 
   //Test dependencies
-  val specs2       = "org.specs2"              %% "specs2-core"   % "3.7.2" % "test"
-  val specs2match  = "org.specs2"              %% "specs2-matcher-extra" % "3.7.2" % "test"
-  val mockito	   = "org.specs2"              %% "specs2-mock"   % "3.7.2" % "test"
-  val nuValidator  = "nu.validator.htmlparser"  % "htmlparser"    % "1.4" //html5 parser for systemtests
-  val akkaTestkit  = "com.typesafe.akka"       %% "akka-testkit"  % akkaV    % "test"
-  val sprayTestkit = "io.spray"                %% "spray-testkit" % sprayV   % "test" exclude("org.specs2", "specs2_2.11")
+  val specs2       = "org.specs2"           %% "specs2-core"   % "3.7.2"   % "test"
+  val specs2match  = "org.specs2"           %% "specs2-matcher-extra" % "3.7.2" % "test"
+  val mockito	   = "org.specs2"             %% "specs2-mock"   % "3.7.2"   % "test"
+  val nuValidator  = "nu.validator.htmlparser" % "htmlparser"  % "1.4"     % "test" //html5 parser for systemtests
+  val akkaTestkit  = "com.typesafe.akka"    %% "akka-testkit"  % akkaV     % "test"
+  val httpTestkit  = "com.typesafe.akka"    %% "akka-http-testkit" % akkaV % "test"
 
   //Slick
   val slickV = "3.1.1"
@@ -58,9 +56,8 @@ object Dependencies {
     akkaActor,
     akkaSlf4j,
     logback,
-    sprayCan,
-    sprayRouting,
-    sprayClient,
+    http,
+    httpExperimnt,
     slick,
     slickCodegen,
     slf4jNop,
@@ -75,9 +72,9 @@ object Dependencies {
     prevaylerFactory,
     gson)
 
-  val servletDependencies: Seq[ModuleID] = Seq(
-    sprayServlet,
-    stm)
+  //val servletDependencies: Seq[ModuleID] = Seq(
+  //  sprayServlet,
+  //  stm)
 
   val testDependencies: Seq[ModuleID] = Seq(
     specs2,
@@ -85,6 +82,6 @@ object Dependencies {
     mockito,
     nuValidator,
     akkaTestkit,
-    sprayTestkit)
+    httpTestkit)
 
 }

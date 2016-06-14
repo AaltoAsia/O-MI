@@ -20,7 +20,7 @@ import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.{NodeSeq, XML}
-//import spray.http.StatusCode
+//import akka.http.StatusCode
 
 import java.net.UnknownHostException
 import java.util.Date

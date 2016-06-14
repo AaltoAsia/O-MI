@@ -18,9 +18,9 @@ import scala.collection.JavaConversions.collectionAsScalaIterable
 
 import http.Authorization.{AuthorizationExtension, CombinedTest}
 import http.Boot.settings
-import spray.http.HttpHeader
-import spray.routing.Directive1
-import spray.routing.Directives.optionalHeaderValue
+import akka.http.HttpHeader
+import akka.routing.Directive1
+import akka.routing.Directives.optionalHeaderValue
 import types.OmiTypes._
 
 // TODO: maybe move to Authorization package

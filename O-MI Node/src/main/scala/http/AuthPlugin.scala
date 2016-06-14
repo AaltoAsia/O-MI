@@ -22,8 +22,8 @@ import scala.util.{Failure, Success, Try}
 
 import database._
 import http.Authorization.{AuthorizationExtension, CombinedTest}
-import spray.http.HttpRequest
-import spray.routing.Directives.extract
+import akka.http.HttpRequest
+import akka.routing.Directives.extract
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path

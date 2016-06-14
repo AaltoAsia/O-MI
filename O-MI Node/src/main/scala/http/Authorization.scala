@@ -17,8 +17,8 @@ package http
 import scala.util.{Failure, Success, Try}
 
 import akka.event.LoggingAdapter
-import spray.routing.Directives._
-import spray.routing._
+import akka.routing.Directives._
+import akka.routing._
 import types.OmiTypes._
 
 
