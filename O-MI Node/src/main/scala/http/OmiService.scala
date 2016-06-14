@@ -18,8 +18,6 @@ import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
 import accessControl.AuthAPIService
@@ -183,7 +181,7 @@ trait OmiService
                   req.ttl match{
                     case ttl: FiniteDuration => ttlPromise.completeWith(
                       akka.pattern.after(ttl, using = http.Boot.system.scheduler) {
-                        log.info(s"TTL timed out after $ttl");
+                        log.info(s"TTL timed out after $ttl")
                         Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
                       }
                     )
@@ -208,20 +206,20 @@ trait OmiService
               value // return
           }
 
-        case Left(errors) => Future { // Errors found
+        case Left(errors) => { // Errors found
 
           log.warning(s"${requestString}")
           log.warning("Parse Errors: {}", errors.mkString(", "))
 
           val errorResponse = parseError(errors.toSeq:_*)
 
-          errorResponse
+          Future.successful(errorResponse)
         }
       }
     } catch {
       case ex: Throwable => { // Catch fatal errors for logging
         log.error(ex, "Fatal server error")
-        respondWithMediaType(`text/xml`){complete(internalError(e))}
+        Future.successful(internalError(ex))
       }
     }
   }
