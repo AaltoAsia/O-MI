@@ -52,16 +52,17 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
  }  
  def AS = ActorSystem() 
  def emptyConfig = ConfigFactory.empty()
+ def timeoutDuration= 10.seconds
+ implicit val timeout = Timeout( timeoutDuration )
  def cmdToNonExistent = new Actorstest(AS){
    import system.dispatcher
    val name = "Nonexisting"
    val testAgents : Map[AgentName, AgentInfo] = Map.empty
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StartAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct =s"Could not find agent: $name"
-   resF should beEqualTo(correct).await
+   resF should beEqualTo(correct).await( 0, timeoutDuration)
  }
 
  def startingRunningTest = new Actorstest(AS){
@@ -73,10 +74,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val testAgents = Map( name -> agentInfo)
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StartAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct = s"Agent $name was already Running. 're-start' should be used to restart running Agents."
-   resF should beEqualTo(correct).await
+   resF should beEqualTo(correct).await( 0, timeoutDuration)
  }
  def stopingStoppedTest = new Actorstest(AS){
    import system.dispatcher
@@ -87,10 +87,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val testAgents = Map( name -> agentInfo)
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StopAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct = s"Agent $name was already stopped."
-   resF should beEqualTo( correct ).await
+   resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 
 
@@ -103,10 +102,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val testAgents = Map( name -> agentInfo)
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StartAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct = s"Agent $name started succesfully." 
-   resF should beEqualTo( correct ).await
+   resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 
  def stopingRunningTest = new Actorstest(AS){
@@ -118,10 +116,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val testAgents = Map( name -> agentInfo)
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StopAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct = s"Agent $name stopped succesfully." 
-   resF should beEqualTo( correct ).await
+   resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
  
  def agentStopFailTest = new Actorstest(AS){
@@ -133,10 +130,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val testAgents = Map( name -> agentInfo)
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StopAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct = s"agentSystem.CommandFailed: Test failure."
-   resF should beEqualTo( correct ).await
+   resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
  def agentStartFailTest = new Actorstest(AS){
    import system.dispatcher
@@ -147,10 +143,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val testAgents = Map( name -> agentInfo)
    val manager = system.actorOf(TestManager.props(testAgents), "agent-manager") 
    val msg = StartAgentCmd(name)
-   implicit val timeout = Timeout( 2.seconds)
    val resF = (manager ? msg).mapTo[Future[String]].flatMap(f => f)
    val correct = s"agentSystem.CommandFailed: Test failure."
-   resF should beEqualTo( correct ).await
+   resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 
 }
