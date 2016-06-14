@@ -35,6 +35,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.actor.ActorSystem
 import types.OmiTypes._
 import types.Path
@@ -156,7 +157,15 @@ trait OmiService
             complete(xmlData)
           case None =>
             log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
-            complete(StatusCodes.NotFound, <error>No object found</error>)
+
+            // TODO: Clean this code
+            complete(
+              ToResponseMarshallable(
+              <error>No object found</error>
+              )(
+                fromToEntityMarshaller(StatusCodes.NotFound)(defaultNodeSeqMarshaller)
+              )
+            )
         }
       }
     }
