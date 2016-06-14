@@ -11,7 +11,7 @@ import org.specs2.specification.Scope
 import org.xml.sax.InputSource
 import responses.RemoveSubscription
 
-class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
+class Actorstest(system: ActorSystem) extends TestKit(system) with Scope with After with ImplicitSender {
 
   def after = {
     TestKit.shutdownActorSystem(system)
