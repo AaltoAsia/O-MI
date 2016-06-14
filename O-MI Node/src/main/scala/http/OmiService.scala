@@ -34,6 +34,7 @@ import akka.http._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.actor.ActorSystem
 import types.OmiTypes._
 import types.Path
@@ -100,6 +101,8 @@ trait OmiService
     case Uri.Path.Segment(head, tail)=> head + pathToString(tail)
   }
 
+  val htmlXml = nodeSeqMarshaller(MediaTypes.`text/html`)
+
   // should be removed?
   val helloWorld = get {
      val document = { 
@@ -134,25 +137,26 @@ trait OmiService
         </body>
         </html>
     }
+
     // XML is marshalled to `text/xml` by default
-    complete(ContentTypes.`text/html`, document)
+    complete(ToResponseMarshallable(document)(htmlXml))
   }
 
   val getDataDiscovery =
     path(Remaining) { uriPath =>
       get {
         // convert to our path type (we don't need very complicated functionality)
-        val pathStr = pathToString(uriPath)
+        val pathStr = uriPath // pathToString(uriPath)
         val path = Path(pathStr)
 
         requestHandler.generateODFREST(path) match {
           case Some(Left(value)) =>
-            complete(ContentTypes.`text/plain`, value)
+            complete(value)
           case Some(Right(xmlData)) =>
-            complete(ContentTypes.`text/xml`, xmlData)
+            complete(xmlData)
           case None =>
             log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
-            complete(StatusCode.NotFound, <error>No object found</error>)
+            complete(StatusCodes.NotFound, <error>No object found</error>)
         }
       }
     }
@@ -217,25 +221,20 @@ trait OmiService
     }
   }
 
-  val respondXML = respondWithMediaType(`text/xml`)
 
   /* Receives HTTP-POST directed to root */
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
-        respondXML {
-          complete(handleRequest(hasPermissionTest, requestString))
-        }
+        complete(handleRequest(hasPermissionTest, requestString))
       }
     }
   }
 
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      formFields("msg", as[String]) {requestString =>
-        respondXML {
-          complete(handleRequest(hasPermissionTest, requestString))
-        }
+      formFields("msg".as[String]) {requestString =>
+        complete(handleRequest(hasPermissionTest, requestString))
       }
     }
   }

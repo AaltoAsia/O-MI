@@ -23,11 +23,14 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
 //import akka.http.WebBoot
+//import akka.http.javadsl.ServerBinding
 
 import database._
 import agentSystem._
@@ -101,7 +104,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
+  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
@@ -139,11 +142,12 @@ trait Starter {
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
    */
-  def bindHttp(service: ActorRef): Unit = {
+  def bindHttp(service: OmiServiceImpl): Unit = {
 
     implicit val timeoutForBind = Timeout(5.seconds)
+    implicit val materializer = ActorMaterializer()
 
-    val bindingFuture: Future[ServerBinding] =
+    val bindingFuture =
       Http().bindAndHandle(service.myRoute, settings.interface, settings.webclientPort)
 
     bindingFuture.onFailure {

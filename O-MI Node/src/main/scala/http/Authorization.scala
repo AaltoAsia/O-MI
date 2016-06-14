@@ -88,6 +88,23 @@ object Authorization {
 
     def makePermissionTestFunction: CombinedTest // Directive1[PermissionTest]
 
+    trait Hole
+    def myHole(h: Hole) = ???
+
+
+    private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {
+      (request: OmiRequest) =>
+        otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
+          match {  // catch any exceptions, because we want to try other, possibly working extensions too
+
+            case Success(result) => result : Option[OmiRequest]
+            case Failure(exception) =>
+              log.error(exception, "While running authorization extensions, trying next extension")
+              None : Option[OmiRequest]
+          }
+        )
+    }
+
     /** Template for abstract override of makePermissionTestFunction.
      *  Stackable trait pattern; Combines other traits' functionality
      * @param prev Should be always super.makePermissionTestFunction.
@@ -100,21 +117,10 @@ object Authorization {
          ): CombinedTest = 
 
       new CombinedTest( for {
-        otherTest <- prev()
-        ourTest   <- next
+        otherTest <- prev() :Directive1[PermissionTest]
+        ourTest   <- next : Directive1[PermissionTest]
 
-        combinedTest = (request: OmiRequest) =>
-          otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
-            match {  // catch any exceptions, because we want to try other, possibly working extensions too
-
-              case Success(result) => result
-              case Failure(exception) =>
-                log.error(exception, "While running authorization extensions, trying next extension")
-                None
-            }
-          )
-
-      } yield combinedTest)
+      } yield combineTests(otherTest, ourTest))
   }
 
   /** 
