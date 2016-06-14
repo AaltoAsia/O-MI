@@ -21,6 +21,7 @@ import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
+import org.slf4j.LoggerFactory
 
 import accessControl.AuthAPIService
 import akka.actor.{Actor, ActorContext, ActorLogging}
@@ -29,10 +30,11 @@ import http.Authorization._
 import parsing.OmiParser
 import responses.OmiGenerator._
 import responses.{RequestHandler, Results}
-import akka.http.MediaTypes._
 import akka.http._
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.actor.ActorSystem
 import types.OmiTypes._
 import types.Path
 
@@ -49,18 +51,12 @@ trait OmiServiceAuthorization
  * Actor that handles incoming http messages
  * @param reqHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(reqHandler: RequestHandler)
-//  extends Actor
-//     with ActorLogging
-     with OmiService
-     {
+class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSystem)
+     extends OmiService {
+
+
 
   registerApi(new AuthAPIService())
-  /**
-   * the HttpService trait defines only one abstract member, which
-   * connects the services environment to the enclosing actor or test
-   */
-  def actorRefFactory : ActorContext= context
 
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
@@ -72,6 +68,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
    */
   def receive : Actor.Receive = runRoute(myRoute)
 
+  val log = LoggerFactory.getLogger("OmiService")
 
 }
 
@@ -79,8 +76,7 @@ class OmiServiceActor(reqHandler: RequestHandler)
  * this trait defines our service behavior independently from the service actor
  */
 trait OmiService
-  extends HttpService
-     with CORSSupport
+     extends CORSSupport
      with OmiServiceAuthorization
      {
 
@@ -97,8 +93,8 @@ trait OmiService
   //val staticHtml = getFromResourceDirectory("html")
 
 
-  /** Some trickery to extract the _decoded_ uri path in current version of spray: */
-  def pathToString: akka.http.Uri.Path => String = {
+  /** Some trickery to extract the _decoded_ uri path: */
+  def pathToString: Uri.Path => String = {
     case Uri.Path.Empty              => ""
     case Uri.Path.Slash(tail)        => "/"  + pathToString(tail)
     case Uri.Path.Segment(head, tail)=> head + pathToString(tail)
@@ -106,8 +102,7 @@ trait OmiService
 
   // should be removed?
   val helloWorld = get {
-    respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-      complete {
+     val document = { 
         <html>
         <body>
           <h1>Say hello to <i>O-MI Node service</i>!</h1>
@@ -138,31 +133,26 @@ trait OmiService
           </ul>
         </body>
         </html>
-      }
     }
+    // XML is marshalled to `text/xml` by default
+    complete(ContentTypes.`text/html`, document)
   }
 
   val getDataDiscovery =
-    path(RestPath) { sprayPath =>
+    path(Remaining) { uriPath =>
       get {
         // convert to our path type (we don't need very complicated functionality)
-        val pathStr = pathToString(sprayPath)
+        val pathStr = pathToString(uriPath)
         val path = Path(pathStr)
 
         requestHandler.generateODFREST(path) match {
           case Some(Left(value)) =>
-            respondWithMediaType(`text/plain`) {
-              complete(value)
-            }
+            complete(ContentTypes.`text/plain`, value)
           case Some(Right(xmlData)) =>
-            respondWithMediaType(`text/xml`) {
-              complete(xmlData)
-            }
+            complete(ContentTypes.`text/xml`, xmlData)
           case None =>
             log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
-            respondWithMediaType(`text/xml`) {
-              complete((404, <error>No object found</error>))
-            }
+            complete(StatusCode.NotFound, <error>No object found</error>)
         }
       }
     }
@@ -222,7 +212,7 @@ trait OmiService
     } catch {
       case ex: Throwable => { // Catch fatal errors for logging
         log.error(ex, "Fatal server error")
-        respondWithMediaType(`text/xml`){complete(internalError(e))}
+        throw ex
       }
     }
   }
@@ -242,7 +232,7 @@ trait OmiService
 
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      formFields("msg") {requestString =>
+      formFields("msg", as[String]) {requestString =>
         respondXML {
           complete(handleRequest(hasPermissionTest, requestString))
         }
@@ -251,7 +241,7 @@ trait OmiService
   }
 
   // Combine all handlers
-  val myRoute = cors {
+  val myRoute = corsEnabled {
     path("") {
       postFormXMLRequest ~
       postXMLRequest ~

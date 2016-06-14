@@ -16,12 +16,13 @@ package http
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
-import http.Authorization.{AuthorizationExtension, CombinedTest}
-import http.Boot.settings
-import akka.http.HttpHeader
-import akka.routing.Directive1
-import akka.routing.Directives.optionalHeaderValue
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.optionalHeaderValue
+
 import types.OmiTypes._
+import Authorization.{AuthorizationExtension, CombinedTest}
+import Boot.settings
 
 // TODO: maybe move to Authorization package
 

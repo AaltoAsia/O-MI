@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.client.pipelining._
-import akka.http.{HttpRequest, HttpResponse, StatusCode, Uri}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, Uri}
 
 /**
  * Handles sending data to callback addresses 

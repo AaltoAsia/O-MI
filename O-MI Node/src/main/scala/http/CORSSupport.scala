@@ -14,39 +14,28 @@
 
 package http
 
-import akka.http.HttpHeaders._
-import akka.http.HttpMethods.OPTIONS
-import akka.http.{AllOrigins, HttpMethod, HttpMethods, HttpResponse}
-import akka.routing._
+import ch.megard.akka.http.cors._
  
 /**
-* Cors headers and OPTIONS method response.
-* code from https://gist.github.com/joseraya/176821d856b43b1cfe19
-* see also https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
-*/
+ * https://github.com/lomigmegard/akka-http-cors
+ */
 trait CORSSupport {
-  this: HttpService =>
+   val corsSettings = CorsSettings.defaultSettings.copy(
+    //allowGenericHttpRequests = false,
+    //allowedOrigins = HttpOriginRange.*,
+    allowedHeaders = HttpHeaderRange.Default(collection.immutable.Seq(
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Accept-Encoding",
+      "Accept-Language",
+      "Host",
+      "Referer",
+      "User-Agent")),
+    maxAge = Some(3 * 24 * 60 * 60)
+  )
+  def corsEnabled = CorsDirectives.cors(corsSettings)
   
-  private[this] val allowOriginHeader = `Access-Control-Allow-Origin`(AllOrigins)
-  private[this] val optionsCorsHeaders = List(
-    `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent"),
-    `Access-Control-Max-Age`(1728000))
- 
-  def cors[T]: Directive0 = mapRequestContext { ctx => ctx.withRouteResponseHandling({
-    //It is an option requeset for a resource that responds to some other method
-    case Rejected(x) if (ctx.request.method.equals(HttpMethods.OPTIONS) && !x.filter(_.isInstanceOf[MethodRejection]).isEmpty) => {
-      val allowedMethods: List[HttpMethod] = x.filter(_.isInstanceOf[MethodRejection]).map(rejection=> {
-        rejection.asInstanceOf[MethodRejection].supported
-      })
-      ctx.complete(HttpResponse().withHeaders(
-        `Access-Control-Allow-Methods`(OPTIONS, allowedMethods :_*) ::  allowOriginHeader ::
-         optionsCorsHeaders
-      ))
-    }
-  }).withHttpResponseHeadersMapped { headers =>
-    allowOriginHeader :: headers
- 
-  }
-  }
 }
 

@@ -17,8 +17,10 @@ package http
 import scala.util.{Failure, Success, Try}
 
 import akka.event.LoggingAdapter
-import akka.routing.Directives._
-import akka.routing._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directive.SingleValueModifiers
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.util.Tupler._
 import types.OmiTypes._
 
 
@@ -190,7 +192,7 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
  */
 trait LogUnauthorized extends AuthorizationExtension {
   private type UserInfo = Option[java.net.InetAddress]
-  private def extractIp: Directive1[UserInfo] = clientIP map (_.toOption)
+  private def extractIp: Directive1[UserInfo] = extractClientIP map (_.toOption)
   private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {
     case r : OmiRequest =>
       log.warning(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")

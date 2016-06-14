@@ -20,8 +20,8 @@ import scala.collection.JavaConverters._
 
 import http.Authorization.{AuthorizationExtension, CombinedTest}
 import http.Boot.settings
-import akka.routing.Directive1
-import akka.routing.Directives.clientIP
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.extractClientIP
 import types.OmiTypes._
 
 // TODO: maybe move to Authorization package
@@ -61,7 +61,7 @@ trait IpAuthorization extends AuthorizationExtension {
 
 
   // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"
-  private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
+  private def extractIp: Directive1[Option[InetAddress]] = extractClientIP map (_.toOption)
 
   def ipHasPermission: UserData => OmiRequest => Option[OmiRequest] = user => {
     // Write and Response are currently PermissiveRequests
