@@ -14,7 +14,6 @@ import responses.RemoveSubscription
 class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
 
   def after = {
-    _system.log.info("SHUTTING DOWN SYSTE ++++++++++++++++++++++++")
     TestKit.shutdownActorSystem(system)
   }
 }
@@ -73,7 +72,6 @@ abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFact
   """)))extends TestKit(as) with After with Scope {
   //def after = system.shutdown()
   def after = {
-    as.log.info("SHUTTING DOWN SYSTE ++++++++++++++++++++++++")
     TestKit.shutdownActorSystem(system)
   }
 }

@@ -168,78 +168,93 @@ trait OmiService
       }
     }
 
-  /* Receives HTTP-POST directed to root */
-  val postXMLRequest = post { try {// Handle POST requests from the client
-    makePermissionTestFunction() { hasPermissionTest =>
-      entity(as[String]) {requestString =>
+  def handleRequest(hasPermissionTest: PermissionTest, requestString: String): Future[NodeSeq] = {
+    try {
+      val eitherOmi = OmiParser.parse(requestString)
+      eitherOmi match {
+        case Right(requests) =>
 
-        val eitherOmi = OmiParser.parse(requestString)
+          val ttlPromise = Promise[NodeSeq]()
 
+          val request = requests.headOption  // TODO: Only one request per xml is supported currently
+          val response = request match {
 
-        respondWithMediaType(`text/xml`) {
-          eitherOmi match {
-            case Right(requests) =>
-
-              val ttlPromise = Promise[NodeSeq]()
-
-              val request = requests.headOption  // TODO: Only one request per xml is supported currently
-              val response = request match {
-
-                case Some(originalReq : OmiRequest) =>
-                  hasPermissionTest(originalReq) match {
-                    case Some(req) =>{
-                      req.ttl match{
-                        case ttl: FiniteDuration => ttlPromise.completeWith(
-                          akka.pattern.after(ttl, using = system.scheduler) {
-                            log.info(s"TTL timed out after $ttl");
-                            Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
-                          }
-                        )
-                        case ttl: Duration => //noop
+            case Some(originalReq : OmiRequest) =>
+              hasPermissionTest(originalReq) match {
+                case Some(req) =>{
+                  req.ttl match{
+                    case ttl: FiniteDuration => ttlPromise.completeWith(
+                      akka.pattern.after(ttl, using = system.scheduler) {
+                        log.info(s"TTL timed out after $ttl");
+                        Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
                       }
-                      requestHandler.handleRequest(req)(system)
-                    }
-                    case None =>
-                      Future.successful(unauthorized)
+                    )
+                    case _ => //noop
                   }
-                case _ =>  Future.successful(notImplemented)
-              }
-
-              //if timeoutfuture completes first then timeout is returned
-              onComplete(Future.firstCompletedOf(Seq(response, ttlPromise.future))){
-                case Success(value) => {
-                  if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
-                    log.warning(s"Errors with following request:\n${requestString}")
-                  }
-
-                  complete(value)
+                  requestHandler.handleRequest(req)(system)
                 }
-                case Failure(ex) => throw ex
+                case None =>
+                  Future.successful(unauthorized)
+              }
+            case _ =>  Future.successful(notImplemented)
+          }
+
+          //if timeoutfuture completes first then timeout is returned
+          Future.firstCompletedOf(Seq(response, ttlPromise.future)) map { value =>
+
+              // check the error code for logging
+              if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
+                log.warning(s"Errors with following request:\n${requestString}")
               }
 
-            case Left(errors) =>  // Errors found
-
-              log.warning(s"${requestString}")
-              log.warning("Parse Errors: {}", errors.mkString(", "))
-
-              val errorResponse = parseError(errors.toSeq:_*)
-
-              complete(errorResponse)
+              value // return
           }
+
+        case Left(errors) => Future { // Errors found
+
+          log.warning(s"${requestString}")
+          log.warning("Parse Errors: {}", errors.mkString(", "))
+
+          val errorResponse = parseError(errors.toSeq:_*)
+
+          errorResponse
+        }
+      }
+    } catch {
+      case ex: Throwable => { // Catch fatal errors for logging
+        log.error(ex, "Fatal server error")
+        throw ex
+      }
+    }
+  }
+
+  val respondXML = respondWithMediaType(`text/xml`)
+
+  /* Receives HTTP-POST directed to root */
+  val postXMLRequest = post {// Handle POST requests from the client
+    makePermissionTestFunction() { hasPermissionTest =>
+      entity(as[String]) {requestString =>   // XML and O-MI parsed later
+        respondXML {
+          complete(handleRequest(hasPermissionTest, requestString))
         }
       }
     }
-    }catch {
-        case NonFatal(e) => {
-          log.error(e, "internal server error")
-          respondWithMediaType(`text/xml`){complete(internalError(e))}
+  }
+
+  val postFormXMLRequest = post {
+    makePermissionTestFunction() { hasPermissionTest =>
+      formFields("msg") {requestString =>
+        respondXML {
+          complete(handleRequest(hasPermissionTest, requestString))
         }
+      }
     }
   }
 
   // Combine all handlers
   val myRoute = cors {
     path("") {
+      postFormXMLRequest ~
       postXMLRequest ~
       helloWorld
     } ~

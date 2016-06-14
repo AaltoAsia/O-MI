@@ -43,7 +43,7 @@ case class SubscriptionRequest(
  */
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
   implicit val dbConnection = new TestDB("subscription-test-db")
-  implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
+  implicit val system = ActorSystem("SubscribtionTest-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
             akka.stdout-loglevel = INFO

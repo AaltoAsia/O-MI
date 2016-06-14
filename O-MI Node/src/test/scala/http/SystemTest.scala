@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.TimeZone
 
 import agentSystem.AgentSystem
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.testkit.TestProbe
@@ -29,8 +29,9 @@ import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
 
+  val conf = ConfigFactory.load("testconfig")
   val testSettings = new OmiConfigExtension(
-    ConfigFactory.load("testconfig")
+    conf
   )
 
   override val settings = testSettings
@@ -374,4 +375,5 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
     }
 
   }
+  step(system.shutdown())
 }
