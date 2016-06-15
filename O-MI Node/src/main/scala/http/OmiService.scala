@@ -18,25 +18,20 @@ import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
-import org.slf4j.LoggerFactory
 
 import accessControl.AuthAPIService
-import akka.actor.{Actor, ActorContext, ActorLogging}
-import akka.event.LoggingAdapter
+import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
 import http.Authorization._
+import org.slf4j.LoggerFactory
 import parsing.OmiParser
 import responses.OmiGenerator._
 import responses.{RequestHandler, Results}
-import akka.http._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
-import akka.actor.ActorSystem
 import types.OmiTypes._
 import types.Path
 
@@ -77,7 +72,7 @@ trait OmiService
      {
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  def log: LoggingAdapter
+  def log: org.slf4j.Logger
   val requestHandler: RequestHandler
 
 
@@ -195,7 +190,7 @@ trait OmiService
 
               // check the error code for logging
               if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
-                log.warning(s"Errors with following request:\n${requestString}")
+                log.warn(s"Errors with following request:\n${requestString}")
               }
 
               value // return
@@ -203,8 +198,8 @@ trait OmiService
 
         case Left(errors) => Future { // Errors found
 
-          log.warning(s"${requestString}")
-          log.warning("Parse Errors: {}", errors.mkString(", "))
+          log.warn(s"${requestString}")
+          log.warn("Parse Errors: {}", errors.mkString(", "))
 
           val errorResponse = parseError(errors.toSeq:_*)
 
@@ -213,7 +208,7 @@ trait OmiService
       }
     } catch {
       case ex: Throwable => { // Catch fatal errors for logging
-        log.error(ex, "Fatal server error")
+        log.error("Fatal server error", ex)
         throw ex
       }
     }

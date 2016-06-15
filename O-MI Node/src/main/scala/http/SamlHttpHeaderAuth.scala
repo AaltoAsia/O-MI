@@ -73,7 +73,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
           log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
           Some(r)
         } else {
-          log.warning(s"Unauthorized user: $u")
+          log.warn(s"Unauthorized user: $u")
           None
         }
 

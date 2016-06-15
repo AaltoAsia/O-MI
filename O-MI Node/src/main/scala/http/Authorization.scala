@@ -21,6 +21,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Directive.SingleValueModifiers
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._
+import org.slf4j.Logger
 import types.OmiTypes._
 
 
@@ -84,7 +85,7 @@ object Authorization {
      * For easy to access logging in extensions.
      * Will get implemented on the service level anyways.
      */
-    def log: LoggingAdapter
+    def log: Logger
 
     def makePermissionTestFunction: CombinedTest // Directive1[PermissionTest]
 
@@ -99,7 +100,7 @@ object Authorization {
 
             case Success(result) => result : Option[OmiRequest]
             case Failure(exception) =>
-              log.error(exception, "While running authorization extensions, trying next extension")
+              log.error("While running authorization extensions, trying next extension", exception)
               None : Option[OmiRequest]
           }
         )
@@ -201,7 +202,7 @@ trait LogUnauthorized extends AuthorizationExtension {
   private def extractIp: Directive1[UserInfo] = extractClientIP map (_.toOption)
   private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {
     case r : OmiRequest =>
-      log.warning(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
+      log.warn(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
       None
   }}
 

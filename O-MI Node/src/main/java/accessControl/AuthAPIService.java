@@ -14,14 +14,15 @@
 
 package accessControl;
 
+import akka.http.scaladsl.model.HttpHeader;
+import akka.http.scaladsl.model.HttpRequest;
+import akka.http.scaladsl.model.headers.HttpCookie;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spray.http.HttpCookie;
-import spray.http.HttpHeader;
 import types.OmiTypes.OmiRequest;
 import types.Path;
 
@@ -66,7 +67,7 @@ public class AuthAPIService implements AuthApi {
 
 
     @Override
-    public AuthorizationResult isAuthorizedForType(spray.http.HttpRequest httpRequest,
+    public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
 
@@ -87,7 +88,7 @@ public class AuthAPIService implements AuthApi {
             HttpCookie ck = null;
             while (iter.hasNext()) {
                 HttpCookie nextCookie = (HttpCookie) iter.next();
-                logger.debug(nextCookie.name() + ":" + nextCookie.content());
+                logger.debug(nextCookie.name() + ":" + nextCookie.value());
 
                 if (nextCookie.name().equals("JSESSIONID")) {
                     ck = nextCookie;
@@ -193,7 +194,7 @@ public class AuthAPIService implements AuthApi {
         }
     }
 
-    public AuthorizationResult isAuthorizedForRequest(spray.http.HttpRequest httpRequest,
+    public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
                                    OmiRequest omiRequest) {
         return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
