@@ -1,29 +1,33 @@
 package http
 
+import java.net.InetAddress
+
 import scala.concurrent.duration.DurationInt
 import scala.xml._
 
 import agentSystem.AgentSystem
 import akka.actor._
+import akka.http.scaladsl.model.RemoteAddress
+import akka.http.scaladsl.model.headers.{RawHeader, `Remote-Address`}
+import akka.http.scaladsl.testkit.{RouteTest, RouteTestTimeout}
 import akka.testkit.TestActorRef
 import database._
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 import responses.{RequestHandler, SubscriptionManager}
-import spray.http.HttpHeaders._
-import spray.http.MediaTypes._
-import spray.http.StatusCodes._
-import spray.httpx.marshalling.BasicMarshallers._
-import spray.testkit.Specs2RouteTest
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import testHelpers.Specs2Interface
 import types._
 
 class OmiServiceTest extends Specification
+  with Specs2Interface
   with XmlMatchers
-  with Specs2RouteTest
+  with RouteTest
   with OmiService
   with BeforeAfterAll {
-
 
   def actorRefFactory = system
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
@@ -38,6 +42,8 @@ class OmiServiceTest extends Specification
   )
   val requestHandler = new RequestHandler(subscriptionHandler, agentManager)(dbConnection)
   val printer = new scala.xml.PrettyPrinter(80, 2)
+
+  val localHost = RemoteAddress(InetAddress.getLocalHost)
 
   "System tests for features of OMI Node service".title
 
@@ -137,7 +143,7 @@ class OmiServiceTest extends Specification
           </omi:read>
         </omi:omiEnvelope>
 
-      Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+      Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
@@ -168,7 +174,7 @@ class OmiServiceTest extends Specification
           </omi:read>
         </omi:omiEnvelope>
 
-      Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+      Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         val resp = responseAs[NodeSeq].head
@@ -198,7 +204,7 @@ class OmiServiceTest extends Specification
           </omi:read>
         </omi:omiEnvelope>
 
-      Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+      Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         val resp = responseAs[NodeSeq].head
@@ -221,7 +227,7 @@ class OmiServiceTest extends Specification
           </omi:read>
         </omi:omiEnvelope>
 
-      Post("/", request).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+      Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         val resp = responseAs[NodeSeq].head
@@ -254,7 +260,7 @@ class OmiServiceTest extends Specification
         </omi:omiEnvelope>"""
 
       "respond correctly to write request with whitelisted IPv4-addresses" >> {
-        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("127.0.0.1")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -266,7 +272,9 @@ class OmiServiceTest extends Specification
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
 
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor1"))).withHeaders(`Remote-Address`("127.255.255.255")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor1")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("127.255.255.255")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -280,7 +288,9 @@ class OmiServiceTest extends Specification
       }
 
       "respond correctly to write request with non-whitelisted IPv4-addresses" >> {
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor2"))).withHeaders(`Remote-Address`("192.65.127.80")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor2")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -294,7 +304,9 @@ class OmiServiceTest extends Specification
           description startsWith("Unauthorized")
         }
 
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor3"))).withHeaders(`Remote-Address`("128.0.0.1")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor3")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("128.0.0.1")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -311,7 +323,9 @@ class OmiServiceTest extends Specification
       }
 
       "respond correctly to write request with whitelisted IPv6-addresses" >> {
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("0:0:0:0:0:0:0:1")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("0:0:0:0:0:0:0:1")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -322,7 +336,9 @@ class OmiServiceTest extends Specification
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor5"))).withHeaders(`Remote-Address`("0:0:0:FFFF:FFFF:FFFF:FFFF:FFFF")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor5")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("0:0:0:FFFF:FFFF:FFFF:FFFF:FFFF")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -335,7 +351,9 @@ class OmiServiceTest extends Specification
         }
       }
       "respond correctly to write request with non-whitelisted IPv6-addresses" >> {
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("0:0:1:0:0:0:0:0")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("0:0:1:0:0:0:0:0")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -349,7 +367,9 @@ class OmiServiceTest extends Specification
           description startsWith("Unauthorized")
         }
 
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4"))).withHeaders(`Remote-Address`("2001:DB80:ABBA:BABB:A:0:FF:FF")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("2001:DB80:ABBA:BABB:A:0:FF:FF")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -371,7 +391,9 @@ class OmiServiceTest extends Specification
               </omi:msg>
             </omi:read>
           </omi:omiEnvelope>"""
-        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("192.65.127.80")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80")))) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -381,7 +403,10 @@ class OmiServiceTest extends Specification
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
         }
-        Post("/", XML.loadString(request)).withHeaders(`Remote-Address`("187.42.74.1"), RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("187.42.74.1"))),
+                       RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -393,7 +418,10 @@ class OmiServiceTest extends Specification
         }
       }
       "respond correctly to write request with non-whitelisted user" >> {
-        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor7"))).withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
+        Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor7")))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80"))),
+                       RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
+
           mediaType === `text/xml`
           status === OK
           val resp = responseAs[NodeSeq].head
@@ -407,7 +435,8 @@ class OmiServiceTest extends Specification
       }
       "respond correctly to write request with whitelisted saml user" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor8")))
-          .withHeaders(`Remote-Address`("192.65.127.80"), RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80"))),
+                       RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
 
           mediaType === `text/xml`
           status === OK

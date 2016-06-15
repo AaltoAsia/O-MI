@@ -22,9 +22,9 @@ import scala.xml._
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.AfterAll
 import responses.{RequestHandler, SubscriptionManager}
-import spray.can.Http
-import spray.client.pipelining._
-import spray.http._
+//import spray.can.Http
+//import spray.client.pipelining._
+//import spray.http._
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
