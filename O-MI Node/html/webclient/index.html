@@ -22,7 +22,7 @@
 	<title>O-MI Node</title>
 
 	<link href="css/lib/bootstrap.css" rel="stylesheet" />
-	<link href="themes/default/style.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
 	<link href="css/lib/codemirror.css" rel="stylesheet" />
   <link href="css/lib/bootstrap-datetimepicker.min.css" rel="stylesheet" />
 
@@ -34,14 +34,24 @@
      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
      <![endif]-->
-	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-	<script type="text/javascript" src="js/lib/jquery.js"></script>
+	<!-- jQuery dev version
+  <script src="https://code.jquery.com/jquery-1.12.4.js"
+    integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU="
+    crossorigin="anonymous"></script>
+  -->
+  <!-- (minified) production version: -->
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js"
+    integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.1/jstree.min.js"
+    integrity="sha384-aaGg7RQWqISThqn171r92rSI8k9Md3Z+9Oj+qWcYOC8mYJwo0nos3BQ01J2+1Ie2"
+    crossorigin="anonymous"></script>
+
+	<script type="text/javascript" src="js/lib/codemirror.js"></script>
+	<script type="text/javascript" src="js/lib/xml.js"></script>
 	<script type="text/javascript" src="js/lib/bootstrap.js"></script>
 	<script type="text/javascript" src="js/lib/moment-with-locales.min.js"></script>
 	<script type="text/javascript" src="js/lib/bootstrap-datetimepicker.min.js"></script>
-	<script type="text/javascript" src="js/lib/jstree.js"></script>
-	<script type="text/javascript" src="js/lib/codemirror.js"></script>
-	<script type="text/javascript" src="js/lib/xml.js"></script>
 
 	<script type="text/javascript" src="js/CodeMirrorFormatExt.js"></script>
 	<script type="text/javascript" src="js/initialize.js"></script>
