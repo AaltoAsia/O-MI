@@ -4,8 +4,10 @@ import scala.xml._
 import scala.xml.parsing._
 
 import akka.actor.{ActorSystem, _}
+import akka.http.scaladsl.testkit.TestFrameworkInterface
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
+import org.specs2.execute.{Failure, FailureException}
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
@@ -17,11 +19,6 @@ class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with 
 }
 
 class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
-  import spray.can.Http
-  import spray.http._
-  import HttpMethods._
-  import spray.httpx.unmarshalling._
-  import spray.util._
 
   implicit val system = ActorSystem()
   //vvv in test
@@ -110,6 +107,19 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
   override def apply[S <: Seq[Node]](n: Expectable[S]) = {
     super.apply(n).updateMessage { x => n.description + "\nis not equal to correct:\n" + printer.format(node.head) }
 
+  }
+}
+
+
+// until akka-http gets support
+trait Specs2Interface extends TestFrameworkInterface {
+  // def cleanUp(): Unit
+
+  // from spray-testkit
+  def failTest(msg: String): Nothing = {
+    val trace = new Exception().getStackTrace.toList
+    val fixedTrace = trace.drop(trace.indexWhere(_.getClassName.startsWith("org.specs2")) - 1)
+    throw new FailureException(Failure(msg, stackTrace = fixedTrace))
   }
 }
 
