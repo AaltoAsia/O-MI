@@ -22,6 +22,7 @@ import akka.http.scaladsl.server.Directive.SingleValueModifiers
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import types.OmiTypes._
 
 
@@ -85,7 +86,7 @@ object Authorization {
      * For easy to access logging in extensions.
      * Will get implemented on the service level anyways.
      */
-    def log: Logger
+    def log: Logger = LoggerFactory.getLogger("AuthorizationExtensionDefaultLogger")
 
     def makePermissionTestFunction: CombinedTest // Directive1[PermissionTest]
 

@@ -47,9 +47,11 @@ class ExternalAgentListener(override val config: Config)
   extends InternalAgent
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
-    private val authorization = new {
-      val log = LoggerFactory.getLogger("ExternalAgentListenerAuth")
-    } with ExtensibleAuthorization with IpAuthorization
+  class ExtAgentAuthorization extends {
+    override val log = LoggerFactory.getLogger(classOf[ExternalAgentListener])
+  } with ExtensibleAuthorization with IpAuthorization
+
+  private val authorization = new ExtAgentAuthorization
   protected implicit val timeout = config.getDuration("timeout", SECONDS).seconds
   protected val port = config.getInt("port")
   protected val interface = config.getString("interface")
