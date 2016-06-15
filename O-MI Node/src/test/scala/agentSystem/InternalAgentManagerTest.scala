@@ -20,22 +20,18 @@ import testHelpers.Actorstest
 
 
 class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification {
-  object TestManager{
-    def props(  testAgents: scala.collection.mutable.Map[AgentName, AgentInfo]) : Props = {
-      Props( new TestManager( testAgents ))
-    } 
-  }
 
-class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo]) extends BaseAgentSystem with InternalAgentManager{
-   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
-   protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings
-   def receive : Actor.Receive = {
-     case  start: StartAgentCmd  => handleStart( start)
-     case  stop: StopAgentCmd  => handleStop( stop)
-     case  restart: ReStartAgentCmd  => handleRestart( restart )
-     case ListAgentsCmd() => sender() ! agents.values.toSeq
-   }
- }
+  class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])
+  extends BaseAgentSystem with InternalAgentManager{
+    protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
+    protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings
+    def receive : Actor.Receive = {
+      case  start: StartAgentCmd  => handleStart( start)
+      case  stop: StopAgentCmd  => handleStop( stop)
+      case  restart: ReStartAgentCmd  => handleRestart( restart )
+      case ListAgentsCmd() => sender() ! agents.values.toSeq
+    }
+  }
  "InternalAgentManager should" >>{
    "return message when trying to" >> {
      "start allready running agent" >> startingRunningTest

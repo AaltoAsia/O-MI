@@ -75,7 +75,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
   /*
    * TODO: Use database and Authetication for responsible agents
    */
-  protected[this] lazy val pathOwners: scala.collection.mutable.Map[Path,AgentName] =
+  protected[this] def pathOwners: scala.collection.mutable.Map[Path,AgentName] =
     getConfigsOwnerships()
   protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
     paths.collect{
