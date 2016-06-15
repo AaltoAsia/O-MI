@@ -35,66 +35,66 @@ object CallbackHandlers {
   //Success
   case class  CallbackSuccess()               extends CallbackResult
   // Errors
-  case class   HttpError(status: StatusCode, callback: Uri )  extends 
-    CallbackFailure(s"Received HTTP status $status from $callback.", callback)
-  case class  ProtocolNotSupported(protocol: String, callback: Uri) extends 
-    CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
-  case class  ForbiddenLocalhostPort( callback: Uri)  extends 
-    CallbackFailure(s"Callback address is forbidden.", callback)
+  case class   HttpError(status: StatusCode, callback: Uri )  extends
+  CallbackFailure(s"Received HTTP status $status from $callback.", callback)
+  case class  ProtocolNotSupported(protocol: String, callback: Uri) extends
+  CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
+  case class  ForbiddenLocalhostPort( callback: Uri)  extends
+  CallbackFailure(s"Callback address is forbidden.", callback)
 
-  protected def currentTimestamp =  new Timestamp( new Date().getTime ) 
+  protected def currentTimestamp =  new Timestamp( new Date().getTime )
   implicit val system = ActorSystem()
   import system.dispatcher // execution context for futures
-  val settings = http.Boot.settings 
+  val settings = http.Boot.settings
   private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
 
   private[this] def sendHttp(
-    address: Uri,
-    data: xml.NodeSeq,
-    ttl: Duration): Future[CallbackResult] = {
-      val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
-        case ttl: FiniteDuration => ttl.toMillis
-        case _ => http.Boot.settings.callbackTimeout.toMillis
-      }))
-      def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
-      val request = Post(address, data)
+                              address: Uri,
+                              data: xml.NodeSeq,
+                              ttl: Duration): Future[CallbackResult] = {
+    val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
+      case ttl: FiniteDuration => ttl.toMillis
+      case _ => http.Boot.settings.callbackTimeout.toMillis
+    }))
+    def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
+    val request = Post(address, data)
+    system.log.info(
+      s"Trying to send POST request to $address, will keep trying until $tryUntil."
+    )
+    val check : PartialFunction[HttpResponse, CallbackResult] = {
+      case response: HttpResponse =>
+        if (response.status.isSuccess){
+          //TODO: Handle content of response, possible piggypacking
           system.log.info(
-            s"Trying to send POST request to $address, will keep trying until $tryUntil."
-          ) 
-          val check : PartialFunction[HttpResponse, CallbackResult] = { 
-            case response: HttpResponse =>
-            if (response.status.isSuccess){
-              //TODO: Handle content of response, possible piggypacking
-              system.log.info(
-                s"Successful send POST request to $address."
-              ) 
-              CallbackSuccess()
-            } else throw HttpError(response.status, address)
-          }
-          def trySend = httpHandler(request)
-          val retry = retryUntilWithCheck[HttpResponse, CallbackResult](
+            s"Successful send POST request to $address."
+          )
+          CallbackSuccess()
+        } else throw HttpError(response.status, address)
+    }
+    def trySend = httpHandler(request)
+    val retry = retryUntilWithCheck[HttpResponse, CallbackResult](
             settings.callbackDelay,
             tryUntil
           )(check )(trySend)
-          retry.onFailure{
-            case e : Throwable=>
-            system.log.warning(
-              s"Failed to send POST request to $address after trying until ttl ended."
-            ) 
-          }
-          retry
-          
+    retry.onFailure{
+      case e : Throwable=>
+        system.log.warning(
+          s"Failed to send POST request to $address after trying until ttl ended."
+        )
     }
+    retry
+
+  }
 
   private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] ) : Future[U] = {
     val future = creator
     future.map{ check }.recoverWith{
-      case e if tryUntil.after( currentTimestamp ) => 
+      case e if tryUntil.after( currentTimestamp ) =>
         system.log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
-        ) 
+        )
         Thread.sleep(delay.toMillis)
-        retryUntilWithCheck[T,U](delay,tryUntil, attempt + 1 )(check )(creator )  
+        retryUntilWithCheck[T,U](delay,tryUntil, attempt + 1 )(check )(creator )
     }
   }
   /**
@@ -104,23 +104,23 @@ object CallbackHandlers {
    * @return future for the result of the callback is returned without blocking the calling thread
    */
   def sendCallback(
-    address: String,
-    data: xml.NodeSeq,
-    ttl: Duration
-  ): Future[CallbackResult] = {
+                    address: String,
+                    data: xml.NodeSeq,
+                    ttl: Duration
+                    ): Future[CallbackResult] = {
 
     checkCallback(address).flatMap{ uri =>
-          sendHttp(uri, data, ttl)
+      sendHttp(uri, data, ttl)
     }
   }
 
   def checkCallback( callback: String ): Future[Uri]= Future{
-    
+
     val uri = Uri(callback)
     val hostAddress = uri.authority.host.address
     val IpAddress = InetAddress.getByName(hostAddress)
-    
-    val portsUsedByNode =settings.ports.values.toSeq 
+
+    val portsUsedByNode =settings.ports.values.toSeq
     val validScheme = supportedProtocols.contains(uri.scheme)
     val validPort = hostAddress != "localhost" || !portsUsedByNode.contains(uri.effectivePort)
     val invalidPortMsg = "Tryed to send callback to port used by O-MI Node"
