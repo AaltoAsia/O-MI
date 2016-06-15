@@ -117,11 +117,6 @@ trait OmiService
                 You can test O-MI requests here with the help of this webapp.
               </p>
             </li>
-            <li style="color:gray;"><a style="text-decoration:line-through" href="html/old-webclient/form.html">Old WebApp</a>
-              <p>
-                Very old version of the webapp.
-              </p>
-            </li>
             <li><a href="html/ImplementationDetails.html">Implementation details, request-response examples</a>
               <p>
                 Here you can view examples of the requests this project supports.
