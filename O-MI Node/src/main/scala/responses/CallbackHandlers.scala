@@ -21,8 +21,10 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
-import akka.client.pipelining._
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, Uri}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.model._
 
 /**
  * Handles sending data to callback addresses 
@@ -46,7 +48,9 @@ object CallbackHandlers {
   implicit val system = ActorSystem()
   import system.dispatcher // execution context for futures
   val settings = http.Boot.settings
-  private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
+  val httpExt = Http(system)
+  //private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
+  //implicit val xmlEntityMarshaller: akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 
   private[this] def sendHttp(
                               address: Uri,
@@ -56,11 +60,15 @@ object CallbackHandlers {
       case ttl: FiniteDuration => ttl.toMillis
       case _ => http.Boot.settings.callbackTimeout.toMillis
     }))
+
     def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
-    val request = Post(address, data)
+
+    val request = RequestBuilding.Post(address, data)
+
     system.log.info(
       s"Trying to send POST request to $address, will keep trying until $tryUntil."
     )
+
     val check : PartialFunction[HttpResponse, CallbackResult] = {
       case response: HttpResponse =>
         if (response.status.isSuccess){
@@ -71,17 +79,21 @@ object CallbackHandlers {
           CallbackSuccess()
         } else throw HttpError(response.status, address)
     }
-    def trySend = httpHandler(request)
+
+    def trySend = httpExt.singleRequest(request)//httpHandler(request)
+
     val retry = retryUntilWithCheck[HttpResponse, CallbackResult](
             settings.callbackDelay,
             tryUntil
           )(check )(trySend)
+
     retry.onFailure{
       case e : Throwable=>
         system.log.warning(
           s"Failed to send POST request to $address after trying until ttl ended."
         )
     }
+
     retry
 
   }
