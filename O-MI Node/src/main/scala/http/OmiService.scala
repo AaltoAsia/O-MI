@@ -63,12 +63,6 @@ class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSyste
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
 
-  /**
-   * this actor only runs our route, but you could add
-   * other things here, like request stream processing
-   * or timeout handling
-   */
-  def receive : Actor.Receive = runRoute(myRoute)
 
   val log = LoggerFactory.getLogger("OmiService")
 
