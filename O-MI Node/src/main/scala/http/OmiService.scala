@@ -63,12 +63,6 @@ class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSyste
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
 
-  /**
-   * this actor only runs our route, but you could add
-   * other things here, like request stream processing
-   * or timeout handling
-   */
-  def receive : Actor.Receive = runRoute(myRoute)
 
   val log = LoggerFactory.getLogger("OmiService")
 
@@ -121,11 +115,6 @@ trait OmiService
             <li><a href="html/webclient/index.html">O-MI Test Client WebApp</a>
               <p>
                 You can test O-MI requests here with the help of this webapp.
-              </p>
-            </li>
-            <li style="color:gray;"><a style="text-decoration:line-through" href="html/old-webclient/form.html">Old WebApp</a>
-              <p>
-                Very old version of the webapp.
               </p>
             </li>
             <li><a href="html/ImplementationDetails.html">Implementation details, request-response examples</a>

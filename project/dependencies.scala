@@ -14,10 +14,11 @@ object Dependencies {
   val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.1.2"
 
   //Test dependencies
-  val specs2       = "org.specs2"        %% "specs2-core"   % "3.7.2"   % "test"
-  val specs2match  = "org.specs2"        %% "specs2-matcher-extra" % "3.7.2" % "test"
-  val mockito	   = "org.specs2"          %% "specs2-mock"   % "3.7.2"   % "test"
-  val nuValidator  = "nu.validator"      % "htmlparser"  % "1.4.3"   % "test" //html5 parser for systemtests
+  val specs2V = "3.7.2"
+  val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
+  val specs2match  = "org.specs2"        %% "specs2-matcher-extra" % specs2V % "test"
+  val mockito	     = "org.specs2"        %% "specs2-mock"   % specs2V   % "test"
+  val nuValidator  = "nu.validator"      % "htmlparser"     % "1.4.3"   % "test" //html5 parser for systemtests
   val akkaTestkit  = "com.typesafe.akka" %% "akka-testkit"  % akkaV     % "test"
   val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaV % "test"
 
@@ -33,9 +34,10 @@ object Dependencies {
   val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
 
   //etc
-  val logback = "ch.qos.logback" % "logback-classic" % "1.1.3"
-  val prevaylerCore = "org.prevayler" % "prevayler-core" % "2.6"
-  val prevaylerFactory = "org.prevayler" % "prevayler-factory" % "2.6"
+  val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
+  val prevaylerV = "2.6"
+  val prevaylerCore    = "org.prevayler"  % "prevayler-core"   % prevaylerV
+  val prevaylerFactory = "org.prevayler"  % "prevayler-factory"% prevaylerV
 
 
 

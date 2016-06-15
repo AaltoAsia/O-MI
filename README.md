@@ -20,7 +20,7 @@ Resources
 
 Dependencies
 ------------
-* Java 1.7
+* Java 1.8
 
 Running
 -------

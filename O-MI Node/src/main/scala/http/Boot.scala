@@ -152,7 +152,7 @@ trait Starter {
 
     bindingFuture.onFailure {
       case ex: Exception =>
-        log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
 
     }
   }
