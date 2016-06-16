@@ -95,16 +95,12 @@ case class ReadRequest(
       None,
       oldest,
       begin.map{
-        timestamp => 
-        val cal = new GregorianCalendar();
-        cal.setTime(timestamp)
-        DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+        timestamp: Timestamp => 
+        timestampToXML(timestamp)
       },
       end.map{
-        timestamp => 
-        val cal = new GregorianCalendar();
-        cal.setTime(timestamp)
-        DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+        timestamp : Timestamp => 
+        timestampToXML(timestamp)
       },
       newest
     )

@@ -16,6 +16,9 @@ package types
 
 
 import java.lang.{Iterable => JavaIterable}
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
+import java.sql.Timestamp
 
 import scala.language.existentials
 
@@ -29,7 +32,7 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
-  def requestToEnvelope[T <: OmiEnvelopeOption](request: T, ttl : Long) ={
+  def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long) ={
     val namespace = Some("omi.xsd")
     val version = "1.0"
     val datarecord = request match{
@@ -39,13 +42,18 @@ package object OmiTypes  {
       scalaxb.DataRecord[xmlTypes.WriteRequest](namespace, Some("write"), write)
       case cancel: xmlTypes.CancelRequest => 
       scalaxb.DataRecord[xmlTypes.CancelRequest](namespace, Some("cancel"), cancel)
-      case response: xmlTypes.ResponseListType => "response"
+      case response: xmlTypes.ResponseListType => 
       scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
     }
     xmlTypes.OmiEnvelope( datarecord, "1.0", ttl)
   }
  def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) ={ 
     scalaxb.toXML[OmiEnvelope](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+  }
+  def timestampToXML(timestamp: Timestamp) ={ 
+    val cal = new GregorianCalendar();
+    cal.setTime(timestamp)
+    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
 }
 /**
