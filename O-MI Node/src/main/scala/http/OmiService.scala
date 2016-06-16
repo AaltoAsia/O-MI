@@ -22,7 +22,7 @@ import scala.xml.NodeSeq
 
 import accessControl.AuthAPIService
 import akka.actor.ActorSystem
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
@@ -49,17 +49,15 @@ trait OmiServiceAuthorization
  * @param reqHandler ActorRef that is used in subscription handling
  */
 class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSystem)
-     extends OmiService {
-
-
+     extends {
+       // Early initializer needed (-- still doesn't seem to work)
+       override val log = LoggerFactory.getLogger(classOf[OmiService])
+  } with OmiService {
 
   registerApi(new AuthAPIService())
 
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
-
-
-  val log = LoggerFactory.getLogger("OmiService")
 
 }
 
@@ -91,7 +89,9 @@ trait OmiService
     case Uri.Path.Segment(head, tail)=> head + pathToString(tail)
   }
 
-  val htmlXml = nodeSeqMarshaller(MediaTypes.`text/html`)
+  // Default to xml mediatype and require explicit type for html
+  val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
+  implicit val xml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
 
   // should be removed?
   val helloWorld = get {
@@ -147,7 +147,7 @@ trait OmiService
               ToResponseMarshallable(
               <error>No object found</error>
               )(
-                fromToEntityMarshaller(StatusCodes.NotFound)(defaultNodeSeqMarshaller)
+                fromToEntityMarshaller(StatusCodes.NotFound)(xml)
               )
             )
         }
