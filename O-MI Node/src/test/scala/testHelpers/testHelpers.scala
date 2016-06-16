@@ -28,9 +28,6 @@ class Actorstest(system: ActorSystem) extends TestKit(system) with Scope with Af
 
 class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int){
 
-  //implicit val system = ActorSystem()
-  //vvv in test
-  //IO(Http) ! Http.Bind(this, interface = "localhost", port = "12345"
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
 
@@ -48,49 +45,9 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
 
   val bindFuture = Http().bindAndHandle(route, interface, port)
   Await.ready(bindFuture, 2 seconds)
-  //val reqHandler: HttpRequest => HttpResponse = {
-  //  case HttpRequest(POST, _, _, ,_)
-  //}
-
- /* def receive = {
-    case _: Http.Connected => sender ! Http.Register(self)
-
-    case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
-      val xmldata: Option[NodeSeq] = entity.as[NodeSeq].toOption//.asInstanceOf[NodeSeq]
-      //log.debug("server received\n:" + xmldata )
-      destination ! xmldata
-//      println("\n\ndata sent to listener")
-    }
-//    case Timedout(_) => log.info("Callback test server connection timed out")
-    
-
-  }*/
 }
 
-/*trait BeforeAll extends Specification {
-  override def map(fs: => Fragments) = {
-    Step(beforeAll) ^ fs
-  }
 
-  protected[this] def beforeAll()
-}
-
-trait AfterAll extends Specification {
-  override def map(fs: => Fragments) = {
-    fs ^ Step(afterAll)
-  }
-
-  protected[this] def afterAll()
-}
-
-trait BeforeAfterAll extends Specification {
-  override def map(fs: => Fragments) = {
-    Step(beforeAll) ^ fs ^ Step(afterAll)
-  }
-  protected[this] def beforeAll()
-  protected[this] def afterAll()
-}
-*/
 abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """)))extends TestKit(as) with After with Scope {
@@ -143,20 +100,11 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
 }
 
 
-// until akka-http gets support
 trait Specs2Interface extends TestFrameworkInterface {
-  // def cleanUp(): Unit
 
-  // from spray-testkit
   def failTest(msg: String): Nothing = {
     val trace = new Exception().getStackTrace.toList
     val fixedTrace = trace.drop(trace.indexWhere(_.getClassName.startsWith("org.specs2")) - 1)
     throw new FailureException(Failure(msg, stackTrace = fixedTrace))
   }
 }
-
-/* depracated
-// Disable implicit from specs2 Specification so concurrent.Duration int.seconds etc can be used
-trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {
-  override def intToRichLong(v: Int) = super.intToRichLong(v)
-} */

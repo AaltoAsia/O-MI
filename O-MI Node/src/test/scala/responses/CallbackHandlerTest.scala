@@ -42,9 +42,6 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val probe = TestProbe()
       val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
       implicit val timeout = Timeout(1 seconds)
-      //val bindFuture = IO(Http) ? Http.Bind(testServer, interface = "localhost", port = port)
-      //bind timeout?
-      //Await.ready(bindFuture, 2 seconds) //wait for bind to complete
       probe
   }
 }

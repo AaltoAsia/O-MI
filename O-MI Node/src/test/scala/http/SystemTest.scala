@@ -17,8 +17,6 @@ import akka.util.Timeout
 import database._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-//import org.specs2.specification.core.Fragment
-//import org.specs2.specification.Fragment
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
@@ -27,9 +25,6 @@ import scala.xml._
 import com.typesafe.config.ConfigFactory
 import org.specs2.specification.AfterAll
 import responses.{RequestHandler, SubscriptionManager}
-//import spray.can.Http
-//import spray.client.pipelining._
-//import spray.http._
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
@@ -41,7 +36,6 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   override val settings = testSettings
 
-  //testHelpers.utils.removeAllPrevaylers
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
 
@@ -51,7 +45,6 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   override def start(dbConnection: DB): OmiServiceImpl = {
     val agentManager = system.actorOf(
-      //AgentSystem.props(dbConnection, subManager),
       Props({val as = new AgentSystem(dbConnection,subManager) {
         override val settings = testSettings
       }
@@ -60,22 +53,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
       "agent-system"
     )
     
-    //val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
-    /*
-    val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
-      "omi-node-cli-listener"
-    )*/
 
     // create omi service actor
     val omiService = new OmiServiceImpl(requestHandler)
-  /*    system.actorOf(Props(
-      new OmiServiceActor(
-        requestHandler
-      )
-    ), "omi-service")
-*/
+
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
 
@@ -86,22 +68,12 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
 
 
-  //init(dbConnection)
-  // init without settings odf:
-
-  // Create input pusher actor
-  //initInputPusher(dbConnection)
-
-  //val serviceActor = new OmiServiceImpl()//start(dbConnection)
   bindHttp(start(dbConnection))
   implicit val materializer = ActorMaterializer()
   val probe = TestProbe()
   val testServer = new SystemTestCallbackServer(probe.ref, "localhost", 20002)
-  //implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
-  //IO(Http) ? Http.Bind(testServer, interface = "localhost", port = 20002)
   val http = Http(system)
 
-  //val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
 
 
   val printer = new scala.xml.PrettyPrinter(80, 2)
@@ -264,10 +236,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
     })
     
     "Read Test" >> {
-      //Fragment.foreach(readTests) { i => {
       readTests.foldLeft(org.specs2.specification.core.Fragments.empty)((res, i) => {
         val (request, correctResponse, testDescription) = i
-        //res.append(
         (testDescription.trim + "\n") in {
 
           request aka "Read request message" must beSuccessfulTry
@@ -281,19 +251,17 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
           response showAs (n =>
             "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
           ) must new BeEqualFormatted(correctResponse.get)
-        } //)
+        }
       })
     }
-    //}
+
 
     "Subscription Test" >> {
       subsNoCallback.foldLeft(org.specs2.specification.core.Fragments.empty)((res, i) => {
         val (reqrespwait, testDescription) = i
         (testDescription.trim() + "\n") >> {
-          //Fragment.foreach(reqrespwait.toSeq){j=>
           reqrespwait.foldLeft(org.specs2.specification.core.Fragments.empty)((res, j) => {
             "step: " >> {
-//testDescription.trim() ! {
               val (request, correctResponse, responseWait) = j
               request aka "Subscription request message" must beSuccessfulTry
               correctResponse aka "Correct response message" must beSuccessfulTry
