@@ -16,7 +16,7 @@ A) Request as a value
 * O-MI parser overhead: very low, just xml escaping
 
 
-```
+```xml
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
   <write xmlns="omi.xsd" msgformat="odf">
@@ -46,7 +46,7 @@ A) Request as a value
   &lt;/write&gt;
 &lt;/omi:omiEnvelope&gt;
 
-						</value>
+            </value>
           </InfoItem>
           <InfoItem name="UserInfo">
             <value type="xs:string">user@email.com</value>
@@ -64,7 +64,7 @@ B) Request as O-DF and type
 * O-MI parser overhead: medium/low, only header needs parsing
 
 
-```
+```xml
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
   <write xmlns="omi.xsd" msgformat="odf">
@@ -73,19 +73,19 @@ B) Request as O-DF and type
         <Object>
           <id>AuthorizationRequest</id>
           <InfoItem name="PermissionForRequestType">
-						<value type="xs:string">write</value>
+            <value type="xs:string">write</value>
           </InfoItem>
-					<Object>
-						<id>PermissionForODF</id>
-						<Object>
-							<id>SmartHouse</id>
-							<InfoItem name="FrontDoor">
-								<value>VALUE_PLACEHOLDER</value>
-							</InfoItem>
-							<InfoItem name="BackDoor">
-								<value>VALUE_PLACEHOLDER</value>
-							</InfoItem>
-						</Object>
+          <Object>
+            <id>PermissionForODF</id>
+            <Object>
+              <id>SmartHouse</id>
+              <InfoItem name="FrontDoor">
+                <value>VALUE_PLACEHOLDER</value>
+              </InfoItem>
+              <InfoItem name="BackDoor">
+                <value>VALUE_PLACEHOLDER</value>
+              </InfoItem>
+            </Object>
           </Object>
           <InfoItem name="UserInfo">
             <value type="xs:string">user@email.com</value>
@@ -105,7 +105,7 @@ C) Request as paths and type
 * O-MI parser overhead: high, whole request needs parsing
 
 
-```
+```xml
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
   <write xmlns="omi.xsd" msgformat="odf">
@@ -114,9 +114,9 @@ C) Request as paths and type
         <Object>
           <id>AuthorizationRequest</id>
           <InfoItem name="PermissionForRequestType">
-						<value type="xs:string">write</value>
+            <value type="xs:string">write</value>
           </InfoItem>
-					<InfoItem name="PermissionForPaths">
+          <InfoItem name="PermissionForPaths">
             <value type="xs:string">Objects/SmartHouse/FrontDoor</value>
             <value type="xs:string">Objects/SmartHouse/BackDoor</value>
           </InfoItem>
