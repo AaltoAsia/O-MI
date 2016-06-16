@@ -35,7 +35,7 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
   val route = post {
     decodeRequest{
       entity(as[NodeSeq]) { data =>
-        destination ! data
+        destination ! Option(data)
         complete{
           "OK"
         }

@@ -139,7 +139,7 @@ trait OmiService
             complete(value)
           case Some(Right(xmlData)) =>
             complete(xmlData)
-          case None =>
+          case None =>            {
             log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
 
             // TODO: Clean this code
@@ -150,6 +150,7 @@ trait OmiService
                 fromToEntityMarshaller(StatusCodes.NotFound)(xml)
               )
             )
+          }
         }
       }
     }

@@ -355,34 +355,5 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
       })
     }
   }
-  "Data discovery tests" should {
-    "Respond successfully to GET request in '/Objects' and '/Objects/'" in {
-      val responseFuture1 = http.singleRequest(RequestBuilding.Get("http://localhost:8080/Objects"))
-      val responseXml1 = Try(Await.result(responseFuture1.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
-      val responseFuture2 = http.singleRequest(RequestBuilding.Get("http://localhost:8080/Objects/"))
-      val responseXml2 = Try(Await.result(responseFuture2.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
 
-      responseXml1 must beSuccessfulTry
-      responseXml2 must beSuccessfulTry
-
-      val response1 = responseXml1.get
-      val response2 = responseXml2.get
-
-      response1.headOption must beSome.which(_.label == "Objects")
-      response2.headOption must beSome.which(_.label == "Objects")
-    }
-
-    "Respond with error to nonexisting paths" in {
-      val responseFuture = http.singleRequest(RequestBuilding.Get("http://localhost:8080/Objects/nonexistingPath628543"))
-      val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
-
-      responseXml must beAFailedTry
-
-      val response = responseXml.failed.get.getMessage
-      response ===
-        """Status: 404 Not Found
-          |Body: <error>No object found</error>""".stripMargin
-    }
-
-  }
 }
