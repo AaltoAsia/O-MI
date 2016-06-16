@@ -3,6 +3,7 @@ Some different options for the protocol
 =======================================
 
 We require
+
 1. the original request including
   1. O-DF
   2. method type (read/write)
