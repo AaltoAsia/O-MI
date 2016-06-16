@@ -22,7 +22,7 @@ import scala.concurrent.Future
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
 
-import agentSystem.{PromiseResult, PromiseWrite}
+import agentSystem.{PromiseResult, PromiseWrite, SuccessfulWrite}
 import akka.actor.ActorRef
 import responses.OmiGenerator._
 import types.OmiTypes._
@@ -38,7 +38,8 @@ trait WriteHandler extends OmiRequestHandlerBase{
 
       val promiseResult = PromiseResult()
       agentSystem ! PromiseWrite(promiseResult, write)
-      val successF = promiseResult.isSuccessful
+      val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}
+
       successF.recoverWith{
         case e : Throwable =>{
         log.error(e, "Failure when writing")
@@ -46,6 +47,7 @@ trait WriteHandler extends OmiRequestHandlerBase{
       }}
 
 
+      successF.onSuccess{ case succ => log.info( succ.toString) }
       val response = successF.map{
         succ => success 
       }

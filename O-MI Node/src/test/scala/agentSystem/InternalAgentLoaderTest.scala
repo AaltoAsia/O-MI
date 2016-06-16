@@ -2,8 +2,8 @@ package agentSystem
 
 import scala.collection.mutable.{Map => MutableMap }
 import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.util.Timeout
 import akka.pattern.ask
-
 import akka.testkit._
 import com.typesafe.config.{ConfigFactory, Config}
 import http.CLICmds._

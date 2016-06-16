@@ -19,9 +19,11 @@ import org.specs2.specification.Scope
 import org.xml.sax.InputSource
 import responses.RemoveSubscription
 
-class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
+class Actorstest(system: ActorSystem) extends TestKit(system) with Scope with After with ImplicitSender {
 
-  def after = TestKit.shutdownActorSystem(system)
+  def after = {
+    TestKit.shutdownActorSystem(system)
+  }
 }
 
 class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int){
@@ -92,7 +94,10 @@ trait BeforeAfterAll extends Specification {
 abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
   """)))extends TestKit(as) with After with Scope {
-  def after = system.shutdown()
+  //def after = system.shutdown()
+  def after = {
+    TestKit.shutdownActorSystem(system)
+  }
 }
 
 class SubscriptionHandlerTestActor extends Actor {

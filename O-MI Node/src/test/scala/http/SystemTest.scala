@@ -3,7 +3,9 @@ import java.text.SimpleDateFormat
 import java.util.TimeZone
 
 import agentSystem.AgentSystem
-import akka.actor.Props
+import akka.actor.{ActorRef, Props, ActorSystem}
+import akka.io.{IO, Tcp}
+import akka.pattern.ask
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -32,8 +34,9 @@ import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
 
+  val conf = ConfigFactory.load("testconfig")
   val testSettings = new OmiConfigExtension(
-    ConfigFactory.load("testconfig")
+    conf
   )
 
   override val settings = testSettings
@@ -198,7 +201,14 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   }
   def getCallbackRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
-    Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text.replaceAll("""callback\s*=\s*"(http:\/\/callbackAddress\.com:5432)"""", """callback="http://localhost:20002/""""))))
+    Try(XML.loadString(
+      setTimezoneToSystemLocale(
+        reqresp.head.text.replaceAll(
+          """callback\s*=\s*"(http:\/\/callbackAddress\.com:5432)"""",
+          """callback="http://localhost:20002/"""")
+        )
+      )
+    )
   }
 
   def setTimezoneToSystemLocale(in: String): String = {
@@ -244,7 +254,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
         response must beSuccessfulTry
 
         response.get showAs (n =>
-          "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+          "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
+        ) must new BeEqualFormatted(correctResponse.get)
       }
     }
 
@@ -268,7 +279,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
           responseXML must beSuccessfulTry
           val response = XML.loadString(removeDateTime(responseXML.get.toString))
           response showAs (n =>
-            "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+            "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
+          ) must new BeEqualFormatted(correctResponse.get)
         } //)
       })
     }
@@ -296,7 +308,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
               val response = XML.loadString(removeTimes(responseXml.get.toString))
 
               response showAs (n =>
-                "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+                "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
+              ) must new BeEqualFormatted(correctResponse.get)
             }
           })
         }
@@ -337,7 +350,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
                   Thread.sleep(2000)
                 }
                 response showAs (n =>
-                  "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+                  "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
+                ) must new BeEqualFormatted(correctResponse.get)
 
               } else {
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
@@ -346,7 +360,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
                 val response = XML.loadString(removeTimes(messageOption.get.toString()))
                 
                 response showAs (n =>
-                  "Response at callback server:\n" + printer.format(n.head)) must new BeEqualFormatted(correctResponse.get)
+                  "Response at callback server:\n" + printer.format(n.head)
+                ) must new BeEqualFormatted(correctResponse.get)
 
               }
             }
@@ -355,5 +370,5 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
       })
     }
   }
-
+  step(system.shutdown())
 }

@@ -69,7 +69,8 @@ trait OmiService
      with OmiServiceAuthorization
      {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  val system : ActorSystem
+  import system.dispatcher
   def log: org.slf4j.Logger
   val requestHandler: RequestHandler
 
@@ -171,14 +172,14 @@ trait OmiService
                 case Some(req) =>{
                   req.ttl match{
                     case ttl: FiniteDuration => ttlPromise.completeWith(
-                      akka.pattern.after(ttl, using = http.Boot.system.scheduler) {
+                      akka.pattern.after(ttl, using = system.scheduler) {
                         log.info(s"TTL timed out after $ttl");
                         Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
                       }
                     )
                     case _ => //noop
                   }
-                  requestHandler.handleRequest(req)
+                  requestHandler.handleRequest(req)(system)
                 }
                 case None =>
                   Future.successful(unauthorized)
@@ -197,14 +198,14 @@ trait OmiService
               value // return
           }
 
-        case Left(errors) => Future { // Errors found
+        case Left(errors) => { // Errors found
 
           log.warn(s"${requestString}")
           log.warn("Parse Errors: {}", errors.mkString(", "))
 
           val errorResponse = parseError(errors.toSeq:_*)
 
-          errorResponse
+          Future.successful(errorResponse)
         }
       }
     } catch {

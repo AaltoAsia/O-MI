@@ -39,11 +39,11 @@ object CallbackHandlers {
   case class  CallbackSuccess()               extends CallbackResult
   // Errors
   case class   HttpError(status: StatusCode, callback: Uri )  extends
-  CallbackFailure(s"Received HTTP status $status from $callback.", callback)
+    CallbackFailure(s"Received HTTP status $status from $callback.", callback)
   case class  ProtocolNotSupported(protocol: String, callback: Uri) extends
-  CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
+    CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
   case class  ForbiddenLocalhostPort( callback: Uri)  extends
-  CallbackFailure(s"Callback address is forbidden.", callback)
+    CallbackFailure(s"Callback address is forbidden.", callback)
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
   implicit val system = ActorSystem()
@@ -55,8 +55,8 @@ object CallbackHandlers {
   //private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
   //implicit val xmlEntityMarshaller: akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 
-  private[this] def sendHttp(
-                              address: Uri,
+  def log(implicit system: ActorSystem) = system.log
+  private[this] def sendHttp( address: Uri,
                               data: xml.NodeSeq,
                               ttl: Duration): Future[CallbackResult] = {
     val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
@@ -104,7 +104,7 @@ object CallbackHandlers {
   private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] ) : Future[U] = {
     val future = creator
     future.map{ check }.recoverWith{
-      case e if tryUntil.after( currentTimestamp ) =>
+      case e if tryUntil.after( currentTimestamp ) && !system.isTerminated => 
         system.log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
         )
@@ -118,8 +118,7 @@ object CallbackHandlers {
    * @param data xml data to send as a callback
    * @return future for the result of the callback is returned without blocking the calling thread
    */
-  def sendCallback(
-                    address: String,
+  def sendCallback( address: String,
                     data: xml.NodeSeq,
                     ttl: Duration
                     ): Future[CallbackResult] = {

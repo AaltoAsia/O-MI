@@ -36,15 +36,20 @@ sealed trait InternalAgentCmd
   case class Start()                    extends InternalAgentCmd
   case class Restart()                  extends InternalAgentCmd
   case class Stop()                     extends InternalAgentCmd
-sealed trait InternalAgentResponse
-trait InternalAgentSuccess     extends InternalAgentResponse 
+
+  sealed trait InternalAgentResponse
+  trait InternalAgentSuccess     extends InternalAgentResponse 
   case class CommandSuccessful() extends InternalAgentSuccess 
-abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse
+
+  abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse
   case class CommandFailed(msg : String ) extends InternalAgentFailure(msg) 
-sealed trait ResponsibleAgentMsg
+
+  sealed trait ResponsibleAgentMsg
   case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
-sealed trait ResponsibleAgentResponse
+
+  sealed trait ResponsibleAgentResponse
   case class SuccessfulWrite( paths: Vector[Path] ) extends ResponsibleAgentResponse 
+
 object AgentTypes {
   trait InternalAgent extends Actor with ActorLogging {
     protected def config : Config
@@ -66,6 +71,7 @@ object AgentTypes {
   }
 
   trait ResponsibleInternalAgent extends InternalAgent {
+      import context.dispatcher
     protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
     override private[AgentTypes] def forcer: Actor.Receive = super.forcer orElse {
       case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)

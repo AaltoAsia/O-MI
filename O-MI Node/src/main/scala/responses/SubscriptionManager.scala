@@ -66,6 +66,7 @@ object SubscriptionManager{
  */
 class SubscriptionManager(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
+  import context.system
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler = context.system.scheduler

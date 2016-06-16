@@ -46,7 +46,7 @@ import types.Path
  */
 trait Starter {
   // we need an ActorSystem to host our application in
-  implicit val system = ActorSystem("on-core")
+  implicit val system : ActorSystem = ActorSystem("on-core")
 
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
@@ -113,7 +113,6 @@ trait Starter {
       AgentSystem.props(dbConnection, subManager),
       "agent-system"
     )
-//    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
 
     saveSettingsOdf(agentManager)
     val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
@@ -130,8 +129,6 @@ trait Starter {
 
     implicit val timeoutForBind = Timeout(5.seconds)
 
-//    IO(Tcp)  ? Tcp.Bind(sensorDataListener,
-//      new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
     IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
       new InetSocketAddress("localhost", settings.cliPort))
 

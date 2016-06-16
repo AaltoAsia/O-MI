@@ -6,6 +6,7 @@ import com.typesafe.config.Config
 
 import agentSystem._
 import agentSystem.AgentTypes._
+import types.OmiTypes.WriteRequest
 
 
 trait StartFailure{
@@ -48,6 +49,12 @@ class SFAgent extends InternalAgent with StartSuccess with StopFailure{
 }
 class SSAgent extends InternalAgent with StartSuccess with StopSuccess{
   def config = throw  CommandFailed("Test failure.")
+}
+class WSAgent extends SSAgent with ResponsibleInternalAgent{
+  protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit = {
+    passWrite(promise, write)
+  }
+
 }
 object SSAgent extends PropsCreator{
   final def props(config: Config) : InternalAgentProps = { 
