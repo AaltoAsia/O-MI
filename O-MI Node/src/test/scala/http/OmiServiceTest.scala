@@ -47,7 +47,7 @@ class OmiServiceTest
   val requestHandler = new RequestHandler(subscriptionHandler, agentManager)(dbConnection)
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
-  val localHost = RemoteAddress(InetAddress.getLocalHost)
+  val localHost = RemoteAddress(InetAddress.getLoopbackAddress)
 
   "System tests for features of OMI Node service".title
 
