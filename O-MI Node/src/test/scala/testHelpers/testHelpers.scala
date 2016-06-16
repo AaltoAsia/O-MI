@@ -1,10 +1,16 @@
 package testHelpers
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.xml._
 import scala.xml.parsing._
 
 import akka.actor.{ActorSystem, _}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.TestFrameworkInterface
+import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
 import org.specs2.execute.{Failure, FailureException}
@@ -18,12 +24,33 @@ class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with 
   def after = TestKit.shutdownActorSystem(system)
 }
 
-class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
+class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int){
 
-  implicit val system = ActorSystem()
+  //implicit val system = ActorSystem()
   //vvv in test
-  //  IO(Http) ! Http.Bind(this, interface = "localhost", port = "12345"
-  def receive = {
+  //IO(Http) ! Http.Bind(this, interface = "localhost", port = "12345"
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+
+  val route = post {
+    decodeRequest{
+      entity(as[NodeSeq]) { data =>
+        destination ! data
+        complete{
+          "OK"
+        }
+      }
+    }
+  }
+
+
+  val bindFuture = Http().bindAndHandle(route, interface, port)
+  Await.ready(bindFuture, 2 seconds)
+  //val reqHandler: HttpRequest => HttpResponse = {
+  //  case HttpRequest(POST, _, _, ,_)
+  //}
+
+ /* def receive = {
     case _: Http.Connected => sender ! Http.Register(self)
 
     case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
@@ -34,8 +61,8 @@ class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLo
     }
 //    case Timedout(_) => log.info("Callback test server connection timed out")
     
-    
-  }
+
+  }*/
 }
 
 /*trait BeforeAll extends Specification {

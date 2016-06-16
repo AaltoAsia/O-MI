@@ -4,6 +4,7 @@
   */
 package spray.testkit
 
+import akka.http.scaladsl.testkit.TestFrameworkInterface
 import org.specs2.execute.{Failure, FailureException}
 import org.specs2.specification.core.{Fragments, SpecificationStructure}
 import org.specs2.specification.create.DefaultFragmentFactory

@@ -1,12 +1,15 @@
 package http
-import java.net.InetSocketAddress
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
 import agentSystem.AgentSystem
-import akka.actor.{ActorRef, Props}
-import akka.io.{IO, Tcp}
-import akka.pattern.ask
+import akka.actor.Props
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.ActorMaterializer
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import database._
@@ -43,7 +46,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   override val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler-test")
 
-  override def start(dbConnection: DB): ActorRef = {
+  override def start(dbConnection: DB): OmiServiceImpl = {
     val agentManager = system.actorOf(
       //AgentSystem.props(dbConnection, subManager),
       Props({val as = new AgentSystem(dbConnection,subManager) {
@@ -63,16 +66,17 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
     )*/
 
     // create omi service actor
-    val omiService = system.actorOf(Props(
+    val omiService = new OmiServiceImpl(requestHandler)
+  /*    system.actorOf(Props(
       new OmiServiceActor(
         requestHandler
       )
     ), "omi-service")
-
+*/
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 
 
-    return omiService
+    omiService
   }
 
   sequential
@@ -85,15 +89,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   // Create input pusher actor
   //initInputPusher(dbConnection)
 
-  val serviceActor = start(dbConnection)
-  bindHttp(serviceActor)
-
+  //val serviceActor = new OmiServiceImpl()//start(dbConnection)
+  bindHttp(start(dbConnection))
+  implicit val materializer = ActorMaterializer()
   val probe = TestProbe()
-  lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
-  implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
-  IO(Http) ? Http.Bind(testServer, interface = "localhost", port = 20002)
+  val testServer = new SystemTestCallbackServer(probe.ref, "localhost", 20002)
+  //implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
+  //IO(Http) ? Http.Bind(testServer, interface = "localhost", port = 20002)
+  val http = Http(system)
 
-  val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
+  //val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]
+
+
   val printer = new scala.xml.PrettyPrinter(80, 2)
   val parser = new HTML5Parser
   val sourceFile = if(java.nio.file.Files.exists(java.nio.file.Paths.get("O-MI Node/html/ImplementationDetails.html"))){
@@ -159,6 +166,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
   }
 
+  def getPostRequest(in: NodeSeq): HttpRequest = {
+    RequestBuilding.Post("http://localhost:8080", in)
+  }
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
@@ -227,8 +237,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
         request aka "Write request message" must beSuccessfulTry
         correctResponse aka "Correct write response message" must beSuccessfulTry
 
-        val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-        val response = Try(Await.result(responseFuture, Duration(2, "second")))
+        val responseFuture = http.singleRequest(getPostRequest(request.get))//pipeline(Post("http://localhost:8080/", request.get))
+
+        val response = Try(Await.result(responseFuture.flatMap(n => Unmarshal(n).to[NodeSeq]), Duration(2, "second")))
 
         response must beSuccessfulTry
 
@@ -251,8 +262,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
           request aka "Read request message" must beSuccessfulTry
           correctResponse aka "Correct read response message" must beSuccessfulTry
 
-          val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-          val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))
+          val responseFuture = http.singleRequest(getPostRequest(request.get))
+          val responseXML = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
 
           responseXML must beSuccessfulTry
           val response = XML.loadString(removeDateTime(responseXML.get.toString))
@@ -277,8 +288,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
               responseWait.foreach { x => Thread.sleep(x * 1000) }
 
-              val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-              val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
+              val responseFuture = http.singleRequest(getPostRequest(request.get))
+              val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
 
               responseXml must beSuccessfulTry
               
@@ -314,8 +325,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
                 responseWait.foreach { x => Thread.sleep(x * 1000) }
 
-                val responseFuture = pipeline(Post("http://localhost:8080/", request.get))
-                val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
+                val responseFuture = http.singleRequest(getPostRequest(request.get))
+                val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
              
 
                 responseXml must beSuccessfulTry
@@ -346,10 +357,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   }
   "Data discovery tests" should {
     "Respond successfully to GET request in '/Objects' and '/Objects/'" in {
-      val responseFuture1 = pipeline(Get("http://localhost:8080/Objects"))
-      val responseXml1 = Try(Await.result(responseFuture1, Duration(2, "second")))
-      val responseFuture2 = pipeline(Get("http://localhost:8080/Objects/"))
-      val responseXml2 = Try(Await.result(responseFuture2, Duration(2, "second")))
+      val responseFuture1 = http.singleRequest(RequestBuilding.Get("http://localhost:8080/Objects"))
+      val responseXml1 = Try(Await.result(responseFuture1.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
+      val responseFuture2 = http.singleRequest(RequestBuilding.Get("http://localhost:8080/Objects/"))
+      val responseXml2 = Try(Await.result(responseFuture2.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
 
       responseXml1 must beSuccessfulTry
       responseXml2 must beSuccessfulTry
@@ -362,8 +373,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
     }
 
     "Respond with error to nonexisting paths" in {
-      val responseFuture = pipeline(Get("http://localhost:8080/Objects/nonexistingPath628543"))
-      val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))
+      val responseFuture = http.singleRequest(RequestBuilding.Get("http://localhost:8080/Objects/nonexistingPath628543"))
+      val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
 
       responseXml must beAFailedTry
 

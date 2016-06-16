@@ -31,8 +31,8 @@ class OmiServiceTest extends Specification
 
   def actorRefFactory = system
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
-  lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
-
+  //lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
+  lazy val log = org.slf4j.LoggerFactory.getLogger(classOf[OmiServiceTest])
   implicit val dbConnection = new TestDB("system-test")
   val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()(dbConnection)))
 
@@ -61,7 +61,7 @@ class OmiServiceTest extends Specification
   def afterAll() = {
     // clear db
     dbConnection.destroy()
-    system.shutdown()
+    system.terminate()
   }
 
   "Data discovery, GET: OmiService" >> {

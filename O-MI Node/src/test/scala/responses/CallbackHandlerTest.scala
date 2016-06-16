@@ -1,16 +1,13 @@
 package responses
 
-import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
-import akka.actor.{ActorSystem, Props}
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.io.IO
+import akka.actor.ActorSystem
 import akka.testkit.TestProbe
+import akka.util.Timeout
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import spray.can.Http
 import testHelpers.{Actors, SystemTestCallbackServer}
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
@@ -42,10 +39,11 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem): TestProbe = {
       val probe = TestProbe()
-      val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
+      val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
       implicit val timeout = Timeout(1 seconds)
-      val bindFuture = IO(Http) ? Http.Bind(testServer, interface = "localhost", port = port)
-      Await.ready(bindFuture, 2 seconds) //wait for bind to complete
+      //val bindFuture = IO(Http) ? Http.Bind(testServer, interface = "localhost", port = port)
+      //bind timeout?
+      //Await.ready(bindFuture, 2 seconds) //wait for bind to complete
       probe
   }
 }
