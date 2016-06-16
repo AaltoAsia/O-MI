@@ -20,6 +20,7 @@ import java.lang.{Iterable => JavaIterable}
 import scala.language.existentials
 
 import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen._
 import types.OdfTypes._
 /**
  * Package containing classes presenting O-MI request interanlly. 
@@ -28,6 +29,24 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
+  def requestToEnvelope[T <: OmiEnvelopeOption](request: T, ttl : Long) ={
+    val namespace = Some("omi.xsd")
+    val version = "1.0"
+    val datarecord = request match{
+      case read: xmlTypes.ReadRequest => 
+      scalaxb.DataRecord[xmlTypes.ReadRequest](namespace, Some("read"), read)
+      case write: xmlTypes.WriteRequest => 
+      scalaxb.DataRecord[xmlTypes.WriteRequest](namespace, Some("write"), write)
+      case cancel: xmlTypes.CancelRequest => 
+      scalaxb.DataRecord[xmlTypes.CancelRequest](namespace, Some("cancel"), cancel)
+      case response: xmlTypes.ResponseListType => "response"
+      scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
+    }
+    xmlTypes.OmiEnvelope( datarecord, "1.0", ttl)
+  }
+ def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) ={ 
+    scalaxb.toXML[OmiEnvelope](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+  }
 }
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
@@ -144,4 +163,5 @@ package object OdfTypes {
   def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
+
 }
