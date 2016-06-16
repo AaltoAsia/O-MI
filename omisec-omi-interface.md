@@ -26,7 +26,7 @@ A) Request as a value
         <Object>
           <id>AuthorizationRequest</id>
           <InfoItem name="PermissionForRequest">
-            <value type="xs:string">
+            <value type="escapedxml">
 
 &lt;?xml version=&quot;1.0&quot;?&gt;
 &lt;omi:omiEnvelope xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:omi=&quot;omi.xsd&quot; version=&quot;1.0&quot; ttl=&quot;0&quot;&gt;
