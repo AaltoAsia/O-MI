@@ -12,27 +12,32 @@ import akka.http.scaladsl.model.headers.{RawHeader, `Remote-Address`}
 import akka.http.scaladsl.testkit.{RouteTest, RouteTestTimeout}
 import akka.testkit.TestActorRef
 import database._
+import org.slf4j.LoggerFactory
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 import responses.{RequestHandler, SubscriptionManager}
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
 import testHelpers.Specs2Interface
 import types._
 
-class OmiServiceTest extends Specification
+class OmiServiceTest
+  extends {
+    override val log = LoggerFactory.getLogger("OmiServiceTest")
+  }
+  with Specification
   with Specs2Interface
   with XmlMatchers
   with RouteTest
   with OmiService
-  with BeforeAfterAll {
+  with BeforeAfterAll
+{
 
   def actorRefFactory = system
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
   //lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)
-  lazy val log = org.slf4j.LoggerFactory.getLogger(classOf[OmiServiceTest])
   implicit val dbConnection = new TestDB("system-test")
   val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()(dbConnection)))
 
