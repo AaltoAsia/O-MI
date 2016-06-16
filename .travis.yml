@@ -1,7 +1,9 @@
 sudo: false
 language: scala
+jdk: 
+  - oraclejdk8
 scala:
-  - "2.11.7"
+  - "2.11.8"
 notifications:
   flowdock:
     - 8fa39d3ba829b0083c135134658d0ac2
