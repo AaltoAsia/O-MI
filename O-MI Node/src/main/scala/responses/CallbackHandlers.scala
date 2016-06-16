@@ -50,10 +50,7 @@ object CallbackHandlers {
   import system.dispatcher // execution context for futures
   val settings = http.Boot.settings
   val httpExt = Http(system)
-  implicit val mat: Materializer = ActorMaterializer()//Materializer()
-  //ActorMaterializer
-  //private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive
-  //implicit val xmlEntityMarshaller: akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
+  implicit val mat: Materializer = ActorMaterializer()
 
   private[this] def sendHttp(
                               address: Uri,
