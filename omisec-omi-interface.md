@@ -1,5 +1,5 @@
 
-Some different options for the protocol
+Some options for the protocol
 =======================================
 
 We require
