@@ -20,8 +20,8 @@ import scala.collection.JavaConverters._
 
 import http.Authorization.{AuthorizationExtension, CombinedTest}
 import http.Boot.settings
-import spray.routing.Directive1
-import spray.routing.Directives.clientIP
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.extractClientIP
 import types.OmiTypes._
 
 // TODO: maybe move to Authorization package
@@ -35,7 +35,7 @@ trait IpAuthorization extends AuthorizationExtension {
   /** Contains white listed IPs
     *
     **/
-  private[this] val whiteIPs = settings.inputWhiteListIps.asScala.map{
+  private[this] lazy val whiteIPs = settings.inputWhiteListIps.asScala.map{
     case s: String => 
     val ip = inetAddrToBytes(InetAddress.getByName(s)) 
     log.debug("IPv" + ip.length + ": " + ip.mkString("."))  // TODO: bytes should be printed as unsigned
@@ -47,7 +47,7 @@ trait IpAuthorization extends AuthorizationExtension {
   /** Contains masks of white listed subnets.
     *
     **/
-  private[this] val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ 
+  private[this] lazy val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ 
     case (str: String) => 
     val parts = str.split("/")
     require(parts.length == 2)
@@ -61,7 +61,7 @@ trait IpAuthorization extends AuthorizationExtension {
 
 
   // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"
-  private def extractIp: Directive1[Option[InetAddress]] = clientIP map (_.toOption)
+  private def extractIp: Directive1[Option[InetAddress]] = extractClientIP map (_.toOption)
 
   def ipHasPermission: UserData => OmiRequest => Option[OmiRequest] = user => {
     // Write and Response are currently PermissiveRequests

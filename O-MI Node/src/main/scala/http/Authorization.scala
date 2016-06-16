@@ -17,8 +17,12 @@ package http
 import scala.util.{Failure, Success, Try}
 
 import akka.event.LoggingAdapter
-import spray.routing.Directives._
-import spray.routing._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directive.SingleValueModifiers
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.util.Tupler._
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import types.OmiTypes._
 
 
@@ -82,9 +86,26 @@ object Authorization {
      * For easy to access logging in extensions.
      * Will get implemented on the service level anyways.
      */
-    def log: LoggingAdapter
+    def log: Logger = LoggerFactory.getLogger("AuthorizationExtensionDefaultLogger")
 
     def makePermissionTestFunction: CombinedTest // Directive1[PermissionTest]
+
+    trait Hole
+    def myHole(h: Hole) = ???
+
+
+    private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {
+      (request: OmiRequest) =>
+        otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
+          match {  // catch any exceptions, because we want to try other, possibly working extensions too
+
+            case Success(result) => result : Option[OmiRequest]
+            case Failure(exception) =>
+              log.error("While running authorization extensions, trying next extension", exception)
+              None : Option[OmiRequest]
+          }
+        )
+    }
 
     /** Template for abstract override of makePermissionTestFunction.
      *  Stackable trait pattern; Combines other traits' functionality
@@ -98,21 +119,10 @@ object Authorization {
          ): CombinedTest = 
 
       new CombinedTest( for {
-        otherTest <- prev()
-        ourTest   <- next
+        otherTest <- prev() :Directive1[PermissionTest]
+        ourTest   <- next : Directive1[PermissionTest]
 
-        combinedTest = (request: OmiRequest) =>
-          otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
-            match {  // catch any exceptions, because we want to try other, possibly working extensions too
-
-              case Success(result) => result
-              case Failure(exception) =>
-                log.error(exception, "While running authorization extensions, trying next extension")
-                None
-            }
-          )
-
-      } yield combinedTest)
+      } yield combineTests(otherTest, ourTest))
   }
 
   /** 
@@ -190,10 +200,10 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
  */
 trait LogUnauthorized extends AuthorizationExtension {
   private type UserInfo = Option[java.net.InetAddress]
-  private def extractIp: Directive1[UserInfo] = clientIP map (_.toOption)
+  private def extractIp: Directive1[UserInfo] = extractClientIP map (_.toOption)
   private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {
     case r : OmiRequest =>
-      log.warning(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
+      log.warn(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
       None
   }}
 
