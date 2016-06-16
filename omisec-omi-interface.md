@@ -25,7 +25,7 @@ A) Request as a value
       <Objects xmlns="odf.xsd">
         <Object>
           <id>AuthorizationRequest</id>
-          <InfoItem name="PermissionForRequest">
+          <InfoItem name="OriginalRequest">
             <value type="escapedxml">
 
 &lt;?xml version=&quot;1.0&quot;?&gt;
