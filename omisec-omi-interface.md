@@ -27,7 +27,7 @@ A) Request as a value
         <Object>
           <id>AuthorizationRequest</id>
           <InfoItem name="OriginalRequest">
-            <value type="escapedxml">
+            <value type="omi.xsd">
 
 &lt;?xml version=&quot;1.0&quot;?&gt;
 &lt;omi:omiEnvelope xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:omi=&quot;omi.xsd&quot; version=&quot;1.0&quot; ttl=&quot;0&quot;&gt;
@@ -172,7 +172,7 @@ Response
           <Object>
             <id>AuthorizationResponse</id>
             <InfoItem name="AuthorizedPartialRequest">
-              <value type="escapedxml">
+              <value type="omi.xsd">
 &lt;?xml version=&quot;1.0&quot;?&gt;
 &lt;omi:omiEnvelope xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:omi=&quot;omi.xsd&quot; version=&quot;1.0&quot; ttl=&quot;0&quot;&gt;
   &lt;write xmlns=&quot;omi.xsd&quot; msgformat=&quot;odf&quot;&gt;
