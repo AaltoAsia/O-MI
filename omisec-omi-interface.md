@@ -16,6 +16,7 @@ A) Request as a value
 
 * O-MI parser overhead: very low, just xml escaping
 
+### Request
 
 ```xml
 <?xml version="1.0"?>
@@ -131,3 +132,68 @@ C) Request as paths and type
 </omi:omiEnvelope>
 ```
 
+Response
+--------
+
+### Authorized
+
+```xml
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <omi:response>
+    <omi:result>
+      <omi:return returnCode="200"/>
+    </omi:result>
+  </omi:response>
+</omi:omiEnvelope>
+```
+
+### Unauthorized
+
+```xml
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <omi:response>
+    <omi:result>
+      <omi:return returnCode="401"/>
+    </omi:result>
+  </omi:response>
+</omi:omiEnvelope>
+```
+
+### Partial
+
+```xml
+<omi:omiEnvelope ttl="1.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <omi:response>
+    <omi:result msgformat="odf">
+      <omi:return returnCode="206">
+      </omi:return>
+      <omi:msg>
+        <Objects>
+          <Object>
+            <id>AuthorizationResponse</id>
+            <InfoItem name="AuthorizedPartialRequest">
+              <value type="escapedxml">
+&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;omi:omiEnvelope xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:omi=&quot;omi.xsd&quot; version=&quot;1.0&quot; ttl=&quot;0&quot;&gt;
+  &lt;write xmlns=&quot;omi.xsd&quot; msgformat=&quot;odf&quot;&gt;
+    &lt;omi:msg&gt;
+      &lt;Objects xmlns=&quot;odf.xsd&quot;&gt;
+        &lt;Object&gt;
+          &lt;id&gt;SmartHouse&lt;/id&gt;
+          &lt;InfoItem name=&quot;FrontDoor&quot;&gt;
+            &lt;value&gt;VALUE_PLACEHOLDER&lt;/value&gt;
+          &lt;/InfoItem&gt;
+        &lt;/Object&gt;
+      &lt;/Objects&gt;
+    &lt;/omi:msg&gt;
+  &lt;/write&gt;
+&lt;/omi:omiEnvelope&gt;
+              </value>
+            </InfoItem>
+          </Object>
+        </Objects>
+      </omi:msg>
+    </omi:result>
+  </omi:response>
+</omi:omiEnvelope>
+```
