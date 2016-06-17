@@ -192,7 +192,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param begin optional start Timestamp
    * @param end optional end Timestamp
    * @param newest number of values to be returned from start
-   * @param  number of values to be returned from end
+   * @param oldest number of values to be returned from end
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
@@ -210,12 +210,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     require(requestsSeq.size >= 1,
       "getNBetween should be called with at least one request thing")
 
-    // NOTE: Might go off sync with tree or values if the request is large,
-    // but it shouldn't be a big problem
-    val metadataTree = SingleStores.hierarchyStore execute GetTree()
+ /*  val metadataTree = SingleStores.hierarchyStore execute GetTree()
 
     // NOTE: this discards currentData if attaching object description, requires refactoring
-    def getDescObject(path: Path, currentData: OdfObjects, attachObjectDescription: Boolean) =
+    def getDescObject(path: Path, currentData: OdfObjects, attachObjectDescription: Boolean): OdfObjects =
       {metadataTree.get(path) collect {
             case o: OdfObject if (attachObjectDescription) =>
               o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
@@ -223,7 +221,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection(), description = None)
           } map createAncestors
       }.getOrElse(OdfObjects()) union currentData
-
+*/
     def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
         case Some(rootNode) => for { // DBIO
@@ -243,11 +241,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
 
           
-          results = for {
+          results = odfConversion(dbInfoItems)
+          /*for {
             odf <- odfConversion(dbInfoItems)
-            desc = getDescObject(path, odf, attachObjectDescription)
-            } yield desc
-
+            //desc = getDescObject(path, odf, attachObjectDescription)
+            } yield odf
+           */
         } yield results
 
         case None => // Requested object was not found, TODO: think about error handling
@@ -256,7 +255,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     }
 
-    // returns metadata if metadataQuery is Some
+ /*   // returns metadata if metadataQuery is Some
     def getMetaInfoItem(queryInfoItem: OdfInfoItem, path: Path): OdfInfoItem = {
       (for {
         // If metadata.nonEmpty || description.nonEmpty
@@ -275,7 +274,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         }
       } yield res) getOrElse OdfInfoItem(path, Iterable(), None, None)
     }
-
+*/
 
     def getFromDB(): Seq[Future[Option[OdfObjects]]] = requestsSeq map { // par
 
@@ -302,9 +301,9 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               odfInfoItem <- processObjectI(path, false)
 
 
-              metaInfoItem: OdfInfoItem = getMetaInfoItem(qry, path)
+//              metaInfoItem: OdfInfoItem = getMetaInfoItem(qry, path)
               result = odfInfoItem.map {
-                infoItem => createAncestors(infoItem) union createAncestors(metaInfoItem)
+                infoItem => createAncestors(infoItem)// union createAncestors(metaInfoItem)
               }
 
             } yield result
@@ -340,6 +339,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             odfObject <- metadataTree.get(path) collect {  // get all descendants
               case o: OdfObject => o
             }
+
             paths = getLeafs(odfObject) map (_.path)
 
             pathValues = SingleStores.latestStore execute LookupSensorDatas(paths) 

@@ -17,6 +17,9 @@ package responses
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import database.{GetTree, SingleStores}
+
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
@@ -35,14 +38,30 @@ trait ReadHandler extends OmiRequestHandlerBase{
     log.debug("Handling read.")
 
     val leafs = getLeafs(read.odf)
-    val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
+    // NOTE: Might go off sync with tree or values if the request is large,
+    // but it shouldn't be a big problem
+    val metadataTree = SingleStores.hierarchyStore execute GetTree()
+
+    val metadataObjects:Option[OdfObjects] = getOdfNodes(read.odf).collect{
+      case oii @ OdfInfoItem(_,_, desc, mData)
+        if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
+      case obj @ OdfObject(_, _, _, _, des, tv)
+        if des.isDefined || tv.isDefined => createAncestors(obj)
+    }.reduceOption(_.union(_))
+
+
+    val other = getOdfNodes(read.odf) collect {
+      case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())
+    }
+
     val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
     objectsO.map{
       case Some(objects) =>
-        val found = Results.read(objects)
+        val metaCombined = metadataObjects.fold(objects)(_.union(objects))
+        val found = Results.read(metaCombined)
         val requestsPaths = leafs.map { _.path }
-        val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
+        val foundOdfAsPaths = getLeafs(metaCombined).flatMap { _.path.getParentsAndSelf }.toSet
         val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
         val results = Seq(found) ++ {
           if (notFound.nonEmpty)
