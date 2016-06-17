@@ -11,12 +11,11 @@ We require
 
 
 
-A) Request as a value
+Request as a value
 ---------------------
 
 * O-MI parser overhead: very low, just xml escaping
 
-### Request
 
 ```xml
 <?xml version="1.0"?>
@@ -60,77 +59,6 @@ A) Request as a value
 </omi:omiEnvelope>
 ```
 
-B) Request as O-DF and type
---------------------------
-
-* O-MI parser overhead: medium/low, only header needs parsing
-
-
-```xml
-<?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
-  <write xmlns="omi.xsd" msgformat="odf">
-    <omi:msg>
-      <Objects xmlns="odf.xsd">
-        <Object>
-          <id>AuthorizationRequest</id>
-          <InfoItem name="PermissionForRequestType">
-            <value type="xs:string">write</value>
-          </InfoItem>
-          <Object>
-            <id>PermissionForODF</id>
-            <Object>
-              <id>SmartHouse</id>
-              <InfoItem name="FrontDoor">
-                <value>VALUE_PLACEHOLDER</value>
-              </InfoItem>
-              <InfoItem name="BackDoor">
-                <value>VALUE_PLACEHOLDER</value>
-              </InfoItem>
-            </Object>
-          </Object>
-          <InfoItem name="UserInfo">
-            <value type="xs:string">user@email.com</value>
-          </InfoItem>
-        </Object>
-      </Objects>
-    </omi:msg>
-  </write>
-</omi:omiEnvelope>
-```
-
-
-
-C) Request as paths and type
----------------------------
-
-* O-MI parser overhead: high, whole request needs parsing
-
-
-```xml
-<?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
-  <write xmlns="omi.xsd" msgformat="odf">
-    <omi:msg>
-      <Objects xmlns="odf.xsd">
-        <Object>
-          <id>AuthorizationRequest</id>
-          <InfoItem name="PermissionForRequestType">
-            <value type="xs:string">write</value>
-          </InfoItem>
-          <InfoItem name="PermissionForPaths">
-            <value type="xs:string">Objects/SmartHouse/FrontDoor</value>
-            <value type="xs:string">Objects/SmartHouse/BackDoor</value>
-          </InfoItem>
-          <InfoItem name="UserInfo">
-            <value type="xs:string">user@email.com</value>
-          </InfoItem>
-        </Object>
-      </Objects>
-    </omi:msg>
-  </write>
-</omi:omiEnvelope>
-```
 
 Response
 --------
