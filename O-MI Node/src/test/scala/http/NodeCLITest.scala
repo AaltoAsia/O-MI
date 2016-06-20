@@ -1,5 +1,7 @@
 package http
 
+import java.util.Date
+import java.sql.Timestamp
 import java.net.InetSocketAddress//(String hostname, int port)
 import scala.collection.mutable.{ Map => MutableMap }
 import scala.concurrent.Future
@@ -17,10 +19,14 @@ import org.specs2.matcher.FutureMatchers._
 import com.typesafe.config.{ConfigFactory, Config}
 import testHelpers.Actorstest
 import types.Path
-import responses.RemoveHandler
+import responses.{RemoveHandler,RemoveSubscription}
 import agentSystem.{AgentName, AgentInfo, TestManager, SSAgent}
 import akka.util.{ByteString, Timeout}
 import akka.io.Tcp.{Write, Received}
+import database.{EventSub, IntervalSub, PolledSub, PollEventSub, PollIntervalSub}
+import http.CLICmds._
+
+
 
 class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   "NodeCLI should " >> {
@@ -31,9 +37,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     "return help information when unknown command is received" >> unknownCmdTest
     "return correct message when path remove command is received" >> removePathTest
     "return correct message when path remove command for unexisting path is received" >> removeUnexistingPathTest
-    "return table of subscriptions when list subs command is received" >> listSubsTest.pendingUntilFixed
-    "return correct message when sub remove command is received" >> removeSubTest.pendingUntilFixed
-    "return correct message when sub remove command for unexisting id is received" >> removeUnexistingSubTest.pendingUntilFixed
+    "return table of subscriptions when list subs command is received" >> listSubsTest
+    "return correct message when sub remove command is received" >> removeSubTest
+    "return correct message when sub remove command for unexisting id is received" >> removeUnexistingSubTest
   }
   implicit val timeout = Timeout( 1.minutes )
  def timeoutDuration= 10.seconds
@@ -101,7 +107,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg("list agents"))    
-    val correct : String =  listener.agentsStrTable( agents) 
+    val correct : String =  listener.agentsStrChart( agents) 
     resF should beEqualTo( correct ).await( 0, timeoutDuration)
   }
   
@@ -205,15 +211,99 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val correct: String  = s"Given path does not exist\n" 
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
+
   def listSubsTest= new Actorstest(AS){
-   1 === 2 
+    import system.dispatcher
+    val startTime = new Timestamp( new Date().getTime() )
+    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
+    val interval = 5.minutes
+    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
+    val callback = "http://test.org:31"
+    val paths = Vector( 
+      Path( "Objects/object/sensor1" ),
+      Path( "Objects/object/sensor2" )
+    )
+    val intervalSubs : Set[IntervalSub] = Set( 
+      IntervalSub( 35, paths, endTime, callback, interval, nextRunTime, startTime ),
+      IntervalSub( 55, paths, endTime, callback + "13", interval, nextRunTime, startTime )
+    )
+    val eventSubs : Set[EventSub] =Set( 
+      EventSub( 40, paths, endTime, callback),
+      EventSub( 430, paths, endTime, callback + "31"),
+      EventSub( 32, paths, endTime, callback + "15")
+    )
+    val pollSubs : Set[PolledSub] = Set( 
+      PollEventSub(59, endTime, nextRunTime, startTime, paths),
+      PollEventSub(173, endTime, nextRunTime, startTime, paths),
+      PollIntervalSub(37,endTime,interval,nextRunTime,startTime,paths),
+      PollIntervalSub(3047,endTime,interval,nextRunTime,startTime,paths)
+    )
+    val agentSystem =ActorRef.noSender
+    val subscriptionManager = TestActorRef( new Actor{
+      def receive = {
+        case ListSubsCmd() => sender() ! (intervalSubs, eventSubs, pollSubs) 
+      }
+
+    })
+    val removeHandler = new RemoveTester( Path("Objects/aue" ) )
+    val remote = new InetSocketAddress("Tester",22)
+    val listenerRef = TestActorRef(new OmiNodeCLI(
+        remote,
+        agentSystem,
+        subscriptionManager,
+        removeHandler
+      ))
+    val listener = listenerRef.underlyingActor
+    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("list subs"))    
+    val correct: String  = listener.subsStrChart(intervalSubs, eventSubs, pollSubs)
+    resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
-  def removeUnexistingSubTest= new Actorstest(AS){
-    //TODO
-    1 === 2
-  }
+
   def removeSubTest= new Actorstest(AS){
-    //TODO
-    1 === 2
+    import system.dispatcher
+    val id = 13
+    val agentSystem =ActorRef.noSender
+    val subscriptionManager = TestActorRef( new Actor{
+      def receive = {
+        case RemoveSubscription(di) => sender() ! true
+      }
+
+    })
+    val removeHandler = new RemoveTester( Path("Objects/aue" ) )
+    val remote = new InetSocketAddress("Tester",22)
+    val listenerRef = TestActorRef(new OmiNodeCLI(
+        remote,
+        agentSystem,
+        subscriptionManager,
+        removeHandler
+      ))
+    val listener = listenerRef.underlyingActor
+    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
+    val correct: String  =s"Removed subscription with $id successfully.\n" 
+    resF should beEqualTo(correct ).await( 0, timeoutDuration)
+  }
+
+  def removeUnexistingSubTest= new Actorstest(AS){
+    import system.dispatcher
+    val id = 13
+    val agentSystem =ActorRef.noSender
+    val subscriptionManager = TestActorRef( new Actor{
+      def receive = {
+        case RemoveSubscription(di) => sender() ! false
+      }
+
+    })
+    val removeHandler = new RemoveTester( Path("Objects/aue" ) )
+    val remote = new InetSocketAddress("Tester",22)
+    val listenerRef = TestActorRef(new OmiNodeCLI(
+        remote,
+        agentSystem,
+        subscriptionManager,
+        removeHandler
+      ))
+    val listener = listenerRef.underlyingActor
+    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
+    val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
+    resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 }
