@@ -31,30 +31,30 @@ class  OdfObjectImpl(
   description:          Option[OdfDescription] = None,
   typeValue:            Option[String] = None
 ) extends Serializable {
-require(path.length > 1,
-  s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path(${path})")
+  require(path.length > 1,
+    s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path(${path})")
 
   def hasDescription: Boolean = description.nonEmpty
 
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfObject): OdfObject = {
-    val thisInfo: HashMap[Path, OdfInfoItem] = HashMap(infoItems.map(ii=> (ii.path, ii)):_*)
-    val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii=> (ii.path, ii)):_*)
-    val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o=>(o.path, o)):_*)
-    val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o=>(o.path, o)):_*)
+    val thisInfo: HashMap[Path, OdfInfoItem] = HashMap(infoItems.map(ii => (ii.path, ii)): _*)
+    val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii => (ii.path, ii)): _*)
+    val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)): _*)
+    val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
     OdfObject(
-      (id ++ another.id).groupBy(_.value).values.collect{
+      (id ++ another.id).groupBy(_.value).values.collect {
         case Seq(single) => single
         case Seq(QlmID(valueA, idTypeA, tagTypeA, startDateA, endDateA, attrA),
-                 QlmID(valueB, idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
+        QlmID(valueB, idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
           QlmID(valueB, idTypeB orElse idTypeA, tagTypeB orElse tagTypeA,
-            unionOption(startDateB, startDateA){case (b, a) =>
+            unionOption(startDateB, startDateA) { case (b, a) =>
               a compare b match {
                 case XMLConst.LESSER => a // a < b
                 case _ => b
               }
             },
-            unionOption(endDateB, endDateA){case (b, a) =>
+            unionOption(endDateB, endDateA) { case (b, a) =>
               a compare b match {
                 case XMLConst.GREATER => a // a > b
                 case _ => b
@@ -64,11 +64,11 @@ require(path.length > 1,
             attrA ++ attrB
           )
       },
-    path,
-    thisInfo.merged(thatInfo){ case ((k1,v1), (_, v2)) => (k1, v1.combine(v2))}.values,
-    thisObj.merged(thatObj){case ((k1,v1), (_, v2)) => (k1, v1.combine(v2))}.values,
-    another.description orElse description,
-    another.typeValue orElse typeValue
+      path,
+      thisInfo.merged(thatInfo) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
+      thisObj.merged(thatObj) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
+      another.description orElse description,
+      another.typeValue orElse typeValue
     )
   }
 
@@ -79,14 +79,15 @@ require(path.length > 1,
    * @param another another Object to merge with
    * @return
    */
-  def intersect( another: OdfObject ): Option[OdfObject] = sharedAndUniques[Option[OdfObject]]( another: OdfObject){(
-    uniqueInfos: Seq[OdfInfoItem],
-    anotherUniqueInfos: Seq[OdfInfoItem],
-    sharedInfos: Map[Path, Seq[OdfInfoItem]],
-    uniqueObjs: Seq[OdfObject],
-    anotherUniqueObjs: Seq[OdfObject],
-    sharedObjs: Map[Path, Seq[OdfObject]]
-    )=>
+  def intersect(another: OdfObject): Option[OdfObject] = {
+    sharedAndUniques[Option[OdfObject]]( another: OdfObject){(
+      uniqueInfos: Seq[OdfInfoItem],
+      anotherUniqueInfos: Seq[OdfInfoItem],
+      sharedInfos: Map[Path, Seq[OdfInfoItem]],
+      uniqueObjs: Seq[OdfObject],
+      anotherUniqueObjs: Seq[OdfObject],
+      sharedObjs: Map[Path, Seq[OdfObject]]
+      )=>
 
     val sharedInfosOut = sharedInfos.flatMap{
         case (path: Path, sobj: Seq[OdfInfoItem]) =>
@@ -113,7 +114,7 @@ require(path.length > 1,
           } yield res
     }
 
-    if(sharedInfosOut.isEmpty && sharedObjsOut.isEmpty){
+    if(sharedInfosOut.isEmpty && sharedObjsOut.isEmpty && another.description.isEmpty && another.typeValue.isEmpty){
       None
     } else{
       Option(
@@ -127,6 +128,7 @@ require(path.length > 1,
         )
       )
     }
+  }
   }
   /**
    * Method for calculating the unique values to this object compared to the given object. This method calculates the
