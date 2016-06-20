@@ -40,25 +40,27 @@ trait ReadHandler extends OmiRequestHandlerBase{
     val leafs = getLeafs(read.odf)
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val metadataTree = SingleStores.hierarchyStore execute GetTree()
+    lazy val metadataTree = SingleStores.hierarchyStore execute GetTree()
 
-    val metadataObjects:Option[OdfObjects] = getOdfNodes(read.odf).collect{
+    //Find nodes from the request that
+    def nodesWithoutMetadata:Option[OdfObjects] = getOdfNodes(read.odf).collect{
       case oii @ OdfInfoItem(_,_, desc, mData)
         if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
       case obj @ OdfObject(_, _, _, _, des, tv)
         if des.isDefined || tv.isDefined => createAncestors(obj)
     }.reduceOption(_.union(_))
 
+    def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
 
-    val other = getOdfNodes(read.odf) collect {
-      case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())
-    }
+    //val other = getOdfNodes(read.odf) collect {
+    //  case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())
+    //}
 
     val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
     objectsO.map{
       case Some(objects) =>
-        val metaCombined = metadataObjects.fold(objects)(_.union(objects))
+        val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
         val found = Results.read(metaCombined)
         val requestsPaths = leafs.map { _.path }
         val foundOdfAsPaths = getLeafs(metaCombined).flatMap { _.path.getParentsAndSelf }.toSet

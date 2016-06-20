@@ -324,33 +324,22 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     }
 
     def getFromCache(): Seq[Option[OdfObjects]] = {
-      val objectData: Seq[Option[OdfObjects]] = requestsSeq map {
+      val objectData: Seq[Option[OdfObjects]] = requestsSeq collect {
         case obj @ OdfObjects(objects, _) =>
           require(objects.isEmpty,
             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-          Some( SingleStores.buildOdfFromValues(
-            SingleStores.latestStore execute LookupAllDatas()) )
+          Some(SingleStores.buildOdfFromValues(
+            SingleStores.latestStore execute LookupAllDatas()))
 
         case obj @ OdfObject(id, path, items, objects, desc, typeVal) =>
           require(items.isEmpty && objects.isEmpty,
             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
-          val resultsO = for {
-            odfObject <- metadataTree.get(path) collect {  // get all descendants
-              case o: OdfObject => o
-            }
+          val paths = getLeafs(obj).map(_.path)
+          val objs = SingleStores.latestStore execute LookupSensorDatas(paths)
+          val results = SingleStores.buildOdfFromValues(objs)
 
-            paths = getLeafs(odfObject) map (_.path)
-
-            pathValues = SingleStores.latestStore execute LookupSensorDatas(paths) 
-          } yield SingleStores.buildOdfFromValues(pathValues)
-
-          // O-DF standard is a bit unclear about description field for objects
-          // so we decided to put it in only when explicitly asked
-          // FIXME: TODO: what if only description exists?, description not working
-          resultsO map (data => getDescObject(path, data, desc.nonEmpty))
-
-        case _ => None // noop, infoitems are processed in the next lines
+          Some(results)
       }
 
       // And then get all InfoItems with the same call
@@ -365,7 +354,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         reqInfoItems.foldLeft(resultOdf){(result, info) =>
           info match {
             case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
-              result union createAncestors(getMetaInfoItem(qry, path))
+              result union createAncestors(qry)
             case _ => result // else discard
           }
         }
@@ -390,7 +379,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
     results.map{
       case Some(OdfObjects(x,_)) if x.isEmpty => None
-      case default : Option[OdfObjects ]  => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
+      case default : Option[OdfObjects ]  => default//default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
     }
 
   }

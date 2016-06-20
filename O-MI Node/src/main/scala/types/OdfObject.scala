@@ -74,7 +74,8 @@ require(path.length > 1,
 
   /**
    * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
-   * on the tree that should be added the data. another should be subset of this odfTree.
+   * on the tree that should be added the data. another should be subset of this odfTree. Used to Collect metadatas and
+   * descriptions from a read request.
    * @param another another Object to merge with
    * @return
    */
@@ -93,7 +94,13 @@ require(path.length > 1,
           for{
             head <- sobj.headOption
             last <- sobj.lastOption
-          } yield last
+            infoI = OdfInfoItem(
+              path,
+              last.values,
+              last.description.fold(last.description)(n => head.description),
+              last.metaData.fold(last.metaData)(n => head.metaData)
+              ) //use metadata and description from hierarchytree
+          } yield infoI
     }
 
     val sharedObjsOut = sharedObjs.flatMap{
@@ -115,8 +122,8 @@ require(path.length > 1,
           path,
           sharedInfosOut,
           sharedObjsOut,
-          another.description,
-          typeValue
+          another.description.fold(another.description)(n => description),
+          another.typeValue.fold(another.typeValue)(n => typeValue)
         )
       )
     }
