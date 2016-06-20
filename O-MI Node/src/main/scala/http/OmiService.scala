@@ -26,7 +26,9 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directive0
 import http.Authorization._
 import org.slf4j.LoggerFactory
 import parsing.OmiParser
@@ -61,11 +63,13 @@ class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSyste
 
 }
 
+
 /**
  * this trait defines our service behavior independently from the service actor
  */
 trait OmiService
      extends CORSSupport
+     with WebSocketOMISupport
      with OmiServiceAuthorization
      {
 
@@ -217,7 +221,9 @@ trait OmiService
   }
 
 
-  /* Receives HTTP-POST directed to root */
+  /** 
+   * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)
+   */
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
@@ -226,6 +232,9 @@ trait OmiService
     }
   }
 
+  /**
+   * Receives POST at root with O-MI compliant msg parameter.
+   */
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
@@ -237,6 +246,7 @@ trait OmiService
   // Combine all handlers
   val myRoute = corsEnabled {
     path("") {
+      webSocketUpgrade ~
       postFormXMLRequest ~
       postXMLRequest ~
       helloWorld
@@ -249,3 +259,32 @@ trait OmiService
     }
   }
 }
+
+/**
+ * This trait implements websocket support for O-MI message handling using akka-http
+ */
+trait WebSocketOMISupport {
+  self: OmiService =>
+
+  def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
+    makePermissionTestFunction() { hasPermissionTest =>
+      extractUpgradeToWebSocket {wsRequest =>
+        complete(
+          wsRequest.handleMessagesWithSinkSource(wsInSink(hasPermissionTest), wsOutSource)
+        )
+      }
+    }
+
+  protected def wsInSink(hasPermissionTest: PermissionTest) = {
+    val requestString: String = ???
+    val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString)
+
+    ??? 
+  }
+    
+  protected def wsOutSource = ???
+
+}
+
+
+
