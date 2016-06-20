@@ -10,9 +10,9 @@ import akka.testkit._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.specification.create.InterpolatedFragment
 import org.specs2.mutable._
-import com.typesafe.config.{ConfigFactory, Config}
 import org.specs2.matcher._
 import org.specs2.matcher.FutureMatchers._
+import com.typesafe.config.{ConfigFactory, Config}
 import agentSystem._
 import http.CLICmds._
 import testHelpers.Actorstest
@@ -21,17 +21,6 @@ import testHelpers.Actorstest
 
 class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification {
 
-  class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])
-  extends BaseAgentSystem with InternalAgentManager{
-    protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
-    protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings
-    def receive : Actor.Receive = {
-      case  start: StartAgentCmd  => handleStart( start)
-      case  stop: StopAgentCmd  => handleStop( stop)
-      case  restart: ReStartAgentCmd  => handleRestart( restart )
-      case ListAgentsCmd() => sender() ! agents.values.toSeq
-    }
-  }
  "InternalAgentManager should" >>{
    "return message when trying to" >> {
      "start allready running agent" >> startingRunningTest
@@ -103,8 +92,8 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor
    val msg = StartAgentCmd(name)
-   val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
-   val correct = managerActor.successfulStartMsg(name)
+   val resF: Future[String ] = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
+   val correct: String = managerActor.successfulStartMsg(name)
    resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 

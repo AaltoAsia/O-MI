@@ -28,7 +28,7 @@ import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
-import responses.{RemoveSubscription, RequestHandler}
+import responses.{RemoveSubscription, RemoveHandler}
 import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
@@ -49,7 +49,7 @@ object OmiNodeCLI{
     sourceAddress: InetSocketAddress,
     agentSystem: ActorRef,
     subscriptionHandler: ActorRef,
-    requestHandler: RequestHandler
+    requestHandler: RemoveHandler
   ) : Props = Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
 }
 /** Command Line Interface for internal agent management. 
@@ -59,7 +59,7 @@ class OmiNodeCLI(
     sourceAddress: InetSocketAddress,
     agentLoader: ActorRef,
     subscriptionHandler: ActorRef,
-    requestHandler: RequestHandler
+    requestHandler: RemoveHandler
   ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -80,28 +80,28 @@ remove <path>
     commands
   }
 
+  private[http] def agentsStrTable( agents: Vector[AgentInfo] ) : String ={
+    val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
+    val msg =
+      f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
+    agents.map{
+      case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
+        f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
+    }.mkString("\n")
+    msg +"\n"
+  }
   private def listAgents(): String = {
     log.info(s"Got list agents command from $ip")
-    val result = (agentLoader ? ListAgentsCmd()).mapTo[Future[Vector[AgentInfo]]]
-      .flatMap{ case future : Future[Vector[AgentInfo]] => future }
-      .map[String]{
-        case agents: Seq[AgentInfo @unchecked] =>  // internal type 
+    val result = (agentLoader ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
+      .map{
+        case agents: Vector[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
-
-          val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
-          val msg =
-            f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
-            agents.map{
-              case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
-                f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
-            }.mkString("\n")
-
-          msg +"\n"
+          agentsStrTable( agents.sortBy{ info => info.name} )
         case _ => ""
       }
       .recover[String]{
         case a : Throwable =>
-          log.warning("Failed to get list of Agents. Sending error message.")
+          log.warning(s"Failed to get list of Agents. Sending error message. " + a.toString)
           "Something went wrong. Could not get list of Agents.\n"
       }
     Await.result(result, commandTimeout)
@@ -233,7 +233,7 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RequestHandler)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RemoveHandler)  extends Actor with ActorLogging{
 
   import Tcp._
 
