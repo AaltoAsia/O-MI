@@ -80,28 +80,28 @@ remove <path>
     commands
   }
 
+  private[http] def agentsStrTable( agents: Vector[AgentInfo] ) : String ={
+    val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
+    val msg =
+      f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
+    agents.map{
+      case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
+        f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
+    }.mkString("\n")
+    msg +"\n"
+  }
   private def listAgents(): String = {
     log.info(s"Got list agents command from $ip")
-    val result = (agentLoader ? ListAgentsCmd()).mapTo[Future[Vector[AgentInfo]]]
-      .flatMap{ case future : Future[Vector[AgentInfo]] => future }
-      .map[String]{
-        case agents: Seq[AgentInfo @unchecked] =>  // internal type 
+    val result = (agentLoader ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
+      .map{
+        case agents: Vector[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
-
-          val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
-          val msg =
-            f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
-            agents.map{
-              case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
-                f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
-            }.mkString("\n")
-
-          msg +"\n"
+          agentsStrTable( agents.sortBy{ info => info.name} )
         case _ => ""
       }
       .recover[String]{
         case a : Throwable =>
-          log.warning("Failed to get list of Agents. Sending error message.")
+          log.warning(s"Failed to get list of Agents. Sending error message. " + a.toString)
           "Something went wrong. Could not get list of Agents.\n"
       }
     Await.result(result, commandTimeout)
