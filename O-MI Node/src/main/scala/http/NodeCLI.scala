@@ -28,7 +28,7 @@ import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
-import responses.{RemoveSubscription, RequestHandler}
+import responses.{RemoveSubscription, RemoveHandler}
 import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
@@ -49,7 +49,7 @@ object OmiNodeCLI{
     sourceAddress: InetSocketAddress,
     agentSystem: ActorRef,
     subscriptionHandler: ActorRef,
-    requestHandler: RequestHandler
+    requestHandler: RemoveHandler
   ) : Props = Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
 }
 /** Command Line Interface for internal agent management. 
@@ -59,7 +59,7 @@ class OmiNodeCLI(
     sourceAddress: InetSocketAddress,
     agentLoader: ActorRef,
     subscriptionHandler: ActorRef,
-    requestHandler: RequestHandler
+    requestHandler: RemoveHandler
   ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -233,7 +233,7 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RequestHandler)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RemoveHandler)  extends Actor with ActorLogging{
 
   import Tcp._
 
