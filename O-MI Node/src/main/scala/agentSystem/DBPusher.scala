@@ -173,8 +173,8 @@ trait  DBPusher  extends BaseAgentSystem{
     //}")
     val newPollValues = pathValueOldValueTuples.flatMap{
       case (path, oldValue, value) =>
-      handlePollData(path, oldValue ,value)}
-      //handlePollData _ tupled n}
+      handlePollData(path, oldValue ,value)
+    }
     val pollFuture: Future[Option[Int]] = if(!newPollValues.isEmpty) {
       dbobject.addNewPollData(newPollValues)
       } else {
@@ -185,7 +185,8 @@ trait  DBPusher  extends BaseAgentSystem{
         case t: Throwable => log.error(t, "Error when adding poll values to database")
       }
 
-    val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)
+    def tupledProcessData = SingleStores.processData _ tupled
+    val callbackDataOptions = pathValueOldValueTuples.map(n=> tupledProcessData(n))
     val triggeringEvents = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
