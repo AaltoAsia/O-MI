@@ -25,5 +25,5 @@ script:
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 after_success:
   #- ln -s ../.git
-  - sbt coveralls
+  - sbt coveralls "project omiNode" coverageReport codacyCoverage
   
