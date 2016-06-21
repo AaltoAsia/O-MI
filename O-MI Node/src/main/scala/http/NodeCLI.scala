@@ -80,7 +80,7 @@ remove <path>
     commands
   }
 
-  private[http] def agentsStrTable( agents: Vector[AgentInfo] ) : String ={
+  private[http] def agentsStrChart( agents: Vector[AgentInfo] ) : String ={
     val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
     val msg =
       f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
@@ -96,7 +96,7 @@ remove <path>
       .map{
         case agents: Vector[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
-          agentsStrTable( agents.sortBy{ info => info.name} )
+          agentsStrChart( agents.sortBy{ info => info.name} )
         case _ => ""
       }
       .recover[String]{
@@ -107,15 +107,10 @@ remove <path>
     Await.result(result, commandTimeout)
   }
 
-  private def listSubs(): String = {
-    log.info(s"Got list subs command from $ip")
-    val result = (subscriptionHandler ? ListSubsCmd())
-      .map{
-        case (intervals: Set[IntervalSub @unchecked],
+  def subsStrChart (intervals: Set[IntervalSub @unchecked],
               events: Set[EventSub] @unchecked,
-              polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
-          log.info("Received list of Subscriptions. Sending ...")
-
+              polls: Set[PolledSub] @unchecked) : String = {
+  
           val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
             ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
 
@@ -134,6 +129,17 @@ remove <path>
             }.mkString("\n")
 
           s"$intMsg\n$eventMsg\n$pollMsg\n"
+  } 
+  private def listSubs(): String = {
+    log.info(s"Got list subs command from $ip")
+    val result = (subscriptionHandler ? ListSubsCmd())
+      .map{
+        case (intervals: Set[IntervalSub @unchecked],
+              events: Set[EventSub] @unchecked,
+              polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
+          log.info("Received list of Subscriptions. Sending ...")
+
+          subsStrChart( intervals, events, polls)
       }
       .recover{
         case a: Throwable  =>
