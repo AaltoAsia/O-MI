@@ -35,12 +35,14 @@ case object Unauthorized extends AuthorizationResult {def instance = this}
 case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
 
 /**
- * Implement this interface and register the class through AuthApiProvider
+ * Implement one method of this interface and register the class through AuthApiProvider.
  */
 trait AuthApi {
 
 
-  /** This can be overridden or isAuthorizedForType can be overridden instead.
+  /**
+   * This can be overridden or isAuthorizedForType can be overridden instead.
+   *  @param httpRequest http headers and other data as they were received to O-MI Node.
    *  @return True if user is authorized
    */
   def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {
@@ -63,12 +65,20 @@ trait AuthApi {
 
 
   /** This can be overridden or isAuthorizedForType can be overridden instead.
-   *  @param httpRequest http headers and other data as they was received by Spray.
+   *  @param httpRequest http headers and other data as they were received to O-MI Node.
    *  @param isWrite True if the request requires write permissions, false if it's read only. 
    *  @param paths O-DF paths to all of the requested or to be written InfoItems.
    *  @return True if user is authorized, false if unauthorized
    */
   def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult
+
+  /**
+   * This is used if the parser is wanted to be skipped, e.g. for forwarding to the 
+   * original request to some authentication/authorization service.
+   *
+   *  @param httpRequest http headers and other data as they were received to O-MI Node.
+   */
+  def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = ???
 
 }
 
