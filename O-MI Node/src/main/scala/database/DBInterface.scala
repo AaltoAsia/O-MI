@@ -253,8 +253,8 @@ trait DB {
     newest: Option[Int],
     oldest: Option[Int]): Future[Option[OdfObjects]]
 
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]]
 
+  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]]
 
 
 
