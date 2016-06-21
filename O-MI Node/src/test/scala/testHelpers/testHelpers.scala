@@ -45,7 +45,7 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
 
 
   val bindFuture = Http().bindAndHandle(route, interface, port)
-  Await.ready(bindFuture, 2 seconds)
+  Await.ready(bindFuture, 5 seconds)
 }
 
 

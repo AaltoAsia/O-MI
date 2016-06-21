@@ -39,9 +39,9 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem): TestProbe = {
+      implicit val timeout = Timeout(5 seconds)
       val probe = TestProbe()
       val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
-      implicit val timeout = Timeout(1 seconds)
       probe
   }
 }

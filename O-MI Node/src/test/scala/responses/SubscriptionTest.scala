@@ -280,7 +280,7 @@ case class OdfValue(
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest(0 seconds, odf)
     agentManager ! PromiseWrite(promiseResult, writeReq)
-    Await.ready(promiseResult.futures, 2 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
+    Await.ready(promiseResult.futures, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
 
   //create new odfValue value easily
