@@ -254,7 +254,11 @@ trait  DBPusher  extends BaseAgentSystem{
     //subHandler ! NewDataEvent(itemValues)
     */
     //log.debug("Successfully saved InfoItems to DB")
-    writeFuture.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path))
+
+    //doesn't fail if writing fails but waits that it its completed
+    writeFuture.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path)).recover{
+      case r => infoItems.map(_.path) ++ objectMetadatas.map(_.path)
+    }
     //Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
   }
 
