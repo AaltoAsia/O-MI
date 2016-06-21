@@ -29,6 +29,10 @@ import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
 
+  // TODO: better cleaning after tests
+  SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+
+
   val conf = ConfigFactory.load("testconfig")
   val testSettings = new OmiConfigExtension(
     conf
