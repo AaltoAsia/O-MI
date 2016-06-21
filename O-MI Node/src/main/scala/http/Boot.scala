@@ -104,7 +104,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {
+  def start(dbConnection: DB = new Warp10Wrapper): OmiServiceImpl = {
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!

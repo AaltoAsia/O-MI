@@ -19,14 +19,17 @@ import java.sql.Timestamp
 import scala.concurrent.Future
 
 import spray.json.{JsValue, RootJsonFormat, DefaultJsonProtocol}
-import types.OdfTypes.{OdfNode, OdfObjects, OdfValue}
+import types.OdfTypes.{OdfInfoItem, OdfNode, OdfObjects, OdfValue}
 import types.Path
 
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol{
-  implicit object Warp10JsonFormat extends RootJsonFormat[OdfObjects] {
-    def write(o: OdfObjects): JsValue = ???
-    def read(v: JsValue): OdfObjects = ???
+  implicit object Warp10JsonFormat extends RootJsonFormat[OdfInfoItem] {
+    def write(o: OdfInfoItem): JsValue = ???
+
+
+
+    def read(v: JsValue): OdfInfoItem = ???
   }
 }
 
