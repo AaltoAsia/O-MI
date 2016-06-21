@@ -120,7 +120,7 @@ with SubscriptionHandler
 with PollHandler
 with CancelHandler
 with RESTHandler
-with RemoveHandler
+//with RemoveHandler TODO: FIX
 {
   protected def handle: PartialFunction[OmiRequest,Future[NodeSeq]] = {
     case subscription: SubscriptionRequest => handleSubscription(subscription)

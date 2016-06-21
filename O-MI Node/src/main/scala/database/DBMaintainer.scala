@@ -25,9 +25,9 @@ import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
 
 object DBMaintainer{
-  def props(dbobject: DB) : Props = Props( new DBMaintainer(dbobject) )  
+  def props(dbobject: DBReadWrite) : Props = Props( new DBMaintainer(dbobject) )
 }
-class DBMaintainer(val dbobject: DB)
+class DBMaintainer(val dbobject: DBReadWrite)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]

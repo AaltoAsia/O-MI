@@ -52,10 +52,6 @@ trait ReadHandler extends OmiRequestHandlerBase {
 
     def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
 
-    //val other = getOdfNodes(read.odf) collect {
-    //  case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())
-    //}
-
     val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
     objectsO.map {

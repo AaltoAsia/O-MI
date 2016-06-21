@@ -17,9 +17,9 @@ package http
 
 import java.net.InetSocketAddress
 
-import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 import agentSystem.{AgentInfo, AgentName}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -29,7 +29,6 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
 import responses.{RemoveSubscription, RequestHandler}
-import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -194,7 +193,7 @@ remove <path>
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
-      if (requestHandler.handlePathRemove(Path(pathOrId))) {
+      if (false){//requestHandler.handlePathRemove(Path(pathOrId))) {TODO: FIXX!!!
           log.info(s"Successfully removed path")
           s"Successfully removed path $pathOrId\n"
       } else {

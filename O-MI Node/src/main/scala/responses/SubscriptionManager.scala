@@ -65,8 +65,6 @@ object SubscriptionManager{
  * @param dbConnection
  */
 class SubscriptionManager(implicit val dbConnection: DB) extends Actor with ActorLogging {
-
-  import context.system
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler = context.system.scheduler
@@ -125,7 +123,8 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long) : Future[Option[OdfObjects]] = {
+  private def pollSubscription(id: Long) : Future[Option[OdfObjects]] = { Future.failed(new Exception("TODO: implement poll sub in prevayler"))}
+    /*
     val pollTime: Long = System.currentTimeMillis()
     val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
@@ -253,7 +252,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
       case _ => Future.successful(None)
     }
   }
-
+*/
   /**
    * Method called when the interval of an interval subscription has passed
    */
@@ -331,8 +330,8 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)
     lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)
     if (removePS) {
-      dbConnection.removePollSub(id)
-      removePS
+      ??? //dbConnection.removePollSub(id)
+      //removePS
     } else {
       removeIS || removeES
     }

@@ -14,9 +14,12 @@
 package database
 
 import java.io.File
+import java.sql.Timestamp
 
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.Future
 
+import akka.actor.ActorSystem
 import http.Boot.settings
 import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
@@ -185,9 +188,13 @@ object SingleStores {
  * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
-class DatabaseConnection extends DB {
+class DatabaseConnection extends DBReadWrite with DBBase with DB {
+  implicit val system = ActorSystem()
+
   val db = Database.forConfig(dbConfigName)
   initialize()
+
+  val dbmaintainer = system.actorOf(DBMaintainer.props( this), "db-maintainer")
 
   def destroy(): Unit = {
      dropDB()
@@ -212,13 +219,15 @@ class DatabaseConnection extends DB {
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(val name:String = "") extends DB
+class TestDB(val name:String = "") extends DBReadWrite with DBBase with DB
 {
+  implicit val system = ActorSystem()
   println("Creating TestDB: " + name)
   val db = Database.forURL(s"jdbc:h2:mem:$name;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver",
     keepAliveConnection=true)
   initialize()
 
+  val dbmaintainer = system.actorOf(DBMaintainer.props( this ), "db-maintainer")
   /**
   * Should be called after tests.
   */
@@ -235,12 +244,18 @@ class TestDB(val name:String = "") extends DB
  * Database trait used by db classes.
  * Contains a public high level read-write interface for the database tables.
  */
-trait DB extends DBReadWrite with DBBase {
-  /**
-   * These are old ideas about reducing access to read only
-   */
-  def asReadOnly: DBReadOnly = this
-  def asReadWrite: DBReadWrite = this
+trait DB {
+
+  def getNBetween(
+    requests: Iterable[OdfNode],
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]): Future[Option[OdfObjects]]
+
+  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]]
+
+
 
 
 }

@@ -115,7 +115,6 @@ trait Starter {
     )
 
     saveSettingsOdf(agentManager)
-    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(

@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
-import akka.actor.{ActorSystem, ActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import database.SingleStores.valueShouldBeUpdated
 import database._
 import parsing.xmlGen
@@ -34,7 +34,6 @@ import types.OdfTypes._
 import types.Path
 
 trait  InputPusher  extends BaseAgentSystem{
-  import context.dispatcher
   protected def writeValues(
     infoItems: Iterable[OdfInfoItem],
     objectMetadatas: Vector[OdfObject] = Vector()
@@ -43,7 +42,7 @@ trait  InputPusher  extends BaseAgentSystem{
 trait  DBPusher  extends BaseAgentSystem{
   def dbobject: DB
   def subHandler: ActorRef
-  import context.{system, dispatcher}
+  import context.dispatcher
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
@@ -176,7 +175,7 @@ trait  DBPusher  extends BaseAgentSystem{
       handlePollData(path, oldValue ,value)}
       //handlePollData _ tupled n}
     val pollFuture: Future[Option[Int]] = if(!newPollValues.isEmpty) {
-      dbobject.addNewPollData(newPollValues)
+      ??? //dbobject.addNewPollData(newPollValues)
       } else {
         Future.successful(Option(0))
       }

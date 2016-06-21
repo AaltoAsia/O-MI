@@ -25,6 +25,9 @@ import types.OdfTypes._
 import types._
 
 trait RemoveHandler extends OmiRequestHandlerBase{
+  val dbConnection = new DatabaseConnection //TODO :fix
+
+
   def handlePathRemove(parentPath: Path): Boolean = {
     val objects = SingleStores.hierarchyStore execute GetTree()
     val node = objects.get(parentPath)
