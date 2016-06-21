@@ -18,8 +18,8 @@ import java.sql.Timestamp
 
 import scala.concurrent.Future
 
-import spray.json.{JsValue, RootJsonFormat, DefaultJsonProtocol}
-import types.OdfTypes.{OdfInfoItem, OdfNode, OdfObjects, OdfValue}
+import spray.json._
+import types.OdfTypes._
 import types.Path
 
 //serializer and deserializer for warp10 json formats
@@ -29,7 +29,50 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
 
 
 
-    def read(v: JsValue): OdfInfoItem = ???
+    def read(v: JsValue): OdfInfoItem = v.convertTo[List[JsObject]] match {
+
+      case first :: Nil => {
+        first.getFields("c", "v") match {
+          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
+            val values: OdfTreeCollection[OdfValue] = valueVectors collect {
+              case Vector(JsNumber(timestamp), JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              case Vector(JsNumber(timestamp), _, JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              case Vector(JsNumber(timestamp), _, _, JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              case Vector(JsNumber(timestamp), _, _, _, JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              }
+
+            OdfInfoItem(Path(c),values, None,None)
+          }
+        }
+      }
+
+      case first :: rest =>{
+       val (path,values) = first.getFields("c", "v") match {
+          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
+            val values: OdfTreeCollection[OdfValue] = valueVectors collect {
+              case Vector(JsNumber(timestamp), JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              case Vector(JsNumber(timestamp), _, JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              case Vector(JsNumber(timestamp), _, _, JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              case Vector(JsNumber(timestamp), _, _, _, JsNumber(value)) =>
+                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+              }
+
+            (Path(c),values)
+          }
+        }
+        val restValues = rest.flatMap{ jsobj =>
+          jsobj.getFields("v")
+        }
+        ???
+      }
+    }
   }
 }
 
