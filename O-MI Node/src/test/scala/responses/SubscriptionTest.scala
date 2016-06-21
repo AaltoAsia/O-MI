@@ -66,10 +66,13 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     //comment line below for detailed debug information
     //system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
     initDB()
+
+    //SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
   def afterAll = {
     //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
     cleanAndShutdown
+    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -265,8 +268,9 @@ case class OdfValue(
     Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Vector(id))), Duration.Inf)
   }
   def cleanAndShutdown() = {
-    system.shutdown()
+    Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
+
   }
 
   //add new value easily
