@@ -45,7 +45,7 @@ trait CancelHandler extends OmiRequestHandlerBase{
   def handleCancel(cancel: CancelRequest): Future[NodeSeq] = {
     log.debug("Handling cancel.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val jobs = Future.sequence(cancel.requestID.map { id =>
+    val jobs = Future.sequence(cancel.requestIDs.map { id =>
       (subscriptionManager ? RemoveSubscription(id)).mapTo[Boolean].map( res =>
         if(res){
           Results.success

@@ -20,7 +20,11 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;")
+  // coverage 1.3.x:
+  coverageExcludedPackages := "parsing.xmlGen.*;"
+  // coverage 1.0.x:
+  //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
+)
 
 lazy val JavaDoc = config("genjavadoc") extend Compile
 
@@ -62,6 +66,7 @@ lazy val agents = (project in file("Agents")).
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   enablePlugins(DockerPlugin).
+  //enablePlugins(CodacyCoveragePlugin).
   settings(
     (commonSettings("Node") ++ Seq(
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",

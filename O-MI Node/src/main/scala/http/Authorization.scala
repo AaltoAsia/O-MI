@@ -90,9 +90,6 @@ object Authorization {
 
     def makePermissionTestFunction: CombinedTest // Directive1[PermissionTest]
 
-    trait Hole
-    def myHole(h: Hole) = ???
-
 
     private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {
       (request: OmiRequest) =>

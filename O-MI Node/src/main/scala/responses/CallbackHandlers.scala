@@ -52,7 +52,7 @@ object CallbackHandlers {
   val httpExt = Http(system)
   implicit val mat: Materializer = ActorMaterializer()
 
-  def log(implicit system: ActorSystem) = system.log
+  private def log(implicit system: ActorSystem) = system.log
   private[this] def sendHttp( address: Uri,
                               data: xml.NodeSeq,
                               ttl: Duration): Future[CallbackResult] = {
