@@ -275,6 +275,7 @@ trait WebSocketOMISupport {
       }
     }
 
+  // akka.stream
   protected def wsInSink(hasPermissionTest: PermissionTest) = {
     val requestString: String = ???
     val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString)
@@ -282,6 +283,7 @@ trait WebSocketOMISupport {
     ??? 
   }
     
+  // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
   protected def wsOutSource = ???
 
 }
