@@ -26,13 +26,13 @@ import types.Path
 object Warp10JsonProtocol extends DefaultJsonProtocol{
   implicit object Warp10JsonFormat extends RootJsonFormat[OdfInfoItem] {
     private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
-      case Vector(JsNumber(timestamp), JsNumber(value)) =>
+      case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
         OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-      case Vector(JsNumber(timestamp), _, JsNumber(value)) =>
+      case JsArray(Vector(JsNumber(timestamp), _, JsNumber(value))) =>
         OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-      case Vector(JsNumber(timestamp), _, _, JsNumber(value)) =>
+      case JsArray(Vector(JsNumber(timestamp), _, _, JsNumber(value))) =>
         OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-      case Vector(JsNumber(timestamp), _, _, _, JsNumber(value)) =>
+      case JsArray(Vector(JsNumber(timestamp), _, _, _, JsNumber(value))) =>
         OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
     }
 
@@ -46,7 +46,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
       case first :: Nil => {
         first.getFields("c", "v") match {
           case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
-            val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
+            val values: OdfTreeCollection[OdfValue] = valueVectors.collect(createOdfValue)
 
             OdfInfoItem(Path(c),values, None,None)
           }
