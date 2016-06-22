@@ -28,12 +28,12 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
     private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
       case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
         OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-      case JsArray(Vector(JsNumber(timestamp), _, JsNumber(value))) =>
-        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-      case JsArray(Vector(JsNumber(timestamp), _, _, JsNumber(value))) =>
-        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-      case JsArray(Vector(JsNumber(timestamp), _, _, _, JsNumber(value))) =>
-        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+      case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), JsNumber(value))) =>
+        OdfValue(s"$elev $value", timestamp = new Timestamp((timestamp / 1000).toLong))
+      case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(value))) =>
+        OdfValue(s"$lat:$lon $value", timestamp = new Timestamp((timestamp / 1000).toLong))
+      case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), JsNumber(value))) =>
+        OdfValue(s"$lat:$lon/$elev $value", timestamp = new Timestamp((timestamp / 1000).toLong))
     }
 
 
