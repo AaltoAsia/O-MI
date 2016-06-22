@@ -20,7 +20,7 @@ import scala.concurrent.Future
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
-//import spray.http.StatusCode
+//import akka.http.StatusCode
 
 import agentSystem.{PromiseResult, PromiseWrite, SuccessfulWrite}
 import akka.actor.ActorRef

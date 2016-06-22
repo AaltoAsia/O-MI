@@ -22,8 +22,8 @@ import scala.util.{Failure, Success, Try}
 
 import database._
 import http.Authorization.{AuthorizationExtension, CombinedTest}
-import spray.http.HttpRequest
-import spray.routing.Directives.extract
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.server.Directives.extract
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
@@ -139,7 +139,7 @@ trait AuthApiProvider extends AuthorizationExtension {
                 case _ => None
               }
             case Failure(exception) =>
-                log.error(exception, "While running AuthPlugins. => Unauthorized, trying next plugin")
+                log.error("While running AuthPlugins. => Unauthorized, trying next plugin", exception)
                 None
           }
         )

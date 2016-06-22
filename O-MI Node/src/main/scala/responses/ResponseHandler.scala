@@ -23,7 +23,7 @@ import agentSystem.{PromiseResult, PromiseWrite}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
-//import spray.http.StatusCode
+//import akka.http.StatusCode
 
 import akka.actor.ActorRef
 import responses.OmiGenerator._

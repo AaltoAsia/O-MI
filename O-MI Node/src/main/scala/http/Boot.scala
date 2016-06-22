@@ -22,15 +22,19 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-import agentSystem._
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
+//import akka.http.WebBoot
+//import akka.http.javadsl.ServerBinding
+
 import database._
+import agentSystem._
 import responses.{RequestHandler, SubscriptionManager}
-import spray.can.Http
-import spray.servlet.WebBoot
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
@@ -100,7 +104,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
+  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
@@ -120,11 +124,7 @@ trait Starter {
     )
 
     // create omi service actor
-    val omiService = system.actorOf(Props(
-      new OmiServiceActor(
-        requestHandler
-      )
-    ), "omi-service")
+    val omiService = new OmiServiceImpl(requestHandler)
 
 
     implicit val timeoutForBind = Timeout(5.seconds)
@@ -139,11 +139,19 @@ trait Starter {
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
    */
-  def bindHttp(service: ActorRef): Unit = {
+  def bindHttp(service: OmiServiceImpl): Unit = {
 
     implicit val timeoutForBind = Timeout(5.seconds)
+    implicit val materializer = ActorMaterializer()
 
-    IO(Http) ? Http.Bind(service, interface = settings.interface, port = settings.webclientPort)
+    val bindingFuture =
+      Http().bindAndHandle(service.myRoute, settings.interface, settings.webclientPort)
+
+    bindingFuture.onFailure {
+      case ex: Exception =>
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+
+    }
   }
 }
 
@@ -170,8 +178,8 @@ object Boot extends Starter {// with App{
 /**
  * Starting point of the servlet program.
  */
-class ServletBoot extends Starter with WebBoot {
-  override implicit val system = Boot.system
-  val serviceActor = start()
-  // bindHttp is not called
-}
+//class ServletBoot extends Starter with WebBoot {
+//  override implicit val system = Boot.system
+//  val serviceActor = start()
+//  // bindHttp is not called
+//}

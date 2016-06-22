@@ -4,6 +4,9 @@ import NativePackagerHelper._
 import Path.relativeTo
 import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
 
+lazy val separator = taskKey[Unit]("Prints seperating string")
+separator := println("########################################################\n\n\n\n")
+
 addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
@@ -11,13 +14,17 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
   version := "0.4.0",
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;")
+  // coverage 1.3.x:
+  coverageExcludedPackages := "parsing.xmlGen.*;"
+  // coverage 1.0.x:
+  //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
+)
 
 lazy val JavaDoc = config("genjavadoc") extend Compile
 
@@ -46,7 +53,7 @@ lazy val omiNode = (project in file("O-MI Node")).
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
       target in (Compile, doc) := baseDirectory.value / "html" / "api",
       //Revolver.settings,
-      libraryDependencies ++= commonDependencies ++ servletDependencies ++ testDependencies)): _*)
+      libraryDependencies ++= commonDependencies ++ testDependencies)): _*) //  ++ servletDependencies
 
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
@@ -59,6 +66,7 @@ lazy val agents = (project in file("Agents")).
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   enablePlugins(DockerPlugin).
+  //enablePlugins(CodacyCoveragePlugin).
   settings(
     (commonSettings("Node") ++ Seq(
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",

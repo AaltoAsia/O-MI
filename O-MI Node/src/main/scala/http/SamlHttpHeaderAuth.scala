@@ -16,12 +16,13 @@ package http
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 
-import http.Authorization.{AuthorizationExtension, CombinedTest}
-import http.Boot.settings
-import spray.http.HttpHeader
-import spray.routing.Directive1
-import spray.routing.Directives.optionalHeaderValue
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.optionalHeaderValue
+
 import types.OmiTypes._
+import Authorization.{AuthorizationExtension, CombinedTest}
+import Boot.settings
 
 // TODO: maybe move to Authorization package
 
@@ -72,7 +73,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
           log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
           Some(r)
         } else {
-          log.warning(s"Unauthorized user: $u")
+          log.warn(s"Unauthorized user: $u")
           None
         }
 

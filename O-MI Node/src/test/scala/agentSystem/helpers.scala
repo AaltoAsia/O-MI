@@ -3,10 +3,12 @@ import scala.util.Try
 import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 
 import com.typesafe.config.Config
+import akka.actor.{ActorRef, Actor, ActorSystem }
 
 import agentSystem._
 import agentSystem.AgentTypes._
 import types.OmiTypes.WriteRequest
+import http.CLICmds._
 
 
 trait StartFailure{
@@ -109,5 +111,16 @@ object WrongPropsAgent extends PropsCreator{
     InternalAgentProps( new FFAgent )
   }
 }
-
+class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])
+extends BaseAgentSystem with InternalAgentManager{
+  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
+  protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings
+  def receive : Actor.Receive = {
+    case  start: StartAgentCmd  => handleStart( start)
+    case  stop: StopAgentCmd  => handleStop( stop)
+    case  restart: ReStartAgentCmd  => handleRestart( restart )
+    case ListAgentsCmd() => sender() ! agents.values.toVector
+  }
+  def getAgents = agents
+}
 

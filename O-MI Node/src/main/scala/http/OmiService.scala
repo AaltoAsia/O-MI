@@ -21,15 +21,17 @@ import scala.concurrent.{Future, Promise}
 import scala.xml.NodeSeq
 
 import accessControl.AuthAPIService
-import akka.actor.{Actor, ActorSystem, ActorContext, ActorLogging}
-import akka.event.LoggingAdapter
+import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
+import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
 import http.Authorization._
+import org.slf4j.LoggerFactory
 import parsing.OmiParser
 import responses.OmiGenerator._
 import responses.{RequestHandler, Results}
-import spray.http.MediaTypes._
-import spray.http._
-import spray.routing._
 import types.OmiTypes._
 import types.Path
 
@@ -46,30 +48,16 @@ trait OmiServiceAuthorization
  * Actor that handles incoming http messages
  * @param reqHandler ActorRef that is used in subscription handling
  */
-class OmiServiceActor(reqHandler: RequestHandler)
-  extends Actor
-     with ActorLogging
-     with OmiService
-     {
+class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSystem)
+     extends {
+       // Early initializer needed (-- still doesn't seem to work)
+       override val log = LoggerFactory.getLogger(classOf[OmiService])
+  } with OmiService {
 
   registerApi(new AuthAPIService())
-  val system = context.system
-  /**
-   * the HttpService trait defines only one abstract member, which
-   * connects the services environment to the enclosing actor or test
-   */
-  def actorRefFactory : ActorContext= context
 
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
-
-  /**
-   * this actor only runs our route, but you could add
-   * other things here, like request stream processing
-   * or timeout handling
-   */
-  def receive : Actor.Receive = runRoute(myRoute)
-
 
 }
 
@@ -77,14 +65,13 @@ class OmiServiceActor(reqHandler: RequestHandler)
  * this trait defines our service behavior independently from the service actor
  */
 trait OmiService
-  extends HttpService
-     with CORSSupport
+     extends CORSSupport
      with OmiServiceAuthorization
      {
 
-  def log: LoggingAdapter
   val system : ActorSystem
   import system.dispatcher
+  def log: org.slf4j.Logger
   val requestHandler: RequestHandler
 
 
@@ -96,17 +83,20 @@ trait OmiService
   //val staticHtml = getFromResourceDirectory("html")
 
 
-  /** Some trickery to extract the _decoded_ uri path in current version of spray: */
-  def pathToString: spray.http.Uri.Path => String = {
+  /** Some trickery to extract the _decoded_ uri path: */
+  def pathToString: Uri.Path => String = {
     case Uri.Path.Empty              => ""
     case Uri.Path.Slash(tail)        => "/"  + pathToString(tail)
     case Uri.Path.Segment(head, tail)=> head + pathToString(tail)
   }
 
+  // Default to xml mediatype and require explicit type for html
+  val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
+  implicit val xml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
+
   // should be removed?
   val helloWorld = get {
-    respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default
-      complete {
+     val document = { 
         <html>
         <body>
           <h1>Say hello to <i>O-MI Node service</i>!</h1>
@@ -123,11 +113,6 @@ trait OmiService
                 You can test O-MI requests here with the help of this webapp.
               </p>
             </li>
-            <li style="color:gray;"><a style="text-decoration:line-through" href="html/old-webclient/form.html">Old WebApp</a>
-              <p>
-                Very old version of the webapp.
-              </p>
-            </li>
             <li><a href="html/ImplementationDetails.html">Implementation details, request-response examples</a>
               <p>
                 Here you can view examples of the requests this project supports.
@@ -137,31 +122,36 @@ trait OmiService
           </ul>
         </body>
         </html>
-      }
     }
+
+    // XML is marshalled to `text/xml` by default
+    complete(ToResponseMarshallable(document)(htmlXml))
   }
 
   val getDataDiscovery =
-    path(RestPath) { sprayPath =>
+    path(Remaining) { uriPath =>
       get {
         // convert to our path type (we don't need very complicated functionality)
-        val pathStr = pathToString(sprayPath)
+        val pathStr = uriPath // pathToString(uriPath)
         val path = Path(pathStr)
 
         requestHandler.generateODFREST(path) match {
           case Some(Left(value)) =>
-            respondWithMediaType(`text/plain`) {
-              complete(value)
-            }
+            complete(value)
           case Some(Right(xmlData)) =>
-            respondWithMediaType(`text/xml`) {
-              complete(xmlData)
-            }
-          case None =>
+            complete(xmlData)
+          case None =>            {
             log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
-            respondWithMediaType(`text/xml`) {
-              complete((404, <error>No object found</error>))
-            }
+
+            // TODO: Clean this code
+            complete(
+              ToResponseMarshallable(
+              <error>No object found</error>
+              )(
+                fromToEntityMarshaller(StatusCodes.NotFound)(xml)
+              )
+            )
+          }
         }
       }
     }
@@ -202,7 +192,7 @@ trait OmiService
 
               // check the error code for logging
               if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
-                log.warning(s"Errors with following request:\n${requestString}")
+                log.warn(s"Errors with following request:\n${requestString}")
               }
 
               value // return
@@ -210,8 +200,8 @@ trait OmiService
 
         case Left(errors) => { // Errors found
 
-          log.warning(s"${requestString}")
-          log.warning("Parse Errors: {}", errors.mkString(", "))
+          log.warn(s"${requestString}")
+          log.warn("Parse Errors: {}", errors.mkString(", "))
 
           val errorResponse = parseError(errors.toSeq:_*)
 
@@ -220,37 +210,32 @@ trait OmiService
       }
     } catch {
       case ex: Throwable => { // Catch fatal errors for logging
-        log.error(ex, "Fatal server error")
-        Future.successful(internalError(ex))
+        log.error("Fatal server error", ex)
+        throw ex
       }
     }
   }
 
-  val respondXML = respondWithMediaType(`text/xml`)
 
   /* Receives HTTP-POST directed to root */
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
-        respondXML {
-          complete(handleRequest(hasPermissionTest, requestString))
-        }
+        complete(handleRequest(hasPermissionTest, requestString))
       }
     }
   }
 
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      formFields("msg") {requestString =>
-        respondXML {
-          complete(handleRequest(hasPermissionTest, requestString))
-        }
+      formFields("msg".as[String]) {requestString =>
+        complete(handleRequest(hasPermissionTest, requestString))
       }
     }
   }
 
   // Combine all handlers
-  val myRoute = cors {
+  val myRoute = corsEnabled {
     path("") {
       postFormXMLRequest ~
       postXMLRequest ~

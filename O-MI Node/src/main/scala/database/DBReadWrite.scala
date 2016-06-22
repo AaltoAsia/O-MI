@@ -185,9 +185,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(
-        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true)))
+        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true))) // NOTE: Heavy operation
 
-      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode =>
+      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode => // NOTE: Heavy operation
         (hNode.path, hNode.id)
       } result
 

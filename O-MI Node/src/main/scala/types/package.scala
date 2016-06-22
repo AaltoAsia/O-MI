@@ -16,10 +16,16 @@ package types
 
 
 import java.lang.{Iterable => JavaIterable}
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
+import java.sql.Timestamp
 
 import scala.language.existentials
+import scala.xml.NodeSeq
+import javax.xml.datatype.XMLGregorianCalendar
 
 import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen._
 import types.OdfTypes._
 /**
  * Package containing classes presenting O-MI request interanlly. 
@@ -28,6 +34,29 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
+  def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long): xmlTypes.OmiEnvelope ={
+    val namespace = Some("omi.xsd")
+    val version = "1.0"
+    val datarecord = request match{
+      case read: xmlTypes.ReadRequest => 
+      scalaxb.DataRecord[xmlTypes.ReadRequest](namespace, Some("read"), read)
+      case write: xmlTypes.WriteRequest => 
+      scalaxb.DataRecord[xmlTypes.WriteRequest](namespace, Some("write"), write)
+      case cancel: xmlTypes.CancelRequest => 
+      scalaxb.DataRecord[xmlTypes.CancelRequest](namespace, Some("cancel"), cancel)
+      case response: xmlTypes.ResponseListType => 
+      scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
+    }
+    xmlTypes.OmiEnvelope( datarecord, "1.0", ttl)
+  }
+ def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) : NodeSeq ={ 
+    scalaxb.toXML[OmiEnvelope](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+  }
+ def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={ 
+    val cal = new GregorianCalendar();
+    cal.setTime(timestamp)
+    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+  }
 }
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
@@ -144,4 +173,5 @@ package object OdfTypes {
   def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
+
 }
