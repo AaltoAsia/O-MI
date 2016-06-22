@@ -184,7 +184,7 @@ trait OmiService
                 case None =>
                   Future.successful(unauthorized)
               }
-            case _ =>  Future.successful(notImplemented)
+            case _ => Future.successful(notImplemented)
           }
 
           //if timeoutfuture completes first then timeout is returned

@@ -199,6 +199,12 @@ public class AuthAPIService implements AuthApi {
         return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
 
+    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
+    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
+                                   String request) {
+        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
+    }
+
     public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
 
         HttpURLConnection connection = null;

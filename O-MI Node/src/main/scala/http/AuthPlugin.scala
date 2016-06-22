@@ -78,7 +78,9 @@ trait AuthApi {
    *
    *  @param httpRequest http headers and other data as they were received to O-MI Node.
    */
-  def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = ???
+  def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = {
+    ???
+  }
 
 }
 
