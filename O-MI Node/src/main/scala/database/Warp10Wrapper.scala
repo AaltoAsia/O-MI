@@ -25,6 +25,18 @@ import types.Path
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol{
   implicit object Warp10JsonFormat extends RootJsonFormat[OdfInfoItem] {
+    private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
+      case Vector(JsNumber(timestamp), JsNumber(value)) =>
+        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+      case Vector(JsNumber(timestamp), _, JsNumber(value)) =>
+        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+      case Vector(JsNumber(timestamp), _, _, JsNumber(value)) =>
+        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+      case Vector(JsNumber(timestamp), _, _, _, JsNumber(value)) =>
+        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+    }
+
+
     def write(o: OdfInfoItem): JsValue = ???
 
 
@@ -34,16 +46,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
       case first :: Nil => {
         first.getFields("c", "v") match {
           case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
-            val values: OdfTreeCollection[OdfValue] = valueVectors collect {
-              case Vector(JsNumber(timestamp), JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              case Vector(JsNumber(timestamp), _, JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              case Vector(JsNumber(timestamp), _, _, JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              case Vector(JsNumber(timestamp), _, _, _, JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              }
+            val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
 
             OdfInfoItem(Path(c),values, None,None)
           }
@@ -53,24 +56,21 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
       case first :: rest =>{
        val (path,values) = first.getFields("c", "v") match {
           case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
-            val values: OdfTreeCollection[OdfValue] = valueVectors collect {
-              case Vector(JsNumber(timestamp), JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              case Vector(JsNumber(timestamp), _, JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              case Vector(JsNumber(timestamp), _, _, JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              case Vector(JsNumber(timestamp), _, _, _, JsNumber(value)) =>
-                OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
-              }
+            val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
 
             (Path(c),values)
           }
         }
-        val restValues = rest.flatMap{ jsobj =>
-          jsobj.getFields("v")
-        }
-        ???
+        val restValues:OdfTreeCollection[OdfValue] = rest.flatMap{ jsobj =>
+          jsobj.getFields("v") match {
+            case Seq(JsArray(valueVectors: Vector[JsArray])) => {
+              val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
+              values
+            }
+          }
+        }(collection.breakOut)
+
+        OdfInfoItem(path, values ++ restValues)
       }
     }
   }
