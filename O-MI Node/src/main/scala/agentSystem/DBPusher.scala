@@ -243,24 +243,12 @@ trait  DBPusher  extends BaseAgentSystem{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    //return when futures have been completed
-    //OmiServiceTest fails when value is returned after items have been written in database
-    /*
-    for {
+    for{
       _ <- pollFuture
       _ <- writeFuture
       res = infoItems.map(_.path) ++ objectMetadatas.map(_.path)
     } yield res
-    //subHandler ! NewDataEvent(itemValues)
-    */
-    //log.debug("Successfully saved InfoItems to DB")
 
-    //doesn't fail if writing fails but waits that it its completed
-    writeFuture.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path))//.recover{
-      //case r => infoItems.map(_.path) ++ objectMetadatas.map(_.path)
-
-    //}
-    //Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
   }
 
   /**

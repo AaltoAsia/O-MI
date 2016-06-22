@@ -12,6 +12,7 @@ import testHelpers.{Actors, SystemTestCallbackServer}
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
   "CallbackHandler" should {
+
     "Send callback to the correct address" in new Actors {
       val port = 20003
       val probe = initCallbackServer(port)
@@ -28,7 +29,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       CallbackHandlers.sendCallback(s"http://localhost:$port", msg, Duration(10, "seconds"))
 
       val testProbeFuture = Future{
-        Thread.sleep(3000)
+        Thread.sleep(2000)
         initCallbackServer(port)
       }
 
