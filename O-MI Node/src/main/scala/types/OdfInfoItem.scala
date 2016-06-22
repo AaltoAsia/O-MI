@@ -97,9 +97,7 @@ case class OdfValue(
       typeValue,
       unixTime = Option(timestamp.getTime/1000),
       dateTime = Option{
-        val c :GregorianCalendar  = new GregorianCalendar()
-        c.setTimeInMillis(timestamp.getTime)
-        DatatypeFactory.newInstance().newXMLGregorianCalendar(c)
+        timestampToXML(timestamp)
       },
       attributes = Map.empty
     )

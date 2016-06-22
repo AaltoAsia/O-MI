@@ -87,4 +87,55 @@ class Warp10Wrapper extends DB {
 
  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = ???
 
+ private def warpWriteMsg( objects : OdfObjects ) = {
+   val infos = getInfoItems( objects )
+   infos.map{
+     info =>
+       info.values.map{
+         odfValue => 
+           val unixEpochTime = odfValue.timestamp.getTime
+           val path = info.path.mkString(".") 
+           val labels = "{}"
+           val value = odfValue.value
+            s"$unixEpochTime// $path$labels $value\n" 
+       }
+   }.mkString("\n")
+ }
+ private def odfToReadPathSelector( objects: OdfObjects ) = {
+   val leafs = getLeafs( objects)
+   val paths = leafs.map{ 
+     case obj : OdfObject => obj.path.mkString(".") + ".*"
+     case objs : OdfObjects => objs.path.mkString(".") + ".*" 
+     case info : OdfInfoItem => info.path.mkString(".") 
+   }
+   "(" + paths.mkString("|") + ")"
+ }
+ type Warp10ReadToken = String
+ private def warpReadNBeforeMsg(
+   pathSelector: String,
+   sticks: Long,
+   before: Timestamp )(implicit readToken: Warp10ReadToken ): String = {
+   val epoch = before.getTime * 1000
+   s"""[
+   '$readToken'
+   '$pathSelector'
+   {}
+   $epoch
+   -$sticks
+   ] FETCH"""
+
+ }
+ private def warpReadBetweenMsg( pathSelector: String,
+   begin: Timestamp,
+   end: Timestamp )(implicit readToken: Warp10ReadToken ): String = {
+   val start = end.getTime * 1000
+   val timespan = (end.getTime - begin.getTime) * 1000
+   s"""[
+   '$readToken'
+   '$pathSelector'
+   {}
+   $start
+   $timespan
+   ] FETCH"""
+ }
 }
