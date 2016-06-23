@@ -37,7 +37,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
     }
 
 
-    def write(o: OdfInfoItem): JsValue = ???
+    def write(o: OdfInfoItem): JsValue = ??? //no use
 
 
 
@@ -45,17 +45,17 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
 
       case first :: Nil => {
         first.getFields("c", "v") match {
-          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
+          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
             val values: OdfTreeCollection[OdfValue] = valueVectors.collect(createOdfValue)
 
-            OdfInfoItem(Path(c),values, None,None)
+            OdfInfoItem(Path(c),values.sortBy(_.timestamp.getTime()))
           }
         }
       }
 
       case first :: rest =>{
        val (path,values) = first.getFields("c", "v") match {
-          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) =>{
+          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
             val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
 
             (Path(c),values)
@@ -70,14 +70,30 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
           }
         }(collection.breakOut)
 
-        OdfInfoItem(path, values ++ restValues)
+        OdfInfoItem(path, (values ++ restValues).sortBy(_.timestamp.getTime()))
       }
     }
   }
 }
 
 class Warp10Wrapper extends DB {
-
+  /**
+   * Used to get result values with given constrains in parallel if possible.
+   * first the two optional timestamps, if both are given
+   * search is targeted between these two times. If only start is given,all values from start time onwards are
+   * targeted. Similiarly if only end is given, values before end time are targeted.
+   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
+   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
+   * the end.
+   * All parameters except the first are optional, given only the first returns all requested data
+   *
+   * @param requests SINGLE requests in a list (leafs in request O-DF); InfoItems, Objects and MetaDatas
+   * @param begin optional start Timestamp
+   * @param end optional end Timestamp
+   * @param newest number of values to be returned from start
+   * @param oldest number of values to be returned from end
+   * @return Combined results in a O-DF tree
+   */
  def getNBetween(
     requests: Iterable[OdfNode],
     begin: Option[Timestamp],
@@ -85,6 +101,10 @@ class Warp10Wrapper extends DB {
     newest: Option[Int],
     oldest: Option[Int]): Future[Option[OdfObjects]] = ???
 
+  /**
+   * Used to set many values efficiently to the database.
+   * @param data list item to be added consisting of Path and OdfValue tuples.
+   */
  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = ???
 
  private def warpWriteMsg( objects : OdfObjects ) = {
