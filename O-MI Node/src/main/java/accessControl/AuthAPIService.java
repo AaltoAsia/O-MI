@@ -17,6 +17,7 @@ package accessControl;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import akka.http.HttpRequest;
 import http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +65,12 @@ public class AuthAPIService implements AuthApi {
                 });
     }
 
+    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest, String omiRequestXml) {
+        logger.debug("isAuthorizedForRawRequest EXECUTED!");
+        return Authorized.instance();
+    }
 
-    @Override
+
     public AuthorizationResult isAuthorizedForType(spray.http.HttpRequest httpRequest,
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
@@ -104,7 +109,7 @@ public class AuthAPIService implements AuthApi {
         }
 
 
-        // If there is not certificate present we try to find the certificate
+        // If there are no cookies we try to find the certificate
         if (!authenticated) {
 
             iter = httpRequest.headers().iterator();
