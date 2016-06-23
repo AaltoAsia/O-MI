@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 
 import parsing.xmlGen.xmlTypes.QlmID
 import slick.driver.H2Driver.api._
-import slick.lifted.{ForeignKeyQuery, Index, ProvenShape}
+import slick.lifted.{Index, ForeignKeyQuery, ProvenShape}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -183,7 +183,7 @@ trait OmiNodeTables extends DBBase {
     def pollRefCount: Rep[Int] = column[Int]("POLLREFCOUNT")
     def isInfoItem: Rep[Boolean] = column[Boolean]("ISINFOITEM")
 
-    def pathIndex: Index = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
+    //def pathIndex: Index = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
 
     // Every table needs a * projection with the same type as the table's type parameter
     def * : ProvenShape[DBNode] = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (

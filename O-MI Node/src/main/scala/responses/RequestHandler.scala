@@ -16,11 +16,8 @@
 package responses
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, TimeoutException,  ExecutionContext}
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.{NodeSeq, XML}
-//import spray.http.StatusCode
+import scala.concurrent.{ExecutionContext, Future, TimeoutException}
+import scala.xml.NodeSeq
 
 import java.net.UnknownHostException
 import java.util.Date
@@ -28,12 +25,9 @@ import java.util.Date
 import akka.actor.{ActorSystem, ActorRef}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import database._
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import responses.CallbackHandlers._
 import responses.OmiGenerator._
-import types.OdfTypes._
 import types.OmiTypes._
-import types._
 
 trait OmiRequestHandlerBase { 
   protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
@@ -110,11 +104,8 @@ trait OmiRequestHandlerCore {
   /**
    * Method to be called for handling internal server error, logging and stacktrace.
    *
-   * @param request request is O-MI request to be handled
    */
   def actionOnInternalError: Throwable => Unit = { error =>
-    //println("[ERROR] Internal Server error:")
-    //error.printStackTrace()
     log.error(error, "Internal server error: ")
   }
 }

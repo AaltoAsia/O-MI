@@ -24,6 +24,7 @@ import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.io.{IO, Tcp}
 import akka.util.Timeout
+import org.slf4j.LoggerFactory
 import http.Authorization.ExtensibleAuthorization
 import http.IpAuthorization
 import parsing.OdfParser
@@ -44,9 +45,13 @@ object  ExternalAgentListener extends PropsCreator{
   */
 class ExternalAgentListener(override val config: Config)
   extends InternalAgent
-  with ExtensibleAuthorization with IpAuthorization
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
+  class ExtAgentAuthorization extends {
+    override val log = LoggerFactory.getLogger(classOf[ExternalAgentListener])
+  } with ExtensibleAuthorization with IpAuthorization
+
+  private val authorization = new ExtAgentAuthorization
   protected implicit val timeout = config.getDuration("timeout", SECONDS).seconds
   protected val port = config.getInt("port")
   protected val interface = config.getString("interface")
@@ -92,7 +97,7 @@ class ExternalAgentListener(override val config: Config)
       val user = Some(remote.getAddress())
       val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
 
-      if( ipHasPermission(user)(requestForPermissionCheck).isDefined ){
+      if( authorization.ipHasPermission(user)(requestForPermissionCheck).isDefined ){
         log.info(s"Agent connected from $remote to $local")
 
         val handler = context.actorOf(
