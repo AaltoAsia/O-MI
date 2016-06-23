@@ -15,9 +15,19 @@
 package database
 
 import java.sql.Timestamp
+import java.util.Date
 
 import scala.concurrent.Future
+import scala.util.{Try}
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
 import types.OdfTypes._
 import types.Path
@@ -77,65 +87,99 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
 }
 
 class Warp10Wrapper extends DB {
-  /**
-   * Used to get result values with given constrains in parallel if possible.
-   * first the two optional timestamps, if both are given
-   * search is targeted between these two times. If only start is given,all values from start time onwards are
-   * targeted. Similiarly if only end is given, values before end time are targeted.
-   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
-   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
-   * the end.
-   * All parameters except the first are optional, given only the first returns all requested data
-   *
-   * @param requests SINGLE requests in a list (leafs in request O-DF); InfoItems, Objects and MetaDatas
-   * @param begin optional start Timestamp
-   * @param end optional end Timestamp
-   * @param newest number of values to be returned from start
-   * @param oldest number of values to be returned from end
-   * @return Combined results in a O-DF tree
-   */
+  import Warp10JsonProtocol._
+  type Warp10Token = String
+  final class Warp10TokenHeader(token: Warp10Token) extends ModeledCustomHeader[Warp10TokenHeader] {
+      override def renderInRequests = false
+        override def renderInResponses = false
+          override val companion = Warp10TokenHeader
+            override def value: String = token
+  }
+  object Warp10TokenHeader extends ModeledCustomHeaderCompanion[Warp10TokenHeader] {
+      override val name = "X-Warp10-Token"
+        override def parse(value: String) = Try(new Warp10TokenHeader(value))
+  }
+
+ def warpAddress = ???
+ implicit val readToken : Warp10Token = ???
+ implicit val writeToken : Warp10Token = ???
+ 
+ implicit val system = ActorSystem()
+ import system.dispatcher // execution context for futures
+ val settings = http.Boot.settings
+ val httpExt = Http(system)
+ implicit val mat: Materializer = ActorMaterializer()
+
  def getNBetween(
     requests: Iterable[OdfNode],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]): Future[Option[OdfObjects]] = ???
-
-  /**
-   * Used to set many values efficiently to the database.
-   * @param data list item to be added consisting of Path and OdfValue tuples.
-   */
- def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = ???
-
- private def warpWriteMsg( objects : OdfObjects ) = {
-   val infos = getInfoItems( objects )
-   infos.map{
-     info =>
-       info.values.map{
-         odfValue => 
-           val unixEpochTime = odfValue.timestamp.getTime
-           val path = info.path.mkString(".") 
-           val labels = "{}"
-           val value = odfValue.value
-            s"$unixEpochTime// $path$labels $value\n" 
-       }
-   }.mkString("\n")
+    oldest: Option[Int]
+  ): Future[Option[OdfObjects]] = {
+    val selector = nodesToReadPathSelector(requests)
+    val content : String = (begin, end, newest) match {
+      case (None, None, None) =>
+        warpReadNBeforeMsg(selector, 1, None)(readToken)
+      case (None, None, Some(sticks)) =>
+        warpReadNBeforeMsg(selector,sticks, None)(readToken)
+      case (None, Some(endTime), Some(sticks)) => 
+        warpReadNBeforeMsg(selector,sticks, end)(readToken)
+      case (startTime, endTime, None) => 
+        warpReadBetweenMsg(selector,begin, end)(readToken)
+    } 
+    val request = RequestBuilding.Post(warpAddress, content)
+    val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
+    responseF.map{ 
+      case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+        Unmarshal(response).to[OdfInfoItem]
+        
+    }
  }
- private def odfToReadPathSelector( objects: OdfObjects ) = {
-   val leafs = getLeafs( objects)
-   val paths = leafs.map{ 
+
+ def writeMany(data: Seq[(Path, OdfValue)]): Future[StatusCode] ={
+   val content = data.map{
+    case (path, odfValue) =>
+    toWriteFormat(path,odfValue)
+   }.mkString("")
+   val request = RequestBuilding.Post(warpAddress, content)
+     .withHeaders(Warp10TokenHeader(writeToken))
+
+   val response = httpExt.singleRequest(request)//httpHandler(request)
+   response.map{
+     case HttpResponse( status, headers, entity, protocol ) =>
+       status
+       //TODO: what to do if failed? Entity has more information.
+   }
+
+ }
+
+ private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
+   val unixEpochTime = odfValue.timestamp.getTime * 1000
+   val pathSelector = path.mkString(".") 
+   val labelSelector = "{}"
+   val value = odfValue.value
+   s"$unixEpochTime// $pathSelector$labelSelector $value\n" 
+ }
+ 
+ private def nodesToReadPathSelector( nodes : Iterable[OdfNode] ) = {
+   val paths = nodes.map{ 
      case obj : OdfObject => obj.path.mkString(".") + ".*"
      case objs : OdfObjects => objs.path.mkString(".") + ".*" 
      case info : OdfInfoItem => info.path.mkString(".") 
    }
    "(" + paths.mkString("|") + ")"
  }
- type Warp10ReadToken = String
+ 
+ 
  private def warpReadNBeforeMsg(
    pathSelector: String,
-   sticks: Long,
-   before: Timestamp )(implicit readToken: Warp10ReadToken ): String = {
-   val epoch = before.getTime * 1000
+   sticks: Int,
+   start: Option[Timestamp]
+ )(
+   implicit readToken: Warp10Token
+ ): String = {
+   val epoch = start.map{ ts => (ts.getTime * 1000).toString }.getOrElse("NOW")
    s"""[
    '$readToken'
    '$pathSelector'
@@ -143,18 +187,27 @@ class Warp10Wrapper extends DB {
    $epoch
    -$sticks
    ] FETCH"""
-
  }
- private def warpReadBetweenMsg( pathSelector: String,
-   begin: Timestamp,
-   end: Timestamp )(implicit readToken: Warp10ReadToken ): String = {
-   val start = end.getTime * 1000
-   val timespan = (end.getTime - begin.getTime) * 1000
+
+ def currentEpoch = new Timestamp( new Date().getTime ).getTime *1000
+ private def warpReadBetweenMsg(
+   pathSelector: String,
+   begin: Option[Timestamp],
+   end: Option[Timestamp]
+   )(
+     implicit readToken: Warp10Token
+   ): String = {
+   val startEpoch=  end.map{
+    time => time.getTime * 1000
+   }.getOrElse( currentEpoch )
+   val timespan =  begin.map{
+    time => startEpoch - time.getTime * 1000 
+   }.getOrElse( startEpoch )
    s"""[
    '$readToken'
    '$pathSelector'
    {}
-   $start
+   $startEpoch
    $timespan
    ] FETCH"""
  }
