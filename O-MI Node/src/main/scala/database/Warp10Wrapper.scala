@@ -18,12 +18,12 @@ import java.sql.Timestamp
 import java.util.Date
 
 import scala.concurrent.Future
-import scala.util.{Try}
+import scala.util.Try
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -31,7 +31,6 @@ import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
 import types.OdfTypes._
 import types.Path
-
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol{
   implicit object Warp10JsonFormat extends RootJsonFormat[OdfInfoItem] {
@@ -87,7 +86,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
 }
 
 class Warp10Wrapper extends DB {
-  import Warp10JsonProtocol._
   type Warp10Token = String
   final class Warp10TokenHeader(token: Warp10Token) extends ModeledCustomHeader[Warp10TokenHeader] {
       override def renderInRequests = false
@@ -109,7 +107,6 @@ class Warp10Wrapper extends DB {
  val settings = http.Boot.settings
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
-
  def getNBetween(
     requests: Iterable[OdfNode],
     begin: Option[Timestamp],
@@ -130,11 +127,13 @@ class Warp10Wrapper extends DB {
     } 
     val request = RequestBuilding.Post(warpAddress, content)
     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
-    responseF.map{ 
+    val test = responseF.map{
       case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-        Unmarshal(response).to[OdfInfoItem]
+        Unmarshal(entity).to[OdfInfoItem]//Unmarshal(response).to[OdfInfoItem]
+
         
     }
+   ???
  }
 
  def writeMany(data: Seq[(Path, OdfValue)]): Future[StatusCode] ={
