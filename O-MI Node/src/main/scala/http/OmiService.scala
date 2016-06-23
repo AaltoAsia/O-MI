@@ -198,7 +198,7 @@ trait OmiService
               value // return
           }
 
-        case Left(errors) => { // Errors found
+        case Left(errors) => { // Parsing errors found
 
           log.warn(s"${requestString}")
           log.warn("Parse Errors: {}", errors.mkString(", "))

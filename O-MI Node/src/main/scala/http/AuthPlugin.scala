@@ -43,7 +43,6 @@ trait AuthApi {
   /**
    * This can be overridden or isAuthorizedForType can be overridden instead.
    *  @param httpRequest http headers and other data as they were received to O-MI Node.
-   *  @return True if user is authorized
    */
   def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {
     omiRequest match {
@@ -68,20 +67,19 @@ trait AuthApi {
    *  @param httpRequest http headers and other data as they were received to O-MI Node.
    *  @param isWrite True if the request requires write permissions, false if it's read only. 
    *  @param paths O-DF paths to all of the requested or to be written InfoItems.
-   *  @return True if user is authorized, false if unauthorized
    */
-  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult
+  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult = ???
 
   /**
    * This is used if the parser is wanted to be skipped, e.g. for forwarding to the 
    * original request to some authentication/authorization service.
    *
    *  @param httpRequest http headers and other data as they were received to O-MI Node.
+   *  @param omiRequestXml contains the original request as received by the server.
    */
   def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = {
     ???
   }
-
 }
 
 trait AuthApiProvider extends AuthorizationExtension {

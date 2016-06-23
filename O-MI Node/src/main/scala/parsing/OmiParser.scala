@@ -108,13 +108,13 @@ object OmiParser extends Parser[OmiParseResult] {
   }
 
   // fixes problem with duration: -1.0.seconds == -999999999 nanoseconds
-  protected def parseInterval(v: Double) =
+  def parseInterval(v: Double): Duration =
   v match{
     case -1.0 =>  -1.seconds
     case w if w >= 0 => w.seconds
     case _ => throw new IllegalArgumentException("Illegal interval, only positive or -1 are allowed.")
   }
-  protected def parseTTL(v: Double)      =
+  def parseTTL(v: Double): Duration =
   v match{
     case -1.0 => Duration.Inf
     case 0.0 => Duration.Inf
@@ -122,7 +122,7 @@ object OmiParser extends Parser[OmiParseResult] {
     case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
   }
 
-  private[this] def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
+  def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
   
   private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
     if(read.requestID.nonEmpty) {
@@ -247,11 +247,11 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
   private[this] def parseOdf(node: Node): OdfParseResult = OdfParser.parse(node)
-  private[this] def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
+  def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
     case None => None
     case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
   }
-  private[this] def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {
+  def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {
     case None => None
     case Some(uri) => Some(uri.toString)
   }
