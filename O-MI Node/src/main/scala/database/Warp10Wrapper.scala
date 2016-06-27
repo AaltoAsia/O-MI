@@ -78,7 +78,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
             val _values = ii.foldLeft(OdfTreeCollection[OdfValue])((col ,next ) => col ++ next._3)
 
-            Seq(OdfInfoItem(Path(_path), _values))
+            Seq(OdfInfoItem(Path(_path), _values.sortBy(_.timestamp.getTime())))
           }
           case _ => throw new DeserializationException("Unknown format")
         }(collection.breakOut).flatten
