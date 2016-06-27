@@ -216,8 +216,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     //Call hooks
     pathIdRelations.map{ 
-      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => OmiReturn("","200")
-      case seq : Seq[(types.Path, Int)] if seq.isEmpty => OmiReturn("","500")
+      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => OmiReturn("200")
+      case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
+        OmiReturn("500",Some("Using old database. Should use Warp 10."))
     }
   }
 

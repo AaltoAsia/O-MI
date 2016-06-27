@@ -156,12 +156,12 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    val response = httpExt.singleRequest(request)//httpHandler(request)
    response.flatMap{
      case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-       Future.successful( OmiReturn( "", status.value) )
+       Future.successful( OmiReturn( status.value) )
      case HttpResponse( status, headers, entity, protocol ) if status.isFailure => 
        Unmarshal(entity).to[String].map{ 
         str => 
           log.debug(s"$status with:\n $str")
-          OmiReturn( str, status.value)
+          OmiReturn( status.value, Some(str))
        }
        //TODO: what to do if failed? Entity has more information.
    }

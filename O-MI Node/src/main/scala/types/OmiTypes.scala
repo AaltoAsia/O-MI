@@ -221,7 +221,7 @@ case class OmiResult(
     
   implicit def asRequestResultType : xmlTypes.RequestResultType = xmlTypes.RequestResultType(
     xmlTypes.ReturnType(
-      returnValue.value,
+      "",
       returnValue.returnCode,
       returnValue.description,
       Map.empty
@@ -240,7 +240,6 @@ case class OmiResult(
 } 
 
 case class OmiReturn(
-  value: String,
   returnCode: String,
   description: Option[String] = None
 )

@@ -60,7 +60,7 @@ class TypesTest extends Specification {
   }
 
   def e5 = {
-    new ResponseRequest(Seq(OmiResult("1","200"))).isInstanceOf[OmiRequest]
+    new ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
   }
 
   def e6 = {

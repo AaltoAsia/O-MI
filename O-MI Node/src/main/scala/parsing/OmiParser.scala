@@ -203,7 +203,6 @@ object OmiParser extends Parser[OmiParseResult] {
           result =>
             OmiResult(
               OmiReturn(
-                result.returnValue.value,
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
