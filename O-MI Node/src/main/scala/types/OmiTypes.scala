@@ -40,6 +40,9 @@ sealed trait OmiRequest extends RequestWrapper {
   def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
+  def parsed = Right(asJavaIterable(collection.Iterable(this)))
+  def unwrapped = Some(this)
+  def rawRequest = asXML.toString
 }
 sealed trait PermissiveRequest
 sealed trait OdfRequest {
@@ -50,7 +53,10 @@ sealed trait RequestIDRequest {
 }
 
 sealed trait RequestWrapper {
+  def rawRequest: String
   def ttl: Duration
+  def parsed: OmiParseResult
+  def unwrapped: Option[OmiRequest]
 }
 
 /**
@@ -96,6 +102,15 @@ class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
    * Get the parsed request. Message is parsed only once because of laziness.
    */
   lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest)
+
+  /**
+   * Access the request easily and leave responsibility of error handling to someone else.
+   * TODO: Only one request per xml message is supported currently
+   */
+  lazy val unwrapped = parsed match {
+    case Right(requestSeq) => requestSeq.headOption
+    case _ => None
+  }
 }
 
 object RawRequestWrapper {

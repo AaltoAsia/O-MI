@@ -158,56 +158,61 @@ trait OmiService
 
   def handleRequest(hasPermissionTest: PermissionTest, requestString: String): Future[NodeSeq] = {
     try {
-      val eitherOmi = OmiParser.parse(requestString)
-      eitherOmi match {
-        case Right(requests) =>
+      //val eitherOmi = OmiParser.parse(requestString)
 
-          val ttlPromise = Promise[NodeSeq]()
 
-          val request = requests.headOption  // TODO: Only one request per xml is supported currently
-          val response = request match {
-
-            case Some(originalReq : OmiRequest) =>
-              hasPermissionTest(originalReq) match {
-                case Some(req) =>{
-                  req.ttl match{
-                    case ttl: FiniteDuration => ttlPromise.completeWith(
-                      akka.pattern.after(ttl, using = system.scheduler) {
-                        log.info(s"TTL timed out after $ttl");
-                        Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
-                      }
-                    )
-                    case _ => //noop
-                  }
-                  requestHandler.handleRequest(req)(system)
-                }
-                case None =>
-                  Future.successful(unauthorized)
-              }
-            case _ => Future.successful(notImplemented)
+      val originalReq = RawRequestWrapper(requestString)
+      val ttlPromise = Promise[NodeSeq]()
+      originalReq.ttl match {
+        case ttl: FiniteDuration => ttlPromise.completeWith(
+          akka.pattern.after(ttl, using = system.scheduler) {
+            log.info(s"TTL timed out after $ttl");
+            Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
           }
-
-          //if timeoutfuture completes first then timeout is returned
-          Future.firstCompletedOf(Seq(response, ttlPromise.future)) map { value =>
-
-              // check the error code for logging
-              if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
-                log.warn(s"Errors with following request:\n${requestString}")
-              }
-
-              value // return
-          }
-
-        case Left(errors) => { // Parsing errors found
-
-          log.warn(s"${requestString}")
-          log.warn("Parse Errors: {}", errors.mkString(", "))
-
-          val errorResponse = parseError(errors.toSeq:_*)
-
-          Future.successful(errorResponse)
-        }
+        )
+        case _ => //noop
       }
+
+      val response: Future[NodeSeq] = hasPermissionTest(originalReq) match {
+        case Some(req: RequestWrapper) => { // Authorized
+           req.parsed match {
+            case Right(requests) =>
+
+              val request = req.unwrapped // NOTE: Be careful when implementing multi-request messages
+              request match {
+
+                case Some(r : OmiRequest) =>
+                  requestHandler.handleRequest(r)(system)
+
+                case _ => Future.successful(notImplemented)
+              }
+            case Left(errors) => { // Parsing errors found
+
+              log.warn(s"${requestString}")
+              log.warn("Parse Errors: {}", errors.mkString(", "))
+
+              val errorResponse = parseError(errors.toSeq:_*)
+
+              Future.successful(errorResponse)
+            }
+          }
+        }
+        case None => // Unauthorized
+          Future.successful(unauthorized)
+      }
+
+      //if timeoutfuture completes first then timeout is returned
+      Future.firstCompletedOf(Seq(response, ttlPromise.future)) map { value =>
+
+        // check the error code for logging
+        val returnCodes = value \\ "return" map (_ \@ "returnCode")
+        if (returnCodes exists (_ != "200")) {
+          log.warn(s"Errors (returnCodes=$returnCodes) with following request:\n${requestString}")
+        }
+
+        value // return
+      }
+
     } catch {
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)
