@@ -39,7 +39,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
   def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={
     val ttl = handleTTL(response.ttl)
     val resultFuture = Future.sequence(response.results.map{ 
-        case OmiResult(_,_,_,_,Some(odf)) =>
+        case OmiResult(_,_,Some(odf)) =>
         val promiseResult = PromiseResult()
         val write = WriteRequest( ttl, odf)
         agentSystem ! PromiseWrite(promiseResult, write)
@@ -54,7 +54,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
             succ => Results.success 
           }
           response
-        case OmiResult(_,_,_,_,None) =>
+        case OmiResult(_,_,None) =>
           Future.successful(Results.success)
         
       }.toSeq

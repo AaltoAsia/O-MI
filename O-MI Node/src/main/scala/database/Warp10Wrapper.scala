@@ -31,6 +31,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
 import types.OdfTypes._
 import types.Path
+import types.OmiTypes.OmiReturn
 import Warp10JsonProtocol.Warp10JsonFormat
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
@@ -141,12 +142,10 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
           case infos => 
             Some(infos.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
         }
-
-        
-    }
+      }
  }
 
- def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path,Int)]/*StatusCode*/] ={
+ def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn] ={
    val content = data.map{
     case (path, odfValue) =>
     toWriteFormat(path,odfValue)
@@ -155,19 +154,18 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
      .withHeaders(Warp10TokenHeader(writeToken))
 
    val response = httpExt.singleRequest(request)//httpHandler(request)
-   response.map{
+   response.flatMap{
      case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-       status
+       Future.successful( OmiReturn( "", status.value) )
      case HttpResponse( status, headers, entity, protocol ) if status.isFailure => 
        Unmarshal(entity).to[String].map{ 
         str => 
           log.debug(s"$status with:\n $str")
+          OmiReturn( str, status.value)
        }
-       status
        //TODO: what to do if failed? Entity has more information.
    }
 
-   ???
  }
 
  private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={

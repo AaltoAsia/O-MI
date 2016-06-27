@@ -68,7 +68,7 @@ trait DBAgentBehavior {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[Path]]
+  def writeMany(data: Seq[(Path, OdfValue)]): Future[Any]
 
   val DBAgentBehavior: Receive = {
     case WriteMany(data)

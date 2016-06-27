@@ -202,9 +202,11 @@ object OmiParser extends Parser[OmiParseResult] {
         OdfTreeCollection(response.result.map{
           result =>
             OmiResult(
-              result.returnValue.value,
-              result.returnValue.returnCode,
-              result.returnValue.description,
+              OmiReturn(
+                result.returnValue.value,
+                result.returnValue.returnCode,
+                result.returnValue.description
+              ),
               OdfTreeCollection( result.requestID.map(parseRequestID).toSeq : _* ), 
               result.msg.map{
                 case msg : xmlGen.scalaxb.DataRecord[Any] => 

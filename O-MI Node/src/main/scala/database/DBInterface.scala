@@ -25,6 +25,7 @@ import org.prevayler.PrevaylerFactory
 import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.OmiTypes.OmiReturn
 import types.Path
 
 
@@ -273,7 +274,7 @@ trait DB {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]]
+  def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn]
 
 
 

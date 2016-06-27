@@ -214,18 +214,16 @@ case class CancelRequest(
   *
   **/
 case class OmiResult(
-  value: String,
-  returnCode: String,
-  description: Option[String] = None,
+  returnValue: OmiReturn,
   requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   odf: Option[OdfTypes.OdfObjects] = None
 ){
     
   implicit def asRequestResultType : xmlTypes.RequestResultType = xmlTypes.RequestResultType(
     xmlTypes.ReturnType(
-      value,
-      returnCode,
-      description,
+      returnValue.value,
+      returnValue.returnCode,
+      returnValue.description,
       Map.empty
     ),
     requestID.headOption.map{
@@ -241,3 +239,8 @@ case class OmiResult(
   )
 } 
 
+case class OmiReturn(
+  value: String,
+  returnCode: String,
+  description: Option[String] = None
+)
