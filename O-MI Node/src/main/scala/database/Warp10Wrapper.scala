@@ -85,26 +85,26 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
   }
 }
 
-class Warp10Wrapper extends DB {
+class Warp10Wrapper( settings: Warp10ConfigExtension ) extends DB {
+  import Warp10JsonProtocol._
   type Warp10Token = String
   final class Warp10TokenHeader(token: Warp10Token) extends ModeledCustomHeader[Warp10TokenHeader] {
-      override def renderInRequests = false
-        override def renderInResponses = false
-          override val companion = Warp10TokenHeader
-            override def value: String = token
+    override def renderInRequests = false
+    override def renderInResponses = false
+    override val companion = Warp10TokenHeader
+    override def value: String = token
   }
   object Warp10TokenHeader extends ModeledCustomHeaderCompanion[Warp10TokenHeader] {
-      override val name = "X-Warp10-Token"
-        override def parse(value: String) = Try(new Warp10TokenHeader(value))
+    override val name = "X-Warp10-Token"
+    override def parse(value: String) = Try(new Warp10TokenHeader(value))
   }
 
- def warpAddress = ???
- implicit val readToken : Warp10Token = ???
- implicit val writeToken : Warp10Token = ???
+ def warpAddress : Uri = settings.warp10Address 
+ implicit val readToken : Warp10Token = settings.warp10ReadToken
+ implicit val writeToken : Warp10Token = settings.warp10WriteToken
  
  implicit val system = ActorSystem()
  import system.dispatcher // execution context for futures
- val settings = http.Boot.settings
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
  def getNBetween(
@@ -127,13 +127,11 @@ class Warp10Wrapper extends DB {
     } 
     val request = RequestBuilding.Post(warpAddress, content)
     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
-    val test = responseF.map{
+    val response = responseF.map{
       case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
         Unmarshal(entity).to[OdfInfoItem]//Unmarshal(response).to[OdfInfoItem]
-
-        
     }
-   ???
+    ???
  }
 
  def writeMany(data: Seq[(Path, OdfValue)]): Future[StatusCode] ={
