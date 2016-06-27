@@ -51,50 +51,39 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
     def write(o: Seq[OdfInfoItem]): JsValue = ??? //no use
 
-
     def read(v: JsValue): Seq[OdfInfoItem] = v.convertTo[List[JsObject]] match {
 
-      /*  case first :: Nil => {
-        first.getFields("c", "v") match {
-          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
-            val values: OdfTreeCollection[OdfValue] = valueVectors.collect(createOdfValue)
-
-            OdfInfoItem(Path(c),values.sortBy(_.timestamp.getTime()))
-          }
-        }
-      }
-*/
       case jsObjs: List[JsObject] => {
-        val infoIs:Seq[OdfInfoItem] = jsObjs.map { jsobj =>
-          jsobj.getFields("c", "v") match {
-            case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
-              val values: OdfTreeCollection[OdfValue] = valueVectors.collect(createOdfValue)
+        val idPathValuesTuple = jsObjs.map { jsobj =>
+          val path = fromField[Option[String]](jsobj, "c")
+          val vals = fromField[JsArray](jsobj,"v")
+          val id = fromField[Option[String]](jsobj,"i")
 
-              OdfInfoItem(Path(c), values.sortBy(_.timestamp.getTime()))
-
-            }
+          val values: OdfTreeCollection[OdfValue] = vals match {
+            case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect(createOdfValue)
           }
+
+          (id, path , values)
+
         }
+        val infoIs:Seq[OdfInfoItem] = idPathValuesTuple.groupBy(_._1).collect{
+          case (None , ii) => ii.map{
+            case (_, Some(_path), c) => OdfInfoItem(Path(_path), c) //sort by timestamp?
+            case _ => throw new DeserializationException("No Path found when deserializing")
+          }
+
+          case (Some(id), ii) => {
+            val _path = ii.collectFirst{ case (_, Some(p),_) => p}
+              .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing"))
+
+            val _values = ii.foldLeft(OdfTreeCollection[OdfValue])((col ,next ) => col ++ next._3)
+
+            Seq(OdfInfoItem(Path(_path), _values))
+          }
+          case _ => throw new DeserializationException("Unknown format")
+        }(collection.breakOut).flatten
+
         infoIs
-        /*case first :: rest =>{
-        val firstInfoI = first.getFields("c", "v") match {
-          case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
-            val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
-
-            OdfInfoItem(Path(c),values.sortBy(_.timestamp.getTime()))
-          }
-        }
-        val restValues:OdfTreeCollection[OdfValue] = rest.flatMap{ jsobj =>
-          jsobj.getFields("v") match {
-            case Seq(JsArray(valueVectors: Vector[JsArray])) => {
-              val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
-              values
-            }
-          }
-        }(collection.breakOut)
-        OdfInfoItem(path, (values ++ restValues).sortBy(_.timestamp.getTime()))
-*/
-
       }
     }
   }
@@ -151,7 +140,6 @@ class Warp10Wrapper extends DB {
 
         
     }
-   ???
  }
 
  def writeMany(data: Seq[(Path, OdfValue)]): Future[StatusCode] ={
@@ -168,7 +156,6 @@ class Warp10Wrapper extends DB {
        status
        //TODO: what to do if failed? Entity has more information.
    }
-
  }
 
  private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
