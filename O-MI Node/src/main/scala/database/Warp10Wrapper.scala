@@ -31,9 +31,12 @@ import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
 import types.OdfTypes._
 import types.Path
+import Warp10JsonProtocol.Warp10JsonFormat
 //serializer and deserializer for warp10 json formats
-object Warp10JsonProtocol extends DefaultJsonProtocol{
-  implicit object Warp10JsonFormat extends RootJsonFormat[OdfInfoItem] {
+object Warp10JsonProtocol extends DefaultJsonProtocol {
+
+  implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfInfoItem]] {
+
     private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
       case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
         OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
@@ -46,13 +49,12 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
     }
 
 
-    def write(o: OdfInfoItem): JsValue = ??? //no use
+    def write(o: Seq[OdfInfoItem]): JsValue = ??? //no use
 
 
+    def read(v: JsValue): Seq[OdfInfoItem] = v.convertTo[List[JsObject]] match {
 
-    def read(v: JsValue): OdfInfoItem = v.convertTo[List[JsObject]] match {
-
-      case first :: Nil => {
+      /*  case first :: Nil => {
         first.getFields("c", "v") match {
           case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
             val values: OdfTreeCollection[OdfValue] = valueVectors.collect(createOdfValue)
@@ -61,13 +63,25 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
           }
         }
       }
+*/
+      case jsObjs: List[JsObject] => {
+        val infoIs:Seq[OdfInfoItem] = jsObjs.map { jsobj =>
+          jsobj.getFields("c", "v") match {
+            case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
+              val values: OdfTreeCollection[OdfValue] = valueVectors.collect(createOdfValue)
 
-      case first :: rest =>{
-       val (path,values) = first.getFields("c", "v") match {
+              OdfInfoItem(Path(c), values.sortBy(_.timestamp.getTime()))
+
+            }
+          }
+        }
+        infoIs
+        /*case first :: rest =>{
+        val firstInfoI = first.getFields("c", "v") match {
           case Seq(JsString(c), JsArray(valueVectors: Vector[JsArray])) => {
             val values: OdfTreeCollection[OdfValue] = valueVectors collect(createOdfValue)
 
-            (Path(c),values)
+            OdfInfoItem(Path(c),values.sortBy(_.timestamp.getTime()))
           }
         }
         val restValues:OdfTreeCollection[OdfValue] = rest.flatMap{ jsobj =>
@@ -78,14 +92,17 @@ object Warp10JsonProtocol extends DefaultJsonProtocol{
             }
           }
         }(collection.breakOut)
-
         OdfInfoItem(path, (values ++ restValues).sortBy(_.timestamp.getTime()))
+*/
+
       }
     }
   }
+
 }
 
-class Warp10Wrapper( settings: Warp10ConfigExtension ) extends DB {
+class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSystem = ActorSystem()) extends DB {
+ 
   import Warp10JsonProtocol._
   type Warp10Token = String
   final class Warp10TokenHeader(token: Warp10Token) extends ModeledCustomHeader[Warp10TokenHeader] {
@@ -103,10 +120,10 @@ class Warp10Wrapper( settings: Warp10ConfigExtension ) extends DB {
  implicit val readToken : Warp10Token = settings.warp10ReadToken
  implicit val writeToken : Warp10Token = settings.warp10WriteToken
  
- implicit val system = ActorSystem()
  import system.dispatcher // execution context for futures
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
+ def log = system.log
  def getNBetween(
     requests: Iterable[OdfNode],
     begin: Option[Timestamp],
@@ -127,14 +144,20 @@ class Warp10Wrapper( settings: Warp10ConfigExtension ) extends DB {
     } 
     val request = RequestBuilding.Post(warpAddress, content)
     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
-    val response = responseF.map{
+    responseF.flatMap{
       case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-        Unmarshal(entity).to[OdfInfoItem]//Unmarshal(response).to[OdfInfoItem]
+        Unmarshal(entity).to[Seq[OdfInfoItem]].map{ 
+          case infos if infos.isEmpty=> 
+            None
+          case infos => 
+            Some(infos.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
+        }
+
+        
     }
-    ???
  }
 
- def writeMany(data: Seq[(Path, OdfValue)]): Future[StatusCode] ={
+ def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path,Int)]/*StatusCode*/] ={
    val content = data.map{
     case (path, odfValue) =>
     toWriteFormat(path,odfValue)
@@ -144,11 +167,18 @@ class Warp10Wrapper( settings: Warp10ConfigExtension ) extends DB {
 
    val response = httpExt.singleRequest(request)//httpHandler(request)
    response.map{
-     case HttpResponse( status, headers, entity, protocol ) =>
+     case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+       status
+     case HttpResponse( status, headers, entity, protocol ) if status.isFailure => 
+       Unmarshal(entity).to[String].map{ 
+        str => 
+          log.debug(s"$status with:\n $str")
+       }
        status
        //TODO: what to do if failed? Entity has more information.
    }
 
+   ???
  }
 
  private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
