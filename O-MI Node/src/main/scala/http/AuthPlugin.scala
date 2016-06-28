@@ -17,6 +17,7 @@ package http
 import java.lang.{Iterable => JavaIterable}
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.collection.mutable
 import scala.collection.mutable.Buffer
 import scala.util.{Failure, Success, Try}
 
@@ -75,7 +76,7 @@ trait AuthApi {
 trait AuthApiProvider extends AuthorizationExtension {
 
 
-  private[this] val authorizationSystems: Buffer[AuthApi] = Buffer()
+  private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()
 
 
   /**

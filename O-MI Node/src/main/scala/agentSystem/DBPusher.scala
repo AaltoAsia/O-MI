@@ -184,8 +184,8 @@ trait  DBPusher  extends BaseAgentSystem{
         case t: Throwable => log.error(t, "Error when adding poll values to database")
       }
 
-    def tupledProcessData = SingleStores.processData _ tupled
-    val callbackDataOptions = pathValueOldValueTuples.map(n=> tupledProcessData(n))
+    val callbackDataOptions = pathValueOldValueTuples.map{
+      case (path,value, oldValueO) => SingleStores.processData(path,value,oldValueO)}
     val triggeringEvents = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)

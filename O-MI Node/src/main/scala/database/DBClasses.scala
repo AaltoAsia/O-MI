@@ -120,6 +120,7 @@ trait OmiNodeTables extends DBBase {
    * @param depth Extended nested set model: depth of this node in the tree
    * @param description for the corresponding odf node (Object or InfoItem)
    * @param pollRefCount Count of references to this node from active poll subscriptions
+   * @param isInfoItem Boolean indicating if this Node is an InfoItem
    */
   case class DBNode(
     id: Option[Int],

@@ -62,7 +62,7 @@ object SubscriptionManager{
 /**
  * Class that handles event and interval based subscriptions.
  * Uses Akka scheduler to schedule ttl handling and intervalhandling
- * @param dbConnection
+ * @param dbConnection Database used for polled subscriptions
  */
 class SubscriptionManager(implicit val dbConnection: DB) extends Actor with ActorLogging {
 
@@ -274,7 +274,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         log.info(s"Trying to send subscription data to ${iSub.callback}")
         val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
         val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
-            case ((paths, nodes), (p,Some(node))) => (paths, nodes.:+(node))
+            case ((paths, _nodes), (p,Some(node))) => (paths, _nodes.:+(node))
             case ((paths, nodes), (p, None))    => (paths.:+(p), nodes)
           }
         val subscribedInfoItems = OdfTypes
