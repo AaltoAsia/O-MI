@@ -192,7 +192,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param begin optional start Timestamp
    * @param end optional end Timestamp
    * @param newest number of values to be returned from start
-   * @param oldest number of values to be returned from end
+   * @param oldest er of values to be returned from end
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
