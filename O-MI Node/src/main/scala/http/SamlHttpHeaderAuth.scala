@@ -21,7 +21,7 @@ import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.optionalHeaderValue
 
 import types.OmiTypes._
-import Authorization.{AuthorizationExtension, CombinedTest}
+import Authorization.{AuthorizationExtension, CombinedTest, PermissionTest}
 import Boot.settings
 
 // TODO: maybe move to Authorization package
@@ -62,8 +62,8 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
       None
   )
 
-  private def hasPermission: User => OmiRequest => Option[OmiRequest] = {
-    case u @ Some(user) => {
+  private def hasPermission: User => PermissionTest = {
+    case u @ Some(user) => (wrap: RequestWrapper) => wrap.unwrapped flatMap {
 
       case r : PermissiveRequest =>
 

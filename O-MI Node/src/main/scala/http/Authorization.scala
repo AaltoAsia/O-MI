@@ -65,7 +65,7 @@ object Authorization {
    * if the user is authorized to make the `sameOrNewRequest` that can have some unauthorized
    * objects removed or otherwise limit the original request.
    */
-  type PermissionTest = OmiRequest => Option[OmiRequest]
+  type PermissionTest = RequestWrapper => Option[RequestWrapper]
 
   /** Simple private container for forcing the combination of previous authorization.
    *  Call the apply for the result.
@@ -92,11 +92,11 @@ object Authorization {
 
 
     private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {
-      (request: OmiRequest) =>
+      (request: RequestWrapper) =>
         otherTest(request) orElse (Try{ ourTest(request) } // If any authentication method succeeds
           match {  // catch any exceptions, because we want to try other, possibly working extensions too
 
-            case Success(result) => result : Option[OmiRequest]
+            case Success(result) => result : Option[RequestWrapper]
             case Failure(exception) =>
               log.error("While running authorization extensions, trying next extension", exception)
               None : Option[OmiRequest]
@@ -182,11 +182,13 @@ trait AllowAllAuthorization extends AuthorizationExtension {
 trait AllowNonPermissiveToAll extends AuthorizationExtension {
   abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
-    provide{
-      case r: PermissiveRequest =>
-        None
-      case r: OmiRequest =>
-        Some(r)
+    provide{(wrap: RequestWrapper) =>
+      wrap.unwrapped flatMap {
+        case r: PermissiveRequest =>
+          None
+        case r: OmiRequest =>
+          Some(r)
+      }
     }
   )
 }
@@ -198,10 +200,12 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
 trait LogUnauthorized extends AuthorizationExtension {
   private type UserInfo = Option[java.net.InetAddress]
   private def extractIp: Directive1[UserInfo] = extractClientIP map (_.toOption)
-  private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {
-    case r : OmiRequest =>
-      log.warn(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
-      None
+  private def logFunc: UserInfo => PermissionTest = {ip => {(wrap: RequestWrapper) =>
+    wrap.unwrapped flatMap {
+      case r : OmiRequest =>
+        log.warn(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
+        None
+    }
   }}
 
 
@@ -219,15 +223,17 @@ trait LogUnauthorized extends AuthorizationExtension {
 trait LogPermissiveRequestBeginning extends AuthorizationExtension {
   abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
-    provide{
-      case r: PermissiveRequest with OdfRequest =>
-        log.info(s"Permissive request received: ${r.getClass.getSimpleName}: " +
-          r.odf.paths.take(3).mkString(", ") + "...")
-        None
-      case r: PermissiveRequest =>
-        log.info(s"Permissive request received: ${r.toString.take(80)}...")
-        None
-      case _ => None
+    provide{(wrap: RequestWrapper) =>
+      wrap.unwrapped flatMap {
+        case r: PermissiveRequest with OdfRequest =>
+          log.info(s"Permissive request received: ${r.getClass.getSimpleName}: " +
+            r.odf.paths.take(3).mkString(", ") + "...")
+          None
+        case r: PermissiveRequest =>
+          log.info(s"Permissive request received: ${r.toString.take(80)}...")
+          None
+        case _ => None
+      }
     }
   )
 }
