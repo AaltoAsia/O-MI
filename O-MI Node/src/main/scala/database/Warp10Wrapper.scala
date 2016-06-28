@@ -95,18 +95,30 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
  
   import Warp10JsonProtocol._
   type Warp10Token = String
+  final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
+    override def renderInRequests = true
+    override def renderInResponses = false
+    override val companion = AcceptHeader
+    override def value: String = format
+  }
+  object AcceptHeader extends ModeledCustomHeaderCompanion[AcceptHeader] {
+    override val name = "Accept"
+    override def parse(value: String) = Try(new AcceptHeader(value))
+  }
   final class Warp10TokenHeader(token: Warp10Token) extends ModeledCustomHeader[Warp10TokenHeader] {
-    override def renderInRequests = false
+    override def renderInRequests = true
     override def renderInResponses = false
     override val companion = Warp10TokenHeader
     override def value: String = token
   }
   object Warp10TokenHeader extends ModeledCustomHeaderCompanion[Warp10TokenHeader] {
-    override val name = "X-Warp10-Token"
+    override val name = "x-warp10-token"
     override def parse(value: String) = Try(new Warp10TokenHeader(value))
   }
 
- def warpAddress : Uri = settings.warp10Address 
+ def warpAddress : String = settings.warp10Address 
+ def writeAddress : Uri = Uri( warpAddress + "update")
+ def readAddress : Uri = Uri( warpAddress + "exec")
  implicit val readToken : Warp10Token = settings.warp10ReadToken
  implicit val writeToken : Warp10Token = settings.warp10WriteToken
  
@@ -132,10 +144,17 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
       case (startTime, endTime, None) => 
         warpReadBetweenMsg(selector,begin, end)(readToken)
     } 
-    val request = RequestBuilding.Post(warpAddress, content)
+    val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
+    log.debug( request.toString )
     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
+    responseF.onFailure{
+      case t : Throwable => 
+        log.error(t, "Failed to communicate to Warp 10.")
+    }
     responseF.flatMap{
       case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+        log.debug( "Received HTTP response for getBetween:\n" + response.toString )
+        log.debug( "Received HTTP response for getBetween:\n" + entity.toString )
         Unmarshal(entity).to[Seq[OdfInfoItem]].map{ 
           case infos if infos.isEmpty=> 
             None
@@ -150,16 +169,21 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
     case (path, odfValue) =>
     toWriteFormat(path,odfValue)
    }.mkString("")
-   val request = RequestBuilding.Post(warpAddress, content)
-     .withHeaders(Warp10TokenHeader(writeToken))
+   val request = RequestBuilding.Post(writeAddress, content).withHeaders(Warp10TokenHeader(writeToken))
 
    val response = httpExt.singleRequest(request)//httpHandler(request)
+    response.onFailure{
+      case t : Throwable => 
+        log.debug(request.toString)
+        log.error(t, "Failed to communicate to Warp 10.")
+    }
    response.flatMap{
      case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
        Future.successful( OmiReturn( status.value) )
      case HttpResponse( status, headers, entity, protocol ) if status.isFailure => 
        Unmarshal(entity).to[String].map{ 
         str => 
+          log.debug(request.toString)
           log.debug(s"$status with:\n $str")
           OmiReturn( status.value, Some(str))
        }
@@ -182,7 +206,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
      case objs : OdfObjects => objs.path.mkString(".") + ".*" 
      case info : OdfInfoItem => info.path.mkString(".") 
    }
-   "(" + paths.mkString("|") + ")"
+   "~(" + paths.mkString("|") + ")"
  }
  
  
