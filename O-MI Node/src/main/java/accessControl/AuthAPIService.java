@@ -23,6 +23,10 @@ import com.google.gson.JsonParser;
 import http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import parsing.xmlGen.odf.*;
+import parsing.xmlGen.omi.ObjectFactory;
+import parsing.xmlGen.omi.OmiEnvelope;
+import parsing.xmlGen.omi.WriteRequest;
 import types.OmiTypes.OmiRequest;
 import types.Path;
 
@@ -66,13 +70,204 @@ public class AuthAPIService implements AuthApi {
     }
 
 
-    @Override
+//    @Override
+//    public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
+//                                boolean isWrite,
+//                                java.lang.Iterable<Path> paths) {
+//
+//        logger.debug("isAuthorizedForType EXECUTED!");
+//
+//
+//        String subjectInfo = null;
+//        boolean success = false;
+//        boolean authenticated = false;
+//
+//        // First try authenticate user by cookies
+//        scala.collection.Iterator  iter = httpRequest.cookies().iterator();
+//        if (!iter.hasNext()) {
+//            logger.debug("No cookies!");
+//
+//        } else {
+//
+//            HttpCookie ck = null;
+//            while (iter.hasNext()) {
+//                HttpCookie nextCookie = (HttpCookie) iter.next();
+//                logger.debug(nextCookie.name() + ":" + nextCookie.value());
+//
+//                if (nextCookie.name().equals("JSESSIONID")) {
+//                    ck = nextCookie;
+//                    break;
+//                }
+//            }
+//
+//            if (ck != null)
+//            {
+//                authenticated = true;
+//                subjectInfo = ck.toString();
+//            }
+//
+//        }
+//
+//
+//        // If there is not certificate present we try to find the certificate
+//        if (!authenticated) {
+//
+//            iter = httpRequest.headers().iterator();
+//
+//            while (iter.hasNext()) {
+//
+//                HttpHeader nextHeader = (HttpHeader)iter.next();
+//                if (nextHeader.name().equals("X-SSL-CLIENT")) {
+//                    String allInfo = nextHeader.value();
+//                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
+//
+//                    if (success)
+//                        break;
+//
+//                } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
+//                    success = nextHeader.value().contains("SUCCESS");
+//
+//                    if (subjectInfo != null)
+//                        break;
+//                }
+//            }
+//
+//            authenticated = (subjectInfo != null) && success;
+//            if (authenticated)
+//            {
+//                logger.debug("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
+//            }
+//        }
+//
+//
+//        // Start parsing request
+//        if (authenticated) {
+//
+//            Iterator<Path> iterator = paths.iterator();
+//            while (iterator.hasNext()) {
+//                String nextObj = iterator.next().toString();
+//
+//                // the very first query to read the tree
+//                if (nextObj.equalsIgnoreCase("Objects")) {
+//                    logger.debug("Root tree requested. forwarding to Partial API.");
+//
+//                    //Getting paths according to the policies
+//                    ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
+//
+//                    if (res_paths == null)
+//                        return Unauthorized.instance();
+//
+//                    // Check if security module return "all" means allowing all tree (administrator mode or read_all mode)
+//                    if (res_paths.size() == 1) {
+//                        String obj_path = res_paths.get(0).toString();
+//                        if (obj_path.equalsIgnoreCase("all"))
+//                            return Authorized.instance();
+//                    }
+//
+//                    return new Partial(res_paths);
+//                } else
+//                    break;
+//            }
+//
+//            String requestBody = "{\"paths\":[";
+//            Iterator<Path> it = paths.iterator();
+//            while (it.hasNext()) {
+//                String nextObj = it.next().toString();
+//
+//                // the very first query to read the tree
+//                if (nextObj.equalsIgnoreCase("Objects"))
+//                    return Authorized.instance();
+//
+//                requestBody += "\"" + nextObj + "\"";
+//
+//                if (it.hasNext())
+//                    requestBody += ",";
+//            }
+//
+//            if (success)
+//                requestBody += "],\"user\":\"" + subjectInfo + "\"}";
+//            else
+//                requestBody += "]}";
+//
+//            logger.debug("isWrite:" + isWrite);
+//            logger.debug("Paths:" + requestBody);
+//
+//            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
+//        } else {
+//            return Unauthorized.instance();
+//        }
+//    }
+
+    private void createOMIRequest(String escapedData, String userInfo) {
+        ObjectFactory omiObjFactory = new ObjectFactory();
+        parsing.xmlGen.odf.ObjectFactory odfObjFactory = new parsing.xmlGen.odf.ObjectFactory();
+
+        OmiEnvelope envelope = omiObjFactory.createOmiEnvelope();
+        envelope.setTtl(0);
+        envelope.setVersion("1.0");
+
+        WriteRequest writeReq = omiObjFactory.createWriteRequest();
+        writeReq.setMsgformat("odf");
+
+        ObjectsType allObjects = odfObjFactory.createObjectsType();
+
+        ObjectType authObj = odfObjFactory.createObjectType();
+        QlmID authID = odfObjFactory.createQlmID();
+        authID.setValue("AuthorizationRequest");
+
+
+        // Auth info item
+        InfoItemType authInfoItem = odfObjFactory.createInfoItemType();
+        authInfoItem.setNameAttribute("OriginalRequest");
+
+        ValueType originalReq = odfObjFactory.createValueType();
+        originalReq.setType("omi.xsd");
+        originalReq.setValue(escapedData);
+
+        // User info item
+        InfoItemType userInfoItem = odfObjFactory.createInfoItemType();
+        userInfoItem.setNameAttribute("UserInfo");
+
+        ValueType userInfoVal = odfObjFactory.createValueType();
+        userInfoVal.setType("xs:string");
+        userInfoVal.setValue(userInfo);
+
+        // Setters
+        // Two infoitems with values
+        userInfoItem.getValue().add(userInfoVal);
+        authInfoItem.getValue().add(originalReq);
+
+        // Add object
+        authObj.getId().add(authID);
+        authObj.getInfoItem().add(authInfoItem);
+        authObj.getInfoItem().add(userInfoItem);
+
+        allObjects.getObject().add(authObj);
+
+        // Write request
+        writeReq.setMsg(allObjects);
+
+        // Envelope
+        envelope.setWrite(writeReq);
+    }
+
     public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
+        throw new UnsupportedOperationException();
+    }
 
-        logger.debug("isAuthorizedForType EXECUTED!");
+    public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
+                                   OmiRequest omiRequest) {
+        return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
+    }
 
+    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
+    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
+                                   String request) {
+        logger.debug("isAuthorizedForRawRequest EXECUTED!");
+        System.out.println("isAuthorizedForRawRequest EXECUTED!");
+//        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
 
         String subjectInfo = null;
         boolean success = false;
@@ -104,7 +299,6 @@ public class AuthAPIService implements AuthApi {
 
         }
 
-
         // If there is not certificate present we try to find the certificate
         if (!authenticated) {
 
@@ -135,74 +329,9 @@ public class AuthAPIService implements AuthApi {
             }
         }
 
-
-        // Start parsing request
         if (authenticated) {
 
-            Iterator<Path> iterator = paths.iterator();
-            while (iterator.hasNext()) {
-                String nextObj = iterator.next().toString();
-
-                // the very first query to read the tree
-                if (nextObj.equalsIgnoreCase("Objects")) {
-                    logger.debug("Root tree requested. forwarding to Partial API.");
-
-                    //Getting paths according to the policies
-                    ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
-
-                    if (res_paths == null)
-                        return Unauthorized.instance();
-
-                    // Check if security module return "all" means allowing all tree (administrator mode or read_all mode)
-                    if (res_paths.size() == 1) {
-                        String obj_path = res_paths.get(0).toString();
-                        if (obj_path.equalsIgnoreCase("all"))
-                            return Authorized.instance();
-                    }
-
-                    return new Partial(res_paths);
-                } else
-                    break;
-            }
-
-            String requestBody = "{\"paths\":[";
-            Iterator<Path> it = paths.iterator();
-            while (it.hasNext()) {
-                String nextObj = it.next().toString();
-
-                // the very first query to read the tree
-                if (nextObj.equalsIgnoreCase("Objects"))
-                    return Authorized.instance();
-
-                requestBody += "\"" + nextObj + "\"";
-
-                if (it.hasNext())
-                    requestBody += ",";
-            }
-
-            if (success)
-                requestBody += "],\"user\":\"" + subjectInfo + "\"}";
-            else
-                requestBody += "]}";
-
-            logger.debug("isWrite:" + isWrite);
-            logger.debug("Paths:" + requestBody);
-
-            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
-        } else {
-            return Unauthorized.instance();
         }
-    }
-
-    public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
-                                   OmiRequest omiRequest) {
-        return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
-    }
-
-    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
-    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
-                                   String request) {
-        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
     }
 
     public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
