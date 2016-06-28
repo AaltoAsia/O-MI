@@ -20,6 +20,6 @@ trait Warp10ConfigExtension extends Extension {
   //Warp10
   val warp10ReadToken : String= config.getString("warp10.read-token")
   val warp10WriteToken : String = config.getString("warp10.write-token")
-  val warp10Address : Uri = Uri( config.getString("warp10.adress"))
+  val warp10Address : Uri = Uri( config.getString("warp10.address"))
   
 }
