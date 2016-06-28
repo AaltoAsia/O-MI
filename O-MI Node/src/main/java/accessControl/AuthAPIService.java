@@ -30,10 +30,9 @@ import parsing.xmlGen.omi.WriteRequest;
 import types.OmiTypes.OmiRequest;
 import types.Path;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -249,12 +248,24 @@ public class AuthAPIService implements AuthApi {
 
         // Envelope
         envelope.setWrite(writeReq);
+
+        try {
+
+            JAXBContext jaxbContext = JAXBContext.newInstance("parsing.xmlGen.omi:parsing.xmlGen.odf");
+            Marshaller marshaller = jaxbContext.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT,
+                    new Boolean(true));
+            marshaller.marshal(envelope,
+                    new FileOutputStream("jaxbOutput.xml"));
+        } catch (Exception ex) {
+            logger.error("Error:",ex);
+        }
     }
 
     public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
                                 boolean isWrite,
                                 java.lang.Iterable<Path> paths) {
-        throw new UnsupportedOperationException();
+        return  AuthApi$class.isAuthorizedForType(this, httpRequest, isWrite, paths);
     }
 
     public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
@@ -330,8 +341,10 @@ public class AuthAPIService implements AuthApi {
         }
 
         if (authenticated) {
-
+            createOMIRequest(request,subjectInfo);
+            return Authorized.instance();
         }
+        return Unauthorized.instance();
     }
 
     public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
@@ -460,4 +473,53 @@ public class AuthAPIService implements AuthApi {
             }
         }
     }
+
+//    public AuthorizationResult sendPermissionRequest(boolean isWrite, String body, String subjectInfo, boolean isCertificate) {
+//        HttpURLConnection connection = null;
+//        try {
+//            //Create connection
+//            String writeURL = isWrite ? "true" : "false";
+//            String finalURL = authServiceURI + "?ac=true&write=" + writeURL;
+//            logger.debug("Sending request. URI:" + finalURL);
+//            URL url = new URL(finalURL);
+//            connection = (HttpURLConnection)url.openConnection();
+//            connection.setRequestMethod("POST");
+//            connection.setRequestProperty("Content-Type",
+//                    "application/json");
+//
+//            if (!isCertificate)
+//                connection.setRequestProperty("Cookie", subjectInfo);
+//
+//            connection.setUseCaches(false);
+//            connection.setDoOutput(true);
+//            connection.connect();
+//
+//            //Send request
+//            DataOutputStream wr = new DataOutputStream (
+//                    connection.getOutputStream());
+//            wr.writeBytes(body);
+//            wr.close();
+//
+//            //Get Response
+//            InputStream is = connection.getInputStream();
+//            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+//            StringBuilder response = new StringBuilder(); // or StringBuffer if not Java 5+
+//            String line;
+//            while((line = rd.readLine()) != null) {
+//                response.append(line);
+//            }
+//            rd.close();
+//
+//            logger.debug("RESPONSE:"+response.toString());
+//
+//            return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
+//        } catch (Exception e) {
+//            logger.error("During http request", e);
+//            return Unauthorized.instance();
+//        } finally {
+//            if(connection != null) {
+//                connection.disconnect();
+//            }
+//        }
+//    }
 }
