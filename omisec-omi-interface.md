@@ -1,21 +1,26 @@
 
-Some options for the protocol
-=======================================
+O-MI Security Service Protocol
+==============================
 
-We require
+Intro
+-----
 
-1. the original request including
-  1. O-DF
-  2. method type (read/write)
-2. userinfo
+This protocol transfers the following information:
+
+1. the original request
+2. authenticated user info (e.g. email address or username)
+
+It is sent to a service that can decide whether the request is authorized or not for the user described by the user info.
+
+Response can also include a new O-MI request that is intended to be used when user has partial permissions and the request is wanted to automatically get the result of the partial permissions (e.g. get all objects).
 
 
+Request
+-------
 
-Request as a value
----------------------
-
-* O-MI parser overhead: very low, just xml escaping
-
+* Request is a O-MI write request (because it contains values)
+* Request is xml escaped string and inserted as the value of InfoItem `Objects/AuthorizationRequest/OriginalRequest`:
+* User info is in InfoItem `Objects/AuthorizationRequest/UserInfo`
 
 ```xml
 <?xml version="1.0"?>
@@ -62,6 +67,10 @@ Request as a value
 
 Response
 --------
+
+* `returnCode="200"`: Authorized
+* `returnCode="401"`: Fully unauthorized
+* `returnCode="206"`: Partially authorized, modified request given in the value of `Objects/AuthorizationResponse/AuthorizedPartialRequest` as escaped xml string
 
 ### Authorized
 
