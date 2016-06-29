@@ -96,7 +96,9 @@ object SingleStores {
   val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")
   val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")
   val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")
+  val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
   val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
+
 
   def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
 
