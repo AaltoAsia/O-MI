@@ -61,7 +61,7 @@ trait Starter {
   def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
       // Same timestamp for all OdfValues of the settings
-      val date = new Date();
+      val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
 
       // Save settings in db, this works also as a test for writing

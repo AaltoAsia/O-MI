@@ -2,6 +2,7 @@ package http
 
 import java.net.InetAddress
 
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.xml._
 
@@ -55,11 +56,10 @@ class OmiServiceTest
   def beforeAll() = {
     Boot.saveSettingsOdf(agentManager)//Boot.init(dbConnection)
   }
-
-  def afterAll() = {
-    // clear db
+  def afterAll = {
+    Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
-    system.terminate()
+    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
 
   "Data discovery, GET: OmiService" >> {

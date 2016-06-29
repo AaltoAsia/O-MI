@@ -63,7 +63,7 @@ class  OdfInfoItemImpl(
     InfoItemType(
       description = description.map( des => des.asDescription ),
       MetaData = metaData.map{ odfMetaData => odfMetaData.asMetaData},
-      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: ${path}")),
+      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")),
       value = values.map{ 
         value : OdfValue =>
         value.asValueType

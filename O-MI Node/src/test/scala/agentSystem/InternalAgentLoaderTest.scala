@@ -13,6 +13,7 @@ import org.specs2.mutable._
 import testHelpers.Actorstest
 import scala.concurrent.Future
 import http.OmiConfigExtension
+import scala.concurrent.duration._
 
 class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification { 
   
@@ -227,7 +228,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val configStr =
    s"""
    agent-system{
-     starting-timeout = 2 seconds
+     starting-timeout = 5 seconds
      internal-agents {
        "A1" ={
          class = "$classname"
@@ -263,16 +264,18 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val config =new AgentSystemSettings( ConfigFactory.parseString(configStr) )
    val timeout = config.internalAgentsStartTimout
    val loader = system.actorOf(TestLoader.props(config), "agent-loader") 
-   val res = (loader ? ListAgentsCmd())(timeout).mapTo[Vector[AgentInfo]].map{ 
-     vec : Vector[AgentInfo] =>
-      vec.map{
-       agentInfo => agentInfo.copy( agent = matchAll )
-     }
+   val res = (loader ? ListAgentsCmd())(timeout).mapTo[Vector[AgentInfo]].map {
+     vec: Vector[AgentInfo] =>
+       vec.map {
+         agentInfo => agentInfo.copy(agent = matchAll)
+       }
    }
+   res.onFailure{case er:Throwable => system.log.error(er, "ListAgentsCmd() future failed")}
+
    res must contain{
      t: AgentInfo =>
-     correctAgents must contain(t) 
-   }.await
+     correctAgents must contain(t)
+   }.await(retries = 2, timeout = 5 seconds)
  }
 
  def logWarningTest(

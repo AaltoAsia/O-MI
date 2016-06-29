@@ -184,8 +184,8 @@ trait  DBPusher  extends BaseAgentSystem{
         case t: Throwable => log.error(t, "Error when adding poll values to database")
       }
 
-    def tupledProcessData = SingleStores.processData _ tupled
-    val callbackDataOptions = pathValueOldValueTuples.map(n=> tupledProcessData(n))
+    val callbackDataOptions = pathValueOldValueTuples.map{
+      case (path,value, oldValueO) => SingleStores.processData(path,value,oldValueO)}
     val triggeringEvents = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
@@ -243,19 +243,12 @@ trait  DBPusher  extends BaseAgentSystem{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    //return when futures have been completed
-    //OmiServiceTest fails when value is returned after items have been written in database
-    /*
-    for {
+    for{
       _ <- pollFuture
       _ <- writeFuture
       res = infoItems.map(_.path) ++ objectMetadatas.map(_.path)
     } yield res
-    //subHandler ! NewDataEvent(itemValues)
-    */
-    //log.debug("Successfully saved InfoItems to DB")
-    writeFuture.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path))
-    //Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
+
   }
 
   /**
