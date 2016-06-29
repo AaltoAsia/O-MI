@@ -39,9 +39,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   //start the program
   implicit val dbConnection = new TestDB("SystemTest")
 
-  override val subHandlerDbConn = dbConnection
 
-  override val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler-test")
+  override val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler-test")
 
   override def start(dbConnection: DB): OmiServiceImpl = {
     val agentManager = system.actorOf(

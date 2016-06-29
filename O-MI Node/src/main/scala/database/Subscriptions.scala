@@ -84,14 +84,14 @@ object EventSubs {
   //type EventSubsStore = Prevayler[EventSubs]
   def empty : EventSubs = EventSubs(HashMap.empty)
 }
-case class PollSubValue(
-                     timestamp: Timestamp,
-                     value: String,
-                     typeValue: String
-                     )
+//case class PollSubValue(
+//                     timestamp: Timestamp,
+//                     value: String,
+//                     typeValue: String
+//                    )
 
 case class PollSubData(
-  val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[PollSubValue]]])
+  val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue]]])
 
 object PollSubData {
   def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
@@ -109,15 +109,15 @@ case class AddPollData(subId: Long, path: Path, value: OdfValue) extends Transac
     p.idToData.get(subId) match {
       case Some(pathToValues) => pathToValues.get(path) match {
         case Some(sd) =>
-          p.idToData(subId)(path) = PollSubValue(value.timestamp, value.value, value.typeValue) :: sd
+          p.idToData(subId)(path) = value :: sd
         case None =>
-          p.idToData(subId).update(path, List(PollSubValue(value.timestamp, value.value, value.typeValue)))
+          p.idToData(subId).update(path, List(value))
       }
       case None =>
         p.idToData
           .update(
             subId,
-            collection.mutable.HashMap(path -> List(PollSubValue(value.timestamp, value.value, value.typeValue))))
+            collection.mutable.HashMap(path -> List(value)))
     }
   }
 }
@@ -126,9 +126,9 @@ case class AddPollData(subId: Long, path: Path, value: OdfValue) extends Transac
  * Used to Poll event subscription data from the prevayler. Can also used to remove data from subscription
  * @param subId
  */
-case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[PollSubValue]]] {
-  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[PollSubValue]] = {
-    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[PollSubValue]])
+case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[OdfValue]]] {
+  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[OdfValue]] = {
+    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[OdfValue]])
   }
 }
 
@@ -138,8 +138,8 @@ case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollS
  * so this can't be used to remove subscriptions.
  * @param subId
  */
-case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[PollSubValue]]]{
-  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[PollSubValue]] = {
+case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[OdfValue]]]{
+  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue]] = {
     val removed = p.idToData.remove(subId)
 
     removed match {
@@ -148,9 +148,10 @@ case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[Pol
           case (path, oldValues) if oldValues.nonEmpty => {
             val newest = oldValues.maxBy(_.timestamp.getTime)
 
+            //add latest value back to the database
             p.idToData(subId).get(path) match {
               case Some(oldV) => p.idToData(subId)(path) = newest :: oldV
-              case None => p.idToData(subId).update(path, newest ::Nil)
+              case None => p.idToData(subId).update(path, newest :: Nil)
             }
           }
           case _ =>

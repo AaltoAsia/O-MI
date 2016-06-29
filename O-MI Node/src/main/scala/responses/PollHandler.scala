@@ -44,7 +44,7 @@ trait PollHandler extends OmiRequestHandlerBase{
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id =>
 
-      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = (subscriptionManager ? PollSubscription(id)).mapTo[Future[Option[OdfObjects]]].flatMap(n=>n)
+      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = (subscriptionManager ? PollSubscription(id)).mapTo[Option[OdfObjects]]
       objectsF.recoverWith{
         case e: Throwable => Future.failed(new RuntimeException(
         s"Error when trying to poll subscription: ${e.getMessage}"))
