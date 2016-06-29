@@ -77,7 +77,7 @@ trait OmiRequestHandlerCore {
                   1.0,
                   Results.simple("200", Some("OK, callback job started")))
               }
-           }
+            }
           }
         } recover {
           case e: ProtocolNotSupported => invalidCallback(e.getMessage)

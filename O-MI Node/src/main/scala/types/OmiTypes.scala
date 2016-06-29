@@ -21,6 +21,7 @@ import javax.xml.datatype.DatatypeFactory
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.language.existentials
 import scala.xml.NodeSeq
 
@@ -30,19 +31,32 @@ import responses.OmiGenerator.odfMsg
 import types.OdfTypes._
 
 
-
 /**
   * Trait that represents any Omi request. Provides some data that are common
   * for all omi requests.
   */
 sealed trait OmiRequest {
+
   def ttl: Duration
+
   def callback: Option[String]
+
   def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
+
+  @volatile
+  def callbackHandle: OmiRequest => Future[Unit] = // TODO: Change return type if needed
+  {
+    throw UndefinedCallbackCallException(s"No callbackHandle on $this")
+  }
+
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
+
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
 }
+case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
+
 sealed trait PermissiveRequest
+
 sealed trait OdfRequest {
   def odf : OdfObjects
 }
