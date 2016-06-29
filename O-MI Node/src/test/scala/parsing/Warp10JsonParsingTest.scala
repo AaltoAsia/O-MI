@@ -30,7 +30,7 @@ class Warp10JsonParsingTest extends Specification {
   def twoParams = {
     val testJson =
       """
-        |[{"c":"class",
+        |[{"c":"class.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -40,7 +40,7 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
     val correctInfoItem = Seq(OdfInfoItem(
-      Path("class"),
+      Path("class/test/test2"),
       Vector(
         OdfValue("3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("2.5", timestamp = new Timestamp(1380475081500L)),

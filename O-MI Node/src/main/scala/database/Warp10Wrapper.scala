@@ -66,7 +66,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         }
         val infoIs:Seq[OdfInfoItem] = idPathValuesTuple.groupBy(_._1).collect{
           case (None , ii) => ii.map{
-            case (_, Some(_path), c) => OdfInfoItem(Path(_path), c) //sort by timestamp?
+            case (_, Some(_path), c) => OdfInfoItem(Path(_path.replaceAll("\\.", "/")), c) //sort by timestamp?
             case _ => throw new DeserializationException("No Path found when deserializing")
           }
 
@@ -76,7 +76,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
             val _values = ii.foldLeft(OdfTreeCollection[OdfValue])((col ,next ) => col ++ next._3)
 
-            Seq(OdfInfoItem(Path(_path), _values.sortBy(_.timestamp.getTime())))
+            Seq(OdfInfoItem(Path(_path.replaceAll("\\.", "/")), _values.sortBy(_.timestamp.getTime())))
           }
           case _ => throw new DeserializationException("Unknown format")
         }(collection.breakOut).flatten
@@ -91,6 +91,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     def read(v: JsValue): Seq[OdfInfoItem] = v match {
       case JsArray(Vector(JsArray(in: Vector[JsObject]))) => parseObjects(in)
       case JsArray(in: Vector[JsObject]) => parseObjects(in)
+      case _ => throw new DeserializationException("Unknown format")
     }
 
   }
