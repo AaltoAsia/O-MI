@@ -94,7 +94,7 @@ trait OmiService
     case Uri.Path.Segment(head, tail)=> head + pathToString(tail)
   }
 
-  // Default to xml mediatype and require explicit type for html
+  // Change default to xml mediatype and require explicit type for html
   val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
   implicit val xml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
 

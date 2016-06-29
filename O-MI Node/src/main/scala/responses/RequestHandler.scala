@@ -39,20 +39,29 @@ trait OmiRequestHandlerBase {
         FiniteDuration(Int.MaxValue,MILLISECONDS)
       }
   implicit def  dbConnection: DB
+
   protected def log: LoggingAdapter
+
   protected[this] def date = new Date()
 }
+
+
 trait OmiRequestHandlerCore { 
   protected def handle: PartialFunction[OmiRequest,Future[NodeSeq]] 
+
   implicit val logSource: LogSource[OmiRequestHandlerCore]= new LogSource[OmiRequestHandlerCore] {
       def genString(requestHandler:  OmiRequestHandlerCore) = requestHandler.toString
     }
   protected def log = Logging( http.Boot.system, this)
+
   def handleRequest(request: OmiRequest)(implicit system: ActorSystem): Future[NodeSeq] = {
     import system.dispatcher // execution context for futures
+
     request.callback match {
       case Some(address) => {
+
         val callbackCheck = CallbackHandlers.checkCallback(address)
+
         callbackCheck.flatMap { uri =>
           request match {
             case sub: SubscriptionRequest => runGeneration(sub)
@@ -109,26 +118,29 @@ trait OmiRequestHandlerCore {
     log.error(error, "Internal server error: ")
   }
 }
+
 class RequestHandler(
   val subscriptionManager: ActorRef,
   val agentSystem: ActorRef
-)(implicit val dbConnection: DB) extends  OmiRequestHandlerCore
-with ReadHandler 
-with WriteHandler
-with ResponseHandler
-with SubscriptionHandler
-with PollHandler
-with CancelHandler
-with RESTHandler
-with RemoveHandler
-{
+)(implicit val dbConnection: DB
+  ) extends OmiRequestHandlerCore
+    with ReadHandler 
+    with WriteHandler
+    with ResponseHandler
+    with SubscriptionHandler
+    with PollHandler
+    with CancelHandler
+    with RESTHandler
+    with RemoveHandler
+  {
+
   protected def handle: PartialFunction[OmiRequest,Future[NodeSeq]] = {
-    case subscription: SubscriptionRequest => handleSubscription(subscription)
-    case read: ReadRequest => handleRead(read)
-    case write: WriteRequest => handleWrite(write)
-    case cancel: CancelRequest => handleCancel(cancel)
-    case poll: PollRequest => handlePoll(poll)
-    case response: ResponseRequest => handleResponse(response)
+    case sub     : SubscriptionRequest => handleSubscription(sub)
+    case read    : ReadRequest         => handleRead(read)
+    case write   : WriteRequest        => handleWrite(write)
+    case cancel  : CancelRequest       => handleCancel(cancel)
+    case poll    : PollRequest         => handlePoll(poll)
+    case response: ResponseRequest     => handleResponse(response)
   }
 
 }
