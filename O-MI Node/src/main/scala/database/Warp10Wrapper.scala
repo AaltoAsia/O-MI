@@ -140,46 +140,47 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
     newest: Option[Int],
     oldest: Option[Int]
   ): Future[Option[OdfObjects]] = {
-    val selector = nodesToReadPathSelector(requests)
-    val content : String = (begin, end, newest) match {
-      case (None, None, None) =>
-        warpReadNBeforeMsg(selector, 1, None)(readToken)
-      case (None, None, Some(sticks)) =>
-        warpReadNBeforeMsg(selector,sticks, None)(readToken)
-      case (None, Some(endTime), Some(sticks)) => 
-        warpReadNBeforeMsg(selector,sticks, end)(readToken)
-      case (startTime, endTime, None) => 
-        warpReadBetweenMsg(selector,begin, end)(readToken)
-    } 
-    val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
-    log.debug( request.toString )
-    val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
-    responseF.onFailure{
-      case t : Throwable => 
-        log.error(t, "Failed to communicate to Warp 10.")
-    }
-    responseF.flatMap{
-      case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-        response.toStrict(10.seconds)
-    }.flatMap{
-      case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-        entity.toStrict(10.seconds)
-    }.flatMap{
-      case entity : HttpEntity.Strict =>
-        //Ugly fix, for wrong/missing content type.
-        val ent = entity.copy(contentType = `application/json`) 
-        val jsF = Unmarshal(ent).to[JsValue]
-        jsF.map{
-          js => 
-            log.debug(js.toString)
-            read(js)
-        }.map{
-          case infos if infos.isEmpty=> 
-            None
-          case infos => 
-            Some(infos.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
+    oldest match {
+      case Some(a) => Future.failed( new Exception("Oldest is not supported, since 29.6.2016"))
+      case None =>
+        val selector = nodesToReadPathSelector(requests)
+        val contentFuture : Future[String] = (begin, end, newest) match {
+          case (None, None, None) =>
+            Future.successful( warpReadNBeforeMsg(selector, 1, None)(readToken) )
+          case (None, endTime, Some(sticks)) => 
+            Future.successful( warpReadNBeforeMsg(selector,sticks, end)(readToken) )
+          case (startTime, endTime, None) => 
+            Future.successful( warpReadBetweenMsg(selector,begin, end)(readToken) )
+          case (startTime, endTime, sticks) => 
+             Future.failed( new Exception(s"Unsupported compination ($startTime, $endTime, $sticks), since 29.6.2016"))
+        } 
+        contentFuture.flatMap{
+          content => 
+            read( content)
         }
-      }
+    }
+ }
+ private def read(content : String ) = { 
+        val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
+        val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
+        responseF.onFailure{
+          case t : Throwable => 
+            log.error(t, "Failed to communicate to Warp 10.")
+        }
+        responseF.flatMap{
+          case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+            entity.toStrict(10.seconds)
+        }.flatMap{
+          case entity : HttpEntity.Strict =>
+            //Ugly fix, for wrong/missing content type.
+            val ent = entity.copy(contentType = `application/json`) 
+            Unmarshal(ent).to[Seq[OdfInfoItem]].map{
+              case infos if infos.isEmpty=> 
+                None
+              case infos => 
+                Some(infos.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
+            }
+        }
  }
 
  def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn] ={
@@ -201,7 +202,6 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
      case HttpResponse( status, headers, entity, protocol ) if status.isFailure => 
        Unmarshal(entity).to[String].map{ 
         str => 
-          log.debug(request.toString)
           log.debug(s"$status with:\n $str")
           OmiReturn( status.value, Some(str))
        }
