@@ -18,6 +18,7 @@ import java.sql.Timestamp
 import java.util.Date
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.Try
 
 import akka.actor.ActorSystem
@@ -25,8 +26,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
 import types.OdfTypes._
@@ -53,7 +55,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     def write(o: Seq[OdfInfoItem]): JsValue = ??? //no use
 
     def read(v: JsValue): Seq[OdfInfoItem] = v.convertTo[List[JsObject]] match {
-
       case jsObjs: List[JsObject] => {
         val idPathValuesTuple = jsObjs.map { jsobj =>
           val path = fromField[Option[String]](jsobj, "c")
@@ -79,7 +80,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
             val _values = ii.foldLeft(OdfTreeCollection[OdfValue])((col ,next ) => col ++ next._3)
 
-            Seq(OdfInfoItem(Path(_path), _values.sortBy(_.timestamp.getTime())))
+          Seq(OdfInfoItem(Path(_path), _values.sortBy(_.timestamp.getTime())))
           }
           case _ => throw new DeserializationException("Unknown format")
         }(collection.breakOut).flatten
@@ -93,7 +94,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
 class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSystem = ActorSystem()) extends DB {
  
-  import Warp10JsonProtocol._
+  import Warp10JsonProtocol.Warp10JsonFormat._
   type Warp10Token = String
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests = true
@@ -153,9 +154,20 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
     }
     responseF.flatMap{
       case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-        log.debug( "Received HTTP response for getBetween:\n" + response.toString )
-        log.debug( "Received HTTP response for getBetween:\n" + entity.toString )
-        Unmarshal(entity).to[Seq[OdfInfoItem]].map{ 
+        response.toStrict(10.seconds)
+    }.flatMap{
+      case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+        entity.toStrict(10.seconds)
+    }.flatMap{
+      case entity : HttpEntity.Strict =>
+        //Ugly fix, for wrong/missing content type.
+        val ent = entity.copy(contentType = `application/json`) 
+        val jsF = Unmarshal(ent).to[JsValue]
+        jsF.map{
+          js => 
+            log.debug(js.toString)
+            read(js)
+        }.map{
           case infos if infos.isEmpty=> 
             None
           case infos => 
