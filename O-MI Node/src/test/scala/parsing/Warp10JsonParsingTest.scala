@@ -78,13 +78,13 @@ class Warp10JsonParsingTest extends Specification {
   def fourParams = {
     val testJson =
       """
-        |[{"c":"class",
+        |[[{"c":"class",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
         |  "v":[[1380475081000000,48.0,-4.5,3.14],
         |       [1380475081500000,50.0,50.0,2.5],
-        |       [1380475082000000,50.0,60.0,3.0]]}]
+        |       [1380475082000000,50.0,60.0,3.0]]}]]
       """.stripMargin
 
     val correctInfoItem = Seq(OdfInfoItem(

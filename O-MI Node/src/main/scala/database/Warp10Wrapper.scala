@@ -48,11 +48,50 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
       case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), JsNumber(value))) =>
         OdfValue(s"$lat:$lon/$elev $value", timestamp = new Timestamp((timestamp / 1000).toLong))
     }
+    private def parseObjects(in: Seq[JsObject]) = in match {
+      case jsObjs: Seq[JsObject] => {
+        val idPathValuesTuple = jsObjs.map { jsobj =>
+          val path = fromField[Option[String]](jsobj, "c")
+          val vals = fromField[JsArray](jsobj,"v")
+          val id = fromField[Option[String]](jsobj,"i")
+
+          val values: OdfTreeCollection[OdfValue] = vals match {
+            case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect(createOdfValue)
+          }
+
+          (id, path , values)
+
+        }
+        val infoIs:Seq[OdfInfoItem] = idPathValuesTuple.groupBy(_._1).collect{
+          case (None , ii) => ii.map{
+            case (_, Some(_path), c) => OdfInfoItem(Path(_path), c) //sort by timestamp?
+            case _ => throw new DeserializationException("No Path found when deserializing")
+          }
+
+          case (Some(id), ii) => {
+            val _path = ii.collectFirst{ case (_, Some(p),_) => p}
+              .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing"))
+
+            val _values = ii.foldLeft(OdfTreeCollection[OdfValue])((col ,next ) => col ++ next._3)
+
+            Seq(OdfInfoItem(Path(_path), _values.sortBy(_.timestamp.getTime())))
+          }
+          case _ => throw new DeserializationException("Unknown format")
+        }(collection.breakOut).flatten
+
+        infoIs
+      }
+    }
 
 
-    def write(o: Seq[OdfInfoItem]): JsValue = ??? //no use
+    def write(o: Seq[OdfInfoItem]): JsValue = ??? //not in use
 
-    def read(v: JsValue): Seq[OdfInfoItem] = v.convertTo[List[JsObject]] match {
+    def read(v: JsValue): Seq[OdfInfoItem] = v match {
+      case JsArray(Vector(JsArray(in: Vector[JsObject]))) => parseObjects(in)
+      case JsArray(in: Vector[JsObject]) => parseObjects(in)
+    }
+/*
+      v.convertTo[List[JsObject]] match {
 
       case jsObjs: List[JsObject] => {
         val idPathValuesTuple = jsObjs.map { jsobj =>
@@ -86,7 +125,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
         infoIs
       }
-    }
+    }*/
   }
 
 }
