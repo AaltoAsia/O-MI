@@ -58,9 +58,12 @@ trait OmiRequestHandlerCore {
     import system.dispatcher // execution context for futures
 
     request.callback match {
+      case Some("0") => // O-MI Extension: Zero-callback; use current connection
+        ???
+
       case Some(address) => {
 
-        val callbackCheck = CallbackHandlers.checkCallback(address)
+        val callbackCheck = CallbackHandlers.checkCallbackUri(address)
 
         callbackCheck.flatMap { uri =>
           request match {

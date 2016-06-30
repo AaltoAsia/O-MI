@@ -298,7 +298,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
         val callbackF = CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
           callbackF.onSuccess {
-            case CallbackSuccess() =>
+            case CallbackSuccess =>
               log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
               case _ =>
                 log.warning( s"Callback success, default case should not happen; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")

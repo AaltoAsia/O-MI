@@ -21,13 +21,15 @@ import javax.xml.datatype.DatatypeFactory
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{Future, ExecutionContext}
+import scala.util.{Try, Success, Failure}
 import scala.language.existentials
 import scala.xml.NodeSeq
 
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
 import responses.OmiGenerator.odfMsg
+import responses.CallbackHandlers
 import types.OdfTypes._
 
 
@@ -43,17 +45,12 @@ sealed trait OmiRequest {
 
   def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
 
-  @volatile
-  def callbackHandle: OmiRequest => Future[Unit] = // TODO: Change return type if needed
-  {
-    throw UndefinedCallbackCallException(s"No callbackHandle on $this")
-  }
 
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
 }
-case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
+
 
 sealed trait PermissiveRequest
 
@@ -62,6 +59,32 @@ sealed trait OdfRequest {
 }
 sealed trait RequestIDRequest {
   def requestIDs : OdfTreeCollection[Long ]
+}
+
+
+class Callback(
+  val uri: String,
+  @volatile
+  var callbackHandle: OmiRequest => Future[Unit]
+  ) extends Serializable {
+}
+object Callback {
+  //def apply(uri: Uri): Callback = apply(uri.toString)
+
+  def apply(callbackHandle: OmiRequest => Future[Unit]): Callback =
+    new Callback("0", callbackHandle)
+
+  def apply(uri: String)(implicit ec: ExecutionContext): Callback = new Callback(uri,
+    CallbackHandlers.sendCallback(uri, _: OmiRequest) flatMap {
+      case CallbackHandlers.CallbackSuccess => Future.successful(())
+      case t: Any => Future.failed(new Exception(t.toString))
+    }
+  )
+
+  case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
+  def apply(): Callback = new Callback("0", {a =>
+    throw UndefinedCallbackCallException(s"No callbackHandle on $this")
+  })
 }
 
 /**

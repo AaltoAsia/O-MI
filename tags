@@ -4,13 +4,15 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
+AS	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def AS = ActorSystem() $/;"	m
+AS	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def AS =ActorSystem($/;"	m
+AS	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def AS =ActorSystem($/;"	m
 Actors	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""$/;"	a
 Actors	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""$/;"	c
-Actorstest	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {$/;"	c
+Actorstest	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^class Actorstest(system: ActorSystem) extends TestKit(system) with Scope with After with ImplicitSender {$/;"	c
 AddEventSub	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class AddEventSub(eventSub: EventSub) extends Transaction[EventSubs] {$/;"	r
 AddIntervalSub	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[IntervalSubs] {$/;"	r
 AddPollSub	O-MI Node/src/main/scala/database/LatestValues.scala	/^    case class AddPollSub(polledSub: PolledSub) extends Transaction[PolledSubs] {$/;"	r
-AfterAll	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^trait AfterAll extends Specification {$/;"	t
 AgentConfigEntry	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  case class AgentConfigEntry($/;"	r
 AgentInfo	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  case class AgentInfo($/;"	r
 AgentInfoBase	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  sealed trait AgentInfoBase{$/;"	t
@@ -38,10 +40,11 @@ Base64Binary	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^object Base
 BaseAgentSystem	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^abstract class BaseAgentSystem extends Actor with ActorLogging{$/;"	a
 BaseAgentSystem	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^abstract class BaseAgentSystem extends Actor with ActorLogging{$/;"	c
 BeEqualFormatted	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {$/;"	c
-BeforeAfterAll	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^trait BeforeAfterAll extends Specification {$/;"	t
 Boot	O-MI Node/src/main/scala/http/Boot.scala	/^object Boot extends Starter {\/\/ with App{$/;"	o
 CLICmds	O-MI Node/src/main/scala/http/NodeCLI.scala	/^object CLICmds$/;"	o
 CORSSupport	O-MI Node/src/main/scala/http/CORSSupport.scala	/^trait CORSSupport {$/;"	t
+Callback	O-MI Node/src/main/scala/types/OmiTypes.scala	/^class Callback($/;"	c
+Callback	O-MI Node/src/main/scala/types/OmiTypes.scala	/^object Callback {$/;"	o
 CallbackFailure	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  sealed class CallbackFailure(msg: String, callback: Uri)              extends Exception(msg) with CallbackResult$/;"	c
 CallbackHandlerTest	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {$/;"	c
 CallbackHandlers	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^object CallbackHandlers {$/;"	o
@@ -87,7 +90,6 @@ DataRecord	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^trait DataRec
 DataWriter	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  private[this] case class DataWriter[+A]($/;"	r
 DatabaseConnection	O-MI Node/src/main/scala/database/DBInterface.scala	/^class DatabaseConnection extends DB {$/;"	c
 DatabaseTest	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^class DatabaseTest extends Specification with AfterAll {$/;"	c
-DeactivatedTimeConversions	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {$/;"	t
 DefaultCancelRequestFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  trait DefaultCancelRequestFormat extends scalaxb.ElemNameParser[CancelRequest] {$/;"	t
 DefaultDescriptionFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  trait DefaultDescriptionFormat extends scalaxb.XMLFormat[Description] with scalaxb.CanWriteChildNodes[Description] {$/;"	t
 DefaultIdTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  trait DefaultIdTypeFormat extends scalaxb.XMLFormat[IdType] with scalaxb.CanWriteChildNodes[IdType] {$/;"	t
@@ -132,7 +134,7 @@ FSAgent	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^class FSAgent exten
 FSAgent	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^object FSAgent extends PropsCreator{$/;"	o
 FailurePropsAgent	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^class FailurePropsAgent extends InternalAgent with StartFailure with StopFailure{$/;"	c
 FailurePropsAgent	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^object FailurePropsAgent extends PropsCreator{$/;"	o
-ForbiddenLocalhostPort	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  case class  ForbiddenLocalhostPort( callback: Uri)  extends $/;"	r
+ForbiddenLocalhostPort	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  case class  ForbiddenLocalhostPort( callback: Uri)  extends$/;"	r
 GetAllEventSubs	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class GetAllEventSubs() extends Query[EventSubs, Set[EventSub]] {$/;"	r
 GetAllIntervalSubs	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class GetAllIntervalSubs() extends Query[IntervalSubs, Set[IntervalSub]] {$/;"	r
 GetAllPollSubs	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class GetAllPollSubs() extends Query[PolledSubs, Set[PolledSub]] {$/;"	r
@@ -147,8 +149,7 @@ HexBinary	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^class HexBinar
 HexBinary	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^object HexBinary {$/;"	o
 HierarchyFKey	O-MI Node/src/main/scala/database/DBClasses.scala	/^  trait HierarchyFKey[A] extends Table[A] {$/;"	t
 Hole	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^  type Hole$/;"	T
-Hole	O-MI Node/src/main/scala/http/Authorization.scala	/^    trait Hole$/;"	t
-HttpError	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  case class   HttpError(status: StatusCode, callback: Uri )  extends $/;"	r
+HttpError	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  case class   HttpError(status: StatusCode, callback: Uri )  extends$/;"	r
 IdType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case class IdType(value: String,$/;"	r
 IdTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val IdTypeFormat: scalaxb.XMLFormat[IdType] = new DefaultIdTypeFormat {}$/;"	V
 InfoItemEvent	O-MI Node/src/main/scala/database/DBInterface.scala	/^sealed trait InfoItemEvent {$/;"	t
@@ -158,19 +159,20 @@ InfoName	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^  private case c
 InputPusher	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^trait  InputPusher  extends BaseAgentSystem{$/;"	t
 InternalAgent	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  trait InternalAgent extends Actor with ActorLogging {$/;"	t
 InternalAgentCmd	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^sealed trait InternalAgentCmd$/;"	t
-InternalAgentFailure	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse$/;"	a
-InternalAgentFailure	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse$/;"	c
+InternalAgentFailure	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse$/;"	a
+InternalAgentFailure	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse$/;"	c
 InternalAgentLoadException	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^abstract class InternalAgentLoadException(val msg: String)  extends  Exception(msg) with InternalAgentLoadFailure$/;"	a
 InternalAgentLoadException	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^abstract class InternalAgentLoadException(val msg: String)  extends  Exception(msg) with InternalAgentLoadFailure$/;"	c
 InternalAgentLoadFailure	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^sealed trait InternalAgentLoadFailure{ def msg : String }$/;"	t
 InternalAgentLoader	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^trait InternalAgentLoader extends BaseAgentSystem {$/;"	t
 InternalAgentLoaderTest	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification { $/;"	c
 InternalAgentManager	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^trait InternalAgentManager extends BaseAgentSystem {$/;"	t
+InternalAgentManagerTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification {$/;"	c
 InternalAgentNotImplemented	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^final case class InternalAgentNotImplemented(clazz: Class[_]) extends InternalAgentLoadException({ $/;"	r
 InternalAgentProps	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  final case class InternalAgentProps private[InternalAgentProps](props: Props)$/;"	r
 InternalAgentProps	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  object InternalAgentProps{$/;"	o
-InternalAgentResponse	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^sealed trait InternalAgentResponse$/;"	t
-InternalAgentSuccess	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^trait InternalAgentSuccess     extends InternalAgentResponse $/;"	t
+InternalAgentResponse	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  sealed trait InternalAgentResponse$/;"	t
+InternalAgentSuccess	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  trait InternalAgentSuccess     extends InternalAgentResponse $/;"	t
 IntervalSub	O-MI Node/src/main/scala/database/Subscriptions.scala	/^case class IntervalSub($/;"	r
 IntervalSubOrdering	O-MI Node/src/main/scala/database/Subscriptions.scala	/^object IntervalSubOrdering extends Ordering[IntervalSub] {$/;"	o
 IntervalSubs	O-MI Node/src/main/scala/database/Subscriptions.scala	/^case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])$/;"	r
@@ -195,6 +197,7 @@ NewDBSub	O-MI Node/src/main/scala/database/DBClasses.scala	/^case class NewDBSub
 NewSubscription	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^case class NewSubscription(subscription: SubscriptionRequest)$/;"	r
 NoAutoHtmlLinkFragments	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^trait NoAutoHtmlLinkFragments extends org.specs2.specification.dsl.ReferenceDsl {$/;"	t
 Node	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case object Node extends TargetType { override def toString = "node" }$/;"	R
+NodeCLITest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{$/;"	c
 NodeReq	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^  private case class NodeReq(path: Path)    extends ODFRequest$/;"	r
 NodeValue	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case object NodeValue extends TargetTypeType { override def toString = "node" }$/;"	R
 NodesType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case class NodesType(node: Seq[java.net.URI] = Nil,$/;"	r
@@ -240,7 +243,7 @@ OmiEnvelopeOption	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^trait OmiE
 OmiGenerator	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^object OmiGenerator {$/;"	o
 OmiNodeCLI	O-MI Node/src/main/scala/http/NodeCLI.scala	/^class OmiNodeCLI($/;"	c
 OmiNodeCLI	O-MI Node/src/main/scala/http/NodeCLI.scala	/^object OmiNodeCLI{$/;"	o
-OmiNodeCLIListener	O-MI Node/src/main/scala/http/NodeCLI.scala	/^class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RequestHandler)  extends Actor with ActorLogging{$/;"	c
+OmiNodeCLIListener	O-MI Node/src/main/scala/http/NodeCLI.scala	/^class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RemoveHandler)  extends Actor with ActorLogging{$/;"	c
 OmiNodeTables	O-MI Node/src/main/scala/database/DBClasses.scala	/^trait OmiNodeTables extends DBBase {$/;"	t
 OmiParseResult	O-MI Node/src/main/scala/types/package.scala	/^  type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]$/;"	T
 OmiParser	O-MI Node/src/main/scala/parsing/OmiParser.scala	/^object OmiParser extends Parser[OmiParseResult] {$/;"	o
@@ -251,7 +254,7 @@ OmiResult	O-MI Node/src/main/scala/types/OmiTypes.scala	/^case class OmiResult($
 OmiService	O-MI Node/src/main/scala/http/OmiService.scala	/^trait OmiService$/;"	t
 OmiServiceAuthorization	O-MI Node/src/main/scala/http/OmiService.scala	/^trait OmiServiceAuthorization$/;"	t
 OmiServiceImpl	O-MI Node/src/main/scala/http/OmiService.scala	/^class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSystem)$/;"	c
-OmiServiceTest	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^class OmiServiceTest extends Specification$/;"	c
+OmiServiceTest	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^class OmiServiceTest$/;"	c
 OmiTypes	O-MI Node/src/main/scala/types/OmiTypes.scala	/^package OmiTypes$/;"	p
 ParseError	O-MI Node/src/main/scala/types/Types.scala	/^  case class ParseError(msg: String) extends Exception(msg) $/;"	r
 ParseError	O-MI Node/src/main/scala/types/Types.scala	/^  object ParseError{$/;"	o
@@ -274,12 +277,13 @@ PollSubscription	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^
 PolledSub	O-MI Node/src/main/scala/database/Subscriptions.scala	/^sealed trait PolledSub extends SavedSub {$/;"	t
 PolledSubs	O-MI Node/src/main/scala/database/Subscriptions.scala	/^case class PolledSubs(var idToSub: HashMap[Long, PolledSub], var pathToSubs: HashMap[Path, Set[Long]])$/;"	r
 PolledSubs	O-MI Node/src/main/scala/database/Subscriptions.scala	/^object PolledSubs {$/;"	o
-PromiseResult	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]] ){$/;"	r
-PromiseResult	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^object PromiseResult{$/;"	o
-PromiseWrite	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^case class PromiseWrite(result: PromiseResult, write:WriteRequest )$/;"	r
+PromiseRequest	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^case class PromiseRequest(result: PromiseResult, write:OmiRequest )$/;"	r
+PromiseResult	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^case class PromiseResult( promise: Promise[Vector[Promise[ResponsibleAgentResponse]]] ){$/;"	r
+PromiseResult	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^object PromiseResult{$/;"	o
+PromiseWrite	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^case class PromiseWrite(result: PromiseResult, write:WriteRequest )$/;"	r
 PropsCreator	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  trait PropsCreator{$/;"	t
 PropsCreatorNotImplemented	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^final case class PropsCreatorNotImplemented(clazz : Class[_] ) extends InternalAgentLoadException({ $/;"	r
-ProtocolNotSupported	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  case class  ProtocolNotSupported(protocol: String, callback: Uri) extends $/;"	r
+ProtocolNotSupported	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  case class  ProtocolNotSupported(protocol: String, callback: Uri) extends$/;"	r
 QlmID	O-MI Node/src/main/scala/parsing/xmlGen/odf.scala	/^case class QlmID($/;"	r
 QlmIDFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val QlmIDFormat: scalaxb.XMLFormat[QlmID] = new DefaultQlmIDFormat {}$/;"	V
 RESTHandler	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^trait RESTHandler extends OmiRequestHandlerBase{$/;"	t
@@ -295,29 +299,32 @@ ReadRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^case class ReadReque
 ReadRequestFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val ReadRequestFormat: scalaxb.XMLFormat[ReadRequest] = new DefaultReadRequestFormat {}$/;"	V
 ReadTest	O-MI Node/src/test/scala/responses/ReadTest.scala	/^class ReadTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {$/;"	c
 ReadWrite	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional$/;"	T
-RegisterOwnership	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^case class RegisterOwnership( agent: AgentName, paths: Seq[Path])$/;"	r
+RegisterOwnership	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^case class RegisterOwnership( agent: AgentName, paths: Seq[Path])$/;"	r
 RemoveEventSub	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class RemoveEventSub(id: Long) extends  TransactionWithQuery[EventSubs, Boolean] {$/;"	r
 RemoveHandler	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^trait RemoveHandler extends OmiRequestHandlerBase{$/;"	t
 RemoveIntervalSub	O-MI Node/src/main/scala/database/LatestValues.scala	/^case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[IntervalSubs, Boolean] {$/;"	r
 RemovePath	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  case class RemovePath(path: String)$/;"	r
 RemovePollSub	O-MI Node/src/main/scala/database/LatestValues.scala	/^  case class RemovePollSub(id: Long) extends TransactionWithQuery[PolledSubs, Boolean] {$/;"	r
 RemoveSubscription	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^case class RemoveSubscription(id: Long)$/;"	r
+RemoveTester	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  class RemoveTester( path: Path)extends RemoveHandler{$/;"	c
 RequestBaseTypable	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^trait RequestBaseTypable {$/;"	t
 RequestBaseTypableFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val RequestBaseTypableFormat: scalaxb.XMLFormat[RequestBaseTypable] = new DefaultRequestBaseTypableFormat {}$/;"	V
 RequestBaseType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case class RequestBaseType(nodeList: Option[NodesType] = None,$/;"	r
 RequestBaseTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val RequestBaseTypeFormat: scalaxb.XMLFormat[RequestBaseType] = new DefaultRequestBaseTypeFormat {}$/;"	V
 RequestHandler	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^class RequestHandler($/;"	c
+RequestIDRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^sealed trait RequestIDRequest {$/;"	t
 RequestResultType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case class RequestResultType($/;"	r
 RequestResultTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val RequestResultTypeFormat: scalaxb.XMLFormat[RequestResultType] = new DefaultRequestResultTypeFormat {}$/;"	V
 ResponseHandler	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^trait ResponseHandler extends OmiRequestHandlerBase{$/;"	t
 ResponseListType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case class ResponseListType(result: RequestResultType*) extends OmiEnvelopeOption$/;"	r
 ResponseListTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val ResponseListTypeFormat: scalaxb.XMLFormat[ResponseListType] = new DefaultResponseListTypeFormat {}$/;"	V
 ResponseRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^case class ResponseRequest($/;"	r
-ResponsibilityMessage	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^sealed trait ResponsibilityMessage$/;"	t
-ResponsibilityResponse	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^sealed trait ResponsibilityResponse extends ResponsibilityMessage$/;"	t
-ResponsibleAgentManager	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{$/;"	t
-ResponsibleAgentMsg	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^sealed trait ResponsibleAgentMsg$/;"	t
-ResponsibleAgentResponse	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^sealed trait ResponsibleAgentResponse$/;"	t
+ResponsibilityManagerTest	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification{$/;"	c
+ResponsibilityMessage	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^sealed trait ResponsibilityMessage$/;"	t
+ResponsibilityResponse	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^sealed trait ResponsibilityResponse extends ResponsibilityMessage$/;"	t
+ResponsibleAgentManager	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{$/;"	t
+ResponsibleAgentMsg	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  sealed trait ResponsibleAgentMsg$/;"	t
+ResponsibleAgentResponse	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  sealed trait ResponsibleAgentResponse$/;"	t
 ResponsibleInternalAgent	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  trait ResponsibleInternalAgent extends InternalAgent {$/;"	t
 ResponsibleWrite	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)$/;"	r
 Restart	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  case class Restart()                  extends InternalAgentCmd$/;"	r
@@ -335,6 +342,7 @@ SetSensorData	O-MI Node/src/main/scala/database/LatestValues.scala	/^case class 
 Settings	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^object Settings extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {$/;"	o
 SingleStores	O-MI Node/src/main/scala/database/DBInterface.scala	/^object SingleStores {$/;"	o
 Specs2Interface	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^trait Specs2Interface extends TestFrameworkInterface with SpecificationStructure {$/;"	t
+Specs2Interface	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^trait Specs2Interface extends TestFrameworkInterface {$/;"	t
 Start	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  case class Start()                    extends InternalAgentCmd$/;"	r
 StartAgentCmd	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  case class StartAgentCmd(agent: String)$/;"	r
 StartFailure	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^trait StartFailure{$/;"	t
@@ -359,8 +367,8 @@ SubscriptionScheduler	O-MI Node/src/main/scala/responses/SubscriptionScheduler.s
 SubscriptionSchedulerTest	O-MI Node/src/test/scala/responses/SubscriptionSchedulerTest.scala	/^class SubscriptionSchedulerTest extends Specification {$/;"	c
 SubscriptionTest	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {$/;"	c
 SuccessfulWrite	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^  case class SuccessfulWrite( paths: Vector[Path] ) extends ResponsibleAgentResponse $/;"	r
-SystemTest	O-MI Node/src/test/scala/http/SystemTest.scala	/^class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {$/;"	c
-SystemTestCallbackServer	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {$/;"	c
+SystemTest	O-MI Node/src/test/scala/http/SystemTest.scala	/^class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with BeforeAfterAll {$/;"	c
+SystemTestCallbackServer	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int){$/;"	c
 TakeSnapshot	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^  case object TakeSnapshot$/;"	R
 TargetType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^object TargetType {$/;"	o
 TargetType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^trait TargetType$/;"	t
@@ -369,12 +377,17 @@ TargetTypeType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^object Target
 TargetTypeType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^trait TargetTypeType$/;"	t
 TargetTypeTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val TargetTypeTypeFormat: scalaxb.XMLFormat[TargetTypeType] = new DefaultTargetTypeTypeFormat {}$/;"	V
 TestDB	O-MI Node/src/main/scala/database/DBInterface.scala	/^class TestDB(val name:String = "") extends DB$/;"	c
+TestFailureManager	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  class TestFailureManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])  extends TestManager{$/;"	c
 TestLoader	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ class TestLoader( testConfig : AgentSystemConfigExtension) extends BaseAgentSystem with InternalAgentLoader{$/;"	c
 TestLoader	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ object TestLoader{$/;"	o
+TestManager	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  trait TestManager extends BaseAgentSystem with ResponsibleAgentManager{$/;"	t
+TestManager	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])$/;"	c
+TestSuccessManager	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  class TestSuccessManager(paths: Vector[Path ],  testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])  extends TestManager{$/;"	c
 TreeRemovePath	O-MI Node/src/main/scala/database/LatestValues.scala	/^case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {$/;"	r
 TrimDB	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^  case object TrimDB$/;"	R
 TypesTest	O-MI Node/src/test/scala/parsing/TypesTest.scala	/^class TypesTest extends Specification {$/;"	c
 Unauthorized	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^case object Unauthorized extends AuthorizationResult {def instance = this}$/;"	R
+UndefinedCallbackCallException	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)$/;"	r
 Union	O-MI Node/src/main/scala/database/LatestValues.scala	/^case class Union(anotherRoot: OdfObjects) extends Transaction[OdfTree] {$/;"	r
 User	O-MI Node/src/main/scala/http/SamlHttpHeaderAuth.scala	/^  private type User = Option[Eppn]$/;"	T
 UserData	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  private type UserData = Option[InetAddress]$/;"	T
@@ -382,6 +395,8 @@ UserInfo	O-MI Node/src/main/scala/http/Authorization.scala	/^  private type User
 Value	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^  private case class Value(path: Path)      extends ODFRequest$/;"	r
 ValueType	O-MI Node/src/main/scala/parsing/xmlGen/odf.scala	/^case class ValueType($/;"	r
 ValueTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  implicit lazy val ValueTypeFormat: scalaxb.XMLFormat[ValueType] = new DefaultValueTypeFormat {}$/;"	V
+WSAgent	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^class WSAgent extends SSAgent with ResponsibleInternalAgent{$/;"	c
+WebSocketOMISupport	O-MI Node/src/main/scala/http/OmiService.scala	/^trait WebSocketOMISupport {$/;"	t
 WriteHandler	O-MI Node/src/main/scala/responses/WriteHandler.scala	/^trait WriteHandler extends OmiRequestHandlerBase{$/;"	t
 WriteRequest	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^case class WriteRequest(nodeList: Option[NodesType] = None,$/;"	r
 WriteRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^case class WriteRequest($/;"	r
@@ -422,17 +437,21 @@ addRootR	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def addRootR: F
 addSub	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {$/;"	m
 addValue	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def addValue(path: String, nv: Vector[OdfValue]): Unit = {$/;"	m
 addingAction	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val addingAction = missingPathsI flatMap { (missingPaths: Seq[Path]) =>$/;"	V
-after	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  def after = TestKit.shutdownActorSystem(system)$/;"	m
-after	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  def after = system.shutdown()$/;"	m
+after	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  def after = {$/;"	m
 afterAll	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^  def afterAll = db.destroy()$/;"	m
-afterAll	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  def afterAll() = {$/;"	m
+afterAll	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  def afterAll = {$/;"	m
 afterAll	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def afterAll = {$/;"	m
 afterAll	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  def afterAll = {$/;"	m
 afterAll	O-MI Node/src/test/scala/responses/ReadTest.scala	/^  def afterAll = {$/;"	m
 afterAll	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def afterAll = {$/;"	m
-afterAll	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  protected[this] def afterAll()$/;"	m
 agent	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^                  val agent = context.actorOf( props, name.toString )$/;"	V
 agentConfigurations	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^  val agentConfigurations: Array[AgentConfigEntry] = {$/;"	V
+agentInfo	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)$/;"	V
+agentInfo	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)$/;"	V
+agentInfo	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^      val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, _paths)$/;"	V
+agentInfo	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, paths)$/;"	V
+agentInfo	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)$/;"	V
+agentInfo	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)$/;"	V
 agentInterface	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^      val agentInterface        = classOf[InternalAgent]$/;"	V
 agentManager	O-MI Node/src/main/scala/http/Boot.scala	/^    val agentManager = system.actorOf($/;"	V
 agentManager	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  val agentManager = system.actorOf(Props(new AgentSystem(dbConnection, subscriptionManager)))$/;"	V
@@ -442,6 +461,8 @@ agentManager	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  val a
 agentName	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^    val agentName = restart.agent$/;"	V
 agentName	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^    val agentName = start.agent$/;"	V
 agentName	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^    val agentName = stop.agent$/;"	V
+agentStartFailTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def agentStartFailTest = new Actorstest(AS){$/;"	m
+agentStopFailTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def agentStopFailTest = new Actorstest(AS){$/;"	m
 agentSystem	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^package agentSystem$/;"	p
 agentSystem	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^package agentSystem$/;"	p
 agentSystem	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^package agentSystem$/;"	p
@@ -449,24 +470,34 @@ agentSystem	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    prote
 agentSystem	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^package agentSystem$/;"	p
 agentSystem	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^package agentSystem$/;"	p
 agentSystem	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^package agentSystem$/;"	p
-agentSystem	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^package agentSystem$/;"	p
+agentSystem	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^package agentSystem$/;"	p
 agentSystem	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  val agentSystem: ActorRef$/;"	V
 agentSystem	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^  def agentSystem : ActorRef$/;"	m
 agentSystem	O-MI Node/src/main/scala/responses/WriteHandler.scala	/^  def agentSystem : ActorRef$/;"	m
 agentSystem	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^package agentSystem$/;"	p
+agentSystem	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^package agentSystem$/;"	p
+agentSystem	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^package agentSystem$/;"	p
 agentSystem	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^package agentSystem$/;"	p
+agentSystem	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val agentSystem = agentSystemRef.underlyingActor$/;"	V
+agentSystem	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val agentSystem =ActorRef.noSender$/;"	V
+agentSystemRef	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val agentSystemRef = TestActorRef(new TestManager( agentsMap ))$/;"	V
 agents	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]$/;"	m
 agents	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty$/;"	V
 agents	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty$/;"	V
-agentsToWrite	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val agentsToWrite = allExists.values.flatten$/;"	V
+agents	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents$/;"	V
+agents	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents$/;"	V
+agents	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val agents = Vector($/;"	V
+agentsMap	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val agentsMap : MutableMap[AgentName,AgentInfo] = MutableMap(agents.map{ info => info.name -> info }:_*)$/;"	V
+agentsStrChart	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private[http] def agentsStrChart( agents: Vector[AgentInfo] ) : String ={$/;"	m
+agentsToWrite	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val agentsToWrite = allExists.values.flatten$/;"	V
 allChildren	O-MI Node/src/main/scala/database/OdfConversions.scala	/^        val allChildren =$/;"	V
-allExists	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val allExists = ownerToObjects.map{$/;"	V
+allExists	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val allExists = ownerToObjects.map{$/;"	V
 allFiles	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^            val allFiles = dir.listFiles(new FilenameFilter {$/;"	V
-allInfoItems	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val allInfoItems : Seq[OdfInfoItem] = odfObjects.infoItems \/\/ getInfoItems(odfObjects)$/;"	V
+allInfoItems	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val allInfoItems : Seq[OdfInfoItem] = odfObjects.infoItems \/\/ getInfoItems(odfObjects)$/;"	V
 allOnes	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^          val allOnes = -1$/;"	V
 allOnes	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^        val allOnes = -1$/;"	V
-allOwnedPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val allOwnedPaths : Seq[Path] = ownerToPath.values.flatten.toSeq$/;"	V
-allPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val allPaths = allInfoItems.map( _.path )$/;"	V
+allOwnedPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val allOwnedPaths : Seq[Path] = ownerToPath.values.flatten.toSeq$/;"	V
+allPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val allPaths = allInfoItems.map( _.path )$/;"	V
 allResults	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    val allResults: Future[Seq[Option[OdfObjects]]] =$/;"	V
 allSchemas	O-MI Node/src/main/scala/database/DBClasses.scala	/^  protected[this] val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)$/;"	V
 allSubs	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++$/;"	V
@@ -479,7 +510,7 @@ any	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def any(f: ElemNam
 apply	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    final def apply[T <: InternalAgent: ClassTag](creator: =>T): InternalAgentProps ={$/;"	m
 apply	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    final def apply[T <: InternalAgent]()(implicit arg0: ClassTag[T]): InternalAgentProps ={$/;"	m
 apply	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    final def apply[T <: InternalAgent](clazz: Class[T], args: Any*): InternalAgentProps ={$/;"	m
-apply	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  def apply(): PromiseResult= new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())$/;"	m
+apply	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  def apply(): PromiseResult= new PromiseResult(Promise[Vector[Promise[ResponsibleAgentResponse]]]())$/;"	m
 apply	O-MI Node/src/main/scala/database/DBInterface.scala	/^  def apply(ii: OdfInfoItem): ChangeEvent = new ChangeEvent(ii)$/;"	m
 apply	O-MI Node/src/main/scala/http/Authorization.scala	/^    def apply(): Directive1[PermissionTest] = test$/;"	m
 apply	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def apply(elemName: ElemName): DataRecord[Any] = fromAny(elemName.node)$/;"	m
@@ -498,6 +529,9 @@ apply	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def apply[A:CanW
 apply	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit def apply(node: scala.xml.Node): ElemName = node match {$/;"	m
 apply	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def apply[T](): OdfTreeCollection[T] = Vector()$/;"	m
 apply	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def apply[T](elems: T*): OdfTreeCollection[T] = Vector(elems:_*)$/;"	m
+apply	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def apply(): Callback = new Callback("0", {a =>$/;"	m
+apply	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def apply(callbackHandle: OmiRequest => Future[Unit]): Callback =$/;"	m
+apply	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def apply(uri: String): Callback = new Callback(uri,$/;"	m
 apply	O-MI Node/src/main/scala/types/Types.scala	/^    def apply(pathSeq: Seq[String]): Path = new Path(pathSeq.toVector)$/;"	m
 apply	O-MI Node/src/main/scala/types/Types.scala	/^    def apply(pathStr: String): Path = new Path(pathStr)$/;"	m
 apply	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  override def apply[S <: Seq[Node]](n: Expectable[S]) = {$/;"	m
@@ -512,8 +546,10 @@ asMetaData	O-MI Node/src/main/scala/types/OdfInfoItem.scala	/^  implicit def asM
 asObjectType	O-MI Node/src/main/scala/types/OdfObject.scala	/^  implicit def asObjectType : ObjectType = {$/;"	m
 asObjectsType	O-MI Node/src/main/scala/types/OdfObjects.scala	/^  implicit def asObjectsType : ObjectsType ={$/;"	m
 asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope $/;"	m
-asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope={ $/;"	m
-asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope: xmlTypes.OmiEnvelope ={ $/;"	m
+asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttl.toSeconds)$/;"	m
+asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttl.toSeconds)$/;"	m
+asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttl.toSeconds)$/;"	m
+asOmiEnvelope	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asWriteRequest, ttl.toSeconds)$/;"	m
 asReadOnly	O-MI Node/src/main/scala/database/DBInterface.scala	/^  def asReadOnly: DBReadOnly = this$/;"	m
 asReadRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest($/;"	m
 asReadRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asReadRequest : xmlTypes.ReadRequest = {$/;"	m
@@ -523,24 +559,22 @@ asResponseListType	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit de
 asValueType	O-MI Node/src/main/scala/types/OdfInfoItem.scala	/^  implicit def asValueType : ValueType = {$/;"	m
 asWriteRequest	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asWriteRequest : xmlTypes.WriteRequest = xmlTypes.WriteRequest($/;"	m
 asXML	O-MI Node/src/main/scala/types/OdfObjects.scala	/^  implicit def asXML : NodeSeq= {$/;"	m
-asXML	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asXML : NodeSeq = scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)$/;"	m
-asXML	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asXML : NodeSeq$/;"	m
-asXML	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asXML : NodeSeq= scalaxb.toXML[OmiEnvelope](asOmiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)$/;"	m
+asXML	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)$/;"	m
 atEnd	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def atEnd = !seq.isDefinedAt(offset)$/;"	m
 attr	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^      var attr: scala.xml.MetaData  = scala.xml.Null$/;"	v
 authServicePort	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    private final int authServicePort = 8088;$/;"	f	class:AuthAPIService	file:
 authServiceURI	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    private final String authServiceURI = authServiceURIScheme + mainURI + "\/security\/PermissionService";$/;"	f	class:AuthAPIService	file:
 authServiceURIScheme	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    private final String authServiceURIScheme = useHTTPS ? "https:\/\/" : "http:\/\/";$/;"	f	class:AuthAPIService	file:
-authorizationSystems	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^  private[this] val authorizationSystems: Buffer[AuthApi] = Buffer()$/;"	V
+authorizationSystems	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^  private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()$/;"	V
 beforeAll	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  def beforeAll() = {$/;"	m
 beforeAll	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  def beforeAll() = {$/;"	m
+beforeAll	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def beforeAll() = {$/;"	m
 beforeAll	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  def beforeAll = {$/;"	m
 beforeAll	O-MI Node/src/test/scala/responses/ReadTest.scala	/^  def beforeAll = {$/;"	m
 beforeAll	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def beforeAll = {$/;"	m
-beforeAll	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  protected[this] def beforeAll()$/;"	m
 betweenLogic	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def betweenLogic($/;"	m
 betweenLogicR	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def betweenLogicR($/;"	m
-bindFuture	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val bindFuture = IO(Http) ? Http.Bind(testServer, interface = "localhost", port = port)$/;"	V
+bindFuture	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  val bindFuture = Http().bindAndHandle(route, interface, port)$/;"	V
 bindHttp	O-MI Node/src/main/scala/http/Boot.scala	/^  def bindHttp(service: OmiServiceImpl): Unit = {$/;"	m
 bindingFuture	O-MI Node/src/main/scala/http/Boot.scala	/^    val bindingFuture =$/;"	V
 bits	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val bits = parts.last$/;"	V
@@ -552,29 +586,31 @@ buildTargetTypeTypeFormat	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.sc
 bytesToInt	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  private[this] def bytesToInt(bytes: Seq[Byte]) : Int = {$/;"	m
 c	O-MI Node/src/main/scala/types/OdfInfoItem.scala	/^        val c :GregorianCalendar  = new GregorianCalendar()$/;"	V
 c	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^                          val c :GregorianCalendar  = new GregorianCalendar()$/;"	V
-cal	O-MI Node/src/main/scala/types/OmiTypes.scala	/^        val cal = new GregorianCalendar();$/;"	V
+cal	O-MI Node/src/main/scala/types/package.scala	/^   val cal = new GregorianCalendar()$/;"	V
 calculatedData	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^              val calculatedData = {\/\/Refactor$/;"	V
 calendar	O-MI Node/src/test/scala/responses/CancelTest.scala	/^    val calendar = Calendar.getInstance()$/;"	V
 calendar	O-MI Node/src/test/scala/responses/ReadTest.scala	/^    val calendar = Calendar.getInstance()$/;"	V
 calendar	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  val calendar = Calendar.getInstance()$/;"	V
-callAgentsForResponsibility	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={$/;"	m
+callAgentsForResponsibility	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Vector[Promise[ResponsibleAgentResponse]]={$/;"	m
 callback	O-MI Node/src/main/scala/database/DBClasses.scala	/^  val callback: Option[String]$/;"	V
 callback	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^  val callback: Option[java.net.URI]$/;"	V
 callback	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def callback : Option[String] = None$/;"	m
 callback	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def callback: Option[String]$/;"	m
 callback	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  val callback : Option[String] = None$/;"	V
+callback	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val callback = "http:\/\/test.org:31"$/;"	V
 callbackAddr	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val callbackAddr = esub.callback$/;"	V
-callbackCheck	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^        val callbackCheck = CallbackHandlers.checkCallback(address)$/;"	V
-callbackDataOptions	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val callbackDataOptions = pathValueOldValueTuples.map(n=>SingleStores.processData _ tupled n)$/;"	V
+callbackCheck	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^        val callbackCheck = CallbackHandlers.checkCallbackUri(address)$/;"	V
+callbackDataOptions	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val callbackDataOptions = pathValueOldValueTuples.map{$/;"	V
 callbackDelay	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds $/;"	V
 callbackF	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val callbackF = sendCallback($/;"	V
 callbackF	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val callbackF = CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)$/;"	V
+callbackHandle	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  var callbackHandle: OmiRequest => Future[Unit]$/;"	v
 callbackTimeout	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds$/;"	V
 changeHistoryLength	O-MI Node/src/main/scala/database/DBInterface.scala	/^  def changeHistoryLength(newLength: Int): Unit = {$/;"	m
 check	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^        val check = (bytesToInt(subnetBytes) & mask) == (bytesToInt(ipBytes) & mask)$/;"	V
 check	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^      def check( subnet: Seq[Byte], ip: Seq[Byte], n : Int): Boolean = n match {$/;"	m
-check	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^          val check : PartialFunction[HttpResponse, CallbackResult] = { $/;"	V
-checkCallback	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  def checkCallback( callback: String ): Future[Uri]= Future{$/;"	m
+check	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val check : PartialFunction[HttpResponse, CallbackResult] = {$/;"	V
+checkCallbackUri	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  def checkCallbackUri( callback: String ): Future[Uri] = Future{$/;"	m
 checkMetaData	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def checkMetaData(metaO: Option[OdfMetaData]): Try[String] = metaO match {$/;"	m
 checkMetaData	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def checkMetaData(metaStr: String): Try[String] = Try{$/;"	m
 checked	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^      val checked = check(subnetBytes, ipBytes,  n) && (( subnetArea  & mask  ) == (  ipArea  & mask ))$/;"	V
@@ -593,23 +629,30 @@ classname	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ 
 classname2	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val classname2 = "unexisting"$/;"	V
 classname3	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val classname3 = "agentSystem.SFAgent"$/;"	V
 classnames	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val classnames = settings.agentConfigurations$/;"	V
+clazz	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val clazz = "agentSystem.FFAgent"$/;"	V
+clazz	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val clazz = "agentSystem.SSAgent"$/;"	V
+clazz	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val clazz = "agentSystem.WSAgent"$/;"	V
+clazz	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val clazz = "agentSystem.SSAgent"$/;"	V
 cleanAndShutdown	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def cleanAndShutdown() = {$/;"	m
 clearDB	O-MI Node/src/main/scala/database/DBClasses.scala	/^  def clearDB(): Future[Int] = {$/;"	m
 cli	O-MI Node/src/main/scala/http/NodeCLI.scala	/^      val cli = context.system.actorOf($/;"	V
 cliPort	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val cliPort: Int = config.getInt("omi-service.ports.cli")$/;"	V
+cmdToNonExistent	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def cmdToNonExistent = new Actorstest(AS){$/;"	m
 column	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  override def column = offset + 1$/;"	m
-colums	O-MI Node/src/main/scala/http/NodeCLI.scala	/^          val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")$/;"	V
+colums	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")$/;"	V
 combine	O-MI Node/src/main/scala/types/OdfInfoItem.scala	/^  def combine(another: OdfInfoItem) : OdfInfoItem ={$/;"	m
 combine	O-MI Node/src/main/scala/types/OdfObject.scala	/^  def combine(another: OdfObject): OdfObject = {$/;"	m
 combineErrors	O-MI Node/src/main/scala/types/Types.scala	/^    def combineErrors( errors: Iterable[ParseError] ) : ParseError = ParseError($/;"	m
 combineTests	O-MI Node/src/main/scala/http/Authorization.scala	/^    private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {$/;"	m
 combineWithPrevious	O-MI Node/src/main/scala/http/Authorization.scala	/^    final protected def combineWithPrevious($/;"	m
 combinedWithPaths	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^            val combinedWithPaths = intervalData.map(iData => {$/;"	V
+commandForNonexistingMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def commandForNonexistingMsg( name : AgentName ) : String = s"Command for nonexistent agent: $name."$/;"	m
 commandTimeout	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  val commandTimeout = 1.minute$/;"	V
 commands	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  val commands = """Current commands:$/;"	V
 compare	O-MI Node/src/main/scala/database/Subscriptions.scala	/^  def compare(a: IntervalSub, b: IntervalSub) : Int =$/;"	m
 compareLog	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    def compareLog() = log.debug("Whitelist check for IP address: " + ip.getHostAddress +$/;"	m
 conf	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^      val conf = internalAgents.toConfig()$/;"	V
+conf	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val conf = ConfigFactory.load("testconfig")$/;"	V
 confUrl	O-MI Node/src/main/scala/database/DBInterface.scala	/^     val confUrl = slick.util.GlobalConfig.driverConfig(dbConfigName).getString("url")$/;"	V
 config	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^    def config:     Config$/;"	m
 config	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^      val config = conf.getObject(s"$name.config").toConfig$/;"	V
@@ -620,6 +663,22 @@ config	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   v
 config	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  def config = throw  CommandFailed("Test failure.")$/;"	m
 configStr	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val configStr =$/;"	V
 connection	O-MI Node/src/main/scala/http/NodeCLI.scala	/^      val connection = sender()$/;"	V
+correct	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val correct = managerActor.couldNotFindMsg(name)$/;"	V
+correct	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val correct = managerActor.successfulStopMsg(name)$/;"	V
+correct	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val correct = managerActor.wasAlreadyStartedMsg(name)$/;"	V
+correct	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val correct = managerActor.wasAlreadyStoppedMsg(name)$/;"	V
+correct	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val correct = s"agentSystem.CommandFailed: Test failure."$/;"	V
+correct	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val correct: String = managerActor.successfulStartMsg(name)$/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct : String =  listener.agentsStrChart( agents) $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct : String =  s"Agent $name started succesfully.\\n" $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct : String =  s"Agent $name stopped succesfully.\\n" $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  = "Unknown command. Use help to get information of current commands.\\n" $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  = listener.commands $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  = listener.subsStrChart(intervalSubs, eventSubs, pollSubs)$/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  = s"Given path does not exist\\n" $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  = s"Successfully removed path $path\\n" $/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\\n"$/;"	V
+correct	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val correct: String  =s"Removed subscription with $id successfully.\\n" $/;"	V
 correct	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^      val correct = createAncestors(node)$/;"	V
 correctAgents	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val correctAgents = Vector($/;"	V
 correctResponse	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val correctResponse = getSingleResponseNoTime(j)$/;"	V
@@ -638,13 +697,13 @@ correctxmlreturn	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      lazy 
 correctxmlreturn	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      val correctxmlreturn =$/;"	V
 corsEnabled	O-MI Node/src/main/scala/http/CORSSupport.scala	/^  def corsEnabled = CorsDirectives.cors(corsSettings)$/;"	m
 corsSettings	O-MI Node/src/main/scala/http/CORSSupport.scala	/^   val corsSettings = CorsSettings.defaultSettings.copy($/;"	V
+couldNotFindMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def couldNotFindMsg( name : AgentName ) : String = s"Could not find agent: $name."$/;"	m
 count	O-MI Node/src/test/scala/responses/ReadTest.scala	/^    var count = 0$/;"	v
 count	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^    var count = 1000000$/;"	v
 createAncestors	O-MI Node/src/main/scala/types/package.scala	/^  def createAncestors(last: OdfNode): OdfObjects = {$/;"	m
 createClassLoader	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  private[this] def createClassLoader(): URLClassLoader = {$/;"	m
 createExtension	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  override def createExtension(system: ExtendedActorSystem) : OmiConfigExtension =$/;"	m
 createPrevayler	O-MI Node/src/main/scala/database/DBInterface.scala	/^  private[this] def createPrevayler[P](in: P, name: String) = {$/;"	m
-createRunnable	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^  private def createRunnable(message: Any): Runnable = new Runnable() {def run() = println(message)}$/;"	m
 createRunnable	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^  private def createRunnable(message: Any, sender: ActorRef): Runnable = new Runnable() {def run() = sender ! message}$/;"	m
 created	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  val created = props.actorClass$/;"	V
 created	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val created = "agentSystem.FFAgent"$/;"	V
@@ -652,7 +711,7 @@ currentTime	O-MI Node/src/main/scala/http/Boot.scala	/^      val currentTime = n
 currentTime	O-MI Node/src/main/scala/parsing/Parser.scala	/^  def currentTime() : Timestamp= new Timestamp( new Date().getTime ) $/;"	m
 currentTime	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^      val currentTime = System.currentTimeMillis()$/;"	V
 currentTime	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val currentTime = System.currentTimeMillis()$/;"	V
-currentTimestamp	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  protected def currentTimestamp =  new Timestamp( new Date().getTime ) $/;"	m
+currentTimestamp	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  protected def currentTimestamp =  new Timestamp( new Date().getTime )$/;"	m
 currentTimestamp	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^      val currentTimestamp = new Timestamp(currentTime)$/;"	V
 currentTree	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^      val currentTree = SingleStores.hierarchyStore execute GetTree()$/;"	V
 data	O-MI Node/src/main/scala/parsing/OmiParser.scala	/^    val data = msg.as[Elem]$/;"	V
@@ -676,8 +735,9 @@ database	O-MI Node/src/main/scala/database/LatestValues.scala	/^package database
 database	O-MI Node/src/main/scala/database/OdfConversions.scala	/^package database$/;"	p
 database	O-MI Node/src/main/scala/database/Subscriptions.scala	/^package database$/;"	p
 database	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^package database$/;"	p
+datarecord	O-MI Node/src/main/scala/types/package.scala	/^    val datarecord = request match{$/;"	V
 datas	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val datas = SingleStores.latestStore execute LookupSensorDatas(subscribedInfoItems.map(_.path))$/;"	V
-date	O-MI Node/src/main/scala/http/Boot.scala	/^      val date = new Date();$/;"	V
+date	O-MI Node/src/main/scala/http/Boot.scala	/^      val date = new Date()$/;"	V
 date	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  protected[this] def date = new Date()$/;"	m
 date	O-MI Node/src/test/scala/http/SystemTest.scala	/^    val date = """(end|begin)\\s*=\\s*"(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2})"""".r$/;"	V
 date	O-MI Node/src/test/scala/responses/CancelTest.scala	/^    val date = calendar.getTime$/;"	V
@@ -690,6 +750,7 @@ db	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^  implicit val db = ne
 dbConfigName	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val dbConfigName = "h2-conf"$/;"	V
 dbConnection	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  implicit def  dbConnection: DB$/;"	m
 dbConnection	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  implicit val dbConnection = new TestDB("agent-listener")$/;"	V
+dbConnection	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    implicit def dbConnection: database.DB = ???$/;"	m
 dbConnection	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  implicit val dbConnection = new TestDB("system-test")$/;"	V
 dbConnection	O-MI Node/src/test/scala/http/SystemTest.scala	/^  implicit val dbConnection = new TestDB("SystemTest")$/;"	V
 dbConnection	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  implicit val dbConnection = testdb$/;"	V
@@ -697,7 +758,7 @@ dbConnection	O-MI Node/src/test/scala/responses/ReadTest.scala	/^  implicit val 
 dbConnection	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  implicit val dbConnection = new TestDB("subscription-response-test")$/;"	V
 dbConnection	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  implicit val dbConnection = new TestDB("subscription-test-db")$/;"	V
 dbPath	O-MI Node/src/main/scala/database/DBInterface.scala	/^     val dbPath = confUrl.split(":").lastOption.getOrElse("")$/;"	V
-dbRemoveFuture	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^        val dbRemoveFuture: Future[Int] = node match {$/;"	V
+dbRemoveFuture	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^        val dbRemoveFuture: Future[Int] = _node match {$/;"	V
 dbValues	O-MI Node/src/main/scala/database/OdfConversions.scala	/^          val dbValues = valuetuple.collect {$/;"	V
 dbValuesForPath	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val dbValuesForPath = getDataForPath.map(OdfObjectsToValues(_))$/;"	V
 dbValuesForPath1	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val dbValuesForPath1 = getDataForPath1.map(OdfObjectsToValues(_))$/;"	V
@@ -705,6 +766,7 @@ dbioDBInfoItemsSum	O-MI Node/src/main/scala/database/DBUtility.scala	/^  protect
 dbioSeqSum	O-MI Node/src/main/scala/database/DBUtility.scala	/^  protected[this] def dbioSeqSum[A]: Seq[DBIO[Seq[A]]] => DBIO[Seq[A]] = {$/;"	m
 dbmaintainer	O-MI Node/src/main/scala/http/Boot.scala	/^    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")$/;"	V
 dbobject	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  def dbobject: DB$/;"	m
+decodeWriteStr	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def decodeWriteStr( future : Future[Any] )(implicit system: ActorSystem) ={$/;"	m
 default	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)$/;"	m
 defaultScope	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^  val defaultScope = scalaxb.toScope(None -> "odf.xsd",$/;"	V
 deploy	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val deploy = new File("O-MI Node\/deploy")$/;"	V
@@ -786,10 +848,14 @@ empty	O-MI Node/src/main/scala/database/Subscriptions.scala	/^  def empty : Poll
 empty	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def empty[T]: OdfTreeCollection[T] = Vector()$/;"	m
 empty	O-MI Node/src/main/scala/types/Types.scala	/^    val empty = new Path(Vector.empty)$/;"	V
 emptyConfig	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val emptyConfig = ConfigFactory.empty()$/;"	V
+emptyConfig	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def emptyConfig = ConfigFactory.empty()$/;"	m
+emptyConfig	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def emptyConfig = ConfigFactory.empty()$/;"	m
+emptyConfig	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^ def emptyConfig = ConfigFactory.empty()$/;"	m
 emptyTree	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val emptyTree = pollSub$/;"	V
 end	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^    val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)$/;"	V
 endTime	O-MI Node/src/main/scala/database/Subscriptions.scala	/^  val endTime: Date$/;"	V
 endTime	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^      val endTime = subEndTimestamp(subscription.ttl)$/;"	V
+endTime	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )$/;"	V
 envelope	O-MI Node/src/main/scala/parsing/OmiParser.scala	/^      val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)$/;"	V
 equals	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    override def equals(o: Any): Boolean =$/;"	m
 equals	O-MI Node/src/main/scala/types/Types.scala	/^    override def equals(that: Any): Boolean = that match{$/;"	m
@@ -805,6 +871,7 @@ eventData	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^       
 eventMsg	O-MI Node/src/main/scala/http/NodeCLI.scala	/^          val eventMsg = "Event subscriptions:\\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\\n" + events.map{ sub=>$/;"	V
 eventPrevayler	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")$/;"	V
 eventSubs	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()$/;"	V
+eventSubs	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val eventSubs : Set[EventSub] =Set( $/;"	V
 exception	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val exception : Throwable = CommandFailed("Test failure.") $/;"	V
 exception	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val exception = new java.lang.ClassNotFoundException(classname)$/;"	V
 exception	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val exception = new java.lang.ClassNotFoundException(classname+"$")$/;"	V
@@ -832,15 +899,17 @@ extractUserData	O-MI Node/src/main/scala/http/SamlHttpHeaderAuth.scala	/^  priva
 factory	O-MI Node/src/main/scala/database/DBInterface.scala	/^      val factory = new PrevaylerFactory[P]()$/;"	V
 factory	O-MI Node/src/main/scala/parsing/Parser.scala	/^    val factory : SchemaFactory =$/;"	V
 failTest	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^  def failTest(msg: String) = {$/;"	m
+failTest	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  def failTest(msg: String): Nothing = {$/;"	m
 failed	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    def failed(reason: String) =$/;"	m
 failedResults	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))$/;"	V
 file	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val file = new File(jarName)$/;"	V
 fileExt	O-MI Node/src/main/scala/database/DBInterface.scala	/^     val fileExt = dbPath.split(".").lastOption.getOrElse("")$/;"	V
 filters	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^    val filters = warnings.map{ msg => EventFilter.warning(message = msg, occurrences = 1)}$/;"	V
 findParentI	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption$/;"	m
-findParentQ	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def findParentQ(childPath: Path) = ($/;"	m
+findParentQ	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def findParentQ(childPath: Path): Query[DBNodesTable, DBNode, Seq] =$/;"	m
 first	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  override def first: ElemName  =$/;"	m
 fixedTrace	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^    val fixedTrace = trace.drop(trace.indexWhere(_.getClassName.startsWith("org.specs2")) - 1)$/;"	V
+fixedTrace	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^    val fixedTrace = trace.drop(trace.indexWhere(_.getClassName.startsWith("org.specs2")) - 1)$/;"	V
 forbiddenWrite	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    final protected def forbiddenWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {$/;"	m
 forcer	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    override private[AgentTypes] def forcer: Actor.Receive = super.forcer orElse {$/;"	m
 forcer	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    private[AgentTypes] def forcer : Actor.Receive = {$/;"	m
@@ -861,11 +930,12 @@ fromString	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^  def fromString(
 fromXML	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def fromXML[A](seq: NodeSeq, stack: List[ElemName] = Nil)$/;"	m
 fromXMLEither	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def fromXMLEither[A](seq: NodeSeq, stack: List[ElemName] = Nil)$/;"	m
 future	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^      val future = handleInfoItems(infoItems, objectMetadatas)$/;"	V
-future	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val future = agentInfo.agent ! ResponsibleWrite( promise, write)$/;"	V
-future	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val future = pathsO.map{$/;"	V
+future	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val future = agentInfo.agent ! ResponsibleWrite( promise, write)$/;"	V
+future	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val future = pathsO.map{$/;"	V
 future	O-MI Node/src/main/scala/http/Boot.scala	/^      val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful$/;"	V
 future	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val future = creator$/;"	V
-futures	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  def futures : Future[Iterable[Future[ResponsibleAgentResponse]]]= {$/;"	m
+futureResponse	O-MI Node/src/main/scala/http/OmiService.scala	/^    val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString)$/;"	V
+futures	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  def futures(implicit ec: ExecutionContext) : Future[Vector[Future[ResponsibleAgentResponse]]]= {$/;"	m
 gcalendarToTimestampOption	O-MI Node/src/main/scala/parsing/OmiParser.scala	/^  private[this] def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {$/;"	m
 genString	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^      def genString(requestHandler:  OmiRequestHandlerCore) = requestHandler.toString$/;"	m
 generateODFREST	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^  def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {$/;"	m
@@ -875,10 +945,11 @@ get	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def get(path: Path) : Opti
 get	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def get(path: Path) : Option[OdfNode] = {$/;"	m
 get	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None$/;"	m
 get	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def get(path: Path): Option[OdfNode]$/;"	m
+getAgents	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  def getAgents = agents$/;"	m
 getAllSubs	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  private def getAllSubs() = {$/;"	m
 getAvailablePaths	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {$/;"	m	class:AuthAPIService
 getCallbackRequest	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def getCallbackRequest(reqresp: NodeSeq): Try[Elem] = {$/;"	m
-getConfigsOwnerships	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  protected def getConfigsOwnerships() = {$/;"	m
+getConfigsOwnerships	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  protected def getConfigsOwnerships() = {$/;"	m
 getDBInfoItemI	O-MI Node/src/main/scala/database/DBUtility.scala	/^  protected[this] def getDBInfoItemI(path: Path): DBIOro[Option[DBInfoItem]] = {$/;"	m
 getDataDiscovery	O-MI Node/src/main/scala/http/OmiService.scala	/^  val getDataDiscovery =$/;"	V
 getDataForPath	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val getDataForPath = db.get(testPath).map(createAncestors(_))$/;"	V
@@ -903,11 +974,12 @@ getMetaInfoItem	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    def get
 getNBetween	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  def getNBetween($/;"	m
 getODFRequest	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^    def getODFRequest(path: Path): ODFRequest = path.lastOption match {$/;"	m
 getOdfNodes	O-MI Node/src/main/scala/types/package.scala	/^  def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {$/;"	m
-getOwners	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {$/;"	m
+getOwners	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {$/;"	m
 getParent	O-MI Node/src/main/scala/types/package.scala	/^  def getParent(child: OdfNode): OdfNode = {$/;"	m
 getParentsAndSelf	O-MI Node/src/main/scala/types/Types.scala	/^    def getParentsAndSelf: Seq[Path] = this.inits.map(Path(_)).toList.reverse.tail$/;"	m
 getPathValuePairs	O-MI Node/src/main/scala/types/package.scala	/^  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={$/;"	m
 getPaths	O-MI Node/src/main/scala/types/package.scala	/^  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq$/;"	m
+getPostRequest	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def getPostRequest(in: NodeSeq): HttpRequest = {$/;"	m
 getPrefix	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def getPrefix(namespace: Option[String], scope: scala.xml.NamespaceBinding) =$/;"	m
 getQ	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  def getQ(path: Path): DBIOro[Option[OdfNode]] = for {$/;"	m
 getSingle	O-MI Node/src/main/scala/database/DBInterface.scala	/^  def getSingle(path: Path) : Option[OdfNode] ={$/;"	m
@@ -933,13 +1005,15 @@ handleAgentCmd	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/
 handleCancel	O-MI Node/src/main/scala/responses/CancelHandler.scala	/^  def handleCancel(cancel: CancelRequest): Future[NodeSeq] = {$/;"	m
 handleInfoItems	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def handleInfoItems($/;"	m
 handleIntervals	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  private def handleIntervals(): Unit = {$/;"	m
+handleOdfRequest	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  protected def handleOdfRequest( result: PromiseResult, request: OdfRequest)(handlers: OdfRequest => (Option[OdfObjects],OdfObjects,Map[AgentName,OdfObjects]) =>Vector[Promise[ResponsibleAgentResponse]]) = {$/;"	m
 handlePathRemove	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^  def handlePathRemove(parentPath: Path): Boolean = {$/;"	m
+handlePathRemove	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    override def handlePathRemove(parentPath: Path): Boolean = { $/;"	m
 handlePoll	O-MI Node/src/main/scala/responses/PollHandler.scala	/^  def handlePoll(poll: PollRequest): Future[NodeSeq] = {$/;"	m
 handlePollData	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Set[SubValue] = {$/;"	m
 handleRead	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^  def handleRead(read: ReadRequest): Future[NodeSeq] = {$/;"	m
-handleRegisterOwnership	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  protected def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}$/;"	m
+handleRegisterOwnership	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  protected def handleRegisterOwnership(registerOwnership: RegisterOwnership ) = {}$/;"	m
 handleRequest	O-MI Node/src/main/scala/http/OmiService.scala	/^  def handleRequest(hasPermissionTest: PermissionTest, requestString: String): Future[NodeSeq] = {$/;"	m
-handleRequest	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  def handleRequest(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {$/;"	m
+handleRequest	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  def handleRequest(request: OmiRequest)(implicit system: ActorSystem): Future[NodeSeq] = {$/;"	m
 handleResponse	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^  def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={$/;"	m
 handleRestart	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  protected def handleRestart( restart: ReStartAgentCmd ) = {$/;"	m
 handleStart	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  protected def handleStart( start: StartAgentCmd ) = {$/;"	m
@@ -947,8 +1021,9 @@ handleStop	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  p
 handleSubscription	O-MI Node/src/main/scala/responses/SubscriptionHandler.scala	/^  def handleSubscription(_subscription: SubscriptionRequest): Future[NodeSeq] = {$/;"	m
 handleTTL	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {$/;"	m
 handleWrite	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit$/;"	m
-handleWrite	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  protected def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={$/;"	m
+handleWrite	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  protected def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={$/;"	m
 handleWrite	O-MI Node/src/main/scala/responses/WriteHandler.scala	/^  def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={$/;"	m
+handleWrite	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit = {$/;"	m
 hasCallback	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty$/;"	m
 hasDescription	O-MI Node/src/main/scala/types/OdfInfoItem.scala	/^  def hasDescription: Boolean = description.nonEmpty$/;"	m
 hasDescription	O-MI Node/src/main/scala/types/OdfObject.scala	/^  def hasDescription: Boolean = description.nonEmpty$/;"	m
@@ -962,6 +1037,7 @@ haspaths	O-MI Node/src/main/scala/types/OdfTypes.scala	/^    val haspaths = info
 headerSelector	O-MI Node/src/main/scala/http/SamlHttpHeaderAuth.scala	/^  def headerSelector(header: HttpHeader): Boolean =$/;"	m
 helloWorld	O-MI Node/src/main/scala/http/OmiService.scala	/^  val helloWorld = get {$/;"	V
 help	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def help(): String = {$/;"	m
+helpTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def helpTest = new Actorstest(AS){$/;"	m
 hierarchy	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def hierarchy: ForeignKeyQuery[DBNodesTable, DBNode] = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)($/;"	m
 hierarchyId	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def hierarchyId: Rep[Int] = column[Int]("HIERARCHYID")$/;"	m
 hierarchyNodes	O-MI Node/src/main/scala/database/DBClasses.scala	/^  protected[this] val hierarchyNodes = TableQuery[DBNodesTable] \/\/table for storing hierarchy$/;"	V
@@ -973,7 +1049,7 @@ histLength	O-MI Node/src/main/scala/database/DBInterface.scala	/^  private[this]
 historyLen	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val historyLen = database.historyLength$/;"	V
 historyLength	O-MI Node/src/main/scala/database/DBInterface.scala	/^  def historyLength: Int = histLength$/;"	m
 hostAddress	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val hostAddress = uri.authority.host.address$/;"	V
-htmlXml	O-MI Node/src/main/scala/http/OmiService.scala	/^  val htmlXml = nodeSeqMarshaller(MediaTypes.`text\/html`)$/;"	V
+htmlXml	O-MI Node/src/main/scala/http/OmiService.scala	/^  val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text\/html`)$/;"	V
 http	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^package http$/;"	p
 http	O-MI Node/src/main/scala/http/Authorization.scala	/^package http$/;"	p
 http	O-MI Node/src/main/scala/http/Boot.scala	/^package http$/;"	p
@@ -983,9 +1059,11 @@ http	O-MI Node/src/main/scala/http/NodeCLI.scala	/^package http$/;"	p
 http	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^package http$/;"	p
 http	O-MI Node/src/main/scala/http/OmiService.scala	/^package http$/;"	p
 http	O-MI Node/src/main/scala/http/SamlHttpHeaderAuth.scala	/^package http$/;"	p
+http	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^package http$/;"	p
 http	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^package http$/;"	p
+http	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val http = Http(system)$/;"	V
 http	O-MI Node/src/test/scala/http/SystemTest.scala	/^package http$/;"	p
-httpHandler	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  private[this] val httpHandler: HttpRequest => Future[HttpResponse] = sendReceive$/;"	V
+httpExt	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  val httpExt = Http(system)$/;"	V
 i	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^                  var i = 1 \/\/Intentionally 1 and not 0$/;"	v
 id	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val id = esub.id$/;"	V
 id	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def id: Rep[Int] = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)$/;"	m
@@ -993,6 +1071,7 @@ id	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def id: Rep[Long] = c
 id	O-MI Node/src/main/scala/database/DBClasses.scala	/^  val id: Long,$/;"	V
 id	O-MI Node/src/main/scala/database/Subscriptions.scala	/^  val id: Long$/;"	V
 id	O-MI Node/src/main/scala/http/NodeCLI.scala	/^      val id = pathOrId.toInt$/;"	V
+id	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val id = 13$/;"	V
 id	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val id = 5000$/;"	V
 idPrevayler	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")$/;"	V
 ideDeploy	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    lazy val ideDeploy = new File("deploy")$/;"	V
@@ -1008,8 +1087,8 @@ infoItem	O-MI Node/src/main/scala/database/DBInterface.scala	/^      val infoIte
 infoItem	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val infoItem: OdfInfoItem$/;"	V
 infoItemData	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^      val infoItemData = SingleStores.latestStore execute LookupSensorDatas(paths)$/;"	V
 infoItems	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^        val infoItems = infoSeq map { case (_, infoItem) =>  infoItem}$/;"	V
-infoItems	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^        val infoItems= allInfoItems.filter{$/;"	V
-infoItems	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val infoItems = allInfoItems.filter{$/;"	V
+infoItems	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^        val infoItems= allInfoItems.filter{$/;"	V
+infoItems	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val infoItems = allInfoItems.filter{$/;"	V
 infoItems	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  lazy val infoItems = getInfoItems(this)$/;"	V
 infoitems	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val infoitems = pathsData.collect{$/;"	V
 infoitems	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^          val infoitems: Seq[OdfInfoItem] = ob.infoItems.toSeq$/;"	V
@@ -1022,7 +1101,6 @@ inputWhiteListSubnets	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^ 
 inputWhiteListUsers	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val inputWhiteListUsers = config.getStringList("omi-service.input-whitelist-users") $/;"	V
 instanceType	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def instanceType(node: scala.xml.Node): (Option[String], Option[String]) = {$/;"	m
 intMsg	O-MI Node/src/main/scala/http/NodeCLI.scala	/^          val intMsg= "Interval subscriptions:\\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\\n" +$/;"	V
-intToRichLong	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  override def intToRichLong(v: Int) = super.intToRichLong(v)$/;"	m
 interface	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val interface: String = config.getString("omi-service.interface")$/;"	V
 internalAgents	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^    val internalAgents = config.getObject("agent-system.internal-agents") $/;"	V
 internalAgentsStartTimout	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^  val internalAgentsStartTimout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds$/;"	V
@@ -1035,10 +1113,12 @@ interval	O-MI Node/src/main/scala/database/DBClasses.scala	/^  val interval: Dur
 interval	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^                val interval  = pollInterval.interval.toMillis$/;"	V
 interval	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^            val interval: Duration = pollInterval.interval$/;"	V
 interval	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def interval: Duration$/;"	m
+interval	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val interval = 5.minutes$/;"	V
 intervalData	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^            val intervalData: Future[Map[Path, Vector[OdfValue]]] = dbConnection.pollIntervalSubscription(id).map(_.toVector$/;"	V
 intervalPrevayler	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")$/;"	V
 intervalScheduler	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  val intervalScheduler = context.system.scheduler$/;"	V
 intervalSubs	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()$/;"	V
+intervalSubs	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val intervalSubs : Set[IntervalSub] = Set( $/;"	V
 intervalToMillis	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def intervalToMillis: Long = interval.toMillis$/;"	m
 intervaltestdata	O-MI Node/src/test/scala/responses/ReadTest.scala	/^    val intervaltestdata = List($/;"	V
 intervaltestdata	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^    val intervaltestdata = List($/;"	V
@@ -1047,10 +1127,10 @@ invalidCallback	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def in
 invalidOdfTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    def invalidOdfTest( text: String, errors : Set[ParseError] ) : MatchResult[OdfParseResult] = {$/;"	m
 invalidOmiTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    def invalidOmiTest( text: String, errors : Set[ParseError] ) : MatchResult[OmiParseResult]= {$/;"	m
 invalidOmiTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    def invalidOmiTest( xml: NodeSeq, errors : Set[ParseError] ) : MatchResult[OmiParseResult] = {$/;"	m
-invalidPortMsg	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val invalidPortMsg = "Tryed to send callback to port used by O-MI Node"$/;"	V
+invalidPortMsg	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val invalidPortMsg = "Tried to send callback to port used by O-MI Node"$/;"	V
 invalidRequest	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def invalidRequest(msg: String = "") : NodeSeq = xmlFromResults($/;"	m
 invalidRequest	O-MI Node/src/main/scala/responses/Result.scala	/^  def invalidRequest(msg: String = ""): RequestResultType = simple( "400", Some("Bad request: " + msg) )$/;"	m
-invalidSchemeMsg	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val invalidSchemeMsg = "Tryed to send callback to port used by O-MI Node"$/;"	V
+invalidSchemeMsg	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val invalidSchemeMsg = "Tried to send callback to port used by O-MI Node"$/;"	V
 iosumlist	O-MI Node/src/main/scala/database/DBUtility.scala	/^      def iosumlist(a: DBIO[Seq[A]], b: DBIO[Seq[A]]): DBIO[Seq[A]] = for {$/;"	m
 ip	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val ip : Int = ((bytes(0) & 0xFF) << 24) |$/;"	V
 ip	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val ip = InetAddress.getByName(mask)\/\/inetAddrToBytes(InetAddress.getByName(mask))$/;"	V
@@ -1063,9 +1143,10 @@ ipv4	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val ipv4 = 4$/;"	
 ipv6	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val ipv6 = 16$/;"	V
 is	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  def is = s2"""$/;"	m
 is	O-MI Node/src/test/scala/parsing/TypesTest.scala	/^  def is = s2"""$/;"	m
-isAuthorizedForRequest	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    public AuthorizationResult isAuthorizedForRequest(spray.http.HttpRequest httpRequest,$/;"	m	class:AuthAPIService
+isAncestor	O-MI Node/src/main/scala/types/Types.scala	/^    def isAncestor( child: Path) : Boolean ={$/;"	m
+isAuthorizedForRequest	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,$/;"	m	class:AuthAPIService
 isAuthorizedForRequest	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^  def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {$/;"	m
-isAuthorizedForType	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    public AuthorizationResult isAuthorizedForType(spray.http.HttpRequest httpRequest,$/;"	m	class:AuthAPIService
+isAuthorizedForType	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,$/;"	m	class:AuthAPIService
 isAuthorizedForType	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult$/;"	m
 isEventBased	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def isEventBased: Boolean = interval == -1.seconds$/;"	m
 isImmortal	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def isImmortal: Boolean  = ! ttl.isFinite$/;"	m
@@ -1074,7 +1155,7 @@ isInfoItem	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def isInfoIte
 isIntervalBased	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def isIntervalBased : Boolean  = interval >= 0.milliseconds$/;"	m
 isMixed	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def isMixed: Boolean = false$/;"	m
 isNil	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def isNil(node: scala.xml.Node) =$/;"	m
-isSuccessful	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  def isSuccessful : Future[ResponsibleAgentResponse]= {$/;"	m
+isSuccessful	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  def isSuccessful(implicit ec: ExecutionContext) : Future[ResponsibleAgentResponse]= {$/;"	m
 item	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^      val item   = event.infoItem$/;"	V
 item1	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    val item1 = createAncestors(OdfInfoItem( $/;"	V
 item2	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    val item2 = createAncestors(OdfInfoItem( $/;"	V
@@ -1084,11 +1165,11 @@ items	O-MI Node/src/main/scala/database/OdfConversions.scala	/^    val items = t
 jarEntries	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^        val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))$/;"	V
 jarFile	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^        val jarFile = new JarFile(jar)$/;"	V
 jars	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val jars = directory.listFiles.filter(_.getName.endsWith(".jar"))$/;"	V
-jobs	O-MI Node/src/main/scala/responses/CancelHandler.scala	/^    val jobs = Future.sequence(cancel.requestID.map { id =>$/;"	V
+jobs	O-MI Node/src/main/scala/responses/CancelHandler.scala	/^    val jobs = Future.sequence(cancel.requestIDs.map { id =>$/;"	V
 joinWithHierarchyQ	O-MI Node/src/main/scala/database/DBUtility.scala	/^  protected[this] def joinWithHierarchyQ[ItemT, TableT <: HierarchyFKey[ItemT]]($/;"	m
 journalFileSizeLimit	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val journalFileSizeLimit = 100 * 1000000 \/\/ TODO: Config variable?$/;"	V
 journalsDirectory	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val journalsDirectory: String = config.getString("journalDBs.directory")$/;"	V
-key	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val key = pathOwners.keys.find{$/;"	V
+key	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val key = pathOwners.keys.find{$/;"	V
 key	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val key = Some(elem.label)$/;"	V
 key	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val key = Some(elem.label)$/;"	V
 key	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  val key: Option[String]$/;"	V
@@ -1100,14 +1181,18 @@ latestStore	O-MI Node/src/main/scala/database/DBInterface.scala	/^  val latestSt
 latestValue	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^                  val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {$/;"	V
 latestValues	O-MI Node/src/main/scala/database/DBClasses.scala	/^  protected[this] val latestValues = TableQuery[DBValuesTable] \/\/table for sensor data$/;"	V
 leafs	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^    val leafs = getLeafs(read.odf)$/;"	V
-leafs	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^        val leafs = getInfoItems(node).map(_.path)$/;"	V
+leafs	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^        val leafs = getInfoItems(_node).map(_.path)$/;"	V
 leftBoundary	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def leftBoundary: Rep[Int] = column[Int]("LEFTBOUNDARY")$/;"	m
 length	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def length = vector.length$/;"	m
 line	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  override def line = 1$/;"	m
 lineContents	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  protected[this] def lineContents =$/;"	m
 linkFragment	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^  override def linkFragment(alias: String) = super.linkFragment(alias)$/;"	m
 listAgents	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def listAgents(): String = {$/;"	m
+listAgentsTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def listAgentsTest= new Actorstest(AS){$/;"	m
 listSubs	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def listSubs(): String = {$/;"	m
+listSubsTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def listSubsTest= new Actorstest(AS){$/;"	m
+listener	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val listener = listenerRef.underlyingActor$/;"	V
+listenerRef	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val listenerRef = TestActorRef(new OmiNodeCLI($/;"	V
 loadAndStart	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit =$/;"	m
 loadAndStart	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  protected[agentSystem] def loadAndStart($/;"	m
 loadDirectoryJars	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  private[this] def loadDirectoryJars(directory: File) = {$/;"	m
@@ -1119,15 +1204,18 @@ loader	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^    
 loader	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^    val loader = new TestLoader(testConfig)$/;"	V
 loader	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val loader = system.actorOf(TestLoader.props(config), "agent-loader") $/;"	V
 local	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  val local = new InetSocketAddress("localhost", 1234)$/;"	V
+localHost	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  val localHost = RemoteAddress(InetAddress.getLoopbackAddress)$/;"	V
 localPart	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val localPart = value.drop(value.indexOf(':') + 1)$/;"	V
 log	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  private val log = LoggerFactory.getLogger("DBReadOnly")$/;"	V
 log	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  private val log = LoggerFactory.getLogger("DBReadWrite")$/;"	V
-log	O-MI Node/src/main/scala/http/Authorization.scala	/^    def log: LoggingAdapter$/;"	m
-log	O-MI Node/src/main/scala/http/OmiService.scala	/^  def log: LoggingAdapter$/;"	m
-log	O-MI Node/src/main/scala/http/OmiService.scala	/^  val log = LoggerFactory.getLogger("OmiService")$/;"	V
+log	O-MI Node/src/main/scala/http/Authorization.scala	/^    def log: Logger = LoggerFactory.getLogger("AuthorizationExtensionDefaultLogger")$/;"	m
+log	O-MI Node/src/main/scala/http/OmiService.scala	/^       override val log = LoggerFactory.getLogger(classOf[OmiService])$/;"	V
+log	O-MI Node/src/main/scala/http/OmiService.scala	/^  def log: org.slf4j.Logger$/;"	m
+log	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  private def log(implicit system: ActorSystem) = system.log$/;"	m
 log	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  protected def log = Logging( http.Boot.system, this)$/;"	m
 log	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  protected def log: LoggingAdapter$/;"	m
-log	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^  lazy val log = akka.event.Logging.getLogger(actorRefFactory, this)$/;"	V
+log	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    protected def log: akka.event.LoggingAdapter = ???$/;"	m
+log	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^    override val log = LoggerFactory.getLogger("OmiServiceTest")$/;"	V
 logFunc	O-MI Node/src/main/scala/http/Authorization.scala	/^  private def logFunc: UserInfo => OmiRequest => Option[OmiRequest] = {ip => {$/;"	m
 logSource	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  implicit val logSource: LogSource[OmiRequestHandlerCore]= new LogSource[OmiRequestHandlerCore] {$/;"	V
 logTestActorSystem	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^  def logTestActorSystem =ActorSystem($/;"	m
@@ -1145,15 +1233,25 @@ makePermissionTestFunction	O-MI Node/src/main/scala/http/Authorization.scala	/^ 
 makePermissionTestFunction	O-MI Node/src/main/scala/http/Authorization.scala	/^  abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious($/;"	m
 makePermissionTestFunction	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  abstract override def makePermissionTestFunction: CombinedTest =$/;"	m
 makePermissionTestFunction	O-MI Node/src/main/scala/http/SamlHttpHeaderAuth.scala	/^  abstract override def makePermissionTestFunction: CombinedTest =$/;"	m
-many	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val many = path.getParentsAndSelf$/;"	V
+managerActor	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val managerActor = managerRef.underlyingActor$/;"	V
+managerActor	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val managerActor = managerRef.underlyingActor$/;"	V
+managerActor	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val managerActor = managerRef.underlyingActor$/;"	V
+managerRef	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val managerRef = TestActorRef( new TestManager(testAgents)) $/;"	V
+managerRef	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val managerRef = TestActorRef( new TestFailureManager(testAgents)) $/;"	V
+managerRef	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val managerRef = TestActorRef( new TestSuccessManager(_paths,testAgents){$/;"	V
+managerRef	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val managerRef = TestActorRef( new TestSuccessManager(paths,testAgents)) $/;"	V
+managerRef	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val managerRef = TestActorRef( new TestManager(testAgents)) $/;"	V
+many	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val many = path.getParentsAndSelf$/;"	V
 map	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^  override def map(fs: ⇒ Fragments) = super.map(fs).append(DefaultFragmentFactory.step(cleanUp()))$/;"	m
-map	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  override def map(fs: => Fragments) = {$/;"	m
 mask	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^          val mask = allOnes << (maxBits - bits)  $/;"	V
 mask	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^        val mask = allOnes << (maxBits - bits)  $/;"	V
 mask	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val mask = parts.head$/;"	V
 masker	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^          val masker = 0xFF $/;"	V
+mat	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  implicit val mat: Materializer = ActorMaterializer()$/;"	V
 matchAll	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val matchAll = ActorRef.noSender$/;"	V
 materializer	O-MI Node/src/main/scala/http/Boot.scala	/^    implicit val materializer = ActorMaterializer()$/;"	V
+materializer	O-MI Node/src/test/scala/http/SystemTest.scala	/^  implicit val materializer = ActorMaterializer()$/;"	V
+materializer	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  implicit val materializer = ActorMaterializer()$/;"	V
 maxBits	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^          val maxBits = 64$/;"	V
 maxBits	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^        val maxBits = 32$/;"	V
 mergeNodeScope	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def mergeNodeScope(node: Node, outer: NamespaceBinding): Node =$/;"	m
@@ -1172,18 +1270,21 @@ missingObjectTest	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.s
 missingPathsI	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val missingPathsI: DBIOro[Seq[Path]] = foundPathsI map (parentsAndPath diff _)$/;"	V
 mixedCancelRequest	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  val mixedCancelRequest = <?xml version="1.0" encoding="UTF-8"?>$/;"	V
 mixedCancelReturn	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  val mixedCancelReturn = <?xml version="1.0" encoding="UTF-8"?>$/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^            val msg = s"Agent $agentName started succesfully."$/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^            val msg = s"Agent $agentName stopped succesfully."$/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^          val msg = s"Agent $agentName restarted succesfully."$/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^        val msg = s"Agent $agentName was already Running. 're-start' should be used to restart running Agents"$/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^        val msg = s"Agent $agentName was already stopped."$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^            val msg = successfulStartMsg(agentName)$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^            val msg = successfulStopMsg(agentName)$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^          val msg = s"Agent $agentName restarted succesfullyi."$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^        val msg = wasAlreadyStartedMsg(agentName)$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^        val msg = wasAlreadyStoppedMsg(agentName)$/;"	V
 msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^      val msg = s"Agent $agentName was not running. 'start' should be used to start stopped Agents."$/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val msg = s"Received write for nonexistent agent." $/;"	V
-msg	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val msg = s"Received write for paths:\\n" + paths.mkString("\\n") + s"owned by stopped agent." $/;"	V
-msg	O-MI Node/src/main/scala/http/NodeCLI.scala	/^          val msg =$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^    val msg : Future[String] = agents.get(agentName) match {$/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val msg = s"Received write for nonexistent agent." $/;"	V
+msg	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val msg = s"Received write for paths:\\n" + paths.mkString("\\n") + s"owned by stopped agent." $/;"	V
+msg	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val msg =$/;"	V
 msg	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^  val msg: Option[scalaxb.DataRecord[Any]]$/;"	V
 msg	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^                    val msg =s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."$/;"	V
 msg	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^            val msg = s"Duration $dur is unsupported"$/;"	V
+msg	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val msg = StartAgentCmd(name)$/;"	V
+msg	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val msg = StopAgentCmd(name)$/;"	V
 msg	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val msg  = <msg>success1<\/msg>$/;"	V
 msg	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val msg  = <msg>success2<\/msg>$/;"	V
 msgformat	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^  val msgformat: Option[String]$/;"	V
@@ -1192,18 +1293,27 @@ multipleCancelRequest	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  va
 multipleCancelReturn	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  val multipleCancelReturn = <?xml version="1.0" encoding="UTF-8"?>$/;"	V
 multiplePathsRequest	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  val multiplePathsRequest = <?xml version="1.0" encoding="UTF-8"?>$/;"	V
 multiplePathsReturn	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  val multiplePathsReturn = <?xml version="1.0" encoding="UTF-8"?>$/;"	V
-myHole	O-MI Node/src/main/scala/http/Authorization.scala	/^    def myHole(h: Hole) = ???$/;"	m
 myRoute	O-MI Node/src/main/scala/http/OmiService.scala	/^  val myRoute = corsEnabled {$/;"	V
 n	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^      val n = 5$/;"	V
 nBetweenLogicQ	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def nBetweenLogicQ($/;"	m
 name	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^    def name:       AgentName$/;"	m
 name	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    protected def name = self.path.name$/;"	m
-name	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val name = agent$/;"	V
-name	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val name = agent.name$/;"	V
-name	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val name = agentInfo.name$/;"	V
+name	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val name = agent$/;"	V
+name	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val name = agent.name$/;"	V
+name	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val name = agentInfo.name$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "Nonexisting"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "Running"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "StartSuccess"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "Startfail"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "StopSuccess"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "Stopfail"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val name = "Stopped"$/;"	V
+name	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val name = "WriteSuccess"$/;"	V
+name	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val name = "StartSuccess"$/;"	V
 names	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^    val names : Set[String] = asScalaSet(internalAgents.keySet()).toSet \/\/ mutable -> immutable$/;"	V
 namespace	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val namespace = scalaxb.Helper.nullOrEmpty(node.scope.getURI(prefix.orNull))$/;"	V
 namespace	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  val namespace: Option[String]$/;"	V
+namespace	O-MI Node/src/main/scala/types/package.scala	/^    val namespace = Some("omi.xsd")$/;"	V
 nestedJars	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val nestedJars = jars map { jar: File =>$/;"	V
 newChild	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^          val newChild = mergeNodeSeqScope(mergeNodeSeqScope(elem.child, outer), innerScope)$/;"	V
 newId	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^      val newId = SingleStores.idPrevayler execute GetAndUpdateId$/;"	V
@@ -1215,15 +1325,16 @@ newPollValues	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val newP
 newPrefix	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^          val newPrefix: String = mapping.get(scalaxb.Helper.nullOrEmpty(elem.prefix)) map {_.orNull} getOrElse {elem.prefix}$/;"	V
 newStore	O-MI Node/src/main/scala/database/LatestValues.scala	/^        val newStore: HashMap[Path, Vector[EventSub]] =$/;"	V
 newSubs	O-MI Node/src/main/scala/database/LatestValues.scala	/^        val newSubs: HashMap[Path, Vector[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Vector(eventSub))): _*)$/;"	V
-newTTL	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^      def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )$/;"	m
+newTTL	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )$/;"	m
 newTime	O-MI Node/src/main/scala/database/LatestValues.scala	/^          val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))$/;"	V
 newTimestamp	O-MI Node/src/test/scala/http/SystemTest.scala	/^        val newTimestamp = form.format(parsedTimestamp)$/;"	V
 newTimestamp	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def newTimestamp(time: Long = -1L): Timestamp = {$/;"	m
 newTs	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^  def newTs = new Timestamp(new java.util.Date().getTime)$/;"	m
-nextPath	O-MI Node/src/main/scala/types/OdfTypes.scala	/^    val nextPath = p.toSeq.tail$/;"	V
-nextPath	O-MI Node/src/main/scala/types/OdfTypes.scala	/^    val nextPath = path.toSeq.tail$/;"	V
+nextPath	O-MI Node/src/main/scala/types/OdfTypes.scala	/^    val nextPath: Path = p.toSeq.tail$/;"	V
+nextPath	O-MI Node/src/main/scala/types/OdfTypes.scala	/^    val nextPath: Path = path.toSeq.tail$/;"	V
 nextRun	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val nextRun = Duration(sub.endTime.getTime() - currentTime,MILLISECONDS)$/;"	V
 nextRun	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^      val nextRun = Duration(math.max(tStamp.getTime - currentTime, 0L), "milliseconds")$/;"	V
+nextRunTime	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)$/;"	V
 nextTick	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^                var nextTick = lastPolled + (interval - pollTimeOffset)$/;"	v
 nil	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def nil = Helper.isNil(node)$/;"	m
 nilElem	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def nilElem(namespace: Option[String], elementLabel: String,$/;"	m
@@ -1237,7 +1348,7 @@ nodeOption	O-MI Node/src/main/scala/database/LatestValues.scala	/^    val nodeOp
 nodes	O-MI Node/src/main/scala/database/OdfConversions.scala	/^    val nodes = items.keys$/;"	V
 nodesQ	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    val nodesQ = hierarchyNodes filter { node =>$/;"	V
 nodesWithValuesQ	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    val nodesWithValuesQ =$/;"	V
-nonExistingOwner	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val nonExistingOwner = allExists.find{ case (name, exists) => exists.isEmpty }$/;"	V
+nonExistingOwner	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val nonExistingOwner = allExists.find{ case (name, exists) => exists.isEmpty }$/;"	V
 normalized	O-MI Node/src/main/scala/types/Types.scala	/^      val normalized = pathSeq.filterNot(_ == "")$/;"	V
 notFound	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def notFound : NodeSeq= xmlFromResults($/;"	m
 notFound	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^        val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq$/;"	V
@@ -1246,6 +1357,8 @@ notFoundSub	O-MI Node/src/main/scala/responses/Result.scala	/^  def notFoundSub(
 notFoundSub	O-MI Node/src/main/scala/responses/Result.scala	/^  def notFoundSub: RequestResultType = simple( "404", Some("A subscription with this id has expired or doesn't exist"))$/;"	m
 notImplemented	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def notImplemented : NodeSeq = xmlFromResults($/;"	m
 notImplemented	O-MI Node/src/main/scala/responses/Result.scala	/^  def notImplemented : RequestResultType = simple( "501", Some("Not implemented") )$/;"	m
+notOwnedWriteFailTest	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def notOwnedWriteFailTest = new Actorstest(AS){$/;"	m
+notOwnedWriteTest	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def notOwnedWriteTest = new Actorstest(AS){$/;"	m
 npath	O-MI Node/src/main/scala/parsing/OdfParser.scala	/^    val npath = path \/ validateId(item.name).getOrElse($/;"	V
 npath	O-MI Node/src/main/scala/parsing/OdfParser.scala	/^    val npath = path \/ validateId(obj.id.headOption.map(_.value)).getOrElse($/;"	V
 ns	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val ns = scalaxb.Helper.nullOrEmpty(elem.scope.getURI(elem.prefix))$/;"	V
@@ -1276,7 +1389,7 @@ objects	O-MI Node/src/main/scala/responses/RemoveHandler.scala	/^    val objects
 objects	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val objects: Vector[OdfObjects] = datas.map {$/;"	V
 objectsF	O-MI Node/src/main/scala/responses/PollHandler.scala	/^      val objectsF: Future[ Any \/* Option[OdfObjects] *\/ ] = (subscriptionManager ? PollSubscription(id)).mapTo[Future[Option[OdfObjects]]].flatMap(n=>n)$/;"	V
 objectsO	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^    val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)$/;"	V
-objectsWithMetadata	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val objectsWithMetadata = odfObjects.objectsWithMetadata$/;"	V
+objectsWithMetadata	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val objectsWithMetadata = odfObjects.objectsWithMetadata$/;"	V
 objectsWithMetadata	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  lazy val objectsWithMetadata = getOdfNodes(this) collect {$/;"	V
 oddObjectTest	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ def oddObjectTest        = new Actorstest(logTestActorSystem){$/;"	m
 odf	O-MI Node/src/main/scala/parsing/OmiParser.scala	/^        val odf = (data \\ "Objects")$/;"	V
@@ -1296,7 +1409,8 @@ odfInfoItemI	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^        val od
 odfMsg	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def odfMsg( odf: NodeSeq ):  NodeSeq ={$/;"	m
 odfObject	O-MI Node/src/main/scala/database/OdfConversions.scala	/^          val odfObject = objectNode.toOdfObject(odfInfoItemChildren, odfObjectChildren)$/;"	V
 odfObjectChildren	O-MI Node/src/main/scala/database/OdfConversions.scala	/^        val odfObjectChildren = objectChildren map (_.toOdfObject)$/;"	V
-odfObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val odfObjects = write.odf$/;"	V
+odfObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val odfObjects = request.odf$/;"	V
+odfObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val odfObjects = write.odf$/;"	V
 odfObjects	O-MI Node/src/main/scala/database/OdfConversions.scala	/^          val odfObjects = OdfObjects(odfObjectChildren)$/;"	V
 odfObjectsTrees	O-MI Node/src/main/scala/database/DBInterface.scala	/^    val odfObjectsTrees = items map { case (path, value) =>$/;"	V
 odfObjectsTrees	O-MI Node/src/main/scala/database/OdfConversions.scala	/^    val odfObjectsTrees = treeData map odfConversion$/;"	V
@@ -1309,15 +1423,15 @@ offset	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    override val 
 oldSubscriptionTest	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^class oldSubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {$/;"	c
 omiCancelTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    val omiCancelTest =$/;"	V
 omiEnvelope	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") : OmiEnvelope= {$/;"	m
+omiEnvelopeToXML	O-MI Node/src/main/scala/types/package.scala	/^ def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) : NodeSeq ={ $/;"	m
 omiNodeCLIListener	O-MI Node/src/main/scala/http/Boot.scala	/^    val omiNodeCLIListener =system.actorOf($/;"	V
-omiNodeCLIListener	O-MI Node/src/test/scala/http/SystemTest.scala	/^    val omiNodeCLIListener =system.actorOf($/;"	V
 omiReadTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val omiReadTest =$/;"	V
 omiResponse	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def omiResponse( results: RequestResultType*) : ResponseListType = {$/;"	m
 omiResponseTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val omiResponseTest =$/;"	V
 omiResult	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def omiResult($/;"	m
 omiReturn	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def omiReturn( returnCode: String, description: Option[String] = None, value: String = "") : ReturnType={$/;"	m
 omiService	O-MI Node/src/main/scala/http/Boot.scala	/^    val omiService = new OmiServiceImpl(requestHandler)$/;"	V
-omiService	O-MI Node/src/test/scala/http/SystemTest.scala	/^    val omiService = system.actorOf(Props($/;"	V
+omiService	O-MI Node/src/test/scala/http/SystemTest.scala	/^    val omiService = new OmiServiceImpl(requestHandler)$/;"	V
 omiWriteTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val omiWriteTest =$/;"	V
 onChangeData	O-MI Node/src/main/scala/database/DBInterface.scala	/^          val onChangeData =$/;"	V
 optTextRecord	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def optTextRecord(implicit format: XMLFormat[String]): Parser[Option[DataRecord[Any]]] =$/;"	m
@@ -1327,9 +1441,15 @@ other	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^    val other = get
 outerList	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val outerList = fromScope(outer)$/;"	V
 ownedPaths	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^    def ownedPaths: Seq[Path]$/;"	m
 ownedPaths	O-MI Node/src/main/scala/agentSystem/AgentSystemConfigExtension.scala	/^      val ownedPaths : Seq[Path] = Try{$/;"	V
-ownerToObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val ownerToObjects = ownerToPaths.mapValues{ $/;"	V
-ownerToPath	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val ownerToPath = getOwners(allPaths:_*)$/;"	V
-ownerToPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val ownerToPaths= ownerToPath - senderName$/;"	V
+ownedWriteFailTest	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def ownedWriteFailTest = new Actorstest(AS){$/;"	m
+ownedWriteTest	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def ownedWriteTest = new Actorstest(AS){$/;"	m
+ownerToObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val ownerToObjects = ownerToPaths.mapValues{ $/;"	V
+ownerToObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val ownerToObjects = ownerToPaths.mapValues{ $/;"	V
+ownerToPath	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val ownerToPath = getOwners(allPaths:_*)$/;"	V
+ownerToPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val ownerToPaths= ownerToPath - senderName$/;"	V
+ownerToPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val ownerToPaths= ownerToPath - senderName$/;"	V
+ownerlessObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val ownerlessObjects = allInfoItems.filter{$/;"	V
+ownerlessPaths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val ownerlessPaths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }$/;"	V
 p	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^    val p = paths.flatMap(p => hTree.get(Path("Objects\/SubscriptionTest\/" + p)))$/;"	V
 parent	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    protected def parent = context.parent$/;"	m
 parent	O-MI Node/src/main/scala/types/package.scala	/^          val parent = OdfObject(OdfTreeCollection(), parentPath, OdfTreeCollection(), OdfTreeCollection(obj))$/;"	V
@@ -1412,6 +1532,8 @@ path	O-MI Node/src/main/scala/database/DBClasses.scala	/^  val path: Path,$/;"	V
 path	O-MI Node/src/main/scala/http/OmiService.scala	/^        val path = Path(pathStr)$/;"	V
 path	O-MI Node/src/main/scala/types/OdfObjects.scala	/^  val path = Path("Objects")$/;"	V
 path	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def path: Path$/;"	m
+path	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val path = Path( "Objects\/object1\/sensor1" )$/;"	V
+path	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val path = "Objects\/object\/sensor"$/;"	V
 path	O-MI Node/src/test/scala/parsing/TypesTest.scala	/^    val path = Path(seq)$/;"	V
 path1	O-MI Node/src/test/scala/parsing/TypesTest.scala	/^    val path1 = Path("Objects")$/;"	V
 path1	O-MI Node/src/test/scala/parsing/TypesTest.scala	/^    val path1 = new Path("test1\/test2")$/;"	V
@@ -1420,24 +1542,25 @@ path2	O-MI Node/src/test/scala/parsing/TypesTest.scala	/^    val path2 = new Pat
 pathAndvalues	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^    val pathAndvalues: Iterable[(String, Vector[OdfValue])] = Seq($/;"	V
 pathColumnType	O-MI Node/src/main/scala/database/DBClasses.scala	/^  implicit val pathColumnType = MappedColumnType.base[Path, String]($/;"	V
 pathIdRelations	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val pathIdRelations = db.run(writeAction.transactionally)$/;"	V
-pathIndex	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def pathIndex: Index = index("IDX_HIERARCHYNODES_PATH", path, unique = true)$/;"	m
-pathOwners	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  protected[this] lazy val pathOwners: scala.collection.mutable.Map[Path,AgentName] =$/;"	V
+pathOwners	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  protected[this] def pathOwners: scala.collection.mutable.Map[Path,AgentName] =$/;"	m
 pathStr	O-MI Node/src/main/scala/http/OmiService.scala	/^        val pathStr = uriPath \/\/ pathToString(uriPath)$/;"	V
 pathToInfoItemIterable	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^  def pathToInfoItemIterable(x: Path) = {$/;"	m
 pathToString	O-MI Node/src/main/scala/http/OmiService.scala	/^  def pathToString: Uri.Path => String = {$/;"	m
 pathValueOldValueTuples	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val pathValueOldValueTuples = for {$/;"	V
-paths	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val paths = getLeafs(write.odf).map(_.path)$/;"	V
-paths	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val paths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }$/;"	V
+paths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val paths = getLeafs(write.odf).map(_.path)$/;"	V
+paths	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val paths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }$/;"	V
 paths	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^      val paths = reqInfoItems map (_.path)$/;"	V
 paths	O-MI Node/src/main/scala/database/Subscriptions.scala	/^  val paths: Vector[Path]$/;"	V
 paths	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^        val paths = getLeafs(odfRequest.odf) map (_.path) \/\/ todo: refactor getLeafs to member lazy to re-use later$/;"	V
 paths	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^          val paths = OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq$/;"	V
 paths	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  lazy val paths = infoItems map (_.path)$/;"	V
+paths	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val paths = Vector(Path( "Objects\/object1\/sensor1" ))$/;"	V
+paths	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val paths = Vector(path)$/;"	V
 paths	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^          val paths = infoitems.map(n => n.path)$/;"	V
+paths	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val paths = Vector( $/;"	V
 pathsData	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val pathsData: Map[Path, Seq[OdfValue]] =$/;"	V
-pathsO	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val pathsO = ownerToPath.get(senderName)$/;"	V
-pathsToOwner	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val pathsToOwner =agents.values.collect{ $/;"	V
-pipeline	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val pipeline: HttpRequest => Future[NodeSeq] = sendReceive ~> unmarshal[NodeSeq]$/;"	V
+pathsO	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val pathsO = ownerToPath.get(senderName)$/;"	V
+pathsToOwner	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val pathsToOwner =agents.values.collect{ $/;"	V
 plainxml	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      val plainxml =$/;"	V
 poll	O-MI Node/src/main/scala/responses/Result.scala	/^  def poll( requestID: String, objects: OdfObjects) : RequestResultType =$/;"	m
 pollData	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^            val pollData: Future[OdfObjects] = combinedWithPaths.map(_.map( pathValuesTuple =>{$/;"	V
@@ -1454,13 +1577,14 @@ pollSubData	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  def pollSubDa
 pollSubDataI	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  private def pollSubDataI(id: Long) = {$/;"	m
 pollSubs	O-MI Node/src/main/scala/database/DBClasses.scala	/^  protected[this] val pollSubs = TableQuery[PollSubsTable]$/;"	V
 pollSubs	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()$/;"	V
+pollSubs	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val pollSubs : Set[PolledSub] = Set( $/;"	V
 pollSubscription	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  private def pollSubscription(id: Long) : Future[Option[OdfObjects]] = {$/;"	m
 pollTime	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val pollTime: Long = System.currentTimeMillis()$/;"	V
 pollTimeOffset	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^                val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis$/;"	V
 port	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val port = 20003$/;"	V
 port	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val port = 20004$/;"	V
 ports	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{$/;"	V
-portsUsedByNode	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val portsUsedByNode =settings.ports.values.toSeq $/;"	V
+portsUsedByNode	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val portsUsedByNode =settings.ports.values.toSeq$/;"	V
 pos	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def pos: Position = new ElemNameSeqPosition(seq, offset)$/;"	m
 postFormXMLRequest	O-MI Node/src/main/scala/http/OmiService.scala	/^  val postFormXMLRequest = post {$/;"	V
 postXMLRequest	O-MI Node/src/main/scala/http/OmiService.scala	/^  val postXMLRequest = post {\/\/ Handle POST requests from the client$/;"	V
@@ -1491,11 +1615,12 @@ probe5	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^      val 
 processData	O-MI Node/src/main/scala/database/DBInterface.scala	/^  def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {$/;"	m
 processEvents	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def processEvents(events: Seq[InfoItemEvent]) = {$/;"	m
 processObjectI	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {$/;"	m
-promise	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val promise = Promise[ResponsibleAgentResponse]()$/;"	V
-promise	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val promise = Promise[ResponsibleAgentResponse]()$/;"	V
+promise	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val promise = Promise[ResponsibleAgentResponse]()$/;"	V
+promise	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val promise = Promise[ResponsibleAgentResponse]()$/;"	V
 promiseResult	O-MI Node/src/main/scala/http/Boot.scala	/^      val promiseResult = PromiseResult()$/;"	V
 promiseResult	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^        val promiseResult = PromiseResult()$/;"	V
 promiseResult	O-MI Node/src/main/scala/responses/WriteHandler.scala	/^      val promiseResult = PromiseResult()$/;"	V
+promiseResult	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val promiseResult = PromiseResult()$/;"	V
 promiseResult	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^    val promiseResult = PromiseResult()$/;"	V
 props	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  def props(dbobject: DB,subHandler: ActorRef): Props = Props($/;"	m
 props	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    def props( config: Config ) : InternalAgentProps$/;"	m
@@ -1507,6 +1632,7 @@ props	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   de
 props	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  final def props(config: Config) : InternalAgentProps = { $/;"	m
 propsCreator	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^              val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] $/;"	V
 propsTest	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ def propsTest            = new Actorstest(logTestActorSystem){$/;"	m
+ps	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^      val ps = infoItems.map(_.path).toVector ++ objectMetadatas.map(_.path).toVector$/;"	V
 q	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val q = pollSubs filter(_.subId === id)$/;"	V
 qname	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^      val qname = javax.xml.namespace.QName.valueOf(value)$/;"	V
 qnameXMLFormat	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def qnameXMLFormat(scope: scala.xml.NamespaceBinding) = new XMLFormat[javax.xml.namespace.QName] {$/;"	m
@@ -1567,14 +1693,24 @@ receive	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    final def
 receive	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^  override def receive: Actor.Receive = {$/;"	m
 receive	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  def receive : Actor.Receive = {$/;"	m
 receive	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  def receive : Actor.Receive={$/;"	m
-receive	O-MI Node/src/main/scala/http/OmiService.scala	/^  def receive : Actor.Receive = runRoute(myRoute)$/;"	m
 receive	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  def receive: PartialFunction[Any, Unit] = {$/;"	m
 receive	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   def receive : Actor.Receive = {$/;"	m
+receive	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    def receive : Actor.Receive = {$/;"	m
+receive	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  def receive : Actor.Receive = {$/;"	m
+receive	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^      def receive = {$/;"	m
 receive	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  def receive = {$/;"	m
 receiver	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    protected def receiver : Actor.Receive = Actor.emptyBehavior $/;"	m
+receives	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  def receives : Actor.Receive= {$/;"	m
+ref	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val ref = ActorRef.noSender$/;"	V
+ref	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val ref = system.actorOf( Props( new FFAgent), name)$/;"	V
+ref	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val ref = system.actorOf( Props( new SSAgent), name)$/;"	V
+ref	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^      val ref = context.actorOf( Props( new WSAgent), name)$/;"	V
+ref	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val ref = system.actorOf( Props( new WSAgent), name)$/;"	V
+ref	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val ref = system.actorOf( Props( new SSAgent), name)$/;"	V
 registerApi	O-MI Node/src/main/scala/http/AuthPlugin.scala	/^  def registerApi(newAuthSystem: AuthApi) = authorizationSystems += newAuthSystem$/;"	m
 relatedPollSubs	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val relatedPollSubs = SingleStores.pollPrevayler execute GetSubsForPath(path)$/;"	V
 remote	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  val remote = new InetSocketAddress("127.0.0.1", 4321)$/;"	V
+remote	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val remote = new InetSocketAddress("Tester",22)$/;"	V
 remove	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def remove(path: Path): Future[Int] = {$/;"	m
 remove	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def remove(pathOrId: String): String = {$/;"	m
 removeDateTime	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def removeDateTime( text: String) : String =text.replaceAll($/;"	m
@@ -1582,14 +1718,20 @@ removeDateTime	O-MI Node/src/test/scala/responses/ReadTest.scala	/^  def removeD
 removeDateTime	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def removeDateTime( text: String) : String =text.replaceAll($/;"	m
 removeDateTimeString	O-MI Node/src/test/scala/responses/ReadTest.scala	/^  def removeDateTimeString( text: String) : String =text.replaceAll($/;"	m
 removeES	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)$/;"	V
+removeHandler	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val removeHandler = new RemoveTester( Path("Objects\/aue" ) )$/;"	V
+removeHandler	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val removeHandler = new RemoveTester( Path(path) )$/;"	V
 removeIS	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    lazy val removeIS = SingleStores.intervalPrevayler execute RemoveIntervalSub(id)$/;"	V
 removePS	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)$/;"	V
+removePathTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def removePathTest= new Actorstest(AS){$/;"	m
 removePollSub	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def removePollSub(id: Long): Future[Int] = {$/;"	m
 removeQ	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  private def removeQ(path: Path) = {\/\/ : Future[DBIOrw[Seq[Any]]] ?$/;"	m
 removeRoot	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def removeRoot(path: Path): Future[Int] = {$/;"	m
+removeSubTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def removeSubTest= new Actorstest(AS){$/;"	m
 removeSubscription	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  private def removeSubscription(id: Long): Boolean = {$/;"	m
 removeTimes	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def removeTimes( text: String) : String =removeUnixTime(removeDateTime(text))$/;"	m
 removeTimes	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def removeTimes( text: String) : String =removeUnixTime(removeDateTime(text))$/;"	m
+removeUnexistingPathTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def removeUnexistingPathTest= new Actorstest(AS){$/;"	m
+removeUnexistingSubTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def removeUnexistingSubTest= new Actorstest(AS){$/;"	m
 removeUnixTime	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def removeUnixTime( text: String) : String =text.replaceAll($/;"	m
 removeUnixTime	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  def removeUnixTime( text: String) : String =text.replaceAll($/;"	m
 removedLeft	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^        val removedLeft = node.leftBoundary$/;"	V
@@ -1600,7 +1742,7 @@ replaced	O-MI Node/src/test/scala/http/SystemTest.scala	/^    val replaced = dat
 reqInfoItems	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^      val reqInfoItems = requestsSeq collect {case ii: OdfInfoItem => ii}$/;"	V
 reqrespCombined	O-MI Node/src/test/scala/http/SystemTest.scala	/^    val reqrespCombined: Seq[NodeSeq] = textAreas.foldLeft[Seq[NodeSeq]](NodeSeq.Empty) { (res, i) =>$/;"	V
 request	O-MI Node/src/main/scala/http/OmiService.scala	/^          val request = requests.headOption  \/\/ TODO: Only one request per xml is supported currently$/;"	V
-request	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^      val request = Post(address, data)$/;"	V
+request	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val request = RequestBuilding.Post(address, data)$/;"	V
 request	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^    val request = getODFRequest(orgPath)$/;"	V
 request	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^        val request: String = """$/;"	V
 request	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^      val request: NodeSeq =$/;"	V
@@ -1621,17 +1763,31 @@ requestHandler	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  val
 requestHandler	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  val requestHandler = new RequestHandler(subscriptionManager,agentManager)$/;"	V
 requestID	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^  val requestID: Seq[IdType]$/;"	V
 requestID	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val requestID = Try(requestReturn.map(x => x._1.\\\\("requestID").text.toInt)).toOption.flatten$/;"	V
+requestIDs	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def requestIDs : OdfTreeCollection[Long ]$/;"	m
 requestOption	O-MI Node/src/test/scala/responses/CancelTest.scala	/^      val requestOption = parserlist.right.toOption.flatMap(_.headOption.collect({ case c: CancelRequest => c }))$/;"	V
 requestOption	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val requestOption = parserlist.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))$/;"	V
 requestOption	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val requestOption = parserlistcallback.right.toOption.flatMap(x => x.headOption.collect({ case y: SubscriptionRequest => y }))$/;"	V
 requestProcessTime	O-MI Node/src/main/scala/parsing/OdfParser.scala	/^      val requestProcessTime = currentTime$/;"	V
 requestReturn	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val requestReturn = requestOption.map(x => requestHandler.handleRequest(x))$/;"	V
+requestString	O-MI Node/src/main/scala/http/OmiService.scala	/^    val requestString: String = ???$/;"	V
+requestToEnvelope	O-MI Node/src/main/scala/types/package.scala	/^  def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long): xmlTypes.OmiEnvelope ={$/;"	m
 requestsPaths	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^        val requestsPaths = leafs.map { _.path }$/;"	V
 requestsSeq	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    val requestsSeq = requests.toSeq$/;"	V
-res	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val res : Iterable[Promise[ResponsibleAgentResponse]] = Iterable(writesToOwnerless, writesBySender) ++ writesToOthers$/;"	V
-res	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val res = (loader ? ListAgentsCmd())(timeout).mapTo[Vector[AgentInfo]].map{ $/;"	V
+res	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val res : Vector[Promise[ResponsibleAgentResponse]] = Vector(writesToOwnerless, writesBySender) ++ writesToOthers$/;"	V
+res	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val res = (loader ? ListAgentsCmd())(timeout).mapTo[Vector[AgentInfo]].map {$/;"	V
 res	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val res = Try(addSub(1, dur, Seq("p\/1")))$/;"	V
 res	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val res = addSub(5, -1, Seq("p\/1"))$/;"	V
+resF	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)$/;"	V
+resF	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val resF: Future[String ] = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)$/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg("list agents"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("aueo"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("help"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("list subs"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove " + path +"ueaueo" ))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    $/;"	V
+resF	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    $/;"	V
 resolveSoap11Refs	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def resolveSoap11Refs(node: Node): Node = {$/;"	m
 resp	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^          val resp = responseAs[NodeSeq].head$/;"	V
 resp	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^        val resp = responseAs[NodeSeq].head$/;"	V
@@ -1643,26 +1799,17 @@ response	O-MI Node/src/test/scala/http/OmiServiceTest.scala	/^        val respon
 response	O-MI Node/src/test/scala/http/SystemTest.scala	/^                val response = XML.loadString(removeTimes(messageOption.get.toString()))$/;"	V
 response	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val response = XML.loadString(removeTimes(responseXml.get.toString))$/;"	V
 response	O-MI Node/src/test/scala/http/SystemTest.scala	/^          val response = XML.loadString(removeDateTime(responseXML.get.toString))$/;"	V
-response	O-MI Node/src/test/scala/http/SystemTest.scala	/^        val response = Try(Await.result(responseFuture, Duration(2, "second")))$/;"	V
-response	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val response = responseXml.failed.get.getMessage$/;"	V
-response1	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val response1 = responseXml1.get$/;"	V
-response2	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val response2 = responseXml2.get$/;"	V
-responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^                val responseFuture = pipeline(Post("http:\/\/localhost:8080\/", request.get))$/;"	V
-responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val responseFuture = pipeline(Post("http:\/\/localhost:8080\/", request.get))$/;"	V
-responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^          val responseFuture = pipeline(Post("http:\/\/localhost:8080\/", request.get))$/;"	V
-responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^        val responseFuture = pipeline(Post("http:\/\/localhost:8080\/", request.get))$/;"	V
-responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseFuture = pipeline(Get("http:\/\/localhost:8080\/Objects\/nonexistingPath628543"))$/;"	V
-responseFuture1	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseFuture1 = pipeline(Get("http:\/\/localhost:8080\/Objects"))$/;"	V
-responseFuture2	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseFuture2 = pipeline(Get("http:\/\/localhost:8080\/Objects\/"))$/;"	V
+response	O-MI Node/src/test/scala/http/SystemTest.scala	/^        val response = Try(Await.result(responseFuture.flatMap(n => Unmarshal(n).to[NodeSeq]), Duration(10, "second")))$/;"	V
+responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^                val responseFuture = http.singleRequest(getPostRequest(request.get))$/;"	V
+responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val responseFuture = http.singleRequest(getPostRequest(request.get))$/;"	V
+responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^          val responseFuture = http.singleRequest(getPostRequest(request.get))$/;"	V
+responseFuture	O-MI Node/src/test/scala/http/SystemTest.scala	/^        val responseFuture = http.singleRequest(getPostRequest(request.get))\/\/pipeline(Post("http:\/\/localhost:8080\/", request.get))$/;"	V
 responseRequestTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val responseRequestTest = ResponseRequest($/;"	V
 responseWait	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val responseWait: Option[Int] = Try(j.last.\\@("wait").toInt).toOption$/;"	V
 responseWait	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseWait: Option[Int] = Try(reqresp.last.\\@("wait").toInt).toOption$/;"	V
-responseXML	O-MI Node/src/test/scala/http/SystemTest.scala	/^          val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))$/;"	V
-responseXml	O-MI Node/src/test/scala/http/SystemTest.scala	/^                val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))$/;"	V
-responseXml	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))$/;"	V
-responseXml	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseXml = Try(Await.result(responseFuture, Duration(2, "second")))$/;"	V
-responseXml1	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseXml1 = Try(Await.result(responseFuture1, Duration(2, "second")))$/;"	V
-responseXml2	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val responseXml2 = Try(Await.result(responseFuture2, Duration(2, "second")))$/;"	V
+responseXML	O-MI Node/src/test/scala/http/SystemTest.scala	/^          val responseXML = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))$/;"	V
+responseXml	O-MI Node/src/test/scala/http/SystemTest.scala	/^                val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))$/;"	V
+responseXml	O-MI Node/src/test/scala/http/SystemTest.scala	/^              val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))$/;"	V
 responses	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^package responses$/;"	p
 responses	O-MI Node/src/main/scala/responses/CancelHandler.scala	/^package responses$/;"	p
 responses	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^package responses$/;"	p
@@ -1691,7 +1838,7 @@ result	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^      v
 result	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val result = db.run(action)$/;"	V
 result	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^      val result = if (user.exists( addr =>$/;"	V
 result	O-MI Node/src/main/scala/http/NodeCLI.scala	/^      val result = (subscriptionHandler ? RemoveSubscription(id))$/;"	V
-result	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val result = (agentLoader ? ListAgentsCmd()).mapTo[Future[Vector[AgentInfo]]]$/;"	V
+result	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val result = (agentLoader ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]$/;"	V
 result	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val result = (agentLoader ? StartAgentCmd(agent)).mapTo[Future[String]]$/;"	V
 result	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val result = (agentLoader ? StopAgentCmd(agent)).mapTo[Future[String]]$/;"	V
 result	O-MI Node/src/main/scala/http/NodeCLI.scala	/^    val result = (subscriptionHandler ? ListSubsCmd())$/;"	V
@@ -1705,13 +1852,13 @@ resultFuture	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^    val 
 resultOdf	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^      val resultOdf = SingleStores.buildOdfFromValues(infoItemData)$/;"	V
 resultOption	O-MI Node/src/test/scala/responses/CancelTest.scala	/^      val resultOption = requestOption.map(x => requestHandler.runGeneration(x)._1)$/;"	V
 resultOption	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      val resultOption = readRequestOption.map(x => requestHandler.runGeneration(x))$/;"	V
-resultSequence	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^  def resultSequence : Future[Iterable[ResponsibleAgentResponse]]= {$/;"	m
+resultSequence	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^  def resultSequence(implicit ec: ExecutionContext) : Future[Vector[ResponsibleAgentResponse]]= {$/;"	m
 resultXml	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)$/;"	V
 results	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    val results = allResults.map(_.fold(None){$/;"	V
 results	O-MI Node/src/main/scala/responses/ReadHandler.scala	/^        val results = Seq(found) ++ {$/;"	V
 resultsFut	O-MI Node/src/main/scala/responses/PollHandler.scala	/^    val resultsFut =$/;"	V
 resultsO	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^          val resultsO = for {$/;"	V
-retry	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^          val retry = retryUntilWithCheck[HttpResponse, CallbackResult]($/;"	V
+retry	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val retry = retryUntilWithCheck[HttpResponse, CallbackResult]($/;"	V
 retryUntilWithCheck	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] ) : Future[U] = {$/;"	m
 returnId	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val returnId = db.run(updateAction.transactionally)$/;"	V
 returnMsg	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val returnMsg = pollSub(id)$/;"	V
@@ -1723,6 +1870,7 @@ rightXML	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      val rightXML 
 rightXML	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      val rightXML = <Object>$/;"	V
 rightXML	O-MI Node/src/test/scala/responses/ReadTest.scala	/^      val rightXML = <Object><id>RoomSensors1<\/id><InfoItem name="CarbonDioxide"\/><Object>$/;"	V
 rootPath	O-MI Node/src/main/scala/database/DBClasses.scala	/^    val rootPath = Path("\/Objects")$/;"	V
+route	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  val route = post {$/;"	V
 rt	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val rt = new RuleTransformer(rule)$/;"	V
 rule	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val rule = new RewriteRule {$/;"	V
 runGeneration	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): Future[NodeSeq] = {$/;"	m
@@ -1731,7 +1879,6 @@ saveSettingsOdf	O-MI Node/src/main/scala/http/Boot.scala	/^  def saveSettingsOdf
 saxParser	O-MI Node/src/main/scala/parsing/Parser.scala	/^    val saxParser = spf.newSAXParser()$/;"	V
 scalaxb	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^package scalaxb$/;"	p
 scheduleOnce	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^  def scheduleOnce(timeout: Duration, sender: ActorRef, message: Any): ScheduledFuture[_] = {$/;"	m
-scheduleOnce	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^  def scheduleOnce(timeout: Int, message: Any) = {$/;"	m
 scheduleTime	O-MI Node/src/main/scala/database/LatestValues.scala	/^        val scheduleTime: Long = polledSub.endTime.getTime - d.getTime$/;"	V
 scheduleTime	O-MI Node/src/main/scala/database/LatestValues.scala	/^      val scheduleTime: Long = eventSub.endTime.getTime - d.getTime \/\/ eventSub.ttl match$/;"	V
 scheduleTime	O-MI Node/src/main/scala/database/LatestValues.scala	/^      val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime$/;"	V
@@ -1747,12 +1894,15 @@ schemaPath	O-MI Node/src/main/scala/parsing/Parser.scala	/^  protected[this] def
 schemaValidation	O-MI Node/src/main/scala/parsing/Parser.scala	/^  def schemaValidation(xml: Node): Seq[ParseError] = {$/;"	m
 seeFragment	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^  override def seeFragment(alias: String) = super.seeFragment(alias)$/;"	m
 send	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def send(receiver: ActorRef)(msg: String): Unit =$/;"	m
-sendCallback	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  def sendCallback($/;"	m
+sendCallback	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  def sendCallback( address: String, omiMessage: types.OmiTypes.OmiRequest): Future[CallbackResult] =$/;"	m
+sendCallback	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  def sendCallback( address: String,$/;"	m
 sendEventCallback	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {$/;"	m
-sendEventCallback	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def sendEventCallback(esub: EventSub, odf: OdfObjects): Unit = {$/;"	m
-sendHttp	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  private[this] def sendHttp($/;"	m
+sendEventCallback	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  private def sendEventCallback(esub: EventSub, odf: OdfObjects) : Unit = {$/;"	m
+sendHttp	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  private[this] def sendHttp( address: Uri,$/;"	m
 sendPermissionRequest	O-MI Node/src/main/java/accessControl/AuthAPIService.java	/^    public AuthorizationResult sendPermissionRequest(boolean isWrite, String body, String subjectInfo, boolean isCertificate) {$/;"	m	class:AuthAPIService
-senderName	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val senderName = sender().path.name$/;"	V
+senderName	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val senderName = sender().path.name$/;"	V
+sendersObjects	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val sendersObjects = sendersPathsO.map{$/;"	V
+sendersPathsO	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val sendersPathsO = ownerToPath.get(senderName)$/;"	V
 sensorDataListener	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  val sensorDataListener = system.actorOf(ExternalAgentListener.props(m), "agent-listener")$/;"	V
 sensors1	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("\/Objects\/path\/to\/sensor1\/temp")), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None) \/\/.getNBetween(Iterable(OdfInfoItem(Path("\/Objects\/path\/to\/sensor1\/temp")), ), Some(new Timestamp(900)), Some(new Timestamp(5500)), None, None)$/;"	V
 sensors1	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val sensors1 = db.getNBetween(pathToInfoItemIterable(Path("\/Objects\/path\/to\/sensor3\/temp")), None, None, None, Some(12))$/;"	V
@@ -1765,13 +1915,14 @@ seqToOdfTreeCollection	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  implici
 seqXMLFormat	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  implicit def seqXMLFormat[A: XMLFormat]: XMLFormat[Seq[A]] = new XMLFormat[Seq[A]] {$/;"	m
 sequentialTest	O-MI Node/src/test/scala/http/SystemTest.scala	/^  lazy val sequentialTest = tests("sequential-test").map { node =>$/;"	V
 serviceActor	O-MI Node/src/main/scala/http/Boot.scala	/^    val serviceActor = start()$/;"	V
-serviceActor	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val serviceActor = start(dbConnection)$/;"	V
 setTimezoneToSystemLocale	O-MI Node/src/test/scala/http/SystemTest.scala	/^  def setTimezoneToSystemLocale(in: String): String = {$/;"	m
 settings	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  protected[this] def settings: AgentSystemConfigExtension $/;"	m
 settings	O-MI Node/src/main/scala/agentSystem/AgentSystem.scala	/^  protected[this] val settings = http.Boot.settings$/;"	V
 settings	O-MI Node/src/main/scala/http/Boot.scala	/^  val settings = Settings(system)$/;"	V
-settings	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  val settings = http.Boot.settings $/;"	V
+settings	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  val settings = http.Boot.settings$/;"	V
 settings	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   override protected[this] val settings = testConfig$/;"	V
+settings	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    protected[this] val settings = http.Boot.settings$/;"	V
+settings	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings$/;"	V
 settings	O-MI Node/src/test/scala/http/SystemTest.scala	/^        override val settings = testSettings$/;"	V
 settings	O-MI Node/src/test/scala/http/SystemTest.scala	/^  override val settings = testSettings$/;"	V
 settingsOdfPath	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")$/;"	V
@@ -1813,20 +1964,28 @@ start	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  val sta
 start	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^    val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)$/;"	V
 start	O-MI Node/src/main/scala/http/Boot.scala	/^  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {$/;"	m
 start	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  protected final def start: Try[InternalAgentSuccess ] = Try{  $/;"	m
-start	O-MI Node/src/test/scala/http/SystemTest.scala	/^  override def start(dbConnection: DB): ActorRef = {$/;"	m
+start	O-MI Node/src/test/scala/http/SystemTest.scala	/^  override def start(dbConnection: DB): OmiServiceImpl = {$/;"	m
 startAgent	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^  protected def startAgent(agent: ActorRef) = { $/;"	m
 startAgent	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def startAgent(agent: AgentName): String = {$/;"	m
+startAgentTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def startAgentTest=  new Actorstest(AS){$/;"	m
 startF	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^    val startF = ask(agent,Start())(timeout)$/;"	V
 startT	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val startT = System.currentTimeMillis()$/;"	V
 startTest	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ def startTest            = new Actorstest(logTestActorSystem\/*ActorSystem()*\/){$/;"	m
 startTime	O-MI Node/src/main/scala/database/DBClasses.scala	/^  val startTime: Timestamp,$/;"	V
 startTime	O-MI Node/src/main/scala/database/Subscriptions.scala	/^  val startTime: Timestamp  \/\/Used for preventing from saving duplicate values in database and debugging$/;"	V
 startTime	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val startTime = new java.util.Date().getTime - 30000$/;"	V
+startTime	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val startTime = new Timestamp( new Date().getTime() )$/;"	V
+startingRunningTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def startingRunningTest = new Actorstest(AS){$/;"	m
+startingStoppedTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def startingStoppedTest = new Actorstest(AS){$/;"	m
 staticHtml	O-MI Node/src/main/scala/http/OmiService.scala	/^  val staticHtml = if(Files.exists(Paths.get(".\/html"))){$/;"	V
 stop	O-MI Node/src/main/scala/agentSystem/InternalAgent.scala	/^    protected def stop    : Try[InternalAgentSuccess ]$/;"	m
 stop	O-MI Node/src/test/scala/agentSystem/helpers.scala	/^  protected final def stop: Try[InternalAgentSuccess ] = Try{ $/;"	m
 stopAgent	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  private def stopAgent(agent: AgentName): String = {$/;"	m
-stoppedOwner	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^      val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }$/;"	V
+stopAgentTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def stopAgentTest= new Actorstest(AS){$/;"	m
+stopingRunningTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def stopingRunningTest = new Actorstest(AS){$/;"	m
+stopingStoppedTest	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def stopingStoppedTest = new Actorstest(AS){$/;"	m
+stoppedOwner	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^      val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }$/;"	V
+strToMsg	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def strToMsg(str: String) = Received(ByteString(str))$/;"	m
 stringToXML	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def stringToXML(obj: String, namespace: Option[String], elementLabel: Option[String],$/;"	m
 sub	O-MI Node/src/main/scala/database/LatestValues.scala	/^      val sub = store.idToSub.get(id)$/;"	V
 sub	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^    val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)$/;"	V
@@ -1858,6 +2017,7 @@ subTreeRoot	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^    val subTree
 subnetArea	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^          val subnetArea = bytesToInt( List( subnetBytes(4), subnetBytes(5), subnetBytes(6), subnetBytes(7) ) )$/;"	V
 subnetBytes	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^    val subnetBytes = inetAddrToBytes(subnet)$/;"	V
 subsNoCallback	O-MI Node/src/test/scala/http/SystemTest.scala	/^  lazy val subsNoCallback = tests("request-response test").map { node =>$/;"	V
+subsStrChart	O-MI Node/src/main/scala/http/NodeCLI.scala	/^  def subsStrChart (intervals: Set[IntervalSub @unchecked],$/;"	m
 subscribe	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  private def subscribe(subscription: SubscriptionRequest): Try[Long] = {$/;"	m
 subscribedInfoItems	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^        val subscribedInfoItems = OdfTypes$/;"	V
 subscription	O-MI Node/src/main/scala/responses/Result.scala	/^  def subscription( requestID: String): RequestResultType ={$/;"	m
@@ -1873,6 +2033,8 @@ subscriptionManager	O-MI Node/src/main/scala/responses/PollHandler.scala	/^  def
 subscriptionManager	O-MI Node/src/main/scala/responses/RequestHandler.scala	/^  val subscriptionManager: ActorRef,$/;"	V
 subscriptionManager	O-MI Node/src/main/scala/responses/SubscriptionHandler.scala	/^  def subscriptionManager : ActorRef$/;"	m
 subscriptionManager	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  val subscriptionManager = system.actorOf((Props(new SubscriptionManager)))$/;"	V
+subscriptionManager	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val subscriptionManager = ActorRef.noSender$/;"	V
+subscriptionManager	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^    val subscriptionManager = TestActorRef( new Actor{$/;"	V
 subscriptionManager	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  val subscriptionManager = system.actorOf((Props(new SubscriptionManager)))$/;"	V
 subscriptionRequest	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  val subscriptionRequest = """<?xml version="1.0" encoding="UTF-8"?>$/;"	V
 subscriptionRequestTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val subscriptionRequestTest = SubscriptionRequest($/;"	V
@@ -1882,14 +2044,21 @@ succResult	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^      
 success	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def success : NodeSeq = xmlFromResults($/;"	m
 success	O-MI Node/src/main/scala/responses/Result.scala	/^  def success : RequestResultType = simple( "200", None)$/;"	m
 successF	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^        val successF = promiseResult.isSuccessful$/;"	V
-successF	O-MI Node/src/main/scala/responses/WriteHandler.scala	/^      val successF = promiseResult.isSuccessful$/;"	V
+successF	O-MI Node/src/main/scala/responses/WriteHandler.scala	/^      val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}$/;"	V
+successF	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val successF = promiseResult.isSuccessful$/;"	V
+successF	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}$/;"	V
 successfulAgents	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ def successfulAgents     = new Actorstest(ActorSystem()){$/;"	m
+successfulCmdMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def successfulCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name $cmd succesfully."$/;"	m
+successfulStartMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def successfulStartMsg( name : AgentName) : String = successfulCmdMsg( name, "started" )$/;"	m
+successfulStopMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def successfulStopMsg( name : AgentName ) : String = successfulCmdMsg( name, "stopped" )$/;"	m
 supportedProtocols	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  val supportedProtocols = Vector("http", "https")$/;"	V
-system	O-MI Node/src/main/scala/http/Boot.scala	/^  implicit val system = ActorSystem("on-core")$/;"	V
+system	O-MI Node/src/main/scala/http/Boot.scala	/^  implicit val system : ActorSystem = ActorSystem("on-core")$/;"	V
+system	O-MI Node/src/main/scala/http/OmiService.scala	/^  val system : ActorSystem$/;"	V
 system	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^  implicit val system = ActorSystem()$/;"	V
 system	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^  implicit val system = ActorSystem()$/;"	V
 system	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  implicit val system = ActorSystem("on-core")$/;"	V
 system	O-MI Node/src/test/scala/responses/ReadTest.scala	/^  implicit val system = ActorSystem("readtest")$/;"	V
+system	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  implicit val system = ActorSystem("SubscribtionTest-core", ConfigFactory.parseString($/;"	V
 system	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  implicit val system = ActorSystem("on-core", ConfigFactory.parseString($/;"	V
 system	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^  implicit val system = ActorSystem()$/;"	V
 takeLogic	O-MI Node/src/main/scala/database/DBReadOnly.scala	/^  protected[this] def takeLogic($/;"	m
@@ -1899,7 +2068,6 @@ targetNamespace	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def ta
 targetNamespace	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    val targetNamespace: Option[String] = Some("odf.xsd")$/;"	V
 targetNamespace	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    val targetNamespace: Option[String] = Some("omi.xsd")$/;"	V
 targetType	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^  val targetType: TargetType}$/;"	V
-task	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^    val task: Runnable = createRunnable(message)$/;"	V
 task	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^    val task: Runnable = createRunnable(message, sender)$/;"	V
 temp	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^    val temp = temp1.toSeq.collect { case c: OdfInfoItem => c.values }.flatten.map(_.value)$/;"	V
 temp	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    val temp = "daer" $/;"	V
@@ -1921,6 +2089,12 @@ temp2	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val temp2 = t
 temp2	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^    val temp2 = temp.right.get.head.asInstanceOf[CancelRequest]$/;"	V
 temp3	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val temp3 = db.getNBetween($/;"	V
 temp4	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val temp4 = temp3.map(OdfObjectsToValues(_))$/;"	V
+test	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def test = new Actorstest(AS){$/;"	m
+testAgents	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val testAgents : Map[AgentName, AgentInfo] = Map.empty$/;"	V
+testAgents	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^   val testAgents = Map( name -> agentInfo)$/;"	V
+testAgents	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val testAgents : Map[AgentName, AgentInfo ]= Map.empty$/;"	V
+testAgents	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val testAgents = Map( name -> agentInfo)$/;"	V
+testAgents	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^   val testAgents = MutableMap( name -> agentInfo)$/;"	V
 testArticles	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val testArticles = sourceXML \\\\ ("article")$/;"	V
 testCase	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val testCase = writearticle \\\\ ("textarea")$/;"	V
 testData	O-MI Node/src/test/scala/responses/CancelTest.scala	/^    val testData = Map($/;"	V
@@ -1934,8 +2108,8 @@ testOdf	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^  lazy va
 testPath	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^      val testPath = Path("Objects\/AgentTest\/SmartHouse\/Moisture")$/;"	V
 testPath	O-MI Node/src/test/scala/database/DatabaseTest.scala	/^      val testPath = Path("\/Objects\/DatabaseTest\/EventSubTest2")$/;"	V
 testProbeFuture	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val testProbeFuture = Future{$/;"	V
-testServer	O-MI Node/src/test/scala/http/SystemTest.scala	/^  lazy val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))$/;"	V
-testServer	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))$/;"	V
+testServer	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val testServer = new SystemTestCallbackServer(probe.ref, "localhost", 20002)$/;"	V
+testServer	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)$/;"	V
 testSettings	O-MI Node/src/test/scala/http/SystemTest.scala	/^  val testSettings = new OmiConfigExtension($/;"	V
 testTimestamp	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val testTimestamp = new Timestamp( 1418909692 )$/;"	V
 testdb	O-MI Node/src/test/scala/responses/CancelTest.scala	/^  val testdb: DB = new TestDB("cancel-test")$/;"	V
@@ -1970,13 +2144,20 @@ timeout	O-MI Node/src/main/scala/responses/PollHandler.scala	/^    implicit val 
 timeout	O-MI Node/src/main/scala/responses/SubscriptionHandler.scala	/^    implicit val timeout = Timeout(10.seconds) \/\/ NOTE: ttl will timeout from elsewhere$/;"	V
 timeout	O-MI Node/src/test/scala/agentSystem/AgentListenerTest.scala	/^    implicit val timeout = akka.util.Timeout.apply(dur)$/;"	V
 timeout	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val timeout = config.internalAgentsStartTimout$/;"	V
-timeout	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      implicit val timeout = Timeout(1 seconds)$/;"	V
+timeout	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ implicit val timeout = Timeout( timeoutDuration )$/;"	V
+timeout	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  implicit val timeout = Timeout( timeoutDuration )$/;"	V
+timeout	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  implicit val timeout = Timeout( 1.minutes )$/;"	V
+timeout	O-MI Node/src/test/scala/responses/CallbackHandlerTest.scala	/^      implicit val timeout = Timeout(5 seconds)$/;"	V
 timeout	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^  implicit val timeout = akka.util.Timeout.apply(5000)$/;"	V
+timeoutDuration	O-MI Node/src/test/scala/agentSystem/InternalAgentManagerTest.scala	/^ def timeoutDuration= 10.seconds$/;"	m
+timeoutDuration	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  val timeoutDuration = 10.seconds$/;"	V
+timeoutDuration	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^ def timeoutDuration= 10.seconds$/;"	m
 timeoutForBind	O-MI Node/src/main/scala/http/Boot.scala	/^    implicit val timeoutForBind = Timeout(5.seconds)$/;"	V
 timeoutForBind	O-MI Node/src/test/scala/http/SystemTest.scala	/^    implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))$/;"	V
-timeoutForBind	O-MI Node/src/test/scala/http/SystemTest.scala	/^  implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))$/;"	V
 timestamp	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def timestamp: Rep[Timestamp] = column[Timestamp]("TIME")$/;"	m
 timestamp	O-MI Node/src/main/scala/database/DBClasses.scala	/^    def timestamp: Rep[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))$/;"	m
+timestamp	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^  def timestamp = new Timestamp( new Date().getTime())$/;"	m
+timestampToXML	O-MI Node/src/main/scala/types/package.scala	/^ def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={$/;"	m
 timeunit	O-MI Node/src/main/scala/responses/SubscriptionScheduler.scala	/^  val timeunit = SECONDS$/;"	V
 toAttribute	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toAttribute(__obj: A, __attr: scala.xml.MetaData, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData$/;"	m
 toCalendar	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toCalendar(value: String): XMLGregorianCalendar = {$/;"	m
@@ -2008,20 +2189,22 @@ toXML	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toXML[A](obj
 toXML	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toXML[A](obj: A, namespace: Option[String], elementLabel: String, scope: NamespaceBinding)$/;"	m
 toXML	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def toXML[A](obj: DataRecord[A], namespace: Option[String], elementLabel: Option[String],$/;"	m
 trace	O-MI Node/src/test/scala/testHelpers/specs2interface.scala	/^    val trace = new Exception().getStackTrace.toList$/;"	V
+trace	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^    val trace = new Exception().getStackTrace.toList$/;"	V
 transform	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^      override def transform(n: Node): Seq[Node] = n match {$/;"	m
 triggeringEvents	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val triggeringEvents = callbackDataOptions.flatten$/;"	V
 trimDB	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def trimDB(): Future[Seq[Int]] = {$/;"	m
 trimInterval	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^  private val trimInterval: FiniteDuration = http.Boot.settings.trimInterval$/;"	V
 trimInterval	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds$/;"	V
 trimQuery	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val trimQuery = for{$/;"	V
-trySend	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^          def trySend = httpHandler(request)$/;"	m
+trySend	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    def trySend = httpExt.singleRequest(request)\/\/httpHandler(request)$/;"	m
 trySnapshot	O-MI Node/src/main/scala/database/DBMaintainer.scala	/^    def trySnapshot[T](p: Prevayler[T], errorName: String): Unit = {$/;"	m
-tryUntil	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^      val tryUntil =  new Timestamp( new Date().getTime + (ttl match {$/;"	V
+tryUntil	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val tryUntil =  new Timestamp( new Date().getTime + (ttl match {$/;"	V
 ttl	O-MI Node/src/main/scala/database/DBClasses.scala	/^  val ttl: Duration,$/;"	V
 ttl	O-MI Node/src/main/scala/responses/PollHandler.scala	/^    val ttl = handleTTL(poll.ttl)$/;"	V
 ttl	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^    val ttl = handleTTL(response.ttl)$/;"	V
 ttl	O-MI Node/src/main/scala/responses/SubscriptionHandler.scala	/^    val ttl = handleTTL(subscription.ttl)$/;"	V
 ttl	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def ttl: Duration$/;"	m
+ttl	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val ttl = timeoutDuration$/;"	V
 ttlPromise	O-MI Node/src/main/scala/http/OmiService.scala	/^          val ttlPromise = Promise[NodeSeq]()$/;"	V
 ttlScheduler	O-MI Node/src/main/scala/responses/SubscriptionManager.scala	/^  val ttlScheduler = new SubscriptionScheduler$/;"	V
 ttlToMillis	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  def ttlToMillis: Long = ttl.toMillis$/;"	m
@@ -2061,10 +2244,12 @@ uniqueInfos	O-MI Node/src/main/scala/types/OdfObject.scala	/^    val uniqueInfos
 uniqueObjs	O-MI Node/src/main/scala/types/OdfObject.scala	/^    val uniqueObjs =  $/;"	V
 uniqueObjs	O-MI Node/src/main/scala/types/OdfObjects.scala	/^    val uniqueObjs : Seq[OdfObject]  = objects.filterNot($/;"	V
 uniquesAndShared	O-MI Node/src/main/scala/types/OdfObject.scala	/^      val uniquesAndShared = sharedObjs.flatMap{$/;"	V
+unknownCmdTest	O-MI Node/src/test/scala/http/NodeCLITest.scala	/^  def unknownCmdTest = new Actorstest(AS){$/;"	m
 updateAction	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val updateAction = for {$/;"	V
 updateTree	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^        val updateTree: OdfObjects =$/;"	V
 updatedStaticItems	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetadatas$/;"	V
 uri	O-MI Node/src/main/scala/responses/CallbackHandlers.scala	/^    val uri = Uri(callback)$/;"	V
+uri	O-MI Node/src/main/scala/types/OmiTypes.scala	/^  val uri: String,$/;"	V
 uriToStringOption	O-MI Node/src/main/scala/parsing/OmiParser.scala	/^  private[this] def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {$/;"	m
 urls	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^        val urls = arr map { _.toURI.toURL } $/;"	V
 urls	O-MI Node/src/main/scala/agentSystem/InternalAgentLoader.scala	/^        val urls = jarEntries map { entry => new File("jar:file:%s!\/%s" format (jarFile.getName, entry.getName)) }$/;"	V
@@ -2094,20 +2279,26 @@ valuesRemoved	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def valuesRemove
 valuesRemoved	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def valuesRemoved: OdfObjects = this.copy(objects = objects map (_.valuesRemoved))$/;"	m
 vector	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val vector: Vector[Byte] = (xs.toIndexedSeq map {x: Byte => x})(breakOut)$/;"	V
 vector	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  val vector = _vector$/;"	V
+version	O-MI Node/src/main/scala/types/package.scala	/^    val version = "1.0"$/;"	V
 warnings	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^   val warnings = Vector($/;"	V
+wasAlreadyCmdMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def wasAlreadyCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name was already $cmd."$/;"	m
+wasAlreadyStartedMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def wasAlreadyStartedMsg( name : AgentName) : String = wasAlreadyCmdMsg( name, "started" )$/;"	m
+wasAlreadyStoppedMsg	O-MI Node/src/main/scala/agentSystem/InternalAgentManager.scala	/^  def wasAlreadyStoppedMsg( name : AgentName) : String = wasAlreadyCmdMsg( name, "stopped" )$/;"	m
+webSocketUpgrade	O-MI Node/src/main/scala/http/OmiService.scala	/^  def webSocketUpgrade = \/\/(implicit r: RequestContext): Directive0 =$/;"	m
 webclientPort	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val webclientPort: Int = config.getInt("omi-service.ports.webclient")$/;"	V
-whiteIPs	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  private[this] val whiteIPs = settings.inputWhiteListIps.asScala.map{$/;"	V
-whiteMasks	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  private[this] val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ $/;"	V
+whiteIPs	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  private[this] lazy val whiteIPs = settings.inputWhiteListIps.asScala.map{$/;"	V
+whiteMasks	O-MI Node/src/main/scala/http/IpAuthorization.scala	/^  private[this] lazy val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ $/;"	V
 whitelistedUsers	O-MI Node/src/main/scala/http/SamlHttpHeaderAuth.scala	/^  private[this] def whitelistedUsers: Vector[Eppn] =$/;"	m
 withInnerScope	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def withInnerScope[A](scope: NamespaceBinding, outer: NamespaceBinding)$/;"	m
 withValues	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def withValues(p: Path, v: Seq[OdfValue]): OdfObject = {$/;"	m
 withValues	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def withValues(p: Path, v: Seq[OdfValue]): OdfObjects = {$/;"	m
 withValues	O-MI Node/src/main/scala/types/OdfTypes.scala	/^  def withValues(v: Seq[OdfValue]): OdfInfoItem = this.copy(values = OdfTreeCollection(v:_*))$/;"	m
 wrapResultsToResponseAndEnvelope	O-MI Node/src/main/scala/responses/OmiGenerator.scala	/^  def wrapResultsToResponseAndEnvelope(ttl: Double, results: RequestResultType*) : OmiEnvelope= {$/;"	m
-write	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^          val write = WriteRequest( ttl, objects) $/;"	V
+write	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^          val write = WriteRequest( ttl, objects) $/;"	V
 write	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {$/;"	m
 write	O-MI Node/src/main/scala/http/Boot.scala	/^      val write = WriteRequest( 60  seconds, objects)$/;"	V
 write	O-MI Node/src/main/scala/responses/ResponseHandler.scala	/^        val write = WriteRequest( ttl, odf)$/;"	V
+write	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    val write = WriteRequest($/;"	V
 writeAction	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^    val writeAction = for {$/;"	V
 writeFuture	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^    val writeFuture = dbobject.writeMany(itemValues)$/;"	V
 writeMany	O-MI Node/src/main/scala/database/DBReadWrite.scala	/^  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {$/;"	m
@@ -2115,8 +2306,8 @@ writeOdf	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val writeOdf
 writeReq	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^    val writeReq = WriteRequest(0 seconds, odf)$/;"	V
 writeRequestTest	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  lazy val writeRequestTest = WriteRequest($/;"	V
 writeToDisk	O-MI Node/src/main/scala/http/OmiConfigExtension.scala	/^  val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")$/;"	V
-writeValues	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  protected def writeValues(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[SuccessfulWrite] $/;"	m
-writeValues	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  protected def writeValues(infoItems: Iterable[OdfInfoItem], objectMetadatas: Vector[OdfObject] = Vector()): Future[SuccessfulWrite] ={$/;"	m
+writeValues	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^  protected def writeValues($/;"	m
+writeValues	O-MI Node/src/test/scala/agentSystem/ResponsibilityManagerTest.scala	/^    override protected def writeValues($/;"	m
 write_r	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^  val write_response_odf: OdfObjects = {$/;"	V
 writearticle	O-MI Node/src/test/scala/http/SystemTest.scala	/^      val writearticle = tests("write test").head$/;"	V
 writes	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^      def writes(obj: DataRecord[Option[Any]], namespace: Option[String], elementLabel: Option[String],$/;"	m
@@ -2167,7 +2358,7 @@ writesAttribute	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    
 writesAttribute	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    override def writesAttribute(__obj: ReturnType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {$/;"	m
 writesAttribute	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    override def writesAttribute(__obj: ValueType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {$/;"	m
 writesAttribute	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    override def writesAttribute(__obj: WriteRequest, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {$/;"	m
-writesBySender	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val writesBySender:Promise[ResponsibleAgentResponse] ={$/;"	V
+writesBySender	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val writesBySender:Promise[ResponsibleAgentResponse] ={$/;"	V
 writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^  def writesChildNodes(obj: A, scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node]$/;"	m
 writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    def writesChildNodes(__obj: CancelRequest, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =$/;"	m
 writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    def writesChildNodes(__obj: Description, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =$/;"	m
@@ -2186,10 +2377,13 @@ writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^   
 writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    def writesChildNodes(__obj: ReturnType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =$/;"	m
 writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    def writesChildNodes(__obj: ValueType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =$/;"	m
 writesChildNodes	O-MI Node/src/main/scala/parsing/xmlGen/xmlprotocol.scala	/^    def writesChildNodes(__obj: WriteRequest, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =$/;"	m
-writesToOthers	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val writesToOthers: Iterable[Promise[ResponsibleAgentResponse]]={ $/;"	V
-writesToOwnerless	O-MI Node/src/main/scala/agentSystem/ResponsibilityHandler.scala	/^    val writesToOwnerless:Promise[ResponsibleAgentResponse] = {$/;"	V
+writesToOthers	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val writesToOthers: Vector[Promise[ResponsibleAgentResponse]]={ $/;"	V
+writesToOwnerless	O-MI Node/src/main/scala/agentSystem/ResponsibilityManager.scala	/^    val writesToOwnerless:Promise[ResponsibleAgentResponse] = {$/;"	V
 wrongPropsTest	O-MI Node/src/test/scala/agentSystem/InternalAgentLoaderTest.scala	/^ def wrongPropsTest       = new Actorstest(logTestActorSystem){$/;"	m
+wsInSink	O-MI Node/src/main/scala/http/OmiService.scala	/^  protected def wsInSink(hasPermissionTest: PermissionTest) = {$/;"	m
+wsOutSource	O-MI Node/src/main/scala/http/OmiService.scala	/^  protected def wsOutSource = ???$/;"	m
 xml	O-MI Node/src/main/scala/agentSystem/DBPusher.scala	/^        val xml = XML.loadString(metaStr)$/;"	V
+xml	O-MI Node/src/main/scala/http/OmiService.scala	/^  implicit val xml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text\/xml`)$/;"	V
 xml	O-MI Node/src/main/scala/types/OdfObjects.scala	/^    val xml  = scalaxb.toXML[ObjectsType](asObjectsType, Some("odf.xsd"), Some("Objects"), defaultScope)$/;"	V
 xml	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^      val xml = correct.asXML$/;"	V
 xml	O-MI Node/src/test/scala/parsing/ParserTest.scala	/^      val xml = request.asXML$/;"	V
@@ -2205,7 +2399,6 @@ xmlReturn	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^        val xml
 xmlReturn	O-MI Node/src/main/scala/responses/RESTHandler.scala	/^        val xmlReturn = SingleStores.getSingle(path).map{$/;"	V
 xmlTypes	O-MI Node/src/main/scala/parsing/xmlGen/odf.scala	/^package xmlTypes$/;"	p
 xmlTypes	O-MI Node/src/main/scala/parsing/xmlGen/omi.scala	/^package xmlTypes$/;"	p
-xmldata	O-MI Node/src/test/scala/testHelpers/testHelpers.scala	/^      val xmldata: Option[NodeSeq] = entity.as[NodeSeq].toOption\/\/.asInstanceOf[NodeSeq]$/;"	V
 xmlreturn	O-MI Node/src/test/scala/responses/SubscriptionTest.scala	/^      val xmlreturn = requestHandler.handleRequest((PollRequest(10.seconds, None, Seq(rid))))$/;"	V
 xs	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^          val xs = Helper.splitBySpace(node.text).toSeq$/;"	V
 xs	O-MI Node/src/main/scala/parsing/xmlGen/scalaxb.scala	/^    val xs: List[((Option[String], String), (Option[String], Option[String]))] = fromScope(scope) flatMap {$/;"	V

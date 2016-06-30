@@ -72,7 +72,7 @@ trait  DBPusher  extends BaseAgentSystem{
         .toOption.getOrElse(Duration.Inf)
     ) 
     callbackF.onSuccess {
-      case CallbackSuccess() =>
+      case CallbackSuccess =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
       case success : CallbackResult =>
         log.error(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1, default math, The impossible happened?")

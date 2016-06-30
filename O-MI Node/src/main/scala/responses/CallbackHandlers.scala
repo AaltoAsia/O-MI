@@ -34,11 +34,11 @@ object CallbackHandlers {
   val supportedProtocols = Vector("http", "https")
   sealed trait CallbackResult
   // Base error
-  sealed class CallbackFailure(msg: String, callback: Uri)              extends Exception(msg) with CallbackResult
+  sealed class CallbackFailure(msg: String, callback: Uri) extends Exception(msg) with CallbackResult
   //Success
-  case class  CallbackSuccess()               extends CallbackResult
+  case object  CallbackSuccess extends CallbackResult
   // Errors
-  case class   HttpError(status: StatusCode, callback: Uri )  extends
+  case class   HttpError(status: StatusCode, callback: Uri ) extends
     CallbackFailure(s"Received HTTP status $status from $callback.", callback)
   case class  ProtocolNotSupported(protocol: String, callback: Uri) extends
     CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
@@ -76,7 +76,7 @@ object CallbackHandlers {
           system.log.info(
             s"Successful send POST request to $address."
           )
-          CallbackSuccess()
+          CallbackSuccess
         } else throw HttpError(response.status, address)
     }
 
@@ -110,8 +110,17 @@ object CallbackHandlers {
     }
   }
   /**
+   * Send callback O-MI message to `address`
+   * @param address Uri that tells the protocol and address for the callback
+   * @param data xml data to send as a callback
+   * @return future for the result of the callback is returned without blocking the calling thread
+   */
+  def sendCallback( address: String, omiMessage: types.OmiTypes.OmiRequest): Future[CallbackResult] =
+    sendCallback(address, omiMessage.asXML, omiMessage.ttl)
+
+  /**
    * Send callback xml message containing `data` to `address`
-   * @param address spray Uri that tells the protocol and address for the callback
+   * @param address Uri that tells the protocol and address for the callback
    * @param data xml data to send as a callback
    * @return future for the result of the callback is returned without blocking the calling thread
    */
@@ -120,12 +129,12 @@ object CallbackHandlers {
                     ttl: Duration
                     ): Future[CallbackResult] = {
 
-    checkCallback(address).flatMap{ uri =>
+    checkCallbackUri(address).flatMap{ uri =>
       sendHttp(uri, data, ttl)
     }
   }
 
-  def checkCallback( callback: String ): Future[Uri]= Future{
+  def checkCallbackUri( callback: String ): Future[Uri] = Future{
 
     val uri = Uri(callback)
     val hostAddress = uri.authority.host.address
