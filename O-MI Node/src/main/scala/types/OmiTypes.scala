@@ -52,16 +52,29 @@ sealed trait OmiRequest {
 }
 
 
+/**
+ * This means request that is writing values
+ */
 sealed trait PermissiveRequest
 
+/**
+ * Request that contains O-DF, (read, write, response)
+ */
 sealed trait OdfRequest {
   def odf : OdfObjects
 }
+
+/**
+ * Request that contains requestID(s) (read, cancel) 
+ */
 sealed trait RequestIDRequest {
   def requestIDs : OdfTreeCollection[Long ]
 }
 
 
+/**
+ * Contains information for sending callbacks for a request or subscription
+ */
 class Callback(
   val uri: String,
   @volatile
@@ -103,9 +116,9 @@ trait SubLike {
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
 }
 
-/** One-time-read request
-  *
-  **/
+/** 
+ * One-time-read request
+ **/
 case class ReadRequest(
   ttl: Duration,
   odf: OdfObjects ,
@@ -149,9 +162,9 @@ case class ReadRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttl.toSeconds)
 }
 
-/** Poll request
-  *
-  **/
+/**
+ * Poll request
+ **/
 case class PollRequest(
   ttl: Duration,
   callback: Option[String ] = None,
@@ -173,9 +186,9 @@ case class PollRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttl.toSeconds)
 }
 
-/** Subscription request for starting subscription
-  *
-  **/
+/**
+ * Subscription request for starting subscription
+ **/
 case class SubscriptionRequest(
   ttl: Duration,
   interval: Duration,
@@ -198,9 +211,9 @@ case class SubscriptionRequest(
 }
 
 
-/** Write request
-  *
-  **/
+/**
+ * Write request
+ **/
 case class WriteRequest(
   ttl: Duration,
   odf: OdfObjects,
@@ -217,9 +230,9 @@ case class WriteRequest(
 }
 
 
-/** Response request, contains result for other requests
-  *
-  **/
+/**
+ * Response request, contains result for other requests
+ **/
 case class ResponseRequest(
   results: OdfTreeCollection[OmiResult],
   ttl: Duration = Duration.Inf
@@ -233,9 +246,9 @@ case class ResponseRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttl.toSeconds)
 } 
 
-/** Cancel request, for cancelling subscription.
-  *
-  **/
+/**
+ * Cancel request, for cancelling subscription.
+ **/
 case class CancelRequest(
   ttl: Duration,
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
@@ -251,9 +264,9 @@ case class CancelRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttl.toSeconds)
 }
 
-/** Result of a O-MI request
-  *
-  **/
+/** 
+ * Result of a O-MI request
+ **/
 case class OmiResult(
   value: String,
   returnCode: String,
