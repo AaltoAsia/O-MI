@@ -171,6 +171,12 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
         responseF.flatMap{
           case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
             entity.toStrict(10.seconds)
+          case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+            Unmarshal(entity).to[String].map{ 
+              str => 
+                log.debug(s"$status with:\n $str")
+                throw new Exception( str)
+            }
         }.flatMap{
           case entity : HttpEntity.Strict =>
             //Ugly fix, for wrong/missing content type.
@@ -206,7 +212,6 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
           log.debug(s"$status with:\n $str")
           OmiReturn( status.value, Some(str))
        }
-       //TODO: what to do if failed? Entity has more information.
    }
 
  }
@@ -214,10 +219,11 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
 
  private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
    val unixEpochTime = odfValue.timestamp.getTime * 1000
-   val pathSelector = path.mkString(".") 
-   val labelSelector = "{}"
-   val value = odfValue.value
-   s"$unixEpochTime// $pathSelector$labelSelector $value\n" 
+   val pathJS = path.mkString(".") 
+   val typeValue = odfValue.typeValue
+   val labels = s"{ type=$typeValue }"
+   val value = if( odfValue.isNumeral ) odfValue.value else s"'${odfValue.value}'"
+   s"$unixEpochTime// $pathJS$labels $value\n" 
  }
  
  private def nodesToReadPathSelector( nodes : Iterable[OdfNode] ) = {
