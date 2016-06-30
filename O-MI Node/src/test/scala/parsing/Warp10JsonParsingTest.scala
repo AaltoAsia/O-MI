@@ -54,7 +54,7 @@ class Warp10JsonParsingTest extends Specification {
   def threeParams = {
     val testJson =
       """
-        |[{"c":"class",
+        |[{"c":"class.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -64,7 +64,7 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
     val correctInfoItem = Seq(OdfInfoItem(
-      Path("class"),
+      Path("class/test/test2"),
       Vector(
         OdfValue("10000 3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("20000 2.5", timestamp = new Timestamp(1380475081500L)),
@@ -78,7 +78,7 @@ class Warp10JsonParsingTest extends Specification {
   def fourParams = {
     val testJson =
       """
-        |[[{"c":"class",
+        |[[{"c":"class.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -88,7 +88,7 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
     val correctInfoItem = Seq(OdfInfoItem(
-      Path("class"),
+      Path("class/test/test2"),
       Vector(
         OdfValue("48.0:-4.5 3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("50.0:50.0 2.5", timestamp = new Timestamp(1380475081500L)),
@@ -102,7 +102,7 @@ class Warp10JsonParsingTest extends Specification {
   def fiveParams = {
     val testJson =
       """
-        |[{"c":"class",
+        |[{"c":"class.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -112,7 +112,7 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
     val correctInfoItem = Seq(OdfInfoItem(
-      Path("class"),
+      Path("class/test/test2"),
       Vector(
         OdfValue("48.0:-4.5/10000000 3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("50.0:50.0/11000000 2.5", timestamp = new Timestamp(1380475081500L)),
@@ -126,7 +126,7 @@ class Warp10JsonParsingTest extends Specification {
   def fiveParamsLongerArray = {
     val testJson =
       """
-        |[{"c":"class",
+        |[{"c":"class.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -140,7 +140,7 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
     val correctInfoItem = Seq(OdfInfoItem(
-      Path("class"),
+      Path("class/test/test2"),
       Vector(
         OdfValue("48.0:-4.5/10000000 3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("50.0:50.0/11000000 2.5", timestamp = new Timestamp(1380475081500L)),
@@ -157,7 +157,7 @@ class Warp10JsonParsingTest extends Specification {
     def hybridRequest = {
     val testJson =
       """
-        |[{"c":"class",
+        |[{"c":"class.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -166,21 +166,21 @@ class Warp10JsonParsingTest extends Specification {
         |       [1380475082000000,10000000,3.0]]},
         | {"i":"1",
         |  "v":[[1380475083000000,48.1,-4.5,11000000,42.0]]},
-        | {"c":"test1",
+        | {"c":"test1.test.test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"2",
         |  "v":[[1380475081000000,3.14],
         |       [1380475081500000,48.0,-4.5,2.5],
         |       [1380475082000000,10000000,3.0]]},
-        | {"c":"test2",
+        | {"c":"test2.test.test2",
         |  "v":[[1380475081000000,3.14],
         |       [1380475081500000,48.0,-4.5,2.5],
         |       [1380475082000000,10000000,3.0]]}]
         |      """.stripMargin
 
     val correctInfoItem1 = OdfInfoItem(
-      Path("class"),
+      Path("class/test/test2"),
       Vector(
         OdfValue("3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("48.0:-4.5 2.5", timestamp = new Timestamp(1380475081500L)),
@@ -189,7 +189,7 @@ class Warp10JsonParsingTest extends Specification {
     )
 
     val correctInfoItem2 = OdfInfoItem(
-      Path("test1"),
+      Path("test1/test/test2"),
       Vector(
         OdfValue("3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("48.0:-4.5 2.5", timestamp = new Timestamp(1380475081500L)),
@@ -197,7 +197,7 @@ class Warp10JsonParsingTest extends Specification {
     )
 
     val correctInfoItem3 = OdfInfoItem(
-      Path("test2"),
+      Path("test2/test/test2"),
       Vector(
         OdfValue("3.14", timestamp = new Timestamp(1380475081000L)),
         OdfValue("48.0:-4.5 2.5", timestamp = new Timestamp(1380475081500L)),
