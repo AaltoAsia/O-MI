@@ -11,6 +11,7 @@ import database.Warp10JsonProtocol._
 
 class Warp10JsonParsingTest extends Specification {
 
+
   def is =
     s2"""
    This is a specification to check forrect parsing of incoming JSON messages
