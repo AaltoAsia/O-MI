@@ -62,11 +62,8 @@ object SubscriptionManager{
 /**
  * Class that handles event and interval based subscriptions.
  * Uses Akka scheduler to schedule ttl handling and intervalhandling
- * @param dbConnection
  */
-class SubscriptionManager(implicit val dbConnection: DB) extends Actor with ActorLogging {
-
-  import context.system
+class SubscriptionManager extends Actor with ActorLogging {
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler = context.system.scheduler
@@ -125,7 +122,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long) : Future[Option[OdfObjects]] = {
+  private def pollSubscription(id: Long) : Option[OdfObjects] = {
     val pollTime: Long = System.currentTimeMillis()
     val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
     sub match {
@@ -148,15 +145,16 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
 
             log.debug(s"Creating response message for Polled Event Subscription")
+            val eventData = (SingleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
+              .map{case (_path,_values) =>
+                OdfInfoItem(_path,_values.sortBy(_.timestamp.getTime()))}
 
-            val eventData = dbConnection.pollEventSubscription(id).map(_.toVector //get data from database
-              .groupBy(_.path) //group data by the paths
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
-              .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
+            //  .mapValues(_.sortBy(_.timestamp.getTime).map(subVal => OdfValue())) //sort values by timestamp and convert them to OdfValue type
+            //  .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
               .map(i => createAncestors(i)) //Map to OdfObjects
-              .fold(emptyTree)(_.union(_)))//.reduceOption(_.union(_)) //Combine OdfObjects
+              .fold(emptyTree)(_.union(_))
 
-            eventData.map(eData => Some(eData))
+            Some(eventData)//eventData.map(eData => Some(eData))
           }
 
           case pollInterval: PollIntervalSub => {
@@ -165,20 +163,23 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
             val interval: Duration = pollInterval.interval
 
-            val intervalData: Future[Map[Path, Vector[OdfValue]]] = dbConnection.pollIntervalSubscription(id).map(_.toVector
-              .groupBy(n => n.path)
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)))
+            //val intervalData: Future[Map[Path, Vector[OdfValue]]] =
 
-            val combinedWithPaths = intervalData.map(iData => {
-              log.info(s"Data length for interval subscription is: ${iData.length}")
+            val intervalData= (SingleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
+              .mapValues(_.sortBy(_.timestamp.getTime()))
+            //dbConnection.pollIntervalSubscription(id).map(_.toVector
+            //  .groupBy(n => n.path)
+            //  .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)))
+
+            val combinedWithPaths =
               OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
               .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
               .map( n => n.path)
-              .map(p => p -> Vector[OdfValue]()).toMap ++ iData
-            })
+              .map(p => p -> Vector[OdfValue]()).toMap ++ intervalData
 
 
-            val pollData: Future[OdfObjects] = combinedWithPaths.map(_.map( pathValuesTuple =>{
+
+            val pollData: OdfObjects = combinedWithPaths.map( pathValuesTuple =>{
 
               val (path, values) = pathValuesTuple match {
                 case (p, v) if (v.nonEmpty) => {
@@ -243,14 +244,13 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
               }).flatMap{ n => //flatMap removes None values
               //create OdfObjects from InfoItems
               n.map{case ( path, values) => createAncestors(OdfInfoItem(path, values))}
-            }).map(
-            _.fold(emptyTree)(_.union(_)))
-            pollData.map(pData => Some(pData))
+            }.fold(emptyTree)(_.union(_))
+            Some(pollData)
           }
 
         }
       }
-      case _ => Future.successful(None)
+      case _ => None
     }
   }
 
@@ -274,7 +274,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         log.info(s"Trying to send subscription data to ${iSub.callback}")
         val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
         val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
-            case ((paths, nodes), (p,Some(node))) => (paths, nodes.:+(node))
+            case ((paths, _nodes), (p,Some(node))) => (paths, _nodes.:+(node))
             case ((paths, nodes), (p, None))    => (paths.:+(p), nodes)
           }
         val subscribedInfoItems = OdfTypes
@@ -331,7 +331,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)
     lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)
     if (removePS) {
-      dbConnection.removePollSub(id)
+      SingleStores.pollDataPrevayler execute RemovePollSubData(id)
       removePS
     } else {
       removeIS || removeES

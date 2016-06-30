@@ -17,6 +17,9 @@ package responses
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import database.{GetTree, SingleStores}
+
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
@@ -26,7 +29,7 @@ import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
 
-trait ReadHandler extends OmiRequestHandlerBase{
+trait ReadHandler extends OmiRequestHandlerBase {
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
@@ -35,14 +38,32 @@ trait ReadHandler extends OmiRequestHandlerBase{
     log.debug("Handling read.")
 
     val leafs = getLeafs(read.odf)
-    val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
+    // NOTE: Might go off sync with tree or values if the request is large,
+    // but it shouldn't be a big problem
+    val metadataTree = SingleStores.hierarchyStore execute GetTree()
+
+    //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
+    def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
+      case oii@OdfInfoItem(_, _, desc, mData)
+        if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
+      case obj@OdfObject(pat, _, _, _, des, tv)
+        if des.isDefined || tv.isDefined => createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
+    }.reduceOption(_.union(_))
+
+    def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
+
     val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-    objectsO.map{
+    objectsO.map {
       case Some(objects) =>
-        val found = Results.read(objects)
-        val requestsPaths = leafs.map { _.path }
-        val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
+        val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
+        val found = Results.read(metaCombined)
+        val requestsPaths = leafs.map {
+          _.path
+        }
+        val foundOdfAsPaths = getLeafs(metaCombined).flatMap {
+          _.path.getParentsAndSelf
+        }.toSet
         val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
         val results = Seq(found) ++ {
           if (notFound.nonEmpty)
@@ -50,9 +71,9 @@ trait ReadHandler extends OmiRequestHandlerBase{
           else Seq.empty
         }
 
-          xmlFromResults(
-            1.0,
-            results: _*)
+        xmlFromResults(
+          1.0,
+          results: _*)
       case None =>
         xmlFromResults(
           1.0, Results.notFound)

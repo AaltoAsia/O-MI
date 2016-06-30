@@ -16,11 +16,11 @@ package OdfTypes
 
 
 import scala.collection.immutable.HashMap
+import scala.xml.NodeSeq
 
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{defaultScope, xmlTypes, scalaxb}
+import parsing.xmlGen.{defaultScope, scalaxb}
 import types.OdfTypes.OdfTreeCollection._
-import scala.xml.{Elem, NodeSeq, Node,UnprefixedAttribute }
 
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
@@ -38,8 +38,8 @@ class OdfObjectsImpl(
     OdfObjects(
       thisObjs.merged(anotherObjs){case ((k1, v1),(_, v2)) => (k1,v1.combine(v2))}.values,
     unionOption(version,another.version){
-      case (a,b) if a > b =>a
-      case (a,b) => b
+      case (a, b) if a > b =>a
+      case (a, b) => b
     }
     )
 
@@ -64,7 +64,10 @@ class OdfObjectsImpl(
    * @return
    */
   def intersect(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
-    (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
+    (
+    uniqueObjs: Seq[OdfObject],
+    anotherUniqueObjs: Seq[OdfObject],
+    sharedObjs: Map[Path, Seq[OdfObject]]) =>
     OdfObjects(
       sharedObjs.flatMap{
       case (path: Path, sobj: Seq[OdfObject]) =>

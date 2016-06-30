@@ -63,7 +63,7 @@ class  OdfInfoItemImpl(
     InfoItemType(
       description = description.map( des => des.asDescription ),
       MetaData = metaData.map{ odfMetaData => odfMetaData.asMetaData},
-      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: ${path}")),
+      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")),
       value = values.map{ 
         value : OdfValue =>
         value.asValueType
@@ -97,9 +97,7 @@ case class OdfValue(
       typeValue,
       unixTime = Option(timestamp.getTime/1000),
       dateTime = Option{
-        val c :GregorianCalendar  = new GregorianCalendar()
-        c.setTimeInMillis(timestamp.getTime)
-        DatatypeFactory.newInstance().newXMLGregorianCalendar(c)
+        timestampToXML(timestamp)
       },
       attributes = Map.empty
     )

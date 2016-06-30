@@ -928,7 +928,7 @@ object Helper {
                     (f: (NamespaceBinding, Map[Option[String], Option[String]]) => A): A = {
     val outerList = fromScope(outer)
     def renamePrefix(prefix: Option[String],  n: Int): Option[String] =
-      if (outerList exists { case (p, n) => p == Some((prefix getOrElse {"ns"}) + n.toString)}) renamePrefix(prefix, n + 1)
+      if (outerList exists { case (p, _n) => p == Some((prefix getOrElse {"ns"}) + _n.toString)}) renamePrefix(prefix, n + 1)
       else Some((prefix getOrElse {"ns"}) + n.toString)
 
     val xs: List[((Option[String], String), (Option[String], Option[String]))] = fromScope(scope) flatMap {

@@ -134,8 +134,8 @@ object CallbackHandlers {
     val portsUsedByNode =settings.ports.values.toSeq
     val validScheme = supportedProtocols.contains(uri.scheme)
     val validPort = hostAddress != "localhost" || !portsUsedByNode.contains(uri.effectivePort)
-    val invalidPortMsg = "Tryed to send callback to port used by O-MI Node"
-    val invalidSchemeMsg = "Tryed to send callback to port used by O-MI Node"
+    val invalidPortMsg = "Tried to send callback to port used by O-MI Node"
+    val invalidSchemeMsg = "Tried to send callback to port used by O-MI Node"
     (validScheme, validPort )match {
       case ( true, true ) =>
         uri

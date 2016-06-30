@@ -52,11 +52,11 @@ package object OmiTypes  {
  def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) : NodeSeq ={ 
     scalaxb.toXML[OmiEnvelope](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
   }
- def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={ 
-    val cal = new GregorianCalendar();
-    cal.setTime(timestamp)
-    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
-  }
+ def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={
+   val cal = new GregorianCalendar()
+   cal.setTime(timestamp)
+   DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+ }
 }
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
@@ -72,9 +72,9 @@ package object OdfTypes {
 
   def unionOption[T](a: Option[T], b: Option[T])(f: (T,T) => T): Option[T] = {
     (a,b) match{
-        case (Some(a), Some(b)) => Some(f(a,b))
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
+        case (Some(a), Some(_b)) => Some(f(a,_b))
+        case (None, Some(_b)) => Some(_b)
+        case (Some(_a), None) => Some(_a)
         case (None, None) => None
     }
   }
@@ -172,6 +172,11 @@ package object OdfTypes {
 
   def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
+  }
+  def timestampToXML(timestamp: Timestamp) ={ 
+    val cal = new GregorianCalendar();
+    cal.setTime(timestamp)
+    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
 
 }

@@ -458,7 +458,7 @@ class ParserTest extends Specification {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult("", "200", None, Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
 
   }
 
@@ -759,7 +759,7 @@ class ParserTest extends Specification {
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(
-      "","200",
+      OmiReturn("200"),
       odf = Some(writeOdf)
       )),
     10 seconds

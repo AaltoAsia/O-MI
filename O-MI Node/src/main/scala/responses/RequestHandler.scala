@@ -128,6 +128,7 @@ with RemoveHandler
     case write: WriteRequest => handleWrite(write)
     case cancel: CancelRequest => handleCancel(cancel)
     case poll: PollRequest => handlePoll(poll)
+
     case response: ResponseRequest => handleResponse(response)
   }
 

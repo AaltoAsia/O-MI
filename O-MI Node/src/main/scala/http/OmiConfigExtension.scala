@@ -29,7 +29,8 @@ import types.Path
 
 
  
-class OmiConfigExtension( val config: Config) extends Extension with AgentSystemConfigExtension{
+class OmiConfigExtension( val config: Config) extends Extension 
+  with AgentSystemConfigExtension {
   // Node special settings
 
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{

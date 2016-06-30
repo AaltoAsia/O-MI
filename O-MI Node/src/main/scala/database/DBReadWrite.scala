@@ -25,7 +25,8 @@ import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types._;
+import types.OmiTypes.OmiReturn
+import types._
 
 /**
  * Read-write interface methods for db tables.
@@ -53,7 +54,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val existingTables = MTable.getTables
     val existed = Await.result(db.run(existingTables), 5 minutes)
-    if (existed.length > 0) {
+    if (existed.nonEmpty) {
       //noop
       log.info(
         "Found tables: " +
@@ -138,9 +139,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to write values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
    *  Does not remove excess rows if path is set or buffer
-   *
-   *  @param data sensordata, of type DBSensor to be stored to database.
-   *  @return hierarchy id
    */
   def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
@@ -175,7 +173,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {
+  def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn] = {
 
     val pathsData: Map[Path, Seq[OdfValue]] =
       data.groupBy{case (path, _) => path}.mapValues(
@@ -211,24 +209,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         
     } yield idMap.toSeq
 
-    val pathIdRelations = db.run(writeAction.transactionally)
+    val pathIdRelations : Future[Seq[(types.Path, Int)]] = db.run(writeAction.transactionally)
 
-    val infoitems = pathsData.collect{
-      case (path: Path, values : Seq[OdfValue] ) if values.nonEmpty =>
-        OdfInfoItem(
-          path,
-          values.map{ va => 
-            OdfValue(
-              va.value,
-              va.typeValue,
-              va.timestamp
-            )
-          }.toIterable
-      )
-    }
     //Call hooks
-
-    pathIdRelations
+    pathIdRelations.map{ 
+      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => OmiReturn("200")
+      case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
+        OmiReturn("500",Some("Using old database. Should use Warp 10."))
+    }
   }
 
 
@@ -241,7 +229,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         val removedRight = node.rightBoundary
         for{
           removedValues <- getSubTreeQ(node).result
-          removedIds = removedValues.map{case (node, _) => node.id.getOrElse(throw new UninitializedError)}.distinct
+          removedIds = removedValues.map{case (_node, _) => _node.id.getOrElse(throw new UninitializedError)}.distinct
           removeOp = DBIO.fold(Seq(
            latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
            hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
@@ -270,7 +258,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether something was removed
    */
   def remove(path: Path): Future[Int] = {
-    db.run(removeQ(path).transactionally)
+    if(path.length == 1){
+      removeRoot(path)
+    }else{
+      db.run(removeQ(path).transactionally)
+    }
   }
 
   /**

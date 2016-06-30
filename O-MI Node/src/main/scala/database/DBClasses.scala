@@ -34,24 +34,6 @@ import types._
  */
 trait DBBase{
   protected[this] val db: Database
-
-
-  //private[this] val dbtimeout = http.Boot.Settings
-
-  /**
-   * We use a more synchronized api for db using these two functions.
-   * Takes a DBIO as parameter and runs it returning the result.
-   */
-  //protected def runSync[R]: DBIOAction[R, NoStream, Nothing] => R =
-  //  io => Await.result(db.run(io), 5.minutes)
-    // db operations shouldn't last longer than 5 minutes TODO: make a config option
-
-  /**
-   * Takes a DBIO as parameter and runs it waiting for it to finish.
-   */
-  //protected def runWait: DBIOAction[_, NoStream, Nothing] => Unit =
-  //  io => Await.ready(db.run(io), 5.minutes) // db operations shouldn't last longer than 5 minutes
-
 }
 
 
@@ -138,6 +120,7 @@ trait OmiNodeTables extends DBBase {
    * @param depth Extended nested set model: depth of this node in the tree
    * @param description for the corresponding odf node (Object or InfoItem)
    * @param pollRefCount Count of references to this node from active poll subscriptions
+   * @param isInfoItem Boolean indicating if this Node is an InfoItem
    */
   case class DBNode(
     id: Option[Int],
@@ -183,8 +166,6 @@ trait OmiNodeTables extends DBBase {
     def pollRefCount: Rep[Int] = column[Int]("POLLREFCOUNT")
     def isInfoItem: Rep[Boolean] = column[Boolean]("ISINFOITEM")
 
-    //def pathIndex: Index = index("IDX_HIERARCHYNODES_PATH", path, unique = true)
-
     // Every table needs a * projection with the same type as the table's type parameter
     def * : ProvenShape[DBNode] = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
       DBNode.tupled,
@@ -213,7 +194,6 @@ trait OmiNodeTables extends DBBase {
     extends Table[DBValue](tag, "SENSORVALUES") with HierarchyFKey[DBValue] {
     val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
-    //def hierarchyId = column[Int]("HIERARCHYID")
     def id: Rep[Long] = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
     def timestamp: Rep[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
     def value: Rep[String] = column[String]("VALUE")
@@ -221,7 +201,6 @@ trait OmiNodeTables extends DBBase {
     def idx1: Index = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
     def idx2: Index = index("timestamp", timestamp, unique = false)  //index on timestmaps
     /** Primary Key: (hierarchyId, timestamp) */
-    //def pk = primaryKey("PK_DBDATA", (hierarchyId, timestamp))
 
     def * : ProvenShape[DBValue] = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)
   }

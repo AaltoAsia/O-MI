@@ -131,22 +131,24 @@ trait  DBPusher  extends BaseAgentSystem{
   }
 
   /**
-   * Creates values that are to be updated into the database for polled subscription.
-   * Polling removes the related data from database, this method creates new data if the old value.
+   * Adds data for polled subscriptions to the Prevayler store.
+   * Polling removes the related data from database
+   * (except for polled interval subscriptions, in which case it leaves the latest value in the database)
    * @param path
    * @param newValue
    * @param oldValueOpt
    * @return returns Sequence of SubValues to be added to database
    */
-  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Set[SubValue] = {
+  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
     val relatedPollSubs = SingleStores.pollPrevayler execute GetSubsForPath(path)
 
     relatedPollSubs.collect {
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
       case sub if(oldValueOpt.forall(oldValue =>
-        valueShouldBeUpdated(oldValue, newValue) && (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
-          SubValue(sub.id, path, newValue.timestamp, newValue.value,newValue.typeValue)
+        valueShouldBeUpdated(oldValue, newValue) &&
+          (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
+        SingleStores.pollDataPrevayler execute AddPollData(sub.id, path, newValue)
       }
     }
   }
@@ -170,22 +172,17 @@ trait  DBPusher  extends BaseAgentSystem{
     //log.debug(s"\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXxxx\n${
     //pathValueOldValueTuples.map(n =>n._1.toString + "-> " + n._2.value + "old: " + n._3.map(_.value).toString()).mkString("\n")
     //}")
-    val newPollValues = pathValueOldValueTuples.flatMap{
+    val pollFuture = Future{pathValueOldValueTuples.foreach{
       case (path, oldValue, value) =>
-      handlePollData(path, oldValue ,value)
+        handlePollData(path, oldValue ,value)} //Add values to pollsubs in this method
     }
-    val pollFuture: Future[Option[Int]] = if(!newPollValues.isEmpty) {
-      dbobject.addNewPollData(newPollValues)
-      } else {
-        Future.successful(Option(0))
-      }
 
     pollFuture.onFailure{
-        case t: Throwable => log.error(t, "Error when adding poll values to database")
-      }
+      case t: Throwable => log.error(t, "Error when adding poll values to database")
+    }
 
-    def tupledProcessData = SingleStores.processData _ tupled
-    val callbackDataOptions = pathValueOldValueTuples.map(n=> tupledProcessData(n))
+    val callbackDataOptions = pathValueOldValueTuples.map{
+      case (path,value, oldValueO) => SingleStores.processData(path,value,oldValueO)}
     val triggeringEvents = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
@@ -243,24 +240,12 @@ trait  DBPusher  extends BaseAgentSystem{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    //return when futures have been completed
-    //OmiServiceTest fails when value is returned after items have been written in database
-    /*
-    for {
+    for{
       _ <- pollFuture
       _ <- writeFuture
       res = infoItems.map(_.path) ++ objectMetadatas.map(_.path)
     } yield res
-    //subHandler ! NewDataEvent(itemValues)
-    */
-    //log.debug("Successfully saved InfoItems to DB")
 
-    //doesn't fail if writing fails but waits that it its completed
-    writeFuture.map(n => infoItems.map(_.path) ++ objectMetadatas.map(_.path))//.recover{
-      //case r => infoItems.map(_.path) ++ objectMetadatas.map(_.path)
-
-    //}
-    //Future.successful(infoItems.map(_.path) ++ objectMetadatas.map(_.path))
   }
 
   /**

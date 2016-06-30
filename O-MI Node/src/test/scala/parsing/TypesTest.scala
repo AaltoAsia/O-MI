@@ -60,7 +60,7 @@ class TypesTest extends Specification {
   }
 
   def e5 = {
-    new ResponseRequest(Seq(OmiResult("1","200"))).isInstanceOf[OmiRequest]
+    new ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
   }
 
   def e6 = {
@@ -68,7 +68,7 @@ class TypesTest extends Specification {
   }
   
   def e10 = {
-    !new OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
+    !new OdfInfoItem(Seq("Objects", "Typestest","t"), Seq()).isInstanceOf[OmiRequest]
   }
   
   def e11 = {
@@ -76,7 +76,7 @@ class TypesTest extends Specification {
   }
   
   def e100 = {
-    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfNode]
+    new OdfInfoItem(Seq("Ojects", "Typestest", "t"), Seq()).isInstanceOf[OdfNode]
   }
   
   def e101 = {

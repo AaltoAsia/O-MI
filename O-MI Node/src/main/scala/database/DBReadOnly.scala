@@ -31,12 +31,11 @@ import types._
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
   protected[this] def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
 
-  protected[this] def findParentQ(childPath: Path) = (
+  protected[this] def findParentQ(childPath: Path): Query[DBNodesTable, DBNode, Seq] =
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
       hierarchyNodes filter (_.path === Path(childPath.init))
-  )
   
   private val log = LoggerFactory.getLogger("DBReadOnly")
 
@@ -65,34 +64,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
   } yield result
 
-  /**
-   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
-   * search is targeted between these two times. If only start is given,all values from start time onwards are
-   * targeted. Similiarly if only end is given, values before end time are targeted.
-   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
-   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
-   * the end.
-   * All parameters except path are optional, given only path returns all values in the database for that path
-   *
-   * @param path path as Path object
-   * @param start optional start Timestamp
-   * @param end optional end Timestamp
-   * @param fromStart number of values to be returned from start
-   * @param fromEnd number of values to be returned from end
-   * @return query for the requested values
-   */
-  //protected[this] def getNBetweenDBInfoItemQ(
-  //  id: Int,
-  //  begin: Option[Timestamp],
-  //  end: Option[Timestamp],
-  //  newest: Option[Int],
-  //  oldest: Option[Int]): Query[DBValuesTable, DBValue, Seq] =
-  //  nBetweenLogicQ(getValuesQ(id), begin, end, newest, oldest)
 
   /**
    * Makes a Query which filters, limits and sorts as limited by the parameters.
    * See [[getNBetween]].
-   * @param getter Gets DBValue from some ValueType for filtering and sorting
    */
   protected[this] def nBetweenLogicQ(
     values: Query[DBValuesTable, DBValue, Seq],
@@ -192,7 +167,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param begin optional start Timestamp
    * @param end optional end Timestamp
    * @param newest number of values to be returned from start
-   * @param  number of values to be returned from end
+   * @param oldest number of values to be returned from end
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
@@ -210,25 +185,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     require(requestsSeq.size >= 1,
       "getNBetween should be called with at least one request thing")
 
-    // NOTE: Might go off sync with tree or values if the request is large,
-    // but it shouldn't be a big problem
-    val metadataTree = SingleStores.hierarchyStore execute GetTree()
-
-    // NOTE: this discards currentData if attaching object description, requires refactoring
-    def getDescObject(path: Path, currentData: OdfObjects, attachObjectDescription: Boolean) =
-      {metadataTree.get(path) collect {
-            case o: OdfObject if (attachObjectDescription) =>
-              o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection())
-            case o: OdfObject =>
-              o.copy(objects = OdfTreeCollection(), infoItems = OdfTreeCollection(), description = None)
-          } map createAncestors
-      }.getOrElse(OdfObjects()) union currentData
-
-    def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
+   def processObjectI(path: Path, attachObjectDescription: Boolean): DBIO[Option[OdfObjects]] = {
       getHierarchyNodeI(path) flatMap {
         case Some(rootNode) => for { // DBIO
 
-          //subTreeData <- getSubTreeI(rootNode.path)
           subTreeData <- getSubTreeQ(rootNode).result // TODO: don't get all values
 
           // NOTE: We can only apply "between" logic here because of the subtree query
@@ -243,11 +203,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
             toDBInfoItems(timeframedTreeData) mapValues takeLogic(newest, oldest, begin.isEmpty && end.isEmpty)
 
           
-          results = for {
+          results = odfConversion(dbInfoItems)
+          /*for {
             odf <- odfConversion(dbInfoItems)
-            desc = getDescObject(path, odf, attachObjectDescription)
-            } yield desc
-
+            //desc = getDescObject(path, odf, attachObjectDescription)
+            } yield odf
+           */
         } yield results
 
         case None => // Requested object was not found, TODO: think about error handling
@@ -255,27 +216,6 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       }
 
     }
-
-    // returns metadata if metadataQuery is Some
-    def getMetaInfoItem(queryInfoItem: OdfInfoItem, path: Path): OdfInfoItem = {
-      (for {
-        // If metadata.nonEmpty || description.nonEmpty
-        _ <- queryInfoItem.metaData orElse queryInfoItem.description
-
-        res <- metadataTree.get(path) flatMap {
-          case found: OdfInfoItem => Some{   // and InfoItem exists in tree
-            if (queryInfoItem.description.isEmpty)
-              found.copy(description = None) // Remove description 
-            else if (queryInfoItem.metaData.isEmpty)
-              found.copy(metaData = None)
-            else
-              found
-          }
-          case _ => None
-        }
-      } yield res) getOrElse OdfInfoItem(path, Iterable(), None, None)
-    }
-
 
     def getFromDB(): Seq[Future[Option[OdfObjects]]] = requestsSeq map { // par
 
@@ -302,9 +242,8 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               odfInfoItem <- processObjectI(path, false)
 
 
-              metaInfoItem: OdfInfoItem = getMetaInfoItem(qry, path)
               result = odfInfoItem.map {
-                infoItem => createAncestors(infoItem) union createAncestors(metaInfoItem)
+                infoItem => createAncestors(infoItem)// union createAncestors(metaInfoItem)
               }
 
             } yield result
@@ -317,40 +256,37 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
         db.run(odfInfoItemI)
 
-      //case odf: OdfElement =>
-      //  throw new RuntimeException(s"Non-supported query parameter: $odf")
-      //case OdfObjects(_, _) =>
-      //case OdfDesctription(_, _) =>
-      //case OdfValue(_, _, _) =>
     }
 
     def getFromCache(): Seq[Option[OdfObjects]] = {
-      val objectData: Seq[Option[OdfObjects]] = requestsSeq map {
-        case obj @ OdfObjects(objects, _) =>
+      lazy val hTree = SingleStores.hierarchyStore execute GetTree()
+      val objectData: Seq[Option[OdfObjects]] = requestsSeq collect {
+
+        case obj@OdfObjects(objects, _) => {
           require(objects.isEmpty,
             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-          Some( SingleStores.buildOdfFromValues(
-            SingleStores.latestStore execute LookupAllDatas()) )
+          Some(SingleStores.buildOdfFromValues(
+            SingleStores.latestStore execute LookupAllDatas()))
+        }
 
-        case obj @ OdfObject(id, path, items, objects, desc, typeVal) =>
+        case obj @ OdfObject(_, path, items, objects, _, _) => {
           require(items.isEmpty && objects.isEmpty,
             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
           val resultsO = for {
-            odfObject <- metadataTree.get(path) collect {  // get all descendants
+            odfObject <- hTree.get(path).collect{
               case o: OdfObject => o
             }
-            paths = getLeafs(odfObject) map (_.path)
-
-            pathValues = SingleStores.latestStore execute LookupSensorDatas(paths) 
+            paths = getLeafs(odfObject).map(_.path)
+            pathValues = SingleStores.latestStore execute LookupSensorDatas(paths)
           } yield SingleStores.buildOdfFromValues(pathValues)
 
-          // O-DF standard is a bit unclear about description field for objects
-          // so we decided to put it in only when explicitly asked
-          // FIXME: TODO: what if only description exists?, description not working
-          resultsO map (data => getDescObject(path, data, desc.nonEmpty))
+          //val paths = getLeafs(obj).map(_.path)
+          //val objs = SingleStores.latestStore execute LookupSensorDatas(paths)
+          //val results = SingleStores.buildOdfFromValues(objs)
 
-        case _ => None // noop, infoitems are processed in the next lines
+          resultsO
+        }
       }
 
       // And then get all InfoItems with the same call
@@ -361,11 +297,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
       val foundPaths = (infoItemData map { case (path,_) => path }).toSet
 
       val resultOdf = SingleStores.buildOdfFromValues(infoItemData)
+
       objectData :+ Some(
         reqInfoItems.foldLeft(resultOdf){(result, info) =>
           info match {
             case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
-              result union createAncestors(getMetaInfoItem(qry, path))
+              result union createAncestors(qry)
             case _ => result // else discard
           }
         }
@@ -375,22 +312,22 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // Optimizing basic read requests,
     // TODO: optimize newest.exists(_ == 1) && (begin.nonEmpty || end.nonEmpty)
     val allResults: Future[Seq[Option[OdfObjects]]] =
-      if ((newest.isEmpty || newest.exists(_ == 1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
+      if ((newest.isEmpty || newest.contains(1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
         Future(getFromCache())
       else
         Future.sequence(getFromDB())
 
     // Combine some Options
     val results = allResults.map(_.fold(None){
-      case (Some(results), Some(otherResults)) => Some(results union otherResults)
-      case (None, Some(results))               => Some(results)
-      case (Some(results), None)               => Some(results)
+      case (Some(_results), Some(otherResults)) => Some(_results union otherResults)
+      case (None, Some(_results))               => Some(_results)
+      case (Some(_results), None)               => Some(_results)
       case (None, None)                        => None
     })
 
     results.map{
       case Some(OdfObjects(x,_)) if x.isEmpty => None
-      case default : Option[OdfObjects ]  => default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
+      case default : Option[OdfObjects ]  => default//default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
     }
 
   }

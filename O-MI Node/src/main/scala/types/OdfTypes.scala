@@ -67,7 +67,7 @@ case class OdfObjects(
   def valuesRemoved: OdfObjects = this.copy(objects = objects map (_.valuesRemoved))
   //def withValues: (Path, Seq[OdfValue]) => OdfObjects = { case (p, v) => withValues(p, v) } 
   def withValues(p: Path, v: Seq[OdfValue]): OdfObjects = {
-    val nextPath = path.toSeq.tail
+    val nextPath: Path = path.toSeq.tail
     require(nextPath.nonEmpty, s"Tried to set values for $path: $p -> $v")
 
     this.copy(objects = objects map (o => if (o.path == nextPath) o.withValues(p, v) else o))
@@ -126,7 +126,7 @@ case class OdfObject(
         infoItems = infoItems map (_.valuesRemoved)
       )
   def withValues(p: Path, v: Seq[OdfValue]): OdfObject = {
-    val nextPath = p.toSeq.tail
+    val nextPath: Path = p.toSeq.tail
     require(nextPath.nonEmpty, s"Tried to set values for Object $path: $p -> $v")
 
     this.copy(
@@ -144,6 +144,8 @@ case class OdfInfoItem(
     description: Option[OdfDescription] = None,
     metaData: Option[OdfMetaData] = None)
   extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+  require(path.length > 2,
+    s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path(${path})")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
   def valuesRemoved: OdfInfoItem = if (values.nonEmpty) this.copy(values = OdfTreeCollection()) else this
   def withValues(v: Seq[OdfValue]): OdfInfoItem = this.copy(values = OdfTreeCollection(v:_*))
