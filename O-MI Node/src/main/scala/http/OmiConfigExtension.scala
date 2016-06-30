@@ -20,7 +20,6 @@ import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 
-import database.Warp10ConfigExtension
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
@@ -31,8 +30,7 @@ import types.Path
 
  
 class OmiConfigExtension( val config: Config) extends Extension 
-  with AgentSystemConfigExtension
-  with Warp10ConfigExtension{
+  with AgentSystemConfigExtension {
   // Node special settings
 
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
