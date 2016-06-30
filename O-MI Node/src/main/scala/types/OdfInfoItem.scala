@@ -85,15 +85,14 @@ case class OdfMetaData(
 }
 
 /** Class presenting Value tag of O-DF format. */
-case class OdfValue(
-  value:                String,
-  typeValue:            String = "xs:string",
-  timestamp:            Timestamp
-) {
+trait OdfValue{
+  def value:                Serializable
+  def typeValue:            String = "xs:string"
+  def timestamp:            Timestamp
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
     ValueType(
-      value,
+      value.toString,
       typeValue,
       unixTime = Option(timestamp.getTime/1000),
       dateTime = Option{
@@ -102,4 +101,72 @@ case class OdfValue(
       attributes = Map.empty
     )
   }
+  def isNumeral : Boolean = typeValue match {
+     case "xs:float" =>
+       true
+     case "xs:double" =>
+       true
+     case "xs:short" =>
+       true
+     case "xs:int" =>
+       true
+     case "xs:long" =>
+       true
+     case _ =>
+       false
+   }
+  def isPresentedByString : Boolean = typeValue match {
+     case "xs:float" =>
+       false
+     case "xs:double" =>
+       false
+     case "xs:short" =>
+       false
+     case "xs:int" =>
+       false
+     case "xs:long" =>
+       false
+     case _ =>
+       true
+   }
+}
+  final case class OdfIntValue(value: Int, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:int"
+  } 
+  final case class  OdfLongValue(value: Long, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:long"
+  } 
+  final case class  OdfShortValue(value: Short, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:short"
+  } 
+  final case class  OdfFloatValue(value: Float, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:float"
+  } 
+  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:double"
+  } 
+  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:boolean"
+  } 
+  final case class  OdfStringPresentedValue(value: String, timestamp: Timestamp) extends OdfValue{
+    def typeValue:            String = "xs:string"
+  } 
+
+object OdfValue{
+  def apply(value: String, typeValue: String, timestamp: Timestamp) : OdfValue = typeValue match {
+     case "xs:float" =>
+        OdfFloatValue(value.toFloat, timestamp)
+     case "xs:double" =>
+        OdfDoubleValue(value.toDouble, timestamp)
+     case "xs:short" =>
+        OdfShortValue(value.toShort, timestamp)
+     case "xs:int" =>
+        OdfIntValue(value.toInt, timestamp)
+     case "xs:long" =>
+        OdfLongValue(value.toLong, timestamp)
+     case "xs:boolean" =>
+        OdfBooleanValue(value.toBoolean, timestamp)
+     case _ =>
+        OdfStringPresentedValue(value, timestamp)
+   }
 }
