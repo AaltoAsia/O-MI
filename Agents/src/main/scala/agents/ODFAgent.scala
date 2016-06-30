@@ -76,10 +76,9 @@ class ODFAgent( override val config: Config) extends InternalAgent {
           val newVal = infoItem.path.lastOption match {
             case Some( name ) => 
             infoItem.values.lastOption match {
-              case Some(oldVal) =>
-              genValue(name, oldVal.value.toDouble)
-              case None => 
-              -1000.0
+              case Some(oldVal: OdfDoubleValue) => genValue(name, oldVal.value)
+              case Some( oldVal ) => -1000.0
+              case None =>  -1000.0
             }
             case None => -1000.0
           }

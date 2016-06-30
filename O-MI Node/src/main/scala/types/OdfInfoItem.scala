@@ -19,6 +19,7 @@ import java.sql.Timestamp
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 
+import scala.util.Try
 import scala.xml.XML
 
 import parsing.xmlGen._
@@ -85,9 +86,9 @@ case class OdfMetaData(
 }
 
 /** Class presenting Value tag of O-DF format. */
-trait OdfValue{
-  def value:                Serializable
-  def typeValue:            String = "xs:string"
+sealed trait OdfValue{
+  def value:                Any
+  def typeValue:            String 
   def timestamp:            Timestamp
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
@@ -131,42 +132,58 @@ trait OdfValue{
    }
 }
   final case class OdfIntValue(value: Int, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:int"
+    def typeValue:            String = "xs:int"
   } 
   final case class  OdfLongValue(value: Long, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:long"
+    def typeValue:            String = "xs:long"
   } 
   final case class  OdfShortValue(value: Short, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:short"
+    def typeValue:            String = "xs:short"
   } 
   final case class  OdfFloatValue(value: Float, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:float"
+    def typeValue:            String = "xs:float"
   } 
   final case class  OdfDoubleValue(value: Double, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:double"
+    def typeValue:            String = "xs:double"
   } 
   final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:boolean"
+    def typeValue:            String = "xs:boolean"
   } 
-  final case class  OdfStringPresentedValue(value: String, timestamp: Timestamp) extends OdfValue{
-    override def typeValue:            String = "xs:string"
-  } 
+  final case class  OdfStringPresentedValue(value: String,  timestamp: Timestamp, typeValue : String = "xs:string"  ) extends OdfValue
 
 object OdfValue{
-  def apply(value: String, typeValue: String, timestamp: Timestamp) : OdfValue = typeValue match {
-     case "xs:float" =>
-        OdfFloatValue(value.toFloat, timestamp)
-     case "xs:double" =>
-        OdfDoubleValue(value.toDouble, timestamp)
-     case "xs:short" =>
-        OdfShortValue(value.toShort, timestamp)
-     case "xs:int" =>
-        OdfIntValue(value.toInt, timestamp)
-     case "xs:long" =>
-        OdfLongValue(value.toLong, timestamp)
-     case "xs:boolean" =>
-        OdfBooleanValue(value.toBoolean, timestamp)
-     case _ =>
-        OdfStringPresentedValue(value, timestamp)
-   }
+  def apply(value: Any, timestamp: Timestamp) : OdfValue = {
+    value match {
+      case s: Short => OdfShortValue(s, timestamp) 
+      case i: Int   => OdfIntValue(i, timestamp)
+      case l: Long  => OdfLongValue(l, timestamp)
+      case f: Float => OdfFloatValue(f, timestamp)
+      case d: Double => OdfDoubleValue(d, timestamp)
+      case b: Boolean => OdfBooleanValue(b, timestamp)
+      case s: String => OdfStringPresentedValue(s, timestamp)
+      case a: Any => OdfStringPresentedValue(a.toString, timestamp)
+    }
+  }
+  def apply(value: String, typeValue: String, timestamp: Timestamp) : OdfValue = {
+    Try{
+      typeValue match {
+        case "xs:float" =>
+          OdfFloatValue(value.toFloat, timestamp)
+        case "xs:double" =>
+          OdfDoubleValue(value.toDouble, timestamp)
+        case "xs:short" =>
+          OdfShortValue(value.toShort, timestamp)
+        case "xs:int" =>
+          OdfIntValue(value.toInt, timestamp)
+        case "xs:long" =>
+          OdfLongValue(value.toLong, timestamp)
+        case "xs:boolean" =>
+          OdfBooleanValue(value.toBoolean, timestamp)
+        case str: String  =>
+          OdfStringPresentedValue(value, timestamp,str)
+      }
+    }.getOrElse(
+      OdfStringPresentedValue(value, timestamp)
+    )
+  }
 }

@@ -52,7 +52,7 @@ trait RESTHandler extends OmiRequestHandlerBase{
     val request = getODFRequest(orgPath)
     request match {
       case Value(path) =>
-        SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value }
+        SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value.toString }
 
       case MetaData(path) =>
         SingleStores.getMetaData(path) map { metaData =>
