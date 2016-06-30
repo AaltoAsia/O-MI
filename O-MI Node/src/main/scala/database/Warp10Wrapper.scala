@@ -41,16 +41,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfInfoItem]] {
 
-    private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
-      case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
-        OdfValue(value.toString(), "xs:string", new Timestamp((timestamp / 1000).toLong))
-      case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), JsNumber(value))) =>
-        OdfValue(s"$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
-      case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(value))) =>
-        OdfValue(s"$lat:$lon $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
-      case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), JsNumber(value))) =>
-        OdfValue(s"$lat:$lon/$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
-    }
     private def parseObjects(in: Seq[JsObject]) = in match {
       case jsObjs: Seq[JsObject] => {
         val idPathValuesTuple = jsObjs.map { jsobj =>
