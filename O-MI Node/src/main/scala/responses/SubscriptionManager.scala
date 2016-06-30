@@ -187,7 +187,7 @@ class SubscriptionManager extends Actor with ActorLogging {
                   v.lastOption match { 
                     case Some(last) =>
                     log.info(s"Found previous values for intervalsubscription: $last")
-                    (p, v.:+(last.copy(timestamp = new Timestamp(pollTime))))
+                    (p, v :+ OdfValue(last.value.toString, last.typeValue, new Timestamp(pollTime)))
                     case None => 
                     val msg =s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
                     log.error(msg)
@@ -200,7 +200,7 @@ class SubscriptionManager extends Actor with ActorLogging {
                     //lookup latest value from latestStore, if exists use that
                     case Some(value) => {
                     log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
-                    Vector(value,value.copy(timestamp = new Timestamp(pollTime)))
+                    Vector(value,OdfValue(value.value, new Timestamp(pollTime)))
                     }
                     //no previous values v is empty
                     case _ => {

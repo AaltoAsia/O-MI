@@ -204,7 +204,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
             id,
             //create new timestamp if option is None
             odfVal.timestamp,
-            odfVal.value,
+            odfVal.value.toString,
             odfVal.typeValue)
         }
       }
