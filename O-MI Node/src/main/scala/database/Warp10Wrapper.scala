@@ -210,6 +210,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    }
 
  }
+  def remove(path: Path): Future[Int] = ???
 
  private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
    val unixEpochTime = odfValue.timestamp.getTime * 1000
