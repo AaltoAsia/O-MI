@@ -25,6 +25,7 @@ import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.OmiTypes.OmiReturn
 import types._
 
 /**
@@ -257,7 +258,11 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @return boolean whether something was removed
    */
   def remove(path: Path): Future[Int] = {
-    db.run(removeQ(path).transactionally)
+    if(path.length == 1){
+      removeRoot(path)
+    }else{
+      db.run(removeQ(path).transactionally)
+    }
   }
 
   /**

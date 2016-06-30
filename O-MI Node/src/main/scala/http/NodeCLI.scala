@@ -29,6 +29,7 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub}
 import responses.{RemoveSubscription, RemoveHandler}
+import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -199,7 +200,7 @@ remove <path>
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
-      if (false){//requestHandler.handlePathRemove(Path(pathOrId))) {TODO: FIXX!!!
+      if (requestHandler.handlePathRemove(Path(pathOrId))) {
           log.info(s"Successfully removed path")
           s"Successfully removed path $pathOrId\n"
       } else {

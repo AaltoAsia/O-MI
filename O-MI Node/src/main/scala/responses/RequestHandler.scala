@@ -120,7 +120,7 @@ with SubscriptionHandler
 with PollHandler
 with CancelHandler
 with RESTHandler
-//with RemoveHandler TODO: FIX
+with RemoveHandler
 {
   protected def handle: PartialFunction[OmiRequest,Future[NodeSeq]] = {
     case subscription: SubscriptionRequest => handleSubscription(subscription)
@@ -128,6 +128,7 @@ with RESTHandler
     case write: WriteRequest => handleWrite(write)
     case cancel: CancelRequest => handleCancel(cancel)
     case poll: PollRequest => handlePoll(poll)
+
     case response: ResponseRequest => handleResponse(response)
   }
 
