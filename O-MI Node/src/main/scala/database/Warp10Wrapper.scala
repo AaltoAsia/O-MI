@@ -43,23 +43,41 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
     private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
       case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
-        OdfValue(value.toString(), timestamp = new Timestamp((timestamp / 1000).toLong))
+        OdfValue(value.toString(), "xs:string", new Timestamp((timestamp / 1000).toLong))
       case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), JsNumber(value))) =>
-        OdfValue(s"$elev $value", timestamp = new Timestamp((timestamp / 1000).toLong))
+        OdfValue(s"$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
       case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(value))) =>
-        OdfValue(s"$lat:$lon $value", timestamp = new Timestamp((timestamp / 1000).toLong))
+        OdfValue(s"$lat:$lon $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
       case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), JsNumber(value))) =>
-        OdfValue(s"$lat:$lon/$elev $value", timestamp = new Timestamp((timestamp / 1000).toLong))
+        OdfValue(s"$lat:$lon/$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
     }
     private def parseObjects(in: Seq[JsObject]) = in match {
       case jsObjs: Seq[JsObject] => {
         val idPathValuesTuple = jsObjs.map { jsobj =>
           val path = fromField[Option[String]](jsobj, "c")
+          val labels = fromField[Option[JsObject]](jsobj,"l")
           val vals = fromField[JsArray](jsobj,"v")
           val id = fromField[Option[String]](jsobj,"i")
 
+          val typeVal: String = labels match {
+            case Some(obj) => fromField[Option[String]](obj, "type") match {
+              case Some(typev) => typev
+              case None => "xs:string"
+            }
+            case None => "xs:string"
+          }
+          //typevalues are strings because of format "LAT:LON/ELEV VALUE"
           val values: OdfTreeCollection[OdfValue] = vals match {
-            case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect(createOdfValue)
+            case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect{
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
+                OdfValue(value.toString(), typeVal, new Timestamp((timestamp / 1000).toLong))
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), JsNumber(value))) =>
+                OdfValue(s"$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(value))) =>
+                OdfValue(s"$lat:$lon $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), JsNumber(value))) =>
+                OdfValue(s"$lat:$lon/$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
+    }
           }
 
           (id, path , values)

@@ -131,25 +131,25 @@ trait OdfValue{
    }
 }
   final case class OdfIntValue(value: Int, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:int"
+    override def typeValue:            String = "xs:int"
   } 
   final case class  OdfLongValue(value: Long, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:long"
+    override def typeValue:            String = "xs:long"
   } 
   final case class  OdfShortValue(value: Short, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:short"
+    override def typeValue:            String = "xs:short"
   } 
   final case class  OdfFloatValue(value: Float, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:float"
+    override def typeValue:            String = "xs:float"
   } 
   final case class  OdfDoubleValue(value: Double, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:double"
+    override def typeValue:            String = "xs:double"
   } 
   final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:boolean"
+    override def typeValue:            String = "xs:boolean"
   } 
   final case class  OdfStringPresentedValue(value: String, timestamp: Timestamp) extends OdfValue{
-    def typeValue:            String = "xs:string"
+    override def typeValue:            String = "xs:string"
   } 
 
 object OdfValue{
