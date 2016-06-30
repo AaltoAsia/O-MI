@@ -25,8 +25,7 @@ import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.OmiReturn
-import types._;
+import types._
 
 /**
  * Read-write interface methods for db tables.
@@ -54,7 +53,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val existingTables = MTable.getTables
     val existed = Await.result(db.run(existingTables), 5 minutes)
-    if (existed.length > 0) {
+    if (existed.nonEmpty) {
       //noop
       log.info(
         "Found tables: " +
@@ -139,9 +138,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to write values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
    *  Does not remove excess rows if path is set or buffer
-   *
-   *  @param data sensordata, of type DBSensor to be stored to database.
-   *  @return hierarchy id
    */
   def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
@@ -186,9 +182,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(
-        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true)))
+        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true))) // NOTE: Heavy operation
 
-      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode =>
+      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode => // NOTE: Heavy operation
         (hNode.path, hNode.id)
       } result
 
@@ -232,7 +228,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         val removedRight = node.rightBoundary
         for{
           removedValues <- getSubTreeQ(node).result
-          removedIds = removedValues.map{case (node, _) => node.id.getOrElse(throw new UninitializedError)}.distinct
+          removedIds = removedValues.map{case (_node, _) => _node.id.getOrElse(throw new UninitializedError)}.distinct
           removeOp = DBIO.fold(Seq(
            latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
            hierarchyNodes.filter { _.id.inSet(removedIds) }.delete

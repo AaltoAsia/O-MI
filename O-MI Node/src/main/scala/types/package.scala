@@ -21,6 +21,8 @@ import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
 
 import scala.language.existentials
+import scala.xml.NodeSeq
+import javax.xml.datatype.XMLGregorianCalendar
 
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen._
@@ -32,7 +34,7 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
-  def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long) ={
+  def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long): xmlTypes.OmiEnvelope ={
     val namespace = Some("omi.xsd")
     val version = "1.0"
     val datarecord = request match{
@@ -47,14 +49,14 @@ package object OmiTypes  {
     }
     xmlTypes.OmiEnvelope( datarecord, "1.0", ttl)
   }
- def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) ={ 
+ def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) : NodeSeq ={ 
     scalaxb.toXML[OmiEnvelope](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
   }
-  def timestampToXML(timestamp: Timestamp) ={ 
-    val cal = new GregorianCalendar();
-    cal.setTime(timestamp)
-    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
-  }
+ def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={
+   val cal = new GregorianCalendar()
+   cal.setTime(timestamp)
+   DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+ }
 }
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
@@ -70,9 +72,9 @@ package object OdfTypes {
 
   def unionOption[T](a: Option[T], b: Option[T])(f: (T,T) => T): Option[T] = {
     (a,b) match{
-        case (Some(a), Some(b)) => Some(f(a,b))
-        case (None, Some(b)) => Some(b)
-        case (Some(a), None) => Some(a)
+        case (Some(a), Some(_b)) => Some(f(a,_b))
+        case (None, Some(_b)) => Some(_b)
+        case (Some(_a), None) => Some(_a)
         case (None, None) => None
     }
   }

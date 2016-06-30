@@ -2,10 +2,13 @@ package http
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.Try
+import scala.xml._
+
 import agentSystem.AgentSystem
-import akka.actor.{ActorRef, Props, ActorSystem}
-import akka.io.{IO, Tcp}
-import akka.pattern.ask
+import akka.actor.Props
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -14,20 +17,20 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.testkit.TestProbe
 import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
 import database._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.Try
-import scala.xml._
-
-import com.typesafe.config.ConfigFactory
-import org.specs2.specification.AfterAll
+import org.specs2.specification.BeforeAfterAll
 import responses.{RequestHandler, SubscriptionManager}
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
-class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with AfterAll {
+class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with BeforeAfterAll {
+
+  // TODO: better cleaning after tests
+  def beforeAll() = {
+    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+  }
 
   val conf = ConfigFactory.load("testconfig")
   val testSettings = new OmiConfigExtension(
@@ -135,8 +138,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   }
 
   def afterAll = {
-    system.shutdown()
+    Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
+    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
 
   }
 
@@ -220,7 +224,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
 
         val responseFuture = http.singleRequest(getPostRequest(request.get))//pipeline(Post("http://localhost:8080/", request.get))
 
-        val response = Try(Await.result(responseFuture.flatMap(n => Unmarshal(n).to[NodeSeq]), Duration(2, "second")))
+        val response = Try(Await.result(responseFuture.flatMap(n => Unmarshal(n).to[NodeSeq]), Duration(10, "second")))
 
         response must beSuccessfulTry
 
@@ -337,5 +341,4 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
       })
     }
   }
-  step(system.shutdown())
 }

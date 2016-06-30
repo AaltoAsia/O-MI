@@ -32,9 +32,9 @@ trait RemoveHandler extends OmiRequestHandlerBase{
     val objects = SingleStores.hierarchyStore execute GetTree()
     val node = objects.get(parentPath)
     node match {
-      case Some(node) => {
+      case Some(_node) => {
 
-        val leafs = getInfoItems(node).map(_.path)
+        val leafs = getInfoItems(_node).map(_.path)
 
         SingleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
@@ -43,7 +43,7 @@ trait RemoveHandler extends OmiRequestHandlerBase{
           SingleStores.latestStore execute EraseSensorData(path)
         }
 
-        val dbRemoveFuture: Future[Int] = node match {
+        val dbRemoveFuture: Future[Int] = _node match {
           case objs: OdfObjects => dbConnection.removeRoot(parentPath)
           case _ => dbConnection.remove(parentPath)
         }

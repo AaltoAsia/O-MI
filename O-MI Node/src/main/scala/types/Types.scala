@@ -74,6 +74,12 @@ package types
      * Representation doesn't start nor end with a '/'.
      */
     override def toString: String = this.mkString("/")
+    
+    def isAncestor( child: Path) : Boolean ={
+      if( child.length > this.length ){ 
+        child.startsWith(this.pathSeq)
+      } else false
+    }
   }
 
   /** Helper object for Path, contains implicit conversion between Path and Seq[String]

@@ -11,7 +11,11 @@ import org.specs2.mutable._
 import testHelpers.{Actors, SystemTestCallbackServer}
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
+
+  sequential
+
   "CallbackHandler" should {
+
     "Send callback to the correct address" in new Actors {
       val port = 20003
       val probe = initCallbackServer(port)
@@ -28,20 +32,20 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       CallbackHandlers.sendCallback(s"http://localhost:$port", msg, Duration(10, "seconds"))
 
       val testProbeFuture = Future{
-        Thread.sleep(4000)
+        Thread.sleep(1000)
         initCallbackServer(port)
       }
 
       val probe = Await.result(testProbeFuture, 5 seconds)
-      probe.expectMsg(5 seconds, Option(msg))
+      probe.expectMsg(10 seconds, Option(msg))
 
     }
   }
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem): TestProbe = {
+      implicit val timeout = Timeout(5 seconds)
       val probe = TestProbe()
       val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
-      implicit val timeout = Timeout(1 seconds)
       probe
   }
 }

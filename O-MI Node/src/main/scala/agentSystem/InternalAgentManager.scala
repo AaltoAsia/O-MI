@@ -13,7 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 import scala.util.{Try, Success, Failure}
 import akka.pattern.ask
 import http.CLICmds._

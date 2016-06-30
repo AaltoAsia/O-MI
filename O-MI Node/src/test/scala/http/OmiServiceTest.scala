@@ -2,6 +2,7 @@ package http
 
 import java.net.InetAddress
 
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.xml._
 
@@ -47,7 +48,7 @@ class OmiServiceTest
   val requestHandler = new RequestHandler(subscriptionHandler, agentManager)(dbConnection)
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
-  val localHost = RemoteAddress(InetAddress.getLocalHost)
+  val localHost = RemoteAddress(InetAddress.getLoopbackAddress)
 
   "System tests for features of OMI Node service".title
 
@@ -55,11 +56,10 @@ class OmiServiceTest
   def beforeAll() = {
     Boot.saveSettingsOdf(agentManager)//Boot.init(dbConnection)
   }
-
-  def afterAll() = {
-    // clear db
+  def afterAll = {
+    Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
-    system.terminate()
+    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
 
   "Data discovery, GET: OmiService" >> {
