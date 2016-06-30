@@ -15,7 +15,7 @@
 
 package agentSystem
 
-import java.lang.{Iterable => JavaIterable}
+//import java.lang.{Vector => JavaVector}
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration._
@@ -23,7 +23,7 @@ import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef}
 import database.SingleStores.valueShouldBeUpdated
 import database._
 import parsing.xmlGen
@@ -31,32 +31,33 @@ import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
 import responses.OmiGenerator.xmlFromResults
-import responses.{Results}
+import responses.Results
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes._
 import types.Path
 
 sealed trait ResponsibilityMessage
 case class RegisterOwnership( agent: AgentName, paths: Seq[Path])
 case class PromiseWrite(result: PromiseResult, write:WriteRequest )
+case class PromiseRequest(result: PromiseResult, write:OmiRequest )
 sealed trait ResponsibilityResponse extends ResponsibilityMessage
 object PromiseResult{
-  def apply(): PromiseResult= new PromiseResult(Promise[Iterable[Promise[ResponsibleAgentResponse]]]())
+  def apply(): PromiseResult= new PromiseResult(Promise[Vector[Promise[ResponsibleAgentResponse]]]())
 }
-case class PromiseResult( promise: Promise[Iterable[Promise[ResponsibleAgentResponse]]] ){
-  def futures(implicit ec: ExecutionContext) : Future[Iterable[Future[ResponsibleAgentResponse]]]= {
+case class PromiseResult( promise: Promise[Vector[Promise[ResponsibleAgentResponse]]] ){
+  def futures(implicit ec: ExecutionContext) : Future[Vector[Future[ResponsibleAgentResponse]]]= {
     promise.future.map{
       promises => 
       promises.map{ pro => pro.future }
     }
   }
-  def resultSequence(implicit ec: ExecutionContext) : Future[Iterable[ResponsibleAgentResponse]]= {
+  def resultSequence(implicit ec: ExecutionContext) : Future[Vector[ResponsibleAgentResponse]]= {
     futures.flatMap{ results => Future.sequence(results) }
   }
   def isSuccessful(implicit ec: ExecutionContext) : Future[ResponsibleAgentResponse]= {
     resultSequence.map{ 
-      res : Iterable[ResponsibleAgentResponse] =>
+      res : Vector[ResponsibleAgentResponse] =>
       res.foldLeft(SuccessfulWrite(Vector.empty)){
         (l, r) =>
         r match{
@@ -106,7 +107,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
     collection.mutable.Map(pathsToOwner: _*)
   }
 
-  private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Iterable[Promise[ResponsibleAgentResponse]]={
+  private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Vector[Promise[ResponsibleAgentResponse]]={
       val allExists = ownerToObjects.map{
         case (name: AgentName, objects: OdfObjects) =>
         (name,
@@ -127,7 +128,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
           log.warning(msg + s"Agent $name.")
           val promise = Promise[ResponsibleAgentResponse]()
           promise.failure( new Exception(msg) )
-        }.toIterable
+        }.toVector
       } else if( stoppedOwner.nonEmpty ){
         stoppedOwner.map{
           case (agent, write) =>
@@ -137,7 +138,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
           log.warning(msg + s"Agent $name.")
           val promise = Promise[ResponsibleAgentResponse]()
           promise.failure( new Exception(msg) )
-        }.toIterable
+        }.toVector
       } else {
         agentsToWrite.map{ 
           case ( agentInfo, write ) =>
@@ -150,6 +151,56 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
       }
     }
 
+  protected def handleOdfRequest( result: PromiseResult, request: OdfRequest)(handlers: OdfRequest => (Option[OdfObjects],OdfObjects,Map[AgentName,OdfObjects]) =>Vector[Promise[ResponsibleAgentResponse]]) = {
+    val senderName = sender().path.name
+    log.debug( s"Received WriteRequest from $senderName.")
+    val odfObjects = request.odf
+    val allInfoItems : Seq[OdfInfoItem] = odfObjects.infoItems // getInfoItems(odfObjects)
+
+    // Collect metadata 
+    val objectsWithMetadata = odfObjects.objectsWithMetadata
+    //val allNodes = allInfoItems ++ objectsWithMetadata
+
+    val allPaths = allInfoItems.map( _.path )
+    val ownerToPath = getOwners(allPaths:_*)
+    
+    val sendersPathsO = ownerToPath.get(senderName)
+    val sendersObjects = sendersPathsO.map{
+      paths: Seq[Path] =>
+        allInfoItems.filter{
+          infoItem  : OdfInfoItem => paths.contains(infoItem.path) 
+        }.foldLeft(OdfObjects()){ (l, r) => l.union(createAncestors(r))}
+    }  
+    val allOwnedPaths : Seq[Path] = ownerToPath.values.flatten.toSeq
+    
+    //Get part that isn't owned by anyone
+    val ownerlessPaths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }
+    val ownerlessObjects = allInfoItems.filter{
+        infoItem : OdfInfoItem => ownerlessPaths.contains(infoItem.path) 
+    }.foldLeft(OdfObjects()){ (l, r) => l.union(createAncestors(r))}
+
+    val ownerToPaths= ownerToPath - senderName
+    val ownerToObjects = ownerToPaths.mapValues{ 
+      paths => 
+        allInfoItems.collect{
+          case infoItem if paths.contains(infoItem.path) => createAncestors(infoItem)
+        }.foldLeft(OdfObjects())(_.union(_))
+    }
+    result.promise.success( handlers( request)(sendersObjects, ownerlessObjects, ownerToObjects))
+  }
+  /*
+  def receives : Actor.Receive= {
+    case PromiseRequest(result, odfRequest : OdfRequest) =>
+    handleOdfRequest(result,odfRequest){
+      case read: ReadRequest =>Vector()
+      case subsription: SubscriptionRequest => Vector()
+      case write: WriteRequest =>Vector()
+    }
+    case PromiseRequest(result, idRequest : RequestIDRequest )=>
+    case PromiseRequest(result, omiRequest : OmiRequest )=>
+
+  }
+  */
   protected def handleWrite( result: PromiseResult, write: WriteRequest ) : Unit={
     val senderName = sender().path.name
     log.debug( s"Received WriteRequest from $senderName.")
@@ -193,7 +244,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
     }
 
     //Get part that is owned by other agents than sender()
-    val writesToOthers: Iterable[Promise[ResponsibleAgentResponse]]={ 
+    val writesToOthers: Vector[Promise[ResponsibleAgentResponse]]={ 
       val ownerToPaths= ownerToPath - senderName
       val ownerToObjects = ownerToPaths.mapValues{ 
         paths => 
@@ -205,7 +256,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
       callAgentsForResponsibility( write.ttl, ownerToObjects)
     }
     //Collect all futures and return
-    val res : Iterable[Promise[ResponsibleAgentResponse]] = Iterable(writesToOwnerless, writesBySender) ++ writesToOthers
+    val res : Vector[Promise[ResponsibleAgentResponse]] = Vector(writesToOwnerless, writesBySender) ++ writesToOthers
     result.promise.success( res ) 
   }
 

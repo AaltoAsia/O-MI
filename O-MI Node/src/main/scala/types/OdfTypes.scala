@@ -67,7 +67,7 @@ case class OdfObjects(
   def valuesRemoved: OdfObjects = this.copy(objects = objects map (_.valuesRemoved))
   //def withValues: (Path, Seq[OdfValue]) => OdfObjects = { case (p, v) => withValues(p, v) } 
   def withValues(p: Path, v: Seq[OdfValue]): OdfObjects = {
-    val nextPath = path.toSeq.tail
+    val nextPath: Path = path.toSeq.tail
     require(nextPath.nonEmpty, s"Tried to set values for $path: $p -> $v")
 
     this.copy(objects = objects map (o => if (o.path == nextPath) o.withValues(p, v) else o))
@@ -126,7 +126,7 @@ case class OdfObject(
         infoItems = infoItems map (_.valuesRemoved)
       )
   def withValues(p: Path, v: Seq[OdfValue]): OdfObject = {
-    val nextPath = p.toSeq.tail
+    val nextPath: Path = p.toSeq.tail
     require(nextPath.nonEmpty, s"Tried to set values for Object $path: $p -> $v")
 
     this.copy(

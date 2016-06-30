@@ -38,7 +38,7 @@ import Warp10JsonProtocol.Warp10JsonFormat
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
-  
+
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfInfoItem]] {
 
     private val createOdfValue: PartialFunction[JsArray, OdfValue] = {

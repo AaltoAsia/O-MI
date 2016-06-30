@@ -61,7 +61,7 @@ trait Starter {
   def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
       // Same timestamp for all OdfValues of the settings
-      val date = new Date();
+      val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
 
       // Save settings in db, this works also as a test for writing
@@ -104,7 +104,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(dbConnection: DB = new Warp10Wrapper(settings)): OmiServiceImpl = {
+  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
