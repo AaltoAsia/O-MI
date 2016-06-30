@@ -30,6 +30,7 @@ import responses.OmiGenerator.odfMsg
 import types.OdfTypes._
 
 
+
 /**
   * Trait that represents any Omi request. Provides some data that are common
   * for all omi requests.
@@ -44,6 +45,9 @@ sealed trait OmiRequest {
 sealed trait PermissiveRequest
 sealed trait OdfRequest {
   def odf : OdfObjects
+}
+sealed trait RequestIDRequest {
+  def requestIDs : OdfTreeCollection[Long ]
 }
 
 /**
@@ -197,11 +201,11 @@ case class ResponseRequest(
   **/
 case class CancelRequest(
   ttl: Duration,
-  requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty
+  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
 ) extends OmiRequest {
   implicit def asCancelRequest : xmlTypes.CancelRequest = xmlTypes.CancelRequest(
     None,
-    requestID.map{ 
+    requestIDs.map{ 
       id =>
       xmlTypes.IdType(id.toString)
     }.toSeq
@@ -215,7 +219,7 @@ case class CancelRequest(
   **/
 case class OmiResult(
   returnValue: OmiReturn,
-  requestID: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   odf: Option[OdfTypes.OdfObjects] = None
 ){
     
@@ -226,7 +230,7 @@ case class OmiResult(
       returnValue.description,
       Map.empty
     ),
-    requestID.headOption.map{
+    requestIDs.headOption.map{
       id => xmlTypes.IdType(id.toString)
     },
     odf.map{ 

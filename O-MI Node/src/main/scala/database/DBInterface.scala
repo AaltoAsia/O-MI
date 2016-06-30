@@ -278,6 +278,11 @@ trait DB {
    */
   def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn]
 
+  /**
+   * Used to remove given path and all its descendants from the databas.
+   * @param path Parent path to be removed.
+   */
+  def remove(path: Path): Future[Int]
 
 
 }

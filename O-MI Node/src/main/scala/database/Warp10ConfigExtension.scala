@@ -17,6 +17,7 @@ import types.Path
 trait Warp10ConfigExtension extends Extension {
   def config: Config
 
+
   //Warp10
   val warp10ReadToken : String= config.getString("warp10.read-token")
   val warp10WriteToken : String = config.getString("warp10.write-token")

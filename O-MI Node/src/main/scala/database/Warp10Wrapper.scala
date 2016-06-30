@@ -38,6 +38,7 @@ import Warp10JsonProtocol.Warp10JsonFormat
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
+
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfInfoItem]] {
 
     private val createOdfValue: PartialFunction[JsArray, OdfValue] = {
@@ -214,6 +215,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    }
 
  }
+  def remove(path: Path): Future[Int] = ???
 
  private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
    val unixEpochTime = odfValue.timestamp.getTime * 1000

@@ -8,6 +8,7 @@ notifications:
   flowdock:
     - 8fa39d3ba829b0083c135134658d0ac2
     - fe0612eaf41017111bd1db99f1c00b49
+  slack: aaltoasia:oQgcAuEw6ugXl8FIO7A60Ei2
 branches:
   only:
     - master
@@ -25,5 +26,5 @@ script:
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 after_success:
   #- ln -s ../.git
-  - sbt coveralls
+  - sbt coveralls "project omiNode" coverageReport codacyCoverage
   

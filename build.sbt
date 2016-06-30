@@ -20,7 +20,11 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;")
+  // coverage 1.3.x:
+  coverageExcludedPackages := "parsing.xmlGen.*;"
+  // coverage 1.0.x:
+  //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
+)
 
 lazy val JavaDoc = config("genjavadoc") extend Compile
 
@@ -62,57 +66,85 @@ lazy val agents = (project in file("Agents")).
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   enablePlugins(DockerPlugin).
+  //enablePlugins(CodacyCoveragePlugin).
+  settings(commonSettings("Node")).
   settings(
-    (commonSettings("Node") ++ Seq(
+    Seq(
+    /////////////////////////////////
+    //Starting point of the program//
+    /////////////////////////////////
+      mainClass in Compile := Some("http.Boot"),
+
+    ///////////////////////
+    //Package information//
+    ///////////////////////
       maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
+
+    ///////////////////
+    //Docker Settings//
+    ///////////////////
       packageName in Docker := "o-mi-reference",
       dockerExposedPorts := Seq(8080, 8180),
+
+    ////////////////////////////////////////////////
+    //Locations to be cleared when using sbt clean//
+    ////////////////////////////////////////////////
       cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
         base / "html" / "api",
         base / "lib",
         base / "logs",
         file("logs"))},
-      serverLoading in Debian := SystemV,
-      //(Compile,doc) in omiNode := (baseDirectory).map{n=> 
-      //  n / "html" / "api"},
+    
+    ////////////////////////////////////////////////////////////////////////
+    //Update version file so that the web browser displays current version//
+    ////////////////////////////////////////////////////////////////////////
       resourceGenerators in Compile <+= (baseDirectory in Compile in omiNode, version) map { (dir, currentVersion) =>
         val file = dir / "html" / "VERSION"
         IO.write(file, s"${currentVersion}")
-        Seq(file)
-      },
+        Seq(file)},
+
+    ///////////////////////////////////////////////////////////////////////
+    //Configure program to read application.conf from the right direction//
+    ///////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
-      mainClass in Compile := Some("http.Boot"),
+
+    ////////////////////////////
+    //Native packager settings//
+    ////////////////////////////
+      serverLoading in Debian := SystemV,
+    //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "html")),
       mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "configs")),
       mappings in Universal <+= (packageBin in Compile, sourceDirectory in omiNode) map { (_, src) =>
         val conf = src / "main" / "resources" / "application.conf"
-        conf -> "configs/application.conf"
-      },
+        conf -> "configs/application.conf"},
       mappings in Universal <++= (doc in Compile in omiNode, baseDirectory in omiNode) map { (_, base) =>
-        directory(base / "html" / "api").map(n => (n._1, "html/" + n._2))
-      },
+        directory(base / "html" / "api").map(n => (n._1, "html/" + n._2))},
       mappings in Universal <++= (baseDirectory in omiNode) map { base =>
         Seq(
-          base / "configs" / "SmartHouse.xml" -> "SmartHouse.xml")
-      },
+          base / "configs" / "SmartHouse.xml" -> "SmartHouse.xml")},
       mappings in Universal <++= baseDirectory map { base =>
         Seq(
           base / "tools" / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
           base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
           base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",
-          base / "LICENSE.txt" -> "LICENSE.txt")
-      },
+          base / "LICENSE.txt" -> "LICENSE.txt")},
+
+    /////////////////////////////////////////////////////////////
+    //Prevent aggregation of following commands to sub projects//
+    /////////////////////////////////////////////////////////////
       aggregate in reStart := false,
       aggregate in reStop := false
-      )): _*).
-    aggregate(omiNode, agents).
-    dependsOn(agents)
+      ): _*
+  ).
+  aggregate(omiNode, agents).
+  dependsOn(agents)
 
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
 tomcat()

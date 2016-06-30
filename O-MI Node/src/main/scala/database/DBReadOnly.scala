@@ -31,12 +31,11 @@ import types._
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
   protected[this] def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
 
-  protected[this] def findParentQ(childPath: Path) = (
+  protected[this] def findParentQ(childPath: Path): Query[DBNodesTable, DBNode, Seq] =
     if (childPath.length == 0)
       hierarchyNodes filter (_.path === childPath)
     else
       hierarchyNodes filter (_.path === Path(childPath.init))
-  )
   
   private val log = LoggerFactory.getLogger("DBReadOnly")
 
@@ -65,34 +64,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
   } yield result
 
-  /**
-   * Used to get sensor values with given constrains. first the two optional timestamps, if both are given
-   * search is targeted between these two times. If only start is given,all values from start time onwards are
-   * targeted. Similiarly if only end is given, values before end time are targeted.
-   *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
-   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
-   * the end.
-   * All parameters except path are optional, given only path returns all values in the database for that path
-   *
-   * @param path path as Path object
-   * @param start optional start Timestamp
-   * @param end optional end Timestamp
-   * @param fromStart number of values to be returned from start
-   * @param fromEnd number of values to be returned from end
-   * @return query for the requested values
-   */
-  //protected[this] def getNBetweenDBInfoItemQ(
-  //  id: Int,
-  //  begin: Option[Timestamp],
-  //  end: Option[Timestamp],
-  //  newest: Option[Int],
-  //  oldest: Option[Int]): Query[DBValuesTable, DBValue, Seq] =
-  //  nBetweenLogicQ(getValuesQ(id), begin, end, newest, oldest)
 
   /**
    * Makes a Query which filters, limits and sorts as limited by the parameters.
    * See [[getNBetween]].
-   * @param getter Gets DBValue from some ValueType for filtering and sorting
    */
   protected[this] def nBetweenLogicQ(
     values: Query[DBValuesTable, DBValue, Seq],
@@ -192,7 +167,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
    * @param begin optional start Timestamp
    * @param end optional end Timestamp
    * @param newest number of values to be returned from start
-   * @param oldest er of values to be returned from end
+   * @param oldest number of values to be returned from end
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
@@ -337,16 +312,16 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     // Optimizing basic read requests,
     // TODO: optimize newest.exists(_ == 1) && (begin.nonEmpty || end.nonEmpty)
     val allResults: Future[Seq[Option[OdfObjects]]] =
-      if ((newest.isEmpty || newest.exists(_ == 1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
+      if ((newest.isEmpty || newest.contains(1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty))
         Future(getFromCache())
       else
         Future.sequence(getFromDB())
 
     // Combine some Options
     val results = allResults.map(_.fold(None){
-      case (Some(results), Some(otherResults)) => Some(results union otherResults)
-      case (None, Some(results))               => Some(results)
-      case (Some(results), None)               => Some(results)
+      case (Some(_results), Some(otherResults)) => Some(_results union otherResults)
+      case (None, Some(_results))               => Some(_results)
+      case (Some(_results), None)               => Some(_results)
       case (None, None)                        => None
     })
 

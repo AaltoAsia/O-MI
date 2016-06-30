@@ -39,7 +39,6 @@ object Results{
       Some(s"TTL timeout, consider increasing TTL or is the server overloaded? $message"))
 
   /** O-MI result for features that aren't implemented.
-    * @param msg 
     * @return O-MI result tag.
     **/
   def notImplemented : RequestResultType = simple( "501", Some("Not implemented") )
@@ -134,8 +133,8 @@ object Results{
   }
 
   /** Generates O-MI result tag  containing O-DF formated msg tag.
-    * @param code HTTP return code as String.
-    * @param description for HTTP return code.
+    * @param returnCode HTTP return code as String.
+    * @param returnDescription for HTTP return code.
     * @param requestID for subscriptions.
     * @param objects OdfObjects, O-DF formatted data.
     * @return O-MI result tag.
