@@ -40,6 +40,22 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
 
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfInfoItem]] {
+    private def createOdfValue(value: JsValue,_timestamp: BigDecimal, typeVal: Map[String, String]): OdfValue = {
+      val timestamp = new Timestamp((_timestamp/1000).toLong)
+      value match {
+        case JsString(v) => OdfValue(v, "xs:string", timestamp, typeVal)
+        case JsBoolean(v) => OdfValue(v, timestamp, typeVal)
+        case JsNumber(n) => {
+          if (n.isValidLong)
+            OdfValue(n.toLong, timestamp, typeVal)
+          else if (n.isExactDouble)
+            OdfValue(n.toDouble, timestamp, typeVal)
+          else
+            OdfValue(n, timestamp, typeVal)
+        }
+        case _ => throw new DeserializationException("Invalid type, could not cast into string, boolean, or number")
+      }
+    }
 
     private def parseObjects(in: Seq[JsObject]) = in match {
       case jsObjs: Seq[JsObject] => {
@@ -49,24 +65,29 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
           val vals = fromField[JsArray](jsobj,"v")
           val id = fromField[Option[String]](jsobj,"i")
 
-          val typeVal: String = labels match {
+          //edit this to add support for different kinds of labels
+          val typeVal: Map[String, String] = labels match {
             case Some(obj) => fromField[Option[String]](obj, "type") match {
-              case Some(typev) => typev
-              case None => "xs:string"
+              case Some(typev) => Map("type" -> typev)
+              case None => Map.empty
             }
-            case None => "xs:string"
+            case None => Map.empty
           }
           //typevalues are strings because of format "LAT:LON/ELEV VALUE"
           val values: OdfTreeCollection[OdfValue] = vals match {
             case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect{
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(value))) =>
-                OdfValue(value.toString(), typeVal, new Timestamp((timestamp / 1000).toLong))
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), JsNumber(value))) =>
-                OdfValue(s"$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(value))) =>
-                OdfValue(s"$lat:$lon $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), JsNumber(value))) =>
-                OdfValue(s"$lat:$lon/$elev $value", "xs:string", new Timestamp((timestamp / 1000).toLong))
+              case JsArray(Vector(JsNumber(timestamp), value: JsValue)) =>{
+                createOdfValue(value,timestamp, typeVal)
+              }
+
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), value: JsValue)) =>
+                createOdfValue(value, timestamp, typeVal + ("elev" -> elev.toString()))
+
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), value: JsValue)) =>
+                createOdfValue(value, timestamp, typeVal ++ Map("lat" -> lat.toString(), "lon" -> lon.toString()))
+
+              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), value: JsValue)) =>
+                createOdfValue(value, timestamp, typeVal ++ Map("lat" -> lat.toString(), "lon" -> lon.toString(), "elev" -> elev.toString()))
     }
           }
 
