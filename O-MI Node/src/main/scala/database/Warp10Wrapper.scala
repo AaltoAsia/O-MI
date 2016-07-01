@@ -14,6 +14,7 @@
 
 package database
 
+import java.net.URLEncoder
 import java.sql.Timestamp
 import java.util.Date
 
@@ -129,7 +130,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 }
 
 class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSystem = ActorSystem()) extends DB {
- 
   import Warp10JsonProtocol.Warp10JsonFormat._
   type Warp10Token = String
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
@@ -246,13 +246,39 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
  }
   def remove(path: Path): Future[Int] = ???
 
- private def toWriteFormat( path: Path, odfValue : OdfValue ) : String ={
+ private def toWriteFormat( path: Path, odfValue : OdfValue ) : String = {
+   def handleString(in: Any): String = {
+     val str = URLEncoder.encode(in.toString, "UTF-8") //might cause problems if encoded twice
+
+     s"'$str'"
+   }
    val unixEpochTime = odfValue.timestamp.getTime * 1000
    val pathJS = path.mkString(".") 
    val typeValue = odfValue.typeValue
    val labels = s"{ type=$typeValue }"
-   val value = if( odfValue.isNumeral ) odfValue.value else s"'${odfValue.value}'"
-   s"$unixEpochTime// $pathJS$labels $value\n" 
+   val latlon = for {
+     lat <- odfValue.attributes.get("lat")
+     lon <- odfValue.attributes.get("lon")
+     res = lat + ":" + lon
+   } yield res
+   val elevation = odfValue.attributes.getOrElse("elev", "")
+
+   val value =
+     if( odfValue.isNumeral )
+       odfValue.value
+     else {
+       val resString = odfValue.typeValue match {
+         case "xs:boolean" => odfValue.value match {
+           case b: Boolean => if(b) "T" else "F"
+           case default: Any => handleString(default)
+         }
+         case _ => handleString(odfValue.value)
+       }
+
+       s"$resString"
+     }
+
+   s"$unixEpochTime/${latlon.getOrElse("")}/$elevation $pathJS$labels $value\n"
  }
  
  private def nodesToReadPathSelector( nodes : Iterable[OdfNode] ) = {

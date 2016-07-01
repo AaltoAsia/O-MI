@@ -723,8 +723,8 @@ class ParserTest extends Specification {
     val item2 = createAncestors(OdfInfoItem( 
       Path( "Objects/SmartHouse/Moisture"),
       Vector( 
-        OdfValue( "193.1",  timestamp = testTimestamp ),
-        OdfValue( "1.1", timestamp = testTimestamp )
+        OdfValue( "193.1", "xs:double", timestamp = testTimestamp ),
+        OdfValue( "1.1", "xs:double", timestamp = testTimestamp )
       ), 
       Some( OdfDescription( " test" )),
       Some( OdfMetaData(
