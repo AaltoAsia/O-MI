@@ -199,7 +199,7 @@ class SubscriptionManager extends Actor with ActorLogging {
                     //lookup latest value from latestStore, if exists use that
                     case Some(value) => {
                     log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
-                    Vector(value,OdfValue(value.value, new Timestamp(pollTime)))
+                    Vector(value,OdfValue(value.value, new Timestamp(pollTime), value.attributes))
                     }
                     //no previous values v is empty
                     case _ => {
