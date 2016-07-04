@@ -43,9 +43,9 @@ class Warp10JsonParsingTest extends Specification {
     val correctInfoItem = Seq(OdfInfoItem(
       Path("class/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map.empty),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map.empty),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map.empty))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty))
     ))
 
     testJson.parseJson.convertTo[Seq[OdfInfoItem]] should be equalTo correctInfoItem
@@ -67,9 +67,9 @@ class Warp10JsonParsingTest extends Specification {
     val correctInfoItem = Seq(OdfInfoItem(
       Path("class/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map("elev"-> "10000")),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("elev"-> "20000")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("elev"-> "30000")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map("elev"-> "10000")),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("elev"-> "20000")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("elev"-> "30000")))
     ))
 
     testJson.parseJson.convertTo[Seq[OdfInfoItem]] should be equalTo correctInfoItem
@@ -91,9 +91,9 @@ class Warp10JsonParsingTest extends Specification {
     val correctInfoItem = Seq(OdfInfoItem(
       Path("class/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map("lat"-> "48.0", "lon"->"-4.5")),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("lat"-> "50.0", "lon"->"50.0")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("lat"-> "50.0", "lon"->"60.0")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map("lat"-> "48.0", "lon"->"-4.5")),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("lat"-> "50.0", "lon"->"50.0")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("lat"-> "50.0", "lon"->"60.0")))
     ))
 
     testJson.parseJson.convertTo[Seq[OdfInfoItem]] should be equalTo correctInfoItem
@@ -115,9 +115,9 @@ class Warp10JsonParsingTest extends Specification {
     val correctInfoItem = Seq(OdfInfoItem(
       Path("class/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map("elev" -> "10000000", "lat"-> "48.0", "lon"->"-4.5")),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("elev"-> "11000000", "lat"-> "50.0", "lon"->"50.0")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("elev"-> "12000000", "lat"-> "50.0", "lon"->"60.0")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map("elev" -> "10000000", "lat"-> "48.0", "lon"->"-4.5")),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("elev"-> "11000000", "lat"-> "50.0", "lon"->"50.0")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("elev"-> "12000000", "lat"-> "50.0", "lon"->"60.0")))
     ))
 
     testJson.parseJson.convertTo[Seq[OdfInfoItem]] should be equalTo correctInfoItem
@@ -143,12 +143,12 @@ class Warp10JsonParsingTest extends Specification {
     val correctInfoItem = Seq(OdfInfoItem(
       Path("class/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map("elev" -> "10000000", "lat"-> "48.0", "lon"->"-4.5")),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("elev"-> "11000000", "lat"-> "50.0", "lon"->"50.0")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("elev"-> "12000000", "lat"-> "50.0", "lon"->"60.0")),
-        OdfDoubleValue(7.5, new Timestamp(1380475082500L), Map("elev"-> "13000000", "lat"-> "55.0", "lon"->"65.0")),
-        OdfDoubleValue(4.5, new Timestamp(1380475083000L), Map("elev"-> "14000000", "lat"-> "60.0", "lon"->"70.0")),
-        OdfDoubleValue(6.5, new Timestamp(1380475083500L), Map("elev"-> "15000000", "lat"-> "70.0", "lon"->"80.0")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map("elev" -> "10000000", "lat"-> "48.0", "lon"->"-4.5")),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("elev"-> "11000000", "lat"-> "50.0", "lon"->"50.0")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("elev"-> "12000000", "lat"-> "50.0", "lon"->"60.0")),
+        OdfValue(7.5, new Timestamp(1380475082500L), attributes = Map("elev"-> "13000000", "lat"-> "55.0", "lon"->"65.0")),
+        OdfValue(4.5, new Timestamp(1380475083000L), attributes = Map("elev"-> "14000000", "lat"-> "60.0", "lon"->"70.0")),
+        OdfValue(6.5, new Timestamp(1380475083500L), attributes = Map("elev"-> "15000000", "lat"-> "70.0", "lon"->"80.0")))
     ))
 
     testJson.parseJson.convertTo[Seq[OdfInfoItem]] should be equalTo correctInfoItem
@@ -183,26 +183,26 @@ class Warp10JsonParsingTest extends Specification {
     val correctInfoItem1 = OdfInfoItem(
       Path("class/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map.empty),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("lat" -> "48.0", "lon" -> "-4.5")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("elev" -> "10000000")),
-        OdfLongValue(42L, new Timestamp(1380475083000L), Map("lat" -> "48.1", "lon" -> "-4.5", "elev" -> "11000000")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("lat" -> "48.0", "lon" -> "-4.5")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("elev" -> "10000000")),
+        OdfValue(42.0, new Timestamp(1380475083000L), attributes = Map("lat" -> "48.1", "lon" -> "-4.5", "elev" -> "11000000")))
     )
 
     val correctInfoItem2 = OdfInfoItem(
       Path("test1/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map.empty),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("lat" -> "48.0", "lon" -> "-4.5")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("elev" -> "10000000")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("lat" -> "48.0", "lon" -> "-4.5")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("elev" -> "10000000")))
     )
 
     val correctInfoItem3 = OdfInfoItem(
       Path("test2/test/test2"),
       Vector(
-        OdfStringPresentedValue("3.14", new Timestamp(1380475081000L), attributes = Map.empty),
-        OdfDoubleValue(2.5, new Timestamp(1380475081500L), Map("lat" -> "48.0", "lon" -> "-4.5")),
-        OdfLongValue(3L, new Timestamp(1380475082000L), Map("elev" -> "10000000")))
+        OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
+        OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map("lat" -> "48.0", "lon" -> "-4.5")),
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map("elev" -> "10000000")))
       )
 
     val res = testJson.parseJson.convertTo[Seq[OdfInfoItem]]

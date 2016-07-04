@@ -41,18 +41,17 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
 
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfInfoItem]] {
+
     private def createOdfValue(value: JsValue,_timestamp: BigDecimal, typeVal: Map[String, String]): OdfValue = {
       val timestamp = new Timestamp((_timestamp/1000).toLong)
       value match {
         case JsString(v) => OdfValue(v, "xs:string", timestamp, typeVal)
         case JsBoolean(v) => OdfValue(v, timestamp, typeVal)
         case JsNumber(n) => {
-          if (n.isValidLong)
+          if (n.ulp == 1)
             OdfValue(n.toLong, timestamp, typeVal)
-          else if (n.isExactDouble)
-            OdfValue(n.toDouble, timestamp, typeVal)
           else
-            OdfValue(n, timestamp, typeVal)
+            OdfValue(n.toDouble, timestamp, typeVal)
         }
         case _ => throw new DeserializationException("Invalid type, could not cast into string, boolean, or number")
       }
