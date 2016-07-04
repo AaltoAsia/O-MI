@@ -25,6 +25,7 @@ import scala.xml.{Elem, Node,UnprefixedAttribute }
 import parsing.xmlGen.xmlTypes
 import types.OdfTypes._
 import types.OmiTypes._
+import types.OmiTypes.Callback._ // implicit: String => Callback
 import types.ParseError._
 import types._
 
@@ -129,7 +130,7 @@ object OmiParser extends Parser[OmiParseResult] {
         Right(Iterable(
           PollRequest(
             ttl,
-            uriToStringOption(read.callback),
+            (read.callback),
             OdfTreeCollection(read.requestID.map(parseRequestID):_*)
           )))
     } else{
@@ -149,7 +150,7 @@ object OmiParser extends Parser[OmiParseResult] {
                           gcalendarToTimestampOption(read.end),
                           read.newest,
                           read.oldest,
-                          uriToStringOption(read.callback)
+                          (read.callback)
                         )
                       ))
                     case Some(interval) =>
@@ -160,7 +161,7 @@ object OmiParser extends Parser[OmiParseResult] {
                           odf,
                           read.newest,
                           read.oldest,
-                          uriToStringOption(read.callback)
+                          (read.callback)
                         )
                       ))
                   }
@@ -184,7 +185,7 @@ object OmiParser extends Parser[OmiParseResult] {
         WriteRequest(
           ttl,
           odf,
-          uriToStringOption(write.callback))))
+          (write.callback))))
       }
   }
 
@@ -250,10 +251,6 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
     case None => None
     case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
-  }
-  private[this] def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt match {
-    case None => None
-    case Some(uri) => Some(uri.toString)
   }
 }
 

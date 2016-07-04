@@ -53,6 +53,10 @@ trait  DBPusher  extends BaseAgentSystem{
   private def sendEventCallback(esub: EventSub, odf: OdfObjects) : Unit = {
     val id = esub.id
     val callbackAddr = esub.callback
+    val responseTTL =
+      Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
+        .toOption.getOrElse(Duration.Inf)
+
     log.debug(s"Sending data to event sub: $id.")
     val xmlMsg = xmlFromResults(
       1.0,
@@ -65,12 +69,8 @@ trait  DBPusher  extends BaseAgentSystem{
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
 
-    val callbackF = sendCallback(
-      callbackAddr,
-      xmlMsg,
-      Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
-        .toOption.getOrElse(Duration.Inf)
-    ) 
+    val callbackF = esub.callback.send(xmlMsg) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
+
     callbackF.onSuccess {
       case CallbackSuccess =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")

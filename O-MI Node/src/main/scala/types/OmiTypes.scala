@@ -41,10 +41,13 @@ sealed trait OmiRequest {
 
   def ttl: Duration
 
-  def callback: Option[String]
+  def callback: Option[Callback]
 
-  def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
+  def hasCallback: Boolean = 
+    callback.isDefined && callback.map(_.uri).getOrElse("").nonEmpty
 
+  def callbackAsUri: Option[java.net.URI] =
+    callback.map{ call => new java.net.URI(call.uri)}
 
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
 
@@ -78,26 +81,38 @@ sealed trait RequestIDRequest {
 class Callback(
   val uri: String,
   @volatile
-  var callbackHandle: OmiRequest => Future[Unit]
+  var sendHandler: ExecutionContext => OmiRequest => Future[Unit]
   ) extends Serializable {
+    def send(response: OmiRequest)(implicit ec: ExecutionContext): Future[Unit] = sendHandler(ec)(response)
 }
 object Callback {
   //def apply(uri: Uri): Callback = apply(uri.toString)
 
-  def apply(callbackHandle: OmiRequest => Future[Unit]): Callback =
+  def apply(callbackHandle: ExecutionContext => OmiRequest => Future[Unit]): Callback =
     new Callback("0", callbackHandle)
 
-  def apply(uri: String)(implicit ec: ExecutionContext): Callback = new Callback(uri,
+  def apply(callbackHandle: OmiRequest => Future[Unit]): Callback =
+    new Callback("0", {_ => callbackHandle})
+
+  def apply(uri: java.net.URI): Callback = apply(uri.toString)
+
+  def apply(uri: String): Callback = new Callback(uri, {implicit ec: ExecutionContext =>
     CallbackHandlers.sendCallback(uri, _: OmiRequest) flatMap {
       case CallbackHandlers.CallbackSuccess => Future.successful(())
       case t: Any => Future.failed(new Exception(t.toString))
     }
-  )
+  })
 
   case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
   def apply(): Callback = new Callback("0", {a =>
     throw UndefinedCallbackCallException(s"No callbackHandle on $this")
   })
+
+  import scala.language.implicitConversions
+  implicit def StringAsCallbackUri: String => Callback = apply
+  implicit def UriAsCallback: java.net.URI => Callback = apply
+  implicit def OptionCallbackFunctor[A](opt: Option[A])(implicit toCallback: A => Callback): Option[Callback] =
+    opt map toCallback
 }
 
 /**
@@ -126,7 +141,7 @@ case class ReadRequest(
   end: Option[Timestamp ] = None,
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
-  callback: Option[String ] = None
+  callback: Option[Callback] = None
 ) extends OmiRequest with OdfRequest{
   
   implicit def asReadRequest : xmlTypes.ReadRequest = {
@@ -140,10 +155,7 @@ case class ReadRequest(
           odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope))
         )
       ),
-      callback.map{ 
-        addr => 
-          new java.net.URI(addr)
-      },
+      callbackAsUri,
       Some("odf"),
       xmlTypes.Node,
       None,
@@ -167,7 +179,7 @@ case class ReadRequest(
  **/
 case class PollRequest(
   ttl: Duration,
-  callback: Option[String ] = None,
+  callback: Option[Callback] = None,
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
 ) extends OmiRequest{
   
@@ -178,7 +190,7 @@ case class PollRequest(
       xmlTypes.IdType(id.toString)
     }.toSeq,
     None,
-    callback.map{ addr => new java.net.URI(addr)},
+    callbackAsUri,
     None,
     xmlTypes.Node,
     None
@@ -195,14 +207,14 @@ case class SubscriptionRequest(
   odf: OdfObjects,
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
-  callback: Option[String ] = None
+  callback: Option[Callback] = None
 ) extends OmiRequest with SubLike with OdfRequest{
   
   implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
     None,
     Nil,
       Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
-    callback.map{ addr => new java.net.URI(addr)},
+    callbackAsUri,
     Some("odf"),
     xmlTypes.Node,
     Some(interval.toSeconds)
@@ -217,13 +229,13 @@ case class SubscriptionRequest(
 case class WriteRequest(
   ttl: Duration,
   odf: OdfObjects,
-  callback: Option[String ] = None
+  callback: Option[Callback] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   implicit def asWriteRequest : xmlTypes.WriteRequest = xmlTypes.WriteRequest(
     None,
     Nil,
       Some( scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ), 
-    callback.map{ addr => new java.net.URI(addr)},
+    callbackAsUri,
     Some("odf")
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asWriteRequest, ttl.toSeconds)
@@ -237,7 +249,7 @@ case class ResponseRequest(
   results: OdfTreeCollection[OmiResult],
   ttl: Duration = Duration.Inf
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
-  val callback : Option[String] = None
+  val callback : Option[Callback] = None
   def odf : OdfObjects= results.foldLeft(OdfObjects()){
     _ union _.odf.getOrElse(OdfObjects())
   }
@@ -260,7 +272,7 @@ case class CancelRequest(
       xmlTypes.IdType(id.toString)
     }.toSeq
   )
-  def callback : Option[String] = None
+  def callback : Option[Callback] = None
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttl.toSeconds)
 }
 

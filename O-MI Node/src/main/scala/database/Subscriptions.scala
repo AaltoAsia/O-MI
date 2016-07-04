@@ -22,6 +22,7 @@ import scala.concurrent.duration.Duration
 
 import org.prevayler._
 import types._
+import types.OmiTypes.Callback
 
 
 object IntervalSubOrdering extends Ordering[IntervalSub] {
@@ -63,7 +64,7 @@ case class IntervalSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
-  callback: String,
+  callback: Callback,
   interval: Duration,
   nextRunTime: Timestamp,
   startTime: Timestamp
@@ -73,7 +74,7 @@ case class EventSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
-  callback: String
+  callback: Callback
   ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */

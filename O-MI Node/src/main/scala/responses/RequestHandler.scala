@@ -58,29 +58,25 @@ trait OmiRequestHandlerCore {
     import system.dispatcher // execution context for futures
 
     request.callback match {
-      case Some("0") => // O-MI Extension: Zero-callback; use current connection
-        ???
 
-      case Some(address) => {
+      case Some(callback) => {
 
-        val callbackCheck = CallbackHandlers.checkCallbackUri(address)
+        val callbackCheck = CallbackHandlers.checkCallbackUri(callback.uri)
 
-        callbackCheck.flatMap { uri =>
+        callbackCheck.flatMap {_ =>
           request match {
             case sub: SubscriptionRequest => runGeneration(sub)
             case _ => {
               // TODO: Can't cancel this callback
-              runGeneration(request)  map { xml =>
-                  sendCallback(
-                    address,
-                    xml,
-                    request.ttl
-                  )
+              runGeneration(request)  map { response =>
+                  request.callback.map(_ send response)
               }
-              xmlFromResults(
-                1.0,
-                Results.simple("200", Some("OK, callback job started"))
-              )
+              Future.successful{
+                xmlFromResults(
+                  1.0,
+                  Results.simple("200", Some("OK, callback job started"))
+                )
+              }
             }
           }
         } recover {

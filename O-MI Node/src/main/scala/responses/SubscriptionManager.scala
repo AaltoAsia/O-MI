@@ -295,22 +295,23 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
 
 
+        val responseTTL = iSub.interval
 
-        val callbackF = CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
-          callbackF.onSuccess {
-            case CallbackSuccess =>
-              log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-              case _ =>
-                log.warning( s"Callback success, default case should not happen; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-            }
-            callbackF.onFailure{
-            case fail: CallbackFailure =>
-              log.warning(
-                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-            case e : Throwable=>
-              log.warning(
-                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+        val callbackF = iSub.callback.send(resultXml) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
+        callbackF.onSuccess {
+          case CallbackSuccess =>
+            log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+            case _ =>
+              log.warning( s"Callback success, default case should not happen; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
           }
+          callbackF.onFailure{
+          case fail: CallbackFailure =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
+          case e : Throwable=>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+        }
       }
     }
 
