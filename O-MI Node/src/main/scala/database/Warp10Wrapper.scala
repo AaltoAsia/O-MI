@@ -45,13 +45,18 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     private def createOdfValue(value: JsValue,_timestamp: BigDecimal, typeVal: Map[String, String]): OdfValue = {
       val timestamp = new Timestamp((_timestamp/1000).toLong)
       value match {
-        case JsString(v) => OdfValue(v, "xs:string", timestamp, typeVal)
-        case JsBoolean(v) => OdfValue(v, timestamp, typeVal)
+        case JsString(v) => {
+          typeVal.get("type") match {
+            case Some(dataType) => OdfValue(v, dataType, timestamp, typeVal - "type")
+            case None => OdfValue(v, "xs:string", timestamp, typeVal)
+          }
+        }
+        case JsBoolean(v) => OdfValue(v, timestamp, typeVal - "type")
         case JsNumber(n) => {
-          if (n.ulp == 1)
-            OdfValue(n.toLong, timestamp, typeVal)
+          if (n.ulp == 1) //if no decimal separator, parse to long
+            OdfValue(n.toLong, timestamp, typeVal - "type")
           else
-            OdfValue(n.toDouble, timestamp, typeVal)
+            OdfValue(n.toDouble, timestamp, typeVal - "type")
         }
         case _ => throw new DeserializationException("Invalid type, could not cast into string, boolean, or number")
       }
@@ -96,7 +101,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         }
         val infoIs:Seq[OdfInfoItem] = idPathValuesTuple.groupBy(_._1).collect{
           case (None , ii) => ii.map{
-            case (_, Some(_path), c) => OdfInfoItem(Path(_path.replaceAll("\\.", "/")), c) //sort by timestamp?
+            case (_, Some(_path), c) => OdfInfoItem(Path(_path.replaceAll("\\.", "/")), c.sortBy(_.timestamp.getTime()))
             case _ => throw new DeserializationException("No Path found when deserializing")
           }
 
