@@ -76,15 +76,16 @@ trait OmiRequestHandlerCore {
                     xml,
                     request.ttl
                   )
-                 xmlFromResults(
-                  1.0,
-                  Results.simple("200", Some("OK, callback job started")))
               }
+              xmlFromResults(
+                1.0,
+                Results.simple("200", Some("OK, callback job started"))
+              )
             }
           }
         } recover {
-          case e: ProtocolNotSupported => invalidCallback(e.getMessage)
-          case e: ForbiddenLocalhostPort => invalidCallback(e.getMessage)
+          case e: ProtocolNotSupported           => invalidCallback(e.getMessage)
+          case e: ForbiddenLocalhostPort         => invalidCallback(e.getMessage)
           case e: java.net.MalformedURLException => invalidCallback(e.getMessage)
           case e: UnknownHostException           => invalidCallback("Unknown host: " + e.getMessage)
           case e: SecurityException              => invalidCallback("Unauthorized " + e.getMessage)
