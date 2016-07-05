@@ -203,7 +203,7 @@ object OmiParser extends Parser[OmiParseResult] {
         OdfTreeCollection(response.result.map{
           result =>
             OmiResult(
-              new OmiReturn(
+              OmiReturn(
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
