@@ -32,8 +32,7 @@ import akka.http.scaladsl.server.Directive0
 import http.Authorization._
 import org.slf4j.LoggerFactory
 import parsing.OmiParser
-import responses.OmiGenerator._
-import responses.{RequestHandler, Results}
+import responses.RequestHandler
 import types.OmiTypes._
 import types.Path
 
@@ -166,10 +165,10 @@ trait OmiService
       eitherOmi match {
         case Right(requests) =>
 
-          val ttlPromise = Promise[NodeSeq]()
+          val ttlPromise = Promise[ResponseRequest]()
 
           val request = requests.headOption  // TODO: Only one request per xml is supported currently
-          val response = request match {
+          val response: Future[ResponseRequest] = request match {
 
             case Some(originalReq : OmiRequest) =>
               hasPermissionTest(originalReq) match {
@@ -178,7 +177,7 @@ trait OmiService
                     case ttl: FiniteDuration => ttlPromise.completeWith(
                       akka.pattern.after(ttl, using = system.scheduler) {
                         log.info(s"TTL timed out after $ttl")
-                        Future.successful(xmlFromResults(1.0, Results.timeOutError("ttl timed out")))
+                        Future.successful(Responses.TimeOutError())
                       }
                     )
                     case _ => //noop
@@ -186,20 +185,20 @@ trait OmiService
                   requestHandler.handleRequest(req)(system)
                 }
                 case None =>
-                  Future.successful(unauthorized)
+                  Future.successful(Responses.Unauthorized())
               }
-            case _ =>  Future.successful(notImplemented)
+            case _ =>  Future.successful(Responses.NotImplemented())
           }
 
           //if timeoutfuture completes first then timeout is returned
-          Future.firstCompletedOf(Seq(response, ttlPromise.future)) map { value =>
-
+          Future.firstCompletedOf(Seq(response, ttlPromise.future)) map {
+            response : ResponseRequest =>
               // check the error code for logging
-              if(value.\\("return").map(_.\@("returnCode")).exists(n=> n.size > 1 && n != "200")){
+              if(response.results.exists{ result => result.returnValue.returnCode != "200"}){
                 log.warn(s"Errors with following request:\n${requestString}")
               }
 
-              value // return
+              response.asXML // return
           }
 
         case Left(errors) => { // Errors found
@@ -207,9 +206,9 @@ trait OmiService
           log.warn(s"${requestString}")
           log.warn("Parse Errors: {}", errors.mkString(", "))
 
-          val errorResponse = parseError(errors.toSeq:_*)
+          val errorResponse = Responses.ParseErrors(errors.toVector)
 
-          Future.successful(errorResponse)
+          Future.successful(errorResponse.asXML)
         }
       }
     } catch {

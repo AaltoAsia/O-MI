@@ -28,7 +28,6 @@ import scala.xml.NodeSeq
 
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
-import responses.OmiGenerator.odfMsg
 import responses.CallbackHandlers
 import types.OdfTypes._
 
@@ -245,11 +244,12 @@ case class WriteRequest(
 /**
  * Response request, contains result for other requests
  **/
-case class ResponseRequest(
-  results: OdfTreeCollection[OmiResult],
-  ttl: Duration = Duration.Inf
+class ResponseRequest( 
+  val results: OdfTreeCollection[OmiResult],
+  val ttl: Duration = Duration.Inf
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   val callback : Option[Callback] = None
+  def copy( results: OdfTreeCollection[OmiResult] = this.results, ttl: Duration = this.ttl) : ResponseRequest = ResponseRequest( results, ttl)
   def odf : OdfObjects= results.foldLeft(OdfObjects()){
     _ union _.odf.getOrElse(OdfObjects())
   }
@@ -257,6 +257,9 @@ case class ResponseRequest(
    
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttl.toSeconds)
 } 
+object ResponseRequest{
+  def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = Duration.Inf) : ResponseRequest = new ResponseRequest( results, ttl)
+}
 
 /**
  * Cancel request, for cancelling subscription.
@@ -279,19 +282,22 @@ case class CancelRequest(
 /** 
  * Result of a O-MI request
  **/
-case class OmiResult(
-  value: String,
-  returnCode: String,
-  description: Option[String] = None,
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
-  odf: Option[OdfTypes.OdfObjects] = None
+class OmiResult(
+  val returnValue : OmiReturn,
+  val requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  val odf: Option[OdfTypes.OdfObjects] = None
 ){
     
+  def copy(
+    returnValue : OmiReturn = this.returnValue,
+    requestIDs: OdfTreeCollection[Long ] = this.requestIDs,
+    odf: Option[OdfTypes.OdfObjects] = this.odf
+  ) : OmiResult = new OmiResult(returnValue, requestIDs, odf)
   implicit def asRequestResultType : xmlTypes.RequestResultType = xmlTypes.RequestResultType(
     xmlTypes.ReturnType(
-      value,
-      returnCode,
-      description,
+      "",
+      returnValue.returnCode,
+      returnValue.description,
       Map.empty
     ),
     requestIDs.headOption.map{
@@ -306,4 +312,11 @@ case class OmiResult(
     odf.map{ objs => "odf" }
   )
 } 
-
+object OmiResult{
+  def apply(
+    returnValue : OmiReturn,
+    requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+    odf: Option[OdfTypes.OdfObjects] = None
+  ) : OmiResult = new OmiResult(returnValue, requestIDs, odf)
+}
+class OmiReturn( val returnCode: String, val description: Option[String] = None )

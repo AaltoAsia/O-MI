@@ -57,6 +57,16 @@ package object OmiTypes  {
    cal.setTime(timestamp)
    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
  }
+  /** Wraps O-DF format to O-MI msg tag.
+    * @param odf O-DF Structure.
+    * @return O-MI msg tag.
+    */
+  def odfMsg( odf: NodeSeq ):  NodeSeq ={
+    <omi:msg xmlns="odf.xsd">
+      {odf}
+    </omi:msg>
+  }
+
 }
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them

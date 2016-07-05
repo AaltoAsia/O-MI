@@ -28,9 +28,8 @@ import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
-import responses.OmiGenerator.xmlFromResults
-import responses.Results
 import types.OdfTypes._
+import types.OmiTypes._
 import types.Path
 
 trait  InputPusher  extends BaseAgentSystem{
@@ -58,9 +57,7 @@ trait  DBPusher  extends BaseAgentSystem{
         .toOption.getOrElse(Duration.Inf)
 
     log.debug(s"Sending data to event sub: $id.")
-    val xmlMsg = xmlFromResults(
-      1.0,
-      Results.poll(id.toString, odf))
+    val responseRequest = Responses.Poll(id, odf, responseTTL)
     log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
@@ -69,7 +66,7 @@ trait  DBPusher  extends BaseAgentSystem{
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
 
-    val callbackF = esub.callback.send(xmlMsg) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
+    val callbackF : Future[Unit] = esub.callback.send(responseRequest) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
 
     callbackF.onSuccess {
       case CallbackSuccess =>

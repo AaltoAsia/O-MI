@@ -28,7 +28,7 @@ import http.CLICmds.ListSubsCmd
 import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.SubscriptionRequest
+import types.OmiTypes._
 import types._
 
 /**
@@ -290,14 +290,12 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None){
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
-        val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
-        val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))
-        val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
-
-
+        val succResult = optionObjects.map{odfObjects => Results.Success(Some(iSub.id), Some(odfObjects))}.toVector
+        val failedResults = if(failures.nonEmpty ) Vector(Results.NotFoundPaths(failures)) else Vector.empty
         val responseTTL = iSub.interval
+        val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
 
-        val callbackF = iSub.callback.send(resultXml) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
+        val callbackF = iSub.callback.send(response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
         callbackF.onSuccess {
           case CallbackSuccess =>
             log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")

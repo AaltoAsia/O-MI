@@ -25,7 +25,6 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
@@ -37,7 +36,7 @@ trait PollHandler extends OmiRequestHandlerBase{
     * @param poll request
     * @return (xml response, HTTP status code)
     */
-  def handlePoll(poll: PollRequest): Future[NodeSeq] = {
+  def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
     val ttl = handleTTL(poll.ttl)
     implicit val timeout = Timeout(ttl) 
     val time = date.getTime
@@ -52,20 +51,18 @@ trait PollHandler extends OmiRequestHandlerBase{
 
       objectsF.map{
         case Some(objects: OdfObjects) =>
-          Results.poll(id.toString, objects)
+          Results.Poll(id, objects)
         case None =>
-          Results.notFoundSub(id.toString)
+          Results.NotFoundRequestIDs(Vector(id))
         //case Failure(e) =>
         //  throw new RuntimeException(
         //    s"Error when trying to poll subscription: ${e.getMessage}")
       }
     })
-    val returnTuple = resultsFut.map(results =>
-      xmlFromResults(
-        1.0,
-        results.toSeq: _*)
+    val response = resultsFut.map(results =>
+        ResponseRequest(results.toVector)
     )
 
-    returnTuple
+    response
   }
 }

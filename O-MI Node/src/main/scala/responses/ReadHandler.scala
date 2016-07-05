@@ -22,7 +22,6 @@ import scala.concurrent.Future
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
 
-import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
 
@@ -31,7 +30,7 @@ trait ReadHandler extends OmiRequestHandlerBase{
     * @param read request
     * @return (xml response, HTTP status code)
     */
-  def handleRead(read: ReadRequest): Future[NodeSeq] = {
+  def handleRead(read: ReadRequest): Future[ResponseRequest] = {
     log.debug("Handling read.")
 
     val leafs = getLeafs(read.odf)
@@ -40,22 +39,19 @@ trait ReadHandler extends OmiRequestHandlerBase{
 
     objectsO.map{
       case Some(objects) =>
-        val found = Results.read(objects)
+        val found = Results.Read(objects)
         val requestsPaths = leafs.map { _.path }
         val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
         val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-        val results = Seq(found) ++ {
+        val omiResults = Vector(found) ++ {
           if (notFound.nonEmpty)
-            Seq(Results.simple("404", Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
-          else Seq.empty
+            Vector(Results.NotFoundPaths(notFound.toVector))
+          else Vector.empty
         }
 
-          xmlFromResults(
-            1.0,
-            results: _*)
+          ResponseRequest( omiResults )
       case None =>
-        xmlFromResults(
-          1.0, Results.notFound)
+          ResponseRequest( Vector(Results.NotFoundPaths(leafs.map{ p => p.path}.toVector)))
     }
   }
 }

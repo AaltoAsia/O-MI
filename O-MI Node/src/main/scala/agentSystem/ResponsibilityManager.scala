@@ -30,8 +30,6 @@ import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
-import responses.OmiGenerator.xmlFromResults
-import responses.Results
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
