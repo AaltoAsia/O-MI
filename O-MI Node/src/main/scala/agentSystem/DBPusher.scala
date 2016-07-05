@@ -68,11 +68,8 @@ trait  DBPusher  extends BaseAgentSystem{
 
     val callbackF : Future[Unit] = esub.callback.send(responseRequest) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
 
-    callbackF.onSuccess {
-      case CallbackSuccess =>
+    callbackF.onSuccess { case () =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
-      case success : CallbackResult =>
-        log.error(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1, default math, The impossible happened?")
     }
     callbackF.onFailure{
       case fail: CallbackFailure =>

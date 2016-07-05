@@ -297,12 +297,10 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
         val callbackF = iSub.callback.send(response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
         callbackF.onSuccess {
-          case CallbackSuccess =>
+          case () =>
             log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-            case _ =>
-              log.warning( s"Callback success, default case should not happen; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-          }
-          callbackF.onFailure{
+        }
+        callbackF.onFailure{
           case fail: CallbackFailure =>
             log.warning(
               s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
