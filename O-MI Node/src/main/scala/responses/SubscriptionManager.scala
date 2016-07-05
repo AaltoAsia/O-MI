@@ -25,7 +25,7 @@ import scala.util.Try
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
 import http.CLICmds.ListSubsCmd
-import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
+import responses.CallbackHandlers.CallbackFailure
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
