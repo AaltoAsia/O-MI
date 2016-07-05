@@ -239,28 +239,6 @@ case class WriteRequest(
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asWriteRequest, ttl.toSeconds)
 }
-
-
-/**
- * Response request, contains result for other requests
- **/
-class ResponseRequest( 
-  val results: OdfTreeCollection[OmiResult],
-  val ttl: Duration = Duration.Inf
-) extends OmiRequest with OdfRequest with PermissiveRequest{
-  val callback : Option[Callback] = None
-  def copy( results: OdfTreeCollection[OmiResult] = this.results, ttl: Duration = this.ttl) : ResponseRequest = ResponseRequest( results, ttl)
-  def odf : OdfObjects= results.foldLeft(OdfObjects()){
-    _ union _.odf.getOrElse(OdfObjects())
-  }
-  implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toVector.toSeq: _*)
-   
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttl.toSeconds)
-} 
-object ResponseRequest{
-  def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = Duration.Inf) : ResponseRequest = new ResponseRequest( results, ttl)
-}
-
 /**
  * Cancel request, for cancelling subscription.
  **/
@@ -279,44 +257,21 @@ case class CancelRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttl.toSeconds)
 }
 
-/** 
- * Result of a O-MI request
+/**
+ * Response request, contains result for other requests
  **/
-class OmiResult(
-  val returnValue : OmiReturn,
-  val requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
-  val odf: Option[OdfTypes.OdfObjects] = None
-){
-    
-  def copy(
-    returnValue : OmiReturn = this.returnValue,
-    requestIDs: OdfTreeCollection[Long ] = this.requestIDs,
-    odf: Option[OdfTypes.OdfObjects] = this.odf
-  ) : OmiResult = new OmiResult(returnValue, requestIDs, odf)
-  implicit def asRequestResultType : xmlTypes.RequestResultType = xmlTypes.RequestResultType(
-    xmlTypes.ReturnType(
-      "",
-      returnValue.returnCode,
-      returnValue.description,
-      Map.empty
-    ),
-    requestIDs.headOption.map{
-      id => xmlTypes.IdType(id.toString)
-    },
-    odf.map{ 
-      objects =>
-        scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), defaultScope ) ) ) 
-    },
-    None,
-    None,
-    odf.map{ objs => "odf" }
-  )
+trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
+  val results: OdfTreeCollection[OmiResult]
+  val ttl: Duration 
+  val callback : Option[Callback] = None
+  def copy( results: OdfTreeCollection[OmiResult] = this.results, ttl: Duration = this.ttl) : ResponseRequest = ResponseRequest( results, ttl)
+  def odf : OdfObjects= results.foldLeft(OdfObjects()){
+    _ union _.odf.getOrElse(OdfObjects())
+  }
+  implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toVector.toSeq: _*)
+   
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttl.toSeconds)
 } 
-object OmiResult{
-  def apply(
-    returnValue : OmiReturn,
-    requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
-    odf: Option[OdfTypes.OdfObjects] = None
-  ) : OmiResult = new OmiResult(returnValue, requestIDs, odf)
+object ResponseRequest{
+  def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = Duration.Inf) : ResponseRequest = ResponseRequestBase( results, ttl)
 }
-class OmiReturn( val returnCode: String, val description: Option[String] = None )
