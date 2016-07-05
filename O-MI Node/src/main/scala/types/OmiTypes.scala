@@ -85,28 +85,49 @@ class Callback(
     def send(response: OmiRequest)(implicit ec: ExecutionContext): Future[Unit] = sendHandler(ec)(response)
 }
 object Callback {
+  import scala.language.implicitConversions
+  
+  // The Magnet pattern, used for apply function
+  trait CallbackApplyMagnet {
+    def apply(): Callback
+  }
+
+  implicit class FromHandleFunction(
+    callbackHandle: OmiRequest => Future[Unit]
+  ) extends CallbackApplyMagnet {
+    def apply() = new Callback("0", {_ => callbackHandle})
+  }
+
+  implicit class FromHandleWithExecutionContext(
+    callbackHandle: ExecutionContext => OmiRequest => Future[Unit]
+  ) extends CallbackApplyMagnet {
+    def apply() = new Callback("0", callbackHandle)
+  }
+
+
+  implicit class FromJavaUri(uri: java.net.URI) extends CallbackApplyMagnet {
+    def apply() = new FromStringUri(uri.toString)()
+  }
+
+  implicit class FromStringUri(uri: String) extends CallbackApplyMagnet {
+    def apply() = new Callback(uri, {implicit ec: ExecutionContext =>
+      CallbackHandlers.sendCallback(uri, _: OmiRequest) 
+    })
+  }
+
+  // akka http uri?
   //def apply(uri: Uri): Callback = apply(uri.toString)
 
-  def apply(callbackHandle: ExecutionContext => OmiRequest => Future[Unit]): Callback =
-    new Callback("0", callbackHandle)
 
-  def apply(callbackHandle: OmiRequest => Future[Unit]): Callback =
-    new Callback("0", {_ => callbackHandle})
-
-  def apply(uri: java.net.URI): Callback = apply(uri.toString)
-
-  def apply(uri: String): Callback = new Callback(uri, {implicit ec: ExecutionContext =>
-    CallbackHandlers.sendCallback(uri, _: OmiRequest) 
-  })
-
-  case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
+  def apply(magnet: CallbackApplyMagnet): Callback = magnet()
   def apply(): Callback = new Callback("0", {a =>
     throw UndefinedCallbackCallException(s"No callbackHandle on $this")
   })
 
-  import scala.language.implicitConversions
-  implicit def StringAsCallbackUri: String => Callback = apply
-  implicit def UriAsCallback: java.net.URI => Callback = apply
+  case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
+
+  implicit def StringAsCallbackUri: String => Callback = apply(_: String)
+  implicit def UriAsCallback: java.net.URI => Callback = apply(_: java.net.URI)
   implicit def OptionCallbackFunctor[A](opt: Option[A])(implicit toCallback: A => Callback): Option[Callback] =
     opt map toCallback
 }
