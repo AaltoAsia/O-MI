@@ -96,10 +96,7 @@ object Callback {
   def apply(uri: java.net.URI): Callback = apply(uri.toString)
 
   def apply(uri: String): Callback = new Callback(uri, {implicit ec: ExecutionContext =>
-    CallbackHandlers.sendCallback(uri, _: OmiRequest) flatMap {
-      case CallbackHandlers.CallbackSuccess => Future.successful(())
-      case t: Any => Future.failed(new Exception(t.toString))
-    }
+    CallbackHandlers.sendCallback(uri, _: OmiRequest) 
   })
 
   case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)

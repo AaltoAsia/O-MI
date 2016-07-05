@@ -19,6 +19,7 @@ import java.util.Date
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.util.{Try,Success,Failure}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -32,16 +33,17 @@ import akka.stream.{ActorMaterializer, Materializer}
  */
 object CallbackHandlers {
   val supportedProtocols = Vector("http", "https")
-  sealed trait CallbackResult
+
   // Base error
-  sealed class CallbackFailure(msg: String, callback: Uri) extends Exception(msg) with CallbackResult
-  //Success
-  case object  CallbackSuccess extends CallbackResult
+  sealed class CallbackFailure(msg: String, callback: Uri) extends Exception(msg)
+
   // Errors
   case class   HttpError(status: StatusCode, callback: Uri ) extends
     CallbackFailure(s"Received HTTP status $status from $callback.", callback)
+
   case class  ProtocolNotSupported(protocol: String, callback: Uri) extends
     CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
+
   case class  ForbiddenLocalhostPort( callback: Uri)  extends
     CallbackFailure(s"Callback address is forbidden.", callback)
 
@@ -55,7 +57,7 @@ object CallbackHandlers {
   private def log(implicit system: ActorSystem) = system.log
   private[this] def sendHttp( address: Uri,
                               data: xml.NodeSeq,
-                              ttl: Duration): Future[CallbackResult] = {
+                              ttl: Duration): Future[Unit] = {
     val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
       case ttl: FiniteDuration => ttl.toMillis
       case _ => http.Boot.settings.callbackTimeout.toMillis
@@ -69,23 +71,22 @@ object CallbackHandlers {
       s"Trying to send POST request to $address, will keep trying until $tryUntil."
     )
 
-    val check : PartialFunction[HttpResponse, CallbackResult] = {
-      case response: HttpResponse =>
+    val check : HttpResponse => Future[Unit] = { response =>
         if (response.status.isSuccess){
           //TODO: Handle content of response, possible piggypacking
           system.log.info(
             s"Successful send POST request to $address."
           )
-          CallbackSuccess
-        } else throw HttpError(response.status, address)
+          Future.successful(())
+        } else Future failed HttpError(response.status, address)
     }
 
     def trySend = httpExt.singleRequest(request)//httpHandler(request)
 
-    val retry = retryUntilWithCheck[HttpResponse, CallbackResult](
+    val retry = retryUntilWithCheck[HttpResponse, Unit](
             settings.callbackDelay,
             tryUntil
-          )(check )(trySend)
+          )(check)(trySend)
 
     retry.onFailure{
       case e : Throwable=>
@@ -98,9 +99,9 @@ object CallbackHandlers {
 
   }
 
-  private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: PartialFunction[T,U])( creator: => Future[T] ) : Future[U] = {
+  private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: T => Future[U])( creator: => Future[T] ) : Future[U] = {
     val future = creator
-    future.map{ check }.recoverWith{
+    future.flatMap{ check }.recoverWith{
       case e if tryUntil.after( currentTimestamp ) && !system.isTerminated => 
         system.log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
@@ -115,7 +116,7 @@ object CallbackHandlers {
    * @param data xml data to send as a callback
    * @return future for the result of the callback is returned without blocking the calling thread
    */
-  def sendCallback( address: String, omiMessage: types.OmiTypes.OmiRequest): Future[CallbackResult] =
+  def sendCallback( address: String, omiMessage: types.OmiTypes.OmiRequest): Future[Unit] =
     sendCallback(address, omiMessage.asXML, omiMessage.ttl)
 
   /**
@@ -127,31 +128,34 @@ object CallbackHandlers {
   def sendCallback( address: String,
                     data: xml.NodeSeq,
                     ttl: Duration
-                    ): Future[CallbackResult] = {
+                    ): Future[Unit] = {
 
     checkCallbackUri(address).flatMap{ uri =>
       sendHttp(uri, data, ttl)
     }
   }
 
-  def checkCallbackUri( callback: String ): Future[Uri] = Future{
+  def checkCallbackUri( callback: String ): Future[Uri] = for { 
+    uri <- Future fromTry Try{Uri(callback)}
+    hostAddress = uri.authority.host.address
 
-    val uri = Uri(callback)
-    val hostAddress = uri.authority.host.address
-    val IpAddress = InetAddress.getByName(hostAddress)
+    // Test address validity (throws exceptions when invalid)
+    ipAddress <- Future fromTry Try{InetAddress.getByName(hostAddress)}
 
-    val portsUsedByNode =settings.ports.values.toSeq
-    val validScheme = supportedProtocols.contains(uri.scheme)
-    val validPort = hostAddress != "localhost" || !portsUsedByNode.contains(uri.effectivePort)
-    val invalidPortMsg = "Tried to send callback to port used by O-MI Node"
-    val invalidSchemeMsg = "Tried to send callback to port used by O-MI Node"
-    (validScheme, validPort )match {
+    portsUsedByNode = settings.ports.values.toSeq
+    validScheme = supportedProtocols.contains(uri.scheme)
+    validPort = hostAddress != "localhost" || !portsUsedByNode.contains(uri.effectivePort)
+
+    result <- (validScheme, validPort) match {
       case ( true, true ) =>
-        uri
+        Future successful uri
+
       case ( false, _ ) =>
-        throw ProtocolNotSupported(uri.scheme,uri)
+        Future failed ProtocolNotSupported(uri.scheme,uri)
+
       case ( true, false ) =>
-        throw ForbiddenLocalhostPort(uri)
+        Future failed ForbiddenLocalhostPort(uri)
     }
-  }
+
+  } yield result
 }
