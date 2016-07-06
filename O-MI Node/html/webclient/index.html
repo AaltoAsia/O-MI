@@ -368,9 +368,14 @@
           </div>
           <div class="row">
             <div class="col-md-12">
-              <h4>
+              <h4 class="responseTitle">
                 <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
                 Response:
+                <button class="btn callback-responses btn-md btn-default"
+                  data-toggle="modal" data-target=".callbackResponseHistory">
+                  <span class="label label-warning">10</span>
+                  Callback response history
+                </button>
               </h4>
               <div class="well response">
                 <div class="progress">
@@ -573,6 +578,190 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-default newInfoCancel" data-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-primary newInfoSubmit">Add to request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade callbackResponseHistory" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="myModalLabel">
+            <b>[Prototype] Callback Response History:</b>
+            <button id="resetall" class="btn btn-sm btn-default" type="button" onclick="javascript: $('.responseListCollection').empty()">
+              <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+              Clear History
+          </button>
+        </h4>
+        </div>
+        <div style="overflow:scroll;">
+          <div class="responseListCollection">
+            <div class="responseList">
+              <div class="panel panel-info">
+                <div class="panel-heading">
+                  <h3 class="panel-title"><b>RequestID 6</b></h3>
+                </div>
+                <table class="table table-hover table-condensed">
+                  <thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>
+                  <tbody>
+                    <tr class="success"><th>4</th><th>returnCode</th><th>200</th></tr>
+                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                    <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                    <tr class="success"><th>3</th><th>returnCode</th><th>200</th></tr>
+                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                    <tr class="danger"><th>2</th><th>returnCode</th><th>404</th></tr>
+                    <tr class="danger"><th>1</th><th>returnCode</th><th>404</th></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="responseList">
+              <div class="panel panel-info">
+                <div class="panel-heading">
+                  <h3 class="panel-title"><b>RequestID 5</b></h3>
+                </div>
+                <div class="panel-body">
+                  <table class="table table-condenced">
+                    <thead><tr><th>InfoItem</th><th>value</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+                <ul class="list-group">
+                  <li class="list-group-item">
+                    <table class="table table-hover table-condensed">
+                      <thead><tr><th><b class="text-success">#2 returnCode=200</b></th></tr></thead>
+                      <tbody>
+                        <tr><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                        <tr><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                        <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                      </tbody>
+                    </table>
+
+                  </li>
+                  <li class="list-group-item">
+                    <table class="table table-hover table-condensed">
+                      <thead><tr><th><b class="text-success">#1 returnCode=201</b></th></tr></thead>
+                      <tbody>
+                        <tr><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                        <tr><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                        <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                      </tbody>
+                    </table>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="responseList">
+              <div class="panel panel-info">
+                <div class="panel-heading">
+                  <h3 class="panel-title"><b>RequestID 4</b></h3>
+                </div>
+                <div class="panel-body">
+
+                </div>
+                <ul class="list-group">
+                  <li class="list-group-item"><b class="text-success">#2 returnCode=200</b>
+                    <table class="table table-hover table-condensed">
+                      <thead><tr><th>InfoItem</th><th>value</th></tr></thead>
+                      <tbody>
+                        <tr><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                        <tr><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                        <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                      </tbody>
+                    </table>
+
+                  </li>
+                  <li class="list-group-item"><b class="text-success">#1 returnCode=200</b>
+                    <table class="table table-hover table-condensed">
+                      <thead><tr><th>InfoItem</th><th>value</th></tr></thead>
+                      <tbody>
+                        <tr><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                        <tr><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                        <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                      </tbody>
+                    </table>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="responseList">
+              <div class="panel panel-info">
+                <div class="panel-heading">
+                  <h3 class="panel-title"><b>RequestID 3.5</b></h3>
+                </div>
+                <table class="table table-hover table-condensed">
+                  <thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>
+                  <tbody>
+                    <tr class="success"><th>2</th><th>returnCode=200</th><th/></tr>
+                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                    <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                    <tr class="success"><th>1</th><th>returnCode=200</th><th/></tr>
+                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="responseList">
+              <div class="panel panel-info">
+                <div class="panel-heading">
+                  <h3 class="panel-title"><b>RequestID 3</b></h3>
+                </div>
+                <table class="table table-hover table-condensed">
+                  <thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>
+                  <tbody>
+                    <tr><td>2</td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                    <tr><td>2</td><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                    <!--<tr><td>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</td><td><code>4014.401769143</code></td></tr>-->
+                    <tr><td>1</td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
+                    <tr><td>1</td><td>S…/BackDoor</td><td><code>true</code></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="responseList mypanel">
+              <h4>RequesID 2</h4>
+              <div class="responseListElement">
+                <code>true</code>
+                <b>S…/FrontDoor</b>
+              </div>
+              <div class="responseListElement">
+                <div>
+                  <b>S…/BackDoor</b>
+                  <code>true</code>
+                </div>
+                <div>
+                  <b>S…/BackDoor</b>
+                  <code>false</code>
+                </div>
+              </div>
+              <div class="responseListElement">
+                <b>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</b>
+                <code>246.03</code>
+                <b>S…/K…/Temperature/Unit/aoeuaosntehu/antdi</b>
+                <code>246.044234506780</code>
+              </div>
+            </div>
+            <div class="responseList mypanel">
+              <h4>RequesID 1</h4>
+              <div class="responseListElement">
+                <b>S…/FrontDoor</b>
+                <code>true</code>
+              </div>
+              <div class="responseListElement">
+                <code>true</code>
+                <b>S…/BackDoor</b>
+              </div>
+              <div class="responseListElement">
+                <code>246.03</code>
+                <b>S…/K…/Temperature</b>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
