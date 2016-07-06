@@ -83,8 +83,10 @@ sealed trait RequestIDRequest {
  */
 class Callback(
   val uri: String,
+
   @volatile
   var sendHandler: ExecutionContext => OmiRequest => Future[Unit]
+
   ) extends Serializable {
     def send(response: OmiRequest)(implicit ec: ExecutionContext): Future[Unit] = sendHandler(ec)(response)
     override def equals( any: Any) : Boolean ={
@@ -116,10 +118,10 @@ object Callback {
 
 
   implicit class FromJavaUri(uri: java.net.URI) extends CallbackApplyMagnet {
-    def apply() = new FromStringUri(uri.toString)()
+    def apply(): Callback = Callback(uri.toString)
   }
 
-  implicit class FromStringUri(uri: String) extends CallbackApplyMagnet {
+  implicit class FromStringUri(uri: String) extends CallbackApplyMagnet with Serializable {
     def apply() = new Callback(uri, {implicit ec: ExecutionContext =>
       CallbackHandlers.sendCallback(uri, _: OmiRequest) 
     })
