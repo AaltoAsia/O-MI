@@ -77,13 +77,17 @@ object SingleStores {
     if(settings.writeToDisk) {
       val factory = new PrevaylerFactory[P]()
 
+      val directory = new File(settings.journalsDirectory++s"/$name")
+      prevaylerDirectories += directory
+
+      // Configure factory settings
       // Change size thereshold so we can remove the old journal files as we take snapshots.
       // Otherwise it will continue to fill disk space
       factory.configureJournalFileSizeThreshold(journalFileSizeLimit) // about 100M
+      factory.configurePrevalenceDirectory(directory.getAbsolutePath)
 
-      val directory = new File(settings.journalsDirectory++s"/$name")
-      prevaylerDirectories += directory
-      PrevaylerFactory.createPrevayler[P](in, directory.getAbsolutePath)
+      // Create factory
+      factory.create()
     } else {
       PrevaylerFactory.createTransientPrevayler[P](in)
     }
