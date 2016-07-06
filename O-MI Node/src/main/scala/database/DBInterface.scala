@@ -72,7 +72,7 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-  val journalFileSizeLimit = 100 * 1000000 // TODO: Config variable?
+  val journalFileSizeLimit = settings.maxJournalSizeBytes
   private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
       val factory = new PrevaylerFactory[P]()
@@ -85,7 +85,7 @@ object SingleStores {
       // Otherwise it will continue to fill disk space
       factory.configureJournalFileSizeThreshold(journalFileSizeLimit) // about 100M
       factory.configurePrevalenceDirectory(directory.getAbsolutePath)
-
+      factory.configurePrevalentSystem(in)
       // Create factory
       factory.create()
     } else {
