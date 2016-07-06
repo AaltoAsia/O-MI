@@ -200,9 +200,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       returnMsg must \("response") \ ("result") \ ("return",
         "returnCode" -> "404",
-        "description" -> "A subscription with this id has expired or doesn't exist")
+        "description" -> s"Following requestIDs not found: $id.")
 
-      returnMsg must \("response") \ ("result") \ ("requestID") \> (s"$id")
     }
 
     "return no new values for event subscription if there are no new events" >> {
@@ -228,7 +227,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       addValue("r/2", nv("0", 22000))
       addValue("r/2", nv("0", 23000))
-      val c2 = pollValues(subIdO) must have size(1)
+      val c2 = pollValues(subIdO) must have size(0)
       val c3 = pollValues(subIdO) must have size(0)
       c1 and c2 and c3
     }
@@ -563,7 +562,7 @@ class oldSubscriptionTest(implicit ee: ExecutionEnv) extends Specification with 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist"/>
+              <omi:return description="Following requestIDs not found: 5000." returnCode="404"/>
               <omi:requestID>{ rid }</omi:requestID>
             </omi:result>
           </omi:response>

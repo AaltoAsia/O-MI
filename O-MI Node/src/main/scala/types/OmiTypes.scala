@@ -51,6 +51,10 @@ sealed trait OmiRequest {
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
+  def ttlAsSeconds : Long = ttl match{
+    case finite : FiniteDuration => finite.toSeconds
+    case infinite : Duration.Infinite => 0
+  }
 }
 
 
@@ -83,6 +87,12 @@ class Callback(
   var sendHandler: ExecutionContext => OmiRequest => Future[Unit]
   ) extends Serializable {
     def send(response: OmiRequest)(implicit ec: ExecutionContext): Future[Unit] = sendHandler(ec)(response)
+    override def equals( any: Any) : Boolean ={
+      any match {
+        case other: Callback => other.uri == uri//for testing
+        case _ => this == any
+      }
+    }
 }
 object Callback {
   import scala.language.implicitConversions
@@ -188,7 +198,7 @@ case class ReadRequest(
       newest
     )
   }
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttl.toSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttlAsSeconds)
 }
 
 /**
@@ -212,7 +222,7 @@ case class PollRequest(
     xmlTypes.Node,
     None
   )
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttl.toSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttlAsSeconds)
 }
 
 /**
@@ -236,7 +246,7 @@ case class SubscriptionRequest(
     xmlTypes.Node,
     Some(interval.toSeconds)
   )
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttl.toSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asReadRequest, ttlAsSeconds)
 }
 
 
@@ -255,7 +265,7 @@ case class WriteRequest(
     callbackAsUri,
     Some("odf")
   )
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asWriteRequest, ttl.toSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asWriteRequest, ttlAsSeconds)
 }
 /**
  * Cancel request, for cancelling subscription.
@@ -272,7 +282,7 @@ case class CancelRequest(
     }.toSeq
   )
   def callback : Option[Callback] = None
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttl.toSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttlAsSeconds)
 }
 
 /**
@@ -288,7 +298,7 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
   }
   implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toVector.toSeq: _*)
    
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttl.toSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttlAsSeconds)
 } 
 object ResponseRequest{
   def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = Duration.Inf) : ResponseRequest = ResponseRequestBase( results, ttl)
