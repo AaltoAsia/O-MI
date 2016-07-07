@@ -52,3 +52,52 @@ html {
     color:#1E90FF; /* dodgerblue */
 }
 
+.responseTitle .btn {
+    margin-left: 2em;
+}
+
+.responseList {
+    flex: 0 1;
+    display: flex;
+    flex-flow: column nowrap;
+    min-width: 30rem;
+    margin: 1em 0 1em 1em;
+}
+
+.mypanel {
+    background-color: #e2e4e6;
+    padding: 0.5em;
+    border-radius: 4px;
+}
+
+.responseListElement {
+    flex: 0 1;
+    padding: 0.5em 0.5em 0.1em;
+    margin: 0.5em 0 0;
+    background-color: white;
+    border-radius: 4px;
+    overflow:hidden;
+}
+.responseListElement > div {
+    display: inline-block;
+    width: 100%;
+}
+
+.responseListElement code, .responseListElement b {
+    display: inline-block;
+    overflow:hidden;
+}
+
+.responseListElement code {
+    width: 6em;
+    float: right;
+}
+
+.responseListElement > b {
+}
+
+.responseListCollection {
+    align-items: flex-start;
+    display: flex;
+}
+
