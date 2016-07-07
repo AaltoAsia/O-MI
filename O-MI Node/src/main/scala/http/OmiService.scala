@@ -18,9 +18,11 @@ import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
+import scala.util.{Success, Failure, Try}
 import scala.xml.NodeSeq
 
-import accessControl.AuthAPIService
+import org.slf4j.LoggerFactory
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
@@ -29,8 +31,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Directive0
+import akka.stream.scaladsl._
+import akka.stream._
+import akka.http.scaladsl.model.ws
+
+import accessControl.AuthAPIService
 import http.Authorization._
-import org.slf4j.LoggerFactory
 import parsing.OmiParser
 import responses.RequestHandler
 import types.OmiTypes._
@@ -259,31 +265,79 @@ trait OmiService
   }
 }
 
+
 /**
  * This trait implements websocket support for O-MI message handling using akka-http
  */
 trait WebSocketOMISupport {
   self: OmiService =>
+  import system.dispatcher
+
+  type InSink = Sink[ws.Message, _]
+  type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 
   def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
     makePermissionTestFunction() { hasPermissionTest =>
       extractUpgradeToWebSocket {wsRequest =>
+
+        val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest)
         complete(
-          wsRequest.handleMessagesWithSinkSource(wsInSink(hasPermissionTest), wsOutSource)
+          wsRequest.handleMessagesWithSinkSource(inSink, outSource)
         )
       }
     }
 
-  // akka.stream
-  protected def wsInSink(hasPermissionTest: PermissionTest) = {
-    val requestString: String = ???
-    val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString)
-
-    ??? 
-  }
-    
   // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
-  protected def wsOutSource = ???
+	// T is the source type
+  // M is the materialization type, here a SourceQueue[String]
+  private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
+    val p = Promise[M]
+    val s = src.mapMaterializedValue { m =>
+      p.trySuccess(m)
+      m
+    }
+    (s, p.future)
+  }
+
+  // akka.stream
+  protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest): (InSink, OutSource) = {
+		val queueSize = 10
+		val (outSource, futureQueue) =
+			peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
+
+    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] =
+      for {
+        response <- futureResponse
+        if (response.nonEmpty)
+
+        queue <- futureQueue
+
+        // TODO: check what happens when sending empty String
+        resultMessage = ws.TextMessage(response.toString)
+        queueResult <- queue offer resultMessage
+      } yield {queueResult}
+
+    val inSink = Sink foreach[ws.Message] {
+      case message: ws.TextMessage =>
+        // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
+        val inputStream: Source[String,_] = message.textStream
+
+        val requestString: String = ??? // FIXME: detect and extract whole O-MI messages from the stream
+
+        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString)
+
+        queueSend(futureResponse) onComplete {
+          case Success(QueueOfferResult.Enqueued) => // Ok
+          case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
+          case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
+        }
+
+      case bm: ws.BinaryMessage => // we don't care about binary
+    }
+
+    (inSink, outSource)
+  }
+
 
 }
 
