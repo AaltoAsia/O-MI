@@ -48,15 +48,15 @@ class TypesTest extends Specification {
   }
 
   def e2 = {
-      ReadRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
+      ReadRequest(OdfObjects(), None, None, None, None, None, 0.seconds).isInstanceOf[OmiRequest]
   }
 
   def e3 = {
-      WriteRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
+      WriteRequest( OdfObjects(), None, 10.seconds).isInstanceOf[OmiRequest]
   }
 
   def e4 = {
-      SubscriptionRequest(0.seconds, 0.seconds, OdfObjects()).isInstanceOf[OmiRequest]
+      SubscriptionRequest(1.seconds, OdfObjects(), None, None, None,  0.seconds).isInstanceOf[OmiRequest]
   }
 
   def e5 = {
@@ -64,7 +64,7 @@ class TypesTest extends Specification {
   }
 
   def e6 = {
-      CancelRequest(10.seconds, Seq()).isInstanceOf[OmiRequest]
+      CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
   }
   
   def e10 = {

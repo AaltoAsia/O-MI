@@ -71,7 +71,7 @@ trait OmiRequestHandlerCore {
                   request.callback.map(_ send response)
               }
               Future.successful{
-                Responses.Success()
+                Responses.Success(description = Some("OK, callback job started"))
               }
             }
           }

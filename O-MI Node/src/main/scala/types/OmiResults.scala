@@ -53,6 +53,8 @@ object OmiResult{
 object Results{
   case class Success(requestID: Option[Long] = None, objects: Option[OdfObjects] = None, description: Option[String] = None) extends OmiResult{
     val returnValue: OmiReturn = Returns.Success(description)
+    override val requestIDs = requestID.toVector
+    override val odf : Option[OdfObjects] = objects
   }
   case class NotImplemented() extends OmiResult{
     val returnValue: OmiReturn = Returns.NotImplemented()
@@ -100,7 +102,7 @@ object Results{
   }
   case class Subscription( requestID: Long, interval: Option[Duration] = None) extends OmiResult{ 
     val returnValue: OmiReturn = Returns.Success(
-      interval.map{ dur => s"Successfully started subscription. Interval was set to $dur"})
+      interval.map{ dur => s"Successfully started subscription. Interval was set to $dur"}.orElse(Some("Successfully started subscription")))
     override val requestIDs = Vector(requestID)
   }
 }

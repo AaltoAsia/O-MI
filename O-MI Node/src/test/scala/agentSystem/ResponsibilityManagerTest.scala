@@ -95,7 +95,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
           path,
           OdfTreeCollection(
@@ -105,7 +104,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      None,
+      ttl
     )
     val promiseResult = PromiseResult()
     managerRef ! PromiseWrite(promiseResult, write)
@@ -124,7 +125,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
           Path("Objects/object1/sensor1"),
           OdfTreeCollection(
@@ -134,7 +134,8 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      ttl = ttl
     )
     val promiseResult = PromiseResult()
     managerRef ! PromiseWrite(promiseResult, write)
@@ -152,7 +153,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
         path,
           OdfTreeCollection(
@@ -162,7 +162,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      None,
+      ttl
     )
     val promiseResult = PromiseResult()
     managerRef ! PromiseWrite(promiseResult, write)
@@ -178,7 +180,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
           Path("Objects/object1/sensor1"),
           OdfTreeCollection(
@@ -188,7 +189,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      None,
+      ttl
     )
     val promiseResult = PromiseResult()
     managerRef ! PromiseWrite(promiseResult, write)

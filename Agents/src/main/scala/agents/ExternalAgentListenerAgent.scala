@@ -95,7 +95,7 @@ class ExternalAgentListener(override val config: Config)
 
       // Code for ip address authorization check
       val user = Some(remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
+      val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isDefined ){
         log.info(s"Agent connected from $remote to $local")
@@ -170,7 +170,7 @@ class ExternalAgentHandler(
           case Left(errors) =>
             log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
           case Right(odf) =>
-            val write = WriteRequest( Duration(5,SECONDS), odf)
+            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
             val promiseResult = PromiseResult()
             agentSystem ! PromiseWrite( promiseResult, write) 
             log.info(s"External agent sent data from $sender to AgentSystem")

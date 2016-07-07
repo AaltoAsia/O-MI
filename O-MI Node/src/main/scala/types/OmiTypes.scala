@@ -53,7 +53,7 @@ sealed trait OmiRequest {
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
   def ttlAsSeconds : Long = ttl match{
     case finite : FiniteDuration => finite.toSeconds
-    case infinite : Duration.Infinite => 0
+    case infinite : Duration.Infinite => -1
   }
 }
 
@@ -164,13 +164,13 @@ trait SubLike {
  * One-time-read request
  **/
 case class ReadRequest(
-  ttl: Duration,
   odf: OdfObjects ,
   begin: Option[Timestamp ] = None,
   end: Option[Timestamp ] = None,
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
-  callback: Option[Callback] = None
+  callback: Option[Callback] = None,
+  ttl: Duration = 10.seconds
 ) extends OmiRequest with OdfRequest{
   
   implicit def asReadRequest : xmlTypes.ReadRequest = {
@@ -207,9 +207,9 @@ case class ReadRequest(
  * Poll request
  **/
 case class PollRequest(
-  ttl: Duration,
   callback: Option[Callback] = None,
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
+  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  ttl: Duration = 10.seconds
 ) extends OmiRequest{
   
   implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
@@ -231,12 +231,12 @@ case class PollRequest(
  * Subscription request for starting subscription
  **/
 case class SubscriptionRequest(
-  ttl: Duration,
   interval: Duration,
   odf: OdfObjects,
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
-  callback: Option[Callback] = None
+  callback: Option[Callback] = None,
+  ttl: Duration = 10.seconds
 ) extends OmiRequest with SubLike with OdfRequest{
   
   implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
@@ -256,9 +256,9 @@ case class SubscriptionRequest(
  * Write request
  **/
 case class WriteRequest(
-  ttl: Duration,
   odf: OdfObjects,
-  callback: Option[Callback] = None
+  callback: Option[Callback] = None,
+  ttl: Duration = 10.seconds
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   implicit def asWriteRequest : xmlTypes.WriteRequest = xmlTypes.WriteRequest(
     None,
@@ -273,8 +273,8 @@ case class WriteRequest(
  * Cancel request, for cancelling subscription.
  **/
 case class CancelRequest(
-  ttl: Duration,
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty
+  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  ttl: Duration = 10.seconds
 ) extends OmiRequest {
   implicit def asCancelRequest : xmlTypes.CancelRequest = xmlTypes.CancelRequest(
     None,
@@ -303,5 +303,5 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttlAsSeconds)
 } 
 object ResponseRequest{
-  def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = Duration.Inf) : ResponseRequest = ResponseRequestBase( results, ttl)
+  def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = 10.seconds) : ResponseRequest = ResponseRequestBase( results, ttl)
 }
