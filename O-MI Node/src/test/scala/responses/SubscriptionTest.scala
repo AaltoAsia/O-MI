@@ -278,7 +278,7 @@ case class OdfValue(
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
 
-    Await.result(requestHandler.handleSubscription(SubscriptionRequest(ttl seconds, interval seconds, p)), Duration.Inf)
+    Await.result(requestHandler.handleSubscription(SubscriptionRequest( interval seconds, p, None, None, None, ttl seconds)), Duration.Inf)
   }
 //  case class PollRequest(
 //  ttl: Duration,
@@ -286,7 +286,7 @@ case class OdfValue(
 //  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 //) extends OmiRequest
   def pollSub(id: Long) = {
-    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Vector(id))), Duration.Inf)
+    Await.result(requestHandler.handlePoll(PollRequest( None, Vector(id))), Duration.Inf)
   }
   def cleanAndShutdown() = {
     Await.ready(system.terminate(), 2 seconds)
@@ -299,7 +299,7 @@ case class OdfValue(
     val pp = Path("Objects/SubscriptionTest/")
     val promiseResult = PromiseResult()
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
-    val writeReq = WriteRequest(0 seconds, odf)
+    val writeReq = WriteRequest( odf)
     agentManager ! PromiseWrite(promiseResult, writeReq)
     Await.ready(promiseResult.futures, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }

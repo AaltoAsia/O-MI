@@ -41,7 +41,7 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
   def handleSubscription(_subscription: SubscriptionRequest): Future[ResponseRequest] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest( _, interval, _, _, _, _) if interval < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+      case SubscriptionRequest( interval, _, _, _, _, _) if interval < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
         _subscription.copy(interval=Boot.settings.minSubscriptionInterval)
       case s : SubscriptionRequest=> s
     }

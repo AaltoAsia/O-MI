@@ -92,7 +92,7 @@ class ODFAgent( override val config: Config) extends InternalAgent {
       val allNodes = updated ++ objectsWithMetaData
       val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
       
-      val write = WriteRequest( interval, newObjects )
+      val write = WriteRequest( newObjects, None, interval)
       context.parent ! PromiseWrite( promiseResult, write ) 
       promiseResult.isSuccessful.onSuccess{
         //Check if failed promises

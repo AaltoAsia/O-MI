@@ -41,7 +41,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
         val odf = omiResult.odf.get
         val promiseResult = PromiseResult()
-        val write = WriteRequest( ttl, odf)
+        val write = WriteRequest( odf, None,ttl)
         agentSystem ! PromiseWrite(promiseResult, write)
         val successF = promiseResult.isSuccessful
         successF.recoverWith{

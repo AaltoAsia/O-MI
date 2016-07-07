@@ -290,7 +290,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
         val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None){
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
-        val succResult = optionObjects.map{odfObjects => Results.Success(Some(iSub.id), Some(odfObjects))}.toVector
+        val succResult = Vector(Results.Success(Some(iSub.id), optionObjects))
         val failedResults = if(failures.nonEmpty ) Vector(Results.NotFoundPaths(failures)) else Vector.empty
         val responseTTL = iSub.interval
         val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)

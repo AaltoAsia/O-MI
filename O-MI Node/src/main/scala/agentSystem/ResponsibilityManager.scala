@@ -111,7 +111,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
         (name,
         agents.get(name).map{
           agent : AgentInfo => 
-          val write = WriteRequest( ttl, objects) 
+          val write = WriteRequest( objects, None,ttl) 
           (agent, write) 
         })
       }

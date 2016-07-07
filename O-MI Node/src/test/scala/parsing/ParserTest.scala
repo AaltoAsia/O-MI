@@ -458,7 +458,7 @@ class ParserTest extends Specification {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))))
 
   }
 
@@ -517,7 +517,7 @@ class ParserTest extends Specification {
   </omi:read>
 </omi:omiEnvelope>
 """)
-    temp should be equalTo Right(Iterable(ReadRequest(10.0.seconds, OdfObjects())))
+    temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
 
   }
 
@@ -596,7 +596,7 @@ class ParserTest extends Specification {
     temp.isRight === true
     val temp2 = temp.right.get.head.asInstanceOf[CancelRequest]
     //Some type problem here with iterators
-    temp2 should be equalTo CancelRequest(10.0.seconds, Vector(123, 456))
+    temp2 should be equalTo CancelRequest(Vector(123, 456))
   }
 
   lazy val omiReadTest =
@@ -655,12 +655,10 @@ class ParserTest extends Specification {
 
   }
   lazy val readRequestTest = ReadRequest(
-    10 seconds,
     readOdf2,
     callback = Some("http://testing.test")
   )
   lazy val subscriptionRequestTest = SubscriptionRequest(
-    10 seconds,
     10 seconds,
     readOdf2,
     callback = Some("http://testing.test")
@@ -753,7 +751,6 @@ class ParserTest extends Specification {
 
   }
   lazy val writeRequestTest = WriteRequest(
-    10 seconds,
     writeOdf,
     Some("http://testing.test")
   )
@@ -761,8 +758,7 @@ class ParserTest extends Specification {
     Seq(OmiResult(
       OmiReturn("200"),
       odf = Some(writeOdf)
-      )),
-    10 seconds
+      ))
   )
 
   println( responseRequestTest.asXML.toString )
