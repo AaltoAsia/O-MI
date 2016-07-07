@@ -24,7 +24,7 @@ import scala.util.Try
 
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
-import http.CLICmds.ListSubsCmd
+import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
 import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -104,6 +104,7 @@ class SubscriptionManager extends Actor with ActorLogging {
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
+    case SubInfoCmd(id) => sender() ! getSub(id)
   }
 
 
@@ -344,6 +345,13 @@ class SubscriptionManager extends Actor with ActorLogging {
     val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
     val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
     (intervalSubs, eventSubs, pollSubs)
+  }
+  private def getSub( id: Long ) = {
+    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()
+    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
+    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
+    val allSubs = intervalSubs ++ eventSubs ++ pollSubs 
+    allSubs.find{ sub => sub.id == id}
   }
 
   /**
