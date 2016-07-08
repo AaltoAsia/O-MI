@@ -347,9 +347,9 @@ class SubscriptionManager extends Actor with ActorLogging {
     (intervalSubs, eventSubs, pollSubs)
   }
   private def getSub( id: Long ) = {
-    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()
-    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
-    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
+    val intervalSubs = SingleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = SingleStores.subStore execute GetAllEventSubs()
+    val pollSubs = SingleStores.subStore execute GetAllPollSubs()
     val allSubs = intervalSubs ++ eventSubs ++ pollSubs 
     allSubs.find{ sub => sub.id == id}
   }
