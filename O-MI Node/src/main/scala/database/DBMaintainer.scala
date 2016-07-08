@@ -59,9 +59,9 @@ class DBMaintainer(val dbobject: DBReadWrite)
 
     trySnapshot(SingleStores.latestStore, "latestStore")
     trySnapshot(SingleStores.hierarchyStore, "hierarchySrtore")
-    trySnapshot(SingleStores.eventPrevayler, "eventPrevayler")
-    trySnapshot(SingleStores.intervalPrevayler, "intervalPrevayler")
-    trySnapshot(SingleStores.pollPrevayler, "pollPrevayler")
+    trySnapshot(SingleStores.subStore, "subStore")
+    trySnapshot(SingleStores.subStore, "subStore")
+    trySnapshot(SingleStores.subStore, "subStore")
     trySnapshot(SingleStores.idPrevayler, "idPrevayler")
 
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)

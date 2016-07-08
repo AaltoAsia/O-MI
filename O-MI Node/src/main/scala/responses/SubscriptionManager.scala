@@ -76,9 +76,9 @@ class SubscriptionManager extends Actor with ActorLogging {
     log.debug("Scheduling removesubscriptions for the first time...")
     val currentTime = System.currentTimeMillis()
     //event subs
-    val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++
-      (SingleStores.intervalPrevayler execute GetAllIntervalSubs()) ++
-      (SingleStores.pollPrevayler execute GetAllPollSubs())
+    val allSubs = (SingleStores.subStore execute  GetAllEventSubs()) ++
+      (SingleStores.subStore execute GetAllIntervalSubs()) ++
+      (SingleStores.subStore execute GetAllPollSubs())
     allSubs.foreach{ sub =>
       if(sub.endTime.getTime() != Long.MaxValue ) {
         val nextRun = Duration(sub.endTime.getTime() - currentTime,MILLISECONDS)
@@ -124,7 +124,7 @@ class SubscriptionManager extends Actor with ActorLogging {
    */
   private def pollSubscription(id: Long) : Option[OdfObjects] = {
     val pollTime: Long = System.currentTimeMillis()
-    val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
+    val sub: Option[PolledSub] = SingleStores.subStore execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
         log.info(s"Polling subcription with id: ${pollSub.id}")
@@ -263,7 +263,7 @@ class SubscriptionManager extends Actor with ActorLogging {
     log.info("handling infoitems")
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
-    val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
+    val (iSubs, nextRunTimeOption) = SingleStores.subStore execute GetIntervals
 
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no intervals passed")
@@ -327,9 +327,9 @@ class SubscriptionManager extends Actor with ActorLogging {
    * @return Boolean indicating if the removing was successful
    */
   private def removeSubscription(id: Long): Boolean = {
-    lazy val removeIS = SingleStores.intervalPrevayler execute RemoveIntervalSub(id)
-    lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)
-    lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)
+    lazy val removeIS = SingleStores.subStore execute RemoveIntervalSub(id)
+    lazy val removePS = SingleStores.subStore execute RemovePollSub(id)
+    lazy val removeES = SingleStores.subStore execute RemoveEventSub(id)
     if (removePS) {
       SingleStores.pollDataPrevayler execute RemovePollSubData(id)
       removePS
@@ -340,9 +340,9 @@ class SubscriptionManager extends Actor with ActorLogging {
 
   private def getAllSubs() = {
     log.info("getting list of all subscriptions")
-    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()
-    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
-    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
+    val intervalSubs = SingleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = SingleStores.subStore execute GetAllEventSubs()
+    val pollSubs = SingleStores.subStore execute GetAllPollSubs()
     (intervalSubs, eventSubs, pollSubs)
   }
 
@@ -364,7 +364,7 @@ class SubscriptionManager extends Actor with ActorLogging {
             //normal event subscription
 
 
-            SingleStores.eventPrevayler execute AddEventSub(
+            SingleStores.subStore execute AddEventSub(
               EventSub(
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
@@ -378,7 +378,7 @@ class SubscriptionManager extends Actor with ActorLogging {
           case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported")//subscription for new node
           case dur: FiniteDuration if dur.gteq(minIntervalDuration)=> {
 
-            SingleStores.intervalPrevayler execute AddIntervalSub(
+            SingleStores.subStore execute AddIntervalSub(
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
@@ -404,7 +404,7 @@ class SubscriptionManager extends Actor with ActorLogging {
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
-              SingleStores.pollPrevayler execute AddPollSub(
+              SingleStores.subStore execute AddPollSub(
                 PollEventSub(
                   newId,
                   endTime,
@@ -419,7 +419,7 @@ class SubscriptionManager extends Actor with ActorLogging {
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
               //interval poll
-              SingleStores.pollPrevayler execute AddPollSub(
+              SingleStores.subStore execute AddPollSub(
                 PollIntervalSub(
                   newId,
                   endTime,

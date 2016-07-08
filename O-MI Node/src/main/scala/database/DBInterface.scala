@@ -97,9 +97,7 @@ object SingleStores {
 
   val latestStore       = createPrevayler(LatestValues.empty, "latestStore")
   val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
-  val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")
-  val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")
-  val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")
+  val subStore          = createPrevayler(Subs.empty,"subscriptionStore")
   val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
   val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
 

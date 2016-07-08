@@ -79,10 +79,18 @@ case class EventSub(
   ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
-case class EventSubs(var eventSubs: HashMap[Path, Vector[EventSub]])
-object EventSubs {
-  //type EventSubsStore = Prevayler[EventSubs]
-  def empty : EventSubs = EventSubs(HashMap.empty)
+
+case class Subs(
+               var eventSubs: HashMap[Path, Vector[EventSub]],
+               var idToSub: HashMap[Long, PolledSub], 
+               var pathToSubs: HashMap[Path, Set[Long]],
+               var intervalSubs: SortedSet[IntervalSub])
+object Subs {
+  def empty: Subs = Subs(
+    HashMap.empty,
+    HashMap.empty,
+    HashMap.empty,
+    SortedSet.empty(IntervalSubOrdering))
 }
 //case class PollSubValue(
 //                     timestamp: Timestamp,
@@ -175,20 +183,9 @@ case class RemovePollSubData(subId: Long) extends Transaction[PollSubData] {
   }
 }
 
-case class PolledSubs(var idToSub: HashMap[Long, PolledSub], var pathToSubs: HashMap[Path, Set[Long]])
 
-object PolledSubs {
-  def empty : PolledSubs = PolledSubs(HashMap.empty, HashMap.empty)
-}
-
-case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
-object IntervalSubs {
-  // type IntervalSubs = Prevayler[IntervalSubs]
-  def empty : IntervalSubs = IntervalSubs(SortedSet.empty(IntervalSubOrdering))
-}
-
-case class LookupEventSubs(path: Path) extends Query[EventSubs, Vector[EventSub]] {
-  def query(es: EventSubs, d: Date): Vector[EventSub] =
+case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
+  def query(es: Subs, d: Date): Vector[EventSub] =
     (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 
