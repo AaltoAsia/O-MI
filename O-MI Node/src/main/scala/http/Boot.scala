@@ -47,7 +47,6 @@ import types.Path
 trait Starter {
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core")
-
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */

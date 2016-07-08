@@ -35,7 +35,6 @@ sealed trait SavedSub {
   val id: Long
   val endTime: Date
   val paths: Vector[Path]
-  //va: Duration
 }
 sealed trait PolledSub extends SavedSub {
   val lastPolled: Timestamp
@@ -69,14 +68,14 @@ case class IntervalSub(
   interval: Duration,
   nextRunTime: Timestamp,
   startTime: Timestamp
-  ) extends SavedSub//, startTime: Duration) extends SavedSub
+  ) extends SavedSub
 
 case class EventSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
   callback: String
-  ) extends SavedSub//startTime: Duration) extends SavedSub
+  ) extends SavedSub
 
 /** from Path string to event subs for that path */
 
@@ -92,11 +91,6 @@ object Subs {
     HashMap.empty,
     SortedSet.empty(IntervalSubOrdering))
 }
-//case class PollSubValue(
-//                     timestamp: Timestamp,
-//                     value: String,
-//                     typeValue: String
-//                    )
 
 case class PollSubData(
   val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue]]])

@@ -193,8 +193,7 @@ object SingleStores {
  * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
-class DatabaseConnection extends DBReadWrite with DBBase with DB {
-  implicit val system = ActorSystem()
+class DatabaseConnection(implicit val system: ActorSystem) extends DBReadWrite with DBBase with DB {
 
   val db = Database.forConfig(dbConfigName)
   initialize()
