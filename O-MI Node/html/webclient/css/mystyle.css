@@ -52,8 +52,16 @@ html {
     color:#1E90FF; /* dodgerblue */
 }
 
-.responseTitle .btn {
+
+/* Response history modal */
+
+.responseTitle > .btn {
     margin-left: 2em;
+}
+
+.responseListCollection {
+    align-items: flex-start;
+    display: flex;
 }
 
 .responseList {
@@ -64,12 +72,20 @@ html {
     margin: 1em 0 1em 1em;
 }
 
+
+
+
+
+
+
+/* First prototype DELME */
 .mypanel {
     background-color: #e2e4e6;
     padding: 0.5em;
     border-radius: 4px;
 }
 
+/* First prototype DELME */
 .responseListElement {
     flex: 0 1;
     padding: 0.5em 0.5em 0.1em;
@@ -78,26 +94,23 @@ html {
     border-radius: 4px;
     overflow:hidden;
 }
+
+/* First prototype DELME */
 .responseListElement > div {
     display: inline-block;
     width: 100%;
 }
 
+/* First prototype DELME */
 .responseListElement code, .responseListElement b {
     display: inline-block;
     overflow:hidden;
 }
 
+/* First prototype DELME */
 .responseListElement code {
     width: 6em;
     float: right;
 }
 
-.responseListElement > b {
-}
-
-.responseListCollection {
-    align-items: flex-start;
-    display: flex;
-}
 

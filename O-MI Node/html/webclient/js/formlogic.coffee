@@ -64,7 +64,8 @@ formLogicExt = ($, WebOmi) ->
     mirror.autoFormatAll()
 
     # refresh as we "resize" so more text will become visible
-    WebOmi.consts.responseDiv.slideDown complete : -> mirror.refresh()
+    WebOmi.consts.responseDiv.slideDown complete : ->
+      mirror.refresh()
     mirror.refresh()
 
 
