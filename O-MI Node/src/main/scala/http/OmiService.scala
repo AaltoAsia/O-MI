@@ -17,7 +17,7 @@ package http
 import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.util.{Success, Failure, Try}
 import scala.xml.NodeSeq
 
@@ -165,7 +165,11 @@ trait OmiService
       }
     }
 
-  def handleRequest(hasPermissionTest: PermissionTest, requestString: String): Future[NodeSeq] = {
+  def handleRequest(
+    hasPermissionTest: PermissionTest,
+    requestString: String,
+    currentConnectionCallback: Option[Callback] = None
+  ): Future[NodeSeq] = {
     try {
       val eitherOmi = OmiParser.parse(requestString)
       eitherOmi match {
@@ -188,7 +192,12 @@ trait OmiService
                     )
                     case _ => //noop
                   }
-                  requestHandler.handleRequest(req)(system)
+                  val fixedReq =
+                    if (req.callback.map(_.uri).getOrElse("") == "0")
+                      req.withCallback(currentConnectionCallback)
+                    else req
+
+                  requestHandler.handleRequest(fixedReq)(system)
                 }
                 case None =>
                   Future.successful(Responses.Unauthorized())
@@ -305,8 +314,8 @@ trait WebSocketOMISupport {
 		val (outSource, futureQueue) =
 			peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
-    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] =
-      for {
+    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
+      val result = for {
         response <- futureResponse
         if (response.nonEmpty)
 
@@ -317,6 +326,18 @@ trait WebSocketOMISupport {
         queueResult <- queue offer resultMessage
       } yield {queueResult}
 
+      result onComplete {
+        case Success(QueueOfferResult.Enqueued) => // Ok
+        case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
+        case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
+      }
+      result
+    }
+
+      def createZeroCallback = Some(Callback{(response: OmiRequest) => 
+        queueSend(Future(response.asXML)) map {_ => ()}
+      })
+
     val inSink = Sink foreach[ws.Message] {
       case message: ws.TextMessage =>
         // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
@@ -324,13 +345,10 @@ trait WebSocketOMISupport {
 
         val requestString: String = ??? // FIXME: detect and extract whole O-MI messages from the stream
 
-        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString)
+        // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
+        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
 
-        queueSend(futureResponse) onComplete {
-          case Success(QueueOfferResult.Enqueued) => // Ok
-          case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
-          case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
-        }
+        queueSend(futureResponse)
 
       case bm: ws.BinaryMessage => // we don't care about binary
     }

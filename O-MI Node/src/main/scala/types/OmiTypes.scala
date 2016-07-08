@@ -42,6 +42,8 @@ sealed trait OmiRequest {
 
   def callback: Option[Callback]
 
+  def withCallback: Option[Callback] => OmiRequest
+
   def hasCallback: Boolean = 
     callback.isDefined && callback.map(_.uri).getOrElse("").nonEmpty
 
@@ -84,6 +86,7 @@ sealed trait RequestIDRequest {
 class Callback(
   val uri: String,
 
+  // can val be volatile?
   @volatile
   var sendHandler: ExecutionContext => OmiRequest => Future[Unit]
 
@@ -122,9 +125,12 @@ object Callback {
   }
 
   implicit class FromStringUri(uri: String) extends CallbackApplyMagnet with Serializable {
-    def apply() = new Callback(uri, {implicit ec: ExecutionContext =>
-      CallbackHandlers.sendCallback(uri, _: OmiRequest) 
-    })
+    def apply() =
+      if (uri == "0") Callback()
+      else
+        new Callback(uri, {implicit ec: ExecutionContext =>
+          CallbackHandlers.sendCallback(uri, _: OmiRequest) 
+        })
   }
 
   // akka http uri?
@@ -172,6 +178,8 @@ case class ReadRequest(
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds
 ) extends OmiRequest with OdfRequest{
+
+  def withCallback = cb => this.copy(callback = cb)
   
   implicit def asReadRequest : xmlTypes.ReadRequest = {
     xmlTypes.ReadRequest(
@@ -211,6 +219,8 @@ case class PollRequest(
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   ttl: Duration = 10.seconds
 ) extends OmiRequest{
+
+  def withCallback = cb => this.copy(callback = cb)
   
   implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
     None,
@@ -239,6 +249,8 @@ case class SubscriptionRequest(
   ttl: Duration = 10.seconds
 ) extends OmiRequest with SubLike with OdfRequest{
   
+  def withCallback = cb => this.copy(callback = cb)
+
   implicit def asReadRequest : xmlTypes.ReadRequest = xmlTypes.ReadRequest(
     None,
     Nil,
@@ -260,6 +272,9 @@ case class WriteRequest(
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
+
+  def withCallback = cb => this.copy(callback = cb)
+
   implicit def asWriteRequest : xmlTypes.WriteRequest = xmlTypes.WriteRequest(
     None,
     Nil,
@@ -284,6 +299,8 @@ case class CancelRequest(
     }.toSeq
   )
   def callback : Option[Callback] = None
+  def withCallback = cb => this
+
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttlAsSeconds)
 }
 
@@ -294,14 +311,30 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
   val results: OdfTreeCollection[OmiResult]
   val ttl: Duration 
   val callback : Option[Callback] = None
-  def copy( results: OdfTreeCollection[OmiResult] = this.results, ttl: Duration = this.ttl) : ResponseRequest = ResponseRequest( results, ttl)
+
+  def copy(
+    results: OdfTreeCollection[OmiResult] = this.results,
+    ttl: Duration = this.ttl,
+    callback: Option[Callback] = this.callback
+  ) : ResponseRequest = ResponseRequest( results, ttl)
+
+  def withCallback = cb => this.copy(callback = cb)
+
   def odf : OdfObjects= results.foldLeft(OdfObjects()){
     _ union _.odf.getOrElse(OdfObjects())
   }
-  implicit def asResponseListType : xmlTypes.ResponseListType = xmlTypes.ResponseListType(results.map{ result => result.asRequestResultType}.toVector.toSeq: _*)
+
+  implicit def asResponseListType : xmlTypes.ResponseListType =
+    xmlTypes.ResponseListType(
+      results.map{ result =>
+        result.asRequestResultType
+      }.toVector.toSeq: _*)
    
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asResponseListType, ttlAsSeconds)
 } 
 object ResponseRequest{
-  def apply( results: OdfTreeCollection[OmiResult], ttl: Duration = 10.seconds) : ResponseRequest = ResponseRequestBase( results, ttl)
+  def apply(
+    results: OdfTreeCollection[OmiResult],
+    ttl: Duration = 10.seconds
+  ) : ResponseRequest = ResponseRequestBase( results, ttl)
 }
