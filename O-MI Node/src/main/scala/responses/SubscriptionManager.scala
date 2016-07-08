@@ -55,7 +55,7 @@ case class RemoveSubscription(id: Long)
 case class PollSubscription(id: Long)
 
 object SubscriptionManager{
-  def props()(implicit dbConnection: DB): Props = Props(new SubscriptionManager())
+  def props(): Props = Props(new SubscriptionManager())
 }
 
 

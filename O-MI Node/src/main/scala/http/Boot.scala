@@ -52,8 +52,7 @@ trait Starter {
    */
   val settings = Settings(system)
 
-  val subHandlerDbConn: DB = new DatabaseConnection
-  val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
+  val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   
 
   import scala.concurrent.ExecutionContext.Implicits.global
