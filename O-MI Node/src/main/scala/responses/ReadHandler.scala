@@ -34,49 +34,72 @@ trait ReadHandler extends OmiRequestHandlerBase {
     * @param read request
     * @return (xml response, HTTP status code)
     */
-  def handleRead(read: ReadRequest): Future[NodeSeq] = {
-    log.debug("Handling read.")
+   def handleRead(read: ReadRequest): Future[NodeSeq] = {
+     log.debug("Handling read.")
+     read match{
+       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_) =>
+         Future.successful(
+           xmlFromResults(
+             1.0,
+             Results.simple(
+               "400",
+               Some("Both newest and oldest at the same time not supported!")
+             )
+           )
+         )
+         /*
+       case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
+         Future.successful(
+           xmlFromResults(
+             1.0,
+             Results.simple(
+               "400",
+               Some("Oldest not supported with Warp10 integration!")
+             )
+           )
+         )*/
+       case default: ReadRequest =>
+         val leafs = getLeafs(read.odf)
+         // NOTE: Might go off sync with tree or values if the request is large,
+         // but it shouldn't be a big problem
+         val metadataTree = SingleStores.hierarchyStore execute GetTree()
 
-    val leafs = getLeafs(read.odf)
-    // NOTE: Might go off sync with tree or values if the request is large,
-    // but it shouldn't be a big problem
-    val metadataTree = SingleStores.hierarchyStore execute GetTree()
+         //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
+         def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
+           case oii@OdfInfoItem(_, _, desc, mData)
+           if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
+             case obj@OdfObject(pat, _, _, _, des, tv)
+             if des.isDefined || tv.isDefined => createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
+         }.reduceOption(_.union(_))
 
-    //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
-    def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
-      case oii@OdfInfoItem(_, _, desc, mData)
-        if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
-      case obj@OdfObject(pat, _, _, _, des, tv)
-        if des.isDefined || tv.isDefined => createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
-    }.reduceOption(_.union(_))
+         def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
 
-    def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
+         val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-    val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
+         objectsO.map {
+           case Some(objects) =>
+             val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
+             val found = Results.read(metaCombined)
+             val requestsPaths = leafs.map {
+               _.path
+             }
+             val foundOdfAsPaths = getLeafs(metaCombined).flatMap {
+               _.path.getParentsAndSelf
+             }.toSet
+             val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
+             val results = Seq(found) ++ {
+               if (notFound.nonEmpty)
+                 Seq(Results.simple("404", Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
+               else Seq.empty
+             }
 
-    objectsO.map {
-      case Some(objects) =>
-        val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
-        val found = Results.read(metaCombined)
-        val requestsPaths = leafs.map {
-          _.path
-        }
-        val foundOdfAsPaths = getLeafs(metaCombined).flatMap {
-          _.path.getParentsAndSelf
-        }.toSet
-        val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-        val results = Seq(found) ++ {
-          if (notFound.nonEmpty)
-            Seq(Results.simple("404", Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
-          else Seq.empty
-        }
-
-        xmlFromResults(
-          1.0,
-          results: _*)
-      case None =>
-        xmlFromResults(
-          1.0, Results.notFound)
-    }
-  }
+             xmlFromResults(
+               1.0,
+               results: _*)
+             case None =>
+               xmlFromResults(
+                 1.0, Results.notFound)
+         }
+     }
+   }
 }
