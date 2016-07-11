@@ -146,6 +146,8 @@ case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[Pol
 
     removed match {
       case Some(old) => {
+        //add the empty sub as placeholder
+        p.idToData += (subId -> mutable.HashMap.empty)
         old.foreach {
           case (path, oldValues) if oldValues.nonEmpty => {
             val newest = oldValues.maxBy(_.timestamp.getTime)
