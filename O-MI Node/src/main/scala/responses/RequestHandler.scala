@@ -136,7 +136,8 @@ class RequestHandler(
     case write   : WriteRequest        => handleWrite(write)
     case cancel  : CancelRequest       => handleCancel(cancel)
     case poll    : PollRequest         => handlePoll(poll)
-    case response: ResponseRequest     => handleResponse(response)
+    case response: ResponseRequest     if response.results.exists{ result => result.odf.nonEmpty } => handleResponse(response)
+    case response: ResponseRequest     => Future.successful(Responses.Success())
   }
 
 }

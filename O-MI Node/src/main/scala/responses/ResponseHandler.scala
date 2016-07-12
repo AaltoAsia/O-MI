@@ -37,7 +37,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
     */
   def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
     val ttl = handleTTL(response.ttl)
-    val resultFuture = Future.sequence(response.results.map{ 
+    val resultFuture = Future.sequence(response.results.collect{ 
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
         val odf = omiResult.odf.get
         val promiseResult = PromiseResult()
@@ -54,9 +54,11 @@ trait ResponseHandler extends OmiRequestHandlerBase{
             succ => Results.Success()
           }
           response
+          //We do not want response request loops between O-MI Nodes
+          /*
         case omiResult : OmiResult if omiResult.odf.isEmpty =>
           Future.successful(Results.Success())
-        
+        */
       }.toSeq
     )
 
