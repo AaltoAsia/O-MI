@@ -201,7 +201,8 @@ trait  DBPusher  extends BaseAgentSystem{
     }
 
     val metas = infoItems filter { _.hasMetadata }
-    // check syntax
+
+/*    // check syntax
     metas foreach {metaInfo =>
 
       checkMetaData(metaInfo.metaData) match {
@@ -212,7 +213,7 @@ trait  DBPusher  extends BaseAgentSystem{
          throw exp;
       }
     }
-
+*/
     val iiDescriptions = infoItems filter { _.hasDescription }
 
     val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetadatas

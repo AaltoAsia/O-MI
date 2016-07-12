@@ -32,17 +32,40 @@ class  OdfInfoItemImpl(
   path:                 Path,
   values:               OdfTreeCollection[OdfValue] = OdfTreeCollection(),
   description:          Option[OdfDescription] = None,
-  metaData:             Option[OdfMetaData] = None
+  metaData:             Option[MetaData] = None
 ) extends Serializable {
 
+  def combineMetaData(another: Option[MetaData], first: Option[MetaData]): Option[MetaData] = {
+    (another, first) match {
+        case (Some(amData), Some(bmData)) => {
+          val mInfoItems = (amData.InfoItem ++ bmData.InfoItem).groupBy(_.name).map{
+            case (path, infos) => InfoItemType(
+              infos.collectFirst{
+                case InfoItemType(ids @ id::b, _,_,_,_,_) => ids
+              }.getOrElse(Nil), // TODO: better merging of QLMIDS currently find first with Id and use that.
+              infos.collectFirst{
+                case InfoItemType(_, Some(des), _, _, _, _) => des}, // Find first metadata with description and use that
+              infos.foldLeft[Option[MetaData]](None)( (col, next ) => combineMetaData(col, next.MetaData)), //recursively merge metadatas
+              infos.flatMap(_.value).distinct, // combine values by flatmapping and remove duplicates
+              path,
+              //merge attributes by preferring the attributes of another over first
+              infos.map(_.attributes).foldRight[Map[String, DataRecord[Any]]](Map.empty)((col, next) => col ++ next)
+            )
+          }
+          Some(MetaData(mInfoItems: _*))
+        }
+        case (a, b) => a orElse b
+      }
+  }
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfInfoItem) : OdfInfoItem ={
     require(path == another.path, "Should have same paths")
     OdfInfoItem(
       path,
-      (values ++ another.values).toSeq,
+      (values ++ another.values),
       another.description orElse description,
-      another.metaData orElse metaData
+      combineMetaData(another.metaData, this.metaData)
+      //another.metaData orElse metaData
     )
   }
 
@@ -53,18 +76,15 @@ class  OdfInfoItemImpl(
   /**
    * Non empty metadata
    */
-  def hasMetadata: Boolean = metaData match {
-    case Some(meta) => meta.data.trim.nonEmpty
-    case _ => false
-  }
-  
+  def hasMetadata: Boolean = metaData.isDefined
+
   def hasDescription: Boolean = description.nonEmpty
 
   /** Method to convert to scalaxb generated class. */
   implicit def asInfoItemType: InfoItemType = {
     InfoItemType(
       description = description.map( des => des.asDescription ),
-      MetaData = metaData.map{ odfMetaData => odfMetaData.asMetaData},
+      MetaData = metaData,
       name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")),
       value = values.map{ 
         value : OdfValue =>

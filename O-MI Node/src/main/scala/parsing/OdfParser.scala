@@ -147,10 +147,11 @@ object OdfParser extends Parser[OdfParseResult] {
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
       },
-      item.MetaData.map{ meta =>
+      item.MetaData
+        //.map{ meta =>
         // tests that conversion works before it is in the db and fails when in read request
-        OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
-      }
+        //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
+      //}
     ) 
   }
 
