@@ -72,18 +72,22 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
  * Contains all stores that requires only one instance for interfacing
  */
 object SingleStores {
-  val journalFileSizeLimit = 100 * 1000000 // TODO: Config variable?
+  val journalFileSizeLimit = settings.maxJournalSizeBytes
   private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
       val factory = new PrevaylerFactory[P]()
 
+      val directory = new File(settings.journalsDirectory++s"/$name")
+      prevaylerDirectories += directory
+
+      // Configure factory settings
       // Change size thereshold so we can remove the old journal files as we take snapshots.
       // Otherwise it will continue to fill disk space
       factory.configureJournalFileSizeThreshold(journalFileSizeLimit) // about 100M
-
-      val directory = new File(settings.journalsDirectory++s"/$name")
-      prevaylerDirectories += directory
-      PrevaylerFactory.createPrevayler[P](in, directory.getAbsolutePath)
+      factory.configurePrevalenceDirectory(directory.getAbsolutePath)
+      factory.configurePrevalentSystem(in)
+      // Create factory
+      factory.create()
     } else {
       PrevaylerFactory.createTransientPrevayler[P](in)
     }
@@ -93,9 +97,7 @@ object SingleStores {
 
   val latestStore       = createPrevayler(LatestValues.empty, "latestStore")
   val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
-  val eventPrevayler    = createPrevayler(EventSubs.empty, "eventPrevayler")
-  val intervalPrevayler = createPrevayler(IntervalSubs.empty, "intervalpPrevayler")
-  val pollPrevayler     = createPrevayler(PolledSubs.empty, "pollPrevayler")
+  val subStore          = createPrevayler(Subs.empty,"subscriptionStore")
   val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
   val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
 
@@ -191,8 +193,7 @@ object SingleStores {
  * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
-class DatabaseConnection extends DBReadWrite with DBBase with DB {
-  implicit val system = ActorSystem()
+class DatabaseConnection(implicit val system: ActorSystem) extends DBReadWrite with DBBase with DB {
 
   val db = Database.forConfig(dbConfigName)
   initialize()

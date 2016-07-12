@@ -27,7 +27,7 @@ import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub}
+import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub}
 import responses.{RemoveSubscription, RemoveHandler}
 import types.Path
 
@@ -40,6 +40,7 @@ object CLICmds
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
   case class ListSubsCmd()
+  case class SubInfoCmd(id: Long)
   case class RemovePath(path: String)
 }
 
@@ -67,6 +68,7 @@ start <agent classname>
 stop  <agent classname> 
 list agents 
 list subs 
+showSub <id>
 remove <subsription id>
 remove <path>
 """
@@ -148,6 +150,43 @@ remove <path>
       }
     Await.result(result, commandTimeout)
   }
+  private def subInfo(id: Long): String = {
+    log.info(s"Got sub info command from $ip")
+    val result = (subscriptionHandler ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
+      .map{
+        case Some(intervalSub: IntervalSub) =>
+          s"Started: ${intervalSub.startTime}\n" +
+          s"Ends: ${intervalSub.endTime}\n" +
+          s"Interval: ${intervalSub.interval}\n" +
+          s"Run next: ${intervalSub.nextRunTime}\n" +
+          s"Callback: ${intervalSub.callback}\n" +
+          s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
+        case Some(eventSub: EventSub) =>
+          s"Ends: ${eventSub.endTime}\n" +
+          s"Callback: ${eventSub.callback}\n" +
+          s"Paths:\n${eventSub.paths.mkString("\n")}\n"
+        case Some(pollSub: PollIntervalSub) =>
+          s"Started: ${pollSub.startTime}\n" +
+          s"Ends: ${pollSub.endTime}\n" +
+          s"Interval: ${pollSub.interval}\n" +
+          s"Last polled: ${pollSub.lastPolled}\n" +
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+        case Some(pollSub: PollEventSub) =>
+          s"Started: ${pollSub.startTime}\n" +
+          s"Ends: ${pollSub.endTime}\n" +
+          s"Last polled: ${pollSub.lastPolled}\n" +
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+        case None => 
+          log.info(s"Subscription with id $id not found.\n Sending ...")
+          s"Subscription with id $id not found.\n"
+      }
+      .recover{
+        case a: Throwable  =>
+          log.info(s"Failed to get subscription with $id.\n Sending ...")
+          s"Failed to get subscription with $id.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
   
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
@@ -222,6 +261,7 @@ remove <path>
       val args = dataString.split("( |\n)").toVector
       args match {
         case Vector("help") => send(sender)(help())
+        case Vector("showSub", id) => send(sender)(subInfo(id.toLong))
         case Vector("list", "agents") => send(sender)(listAgents())
         case Vector("list", "subs") => send(sender)(listSubs())
         case Vector("start", agent) => send(sender)(startAgent(agent))

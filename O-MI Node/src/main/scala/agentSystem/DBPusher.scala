@@ -90,7 +90,7 @@ trait  DBPusher  extends BaseAgentSystem{
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events flatMap {
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
 
-        val esubs = SingleStores.eventPrevayler execute LookupEventSubs(infoItem.path)
+        val esubs = SingleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
     }
     // Aggregate events under same subscriptions (for optimized callbacks)
@@ -140,7 +140,7 @@ trait  DBPusher  extends BaseAgentSystem{
    * @return returns Sequence of SubValues to be added to database
    */
   private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
-    val relatedPollSubs = SingleStores.pollPrevayler execute GetSubsForPath(path)
+    val relatedPollSubs = SingleStores.subStore execute GetSubsForPath(path)
 
     relatedPollSubs.collect {
       //if no old value found for path or start time of subscription is after last value timestamp

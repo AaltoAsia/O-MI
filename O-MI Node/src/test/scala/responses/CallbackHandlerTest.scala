@@ -31,12 +31,9 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val msg  = <msg>success2</msg>
       CallbackHandlers.sendCallback(s"http://localhost:$port", msg, Duration(10, "seconds"))
 
-      val testProbeFuture = Future{
-        Thread.sleep(1000)
-        initCallbackServer(port)
-      }
+      Thread.sleep(1000)
+      val probe = initCallbackServer(port)
 
-      val probe = Await.result(testProbeFuture, 5 seconds)
       probe.expectMsg(10 seconds, Option(msg))
 
     }
