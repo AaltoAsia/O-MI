@@ -186,4 +186,17 @@ case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
     (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 
+case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
+  def executeAndQuery(store: Subs, d: Date): Unit= {
+    store.intervalSubs = store.intervalSubs.filter{ 
+      case sub: IntervalSub => sub.callback.uri.toString != "0"
+    }
+  store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{ 
+    subs => 
+      subs.filter{ 
+        case sub: EventSub => sub.callback.uri.toString != "0"
+      }
+  }.toSeq:_*)
+  }
+}
 // Other transactions are in responses/SubscriptionHandler.scala
