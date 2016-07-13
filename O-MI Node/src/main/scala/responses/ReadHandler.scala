@@ -17,6 +17,9 @@ package responses
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import database.{GetTree, SingleStores}
+
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
@@ -25,33 +28,69 @@ import scala.xml.NodeSeq
 import types.OdfTypes._
 import types.OmiTypes._
 
-trait ReadHandler extends OmiRequestHandlerBase{
+trait ReadHandler extends OmiRequestHandlerBase {
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
     */
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
-    log.debug("Handling read.")
+     log.debug("Handling read.")
+     read match{
+       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_) =>
+         Future.successful(
+           ResponseRequest( Vector(
+             Results.InvalidRequest(
+               "Both newest and oldest at the same time not supported!"
+             )
+           ))
+       )
+         
+         /*
+       case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
+         Future.successful(
+           xmlFromResults(
+             1.0,
+             Results.simple(
+               "400",
+               Some("Oldest not supported with Warp10 integration!")
+             )
+           )
+         )*/
+       case default: ReadRequest =>
+         val leafs = getLeafs(read.odf)
+         // NOTE: Might go off sync with tree or values if the request is large,
+         // but it shouldn't be a big problem
+         val metadataTree = SingleStores.hierarchyStore execute GetTree()
 
-    val leafs = getLeafs(read.odf)
-    val other = getOdfNodes(read.odf) collect {case o: OdfObject if o.hasDescription => o.copy(objects = OdfTreeCollection())}
-    val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
+         //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
+         def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
+           case oii@OdfInfoItem(_, _, desc, mData)
+           if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
+             case obj@OdfObject(pat, _, _, _, des, tv)
+             if des.isDefined || tv.isDefined => createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
+         }.reduceOption(_.union(_))
 
-    objectsO.map{
-      case Some(objects) =>
-        val found = Results.Read(objects)
-        val requestsPaths = leafs.map { _.path }
-        val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
-        val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-        val omiResults = Vector(found) ++ {
-          if (notFound.nonEmpty)
-            Vector(Results.NotFoundPaths(notFound.toVector))
-          else Vector.empty
-        }
+         def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
 
-          ResponseRequest( omiResults )
-      case None =>
-          ResponseRequest( Vector(Results.NotFoundPaths(leafs.map{ p => p.path}.toVector)))
-    }
-  }
+         val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
+
+         objectsO.map {
+           case Some(objects) =>
+             val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
+             val found = Results.Read(metaCombined)
+             val requestsPaths = leafs.map { _.path }
+             val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
+             val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
+             val omiResults = Vector(found) ++ {
+               if (notFound.nonEmpty)
+                 Vector(Results.NotFoundPaths(notFound.toVector))
+               else Vector.empty
+             }
+
+             ResponseRequest( omiResults )
+           case None =>
+             ResponseRequest( Vector(Results.NotFoundPaths(leafs.map{ p => p.path}.toVector)))
+         }
+     }
+   }
 }

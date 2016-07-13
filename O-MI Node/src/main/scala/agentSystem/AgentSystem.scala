@@ -23,17 +23,16 @@ import akka.util.Timeout
 import com.typesafe.config.Config
 import database.DB
 import http.CLICmds._
-import http._
 import types.OmiTypes.WriteRequest
 import types.Path
 
 object AgentSystem {
-  def props(dbobject: DB,subHandler: ActorRef): Props = Props(
+  def props(dbobject: DB ,subHandler: ActorRef): Props = Props(
   {val as = new AgentSystem(dbobject,subHandler)
   as.start()
   as})
 }
-class AgentSystem(val dbobject: DB, val subHandler: ActorRef) 
+class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
   extends BaseAgentSystem 
   with InternalAgentLoader
   with InternalAgentManager

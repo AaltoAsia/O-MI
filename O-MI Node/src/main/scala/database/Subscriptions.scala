@@ -18,9 +18,11 @@ import java.sql.Timestamp
 import java.util.Date
 
 import scala.collection.immutable.{HashMap, SortedSet}
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 
 import org.prevayler._
+import types.OdfTypes.OdfValue
 import types._
 import types.OmiTypes.Callback
 
@@ -34,7 +36,6 @@ sealed trait SavedSub {
   val id: Long
   val endTime: Date
   val paths: Vector[Path]
-  //va: Duration
 }
 sealed trait PolledSub extends SavedSub {
   val lastPolled: Timestamp
@@ -68,7 +69,7 @@ case class IntervalSub(
   interval: Duration,
   nextRunTime: Timestamp,
   startTime: Timestamp
-  ) extends SavedSub//, startTime: Duration) extends SavedSub
+  ) extends SavedSub
 
 case class EventSub(
   id: Long,
@@ -78,26 +79,110 @@ case class EventSub(
   ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
-case class EventSubs(var eventSubs: HashMap[Path, Vector[EventSub]])
-object EventSubs {
-  //type EventSubsStore = Prevayler[EventSubs]
-  def empty : EventSubs = EventSubs(HashMap.empty)
+
+case class Subs(
+               var eventSubs: HashMap[Path, Vector[EventSub]],
+               var idToSub: HashMap[Long, PolledSub], 
+               var pathToSubs: HashMap[Path, Set[Long]],
+               var intervalSubs: SortedSet[IntervalSub])
+object Subs {
+  def empty: Subs = Subs(
+    HashMap.empty,
+    HashMap.empty,
+    HashMap.empty,
+    SortedSet.empty(IntervalSubOrdering))
 }
 
-case class PolledSubs(var idToSub: HashMap[Long, PolledSub], var pathToSubs: HashMap[Path, Set[Long]])
+case class PollSubData(
+  val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue]]])
 
-object PolledSubs {
-  def empty : PolledSubs = PolledSubs(HashMap.empty, HashMap.empty)
+object PollSubData {
+  def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
 }
 
-case class IntervalSubs(var intervalSubs: SortedSet[IntervalSub])
-object IntervalSubs {
-  // type IntervalSubs = Prevayler[IntervalSubs]
-  def empty : IntervalSubs = IntervalSubs(SortedSet.empty(IntervalSubOrdering))
+
+/**
+ * Transaction for adding data for polled subscriptions. Does not check if the sub actually exists
+ * @param subId
+ * @param path
+ * @param value
+ */
+case class AddPollData(subId: Long, path: Path, value: OdfValue) extends Transaction[PollSubData] {
+  def executeOn(p: PollSubData, date: Date): Unit = {
+    p.idToData.get(subId) match {
+      case Some(pathToValues) => pathToValues.get(path) match {
+        case Some(sd) =>
+          p.idToData(subId)(path) = value :: sd
+        case None =>
+          p.idToData(subId).update(path, List(value))
+      }
+      case None =>
+        p.idToData
+          .update(
+            subId,
+            collection.mutable.HashMap(path -> List(value)))
+    }
+  }
 }
 
-case class LookupEventSubs(path: Path) extends Query[EventSubs, Vector[EventSub]] {
-  def query(es: EventSubs, d: Date): Vector[EventSub] =
+/**
+ * Used to Poll event subscription data from the prevayler. Can also used to remove data from subscription
+ * @param subId
+ */
+case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[OdfValue]]] {
+  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[OdfValue]] = {
+    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[OdfValue]])
+  }
+}
+
+/**
+ * Used to poll an interval subscription with the given ID.
+ * Polling interval subscriptions leaves the newest value in the database
+ * so this can't be used to remove subscriptions.
+ * @param subId
+ */
+case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[OdfValue]]]{
+  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue]] = {
+    val removed = p.idToData.remove(subId)
+
+    removed match {
+      case Some(old) => {
+        //add the empty sub as placeholder
+        p.idToData += (subId -> mutable.HashMap.empty)
+        old.foreach {
+          case (path, oldValues) if oldValues.nonEmpty => {
+            val newest = oldValues.maxBy(_.timestamp.getTime)
+
+            //add latest value back to the database
+            p.idToData(subId).get(path) match {
+              case Some(oldV) => p.idToData(subId)(path) = newest :: oldV
+              case None => p.idToData(subId).update(path, newest :: Nil)
+            }
+          }
+          case _ =>
+        }
+        old
+      }
+
+      case None => mutable.HashMap.empty
+    }
+
+  }
+}
+
+/**
+ * Used to remove data from interval and event based poll subscriptions.
+ * @param subId ID of the sub to remove
+ */
+case class RemovePollSubData(subId: Long) extends Transaction[PollSubData] {
+  def executeOn(p: PollSubData, date: Date): Unit = {
+    p.idToData.remove(subId)
+  }
+}
+
+
+case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
+  def query(es: Subs, d: Date): Vector[EventSub] =
     (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 

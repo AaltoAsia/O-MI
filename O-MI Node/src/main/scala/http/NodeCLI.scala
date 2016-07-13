@@ -17,9 +17,9 @@ package http
 
 import java.net.InetSocketAddress
 
-import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 import agentSystem.{AgentInfo, AgentName}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -27,7 +27,7 @@ import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub}
+import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub}
 import responses.{RemoveSubscription, RemoveHandler}
 import types.Path
 
@@ -40,6 +40,7 @@ object CLICmds
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
   case class ListSubsCmd()
+  case class SubInfoCmd(id: Long)
   case class RemovePath(path: String)
 }
 
@@ -67,6 +68,7 @@ start <agent classname>
 stop  <agent classname> 
 list agents 
 list subs 
+showSub <id>
 remove <subsription id>
 remove <path>
 """
@@ -116,11 +118,11 @@ remove <path>
 
           val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +
             intervals.map{ sub=>
-              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback }"
+              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback.uri }"
             }.mkString("\n")
 
           val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
-              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback }"
+              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback.uri}"
             }.mkString("\n")
 
           val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" +
@@ -145,6 +147,43 @@ remove <path>
         case a: Throwable  =>
           log.info("Failed to get list of Subscriptions.\n Sending ...")
           "Failed to get list of subscriptions.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+  private def subInfo(id: Long): String = {
+    log.info(s"Got sub info command from $ip")
+    val result = (subscriptionHandler ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
+      .map{
+        case Some(intervalSub: IntervalSub) =>
+          s"Started: ${intervalSub.startTime}\n" +
+          s"Ends: ${intervalSub.endTime}\n" +
+          s"Interval: ${intervalSub.interval}\n" +
+          s"Run next: ${intervalSub.nextRunTime}\n" +
+          s"Callback: ${intervalSub.callback.uri}\n" +
+          s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
+        case Some(eventSub: EventSub) =>
+          s"Ends: ${eventSub.endTime}\n" +
+          s"Callback: ${eventSub.callback.uri}\n" +
+          s"Paths:\n${eventSub.paths.mkString("\n")}\n"
+        case Some(pollSub: PollIntervalSub) =>
+          s"Started: ${pollSub.startTime}\n" +
+          s"Ends: ${pollSub.endTime}\n" +
+          s"Interval: ${pollSub.interval}\n" +
+          s"Last polled: ${pollSub.lastPolled}\n" +
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+        case Some(pollSub: PollEventSub) =>
+          s"Started: ${pollSub.startTime}\n" +
+          s"Ends: ${pollSub.endTime}\n" +
+          s"Last polled: ${pollSub.lastPolled}\n" +
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+        case None => 
+          log.info(s"Subscription with id $id not found.\n Sending ...")
+          s"Subscription with id $id not found.\n"
+      }
+      .recover{
+        case a: Throwable  =>
+          log.info(s"Failed to get subscription with $id.\n Sending ...")
+          s"Failed to get subscription with $id.\n"
       }
     Await.result(result, commandTimeout)
   }
@@ -222,6 +261,7 @@ remove <path>
       val args = dataString.split("( |\n)").toVector
       args match {
         case Vector("help") => send(sender)(help())
+        case Vector("showSub", id) => send(sender)(subInfo(id.toLong))
         case Vector("list", "agents") => send(sender)(listAgents())
         case Vector("list", "subs") => send(sender)(listSubs())
         case Vector("start", agent) => send(sender)(startAgent(agent))

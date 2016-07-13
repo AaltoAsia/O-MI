@@ -39,7 +39,7 @@ class OmiServiceTest
   def actorRefFactory = system
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
   implicit val dbConnection = new TestDB("system-test")
-  val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()(dbConnection)))
+  val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()))
 
   val agentManager = system.actorOf(
       AgentSystem.props(dbConnection, subscriptionHandler),

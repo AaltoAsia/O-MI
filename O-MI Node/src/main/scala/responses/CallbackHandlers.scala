@@ -48,7 +48,7 @@ object CallbackHandlers {
     CallbackFailure(s"Callback address is forbidden.", callback)
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
-  implicit val system = ActorSystem()
+  implicit val system = http.Boot.system
   import system.dispatcher // execution context for futures
   val settings = http.Boot.settings
   val httpExt = Http(system)

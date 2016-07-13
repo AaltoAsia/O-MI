@@ -58,7 +58,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
           /*
         case omiResult : OmiResult if omiResult.odf.isEmpty =>
           Future.successful(Results.Success())
-        */
+          */
       }.toSeq
     )
 

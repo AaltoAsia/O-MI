@@ -31,12 +31,6 @@ import org.specs2.matcher.XmlMatchers._
  */
 
 class ParserTest extends Specification {
-  //  lazy val omi_subscription_test_file = Source.fromFile("src/test/resources/parsing/omi_subscription_test.xml").getLines.mkString("\n")
-  //  lazy val omi_read_test_file = Source.fromFile("src/test/resources/parsing/omi_read_test.xml").getLines.mkString("\n")
-  //  lazy val omi_write_test_file = Source.fromFile("src/test/resources/parsing/omi_write_test.xml").getLines.mkString("\n")
-  //  lazy val omi_response_test_file = Source.fromFile("src/test/resources/parsing/omi_response_test.xml").getLines.mkString("\n")
-  //  lazy val omi_cancel_test_file = Source.fromFile("src/test/resources/parsing/omi_cancel_test.xml").getLines.mkString("\n")
-  //  lazy val odf_test_file = Source.fromFile("src/test/resources/parsing/odf_test.xml").getLines.mkString("\n")
   val write_response_odf: OdfObjects = {
     /*Right(
       Iterable(
@@ -154,82 +148,6 @@ class ParserTest extends Specification {
           None)),
       None)
   }
-  /*
-    OdfObject(Path("Objects/SmartHouse"),
-      Iterable(
-        OdfObject(Path("Objects/SmartHouse/SmartFridge"),
-          Iterable(),
-          Iterable(
-            OdfInfoItem(Path("Objects/SmartHouse/SmartFridge/PowerConsumption"),
-              Iterable(
-                TimedValue(
-                  None,
-                  "56"
-                )
-              )
-            )
-          )
-        ),
-        OdfObject(Path("Objects/SmartHouse/SmartOven"),
-          Iterable(),
-          Iterable(
-            OdfInfoItem(Path("Objects/SmartHouse/SmartOven/PowerOn"),
-              Iterable(
-                TimedValue(
-                  Some(Timestamp.valueOf("2014-12-18 15:34:52")),
-                  "1"
-                )
-              )            )
-          )
-        )
-      ),
-      Iterable(    
-        OdfInfoItem(Path("Objects/SmartHouse/PowerConsumption"),
-          Iterable(
-            TimedValue(
-              Some(Timestamp.valueOf("2014-12-18 15:34:52")),
-              "180"
-            )
-          )
-        ),
-        OdfInfoItem(Path("Objects/SmartHouse/Moisture"),
-          Iterable(
-            TimedValue(
-              Some(new Timestamp(1418916892.toLong*1000)),
-              "0.20"
-            )
-          )
-      )
-      )
-    ),
-    OdfObject(Path("Objects/SmartCar"),
-      Iterable(),
-      Iterable(
-        OdfInfoItem(Path("Objects/SmartCar/Fuel"),
-          Iterable(
-            TimedValue(
-              Some(Timestamp.valueOf("2014-12-18 15:34:52")),
-              "30")
-            ),
-              Some(InfoItemMetaData(trim(
-	    <MetaData>
-		<InfoItem name="Units">
-		    <value type="xs:String">Litre</value>
-		</InfoItem>
-	    </MetaData>).toString
-              )
-          )
-        )
-      )
-    ),
-    OdfObject(Path("Objects/SmartCottage"),
-      Iterable(
-        OdfObject(Path("Objects/SmartCottage/Heater"), Iterable(), Iterable()),
-        OdfObject(Path("Objects/SmartCottage/Sauna"), Iterable(), Iterable()),
-        OdfObject(Path("Objects/SmartCottage/Weather"), Iterable(), Iterable())
-      ),
-      Iterable()
-    )*/
 
   def is = s2"""
   This is Specification to check the parsing functionality.
@@ -352,7 +270,6 @@ class ParserTest extends Specification {
       omiWriteTest.toString.replace("omi:msg", "omi:msn"),
       Set(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
     ) 
-    //    temp.head should be equalTo (ParseError("Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
   }
 
   def e104 = {
@@ -366,7 +283,6 @@ class ParserTest extends Specification {
       Set(ParseError("No Objects child found in msg."))
     )
 
-    //    temp.head should be equalTo (ParseError("No Objects child found in msg."))
 
   }
 
@@ -381,40 +297,11 @@ class ParserTest extends Specification {
 
   }
 
-//String matching is not good way to check also there is not any reason to test this
-//  def e106 = {
-//    validOmiTest(
-//      omiWriteTest.toString.replaceAll("callback=\"http://testing.test\"", "")
-//    ) 
-//  }
 
   def e200 = {
     validOmiTest(responseRequestTest)
-    //    OmiParser.parse(omiResponseTest) should be equalTo Right(Iterable(
-    //      ResponseRequest(Iterable(OmiResult("","200", None, seqAsJavaList(Seq.empty),Some(write_response_odf))))))
   }
 
-  /*
-  //Missing msgformat is allowed
-  def e201 = {
-    val temp = OmiParser.parse(omiResponseTest.replace("msgformat=\"odf\"", " "))
-    temp.head should be equalTo (ParseError("No msgformat parameter found in result."))
-
-  }
-  */
-
-  //  def e202 = {
-  //    val temp = OmiParser.parse(omiResponseTest.replace("""msgformat="odf"""", """msgformat="pdf""""))
-  //    temp.head should be equalTo (ParseError("Unknown message format."))
-  //
-  //  }
-
-  //  def e203 = {
-  //    OmiParser.parse(omiResponseTest.replace("omi:msg", "omi:msn")) match {
-  //      case ParseError("No message node found in response node.") :: _ => true
-  //      case _ => false
-  //    }
-  //  }
 
   def e204 = {
     val temp = OmiParser.parse(
@@ -458,7 +345,7 @@ class ParserTest extends Specification {
 """)
     temp.isRight === true
 
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))))
+    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
 
   }
 
@@ -477,12 +364,6 @@ class ParserTest extends Specification {
     temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
 
   }
-
-  //  def e302 = {
-  //    val temp = OmiParser.parse(omiReadTest.replace("""msgformat="odf"""", """msgformat="pdf""""))
-  //    temp.head should be equalTo (ParseError("Unknown message format."))
-  //
-  //  }
 
   def e303 = {
     val temp = OmiParser.parse(omiReadTest.replace("omi:msg", "omi:msn"))
@@ -556,32 +437,6 @@ class ParserTest extends Specification {
     temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
 
   }
-  // empty id seems to be ok
-  //  def e403 = {
-  //    val temp = OdfParser.parse("""
-  //    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
-  //        <Object>
-  //        <id></id>
-  //        </Object>
-  //    </Objects>
-  //""")
-  //    temp should be equalTo Left(Iterable(ParseError("OdfParser: id's value not found in Object.")))
-  //
-  //  }
-  // empty name for infoItem seems to be ok
-  //  def e404 = {
-  //    val temp = OdfParser.parse("""
-  //    <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
-  //        <Object>
-  //        <id>SmartHouse</id>
-  //        <InfoItem name="">
-  //        </InfoItem>
-  //        </Object>
-  //    </Objects>
-  //""")
-  //    temp should be equalTo Left(Iterable(ParseError("No name parameter found in InfoItem.")))
-  //
-  //  }
 
   def e500 = {
     val omiCancelTest =

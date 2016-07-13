@@ -24,8 +24,8 @@ import scala.util.Try
 
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
-import http.CLICmds.ListSubsCmd
 import responses.CallbackHandlers.CallbackFailure
+import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
@@ -55,18 +55,15 @@ case class RemoveSubscription(id: Long)
 case class PollSubscription(id: Long)
 
 object SubscriptionManager{
-  def props()(implicit dbConnection: DB): Props = Props(new SubscriptionManager())
+  def props(): Props = Props(new SubscriptionManager())
 }
 
 
 /**
  * Class that handles event and interval based subscriptions.
  * Uses Akka scheduler to schedule ttl handling and intervalhandling
- * @param dbConnection Database used for polled subscriptions
  */
-class SubscriptionManager(implicit val dbConnection: DB) extends Actor with ActorLogging {
-
-  import context.system
+class SubscriptionManager extends Actor with ActorLogging {
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler = context.system.scheduler
@@ -79,9 +76,9 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     log.debug("Scheduling removesubscriptions for the first time...")
     val currentTime = System.currentTimeMillis()
     //event subs
-    val allSubs = (SingleStores.eventPrevayler execute  GetAllEventSubs()) ++
-      (SingleStores.intervalPrevayler execute GetAllIntervalSubs()) ++
-      (SingleStores.pollPrevayler execute GetAllPollSubs())
+    val allSubs = (SingleStores.subStore execute  GetAllEventSubs()) ++
+      (SingleStores.subStore execute GetAllIntervalSubs()) ++
+      (SingleStores.subStore execute GetAllPollSubs())
     allSubs.foreach{ sub =>
       if(sub.endTime.getTime() != Long.MaxValue ) {
         val nextRun = Duration(sub.endTime.getTime() - currentTime,MILLISECONDS)
@@ -107,6 +104,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     case RemoveSubscription(id) => sender() ! removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
+    case SubInfoCmd(id) => sender() ! getSub(id)
   }
 
 
@@ -125,9 +123,9 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long) : Future[Option[OdfObjects]] = {
+  private def pollSubscription(id: Long) : Option[OdfObjects] = {
     val pollTime: Long = System.currentTimeMillis()
-    val sub: Option[PolledSub] = SingleStores.pollPrevayler execute PollSub(id)
+    val sub: Option[PolledSub] = SingleStores.subStore execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
         log.info(s"Polling subcription with id: ${pollSub.id}")
@@ -148,15 +146,16 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
 
             log.debug(s"Creating response message for Polled Event Subscription")
+            val eventData = (SingleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
+              .map{case (_path,_values) =>
+                OdfInfoItem(_path,_values.sortBy(_.timestamp.getTime()))}
 
-            val eventData = dbConnection.pollEventSubscription(id).map(_.toVector //get data from database
-              .groupBy(_.path) //group data by the paths
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)) //sort values by timestmap and convert them to OdfValue type
-              .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
+            //  .mapValues(_.sortBy(_.timestamp.getTime).map(subVal => OdfValue())) //sort values by timestamp and convert them to OdfValue type
+            //  .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
               .map(i => createAncestors(i)) //Map to OdfObjects
-              .fold(emptyTree)(_.union(_)))//.reduceOption(_.union(_)) //Combine OdfObjects
+              .fold(emptyTree)(_.union(_))
 
-            eventData.map(eData => Some(eData))
+            Some(eventData)//eventData.map(eData => Some(eData))
           }
 
           case pollInterval: PollIntervalSub => {
@@ -165,20 +164,23 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
             val interval: Duration = pollInterval.interval
 
-            val intervalData: Future[Map[Path, Vector[OdfValue]]] = dbConnection.pollIntervalSubscription(id).map(_.toVector
-              .groupBy(n => n.path)
-              .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)))
+            //val intervalData: Future[Map[Path, Vector[OdfValue]]] =
 
-            val combinedWithPaths = intervalData.map(iData => {
-              log.info(s"Data length for interval subscription is: ${iData.length}")
+            val intervalData= (SingleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
+              .mapValues(_.sortBy(_.timestamp.getTime()))
+            //dbConnection.pollIntervalSubscription(id).map(_.toVector
+            //  .groupBy(n => n.path)
+            //  .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)))
+
+            val combinedWithPaths =
               OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
               .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
               .map( n => n.path)
-              .map(p => p -> Vector[OdfValue]()).toMap ++ iData
-            })
+              .map(p => p -> Vector[OdfValue]()).toMap ++ intervalData
 
 
-            val pollData: Future[OdfObjects] = combinedWithPaths.map(_.map( pathValuesTuple =>{
+
+            val pollData: OdfObjects = combinedWithPaths.map( pathValuesTuple =>{
 
               val (path, values) = pathValuesTuple match {
                 case (p, v) if (v.nonEmpty) => {
@@ -243,14 +245,13 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
               }).flatMap{ n => //flatMap removes None values
               //create OdfObjects from InfoItems
               n.map{case ( path, values) => createAncestors(OdfInfoItem(path, values))}
-            }).map(
-            _.fold(emptyTree)(_.union(_)))
-            pollData.map(pData => Some(pData))
+            }.fold(emptyTree)(_.union(_))
+            Some(pollData)
           }
 
         }
       }
-      case _ => Future.successful(None)
+      case _ => None
     }
   }
 
@@ -263,7 +264,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
     log.info("handling infoitems")
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
-    val (iSubs, nextRunTimeOption) = SingleStores.intervalPrevayler execute GetIntervals
+    val (iSubs, nextRunTimeOption) = SingleStores.subStore execute GetIntervals
 
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no intervals passed")
@@ -324,11 +325,11 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
    * @return Boolean indicating if the removing was successful
    */
   private def removeSubscription(id: Long): Boolean = {
-    lazy val removeIS = SingleStores.intervalPrevayler execute RemoveIntervalSub(id)
-    lazy val removePS = SingleStores.pollPrevayler execute RemovePollSub(id)
-    lazy val removeES = SingleStores.eventPrevayler execute RemoveEventSub(id)
+    lazy val removeIS = SingleStores.subStore execute RemoveIntervalSub(id)
+    lazy val removePS = SingleStores.subStore execute RemovePollSub(id)
+    lazy val removeES = SingleStores.subStore execute RemoveEventSub(id)
     if (removePS) {
-      dbConnection.removePollSub(id)
+      SingleStores.pollDataPrevayler execute RemovePollSubData(id)
       removePS
     } else {
       removeIS || removeES
@@ -337,10 +338,17 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
 
   private def getAllSubs() = {
     log.info("getting list of all subscriptions")
-    val intervalSubs = SingleStores.intervalPrevayler execute GetAllIntervalSubs()
-    val eventSubs = SingleStores.eventPrevayler execute GetAllEventSubs()
-    val pollSubs = SingleStores.pollPrevayler execute GetAllPollSubs()
+    val intervalSubs = SingleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = SingleStores.subStore execute GetAllEventSubs()
+    val pollSubs = SingleStores.subStore execute GetAllPollSubs()
     (intervalSubs, eventSubs, pollSubs)
+  }
+  private def getSub( id: Long ) = {
+    val intervalSubs = SingleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = SingleStores.subStore execute GetAllEventSubs()
+    val pollSubs = SingleStores.subStore execute GetAllPollSubs()
+    val allSubs = intervalSubs ++ eventSubs ++ pollSubs 
+    allSubs.find{ sub => sub.id == id}
   }
 
   /**
@@ -361,7 +369,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             //normal event subscription
 
 
-            SingleStores.eventPrevayler execute AddEventSub(
+            SingleStores.subStore execute AddEventSub(
               EventSub(
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
@@ -375,7 +383,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
           case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported")//subscription for new node
           case dur: FiniteDuration if dur.gteq(minIntervalDuration)=> {
 
-            SingleStores.intervalPrevayler execute AddIntervalSub(
+            SingleStores.subStore execute AddIntervalSub(
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
@@ -401,7 +409,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
-              SingleStores.pollPrevayler execute AddPollSub(
+              SingleStores.subStore execute AddPollSub(
                 PollEventSub(
                   newId,
                   endTime,
@@ -416,7 +424,7 @@ class SubscriptionManager(implicit val dbConnection: DB) extends Actor with Acto
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
               //interval poll
-              SingleStores.pollPrevayler execute AddPollSub(
+              SingleStores.subStore execute AddPollSub(
                 PollIntervalSub(
                   newId,
                   endTime,

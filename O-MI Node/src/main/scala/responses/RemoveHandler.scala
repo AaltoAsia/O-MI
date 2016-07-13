@@ -25,6 +25,7 @@ import types.OdfTypes._
 import types._
 
 trait RemoveHandler extends OmiRequestHandlerBase{
+
   def handlePathRemove(parentPath: Path): Boolean = {
     val objects = SingleStores.hierarchyStore execute GetTree()
     val node = objects.get(parentPath)
@@ -40,10 +41,7 @@ trait RemoveHandler extends OmiRequestHandlerBase{
           SingleStores.latestStore execute EraseSensorData(path)
         }
 
-        val dbRemoveFuture: Future[Int] = _node match {
-          case objs: OdfObjects => dbConnection.removeRoot(parentPath)
-          case _ => dbConnection.remove(parentPath)
-        }
+        val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath)
 
         dbRemoveFuture.onComplete{
           case Success(res) => log.info(s"Database successfully deleted $res nodes")

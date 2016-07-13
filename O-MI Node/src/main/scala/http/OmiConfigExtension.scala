@@ -29,7 +29,8 @@ import types.Path
 
 
  
-class OmiConfigExtension( val config: Config) extends Extension with AgentSystemConfigExtension{
+class OmiConfigExtension( val config: Config) extends Extension 
+  with AgentSystemConfigExtension {
   // Node special settings
 
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
@@ -57,6 +58,7 @@ class OmiConfigExtension( val config: Config) extends Extension with AgentSystem
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
+  val maxJournalSizeBytes = config.getBytes("journalDBs.max-journal-filesize")
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")

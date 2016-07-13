@@ -47,14 +47,12 @@ import types.Path
 trait Starter {
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core")
-
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
   val settings = Settings(system)
 
-  val subHandlerDbConn: DB = new DatabaseConnection
-  val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
+  val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -115,7 +113,6 @@ trait Starter {
     )
 
     saveSettingsOdf(agentManager)
-    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(

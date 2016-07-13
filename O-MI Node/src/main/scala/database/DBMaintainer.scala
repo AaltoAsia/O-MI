@@ -25,9 +25,9 @@ import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
 
 object DBMaintainer{
-  def props(dbobject: DB) : Props = Props( new DBMaintainer(dbobject) )  
+  def props(dbobject: DBReadWrite) : Props = Props( new DBMaintainer(dbobject) )
 }
-class DBMaintainer(val dbobject: DB)
+class DBMaintainer(val dbobject: DBReadWrite)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
@@ -58,10 +58,8 @@ class DBMaintainer(val dbobject: DB)
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
 
     trySnapshot(SingleStores.latestStore, "latestStore")
-    trySnapshot(SingleStores.hierarchyStore, "hierarchySrtore")
-    trySnapshot(SingleStores.eventPrevayler, "eventPrevayler")
-    trySnapshot(SingleStores.intervalPrevayler, "intervalPrevayler")
-    trySnapshot(SingleStores.pollPrevayler, "pollPrevayler")
+    trySnapshot(SingleStores.hierarchyStore, "hierarchyStore")
+    trySnapshot(SingleStores.subStore, "subStore")
     trySnapshot(SingleStores.idPrevayler, "idPrevayler")
 
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
@@ -88,7 +86,7 @@ class DBMaintainer(val dbobject: DB)
             log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
           case Success(necessaryFiles) =>
             val allFiles = dir.listFiles(new FilenameFilter {
-              def accept(dir: File, name: String) = name endsWith ".journal" // TODO: better filter
+              def accept(dir: File, name: String) = (name endsWith ".journal") || (name endsWith ".snapshot")
             })
             
             val extraFiles = allFiles filterNot (necessaryFiles contains _)

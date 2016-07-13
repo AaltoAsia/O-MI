@@ -23,7 +23,7 @@ import responses.{RemoveHandler,RemoveSubscription}
 import agentSystem.{AgentName, AgentInfo, TestManager, SSAgent}
 import akka.util.{ByteString, Timeout}
 import akka.io.Tcp.{Write, Received}
-import database.{EventSub, IntervalSub, PolledSub, PollEventSub, PollIntervalSub}
+import database.{EventSub, IntervalSub, PolledSub, PollEventSub, PollIntervalSub, SavedSub}
 import http.CLICmds._
 
 
@@ -40,10 +40,17 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     "return table of subscriptions when list subs command is received" >> listSubsTest
     "return correct message when sub remove command is received" >> removeSubTest
     "return correct message when sub remove command for unexisting id is received" >> removeUnexistingSubTest
+    "return correct message when show sub command is received for" >>{
+      "Interval subscription" >> showSubTestInterval
+      "Event subscription" >> showSubTestEvent
+      "Polled Interval subscription" >> showSubTestPollInterval 
+      "Polled Event subscription" >> showSubTestPollEvent
+      "nonexistent subscription" >> showSubTestNonexistent
+    }
   }
   implicit val timeout = Timeout( 1.minutes )
- def timeoutDuration= 10.seconds
- def emptyConfig = ConfigFactory.empty()
+  def timeoutDuration= 10.seconds
+  def emptyConfig = ConfigFactory.empty()
   def AS =ActorSystem(
     "startstop",
     ConfigFactory.load(
@@ -51,7 +58,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         """
         akka.loggers = ["akka.testkit.TestEventListener"]
         """).withFallback(ConfigFactory.load()))
-  )
+    )
   def strToMsg(str: String) = Received(ByteString(str))
   def decodeWriteStr( future : Future[Any] )(implicit system: ActorSystem) ={
     import system.dispatcher
@@ -75,11 +82,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("help"))    
     val correct: String  = listener.commands 
@@ -88,11 +95,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   def listAgentsTest= new Actorstest(AS){
     import system.dispatcher
     val agents = Vector(
-       AgentInfo( "test1", "testClass", emptyConfig, ActorRef.noSender, true, Nil ), 
-       AgentInfo( "test2", "testClass", emptyConfig, ActorRef.noSender, true, Nil ),
-       AgentInfo( "test3", "testClass2", emptyConfig, ActorRef.noSender, true, Nil ), 
-       AgentInfo( "test4", "testClass2", emptyConfig, ActorRef.noSender, false, Nil ) 
-     ).sortBy{info => info.name }
+      AgentInfo( "test1", "testClass", emptyConfig, ActorRef.noSender, true, Nil ), 
+      AgentInfo( "test2", "testClass", emptyConfig, ActorRef.noSender, true, Nil ),
+      AgentInfo( "test3", "testClass2", emptyConfig, ActorRef.noSender, true, Nil ), 
+      AgentInfo( "test4", "testClass2", emptyConfig, ActorRef.noSender, false, Nil ) 
+    ).sortBy{info => info.name }
     val agentsMap : MutableMap[AgentName,AgentInfo] = MutableMap(agents.map{ info => info.name -> info }:_*)
     val agentSystemRef = TestActorRef(new TestManager( agentsMap ))
     val agentSystem = agentSystemRef.underlyingActor
@@ -100,35 +107,35 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystemRef,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystemRef,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg("list agents"))    
     val correct : String =  listener.agentsStrChart( agents) 
     resF should beEqualTo( correct ).await( 0, timeoutDuration)
   }
-  
+
   def startAgentTest=  new Actorstest(AS){
-  
-   val name = "StartSuccess"
-   val ref = system.actorOf( Props( new SSAgent), name)
-   val clazz = "agentSystem.SSAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)
-   val testAgents = MutableMap( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
-   val managerActor = managerRef.underlyingActor
+
+    val name = "StartSuccess"
+    val ref = system.actorOf( Props( new SSAgent), name)
+    val clazz = "agentSystem.SSAgent"
+    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)
+    val testAgents = MutableMap( name -> agentInfo)
+    val managerRef = TestActorRef( new TestManager(testAgents)) 
+    val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        managerRef,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      managerRef,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    
     val correct : String =  s"Agent $name started succesfully.\n" 
@@ -136,22 +143,22 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
 
   }
   def stopAgentTest= new Actorstest(AS){
-   val name = "StartSuccess"
-   val ref = system.actorOf( Props( new SSAgent), name)
-   val clazz = "agentSystem.SSAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)
-   val testAgents = MutableMap( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
-   val managerActor = managerRef.underlyingActor
+    val name = "StartSuccess"
+    val ref = system.actorOf( Props( new SSAgent), name)
+    val clazz = "agentSystem.SSAgent"
+    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)
+    val testAgents = MutableMap( name -> agentInfo)
+    val managerRef = TestActorRef( new TestManager(testAgents)) 
+    val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        managerRef,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      managerRef,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    
     val correct : String =  s"Agent $name stopped succesfully.\n" 
@@ -165,11 +172,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("aueo"))    
     val correct: String  = "Unknown command. Use help to get information of current commands.\n" 
@@ -183,11 +190,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
     val correct: String  = s"Successfully removed path $path\n" 
@@ -201,11 +208,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove " + path +"ueaueo" ))    
     val correct: String  = s"Given path does not exist\n" 
@@ -245,14 +252,14 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       }
 
     })
-    val removeHandler = new RemoveTester( Path("Objects/aue" ) )
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("list subs"))    
     val correct: String  = listener.subsStrChart(intervalSubs, eventSubs, pollSubs)
@@ -272,11 +279,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
     val correct: String  =s"Removed subscription with $id successfully.\n" 
@@ -296,14 +303,156 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
-        remote,
-        agentSystem,
-        subscriptionManager,
-        removeHandler
-      ))
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
     val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
+    resF should beEqualTo(correct ).await( 0, timeoutDuration)
+  }
+  def showSubTestInterval = {
+    val id: Long = 57171
+    val paths = Vector( Path( "Objects/obj1/"), Path( "Objects/obj2/sensor1"), Path( "Objects/obj3/sobj/sensor"))  
+    val startTime = new Timestamp( new Date().getTime() )
+    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
+    val interval = 5.minutes
+    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
+    val callback = "http://test.org:31"
+
+    val remote = new InetSocketAddress("Tester",22)
+    val agentSystem =ActorRef.noSender
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
+    val sub = Some(IntervalSub(
+      id,
+      paths,
+      endTime,
+      callback,
+      interval,
+      nextRunTime,
+      startTime
+    ))
+    val correct: String  =s"Started: ${startTime}\n" +
+    s"Ends: ${endTime}\n" +
+    s"Interval: ${interval}\n" +
+    s"Run next: ${nextRunTime}\n" +
+    s"Callback: ${callback}\n" +
+    s"Paths:\n${paths.mkString("\n")}\n"
+    showSubTestBase(sub,correct)
+  }
+
+  def showSubTestEvent = {
+    val id: Long = 57171
+    val paths = Vector( Path( "Objects/obj1/"), Path( "Objects/obj2/sensor1"), Path( "Objects/obj3/sobj/sensor"))  
+    val startTime = new Timestamp( new Date().getTime() )
+    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
+    val interval = 5.minutes
+    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
+    val callback = "http://test.org:31"
+
+    val remote = new InetSocketAddress("Tester",22)
+    val agentSystem =ActorRef.noSender
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
+    val sub = Some(EventSub(
+      id,
+      paths,
+      endTime,
+      callback
+    ))
+    val correct: String  =s"Ends: ${endTime}\n" +
+    s"Callback: ${callback}\n" +
+    s"Paths:\n${paths.mkString("\n")}\n"
+    showSubTestBase(sub,correct)
+  }
+
+  def showSubTestPollInterval = {
+    val id: Long = 57171
+    val paths = Vector( Path( "Objects/obj1/"), Path( "Objects/obj2/sensor1"), Path( "Objects/obj3/sobj/sensor"))  
+    val startTime = new Timestamp( new Date().getTime() )
+    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
+    val interval = 5.minutes
+    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
+    val callback = "http://test.org:31"
+
+    val remote = new InetSocketAddress("Tester",22)
+    val agentSystem =ActorRef.noSender
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
+    val sub = Some(PollIntervalSub(
+      id,
+      endTime,
+      interval,
+      nextRunTime,
+      startTime,
+      paths
+    ))
+    val correct: String  =s"Started: ${startTime}\n" +
+    s"Ends: ${endTime}\n" +
+    s"Interval: ${interval}\n" +
+    s"Last polled: ${nextRunTime}\n" +
+    s"Paths:\n${paths.mkString("\n")}\n"
+    showSubTestBase(sub,correct)
+  }
+
+  def showSubTestPollEvent = { 
+    val id: Long = 57171
+    val paths = Vector( Path( "Objects/obj1/"), Path( "Objects/obj2/sensor1"), Path( "Objects/obj3/sobj/sensor"))  
+    val startTime = new Timestamp( new Date().getTime() )
+    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
+    val interval = 5.minutes
+    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
+    val callback = "http://test.org:31"
+
+    val remote = new InetSocketAddress("Tester",22)
+    val agentSystem =ActorRef.noSender
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
+    val sub = Some(PollEventSub(
+      id,
+      endTime,
+      nextRunTime,
+      startTime,
+      paths
+    ))
+    val correct: String  = s"Started: ${startTime}\n" +
+    s"Ends: ${endTime}\n" +
+    s"Last polled: ${nextRunTime}\n" +
+    s"Paths:\n${paths.mkString("\n")}\n"
+    showSubTestBase(sub,correct)
+  }
+
+  def showSubTestNonexistent = {
+    val id: Long = 57171
+    val paths = Vector( Path( "Objects/obj1/"), Path( "Objects/obj2/sensor1"), Path( "Objects/obj3/sobj/sensor"))  
+    val startTime = new Timestamp( new Date().getTime() )
+    val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
+    val interval = 5.minutes
+    val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
+    val callback = "http://test.org:31"
+
+    val remote = new InetSocketAddress("Tester",22)
+    val agentSystem =ActorRef.noSender
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
+    val correct: String  = s"Subscription with id $id not found.\n" 
+    showSubTestBase(None,correct)
+  }
+  def showSubTestBase( sub: Option[SavedSub], correctOut: String ) = new Actorstest(AS){
+    val correct = correctOut
+    val remote = new InetSocketAddress("Tester",22)
+    val agentSystem =ActorRef.noSender
+    val removeHandler = new RemoveTester( Path("objects/aue" ) )
+    val subscriptionManager = TestActorRef( new Actor{
+      def receive = {
+        case SubInfoCmd(id) => sender() ! sub
+      }
+    })
+    val listenerRef = TestActorRef(new OmiNodeCLI(
+      remote,
+      agentSystem,
+      subscriptionManager,
+      removeHandler
+    ))
+    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"showSub ${sub.map{s => s.id}.getOrElse(57171)}"))    
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 }

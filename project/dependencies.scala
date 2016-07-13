@@ -11,8 +11,8 @@ object Dependencies {
   val http         = "com.typesafe.akka" %% "akka-http-core" % akkaV
   val httpExperimnt= "com.typesafe.akka" %% "akka-http-experimental" % akkaV
   val httpXml      = "com.typesafe.akka" %% "akka-http-xml-experimental" % akkaV
+  val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaV 
   val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.1.2"
-
   //Test dependencies
   val specs2V = "3.7.2"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
@@ -31,7 +31,7 @@ object Dependencies {
   //val sqliteJdbc   = "org.xerial"          % "sqlite-jdbc"    % "3.7.2" //common
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
   val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
-  val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
+  //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
@@ -68,7 +68,7 @@ object Dependencies {
     //sqliteJdbc,
     hikariCP,
     h2,
-    json4s,
+    sprayJson,//json4s,
     //scalaXML,
     schwatcher,
     commonsLang,
