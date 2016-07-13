@@ -59,7 +59,7 @@ class  OdfInfoItemImpl(
   }
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfInfoItem) : OdfInfoItem ={
-    require(path == another.path, "Should have same paths")
+    require(path == another.path, s"Should have same paths, got $path versus ${another.path}")
     OdfInfoItem(
       path,
       (values ++ another.values),

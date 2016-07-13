@@ -278,7 +278,7 @@ trait DB {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn]
+  def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn]
 
   /**
    * Used to remove given path and all its descendants from the databas.

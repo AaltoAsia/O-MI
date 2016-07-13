@@ -334,6 +334,7 @@ class ParserTest extends Specification {
   def e100 = {
     validOmiTest(writeRequestTest) 
   }
+
   def e101 = {
     invalidOmiTest(
       omiWriteTest.toString.replace("omi:write msgformat=\"odf\"", "omi:write"),
@@ -726,7 +727,7 @@ class ParserTest extends Specification {
         OdfValue( "1.1", "xs:double", timestamp = testTimestamp )
       ), 
       Some( OdfDescription( " test" )), Some(
-                MetaData(InfoItemType(value = Seq(ValueType("Litre", attributes = Map.empty)),name = "Units", attributes = Map.empty)))
+        MetaData(List(InfoItemType(value = Seq(ValueType("Litre", attributes = Map.empty,dateTime = None,unixTime = Some(400000000L))),name = "Units", attributes = Map.empty)): _*))
       //Some( OdfMetaData(
       //  "<MetaData xmlns=\"odf.xsd\" xmlns:omi=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
       //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +

@@ -396,7 +396,9 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
         }
  }
 
- def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn] ={
+ def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] ={
+   val data = infos.flatMap( ii => ii.values.map(value => (ii.path, value)))
+
    val content = data.map{
     case (path, odfValue) =>
     toWriteFormat(path,odfValue)

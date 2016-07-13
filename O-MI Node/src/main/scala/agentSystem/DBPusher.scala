@@ -16,6 +16,7 @@ package agentSystem
 
 import java.lang.{Iterable => JavaIterable}
 
+import scala.collection.immutable.IndexedSeq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -228,14 +229,17 @@ trait  DBPusher  extends BaseAgentSystem{
         SingleStores.hierarchyStore execute Union(updateTree)
     }
 
-    // DB + Poll Subscriptionst
-    val itemValues = triggeringEvents flatMap {event =>
-      val item   = event.infoItem
-      val values = item.values.toSeq
-      values map {value => (item.path, value)}
-    }
+    // DB + Poll Subscriptions
+    val infosToBeWrittenInDB: Seq[OdfInfoItem] =
+      triggeringEvents //InfoItems contain single value
+      .map(_.infoItem) //map type to OdfInfoItem
+      .groupBy(_.path) //combine same paths
+      .flatMap( pathValues => //flatMap to remove None values
+        pathValues._2.reduceOption(_.combine(_)) //Combine infoitems with same paths to single infoitem
+      )(collection.breakOut) // breakOut to correct collection type
 
-    val writeFuture = dbobject.writeMany(itemValues)
+
+    val writeFuture = dbobject.writeMany(infosToBeWrittenInDB)
 
     writeFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
