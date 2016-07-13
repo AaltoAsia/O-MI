@@ -58,7 +58,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     // create omi service actor
-    val omiService = new OmiServiceImpl(requestHandler)
+    val omiService = new OmiServiceImpl(requestHandler,subManager)
 
     implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
 

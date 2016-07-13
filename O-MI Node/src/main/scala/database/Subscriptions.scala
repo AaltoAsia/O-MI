@@ -189,12 +189,12 @@ case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
 case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
   def executeAndQuery(store: Subs, d: Date): Unit= {
     store.intervalSubs = store.intervalSubs.filter{ 
-      case sub: IntervalSub => sub.callback.uri.toString != "0"
+      case sub: IntervalSub => sub.callback.uri != 0
     }
   store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{ 
     subs => 
       subs.filter{ 
-        case sub: EventSub => sub.callback.uri.toString != "0"
+        case sub: EventSub => sub.callback.uri != 0
       }
   }.toSeq:_*)
   }

@@ -39,13 +39,13 @@ class OmiServiceTest
   def actorRefFactory = system
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
   implicit val dbConnection = new TestDB("system-test")
-  val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()))
+  val subscriptionManager = TestActorRef(Props(new SubscriptionManager()))
 
   val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subscriptionHandler),
+      AgentSystem.props(dbConnection, subscriptionManager),
       "agent-system"
   )
-  val requestHandler = new RequestHandler(subscriptionHandler, agentManager)(dbConnection)
+  val requestHandler = new RequestHandler(subscriptionManager, agentManager)(dbConnection)
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
   val localHost = RemoteAddress(InetAddress.getLoopbackAddress)

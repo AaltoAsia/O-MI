@@ -121,7 +121,7 @@ trait Starter {
     )
 
     // create omi service actor
-    val omiService = new OmiServiceImpl(requestHandler)
+    val omiService = new OmiServiceImpl(requestHandler, subManager)
 
 
     implicit val timeoutForBind = Timeout(5.seconds)

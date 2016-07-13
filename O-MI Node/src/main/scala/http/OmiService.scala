@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
 
 import akka.util.ByteString
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
@@ -40,7 +40,7 @@ import akka.http.scaladsl.model.ws
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.RequestHandler
+import responses.{RequestHandler, RemoveSubscription}
 import types.OmiTypes._
 import types.Path
 
@@ -57,7 +57,7 @@ trait OmiServiceAuthorization
  * Actor that handles incoming http messages
  * @param reqHandler ActorRef that is used in subscription handling
  */
-class OmiServiceImpl(reqHandler: RequestHandler)(implicit val system: ActorSystem)
+class OmiServiceImpl(reqHandler: RequestHandler, val subscriptionManager: ActorRef)(implicit val system: ActorSystem)
      extends {
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
@@ -288,6 +288,7 @@ trait OmiService
 trait WebSocketOMISupport {
   self: OmiService =>
   import system.dispatcher
+  def subscriptionManager : ActorRef
 
   type InSink = Sink[ws.Message, _]
   type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
@@ -336,7 +337,29 @@ trait WebSocketOMISupport {
       result onComplete {
         case Success(QueueOfferResult.Enqueued) => // Ok
         case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
+        futureResponse.map{ 
+          response =>
+            val ids = (response \\ "requestID").map{ 
+              node =>
+                node.text.toLong
+            }
+            ids.foreach{ 
+              id =>
+                subscriptionManager ! RemoveSubscription(id)
+            }
+        }
         case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
+        futureResponse.map{ 
+          response =>
+            val ids = (response \\ "requestID").map{ 
+              node =>
+                node.text.toLong
+            }
+            ids.foreach{ 
+              id =>
+                subscriptionManager ! RemoveSubscription(id)
+            }
+        }
       }
       result
     }
