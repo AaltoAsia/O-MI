@@ -33,7 +33,7 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
-import parsing.xmlGen.xmlTypes.QlmID
+import parsing.xmlGen.xmlTypes.{MetaData, QlmID}
 import spray.json._
 import types.OdfTypes._
 import types.Path
@@ -44,6 +44,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfObject]] {
     val hTree = SingleStores.hierarchyStore execute GetTree()
+
     def getObject(path: Path): OdfObject = {
       hTree.get(path) match {
         case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
@@ -55,16 +56,20 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         }
       }
     }
-    def createInfoItems(
+    def createInfoItem(
                          path: Path,
                          in: (OdfTreeCollection[OdfValue], OdfTreeCollection[Option[OdfValue]])): OdfTreeCollection[OdfInfoItem] = {
-      val first = OdfInfoItem(path / "values",in._1.sortBy(_.timestamp.getTime()))
-      val second = OdfInfoItem(path / "locations", in._2.flatten.sortBy(_.timestamp.getTime()))
+      val infoItemPath = path / "values"
 
-      if(second.values.isEmpty)
-        OdfTreeCollection(first)
-      else
-        OdfTreeCollection(first, second)
+      val locations = {
+        val locs = in._2.flatten.sortBy(_.timestamp.getTime)
+        if(locs.isEmpty) None
+        else Some(locs)
+      }
+      val metaDatas = locations.map( meta => MetaData(OdfInfoItem(infoItemPath / "locations", meta).asInfoItemType))
+
+      OdfTreeCollection(OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()), metaData = metaDatas))
+
     }
 
     //formatters
@@ -200,6 +205,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
                                 lon: Option[BigDecimal],
                                 elev: Option[BigDecimal],
                                 typeVal: Map[String, String]): (OdfValue, Option[OdfValue]) = {
+
       val timestamp = new Timestamp((_timestamp/1000).toLong)
       val warp10Value = value match {
         case JsString(v) => {
@@ -262,8 +268,8 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
           case (None , ii) => ii.map{
             case (_, Some(_path), _infoItems ) => {
               val path = Path(_path.replaceAll("\\.", "/"))
-              val parentObj = getObject(path)
-              val infoItems = createInfoItems(path, _infoItems.unzip)
+              val parentObj = getObject(path) //TODO what happens if not in hierarchystore
+              val infoItems = createInfoItem(path, _infoItems.unzip)
               parentObj.copy(infoItems=infoItems)
             }
             case _ => throw new DeserializationException("No Path found when deserializing")
@@ -275,10 +281,10 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
               .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing"))
               .replaceAll("\\.", "/"))
 
-            val parentObj = getObject(path)
+            val parentObj = getObject(path) //TODO what happens if not in hierarchystore
             //val infoItems = createInfoItems(path, infoItems)
 
-            val infoItems = createInfoItems(
+            val infoItems = createInfoItem(
               path,
               ii.foldLeft(Vector[(OdfValue, Option[OdfValue])]())((col ,next ) => col ++ next._3).unzip)
 
