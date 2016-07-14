@@ -75,31 +75,35 @@ formLogicExt = ($, WebOmi) ->
     my.clearResponse()
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
-
-    consts.progressBar.css "width", "95%"
-    $.ajax
-      type: "POST"
-      url: server
-      data: request
-      contentType: "text/xml"
-      processData: false
-      dataType: "text"
-      #complete: -> true
-      error: (response) ->
-        consts.progressBar.css "width", "100%"
-        my.setResponse response.responseText
-        consts.progressBar.css "width", "0%"
-        consts.progressBar.hide()
-        window.setTimeout (-> consts.progressBar.show()), 2000
-        # TODO: Tell somewhere the "Bad Request" etc
-        # response.statusText
-      success: (response) ->
-        consts.progressBar.css "width", "100%"
-        my.setResponse response
-        consts.progressBar.css "width", "0%"
-        consts.progressBar.hide()
-        window.setTimeout (-> consts.progressBar.show()), 2000
-        callback(response) if (callback?)
+    if server.startswith("ws://")
+      if( !my.socket ) # Is WebOmi.formlogic correct place to store socket? 
+        my.createWebSocket(server)
+      my.socket.send(request)
+    else
+      consts.progressBar.css "width", "95%"
+      $.ajax
+        type: "POST"
+        url: server
+        data: request
+        contentType: "text/xml"
+        processData: false
+        dataType: "text"
+        #complete: -> true
+        error: (response) ->
+          consts.progressBar.css "width", "100%"
+          my.setResponse response.responseText
+          consts.progressBar.css "width", "0%"
+          consts.progressBar.hide()
+          window.setTimeout (-> consts.progressBar.show()), 2000
+          # TODO: Tell somewhere the "Bad Request" etc
+          # response.statusText
+        success: (response) ->
+          consts.progressBar.css "width", "100%"
+          my.setResponse response
+          consts.progressBar.css "width", "0%"
+          consts.progressBar.hide()
+          window.setTimeout (-> consts.progressBar.show()), 2000
+          callback(response) if (callback?)
 
   # recursively build odf jstree from the Objects xml node
   my.buildOdfTree = (objectsNode) ->
@@ -163,6 +167,25 @@ formLogicExt = ($, WebOmi) ->
       my.buildOdfTree objectsArr[0] # head, checked above
 
 
+ my.createWebSocket = () -> # Should socket be created automaticly for my or 
+    consts = WebOmi.consts
+    server  = consts.serverUrl.val()
+    my.socket = new WebSocket(server)
+    my.socket.onopen = () ->{} 
+      # Something to do?      
+    my.socket.onclose = () -> {}
+      # Something to do?       
+    my.socket.onmessage = (response) ->
+      # TODO: Check if response to subscription and put into subscription response view
+      consts.progressBar.css "width", "100%"
+      my.setResponse response
+      consts.progressBar.css "width", "0%"
+      consts.progressBar.hide()
+      window.setTimeout (-> consts.progressBar.show()), 2000
+      callback(response) if (callback?)
+    my.socket.onerror = (error) -> {}  
+      # Something to do?      
+      
   WebOmi # export
 
 # extend WebOmi
