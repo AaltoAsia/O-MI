@@ -367,37 +367,17 @@ trait WebSocketOMISupport {
       def createZeroCallback = Some(Callback{(response: OmiRequest) => 
         queueSend(Future(response.asXML)) map {_ => ()}
       })
-    val omiPrefix : String = "<omi:omiEnvelope "
-    val omiPostfix : String = "</omi:omiEnvelope>"
+    //val omiPrefix : String = "<omi:omiEnvelope "
+    //val omiPostfix : String = "</omi:omiEnvelope>"
     val inSink = Sink foreach[ws.Message] {
-      case message: ws.TextMessage =>
-        // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
-        val inputStream: Source[String,_] = message.textStream
-        val frame = Framing.delimiter( ByteString(omiPostfix), Int.MaxValue, true)
-        inputStream
-          .map(ByteString(_))
-          .via(frame)
-          .map(_.utf8String)
-          .map{ 
-          string: String =>
-            val startIndex = string.indexOfSlice(omiPrefix)
-            val endIndex = string.lastIndexOfSlice(omiPostfix) 
-            //Needs buffering if biggerthan on message?
-            //Framing should slipt them to omiEnvelopes
-            if( startIndex >= -1 && endIndex >= -1 ){
-              val requestString = string.slice(startIndex, endIndex + 1)
-              // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
-              val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
-              queueSend(futureResponse)
-            } else if(startIndex <= -1 ){
-              log.warn("Request start not found from message received from websocket.")
-            } else if(endIndex <= -1 ){
-              log.warn("Request end not found from message received from websocket.")
-            } else {
-              log.warn("Request start and end not found from message received from websocket.")
-            }
+      case message: ws.TextMessage.Strict =>
+        val requestString = message.text
+          // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
+          val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+          queueSend(futureResponse)
 
-        }
+        // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
+      case message: ws.TextMessage.Streamed => // TODO???
       case bm: ws.BinaryMessage => // we don't care about binary
     }
 

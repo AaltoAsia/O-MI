@@ -68,18 +68,44 @@ formLogicExt = ($, WebOmi) ->
       mirror.refresh()
     mirror.refresh()
 
-
+  my.createWebSocket = () -> # Should socket be created automaticly for my or 
+    console.log("Creating WebSocket.")
+    consts = WebOmi.consts
+    server = consts.serverUrl.val()
+    socket = new WebSocket(server)
+    socket.onopen = () -> 
+      console.log("WebSocket connected.")
+    socket.onclose = () -> 
+      console.log("WebSocket disconnected.")
+    socket.onmessage = (message) ->
+      # TODO: Check if response to subscription and put into subscription response view
+      response = message.data
+      consts.progressBar.css "width", "100%"
+      my.setResponse response
+      consts.progressBar.css "width", "0%"
+      consts.progressBar.hide()
+      window.setTimeout (-> consts.progressBar.show()), 2000
+      #callback(response) if (callback?)
+    socket.onerror = (error) ->   
+      console.log("WebSocket error: " + error)
+    my.socket = socket
+  
   # send, callback is called with response text if successful
   my.send = (callback) ->
     consts = WebOmi.consts
     my.clearResponse()
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
-    if server.startswith("ws://")
-      if( !my.socket ) # Is WebOmi.formlogic correct place to store socket? 
+    if server.startsWith("ws://")
+      if( !my.socket || my.socket.readyState != WebSocket.OPEN) # Is WebOmi.formlogic correct place to store socket? 
         my.createWebSocket(server)
-      my.socket.send(request)
+        console.log("Sending request via WebSocket.")
+        my.socket.send(request)
+      else
+        console.log("Sending request via WebSocket.")
+        my.socket.send(request)
     else
+      console.log("Sending request with HTTP POST.")
       consts.progressBar.css "width", "95%"
       $.ajax
         type: "POST"
@@ -167,25 +193,6 @@ formLogicExt = ($, WebOmi) ->
       my.buildOdfTree objectsArr[0] # head, checked above
 
 
- my.createWebSocket = () -> # Should socket be created automaticly for my or 
-    consts = WebOmi.consts
-    server  = consts.serverUrl.val()
-    my.socket = new WebSocket(server)
-    my.socket.onopen = () ->{} 
-      # Something to do?      
-    my.socket.onclose = () -> {}
-      # Something to do?       
-    my.socket.onmessage = (response) ->
-      # TODO: Check if response to subscription and put into subscription response view
-      consts.progressBar.css "width", "100%"
-      my.setResponse response
-      consts.progressBar.css "width", "0%"
-      consts.progressBar.hide()
-      window.setTimeout (-> consts.progressBar.show()), 2000
-      callback(response) if (callback?)
-    my.socket.onerror = (error) -> {}  
-      # Something to do?      
-      
   WebOmi # export
 
 # extend WebOmi
