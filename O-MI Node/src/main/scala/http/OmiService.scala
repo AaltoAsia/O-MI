@@ -35,6 +35,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Directive0
 import akka.stream.scaladsl._
 import akka.stream._
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.ws
 
 import accessControl.AuthAPIService
@@ -282,110 +283,120 @@ trait OmiService
 }
 
 
-/**
- * This trait implements websocket support for O-MI message handling using akka-http
- */
-trait WebSocketOMISupport {
-  self: OmiService =>
-  import system.dispatcher
-  def subscriptionManager : ActorRef
+     /**
+      * This trait implements websocket support for O-MI message handling using akka-http
+      */
+     trait WebSocketOMISupport {
+       self: OmiService =>
+         import system.dispatcher
+         def subscriptionManager : ActorRef
 
-  type InSink = Sink[ws.Message, _]
-  type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
+         type InSink = Sink[ws.Message, _]
+         type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 
-  def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
-    makePermissionTestFunction() { hasPermissionTest =>
-      extractUpgradeToWebSocket {wsRequest =>
+         def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
+           makePermissionTestFunction() { hasPermissionTest =>
+             extractUpgradeToWebSocket {wsRequest =>
 
-        val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest)
-        complete(
-          wsRequest.handleMessagesWithSinkSource(inSink, outSource)
-        )
-      }
-    }
+               val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest)
+               complete(
+                 wsRequest.handleMessagesWithSinkSource(inSink, outSource)
+               )
+             }
+           }
 
-  // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
-	// T is the source type
-  // M is the materialization type, here a SourceQueue[String]
-  private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
-    val p = Promise[M]
-    val s = src.mapMaterializedValue { m =>
-      p.trySuccess(m)
-      m
-    }
-    (s, p.future)
-  }
+         // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
+         // T is the source type
+         // M is the materialization type, here a SourceQueue[String]
+         private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
+           val p = Promise[M]
+           val s = src.mapMaterializedValue { m =>
+             p.trySuccess(m)
+             m
+           }
+           (s, p.future)
+         }
 
-  // akka.stream
-  protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest): (InSink, OutSource) = {
-		val queueSize = 10
-		val (outSource, futureQueue) =
-			peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
+         // akka.stream
+         protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest): (InSink, OutSource) = {
+           val queueSize = 10
+           val (outSource, futureQueue) =
+             peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
-    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
-      val result = for {
-        response <- futureResponse
-        if (response.nonEmpty)
+           def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
+             val result = for {
+               response <- futureResponse
+               if (response.nonEmpty)
 
-        queue <- futureQueue
+                 queue <- futureQueue
 
-        // TODO: check what happens when sending empty String
-        resultMessage = ws.TextMessage(response.toString)
-        queueResult <- queue offer resultMessage
-      } yield {queueResult}
+               // TODO: check what happens when sending empty String
+               resultMessage = ws.TextMessage(response.toString)
+               queueResult <- queue offer resultMessage
+             } yield {queueResult}
 
-      result onComplete {
-        case Success(QueueOfferResult.Enqueued) => // Ok
-        case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
-        futureResponse.map{ 
-          response =>
-            val ids = (response \\ "requestID").map{ 
-              node =>
-                node.text.toLong
-            }
-            ids.foreach{ 
-              id =>
-                subscriptionManager ! RemoveSubscription(id)
-            }
-        }
-        case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
-        futureResponse.map{ 
-          response =>
-            val ids = (response \\ "requestID").map{ 
-              node =>
-                node.text.toLong
-            }
-            ids.foreach{ 
-              id =>
-                subscriptionManager ! RemoveSubscription(id)
-            }
-        }
-      }
-      result
-    }
+             result onComplete {
+               case Success(QueueOfferResult.Enqueued) => // Ok
+               case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
+               futureResponse.map{ 
+                 response =>
+                   val ids = (response \\ "requestID").map{ 
+                     node =>
+                       node.text.toLong
+                   }
+                   ids.foreach{ 
+                     id =>
+                       subscriptionManager ! RemoveSubscription(id)
+                   }
+               }
+               case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
+               futureResponse.map{ 
+                 response =>
+                   val ids = (response \\ "requestID").map{ 
+                     node =>
+                       node.text.toLong
+                   }
+                   ids.foreach{ 
+                     id =>
+                       subscriptionManager ! RemoveSubscription(id)
+                   }
+               }
+             }
+             result
+           }
 
-      def createZeroCallback = Some(Callback{(response: OmiRequest) => 
-        queueSend(Future(response.asXML)) map {_ => ()}
-      })
-    //val omiPrefix : String = "<omi:omiEnvelope "
-    //val omiPostfix : String = "</omi:omiEnvelope>"
-    val inSink = Sink foreach[ws.Message] {
-      case message: ws.TextMessage.Strict =>
-        val requestString = message.text
-          // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
-          val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
-          queueSend(futureResponse)
-
-        // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
-      case message: ws.TextMessage.Streamed => // TODO???
-      case bm: ws.BinaryMessage => // we don't care about binary
-    }
-
-    (inSink, outSource)
-  }
+           def createZeroCallback = Some(Callback{(response: OmiRequest) => 
+             queueSend(Future(response.asXML)) map {_ => ()}
+           })
 
 
-}
+           val omiPrefix : String = "<omi:omiEnvelope "
+           val omiPostfix : String = "</omi:omiEnvelope>"
+           val inSink = Sink foreach[ws.Message] {
+             case message: ws.TextMessage => 
+               // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
+               val stream = message.textStream
+               val six = Sink.foreach[String]{ requestString: String  => 
+                 val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+                 queueSend(futureResponse)
+               }
+               stream.runWith(six)(materializer)
 
+             case message: ws.TextMessage.Strict =>
+               val requestString = message.text
+               // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
+               val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+               queueSend(futureResponse)
 
+             case bm: ws.BinaryMessage => // we don't care about binary
+               bm.dataStream.runWith(Sink.ignore)(materializer)
+           }
+
+           (inSink, outSource)
+         }
+
+         val system : ActorSystem 
+         val materializer : Materializer = ActorMaterializer()(system)
+
+     }
 
