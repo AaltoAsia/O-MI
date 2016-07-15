@@ -59,7 +59,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     def createInfoItem(
                          path: Path,
                          in: (OdfTreeCollection[OdfValue], OdfTreeCollection[Option[OdfValue]])): OdfTreeCollection[OdfInfoItem] = {
-      val infoItemPath = path / "values"
+      val infoItemPath = path
 
       val locations = {
         val locs = in._2.flatten.sortBy(_.timestamp.getTime)
@@ -68,7 +68,10 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
       }
       val metaDatas = locations.map( meta => MetaData(OdfInfoItem(infoItemPath / "locations", meta).asInfoItemType))
 
-      OdfTreeCollection(OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()), metaData = metaDatas))
+      val result = OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()), metaData = metaDatas)
+      //SingleStores.hierarchyStore execute Union(createAncestors(result))//update metadatas in hierarchystore
+
+      OdfTreeCollection(result)
 
     }
 
@@ -92,91 +95,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     elevationFormatter.setPositiveSuffix(coordinateFormat)
     elevationFormatter.setNegativeSuffix(coordinateFormat)
     elevationFormatter.setGroupingUsed(false)
-    /*
-    private def createOdfValue(value: JsValue,_timestamp: BigDecimal, typeVal: Map[String, String]): OdfValue = {
-      val timestamp = new Timestamp((_timestamp/1000).toLong)
-      value match {
-        case JsString(v) => {
-          typeVal.get("type") match {
-            case Some(dataType) => OdfValue(v, dataType, timestamp, typeVal - "type")
-            case None => OdfValue(v, "xs:string", timestamp, typeVal)
-          }
-        }
-        case JsBoolean(v) => OdfValue(v, timestamp, typeVal - "type")
-        case JsNumber(n) => {
-          if (n.ulp == 1) //if no decimal separator, parse to long
-            OdfValue(n.toLong, timestamp, typeVal - "type")
-          else
-            OdfValue(n.toDouble, timestamp, typeVal - "type")
-        }
-        case _ => throw new DeserializationException("Invalid type, could not cast into string, boolean, or number")
-      }
-    }
 
-    private def parseObjects(in: Seq[JsObject]) = in match {
-      case jsObjs: Seq[JsObject] => {
-        val idPathValuesTuple = jsObjs.map { jsobj =>
-          val path = fromField[Option[String]](jsobj, "c")
-          val labels = fromField[Option[JsObject]](jsobj,"l")
-          val vals = fromField[JsArray](jsobj,"v")
-          val id = fromField[Option[String]](jsobj,"i")
-
-          //edit this to add support for different kinds of labels
-          val typeVal: Map[String, String] = labels match {
-            case Some(obj) => fromField[Option[String]](obj, "type") match {
-              case Some(typev) => Map("type" -> typev)
-              case None => Map.empty
-            }
-            case None => Map.empty
-          }
-          //typevalues are strings because of format "LAT:LON/ELEV VALUE"
-          val values: OdfTreeCollection[OdfValue] = vals match {
-            case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect{
-              case JsArray(Vector(JsNumber(timestamp), value: JsValue)) =>{
-                createOdfValue(value,timestamp, typeVal)
-              }
-
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(elev), value: JsValue)) =>
-                createOdfValue(value, timestamp, typeVal + ("elev" -> elev.toString()))
-
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), value: JsValue)) =>
-                createOdfValue(value, timestamp, typeVal ++ Map("lat" -> lat.toString(), "lon" -> lon.toString()))
-
-              case JsArray(Vector(JsNumber(timestamp), JsNumber(lat), JsNumber(lon), JsNumber(elev), value: JsValue)) =>
-                createOdfValue(value, timestamp, typeVal ++ Map("lat" -> lat.toString(), "lon" -> lon.toString(), "elev" -> elev.toString()))
-    }
-          }
-
-          (id, path , values)
-
-        }
-        val infoIs:Seq[OdfInfoItem] = idPathValuesTuple.groupBy(_._1).collect{
-          case (None , ii) => ii.map{
-            case (_, Some(_path), c) => OdfInfoItem(Path(_path.replaceAll("\\.", "/")), c.sortBy(_.timestamp.getTime()))
-            case _ => throw new DeserializationException("No Path found when deserializing")
-          }
-
-          case (Some(id), ii) => {
-            val _path = ii.collectFirst{ case (_, Some(p),_) => p}
-              .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing"))
-
-            val _values = ii.foldLeft(OdfTreeCollection[OdfValue])((col ,next ) => col ++ next._3)
-
-            Seq(OdfInfoItem(Path(_path.replaceAll("\\.", "/")), _values.sortBy(_.timestamp.getTime())))
-          }
-          case _ => throw new DeserializationException("Unknown format")
-        }(collection.breakOut).flatten
-
-        infoIs
-      }
-    }
-
-    def read(v: JsValue): Seq[OdfInfoItem] = v match {
-      case JsArray(Vector(JsArray(in: Vector[JsObject]))) => parseObjects(in)
-      case JsArray(in: Vector[JsObject]) => parseObjects(in)
-      case _ => throw new DeserializationException("Unknown format")
-    }
-    */
     def createLocationValue(
                              timestamp: Timestamp,
                              latitude:Option[BigDecimal],
@@ -315,6 +234,10 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSystem = ActorSystem()) extends DB {
   import Warp10JsonProtocol.Warp10JsonFormat._
   type Warp10Token = String
+
+  val locationRegex = """([+-]\d\d\.\d*)?([+-]\d\d\d\.\d*)?(?:([+-]\d*)CRSWGS_84)?""".r
+  //val locationregex = """(?:([+-]\d\d\.\d*)([+-]\d\d\d\.\d*))?(?:([+-]\d*)CRSWGS_84)?""".r
+
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests = true
     override def renderInResponses = false
@@ -403,11 +326,26 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
  }
 
  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] ={
-   val data = infos.flatMap( ii => ii.values.map(value => (ii.path, value)))
+
+   val data = infos.flatMap( ii =>
+     ii.values.map(value =>
+       (
+         ii.path,
+         value,
+         ii.metaData
+           .flatMap(_.InfoItem
+             .find(_.name == "locations")
+             .flatMap(_.value //match location infoitems with values
+               .find(_.unixTime ==value.timestamp.getTime())
+               .map(_.value)
+             ))
+         )
+     )
+   )
 
    val content = data.map{
-    case (path, odfValue) =>
-    toWriteFormat(path,odfValue)
+    case (path, odfValue, location) =>
+    toWriteFormat(path,odfValue, location)
    }.mkString("")
    val request = RequestBuilding.Post(writeAddress, content).withHeaders(Warp10TokenHeader(writeToken))
 
@@ -431,7 +369,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
  }
   def remove(path: Path): Future[Int] = ???
 
- private def toWriteFormat( path: Path, odfValue : OdfValue ) : String = {
+ private def toWriteFormat( path: Path, odfValue : OdfValue, location: Option[String]) : String = {
    def handleString(in: Any): String = {
      val str = URLEncoder.encode(in.toString, "UTF-8") //might cause problems if encoded twice
 
@@ -441,13 +379,31 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    val pathJS = path.mkString(".") 
    val typeValue = odfValue.typeValue
    val labels = s"{ type=$typeValue }"
+
+   val matchResult = location.flatMap(loc => locationRegex.findFirstMatchIn(loc))
+   val loc = matchResult match {
+     case Some(res) => (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
+       case (None, None, Some(elev)) => s"/${elev.toLong}"
+       case (Some(lat), Some(lon), None) => s"${lat.toDouble}:${lon.toDouble}/"
+       case (Some(lat), Some(lon), Some(elev)) => s"${lat.toDouble}:${lon.toDouble}/${elev.toLong}"
+       case _ => {
+         log.warning(s"Invalid format for location${location}")
+         "/"
+       }
+     }
+     case none => {
+       log.debug(s"no location for value found or invalid syntax: $location")
+       "/"
+     }
+   }
+   /*
    val latlon = for {
      lat <- odfValue.attributes.get("lat")
      lon <- odfValue.attributes.get("lon")
      res = lat + ":" + lon
    } yield res
    val elevation = odfValue.attributes.getOrElse("elev", "")
-
+   */
    val value =
      if( odfValue.isNumeral )
        odfValue.value
@@ -463,7 +419,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
        s"$resString"
      }
 
-   s"$unixEpochTime/${latlon.getOrElse("")}/$elevation $pathJS$labels $value\n"
+   s"$unixEpochTime/$loc $pathJS$labels $value\n"
  }
  
  private def nodesToReadPathSelector( nodes : Iterable[OdfNode] ) = {
