@@ -334,11 +334,13 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
          value,
          hTree
            .get(ii.path)
-           .collect{ case OdfInfoItem(_,_,_,Some(meta)) => meta
+           .collect{ case OdfInfoItem(_,_,_,Some(meta)) => {
+             meta
+           }
            }.flatMap(_.InfoItem
              .find(_.name == "locations")
              .flatMap(_.value
-               .find(_.unixTime.exists(time => time * 1000 == value.timestamp.getTime()))// == value.timestamp.getTime())
+               .find(_.unixTime.exists(time => time == value.timestamp.getTime()))// == value.timestamp.getTime())
                .map(_.value)
              )
            )

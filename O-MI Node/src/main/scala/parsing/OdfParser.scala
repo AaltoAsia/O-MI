@@ -168,7 +168,7 @@ object OdfParser extends Parser[OdfParseResult] {
           value = ii.value.map(value =>
             value.copy(
               dateTime = None,
-              unixTime = Some(timeSolver(value, reqTime).getTime / 1000))),
+              unixTime = Some(timeSolver(value, reqTime).getTime))),
 
           MetaData = addTimeStampToMetaDataValues(ii.MetaData,reqTime))
       ): _*)
