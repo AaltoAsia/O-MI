@@ -68,13 +68,15 @@ formLogicExt = ($, WebOmi) ->
       mirror.refresh()
     mirror.refresh()
 
-  my.createWebSocket = () -> # Should socket be created automaticly for my or 
+  my.createWebSocket = (request) -> # Should socket be created automaticly for my or 
     console.log("Creating WebSocket.")
     consts = WebOmi.consts
     server = consts.serverUrl.val()
     socket = new WebSocket(server)
     socket.onopen = () -> 
       console.log("WebSocket connected.")
+      console.log("Sending request via WebSocket.")
+      socket.send(request)
     socket.onclose = () -> 
       console.log("WebSocket disconnected.")
     socket.onmessage = (message) ->
@@ -98,9 +100,7 @@ formLogicExt = ($, WebOmi) ->
     request = consts.requestCodeMirror.getValue()
     if server.startsWith("ws://")
       if( !my.socket || my.socket.readyState != WebSocket.OPEN) # Is WebOmi.formlogic correct place to store socket? 
-        my.createWebSocket(server)
-        console.log("Sending request via WebSocket.")
-        my.socket.send(request)
+        my.createWebSocket(request)
       else
         console.log("Sending request via WebSocket.")
         my.socket.send(request)

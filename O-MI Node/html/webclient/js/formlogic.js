@@ -57,14 +57,16 @@
       });
       return mirror.refresh();
     };
-    my.createWebSocket = function() {
+    my.createWebSocket = function(request) {
       var consts, server, socket;
       console.log("Creating WebSocket.");
       consts = WebOmi.consts;
       server = consts.serverUrl.val();
       socket = new WebSocket(server);
       socket.onopen = function() {
-        return console.log("WebSocket connected.");
+        console.log("WebSocket connected.");
+        console.log("Sending request via WebSocket.");
+        return socket.send(request);
       };
       socket.onclose = function() {
         return console.log("WebSocket disconnected.");
@@ -93,9 +95,7 @@
       request = consts.requestCodeMirror.getValue();
       if (server.startsWith("ws://")) {
         if (!my.socket || my.socket.readyState !== WebSocket.OPEN) {
-          my.createWebSocket(server);
-          console.log("Sending request via WebSocket.");
-          return my.socket.send(request);
+          return my.createWebSocket(request);
         } else {
           console.log("Sending request via WebSocket.");
           return my.socket.send(request);
