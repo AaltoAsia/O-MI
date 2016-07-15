@@ -43,10 +43,10 @@ import Warp10JsonProtocol.Warp10JsonFormat
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfObject]] {
-    val hTree = SingleStores.hierarchyStore execute GetTree()
 
     def getObject(path: Path): OdfObject = {
-      hTree.get(path) match {
+      val hTree = SingleStores.hierarchyStore execute GetTree()
+      hTree.get(path.init) match {
         case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
         case _ => {
           val id = OdfTreeCollection(QlmID(path.lastOption.getOrElse(
@@ -235,7 +235,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
   import Warp10JsonProtocol.Warp10JsonFormat._
   type Warp10Token = String
 
-  val locationRegex = """([+-]\d\d\.\d*)?([+-]\d\d\d\.\d*)?(?:([+-]\d*)CRSWGS_84)?""".r
+  val locationRegex = """([+-]\d\d\.\d*)?([+-]\d\d\d\.\d*)?(?:([+-]\d*)CRSWGS_84)?\/""".r
   //val locationregex = """(?:([+-]\d\d\.\d*)([+-]\d\d\d\.\d*))?(?:([+-]\d*)CRSWGS_84)?""".r
 
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
@@ -326,22 +326,37 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
  }
 
  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] ={
-
+   val hTree = SingleStores.hierarchyStore execute GetTree()
    val data = infos.flatMap( ii =>
      ii.values.map(value =>
        (
          ii.path,
          value,
-         ii.metaData
-           .flatMap(_.InfoItem
+         hTree
+           .get(ii.path)
+           .collect{ case OdfInfoItem(_,_,_,Some(meta)) => meta
+           }.flatMap(_.InfoItem
              .find(_.name == "locations")
-             .flatMap(_.value //match location infoitems with values
-               .find(_.unixTime ==value.timestamp.getTime())
+             .flatMap(_.value
+               .find(_.unixTime.exists(time => time * 1000 == value.timestamp.getTime()))// == value.timestamp.getTime())
                .map(_.value)
-             ))
+             )
+           )
          )
      )
    )
+
+
+           //ii.metaData
+           //.flatMap(_.InfoItem
+            // .find(_.name == "locations")
+             //.flatMap(_.value //match location infoitems with values
+              // .find(_.unixTime ==value.timestamp.getTime())
+               //.map(_.value)
+           //  ))
+     //    )
+    // )
+   //)
 
    val content = data.map{
     case (path, odfValue, location) =>
@@ -392,7 +407,6 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
        }
      }
      case none => {
-       log.debug(s"no location for value found or invalid syntax: $location")
        "/"
      }
    }
@@ -419,7 +433,9 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
        s"$resString"
      }
 
-   s"$unixEpochTime/$loc $pathJS$labels $value\n"
+   val result = s"$unixEpochTime/$loc $pathJS$labels $value\n"
+   log.debug(s"sent message: $result")
+   result
  }
  
  private def nodesToReadPathSelector( nodes : Iterable[OdfNode] ) = {
