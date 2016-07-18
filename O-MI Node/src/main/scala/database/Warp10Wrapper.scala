@@ -467,7 +467,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    ] FETCH"""
  }
 
- def currentEpoch = new Timestamp( new Date().getTime ).getTime *1000
+ def currentEpoch = new Timestamp( new Date().getTime ).getTime * 1000
  private def warpReadBetweenMsg(
    pathSelector: String,
    begin: Option[Timestamp],
