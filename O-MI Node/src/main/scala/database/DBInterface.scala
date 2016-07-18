@@ -22,6 +22,7 @@ import scala.concurrent.Future
 import akka.actor.ActorSystem
 import http.Boot.settings
 import org.prevayler.PrevaylerFactory
+import parsing.xmlGen.xmlTypes.MetaData
 import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -161,10 +162,10 @@ object SingleStores {
   }
 
 
-  def getMetaData(path: Path) : Option[OdfMetaData] = {
-    (hierarchyStore execute GetTree()).get(path).collect{ 
-      case info : OdfInfoItem => info.metaData
-    }.flatten
+  def getMetaData(path: Path) : Option[MetaData] = {
+    (hierarchyStore execute GetTree()).get(path).collect{
+      case OdfInfoItem(_,_,_,Some(mData)) => mData
+    }
   }
 
   def getSingle(path: Path) : Option[OdfNode] ={
@@ -277,7 +278,7 @@ trait DB {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn]
+  def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn]
 
   /**
    * Used to remove given path and all its descendants from the databas.

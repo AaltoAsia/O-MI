@@ -147,20 +147,40 @@ object OdfParser extends Parser[OdfParseResult] {
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
       },
-      item.MetaData.map{ meta =>
+      addTimeStampToMetaDataValues(item.MetaData,requestProcessTime)
+        //.map{ meta =>
         // tests that conversion works before it is in the db and fails when in read request
-        OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
-      }
+        //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
+      //}
     ) 
   }
 
+  /**
+   * Add timestamp values to metadata values as the name suggests.
+   * @param meta
+   * @param reqTime
+   * @return
+   */
+  private[this] def addTimeStampToMetaDataValues(meta: Option[MetaData], reqTime: Timestamp): Option[MetaData] = {
+    meta.map( m =>
+      MetaData(m.InfoItem.map(ii =>
+        ii.copy(
+          value = ii.value.map(value =>
+            value.copy(
+              dateTime = None,
+              unixTime = Some(timeSolver(value, reqTime).getTime))),
+
+          MetaData = addTimeStampToMetaDataValues(ii.MetaData,reqTime))
+      ): _*)
+    )
+  }
 
   /** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
    */
   private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = value.dateTime match {
     case None => value.unixTime match {
       case None => requestProcessTime
-      case Some(seconds) => new Timestamp(seconds.toLong * 1000)
+      case Some(seconds) => new Timestamp(seconds.toLong)
     }
     case Some(cal) => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
   }

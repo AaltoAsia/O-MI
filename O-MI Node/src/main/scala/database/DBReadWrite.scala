@@ -173,13 +173,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def writeMany(data: Seq[(Path, OdfValue)]): Future[OmiReturn] = {
-
-    val pathsData: Map[Path, Seq[OdfValue]] =
-      data.groupBy{case (path, _) => path}.mapValues(
-        pathValues => pathValues.map{case (_, odfValue) => odfValue}.sortBy(
-          _.timestamp.getTime
-        ))
+  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
+    val pathsData: Map[Path, Seq[OdfValue]] = infos.map(ii => (ii.path -> ii.values.sortBy(_.timestamp.getTime))).toMap
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(
@@ -201,7 +196,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
             id,
             //create new timestamp if option is None
             odfVal.timestamp,
-            odfVal.value,
+            odfVal.value.toString,
             odfVal.typeValue)
         }
       }

@@ -3,7 +3,7 @@ package parsing
 import org.specs2._
 import scala.io.Source
 import parsing._
-import parsing.xmlGen.xmlTypes.QlmID
+import parsing.xmlGen.xmlTypes.{ValueType, InfoItemType, MetaData, QlmID}
 import types._
 import types.OmiTypes._
 import types.OdfTypes.OdfTreeCollection._
@@ -77,8 +77,7 @@ class ParserTest extends Specification {
                 OdfValue(
                   "30", "xs:string",
                     Timestamp.valueOf("2014-12-18 15:34:52"))), None, Some(
-                OdfMetaData(
-                  """<MetaData xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><InfoItem name="Units"><value type="xs:String">Litre</value></InfoItem></MetaData>""")))), Iterable(), None, None), OdfObject(
+                MetaData(InfoItemType(value = Seq(ValueType("Litre", attributes = Map.empty)),name = "Units", attributes = Map.empty))))), Iterable(), None, None), OdfObject(
         Seq(),
           Path("Objects/SmartCottage"), Iterable(), Iterable(
             OdfObject(
@@ -335,6 +334,7 @@ class ParserTest extends Specification {
   def e100 = {
     validOmiTest(writeRequestTest) 
   }
+
   def e101 = {
     invalidOmiTest(
       omiWriteTest.toString.replace("omi:write msgformat=\"odf\"", "omi:write"),
@@ -723,16 +723,17 @@ class ParserTest extends Specification {
     val item2 = createAncestors(OdfInfoItem( 
       Path( "Objects/SmartHouse/Moisture"),
       Vector( 
-        OdfValue( "193.1",  timestamp = testTimestamp ),
-        OdfValue( "1.1", timestamp = testTimestamp )
+        OdfValue( "193.1", "xs:double", timestamp = testTimestamp ),
+        OdfValue( "1.1", "xs:double", timestamp = testTimestamp )
       ), 
-      Some( OdfDescription( " test" )),
-      Some( OdfMetaData(
-        "<MetaData xmlns=\"odf.xsd\" xmlns:omi=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
-        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
-        "Litre</value></InfoItem></MetaData>"
-              )
-          )
+      Some( OdfDescription( " test" )), Some(
+        MetaData(List(InfoItemType(value = Seq(ValueType("Litre", attributes = Map.empty,dateTime = None,unixTime = Some(400000000L))),name = "Units", attributes = Map.empty)): _*))
+      //Some( OdfMetaData(
+      //  "<MetaData xmlns=\"odf.xsd\" xmlns:omi=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
+      //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
+      //  "Litre</value></InfoItem></MetaData>"
+      //        )
+      //    )
     ))
   
     val item3 = createAncestors(OdfInfoItem( 

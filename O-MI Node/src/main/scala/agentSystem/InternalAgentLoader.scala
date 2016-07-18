@@ -30,11 +30,11 @@ import types.Path
 
 sealed trait InternalAgentLoadFailure{ def msg : String }
 abstract class InternalAgentLoadException(val msg: String)  extends  Exception(msg) with InternalAgentLoadFailure
-final case class PropsCreatorNotImplemented(clazz : Class[_] ) extends InternalAgentLoadException({ 
+final case class PropsCreatorNotImplemented[T](clazz : Class[T] ) extends InternalAgentLoadException({ 
   val start = clazz.toString.replace( "class", "Object" ).replace( "$", "")
     start + " does not implement PropsCreator trait."
   })
-final case class InternalAgentNotImplemented(clazz: Class[_]) extends InternalAgentLoadException({ 
+final case class InternalAgentNotImplemented[T](clazz: Class[T]) extends InternalAgentLoadException({ 
   val start = clazz.toString.replace( "class", "Class" )
   start + " does not implement InternalAgent trait."
 })
