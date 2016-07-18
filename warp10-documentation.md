@@ -45,6 +45,7 @@ Warp10 details
 ==============
 
 * O-DF InfoItems are saved to Warp10 with *class name* that is built from the path of the O-DF hierarchy.
+  - They are paths but seperator is `.` (dot) instead of `/` because warp10 write syntax uses it.
   - So the above example would become `Objects.model.humidity`
 * Writes include the location data if it is sent in the same request as MetaData (as described above)
 * Reads include the location MetaData automatically
