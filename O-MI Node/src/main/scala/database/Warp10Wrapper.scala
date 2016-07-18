@@ -69,7 +69,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
       val metaDatas = locations.map( meta => MetaData(OdfInfoItem(infoItemPath / "locations", meta).asInfoItemType))
 
       val result = OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()), metaData = metaDatas)
-      //SingleStores.hierarchyStore execute Union(createAncestors(result))//update metadatas in hierarchystore
 
       OdfTreeCollection(result)
 
@@ -209,7 +208,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
             Seq(parentObj.copy(infoItems = infoItems))
 
-            //Seq(OdfInfoItem(Path(_path.replaceAll("\\.", "/")), _values.sortBy(_.timestamp.getTime())))
           }
           case _ => throw new DeserializationException("Unknown format")
         }(collection.breakOut).flatten
@@ -236,7 +234,6 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
   type Warp10Token = String
 
   val locationRegex = """([+-]\d\d\.\d*)?([+-]\d\d\d\.\d*)?(?:([+-]\d*)CRSWGS_84)?\/""".r
-  //val locationregex = """(?:([+-]\d\d\.\d*)([+-]\d\d\d\.\d*))?(?:([+-]\d*)CRSWGS_84)?""".r
 
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests = true
@@ -348,18 +345,6 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
      )
    )
 
-
-           //ii.metaData
-           //.flatMap(_.InfoItem
-            // .find(_.name == "locations")
-             //.flatMap(_.value //match location infoitems with values
-              // .find(_.unixTime ==value.timestamp.getTime())
-               //.map(_.value)
-           //  ))
-     //    )
-    // )
-   //)
-
    val content = data.map{
     case (path, odfValue, location) =>
     toWriteFormat(path,odfValue, location)
@@ -412,14 +397,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
        "/"
      }
    }
-   /*
-   val latlon = for {
-     lat <- odfValue.attributes.get("lat")
-     lon <- odfValue.attributes.get("lon")
-     res = lat + ":" + lon
-   } yield res
-   val elevation = odfValue.attributes.getOrElse("elev", "")
-   */
+
    val value =
      if( odfValue.isNumeral )
        odfValue.value
@@ -436,7 +414,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
      }
 
    val result = s"$unixEpochTime/$loc $pathJS$labels $value\n"
-   log.debug(s"sent message: $result")
+   //log.debug(s"sent message: $result")
    result
  }
  
