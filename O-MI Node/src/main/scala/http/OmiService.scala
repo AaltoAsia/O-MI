@@ -376,11 +376,14 @@ trait OmiService
              case message: ws.TextMessage => 
                // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
                val stream = message.textStream
-               val six = Sink.foreach[String]{ requestString: String  => 
+               //How to concatenate with next if 
+
+               val msgMerging = new OmiMerger()
+               val sink = Sink.foreach[String]{ requestString: String  => 
                  val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
                  queueSend(futureResponse)
                }
-               stream.runWith(six)(materializer)
+               stream.via(msgMerging).runWith(sink)(materializer)
 
              case message: ws.TextMessage.Strict =>
                val requestString = message.text
