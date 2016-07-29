@@ -370,31 +370,12 @@ trait OmiService
            })
 
 
-           val omiPrefix : String = "<omi:omiEnvelope "
-           val omiPostfix : String = "</omi:omiEnvelope>"
-           val inSink = Sink foreach[ws.Message] {
-             case message: ws.TextMessage => 
-               // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
-               val stream = message.textStream
-               //How to concatenate with next if 
-
-               val msgMerging = new OmiMerger()
-               val sink = Sink.foreach[String]{ requestString: String  => 
-                 val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+           val msgSink = Sink.foreach[String]{ requestString: String  => 
+              val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
                  queueSend(futureResponse)
-               }
-               stream.via(msgMerging).runWith(sink)(materializer)
-
-             case message: ws.TextMessage.Strict =>
-               val requestString = message.text
-               // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
-               val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
-               queueSend(futureResponse)
-
-             case bm: ws.BinaryMessage => // we don't care about binary
-               bm.dataStream.runWith(Sink.ignore)(materializer)
            }
-
+           val formatter = Flow.fromGraph(new OmiChecker()(materializer))
+           val inSink = formatter.to(msgSink)
            (inSink, outSource)
          }
 

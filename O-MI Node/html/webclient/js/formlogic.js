@@ -57,34 +57,129 @@
       });
       return mirror.refresh();
     };
-    my.createWebSocket = function(request) {
+    my.handleSubscriptionHistory = function(response) {
+      var addHistory, end, getPath, getPathValues, htmlformat, info, infoitemXmls, newHistory, odf, pathValues, requestID, returnStatus, start;
+      start = response.search("<omi:requestID>") + 15;
+      end = response.search("</omi:requestID>");
+      requestID = parseInt(response.slice(start, end));
+      start = response.search("<Objects>");
+      end = response.search("</Objects>");
+      odf = response.slice(start, end);
+      infoitemXmls = odf.getElementsByTagName("InfoItem");
+      getPath = function(xmlNode) {
+        var head, id, init, name, nameAttr;
+        switch (xmlNode.nodeName) {
+          case "Object":
+            head = my.evaluateXPath(xmlNode, './odf:id')[0];
+            if (head != null) {
+              id = head.textContent.trim();
+              init = getPath(xmlNode.parentNode);
+              return init + "/" + id;
+            } else {
+              return null;
+            }
+            break;
+          case "InfoItem":
+            nameAttr = xmlNode.attributes.name;
+            if (nameAttr != null) {
+              name = nameAttr.value;
+              init = getPath(xmlNode.parentNode);
+              return init + "/" + name;
+            } else {
+              return null;
+            }
+            break;
+          case "Objects":
+            return "Objects";
+          default:
+            return null;
+        }
+      };
+      getPathValues = function(infoitemXml) {
+        var valueXml, valuesXml;
+        valuesXml = infoitemXml.getChildsByTagName("value");
+        return {
+          path: getPath(infoitemXml),
+          values: (function() {
+            var i, len, results;
+            results = [];
+            for (i = 0, len = valuesXml.length; i < len; i++) {
+              valueXml = valuesXml[i];
+              results.push(valueXml.textContent);
+            }
+            return results;
+          })()
+        };
+      };
+      pathValues = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = infoitemXmls.length; i < len; i++) {
+          info = infoitemXmls[i];
+          results.push(getPathValues(info));
+        }
+        return results;
+      })();
+      newHistory = function(requestID) {
+        return "<div class=\"responseList\" id=\"requestID" + requestID + ">" + "<div class=\"panel panel-info\">" + "<div class=\"panel-heading\">" + "<h3 class=\"panel-title\"><b>RequestID " + requestID + "</b></h3>" + "</div>" + "<table class=\"table table-hover table-condensed\">" + "<thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>" + "<tbody>" + "</tbody>" + "</table>" + "</div>";
+      };
+      returnStatus = function(count, returnCode) {
+        switch (returnCode) {
+          case 200:
+            return "<tr class=\"success\"><th>" + count + "</th><th>returnCode</th><th>" + returnCode + "</th></tr>";
+          case 404:
+            return "<tr class=\"danger\"><th>" + count + "</th><th>returnCode</th><th>" + returnCode + "</th></tr>";
+          default:
+            return "<tr class=\"danger\"><th>" + count + "</th><th>returnCode</th><th>" + returnCode + "</th></tr>";
+        }
+      };
+      htmlformat = function(pathValues) {
+        var i, j, len, len1, lines, pathValue, results, value;
+        for (i = 0, len = pathValues.length; i < len; i++) {
+          pathValue = pathValues[i];
+          lines = (function() {
+            var j, len1, ref, results;
+            ref = pathValue.values;
+            results = [];
+            for (j = 0, len1 = ref.length; j < len1; j++) {
+              value = ref[j];
+              results.push({
+                path: pathValue.path,
+                value: value
+              });
+            }
+            return results;
+          })();
+        }
+        results = [];
+        for (j = 0, len1 = lines.length; j < len1; j++) {
+          pathValue = lines[j];
+          results.push("<tr><td></td><td>" + pathValue.path + "</td><td>" + pathValue.value + "</td></tr>");
+        }
+        return results;
+      };
+      addHistory = function(requestID, pathValues) {
+        var requestHistory;
+        requestHistory = $("requestID" + requestID);
+        if (requestHistory != null) {
+          return $("requestID" + requestID + " > table > tbody > tr").prepend((returnStatus(3, 200)) + htmlformat(pathValues));
+        } else {
+          $(".responseListCollection > .responesList").prepend(newHistory(requestID));
+          return $("requestID" + requestID + " > table > tbody").add((returnStatus(1, 200)) + htmlformat(pathValues));
+        }
+      };
+      return addHistory(requestID, pathValues);
+    };
+    my.createWebSocket = function(onopen, onclose, onmessage, onerror) {
       var consts, server, socket;
       console.log("Creating WebSocket.");
       consts = WebOmi.consts;
       server = consts.serverUrl.val();
       socket = new WebSocket(server);
-      socket.onopen = function() {
-        console.log("WebSocket connected.");
-        console.log("Sending request via WebSocket.");
-        return socket.send(request);
-      };
-      socket.onclose = function() {
-        return console.log("WebSocket disconnected.");
-      };
-      socket.onmessage = function(message) {
-        var response;
-        response = message.data;
-        consts.progressBar.css("width", "100%");
-        my.setResponse(response);
-        consts.progressBar.css("width", "0%");
-        consts.progressBar.hide();
-        return window.setTimeout((function() {
-          return consts.progressBar.show();
-        }), 2000);
-      };
-      socket.onerror = function(error) {
-        return console.log("WebSocket error: " + error);
-      };
+      socket.onopen = onopen;
+      socket.onclose = onclose;
+      socket.onmessage = onmessage;
+      socket.onerror = onerror;
       return my.socket = socket;
     };
     my.send = function(callback) {
@@ -93,45 +188,84 @@
       my.clearResponse();
       server = consts.serverUrl.val();
       request = consts.requestCodeMirror.getValue();
-      if (server.startsWith("ws://")) {
-        if (!my.socket || my.socket.readyState !== WebSocket.OPEN) {
-          return my.createWebSocket(request);
-        } else {
-          console.log("Sending request via WebSocket.");
-          return my.socket.send(request);
-        }
+      if (server.startsWith("ws://") || server.startsWith("wss://")) {
+        console.log("Sending request via WebSocket.");
+        return my.wsSend(request);
       } else {
         console.log("Sending request with HTTP POST.");
-        consts.progressBar.css("width", "95%");
-        return $.ajax({
-          type: "POST",
-          url: server,
-          data: request,
-          contentType: "text/xml",
-          processData: false,
-          dataType: "text",
-          error: function(response) {
-            consts.progressBar.css("width", "100%");
-            my.setResponse(response.responseText);
-            consts.progressBar.css("width", "0%");
-            consts.progressBar.hide();
-            return window.setTimeout((function() {
-              return consts.progressBar.show();
-            }), 2000);
-          },
-          success: function(response) {
-            consts.progressBar.css("width", "100%");
-            my.setResponse(response);
-            consts.progressBar.css("width", "0%");
-            consts.progressBar.hide();
-            window.setTimeout((function() {
-              return consts.progressBar.show();
-            }), 2000);
-            if ((callback != null)) {
-              return callback(response);
-            }
+        return my.httpSend(callback);
+      }
+    };
+    my.wsSend = function(request) {
+      var onclose, onerror, onmessage, onopen;
+      if (!my.socket || my.socket.readyState !== WebSocket.OPEN) {
+        onopen = function() {
+          console.log("WebSocket connected.");
+          return my.socket.send(request);
+        };
+        onclose = function() {
+          return console.log("WebSocket disconnected.");
+        };
+        onerror = function(error) {
+          return console.log("WebSocket error: " + error);
+        };
+        onmessage = my.handleWSMessage;
+        return my.createWebSocket(onopen, onclose, onmessage, onerror);
+      } else {
+        console.log("Sending request via WebSocket.");
+        return my.socket.send(request);
+      }
+    };
+    my.httpSend = function(callback) {
+      var consts, request, server;
+      consts = WebOmi.consts;
+      server = consts.serverUrl.val();
+      request = consts.requestCodeMirror.getValue();
+      consts.progressBar.css("width", "95%");
+      return $.ajax({
+        type: "POST",
+        url: server,
+        data: request,
+        contentType: "text/xml",
+        processData: false,
+        dataType: "text",
+        error: function(response) {
+          consts.progressBar.css("width", "100%");
+          my.setResponse(response.responseText);
+          consts.progressBar.css("width", "0%");
+          consts.progressBar.hide();
+          return window.setTimeout((function() {
+            return consts.progressBar.show();
+          }), 2000);
+        },
+        success: function(response) {
+          consts.progressBar.css("width", "100%");
+          my.setResponse(response);
+          consts.progressBar.css("width", "0%");
+          consts.progressBar.hide();
+          window.setTimeout((function() {
+            return consts.progressBar.show();
+          }), 2000);
+          if ((callback != null)) {
+            return callback(response);
           }
-        });
+        }
+      });
+    };
+    my.handleWSMessage = function(message) {
+      var consts, response;
+      consts = WebOmi.consts;
+      response = message.data;
+      if (-1 !== response.search("<omi:requestID>") && -1 !== response.search("<Objects>")) {
+        return my.handleSubscriptionHistory(response);
+      } else {
+        consts.progressBar.css("width", "100%");
+        my.setResponse(response);
+        consts.progressBar.css("width", "0%");
+        consts.progressBar.hide();
+        return window.setTimeout((function() {
+          return consts.progressBar.show();
+        }), 2000);
       }
     };
     my.buildOdfTree = function(objectsNode) {
