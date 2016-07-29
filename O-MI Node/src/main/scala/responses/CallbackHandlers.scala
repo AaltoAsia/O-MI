@@ -32,7 +32,7 @@ import akka.stream.{ActorMaterializer, Materializer}
  * Handles sending data to callback addresses 
  */
 object CallbackHandlers {
-  val supportedProtocols = Vector("http", "https")
+  val supportedProtocols = Vector("http", "https", "ws", "wss")
 
   // Base error
   sealed class CallbackFailure(msg: String, callback: Uri) extends Exception(msg)

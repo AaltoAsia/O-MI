@@ -57,7 +57,18 @@ trait OmiRequestHandlerCore {
     import system.dispatcher // execution context for futures
 
     request.callback match {
-
+      case Some(callback) if callback.uri =="0" => 
+          request match {
+            case sub: SubscriptionRequest => runGeneration(sub)
+            case _ => 
+              // TODO: Can't cancel this callback
+              runGeneration(request)  map { response =>
+                  request.callback.map(_ send response)
+              }
+              Future.successful{
+                Responses.Success(description = Some("OK, callback job started"))
+              }
+            }
       case Some(callback) => {
 
         val callbackCheck = CallbackHandlers.checkCallbackUri(callback.uri)
