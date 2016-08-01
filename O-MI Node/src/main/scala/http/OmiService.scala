@@ -366,24 +366,11 @@ trait OmiService
              queueSend(Future(response.asXML)) map {_ => ()}
            })
 
-
-           val omiPrefix : String = "<omi:omiEnvelope "
-           val omiPostfix : String = "</omi:omiEnvelope>"
-           // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
-           val inSink = Sink foreach[ws.Message] {
-             // Collect strict? - 18.07.16 https://github.com/akka/akka/issues/20096
-             case message: ws.TextMessage => 
-               // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
-               val stream = message.textStream
-               val processor = Sink.foreach[String]{ requestString: String  => 
-                 val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
-                 queueSend(futureResponse)
-               }
-               stream.runWith(processor)(materializer)
-
-             case bm: ws.BinaryMessage => // we don't care about binary
-               bm.dataStream.runWith(Sink.ignore)(materializer)
+           val msgSink = Sink.foreach[String]{ requestString: String  => 
+             val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+             queueSend(futureResponse)
            }
+
            val formatter = Flow.fromGraph(new OmiChecker()(materializer))
            val inSink = formatter.to(msgSink)
            (inSink, outSource)
