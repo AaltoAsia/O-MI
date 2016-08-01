@@ -17,8 +17,9 @@ package http
 import java.net.InetAddress
 
 import scala.collection.JavaConverters._
+import scala.util.{Success, Failure}
 
-import http.Authorization.{AuthorizationExtension, CombinedTest}
+import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
 import http.Boot.settings
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.extractClientIP
@@ -63,26 +64,27 @@ trait IpAuthorization extends AuthorizationExtension {
   // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"
   private def extractIp: Directive1[Option[InetAddress]] = extractClientIP map (_.toOption)
 
-  def ipHasPermission: UserData => OmiRequest => Option[OmiRequest] = user => {
-    // Write and Response are currently PermissiveRequests
-    case r : PermissiveRequest =>
-      val result = if (user.exists( addr =>
-        whiteIPs.contains( inetAddrToBytes( addr ) ) ||
-        whiteMasks.exists{
-          case (subnet : InetAddress, bits : Int) =>
-          isInSubnet(subnet, bits, addr)
-        }
-      )) Some(r)
-      else None
+  def ipHasPermission: UserData => PermissionTest = user => (wrap: RequestWrapper) =>
+    wrap.unwrapped flatMap {
+      // Write and Response are currently PermissiveRequests
+      case r : PermissiveRequest =>
+        val result = if (user.exists( addr =>
+          whiteIPs.contains( inetAddrToBytes( addr ) ) ||
+          whiteMasks.exists{
+            case (subnet : InetAddress, bits : Int) =>
+            isInSubnet(subnet, bits, addr)
+          }
+        )) Success(r)
+        else Failure(UnauthorizedEx())
 
-      if (result.nonEmpty) {
-        log.debug(s"Authorized IP: $user")
-      }
-      
-      result
-    // Read and Subscriptions should be allowed elsewhere
-    case _ => None
-   }
+        if (result.isSuccess) {
+          log.debug(s"Authorized IP: $user")
+        }
+        
+        result
+      // Read and Subscriptions should be allowed elsewhere
+      case _ => Failure(UnauthorizedEx())
+    }
 
   abstract override def makePermissionTestFunction: CombinedTest =
     combineWithPrevious(
