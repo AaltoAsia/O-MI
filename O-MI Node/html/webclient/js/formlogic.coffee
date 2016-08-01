@@ -67,42 +67,42 @@ formLogicExt = ($, WebOmi) ->
       mirror.refresh()
     mirror.refresh()
   
-  my.handleSubscriptionHistory = (response) -> 
+  my.handleSubscriptionHistory = (response) ->
     start = response.search("<omi:requestID>") + 15
-    end = response.search("</omi:requestID>")  
+    end = response.search("</omi:requestID>")
     requestID = parseInt(response.slice(start, end))
-    start = response.search("<Objects>") 
-    end = response.search("</Objects>")  
+    start = response.search("<Objects>")
+    end = response.search("</Objects>")
     odf = response.slice(start, end)
     infoitemXmls = odf.getElementsByTagName "InfoItem"
-    getPath = (xmlNode) -> 
+    getPath = (xmlNode) ->
       switch xmlNode.nodeName
         when "Object"
           head = my.evaluateXPath(xmlNode, './odf:id')[0]
-          if head?  
-            id = head.textContent.trim() 
+          if head?
+            id = head.textContent.trim()
             init = getPath xmlNode.parentNode
             init + "/" + id
           else
             null
         when "InfoItem"
           nameAttr = xmlNode.attributes.name
-          if nameAttr?  
-            name = nameAttr.value 
+          if nameAttr?
+            name = nameAttr.value
             init = getPath xmlNode.parentNode
             init + "/" + name
-          else 
+          else
             null
         when "Objects"  then "Objects"
         else null
-    getPathValues = (infoitemXml) -> 
+    getPathValues = (infoitemXml) ->
       valuesXml = infoitemXml.getChildsByTagName("value")
       {
         path:  getPath infoitemXml
         values:  ( valueXml.textContent for valueXml in valuesXml )
       }
     pathValues = ( getPathValues info for info in infoitemXmls )
-    newHistory = (requestID) -> 
+    newHistory = (requestID) ->
             "<div class=\"responseList\" id=\"requestID"+requestID+">"+
               "<div class=\"panel panel-info\">"+
                 "<div class=\"panel-heading\">"+
@@ -115,25 +115,25 @@ formLogicExt = ($, WebOmi) ->
                 "</table>"+
               "</div>"
     returnStatus = ( count, returnCode ) ->
-      switch returnCode 
+      switch returnCode
         when 200
           "<tr class=\"success\"><th>"+count+"</th><th>returnCode</th><th>"+returnCode+"</th></tr>"
-        when 404 
+        when 404
           "<tr class=\"danger\"><th>"+count+"</th><th>returnCode</th><th>"+returnCode+"</th></tr>"
         else
           "<tr class=\"danger\"><th>"+count+"</th><th>returnCode</th><th>"+returnCode+"</th></tr>"
     htmlformat = ( pathValues ) ->
-      lines = ({path: pathValue.path, value: value} for value in pathValue.values) for pathValue in pathValues 
+      lines = ({path: pathValue.path, value: value} for value in pathValue.values) for pathValue in pathValues
       "<tr><td></td><td>"+pathValue.path+"</td><td>"+pathValue.value+"</td></tr>" for pathValue in lines
     addHistory = ( requestID, pathValues ) ->
       requestHistory = $( "requestID"+requestID )
       if requestHistory?
          $( "requestID"+requestID+" > table > tbody > tr"  )
-         .prepend( (returnStatus 3, 200) + htmlformat pathValues) 
+         .prepend( (returnStatus 3, 200) + htmlformat pathValues)
       else
         $( ".responseListCollection > .responesList" ).prepend(newHistory requestID)
         $( "requestID"+requestID+" > table > tbody"  )
-         .add( (returnStatus 1, 200) + htmlformat pathValues) 
+         .add( (returnStatus 1, 200) + htmlformat pathValues)
     addHistory requestID, pathValues
 
   
@@ -144,10 +144,23 @@ formLogicExt = ($, WebOmi) ->
     consts = WebOmi.consts
     server = consts.serverUrl.val()
     socket = new WebSocket(server)
-    socket.onopen = onopen
-    socket.onclose = onclose
-    socket.onmessage = onmessage
-    socket.onerror = onerror    
+    socket.onopen = () ->
+      console.log("WebSocket connected.")
+      console.log("Sending request via WebSocket.")
+      socket.send(request)
+    socket.onclose = () ->
+      console.log("WebSocket disconnected.")
+    socket.onmessage = (message) ->
+      # TODO: Check if response to subscription and put into subscription response view
+      response = message.data
+      consts.progressBar.css "width", "100%"
+      my.setResponse response
+      consts.progressBar.css "width", "0%"
+      consts.progressBar.hide()
+      window.setTimeout (-> consts.progressBar.show()), 2000
+      #callback(response) if (callback?)
+    socket.onerror = (error) ->
+      console.log("WebSocket error: " + error)
     my.socket = socket
   
   # send, callback is called with response text if successful
@@ -156,7 +169,7 @@ formLogicExt = ($, WebOmi) ->
     my.clearResponse()
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
-    if server.startsWith("ws://") || server.startsWith("wss://") 
+    if server.startsWith("ws://") || server.startsWith("wss://")
       console.log("Sending request via WebSocket.")
       my.wsSend request
     else
@@ -164,19 +177,19 @@ formLogicExt = ($, WebOmi) ->
       my.httpSend callback
 
   my.wsSend = (request) ->
-    if( !my.socket || my.socket.readyState != WebSocket.OPEN)  
+    if( !my.socket || my.socket.readyState != WebSocket.OPEN)
       onopen = () -> 
         console.log("WebSocket connected.")
         my.socket.send(request) 
       onclose = () -> console.log("WebSocket disconnected.")
       onerror = (error) -> console.log("WebSocket error: " + error)
       onmessage = my.handleWSMessage
-      my.createWebSocket onopen, onclose, onmessage, onerror 
+      my.createWebSocket onopen, onclose, onmessage, onerror
     else
       console.log("Sending request via WebSocket.")
-      my.socket.send(request) 
+      my.socket.send(request)
 
-  my.httpSend = (callback) -> 
+  my.httpSend = (callback) ->
     consts = WebOmi.consts
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
@@ -209,9 +222,9 @@ formLogicExt = ($, WebOmi) ->
     consts = WebOmi.consts
     # TODO: Check if response to subscription and put into subscription response view
     response = message.data
-    if -1 != response.search("<omi:requestID>") && -1 != response.search("<Objects>")  
+    if -1 != response.search("<omi:requestID>") && -1 != response.search("<Objects>")
       my.handleSubscriptionHistory response
-    else 
+    else
       consts.progressBar.css "width", "100%"
       my.setResponse response
       consts.progressBar.css "width", "0%"
