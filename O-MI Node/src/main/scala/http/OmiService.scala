@@ -323,6 +323,8 @@ trait OmiService
            val (outSource, futureQueue) =
              peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
+           // keepalive? http://doc.akka.io/docs/akka/2.4.8/scala/stream/stream-cookbook.html#Injecting_keep-alive_messages_into_a_stream_of_ByteStrings
+
            def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
              val result = for {
                response <- futureResponse
@@ -335,21 +337,7 @@ trait OmiService
                queueResult <- queue offer resultMessage
              } yield {queueResult}
 
-             result onComplete {
-               case Success(QueueOfferResult.Enqueued) => // Ok
-               case Success(e: QueueOfferResult) => log.warn(s"WebSocket response queue failed, reason: $e")
-               futureResponse.map{ 
-                 response =>
-                   val ids = (response \\ "requestID").map{ 
-                     node =>
-                       node.text.toLong
-                   }
-                   ids.foreach{ 
-                     id =>
-                       subscriptionManager ! RemoveSubscription(id)
-                   }
-               }
-               case Failure(e) => log.warn("WebSocket response queue failed, reason: ", e)
+             def removeRelatedSub() = {
                futureResponse.map{ 
                  response =>
                    val ids = (response \\ "requestID").map{ 
@@ -362,6 +350,15 @@ trait OmiService
                    }
                }
              }
+             result onComplete {
+               case Success(QueueOfferResult.Enqueued) => // Ok
+               case Success(e: QueueOfferResult) => // Others mean failure
+                 log.warn(s"WebSocket response queue failed, reason: $e")
+                 removeRelatedSub()
+               case Failure(e) => // exceptions
+                 log.warn("WebSocket response queue failed, reason: ", e)
+                 removeRelatedSub()
+             }
              result
            }
 
@@ -370,9 +367,22 @@ trait OmiService
            })
 
 
-           val msgSink = Sink.foreach[String]{ requestString: String  => 
-              val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+           val omiPrefix : String = "<omi:omiEnvelope "
+           val omiPostfix : String = "</omi:omiEnvelope>"
+           // We don't know yet if the request uses callback="0", TODO: implement the check to RawRequestWrapper
+           val inSink = Sink foreach[ws.Message] {
+             // Collect strict? - 18.07.16 https://github.com/akka/akka/issues/20096
+             case message: ws.TextMessage => 
+               // http://doc.akka.io/api/akka/2.4.7/index.html#akka.stream.scaladsl.Source
+               val stream = message.textStream
+               val processor = Sink.foreach[String]{ requestString: String  => 
+                 val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
                  queueSend(futureResponse)
+               }
+               stream.runWith(processor)(materializer)
+
+             case bm: ws.BinaryMessage => // we don't care about binary
+               bm.dataStream.runWith(Sink.ignore)(materializer)
            }
            val formatter = Flow.fromGraph(new OmiChecker()(materializer))
            val inSink = formatter.to(msgSink)
