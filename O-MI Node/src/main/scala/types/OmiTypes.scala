@@ -41,9 +41,9 @@ sealed trait OmiRequest extends RequestWrapper {
   def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
-  def parsed = Right(asJavaIterable(collection.Iterable(this)))
-  def unwrapped = Success(this)
-  def rawRequest = asXML.toString
+  def parsed: OmiParseResult = Right(asJavaIterable(collection.Iterable(this)))
+  def unwrapped: Try[OmiRequest] = Success(this)
+  def rawRequest: String = asXML.toString
 }
 sealed trait PermissiveRequest
 sealed trait OdfRequest {
