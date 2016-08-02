@@ -36,7 +36,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 
 /**
@@ -60,10 +59,7 @@ public class AuthAPIService implements AuthApi {
 
                     public boolean verify(String hostname,
                                           javax.net.ssl.SSLSession sslSession) {
-                        if (hostname.equals("localhost")) {
-                            return true;
-                        }
-                        return false;
+                        return hostname.equals("localhost");
                     }
                 });
     }
@@ -254,7 +250,7 @@ public class AuthAPIService implements AuthApi {
             JAXBContext jaxbContext = JAXBContext.newInstance("parsing.xmlGen.omi:parsing.xmlGen.odf");
             Marshaller marshaller = jaxbContext.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT,
-                    new Boolean(true));
+                    Boolean.TRUE);
             marshaller.marshal(envelope,
                     new FileOutputStream("jaxbOutput.xml"));
         } catch (Exception ex) {
