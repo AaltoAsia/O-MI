@@ -22,6 +22,7 @@ import javax.xml.datatype.DatatypeFactory
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.concurrent.duration._
 import scala.language.existentials
+import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
@@ -35,12 +36,14 @@ import types.OdfTypes._
   * Trait that represents any Omi request. Provides some data that are common
   * for all omi requests.
   */
-sealed trait OmiRequest {
-  def ttl: Duration
+sealed trait OmiRequest extends RequestWrapper {
   def callback: Option[String]
   def hasCallback: Boolean = callback.isDefined && callback.getOrElse("").nonEmpty
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
+  def parsed: OmiParseResult = Right(asJavaIterable(collection.Iterable(this)))
+  def unwrapped: Try[OmiRequest] = Success(this)
+  def rawRequest: String = asXML.toString
 }
 sealed trait PermissiveRequest
 sealed trait OdfRequest {
@@ -48,6 +51,90 @@ sealed trait OdfRequest {
 }
 sealed trait RequestIDRequest {
   def requestIDs : OdfTreeCollection[Long ]
+}
+
+sealed trait RequestWrapper {
+  def rawRequest: String
+  def ttl: Duration
+  def parsed: OmiParseResult
+  def unwrapped: Try[OmiRequest]
+}
+
+/**
+ * Defines values from the beginning of O-MI message like ttl and message type
+ * without parsing the whole request.
+ */
+class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
+  import RawRequestWrapper._
+  import scala.xml.pull._
+
+
+
+  private val parseSingle: () => EvElemStart = {
+    val src = io.Source.fromString(rawRequest)
+    val er = new XMLEventReader(src)
+
+    {() =>
+      // skip to the intresting parts
+      er.collectFirst{
+        case e: EvElemStart => e
+      } getOrElse parseError("no xml elements found")
+    }
+  }
+  // NOTE: Order is important
+  val omiEnvelope: EvElemStart = parseSingle()
+  val omiVerb: EvElemStart = parseSingle()
+
+  require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
+
+  val ttl: Duration = (for {
+      ttlNodeSeq <- Option(omiEnvelope.attrs("ttl"))
+      head <- ttlNodeSeq.headOption
+      ttl = parsing.OmiParser.parseTTL(head.text.toDouble)
+    } yield ttl
+  ) getOrElse parseError("couldn't parse ttl")
+
+  /**
+   * Gets the verb of the O-MI message
+   */
+  val messageType: MessageType = MessageType(omiVerb.label)
+  
+  /**
+   * Get the parsed request. Message is parsed only once because of laziness.
+   */
+  lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest)
+
+  /**
+   * Access the request easily and leave responsibility of error handling to someone else.
+   * TODO: Only one request per xml message is supported currently
+   */
+  lazy val unwrapped = parsed match {
+    case Right(requestSeq) => Try(requestSeq.head)
+    case Left(errors) => Failure(ParseError.combineErrors(errors))
+  }
+}
+
+object RawRequestWrapper {
+  def apply(rawRequest: String): RawRequestWrapper = new RawRequestWrapper(rawRequest)
+
+  private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
+
+  sealed trait MessageType
+
+  object MessageType {
+    case object Write extends MessageType
+    case object Read extends MessageType
+    case object Cancel extends MessageType
+    case object Response extends MessageType
+    def apply(xmlTagLabel: String): MessageType =
+      xmlTagLabel match {
+        case "write"  => Write
+        case "read"   => Read
+        case "cancel" => Cancel
+        case "response" => Response
+        case _ => parseError("read, write or cancel element not found!")
+      }
+  }
 }
 
 /**
