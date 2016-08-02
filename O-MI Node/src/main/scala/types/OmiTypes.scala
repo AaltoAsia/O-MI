@@ -86,9 +86,8 @@ sealed trait RequestIDRequest {
 class Callback(
   val uri: String,
 
-  // can val be volatile?
-  @volatile
-  var sendHandler: ExecutionContext => OmiRequest => Future[Unit]
+  @transient
+  val sendHandler: ExecutionContext => OmiRequest => Future[Unit]
 
   ) extends Serializable {
     def send(response: OmiRequest)(implicit ec: ExecutionContext): Future[Unit] = sendHandler(ec)(response)
