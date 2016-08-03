@@ -37,7 +37,7 @@ trait RESTHandler extends OmiRequestHandlerBase{
    * @param orgPath The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-  def generateODFREST(orgPath: Path): Option[Either[String, xml.Node]] = {
+  def generateODFREST(orgPath: Path): Option[Either[String, xml.NodeSeq]] = {
     def getODFRequest(path: Path): ODFRequest = path.lastOption match {
       case attr @ Some("value")      => Value(path.init)
       case attr @ Some("MetaData")   => MetaData(path.init)
@@ -52,11 +52,11 @@ trait RESTHandler extends OmiRequestHandlerBase{
     val request = getODFRequest(orgPath)
     request match {
       case Value(path) =>
-        SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value }
+        SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value.toString }
 
       case MetaData(path) =>
         SingleStores.getMetaData(path) map { metaData =>
-          Right(XML.loadString(metaData.data))
+          Right(scalaxb.toXML[xmlTypes.MetaData](metaData, Some("odf"), Some("MetaData"),defaultScope))
         }
       case ObjId(path) =>{  //should this query return the id as plain text or inside Object node?
         val xmlReturn = SingleStores.getSingle(path).map{

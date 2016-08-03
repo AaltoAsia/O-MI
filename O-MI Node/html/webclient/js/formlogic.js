@@ -176,10 +176,28 @@
       consts = WebOmi.consts;
       server = consts.serverUrl.val();
       socket = new WebSocket(server);
-      socket.onopen = onopen;
-      socket.onclose = onclose;
-      socket.onmessage = onmessage;
-      socket.onerror = onerror;
+      socket.onopen = function() {
+        console.log("WebSocket connected.");
+        console.log("Sending request via WebSocket.");
+        return socket.send(request);
+      };
+      socket.onclose = function() {
+        return console.log("WebSocket disconnected.");
+      };
+      socket.onmessage = function(message) {
+        var response;
+        response = message.data;
+        consts.progressBar.css("width", "100%");
+        my.setResponse(response);
+        consts.progressBar.css("width", "0%");
+        consts.progressBar.hide();
+        return window.setTimeout((function() {
+          return consts.progressBar.show();
+        }), 2000);
+      };
+      socket.onerror = function(error) {
+        return console.log("WebSocket error: " + error);
+      };
       return my.socket = socket;
     };
     my.send = function(callback) {

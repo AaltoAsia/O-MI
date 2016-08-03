@@ -187,13 +187,13 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   }
 
   def setTimezoneToSystemLocale(in: String): String = {
-    val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})"""".r
+    val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?)"""".r
 
     val replaced = date replaceAllIn (in, _ match {
 
       case date(pref, timestamp) => {
 
-        val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
         form.setTimeZone(TimeZone.getTimeZone("UTC"))
 
         val parsedTimestamp = form.parse(timestamp)

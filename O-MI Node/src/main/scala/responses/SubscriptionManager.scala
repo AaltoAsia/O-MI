@@ -107,7 +107,100 @@ class SubscriptionManager extends Actor with ActorLogging {
     case SubInfoCmd(id) => sender() ! getSub(id)
   }
 
+  private def handlePollEvent(pollEvent: PollEventSub) = {
+    log.debug(s"Creating response message for Polled Event Subscription")
+    val eventData = (SingleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
+              .map{case (_path,_values) =>
+                OdfInfoItem(_path,_values.sortBy(_.timestamp.getTime()))}
 
+              .map(i => createAncestors(i)) //Map to OdfObjects
+
+    eventData //eventData.map(eData => Some(eData))
+  }
+
+  private def calculateIntervals(pollInterval: PollIntervalSub, values: Seq[OdfValue], pollTime: Long) = {//Refactor
+  val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
+    val lastPolled = pollInterval.lastPolled.getTime()
+    val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
+    val interval  = pollInterval.interval.toMillis
+    var nextTick = lastPolled + (interval - pollTimeOffset)
+
+    if(values.length >= 2){
+      var i = 1 //Intentionally 1 and not 0
+      var previousValue = values.head
+
+      while(i < values.length){
+        if(values(i).timestamp.getTime >= (nextTick)){
+          buffer += previousValue
+          nextTick += interval
+        } else { //if timestmap.getTime < startime + interval
+          previousValue = values(i)
+          i += 1
+        }
+      }
+      //overcomplicated??
+      if( previousValue.timestamp.getTime != pollTime &&
+        previousValue.timestamp.getTime() > lastPolled &&
+        previousValue.timestamp.getTime() > (nextTick - interval))
+        buffer += previousValue
+      Some(buffer.toVector)
+    } else None
+  }
+
+  private def handlePollInterval(pollInterval: PollIntervalSub, pollTime: Long, odfTree: OdfObjects) = {
+
+    log.info(s"Creating response message for Polled Interval Subscription")
+
+    val intervalData= (SingleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
+      .mapValues(_.sortBy(_.timestamp.getTime()))
+
+    val combinedWithPaths =
+      OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
+              .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
+        .map( n => n.path)
+        .map(p => p -> Vector[OdfValue]()).toMap ++ intervalData
+
+    val pollData = combinedWithPaths.map( pathValuesTuple =>{
+
+      val (path, values) = pathValuesTuple match {
+        case (p, v) if (v.nonEmpty) => {
+          v.lastOption match {
+            case Some(last) =>
+              log.info(s"Found previous values for intervalsubscription: $last")
+              (p, v :+ OdfValue(last.value.toString, last.typeValue, new Timestamp(pollTime)))
+            case None =>
+              val msg =s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
+              log.error(msg)
+              throw new Exception(msg)
+          }
+        } //add polltime
+        case (p, v) => {
+          log.info(s"No values found for path: $p in Interval subscription poll for sub id ${pollInterval.id}")
+          val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {
+            //lookup latest value from latestStore, if exists use that
+            case Some(value) => {
+              log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
+              Vector(value,OdfValue(value.value, new Timestamp(pollTime), value.attributes))
+            }
+            //no previous values v is empty
+            case _ => {
+              log.info("No previous value found return empty values.")
+              v
+            }
+          }
+          (p, latestValue)
+        }
+
+      }
+      val calculatedData = calculateIntervals(pollInterval, values, pollTime)
+
+      calculatedData.map(cData => path -> cData)
+    }).flatMap{ n => //flatMap removes None values
+      //create OdfObjects from InfoItems
+      n.map{case ( path, values) => createAncestors(OdfInfoItem(path, values))}
+    }
+    pollData
+  }
   /**
    * Get pollsubscriptions data drom database
    *
@@ -141,115 +234,13 @@ class SubscriptionManager extends Actor with ActorLogging {
           }.reduceOption[OdfObjects]{case (l,r) => l.union(r)}.getOrElse(OdfObjects())
 
         //pollSubscription method removes the data from database and returns the requested data
-        pollSub match {
-          case pollEvent: PollEventSub => {
+        val subValues: Iterable[OdfObjects] = pollSub match {
 
+          case pollEvent: PollEventSub => handlePollEvent(pollEvent)
 
-            log.debug(s"Creating response message for Polled Event Subscription")
-            val eventData = (SingleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
-              .map{case (_path,_values) =>
-                OdfInfoItem(_path,_values.sortBy(_.timestamp.getTime()))}
-
-            //  .mapValues(_.sortBy(_.timestamp.getTime).map(subVal => OdfValue())) //sort values by timestamp and convert them to OdfValue type
-            //  .map{case (_path, valueVec) => OdfInfoItem(_path, valueVec)} // Map to Infoitems
-              .map(i => createAncestors(i)) //Map to OdfObjects
-              .fold(emptyTree)(_.union(_))
-
-            Some(eventData)//eventData.map(eData => Some(eData))
-          }
-
-          case pollInterval: PollIntervalSub => {
-
-            log.info(s"Creating response message for Polled Interval Subscription")
-
-            val interval: Duration = pollInterval.interval
-
-            //val intervalData: Future[Map[Path, Vector[OdfValue]]] =
-
-            val intervalData= (SingleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
-              .mapValues(_.sortBy(_.timestamp.getTime()))
-            //dbConnection.pollIntervalSubscription(id).map(_.toVector
-            //  .groupBy(n => n.path)
-            //  .mapValues(_.sortBy(_.timestamp.getTime).map(_.toOdf)))
-
-            val combinedWithPaths =
-              OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
-              .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
-              .map( n => n.path)
-              .map(p => p -> Vector[OdfValue]()).toMap ++ intervalData
-
-
-
-            val pollData: OdfObjects = combinedWithPaths.map( pathValuesTuple =>{
-
-              val (path, values) = pathValuesTuple match {
-                case (p, v) if (v.nonEmpty) => {
-                  v.lastOption match { 
-                    case Some(last) =>
-                    log.info(s"Found previous values for intervalsubscription: $last")
-                    (p, v.:+(last.copy(timestamp = new Timestamp(pollTime))))
-                    case None => 
-                    val msg =s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
-                    log.error(msg)
-                    throw new Exception(msg)
-                  }
-                } //add polltime
-                case (p, v) => {
-                  log.info(s"No values found for path: $p in Interval subscription poll for sub id ${pollSub.id}")
-                  val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {
-                    //lookup latest value from latestStore, if exists use that
-                    case Some(value) => {
-                    log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
-                    Vector(value,value.copy(timestamp = new Timestamp(pollTime)))
-                    }
-                    //no previous values v is empty
-                    case _ => {
-                    log.info("No previous value found return empty values.")
-                    v
-                    }
-                  }
-                  (p, latestValue)
-                }
-
-              }
-              val calculatedData = {//Refactor
-                val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
-                val lastPolled = pollInterval.lastPolled.getTime()
-                val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
-                val interval  = pollInterval.interval.toMillis
-                var nextTick = lastPolled + (interval - pollTimeOffset)
-
-                if(values.length >= 2){
-                  var i = 1 //Intentionally 1 and not 0
-                  var previousValue = values.head
-
-                  while(i < values.length){
-                    if(values(i).timestamp.getTime >= (nextTick)){
-                      buffer += previousValue
-                      nextTick += interval
-                    } else { //if timestmap.getTime < startime + interval
-                        previousValue = values(i)
-                        i += 1
-                    }
-                  }
-                  //overcomplicated??
-                  if( previousValue.timestamp.getTime != pollTime && 
-                      previousValue.timestamp.getTime() > lastPolled && 
-                      previousValue.timestamp.getTime() > (nextTick - interval))
-                    buffer += previousValue
-                  Some(buffer.toVector)
-                } else None
-              }
-
-                calculatedData.map(cData => path -> cData)
-              }).flatMap{ n => //flatMap removes None values
-              //create OdfObjects from InfoItems
-              n.map{case ( path, values) => createAncestors(OdfInfoItem(path, values))}
-            }.fold(emptyTree)(_.union(_))
-            Some(pollData)
-          }
-
+          case pollInterval: PollIntervalSub => handlePollInterval(pollInterval,pollTime,odfTree)
         }
+        Some(subValues.fold(emptyTree)(_.union(_)))
       }
       case _ => None
     }

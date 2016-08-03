@@ -16,6 +16,7 @@ package agentSystem
 
 import java.lang.{Iterable => JavaIterable}
 
+import scala.collection.immutable.IndexedSeq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -162,10 +163,7 @@ trait  DBPusher  extends BaseAgentSystem{
       oldValueOpt = SingleStores.latestStore execute LookupSensorData(path)
       value <- info.values
     } yield (path, value, oldValueOpt)
-    //for debugging
-    //log.debug(s"\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXxxx\n${
-    //pathValueOldValueTuples.map(n =>n._1.toString + "-> " + n._2.value + "old: " + n._3.map(_.value).toString()).mkString("\n")
-    //}")
+
     val pollFuture = Future{pathValueOldValueTuples.foreach{
       case (path, oldValue, value) =>
         handlePollData(path, oldValue ,value)} //Add values to pollsubs in this method
@@ -187,7 +185,6 @@ trait  DBPusher  extends BaseAgentSystem{
       processEvents(triggeringEvents)
     }
 
-
     // Save new/changed stuff to transactional in-memory SingleStores and then DB
 
     val newItems = triggeringEvents collect {
@@ -195,17 +192,6 @@ trait  DBPusher  extends BaseAgentSystem{
     }
 
     val metas = infoItems filter { _.hasMetadata }
-    // check syntax
-    metas foreach {metaInfo =>
-
-      checkMetaData(metaInfo.metaData) match {
-
-        case Success(_) => // noop: exception on failure instead of filtering the valid
-        case Failure(exp) =>
-         log.error( exp, "InputPusher MetaData" )
-         throw exp;
-      }
-    }
 
     val iiDescriptions = infoItems filter { _.hasDescription }
 
@@ -221,14 +207,16 @@ trait  DBPusher  extends BaseAgentSystem{
         SingleStores.hierarchyStore execute Union(updateTree)
     }
 
-    // DB + Poll Subscriptionst
-    val itemValues = triggeringEvents flatMap {event =>
-      val item   = event.infoItem
-      val values = item.values.toSeq
-      values map {value => (item.path, value)}
-    }
+    // DB + Poll Subscriptions
+    val infosToBeWrittenInDB: Seq[OdfInfoItem] =
+      triggeringEvents //InfoItems contain single value
+      .map(_.infoItem) //map type to OdfInfoItem
+      .groupBy(_.path) //combine same paths
+      .flatMap( pathValues => //flatMap to remove None values
+        pathValues._2.reduceOption(_.combine(_)) //Combine infoitems with same paths to single infoitem
+      )(collection.breakOut) // breakOut to correct collection type
 
-    val writeFuture = dbobject.writeMany(itemValues)
+    val writeFuture = dbobject.writeMany(infosToBeWrittenInDB)
 
     writeFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")

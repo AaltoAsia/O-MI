@@ -142,7 +142,7 @@ case class OdfInfoItem(
     path: Path,
     values: OdfTreeCollection[OdfValue] = OdfTreeCollection(),
     description: Option[OdfDescription] = None,
-    metaData: Option[OdfMetaData] = None)
+    metaData: Option[MetaData] = None)
   extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path(${path})")

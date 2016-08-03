@@ -17,8 +17,8 @@ package http
 import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, ExecutionContext}
-import scala.util.{Success, Failure, Try}
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
 import org.slf4j.LoggerFactory
@@ -43,7 +43,7 @@ import http.Authorization._
 import parsing.OmiParser
 import responses.{RequestHandler, RemoveSubscription}
 import types.OmiTypes._
-import types.Path
+import types.{ParseError, Path}
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -174,66 +174,68 @@ trait OmiService
     currentConnectionCallback: Option[Callback] = None
   ): Future[NodeSeq] = {
     try {
-      val eitherOmi = OmiParser.parse(requestString)
-      eitherOmi match {
-        case Right(requests) =>
 
-          val ttlPromise = Promise[ResponseRequest]()
+      //val eitherOmi = OmiParser.parse(requestString)
 
-          val request = requests.headOption  // TODO: Only one request per xml is supported currently
-          val response: Future[ResponseRequest] = request match {
 
-            case Some(originalReq : OmiRequest) =>
-              hasPermissionTest(originalReq) match {
-                case Some(req) =>{
-                  req.ttl match{
-                    case ttl: FiniteDuration => ttlPromise.completeWith(
-                      akka.pattern.after(ttl, using = system.scheduler) {
-                        log.info(s"TTL timed out after $ttl")
-                        Future.successful(Responses.TimeOutError())
-                      }
-                    )
-                    case _ => //noop
-                  }
-                  val fixedReq =
-                    if (req.callback.map(_.uri).getOrElse("") == "0")
-                      req.withCallback(currentConnectionCallback)
-                    else req
-
-                  requestHandler.handleRequest(fixedReq)(system)
-                }
-                case None =>
-                  Future.successful(Responses.Unauthorized())
-              }
-            case _ =>  Future.successful(Responses.NotImplemented())
+      val originalReq = RawRequestWrapper(requestString)
+      val ttlPromise = Promise[ResponseRequest]()
+      originalReq.ttl match {
+        case ttl: FiniteDuration => ttlPromise.completeWith(
+          akka.pattern.after(ttl, using = system.scheduler) {
+            log.info(s"TTL timed out after $ttl");
+            Future.successful(Responses.TimeOutError())
           }
-
-          //if timeoutfuture completes first then timeout is returned
-          Future.firstCompletedOf(Seq(response, ttlPromise.future)) map {
-            response : ResponseRequest =>
-              request match {
-                case Some(resp: ResponseRequest) if !resp.results.exists{ result => result.odf.nonEmpty }=>
-                  NodeSeq.Empty
-                case Some(other : OmiRequest) =>
-                  // check the error code for logging
-                  if(response.results.exists{ result => result.returnValue.returnCode != "200"}){
-                    log.warn(s"Errors with following request:\n${requestString}")
-                  }
-
-                  response.asXML // return
-              }
-          }
-
-        case Left(errors) => { // Errors found
-
-          log.warn(s"${requestString}")
-          log.warn("Parse Errors: {}", errors.mkString(", "))
-
-          val errorResponse = Responses.ParseErrors(errors.toVector)
-
-          Future.successful(errorResponse.asXML)
-        }
+        )
+        case _ => //noop
       }
+
+      val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
+        case Success(req: RequestWrapper) => { // Authorized
+           req.parsed match {
+            case Right(requests) =>
+
+              val request = req.unwrapped // NOTE: Be careful when implementing multi-request messages
+              request match {
+                // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
+                case Success(respRequest: ResponseRequest) if respRequest.results.forall{ result => result.odf.isEmpty } =>
+                  Future.successful(Responses.NoResponse())
+                case Success(r : OmiRequest) =>
+                  requestHandler.handleRequest(r)(system)
+              }
+            case Left(errors) => { // Parsing errors found
+
+              log.warn(s"${requestString}")
+              log.warn("Parse Errors: {}", errors.mkString(", "))
+
+              val errorResponse = Responses.ParseErrors(errors.toVector)
+
+              Future.successful(errorResponse)
+            }
+          }
+        }
+        case Failure(e: UnauthorizedEx) => // Unauthorized
+          Future.successful(Responses.Unauthorized())
+        case Failure(pe: ParseError) =>
+          val errorResponse = Responses.ParseErrors(Vector(pe))
+          Future.successful(errorResponse)
+        case Failure(ex) =>
+          Future.successful(Responses.InternalError(ex))
+      }
+
+      // if timeoutfuture completes first then timeout is returned
+      Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
+
+        case response : ResponseRequest =>
+          // check the error code for logging
+          val statusO = response.results.map{ result => result.returnValue.returnCode}
+          if (statusO exists (_ != "200")){
+            log.warn(s"Error code $statusO with following request:\n${requestString}")
+          }
+
+          response.asXML // return
+      }
+
     } catch {
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)

@@ -621,7 +621,7 @@
 	<article class="request-response single test"> 
 	    <h2> Closed timeframe </h2>
 	    <div><p class="description">
-		User wants values between 01-01-1970T00:00:03 and 00:00:06. 
+		User wants values between 01-01-1970T00:00:00.003 and 00:00:00.006. 
 		</p>
 		Argument:
 		<ul>
@@ -634,7 +634,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06">
+  <omi:read msgformat="odf" begin="1970-01-01T00:00:00.003" end="1970-01-01T00:00:00.006">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -689,7 +689,7 @@
 	<article class="request-response single test"> 
 	    <h2> Open timeframe, begin </h2>
 	    <div><p class="description">
-		User wants values after 01-01-1970T00:00:03 
+		User wants values after 01-01-1970T00:00:00.003 
 		</p>
 		Argument:
 		<ul>
@@ -701,7 +701,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03">
+  <omi:read msgformat="odf" begin="1970-01-01T00:00:00.003">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -762,7 +762,7 @@
 	<article class="request-response single test"> 
 	    <h2> Open timeframe, end  </h2>
 	    <div><p class="description">
-		User wants values before 01-01-1970T00:00:06. 
+		User wants values before 01-01-1970T00:00:00.006. 
 		</p>
 		Argument:
 		<ul>
@@ -774,7 +774,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" end="1970-01-01T00:00:06">
+  <omi:read msgformat="odf" end="1970-01-01T00:00:00.006">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -835,7 +835,7 @@
 	<article class="request-response single test"> 
 	    <h2> Closed timeframe with newest  </h2>
 	    <div><p class="description">
-		User wants two newest values between 01-01-1970T00:00:003 and 00:00:06. 
+		User wants two newest values between 01-01-1970T00:00:00.003 and 00:00:00.006. 
 		</p>
 		Argument:
 		<ul>
@@ -849,7 +849,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" newest="2">
+  <omi:read msgformat="odf" begin="1970-01-01T00:00:00.003" end="1970-01-01T00:00:00.006" newest="2">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -900,7 +900,7 @@
 	<article class="request-response single test"> 
 	    <h2> Closed timeframe with oldest  </h2>
 	    <div > <p class="description">
-		User wants two oldest values between 01-01-1970T00:00:003 and 00:00:06.
+		User wants two oldest values between 01-01-1970T00:00:00.003 and 00:00:00.006.
 		</p>
 		Argument:
 		<ul>
@@ -914,7 +914,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03" end="1970-01-01T00:00:06" oldest="2">
+  <omi:read msgformat="odf" begin="1970-01-01T00:00:00.003" end="1970-01-01T00:00:00.006" oldest="2">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -965,7 +965,7 @@
 	<article class="request-response single test"> 
 	    <h2> Open timeframe with oldest, begin </h2>
 	    <div > <p class="description">
-		User wants two oldest values after 01-01-1970T00:00:03.
+		User wants two oldest values after 01-01-1970T00:00:00.003.
 		</p>
 		Argument:
 		<ul>
@@ -978,7 +978,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03" oldest="2">
+  <omi:read msgformat="odf" begin="1970-01-01T00:00:00.003" oldest="2">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -1029,7 +1029,7 @@
 	<article class="request-response single test"> 
 	    <h2> Open timeframe with newest, begin  </h2>
 	    <div > <p class="description">
-		User wants two newest values after 01-01-1970T00:00:03.
+		User wants two newest values after 01-01-1970T00:00:00.003.
 		</p>
 		Argument:
 		<ul>
@@ -1042,7 +1042,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03" newest="2">
+  <omi:read msgformat="odf" begin="1970-01-01T00:00:00.003" newest="2">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -1093,7 +1093,7 @@
 	<article class="request-response single test"> 
 	    <h2> Open timeframe with oldest, end  </h2>
 	    <div > <p class="description">
-		User wants two oldest values before 01-01-1970T00:00:06.
+		User wants two oldest values before 01-01-1970T00:00:00.006.
 		</p>
 		Argument:
 		<ul>
@@ -1106,7 +1106,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" end="1970-01-01T00:00:06" oldest="2">
+  <omi:read msgformat="odf" end="1970-01-01T00:00:00.006" oldest="2">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
@@ -1157,7 +1157,7 @@
 	<article class="request-response single test"> 
 	    <h2> Open timeframe with newest, end </h2>
 	    <div > <p class="description">
-		User wants two newest values before 01-01-1970T00:00:06.
+		User wants two newest values before 01-01-1970T00:00:00.006.
 		</p>
 		Argument:
 		<ul>
@@ -1170,7 +1170,7 @@
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" end="1970-01-01T00:00:06" newest="2">
+  <omi:read msgformat="odf" end="1970-01-01T00:00:00.006" newest="2">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>

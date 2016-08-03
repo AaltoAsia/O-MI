@@ -30,6 +30,14 @@ object Responses{
     override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.NotFoundPaths(paths))
   }
 
+  case class NoResponse() extends ResponseRequest{
+    val ttl = 0.seconds
+    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection()
+    override val asXML = xml.NodeSeq.Empty
+    override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelope =
+      throw new AssertionError("This request is not an omiEnvelope")
+  }
+
   case class NotFoundRequestIDs( requestIDs: Vector[Long], ttl: Duration = 10.seconds ) extends ResponseRequest{
     override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.NotFoundRequestIDs(requestIDs))
   }
