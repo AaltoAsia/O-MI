@@ -17,7 +17,8 @@ Location format (ISO 6709)
 * We only support the decimal representation: `±00.0±000.0`
 * height/depth:
   - By the standard: "When height or depth is present, CRS identifier must follow." So it becomes `±00.0±000.0±0CRSWGS_84`
-  - Unit is millimeters above/below sea level
+  - Unit is millimeters above/below sea level.
+* Recommended place for MetaData about the location format is in the `<MetaData>` with InfoItem named `type`. It is also added automatically by this server.
 
 Example Object
 ---------------
@@ -25,13 +26,16 @@ Example Object
 ```xml
 <Objects>
   <Object>
-    <id>model</id>
+    <id>SensorBox123</id>
     <InfoItem name="location">
-          <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00" type="ISO 6709">+51.50198796764016+000.005952995270490646+12345CRSWGS_84/</value>
-          <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00" type="ISO 6709">+51.50198796764016+000.005952995270490646+42313CRSWGS_84/</value>
-          <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00" type="ISO 6709">+51.50198796764016+000.005952995270490646+12423CRSWGS_84/</value>
-        </InfoItem>
-      </MetaData>
+     <MetaData>
+      <InfoItem name="type">ISO 6709</InfoItem>
+     </MetaData>
+     <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00">+51.50198796764016+000.005952995270490646+12345CRSWGS_84/</value>
+     <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00">+51.50198796764016+000.005952995270490646+42313CRSWGS_84/</value>
+     <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00">+51.50198796764016+000.005952995270490646+12423CRSWGS_84/</value>
+    </InfoItem>
+    <InfoItem name="humidity">
       <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00" type="xs:double">79.16</value>
       <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00" type="xs:double">75.87</value>
       <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00" type="xs:double">73.55</value>
@@ -58,3 +62,4 @@ Change log
 
 * Changed location data to be in a location InfoItem of the parent Object instead of MetaData 
 * InfoItem for locations renamed from `locations` to `location`
+* Recommended coordinate syntax metadata place is now in the `<MetaData>` of `location` InfoItem instead of `type` attribute of values
