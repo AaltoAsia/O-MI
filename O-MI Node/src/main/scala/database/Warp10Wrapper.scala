@@ -44,6 +44,7 @@ import Warp10JsonProtocol.Warp10JsonFormat
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
   implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfObject]] {
+    def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L)))).asInfoItemType))
 
     def getObject(path: Path): OdfObject = {
       val hTree = SingleStores.hierarchyStore execute GetTree()
@@ -67,7 +68,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         if(locs.isEmpty) None
         else Some(locs)
       }
-      val locationInfoItem = locations.map( locValues => OdfInfoItem(Path(infoItemPath.init)  / "location", locValues))
+      val locationInfoItem = locations.map( locValues => OdfInfoItem(Path(infoItemPath.init)  / "location", locValues, metaData = warp10MetaData(Path(infoItemPath.init) / "location")))
 
       val result = OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()))//, metaData = metaDatas)
 
@@ -110,8 +111,8 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
       val elev = elevation.map(e=> elevationFormatter.format(e))
 
       (latlon, elev) match {
-        case (Some(latilong), el) => Some(OdfValue(s"$latilong${el.getOrElse("")}/","ISO 6709", timestamp))
-        case (_, Some(el)) => Some(OdfValue(s"$el/","ISO 6709", timestamp))
+        case (Some(latilong), el) => Some(OdfValue(s"$latilong${el.getOrElse("")}/","xs:String", timestamp))
+        case (_, Some(el)) => Some(OdfValue(s"$el/","xs:String", timestamp))
         case _ => None
       }
 
@@ -335,10 +336,6 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
          }
        }
      }
-    println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWww")
-      println(inner(path.init))
-      println("__________________")
-        println(path + "|" + locs)
      inner(path.init).flatMap(_.headOption)//should only contain 1 location per path
    }
 
