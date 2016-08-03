@@ -4,9 +4,10 @@ Data model, O-MI conversion
 
 Warp10 takes location data for each value but O-MI doesn't have that kind of field for each value, instead we use the following format:
 
-* Location is stored in `<MetaData>` under InfoItem `locations`
+* Location is stored in the parent `<Object>` under InfoItem `location`
 * Each location value that is related to a warp10 sensor value should have __the same timestamp__
-* Locations are converted from ISO 6709 standard to warp10 (for now)
+  * (for single values you can have a single location and value without timestamp and the server will fill it in automatically)
+* Locations are converted from ISO 6709 standard to warp10 (warp10 geolocation format and others migth be supported in the future)
 
 Location format (ISO 6709)
 --------------------------
@@ -25,9 +26,7 @@ Example Object
 <Objects>
   <Object>
     <id>model</id>
-    <InfoItem name="humidity">
-      <MetaData>
-        <InfoItem name="locations">
+    <InfoItem name="location">
           <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00" type="ISO 6709">+51.50198796764016+000.005952995270490646+12345CRSWGS_84/</value>
           <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00" type="ISO 6709">+51.50198796764016+000.005952995270490646+42313CRSWGS_84/</value>
           <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00" type="ISO 6709">+51.50198796764016+000.005952995270490646+12423CRSWGS_84/</value>
@@ -51,3 +50,11 @@ Warp10 details
 * Reads include the location MetaData automatically
 * Tokens should be pasted to `application.conf` configuration file of O-MI Node
 
+Change log
+==========
+
+2016-08-03
+----------
+
+* Changed location data to be in a location InfoItem of the parent Object instead of MetaData 
+* InfoItem for locations renamed from `locations` to `location`
