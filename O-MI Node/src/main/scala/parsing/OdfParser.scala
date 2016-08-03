@@ -167,7 +167,9 @@ object OdfParser extends Parser[OdfParseResult] {
         ii.copy(
           value = ii.value.map(value =>
             value.copy(
-              dateTime = None,
+              //convert from and back to Gregorian calendar, this causes dateTime and unixTime to show same time.
+              //This doesn't add dateTime if it doesn't exist in the request unixTime is however added even if it is missing
+              dateTime = value.dateTime.map( n => timestampToXML(timeSolver(value, reqTime))),
               unixTime = Some(timeSolver(value, reqTime).getTime))),
 
           MetaData = addTimeStampToMetaDataValues(ii.MetaData,reqTime))
