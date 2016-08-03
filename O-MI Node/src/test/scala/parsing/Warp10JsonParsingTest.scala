@@ -66,16 +66,12 @@ class Warp10JsonParsingTest extends Specification {
         |       [1380475082000000,30000,3.0]]}]
       """.stripMargin
 
-    val correctLocations = Some(
-      MetaData(
-        OdfInfoItem(
-          Path("class/test/test2/locations"),
-          Vector(
-            OdfValue("+10000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081000L)),
-            OdfValue("+20000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081500L)),
-            OdfValue("+30000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L))
-          )
-        ).asInfoItemType
+    val correctLocations = OdfInfoItem(
+      Path("class/test/location"),
+      Vector(
+        OdfValue("+10000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081000L)),
+        OdfValue("+20000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081500L)),
+        OdfValue("+30000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L))
       )
     )
 
@@ -84,14 +80,13 @@ class Warp10JsonParsingTest extends Specification {
       Vector(
         OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
         OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
-        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty)),
-      metaData = correctLocations
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty))
     )
 
 
 
     val result = testJson.parseJson.convertTo[Seq[OdfObject]]
-    result.head.infoItems must contain(correctValues)
+    result.head.infoItems must contain(correctValues) and (result.head.infoItems must contain(correctLocations))
 
   }
 
@@ -108,29 +103,26 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
 
-    val correctLocations = Some(
-      MetaData(
-        OdfInfoItem(
-          Path("class/test/test2/locations"),
-          Vector(
-            OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081000L)),
-            OdfValue("+50+050/", "ISO 6709", new Timestamp(1380475081500L)),
-            OdfValue("+50+060/", "ISO 6709", new Timestamp(1380475082000L)))
-        ).asInfoItemType
-      )
+    val correctLocations = OdfInfoItem(
+      Path("class/test/location"),
+      Vector(
+        OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081000L)),
+        OdfValue("+50+050/", "ISO 6709", new Timestamp(1380475081500L)),
+        OdfValue("+50+060/", "ISO 6709", new Timestamp(1380475082000L)))
     )
+
+
 
     val correctValues = OdfInfoItem(
       Path("class/test/test2"),
       Vector(
         OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
         OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
-        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty)),
-      metaData = correctLocations
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty))
     )
     val result = testJson.parseJson.convertTo[Seq[OdfObject]]
 
-    result.head.infoItems must contain(correctValues)
+    result.head.infoItems must contain(correctValues) and (result.head.infoItems must contain(correctLocations))
 
   }
 
@@ -147,16 +139,12 @@ class Warp10JsonParsingTest extends Specification {
       """.stripMargin
 
 
-    val correctLocations = Some(
-      MetaData(
-        OdfInfoItem(
-          Path("class/test/test2/locations"),
-          Vector(
-            OdfValue("+48-004.5+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081000L)),
-            OdfValue("+50+050+11000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081500L)),
-            OdfValue("+50+060+12000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L)))
-        ).asInfoItemType
-      )
+    val correctLocations = OdfInfoItem(
+      Path("class/test/location"),
+      Vector(
+        OdfValue("+48-004.5+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081000L)),
+        OdfValue("+50+050+11000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081500L)),
+        OdfValue("+50+060+12000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L)))
     )
 
     val correctValues = OdfInfoItem(
@@ -164,12 +152,11 @@ class Warp10JsonParsingTest extends Specification {
       Vector(
         OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
         OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
-        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty)),
-      metaData = correctLocations
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty))
     )
     val result = testJson.parseJson.convertTo[Seq[OdfObject]]
 
-    result.head.infoItems must contain(correctValues)
+    result.head.infoItems must contain(correctValues) and (result.head.infoItems must contain(correctLocations))
   }
 
   def fiveParamsLongerArray = {
@@ -188,19 +175,15 @@ class Warp10JsonParsingTest extends Specification {
         |       [1380475083500000,70.0,80.0,15000000,6.5]]}]
       """.stripMargin
 
-    val correctLocations = Some(
-      MetaData(
-        OdfInfoItem(
-          Path("class/test/test2/locations"),
-          Vector(
-            OdfValue("+48-004.5+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081000L)),
-            OdfValue("+50+050+11000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081500L)),
-            OdfValue("+50+060+12000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L)),
-            OdfValue("+55+065+13000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082500L)),
-            OdfValue("+60+070+14000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475083000L)),
-            OdfValue("+70+080+15000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475083500L)))
-        ).asInfoItemType
-      )
+    val correctLocations = OdfInfoItem(
+      Path("class/test/location"),
+      Vector(
+        OdfValue("+48-004.5+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081000L)),
+        OdfValue("+50+050+11000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475081500L)),
+        OdfValue("+50+060+12000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L)),
+        OdfValue("+55+065+13000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082500L)),
+        OdfValue("+60+070+14000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475083000L)),
+        OdfValue("+70+080+15000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475083500L)))
     )
 
     val correctValues = OdfInfoItem(
@@ -211,12 +194,12 @@ class Warp10JsonParsingTest extends Specification {
         OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty),
         OdfValue(7.5, new Timestamp(1380475082500L), attributes = Map.empty),
         OdfValue(4.5, new Timestamp(1380475083000L), attributes = Map.empty),
-        OdfValue(6.5, new Timestamp(1380475083500L), attributes = Map.empty)), metaData = correctLocations
+        OdfValue(6.5, new Timestamp(1380475083500L), attributes = Map.empty))
     )
 
     val result = testJson.parseJson.convertTo[Seq[OdfObject]]
 
-    result.head.infoItems must contain(correctValues)
+    result.head.infoItems must contain(correctValues) and(result.head.infoItems must contain(correctLocations))
 
   }
 
@@ -247,42 +230,30 @@ class Warp10JsonParsingTest extends Specification {
 
 
 
-      val correctLocations1 = Some(
-        MetaData(
-          OdfInfoItem(
-            Path("class/test/test2/locations"),
-            Vector(
-              OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081500L)),
-              OdfValue("+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L)),
-              OdfValue("+48.1-004.5+11000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475083000L))
-            )
-          ).asInfoItemType
+      val correctLocations1 = OdfInfoItem(
+        Path("class/test/location"),
+        Vector(
+          OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081500L)),
+          OdfValue("+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L)),
+          OdfValue("+48.1-004.5+11000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475083000L))
         )
       )
 
-      val correctLocations2 = Some(
-        MetaData(
-          OdfInfoItem(
-            Path("test1/test/test2/locations"),
+      val correctLocations2 = OdfInfoItem(
+        Path("test1/test/location"),
+        Vector(
+          OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081500L)),
+          OdfValue("+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L))
+        )
+      )
+
+      val correctLocations3 = OdfInfoItem(
+            Path("test2/test/location"),
             Vector(
               OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081500L)),
               OdfValue("+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L))
             )
-          ).asInfoItemType
-        )
-      )
-
-      val correctLocations3 = Some(
-        MetaData(
-          OdfInfoItem(
-            Path("test2/test/test2/locations"),
-            Vector(
-              OdfValue("+48-004.5/", "ISO 6709", new Timestamp(1380475081500L)),
-              OdfValue("+10000000CRSWGS_84/", "ISO 6709", new Timestamp(1380475082000L))
-            )
-          ).asInfoItemType
-        )
-      )
+          )
 
      val correctValues1 = OdfInfoItem(
       Path("class/test/test2"),
@@ -290,8 +261,7 @@ class Warp10JsonParsingTest extends Specification {
         OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
         OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
         OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty),
-        OdfValue(42.0, new Timestamp(1380475083000L), attributes = Map.empty)),
-       metaData = correctLocations1
+        OdfValue(42.0, new Timestamp(1380475083000L), attributes = Map.empty))
      )
 
     val correctValues2 = OdfInfoItem(
@@ -299,8 +269,7 @@ class Warp10JsonParsingTest extends Specification {
       Vector(
         OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
         OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
-        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty)),
-      metaData = correctLocations2
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty))
     )
 
     val correctValues3 = OdfInfoItem(
@@ -308,8 +277,7 @@ class Warp10JsonParsingTest extends Specification {
       Vector(
         OdfValue(3.14, new Timestamp(1380475081000L), attributes = Map.empty),
         OdfValue(2.5, new Timestamp(1380475081500L), attributes = Map.empty),
-        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty)),
-      metaData = correctLocations3
+        OdfValue(3.0, new Timestamp(1380475082000L), attributes = Map.empty))
       )
 
       val res = testJson.parseJson.convertTo[Seq[OdfObject]]
@@ -317,9 +285,12 @@ class Warp10JsonParsingTest extends Specification {
       val obj2 = res.find(_.path == Path("test1/test/test2")).get
       val obj3 = res.find(_.path == Path("test2/test/test2")).get
 
-      obj1.infoItems must contain(correctValues1)  and(
-      obj2.infoItems must contain(correctValues2)) and(
-      obj3.infoItems must contain(correctValues3))
+      obj1.infoItems must contain(correctValues1) and(
+        obj1.infoItems must contain(correctLocations1)) and(
+        obj2.infoItems must contain(correctValues2) and (
+          obj2.infoItems must contain(correctLocations2))) and(
+        obj3.infoItems must contain(correctValues3) and (
+          obj3.infoItems must contain(correctLocations3)))
 
   }
 

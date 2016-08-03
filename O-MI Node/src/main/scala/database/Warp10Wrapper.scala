@@ -19,6 +19,7 @@ import java.sql.Timestamp
 import java.text.DecimalFormat
 import java.util.Date
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
@@ -56,7 +57,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         }
       }
     }
-    def createInfoItem(
+    def createInfoItems(
                          path: Path,
                          in: (OdfTreeCollection[OdfValue], OdfTreeCollection[Option[OdfValue]])): OdfTreeCollection[OdfInfoItem] = {
       val infoItemPath = path
@@ -66,11 +67,11 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         if(locs.isEmpty) None
         else Some(locs)
       }
-      val metaDatas = locations.map( meta => MetaData(OdfInfoItem(infoItemPath / "locations", meta).asInfoItemType))
+      val locationInfoItem = locations.map( locValues => OdfInfoItem(Path(infoItemPath.init)  / "location", locValues))
 
-      val result = OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()), metaData = metaDatas)
+      val result = OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()))//, metaData = metaDatas)
 
-      OdfTreeCollection(result)
+      (OdfTreeCollection(result) ++ OdfTreeCollection(locationInfoItem).flatten)
 
     }
 
@@ -187,7 +188,8 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
             case (_, Some(_path), _infoItems ) => {
               val path = Path(_path.replaceAll("\\.", "/"))
               val parentObj = getObject(path) //TODO what happens if not in hierarchystore
-              val infoItems = createInfoItem(path, _infoItems.unzip)
+              val infoItems = createInfoItems(path, _infoItems.unzip)
+
               parentObj.copy(infoItems=infoItems)
             }
             case _ => throw new DeserializationException("No Path found when deserializing")
@@ -202,7 +204,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
             val parentObj = getObject(path) //TODO what happens if not in hierarchystore
             //val infoItems = createInfoItems(path, infoItems)
 
-            val infoItems = createInfoItem(
+            val infoItems = createInfoItems(
               path,
               ii.foldLeft(Vector[(OdfValue, Option[OdfValue])]())((col ,next ) => col ++ next._3).unzip)
 
@@ -322,25 +324,42 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
         }
  }
 
+  private def findClosestLocation(path: Path, locs: Map[Path,Seq[OdfInfoItem]]): Option[OdfInfoItem] = {
+     @tailrec def inner(iPath: Path):Option[Seq[OdfInfoItem]] = {
+       if(iPath.length <= 1)
+         None
+       else{
+         locs.get(iPath / "location") match {
+           case res @ Some(_) => res
+           case _ => inner(iPath.init)
+         }
+       }
+     }
+    println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWww")
+      println(inner(path.init))
+      println("__________________")
+        println(path + "|" + locs)
+     inner(path.init).flatMap(_.headOption)//should only contain 1 location per path
+   }
+
  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] ={
    val hTree = SingleStores.hierarchyStore execute GetTree()
-   val data = infos.flatMap( ii =>
+   val grouped = infos.groupBy(_.path.lastOption.exists(_ == "location"))
+
+   val locations = grouped.get(true).map(_.groupBy(_.path))
+   val newInfos = grouped.get(false).toSeq.flatten // Option[Seq[InfoItem]] -> Seq[Seq[InfoItem]] -> Seq[InfoItem]
+
+   val data = newInfos.flatMap( ii =>
      ii.values.map(value =>
        (
          ii.path,
          value,
-         hTree
-           .get(ii.path)
-           .collect{ case OdfInfoItem(_,_,_,Some(meta)) => {
-             meta
-           }
-           }.flatMap(_.InfoItem
-             .find(_.name == "locations")
-             .flatMap(_.value
-               .find(_.unixTime.exists(time => time == value.timestamp.getTime()))// == value.timestamp.getTime())
-               .map(_.value)
-             )
-           )
+         for{
+           locs <- locations
+           closest <- findClosestLocation(ii.path, locs)
+           matched <- closest.values.find(_.timestamp.getTime == value.timestamp.getTime)
+           res = matched.value.toString
+         } yield res
          )
      )
    )
