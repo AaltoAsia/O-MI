@@ -187,9 +187,18 @@ class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
   ) getOrElse parseError("couldn't parse ttl")
 
   /**
-   * Gets the verb of the O-MI message
+   * The verb of the O-MI message (read, write, cancel, response)
    */
   val messageType: MessageType = MessageType(omiVerb.label)
+
+  /**
+   * Gets the verb of the O-MI message
+   */
+  val callback: Option[Callback] = for {
+      callbackNodeSeq <- Option(omiEnvelope.attrs("callback"))
+      head <- callbackNodeSeq.headOption
+      callback = Callback(head.text)
+    } yield callback
   
   /**
    * Get the parsed request. Message is parsed only once because of laziness.
