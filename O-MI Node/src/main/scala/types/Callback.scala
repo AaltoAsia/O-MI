@@ -11,13 +11,15 @@ import Callback._
  */
 sealed trait Callback{ 
   def address: String 
-    override def equals( any: Any) : Boolean ={
-      any match {
-        case other: Callback => other.address == address//for testing
-        case _ => this == any
-      }
+  override def equals( any: Any) : Boolean ={
+    any match {
+      case other: Callback => other.address == address//for testing
+      case _ => this == any
     }
+  }
   val defined: Boolean = false
+
+  override def toString: String = address
 }
 
 final case class RawCallback( val address: String ) extends Callback
@@ -31,6 +33,7 @@ final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier)
 
 final case class HTTPCallback(val uri: Uri) extends DefinedCallback{
   val address: String = uri.toString
+
 }
 
 final case class RawCallbackFound(msg: String) extends Exception(msg)

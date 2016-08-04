@@ -68,13 +68,13 @@ class TypesTest extends Specification {
   def e6 = CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
   
   def e10 = {
-    !  OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
+    !  OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OmiRequest]
   }
 
   def e11 = !OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
   
   def e100 = {
-      OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfNode]
+      OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OdfNode]
   }
 
   def e101 = OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
