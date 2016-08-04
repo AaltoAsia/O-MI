@@ -73,12 +73,8 @@ Setup development environment
     - `sbt doc`: compile api documentation
     - `sbt test`: run tests
     - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
-    - `sbt clean coverage test`: generate test coverage
-<!-- not working atm: - `sbt run`: run the project or better: -->
-    - `sbt`: enter sbt command line and then
-       * `re-start`:  run the project in background
-       * `re-stop`: close the background process
-    _extra info:_
+    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI Node/target/scala-2.11/scoverage-report/`
+    - _extra info:_
     - run any of above commands again when there is a file change by adding `~` in front, like `sbt ~re-start`
     - all commands above compiles the needed files that are not yet compiled
     - run many commands in sequence easier if you open sbt command line with `sbt`
