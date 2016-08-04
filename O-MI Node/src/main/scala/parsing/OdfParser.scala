@@ -1,56 +1,50 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package parsing
 
-import scala.util.{Try, Success, Failure}
-import java.util.Date
 import java.io.File
-import scala.util.control.NonFatal
 import java.sql.Timestamp
-import java.text.SimpleDateFormat
 import javax.xml.transform.stream.StreamSource
-import scala.xml.Utility.trim
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 
-import types._
-import OmiTypes._
-import OdfTypes._
-import xmlGen._
-import xmlGen.xmlTypes._
+import scala.collection.JavaConversions.asJavaIterable
+import scala.util.{Failure, Success, Try}
+import scala.xml.Elem
+
+import parsing.xmlGen._
+import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.OdfTypes._
+import types._
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
-
-  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+  val schemaName = "odf.xsd"
+  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream(schemaName))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
   /**
    * Public method for parsing the xml file into OdfParseResults.
    *
-   *  @param xml_msg XML formatted file to be parsed. Should be in O-DF format.
+   *  @param file XML formatted file to be parsed. Should be in O-DF format.
    *  @return OdfParseResults
    */
   def parse(file: File): OdfParseResult = {
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadFile(file)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
-    }
+    )
+    parseTry(parsed)
 
-    parse(root)
   }
 
   /**
@@ -60,16 +54,19 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(xml_msg: String): OdfParseResult = {
-    val root = Try(
+    val parsed = Try(
       XMLParser.loadString(xml_msg)
-    ) match {
-      case Success(s) => s
-      case Failure(f) => return Left( Iterable( ParseError(s"Invalid XML: ${f.getMessage}")))
-    }
+    )
 
-    parse(root)
+    parseTry(parsed)
   }
 
+  private def parseTry(parsed: Try[Elem]): OdfParseResult = {
+    parsed match {
+      case Success(root) => parse(root)
+      case Failure(f) => Left(Iterable(ParseError(s"Invalid XML: ${f.getMessage}")))
+    }
+  }
 
   /**
    * Public method for parsing the xml structure into OdfParseResults.
@@ -78,35 +75,36 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @return OdfParseResults
    */
   def parse(root: xml.Node): OdfParseResult = { 
-    val schema_err = schemaValidation(root)
-    if (schema_err.nonEmpty) return Left(
-      schema_err.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
-    ) 
+    schemaValidation(root) match {
+      case errors : Seq[ParseError] if errors.nonEmpty => Left(
+        errors.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
+      ) 
+      case empty : Seq[ParseError] if empty.isEmpty =>
 
-    val requestProcessTime = currentTime
+      val requestProcessTime = currentTime
 
-    Try{
-      val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
-      Right(
-        OdfObjects( 
-          if(objects.Object.isEmpty)
-            Iterable.empty[OdfObject]
-          else
-            objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
-          objects.version
-        )
-      )
-    } match {
-      case Success(res) => res
-      case Failure(e) => 
-        Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+      Try{
+        val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
+        Right(
+          OdfObjects( 
+            if(objects.Object.isEmpty)
+              Iterable.empty[OdfObject]
+            else
+              objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
+            objects.version
+          ))
+      } match {
+        case Success(res) => res
+        case Failure(e) => Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+      }
     }
   }
 
   private[this] def validateId(stringId: String): Option[String] = {
-    val trimmedName = stringId.trim
-    if (trimmedName.isEmpty) None
-    else Some(trimmedName)
+    stringId.trim match{ 
+      case "" => None 
+      case trimmedName: String => Some(trimmedName)
+    }
   }
   private[this] def validateId(optionId: Option[String]): Option[String] = for {
     head <- optionId
@@ -149,20 +147,40 @@ object OdfParser extends Parser[OdfParseResult] {
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
       },
-      item.MetaData.map{ meta =>
+      addTimeStampToMetaDataValues(item.MetaData,requestProcessTime)
+        //.map{ meta =>
         // tests that conversion works before it is in the db and fails when in read request
-        OdfMetaData( scalaxb.toXML[MetaData](meta, Some("odf.xsd"),Some("MetaData"), xmlGen.defaultScope).toString)
-      }
+        //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
+      //}
     ) 
   }
 
+  /**
+   * Add timestamp values to metadata values as the name suggests.
+   * @param meta
+   * @param reqTime
+   * @return
+   */
+  private[this] def addTimeStampToMetaDataValues(meta: Option[MetaData], reqTime: Timestamp): Option[MetaData] = {
+    meta.map( m =>
+      MetaData(m.InfoItem.map(ii =>
+        ii.copy(
+          value = ii.value.map(value =>
+            value.copy(
+              dateTime = None,
+              unixTime = Some(timeSolver(value, reqTime).getTime))),
+
+          MetaData = addTimeStampToMetaDataValues(ii.MetaData,reqTime))
+      ): _*)
+    )
+  }
 
   /** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
    */
   private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = value.dateTime match {
     case None => value.unixTime match {
       case None => requestProcessTime
-      case Some(seconds) => new Timestamp(seconds.toLong * 1000)
+      case Some(seconds) => new Timestamp(seconds.toLong)
     }
     case Some(cal) => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
   }

@@ -1,9 +1,10 @@
 package responses
 
+import scala.concurrent.duration._
+
 import akka.testkit.TestProbe
 import org.specs2.mutable._
 import testHelpers.Actors
-import scala.concurrent.duration._
 /**
  * Created by satsuma on 19.4.2016.
  */

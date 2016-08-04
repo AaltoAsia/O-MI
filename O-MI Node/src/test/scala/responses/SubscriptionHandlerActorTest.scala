@@ -20,7 +20,7 @@ class SubscriptionHandlerTest extends Specification with NoTimeConversions {
 
 */
 /*  def addIntervalSub(intervalInSeconds: Int) = {
-    SingleStores.intervalPrevayler execute AddIntervalSub(
+    SingleStores.subStore execute AddIntervalSub(
       IntervalSub(1,
                   Vector.empty[Path],
                   new Timestamp(System.currentTimeMillis() + 2000),

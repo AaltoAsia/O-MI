@@ -1,47 +1,48 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import agentSystem._
-import http.CLICmds._
-import http._
-import types.Path
-import akka.actor.SupervisorStrategy._
-import akka.pattern.ask
-import akka.util.Timeout
-import akka.actor.{
-  Actor, 
-  ActorRef, 
-  ActorInitializationException, 
-  ActorKilledException, 
-  ActorLogging, 
-  OneForOneStrategy, 
-  Props, 
-  SupervisorStrategy}
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-import scala.collection.mutable.Map
 import java.io.File
 import java.net.URLClassLoader
-import java.sql.Timestamp
-import java.util.Date
 import java.util.jar.JarFile
-import http.CLICmds._
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
+
+import agentSystem.AgentTypes._
+import akka.actor.{Props, ActorRef}
+import akka.pattern.ask
+import com.typesafe.config.Config
+import types.Path
+
+sealed trait InternalAgentLoadFailure{ def msg : String }
+abstract class InternalAgentLoadException(val msg: String)  extends  Exception(msg) with InternalAgentLoadFailure
+final case class PropsCreatorNotImplemented[T](clazz : Class[T] ) extends InternalAgentLoadException({ 
+  val start = clazz.toString.replace( "class", "Object" ).replace( "$", "")
+    start + " does not implement PropsCreator trait."
+  })
+final case class InternalAgentNotImplemented[T](clazz: Class[T]) extends InternalAgentLoadException({ 
+  val start = clazz.toString.replace( "class", "Class" )
+  start + " does not implement InternalAgent trait."
+})
+final case class WrongPropsCreated(props : Props, classname: String ) extends InternalAgentLoadException({
+  val created = props.actorClass
+  s"Object $classname creates InternalAgentProps for $created,"+
+  s" but should create for class $classname."
+})
 
 trait InternalAgentLoader extends BaseAgentSystem {
   import context.dispatcher
@@ -50,9 +51,8 @@ trait InternalAgentLoader extends BaseAgentSystem {
   Thread.currentThread.setContextClassLoader( createClassLoader())
   /** Settings for getting list of internal agents and their configs from application.conf */
 
-
-  def start() = {
-    val classnames = getAgentConfigurations
+  def start() : Unit = {
+    val classnames = settings.agentConfigurations
     classnames.foreach {
       case configEntry : AgentConfigEntry =>
       agents.get( configEntry.name ) match{
@@ -64,52 +64,82 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  def loadAndStart(name : AgentName, classname : String, config : String) = {
-    Try {
+  protected[agentSystem] def loadAndStart(
+    name : AgentName,
+    classname : String,
+    config : Config,
+    ownedPaths: Seq[Path]
+  ) : Unit = Try {
       log.info("Instantiating agent: " + name + " of class " + classname)
-      val classLoader = Thread.currentThread.getContextClassLoader
-      val clazz = classLoader.loadClass(classname)
-      val interface =  classOf[InternalAgent]
-      if( interface.isAssignableFrom(clazz) ){
-        val prop  = Props(clazz)
-        val agent = context.actorOf( prop, name.toString )
-        val date = new Date()
-        val timeout = Timeout(5 seconds) 
-        val configureF = ask(agent,Configure(config))(timeout)
-        configureF.onSuccess{
-          case error : InternalAgentFailure =>  
-          log.warning(s"Agent $name failed at configuration. Terminating agent.")
-          context.stop(agent)
-          case success : InternalAgentSuccess =>  
-          log.info(s"Agent $name has been configured. Starting...");
-          val startF = ask(agent,Start())(timeout)
-          startF.onSuccess{
-            case error : InternalAgentFailure =>  
-            log.warning(s"Agent $name failed to start. Terminating agent.")
-            context.stop(agent)
-            case success : InternalAgentSuccess =>  
-            log.info(s"Agent $name started successfully.")
-            agents += name -> AgentInfo(name,classname, config, agent, true)
+      val classLoader           = Thread.currentThread.getContextClassLoader
+      val actorClazz            = classLoader.loadClass(classname)
+      val objectClazz           = classLoader.loadClass(classname + "$")
+      val objectInterface       = classOf[PropsCreator]
+      val agentInterface        = classOf[InternalAgent]
+      val responsibleInterface  = classOf[ResponsibleInternalAgent]
+      actorClazz match {
+        //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
+        case actorClass if agentInterface.isAssignableFrom(actorClass) =>
+          objectClazz match { 
+            case objectClass if objectInterface.isAssignableFrom(objectClass) =>
+              //Static field MODULE$ contains Object it self
+              //Method get is used to get value of field for a Object.
+              //Because field MODULE$ is static, it return  the companion object recardles of argument
+              //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
+              val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
+              //Get props and create agent
+              val props = propsCreator.props(config).props
+              props.actorClass match {
+                case clazz if clazz == actorClazz =>
+                  val agent = context.actorOf( props, name.toString )
+                  startAgent(agent)
+                case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
+              }
+            case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
           }
-        }
-      } else {
-        log.warning(s"Class $classname did not implement AbstractInternalAgent.")
+          case clazz: Class[_] => throw new InternalAgentNotImplemented(clazz)
       }
     } match {
-      case Success(_) => ()
-      case Failure(e) => e match {
-        case e: NoClassDefFoundError =>
-          log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
-        case e: ClassNotFoundException =>
-          log.warning("Classloading failed. Could not load: " + classname + "\n" + e + " caught")
-        case e: Throwable =>
-          log.warning(s"Class $classname could not be loaded, created, initialized or started. Because received $e.")
+      case Success(startF: Future[ActorRef]) => 
+        startF.onSuccess{ 
+          case agentRef: ActorRef =>
+          log.info( s"Started agent $name successfully.")
+          agents += name -> AgentInfo(name,classname, config, agentRef, true, ownedPaths)
+        }
+        startF.onFailure{ 
+          case e : Throwable =>
+          log.warning(s"Class $classname could not be started. Received $e")
           log.warning(e.getStackTrace.mkString("\n"))
-        case t => throw t
-      }
+        }
+      case Failure( e : InternalAgentLoadFailure ) =>
+        log.warning( e.msg ) 
+      case Failure(e:NoClassDefFoundError) => 
+        log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+      case Failure(e:ClassNotFoundException ) =>
+        log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+      case Failure(e: Throwable) =>
+        log.warning(s"Class $classname could not be loaded or created. Received $e")
+        log.warning(e.getStackTrace.mkString("\n"))
     }
+    
+  
+
+  protected def startAgent(agent: ActorRef) = { 
+    val timeout = settings.internalAgentsStartTimout
+    val startF = ask(agent,Start())(timeout)
+    val resultF = startF.flatMap{ 
+      case result : Try[InternalAgentSuccess @unchecked] =>  Future.fromTry(result) // internal type is unchecked
+    }.map{
+      case success : InternalAgentSuccess => agent
+    }
+    resultF.onFailure{ 
+      case e: Throwable => 
+      context.stop(agent)
+    }
+    resultF
   }
-  def loadAndStart(configEntry: AgentConfigEntry) : Unit = loadAndStart( configEntry.name,configEntry.classname, configEntry.config)
+  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit =
+    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.ownedPaths)
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.
@@ -149,7 +179,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
 
   }
 
-  private[this] def loadJar( jar: File) : Option[ Array[ File ] ]= {
+  private[this] def loadJar( jar: File) : Option[Array[File ] ]= {
     if( jar.getName.endsWith(".jar") && jar.exists() ){
         val jarFile = new JarFile(jar)
         val jarEntries = jarFile.entries.asScala.toArray.filter(_.getName.endsWith(".jar"))
@@ -176,21 +206,4 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
 
-  private[agentSystem] def getAgentConfigurations: Array[AgentConfigEntry] = {
-    val agentsO = Option(settings.internalAgents)
-    agentsO match {
-      case Some(agents) => 
-        val names : Set[String] = asScalaSet(agents.keySet()).toSet // mutable -> immutable
-        names.map{ 
-          name =>
-          val tuple = agents.toConfig().getObject(name).unwrapped().asScala
-          for{
-            classname <- tuple.get("class")
-            config <- tuple.get("config")
-          } yield AgentConfigEntry(name, classname.toString, config.toString) 
-        }.flatten.toArray
-      case None =>
-        Array.empty
-    }
-  }
 }

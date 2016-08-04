@@ -1,26 +1,25 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  **/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package responses
 
-import types._
-import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{scalaxb, defaultScope}
-import parsing.xmlGen.scalaxb._
-import scala.xml.NodeSeq
 import scala.language.existentials
-import OmiGenerator._
+import scala.xml.NodeSeq
+
+import parsing.xmlGen._
+import parsing.xmlGen.scalaxb._
+import parsing.xmlGen.xmlTypes._
+import types._
 /** 
   * Object containing helper mehtods for generating scalaxb generated O-MI types.
   * Used to generate response messages when received a request.
@@ -34,7 +33,7 @@ object OmiGenerator {
     * @param version of O-MI
     * @return O-MI omiEnvelope tag.
     */
-  def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") = {
+  def omiEnvelope[ R <: OmiEnvelopeOption : CanWriteXML ](ttl: Double, requestName: String, request: R , version: String = "1.0") : OmiEnvelope= {
     OmiEnvelope( DataRecord[R](Some("omi.xsd"), Some(requestName), request), version, ttl)
   }
 
@@ -46,7 +45,7 @@ object OmiGenerator {
     ResponseListType(
       results:_*
     )
-}
+  }
 
   /** Generates O-MI RequestResultType.
     * @param returnType O-MI return tag.
@@ -93,7 +92,7 @@ object OmiGenerator {
     * @param odf O-DF Structure.
     * @return O-MI msg tag.
     */
-  def odfMsg( odf: NodeSeq )={
+  def odfMsg( odf: NodeSeq ):  NodeSeq ={
     <omi:msg xmlns="odf.xsd">
       {odf}
     </omi:msg>
@@ -104,7 +103,7 @@ object OmiGenerator {
     * @param results O-MI result tags.
     * @return O-MI omiEnvelope tag.
     */
-  def wrapResultsToResponseAndEnvelope(ttl: Double, results: RequestResultType*) = {
+  def wrapResultsToResponseAndEnvelope(ttl: Double, results: RequestResultType*) : OmiEnvelope= {
     omiEnvelope(ttl, "response", omiResponse(results: _*))
   }
 
@@ -123,41 +122,41 @@ object OmiGenerator {
     * @param envelope xmlType for OmiEnvelope containing response
     * @return xml.NodeSeq containing response
     */
-  def xmlMsg(envelope: OmiEnvelope) = {
+  def xmlMsg(envelope: OmiEnvelope): NodeSeq = {
     scalaxb.toXML[OmiEnvelope](envelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
   }
 
   /** O-MI response for not found paths/subscription. */
-  def notFound = xmlFromResults(
+  def notFound : NodeSeq= xmlFromResults(
     1.0,
     Results.notFound)
 
   /** O-MI response for successfully handled request with out any other information.*/
-  def success = xmlFromResults(
+  def success : NodeSeq = xmlFromResults(
     1.0,
     Results.success)
 
   /** O-MI response for request which permission was denied.*/
-  def unauthorized = xmlFromResults(
+  def unauthorized : NodeSeq = xmlFromResults(
     1.0,
     Results.unauthorized)
 
   /** O-MI response for features not implemented.*/
-  def notImplemented = xmlFromResults(
+  def notImplemented : NodeSeq = xmlFromResults(
     1.0,
     Results.notImplemented)
 
   /** O-MI response for invalid request.
     * @param msg Message defining invalidation.
     */
-  def invalidRequest(msg: String = "") = xmlFromResults(
+  def invalidRequest(msg: String = "") : NodeSeq = xmlFromResults(
     1.0,
     Results.invalidRequest(msg))
 
   /** O-MI response for request which malformed content.
     * @param err ParseErrors
     */
-  def parseError(err: ParseError*) =
+  def parseError(err: ParseError*) : NodeSeq =
   xmlFromResults(
     1.0,
     Results.simple("400",
@@ -166,7 +165,7 @@ object OmiGenerator {
   /** O-MI response for request which callback address was malformed.
     * @param callback Invalid callback address
     */
-  def invalidCallback(callback: String) =
+  def invalidCallback(callback: String) : NodeSeq =
   xmlFromResults(
     1.0,
     Results.simple("400",
@@ -175,13 +174,13 @@ object OmiGenerator {
   /** O-MI response for request that caused an exception.
     * @param e Exception caught.
     */
-  def internalError(e: Throwable) =
+  def internalError(e: Throwable) : NodeSeq =
   xmlFromResults(
     1.0, Results.internalError(e)
   )
 
   /** O-MI response for request which ttl timedout. */
-  def timeOutError(message: String = "") = xmlFromResults(
+  def timeOutError(message: String = "") : NodeSeq = xmlFromResults(
     1.0, Results.timeOutError(message)
   )
 }

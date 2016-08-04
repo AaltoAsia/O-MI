@@ -7,18 +7,20 @@ O-MI Node Server
 
 
 Internet of Things data server.
-Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard.
+Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard. It is intended to be as reference implementation that shows how these standards work in more detail.
+
 
 See `development` branch for latest progress.
 
+Resources
+---------
 * [API Documentation ScalaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/index.html)
 * [API Documentation JavaDoc](http://pesutykki.mooo.com/dump/O-MI-JavaApi/)
-
-[Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
+* [Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
 
 Dependencies
 ------------
-java-1.7
+* Java 1.8
 
 Running
 -------
@@ -27,8 +29,8 @@ Download the pre-compiled zip or tgz package from latest git releases [here](htt
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
-1. `bin/o-mi-node.bat` for Windows
-2. `bin/o-mi-node` for Unix and Mac
+* `bin/o-mi-node.bat` for Windows
+* `bin/o-mi-node` for Unix and Mac
 
 This will run O-MI Node with configuration in /conf/application.conf.
 By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.
@@ -71,12 +73,8 @@ Setup development environment
     - `sbt doc`: compile api documentation
     - `sbt test`: run tests
     - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
-    - `sbt clean coverage test`: generate test coverage
-<!-- not working atm: - `sbt run`: run the project or better: -->
-    - `sbt`: enter sbt command line and then
-       * `re-start`:  run the project in background
-       * `re-stop`: close the background process
-    _extra info:_
+    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI Node/target/scala-2.11/scoverage-report/`
+    - _extra info:_
     - run any of above commands again when there is a file change by adding `~` in front, like `sbt ~re-start`
     - all commands above compiles the needed files that are not yet compiled
     - run many commands in sequence easier if you open sbt command line with `sbt`

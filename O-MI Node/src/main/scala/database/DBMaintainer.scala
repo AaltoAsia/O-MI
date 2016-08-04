@@ -1,19 +1,33 @@
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package database
 
-import akka.actor._
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.collection.JavaConverters._
+import java.io.{File, FilenameFilter}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-import java.io.{File, FilenameFilter}
+
+import akka.actor._
+import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
+import org.prevayler.Prevayler
 
 object DBMaintainer{
-  def props(dbobject: DB) = Props( new DBMaintainer(dbobject) )  
+  def props(dbobject: DBReadWrite) : Props = Props( new DBMaintainer(dbobject) )
 }
-class DBMaintainer(val dbobject: DB)
+class DBMaintainer(val dbobject: DBReadWrite)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
@@ -22,38 +36,32 @@ class DBMaintainer(val dbobject: DB)
   case object TrimDB
   case object TakeSnapshot
   private val scheduler = context.system.scheduler
-  private val trimInterval = http.Boot.settings.trimInterval
+  private val trimInterval: FiniteDuration = http.Boot.settings.trimInterval
   private val snapshotInterval = http.Boot.settings.snapshotInterval
-  log.info(s"scheduling databse trimming every $trimInterval seconds")
-  scheduler.schedule(trimInterval.seconds, trimInterval.seconds, self, TrimDB)
+  log.info(s"scheduling databse trimming every $trimInterval")
+  scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
   if(http.Boot.settings.writeToDisk){
-    log.info(s"scheduling prevayler snapshot every $snapshotInterval seconds")
-    scheduler.schedule(snapshotInterval.seconds, snapshotInterval.seconds, self, TakeSnapshot)
+    log.info(s"scheduling prevayler snapshot every $snapshotInterval")
+    scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
   } else {
     log.info("using transient prevayler, taking snapshots is not in use.")
   }
   type Hole
   private def takeSnapshot: FiniteDuration = {
+    def trySnapshot[T](p: Prevayler[T], errorName: String): Unit = {
+      Try[Unit]{
+        p.takeSnapshot() // returns snapshot File
+      }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
+    }
+
     log.info("Taking prevyaler snapshot")
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
-    Try[File]{
-      SingleStores.latestStore.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of lateststore")}
-    Try[File]{
-      SingleStores.hierarchyStore.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of hierarchystore")}
-    Try[File]{
-      SingleStores.eventPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of eventPrevayler")}
-    Try[File]{
-      SingleStores.intervalPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of intervalPrevayler")}
-    Try[File]{
-      SingleStores.pollPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of pollPrevayler")}
-    Try[File]{
-      SingleStores.idPrevayler.takeSnapshot()
-    }.recover{case a => log.error(a,"Failed to take Snapshot of idPrevayler")}
+
+    trySnapshot(SingleStores.latestStore, "latestStore")
+    trySnapshot(SingleStores.hierarchyStore, "hierarchyStore")
+    trySnapshot(SingleStores.subStore, "subStore")
+    trySnapshot(SingleStores.idPrevayler, "idPrevayler")
+
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
     val duration : FiniteDuration = end - start
     duration
@@ -62,11 +70,13 @@ class DBMaintainer(val dbobject: DB)
    * Function for handling InputPusherCmds.
    *
    */
-  override def receive = {
-    case TrimDB                         => {val numDel = dbobject.trimDB(); log.info(s"DELETE returned $numDel")}
+  override def receive: Actor.Receive = {
+    case TrimDB                         => {
+      val numDel = dbobject.trimDB()
+      numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
-      log.info(s"Taking Snapshot took $snapshotDur milliseconds")
+      log.info(s"Taking Snapshot took $snapshotDur")
       // remove unnecessary files (might otherwise grow until disk is full)
       val dirs = SingleStores.prevaylerDirectories
       for (dir <- dirs) {
@@ -76,7 +86,7 @@ class DBMaintainer(val dbobject: DB)
             log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
           case Success(necessaryFiles) =>
             val allFiles = dir.listFiles(new FilenameFilter {
-              def accept(dir: File, name: String) = name endsWith ".journal" // TODO: better filter
+              def accept(dir: File, name: String) = (name endsWith ".journal") || (name endsWith ".snapshot")
             })
             
             val extraFiles = allFiles filterNot (necessaryFiles contains _)
@@ -94,6 +104,6 @@ class DBMaintainer(val dbobject: DB)
         
       }
     }
-    case u => log.warning("Unknown message received.")
+    case _ => log.warning("Unknown message received.")
   }
 }

@@ -1,0 +1,126 @@
+package agentSystem
+import scala.util.Try
+import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
+
+import com.typesafe.config.Config
+import akka.actor.{ActorRef, Actor, ActorSystem }
+
+import agentSystem._
+import agentSystem.AgentTypes._
+import types.OmiTypes.WriteRequest
+import http.CLICmds._
+
+
+trait StartFailure{
+  protected final def start: Try[InternalAgentSuccess ] = Try{  
+    throw  CommandFailed("Test failure.")
+  }
+}
+trait StopFailure{
+  protected final def stop: Try[InternalAgentSuccess ] = Try{ 
+    throw  CommandFailed("Test failure.")
+  }
+}
+trait StartSuccess{
+  protected final def start: Try[InternalAgentSuccess ] = Try{  
+    CommandSuccessful()
+  }
+}
+trait StopSuccess{
+  protected final def stop: Try[InternalAgentSuccess ] = Try{ 
+    CommandSuccessful()
+  }
+}
+class FailurePropsAgent extends InternalAgent with StartFailure with StopFailure{
+  def config = throw  CommandFailed("Test failure.")
+}
+object FailurePropsAgent extends PropsCreator{
+  final def props(config: Config) : InternalAgentProps = { 
+    throw  CommandFailed("Test failure.")
+  }
+}
+
+class FFAgent extends InternalAgent with StartFailure with StopFailure{
+  def config = throw  CommandFailed("Test failure.")
+}
+class FSAgent extends InternalAgent with StartFailure with StopSuccess{
+  def config = throw  CommandFailed("Test failure.")
+}
+class SFAgent extends InternalAgent with StartSuccess with StopFailure{
+  def config = throw  CommandFailed("Test failure.")
+}
+class SSAgent extends InternalAgent with StartSuccess with StopSuccess{
+  def config = throw  CommandFailed("Test failure.")
+}
+class WSAgent extends SSAgent with ResponsibleInternalAgent{
+  protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit = {
+    passWrite(promise, write)
+  }
+
+}
+object SSAgent extends PropsCreator{
+  final def props(config: Config) : InternalAgentProps = { 
+    InternalAgentProps( new SSAgent )
+  }
+}
+object FFAgent extends PropsCreator{
+  final def props(config: Config) : InternalAgentProps = { 
+    InternalAgentProps( new FFAgent )
+  }
+}
+object SFAgent extends PropsCreator{
+  final def props(config: Config) : InternalAgentProps = { 
+    InternalAgentProps( new SFAgent )
+  }
+}
+object FSAgent extends PropsCreator{
+  final def props(config: Config) : InternalAgentProps = { 
+    InternalAgentProps( new FSAgent )
+  }
+}
+
+class CompanionlessAgent extends InternalAgent with StartFailure with StopFailure{
+  def config = throw  CommandFailed("Test failure.")
+}
+
+object ClasslessCompanion extends PropsCreator {
+  final def props(config: Config) : InternalAgentProps = { 
+    InternalAgentProps( new FFAgent )
+  }
+}
+
+class WrongInterfaceAgent {
+  def config = throw  CommandFailed("Test failure.")
+}
+object WrongInterfaceAgent {
+
+}
+
+class NotPropsCreatorAgent  extends InternalAgent with StartFailure with StopFailure{
+  def config = throw  CommandFailed("Test failure.")
+}
+object NotPropsCreatorAgent {
+
+}
+
+class WrongPropsAgent  extends InternalAgent with StartFailure with StopFailure{
+  def config = throw  CommandFailed("Test failure.")
+}
+object WrongPropsAgent extends PropsCreator{
+  final def props(config: Config) : InternalAgentProps = { 
+    InternalAgentProps( new FFAgent )
+  }
+}
+class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])
+extends BaseAgentSystem with InternalAgentManager{
+  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
+  protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings
+  def receive : Actor.Receive = {
+    case  start: StartAgentCmd  => handleStart( start)
+    case  stop: StopAgentCmd  => handleStop( stop)
+    case  restart: ReStartAgentCmd  => handleRestart( restart )
+    case ListAgentsCmd() => sender() ! agents.values.toVector
+  }
+  def getAgents = agents
+}
+

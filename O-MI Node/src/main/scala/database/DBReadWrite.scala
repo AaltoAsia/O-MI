@@ -1,30 +1,32 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package database
 
 import java.sql.Timestamp
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+
+import org.slf4j.LoggerFactory
 import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.OmiTypes.OmiReturn
 import types._
-import scala.concurrent.{Future, Await}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.postfixOps
-import scala.concurrent.duration._
-import org.slf4j.LoggerFactory;
 
 /**
  * Read-write interface methods for db tables.
@@ -44,7 +46,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * This gives false-positive only when there is other tables present. In that case
    * manually clean the database.
    */
-  def initialize() = this.synchronized {
+  def initialize(): Unit = this.synchronized {
 
     val setup = DBIO.seq(
       allSchemas.create,
@@ -52,7 +54,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val existingTables = MTable.getTables
     val existed = Await.result(db.run(existingTables), 5 minutes)
-    if (existed.length > 0) {
+    if (existed.nonEmpty) {
       //noop
       log.info(
         "Found tables: " +
@@ -133,14 +135,12 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
   /**
-   * Used to set values to database. If data already exists for the path, appends until historyLength
+   * NOTE: This function is not used at the moment - 2016/06.
+   * Used to write values to database. If data already exists for the path, appends until historyLength
    * is met, otherwise creates new data and all the missing objects to the hierarchy.
    *  Does not remove excess rows if path is set or buffer
-   *
-   *  @param data sensordata, of type DBSensor to be stored to database.
-   *  @return hierarchy id
    */
-  def set(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
+  def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
 
       _ <- addObjectsI(path, true)
@@ -161,10 +161,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val returnId = db.run(updateAction.transactionally)
 
-    val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) ) 
+    //val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) )
 
     //Call hooks
-    database.getSetHooks foreach { _(Seq(infoitem)) }
     returnId
   }
 
@@ -174,19 +173,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue tuples.
    */
-  def setMany(data: Seq[(Path, OdfValue)]): Future[Seq[(Path, Int)]] = {
-
-    val pathsData: Map[Path, Seq[OdfValue]] =
-      data.groupBy(_._1).mapValues(
-        v => v.map(_._2).sortBy(
-          _.timestamp.getTime
-        ))
+  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
+    val pathsData: Map[Path, Seq[OdfValue]] = infos.map(ii => (ii.path -> ii.values.sortBy(_.timestamp.getTime))).toMap
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(
-        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true)))
+        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true))) // NOTE: Heavy operation
 
-      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode =>
+      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode => // NOTE: Heavy operation
         (hNode.path, hNode.id)
       } result
 
@@ -202,7 +196,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
             id,
             //create new timestamp if option is None
             odfVal.timestamp,
-            odfVal.value,
+            odfVal.value.toString,
             odfVal.typeValue)
         }
       }
@@ -210,25 +204,45 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
         
     } yield idMap.toSeq
 
-    val pathIdRelations = db.run(writeAction.transactionally)
+    val pathIdRelations : Future[Seq[(types.Path, Int)]] = db.run(writeAction.transactionally)
 
-    val infoitems = pathsData.collect{
-      case (path: Path, values : Seq[OdfValue] ) if values.nonEmpty =>
-        OdfInfoItem(
-          path,
-          values.map{ va => 
-            OdfValue(
-              va.value,
-              va.typeValue,
-              va.timestamp
-            )
-          }.toIterable
-      )
-    }
     //Call hooks
-    database.getSetHooks foreach { _(infoitems.toSeq) }
+    pathIdRelations.map{ 
+      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => OmiReturn("200")
+      case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
+        OmiReturn("500",Some("Using old database. Should use Warp 10."))
+    }
+  }
 
-    pathIdRelations
+
+  //@deprecated("For testing only.", "Since implemented.")
+  private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Any]]] ?
+    val resultAction = for{
+      hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
+      resOpt =  hNode.map{ node =>
+        val removedLeft = node.leftBoundary
+        val removedRight = node.rightBoundary
+        for{
+          removedValues <- getSubTreeQ(node).result
+          removedIds = removedValues.map{case (_node, _) => _node.id.getOrElse(throw new UninitializedError)}.distinct
+          removeOp = DBIO.fold(Seq(
+           latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
+           hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
+          ), 0)((delete1, delete2) => delete1 + delete2)
+          removedDistance = removedRight - removedLeft + 1
+          updateActions = DBIO.seq(
+            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
+              WHERE RIGHTBOUNDARY > ${removedLeft}""",
+            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
+              WHERE LEFTBOUNDARY > ${removedLeft}""").map(_ => 0)
+          numDel <- DBIO.fold(Seq(removeOp, updateActions), 0)((start, next) => start + next)
+
+        } yield numDel//FIX
+
+      }
+      res <- resOpt.getOrElse(DBIO.failed(new Exception))
+    } yield res
+    resultAction
   }
 
   /**
@@ -238,128 +252,32 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
    */
-  //@deprecated("For testing only.", "Since implemented.")
-  def remove(path: Path) = {
-    val resultValue = for{
-      hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
-      resOpt =  hNode.map{ node =>
-        val removedLeft = node.leftBoundary
-        val removedRight = node.rightBoundary
-        for{
-          removedValues <- getSubTreeQ(node).result
-          removedIds = removedValues.map(_._1.id.getOrElse(throw new UninitializedError))
-          removeOp = DBIO.sequence(Seq(
-           latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
-           hierarchyNodes.filter { _.id.inSet(removedIds) }.delete
-          ))
-          removedDistance = removedRight - removedLeft + 1
-          updateActions = DBIO.seq(
-            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
-              WHERE RIGHTBOUNDARY > ${removedLeft}""",
-            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
-              WHERE LEFTBOUNDARY > ${removedLeft}""")
+  def remove(path: Path): Future[Int] = {
+    if(path.length == 1){
+      removeRoot(path)
+    }else{
+      db.run(removeQ(path).transactionally)
+    }
+  }
 
-
-        } yield DBIO.sequence(Seq(removeOp, updateActions))//FIX
-
-      }
-      res <- resOpt.getOrElse(DBIO.failed(new Exception))
-    } yield res
-    db.run(resultValue.transactionally)
-    //val hNode = db.run(hierarchyNodes.filter(_.path === path).result).headOption
-    //if (hNode.isEmpty) return false //require( hNode.nonEmpty, s"No such item found. Cannot remove. path: $path")
-
-    //val removedLeft = hNode.getOrElse(throw new UninitializedError).leftBoundary
-    //val removedRight = hNode.getOrElse(throw new UninitializedError).rightBoundary
-    //val subTreeQ = getSubTreeQ(hNode.get)
-    //val subTree = db.run(subTreeQ.result)
-    //val removedIds = subTree.map { _._1.id.getOrElse(throw new UninitializedError) }
-    //val removeActions = DBIO.seq(
-    //      latestValues.filter { _.hierarchyId.inSet(removedIds) }.delete,
-    //  hierarchyNodes.filter { _.id.inSet(removedIds) }.delete)
- //val removedDistance = removedRight - removedLeft + 1 // one added to fix distance to rigth most boundary before removed left ( 14-11=3, 15-3=12 is not same as removed 11 )
-   // val updateActions = DBIO.seq(
-   //   sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
-   //     WHERE RIGHTBOUNDARY > ${removedLeft}""",
-   //   sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
-   //     WHERE LEFTBOUNDARY > ${removedLeft}""")
-    //db.run(DBIO.seq(removeActions, updateActions))
-    //true
+  /**
+   * remove the root Objects from the database and add empty root  back to database
+   * this is to help executing the removing and adding operation transactionally
+   */
+  def removeRoot(path: Path): Future[Int] = {
+    db.run(
+      DBIO.sequence(Seq(removeQ(path),addRoot.map(res => 0))).transactionally
+    ).map(_.sum)
   }
   //add root node when removed or when first started
   private def addRoot = {
     hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
   }
-  def addRootR = {
+  def addRootR: Future[Int] = {
     db.run(addRoot)
   }
 
-  def removePollSub(id: Long): Future[Int] = {
-    val q = pollSubs filter(_.subId === id)
-    val action = q.delete
-    val result = db.run(action)
-    result
-  }
-
-  /*def removeDataAndUpdateLastValues(id: Long, lastValues: Seq[SubValue]) = {
-    db.run(removeDataAndUpdateLastValuesI(id, lastValues))
-  }
-  private def removeDataAndUpdateLastValuesI(id: Long, lastValues: Seq[SubValue]) = {
-    val subData = pollSubs filter (_.subId === id)
-    val updateAction = for {
-      _ <- subData.delete
-      added <- pollSubs ++= lastValues
-    } yield added
-    updateAction
-  }*/
-  /**
-   * Method used for polling subsription data from database.
-   * Returns and removes
-   * @param id
-   * @return
-   */
-  def pollEventSubscription(id: Long): Future[Seq[SubValue]] = {
-    db.run(pollEventSubscriptionI(id))
-  }
-  def debugMethod = {
-    db.run(pollSubs.result) //TODO remove
-  }
-  private def pollEventSubscriptionI(id: Long) = {
-    val subData = pollSubs filter (_.subId === id)
-    for{
-      data <- subData.result
-      _ <- subData.delete
-    } yield data
-  }
-  
-  def pollIntervalSubscription(id: Long): Future[Seq[SubValue]] = {
-    db.run(pollIntervalSubscriptionI(id))
-  }
-  
-  private def pollIntervalSubscriptionI(id: Long) = {
-    val subData = pollSubs filter (_.subId === id)
-    for{
-      data <- subData.result
-      lastValues = data.groupBy(_.path).flatMap{ //group by path
-        case (iPath, pathData) =>
-        //pathData.maxBy(_.timestamp.getTime) maxBy can produce nullpointer exception
-        pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp
-          col.fold(Option(next)){c => //compare
-            if (c.timestamp.before(next.timestamp)) Option(next) else Option(c)
-         }
-        }
-      }
-      _ <- subData.delete
-      _ <- pollSubs ++= lastValues
-    //_<- //(pollSubs ++= groupedData.map(_._2).flatten)
-    } yield data
-  }
-
-  def addNewPollData(newData: Seq[SubValue]) = {
-    db.run(pollSubs ++= newData)
-  }
-
-  def trimDB() = {
+  def trimDB(): Future[Seq[Int]] = {
     val historyLen = database.historyLength
     val hIdQuery = (for(h <- hierarchyNodes) yield h.id).result
 
