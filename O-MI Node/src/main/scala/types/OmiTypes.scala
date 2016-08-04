@@ -40,9 +40,9 @@ import types.OdfTypes._
   */
 sealed trait OmiRequest extends RequestWrapper {
   def callback: Option[Callback]
-  def callbackAsUri: Option[URI] = callback map {cb => new URI(cb.uri)}
+  def callbackAsUri: Option[URI] = callback map {cb => new URI(cb.address)}
   def withCallback: Option[Callback] => OmiRequest
-  def hasCallback: Boolean = callback.isDefined && callback.map(_.uri).nonEmpty
+  def hasCallback: Boolean = callback.nonEmpty
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
@@ -72,74 +72,6 @@ sealed trait RequestIDRequest {
 }
 
 
-/**
- * Contains information for sending callbacks for a request or subscription
- */
-class Callback(
-  val uri: String,
-
-  @transient
-  val sendHandler: ExecutionContext => OmiRequest => Future[Unit]
-
-  ) extends Serializable {
-    def send(response: OmiRequest)(implicit ec: ExecutionContext): Future[Unit] = sendHandler(ec)(response)
-    override def equals( any: Any) : Boolean ={
-      any match {
-        case other: Callback => other.uri == uri//for testing
-        case _ => this == any
-      }
-    }
-}
-object Callback {
-  import scala.language.implicitConversions
-  
-  // The Magnet pattern, used for apply function
-  trait CallbackApplyMagnet {
-    def apply(): Callback
-  }
-
-  implicit class FromHandleFunction(
-    callbackHandle: OmiRequest => Future[Unit]
-  ) extends CallbackApplyMagnet {
-    def apply() = new Callback("0", {_ => callbackHandle})
-  }
-
-  implicit class FromHandleWithExecutionContext(
-    callbackHandle: ExecutionContext => OmiRequest => Future[Unit]
-  ) extends CallbackApplyMagnet {
-    def apply() = new Callback("0", callbackHandle)
-  }
-
-
-  implicit class FromJavaUri(uri: java.net.URI) extends CallbackApplyMagnet {
-    def apply(): Callback = Callback(uri.toString)
-  }
-
-  implicit class FromStringUri(uri: String) extends CallbackApplyMagnet with Serializable {
-    def apply() =
-      if (uri == "0") Callback()
-      else
-        new Callback(uri, {implicit ec: ExecutionContext =>
-          CallbackHandlers.sendCallback(uri, _: OmiRequest) 
-        })
-  }
-
-  // akka http uri?
-  //def apply(uri: Uri): Callback = apply(uri.toString)
-
-
-  def apply(magnet: CallbackApplyMagnet): Callback = magnet()
-  def apply(): Callback = new Callback("0", {a =>
-    throw UndefinedCallbackCallException(s"No callbackHandle on $this")
-  })
-
-  case class UndefinedCallbackCallException(msg: String) extends RuntimeException(msg)
-
-  implicit def StringAsCallbackUri: String => Callback = apply(_: String)
-  implicit def UriAsCallback: java.net.URI => Callback = apply(_: java.net.URI)
-  implicit def OptionCallbackFunctor[A](opt: Option[A])(implicit toCallback: A => Callback): Option[Callback] =
-    opt map toCallback
-}
 
 sealed trait RequestWrapper {
   def rawRequest: String
@@ -197,7 +129,7 @@ class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
   val callback: Option[Callback] = for {
       callbackNodeSeq <- Option(omiEnvelope.attrs("callback"))
       head <- callbackNodeSeq.headOption
-      callback = Callback(head.text)
+      callback = RawCallback(head.text)
     } yield callback
   
   /**

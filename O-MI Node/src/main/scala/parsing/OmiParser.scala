@@ -125,17 +125,18 @@ object OmiParser extends Parser[OmiParseResult] {
 
   def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
 
-  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = 
+  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = { 
+    val callback = read.callback.map{ addr => RawCallback( addr.toString ) }
     if(read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
-          (read.callback),
+          callback,
           OdfTreeCollection(read.requestID.map(parseRequestID):_*),
           ttl
         )))
     } else{
       read.msg match {
-        case Some(msg) =>
+        case Some(msg) => {
           val odfParseResult = parseMsg(read.msg, read.msgformat)
           odfParseResult match {
             case Left(errors)  => Left(errors)
@@ -149,7 +150,7 @@ object OmiParser extends Parser[OmiParseResult] {
                       gcalendarToTimestampOption(read.end),
                       read.newest,
                       read.oldest,
-                      (read.callback),
+                      callback,
                       ttl
 
                     )
@@ -161,32 +162,34 @@ object OmiParser extends Parser[OmiParseResult] {
                       odf,
                       read.newest,
                       read.oldest,
-                      (read.callback),
+                      callback,
                       ttl
-
                     )
                   ))
               }
           }
-
-                case None =>
+        }
+                case None => {
                   Left(
                     Iterable(
                       ParseError("Invalid Read request, needs either of \"omi:msg\" or \"omi:requestID\" elements.")
                     )
                   )
+                }
       }
+    }
   }
 
   private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
     val odfParseResult = parseMsg(write.msg, write.msgformat)
+    val callback = write.callback.map{ addr => RawCallback( addr.toString ) }
     odfParseResult match {
       case Left(errors)  => Left(errors)
       case Right(odf) =>
         Right(Iterable(
           WriteRequest(
             odf,
-            (write.callback),
+            callback,
             ttl
           )
         ))

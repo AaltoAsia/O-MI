@@ -57,36 +57,22 @@ trait OmiRequestHandlerCore {
     import system.dispatcher // execution context for futures
 
     request.callback match {
-      case Some(callback) if callback.uri =="0" => 
-          request match {
-            case sub: SubscriptionRequest => runGeneration(sub)
-            case _ => 
-              // TODO: Can't cancel this callback
-              runGeneration(request)  map { response =>
-                  request.callback.map(_ send response)
-              }
-              Future.successful{
-                Responses.Success(description = Some("OK, callback job started"))
-              }
-            }
-      case Some(callback) => {
-
-        val callbackCheck = CallbackHandlers.checkCallbackUri(callback.uri)
-
-        callbackCheck.flatMap {_ =>
-          request match {
+      case Some(callback: RawCallback) => 
+        Future.successful( Responses.InternalError("RawCallback passed to handling") )
+      case Some(callback: DefinedCallback) => {
+        val callbackFuture = request match {
             case sub: SubscriptionRequest => runGeneration(sub)
             case _ => {
               // TODO: Can't cancel this callback
               runGeneration(request)  map { response =>
-                  request.callback.map(_ send response)
+                CallbackHandlers.sendCallback( callback, response )
               }
               Future.successful{
                 Responses.Success(description = Some("OK, callback job started"))
               }
             }
           }
-        } recover {
+       callbackFuture recover {
           case e: ProtocolNotSupported           => Responses.InvalidCallback(e.getMessage)
           case e: ForbiddenLocalhostPort         => Responses.InvalidCallback(e.getMessage)
           case e: java.net.MalformedURLException => Responses.InvalidCallback(e.getMessage)

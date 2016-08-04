@@ -65,8 +65,8 @@ object Results{
   case class InvalidRequest(msg: String = "") extends OmiResult{
     val returnValue: OmiReturn = Returns.InvalidRequest(msg) 
   }
-  case class InvalidCallback(callback: String ) extends OmiResult{
-    val returnValue: OmiReturn = Returns.InvalidCallback(callback)
+  case class InvalidCallback(callback: String, reason: Option[String] = None ) extends OmiResult{
+    val returnValue: OmiReturn = Returns.InvalidCallback(callback, reason)
   }
   case class NotFoundPaths( paths: Vector[Path] ) extends OmiResult{
     val returnValue: OmiReturn = Returns.NotFoundPaths(paths)

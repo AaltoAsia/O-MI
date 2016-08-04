@@ -23,8 +23,8 @@ object Responses{
   case class InvalidRequest(msg: String = "", ttl: Duration = 10.seconds) extends ResponseRequest{
     override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.InvalidRequest(msg))
   }
-  case class InvalidCallback(callbackAddr: String, ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.InvalidCallback(callbackAddr))
+  case class InvalidCallback(callbackAddr: String, reason: Option[String] =None, ttl: Duration = 10.seconds ) extends ResponseRequest{
+    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.InvalidCallback(callbackAddr,reason))
   }
   case class NotFoundPaths( paths: Vector[Path], ttl: Duration = 10.seconds ) extends ResponseRequest{
     override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.NotFoundPaths(paths))

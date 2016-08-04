@@ -287,7 +287,7 @@ class SubscriptionManager extends Actor with ActorLogging {
         val responseTTL = iSub.interval
         val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
 
-        val callbackF = iSub.callback.send(response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
+        val callbackF = CallbackHandlers.sendCallback(iSub.callback,response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
         callbackF.onSuccess {
           case () =>
             log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
@@ -355,7 +355,9 @@ class SubscriptionManager extends Actor with ActorLogging {
       val currentTimestamp = new Timestamp(currentTime)
 
       val subId = subscription.callback match {
-        case cb @ Some(callback) => subscription.interval match {
+        case cb @ Some(callback: RawCallback ) =>
+          throw RawCallbackFound(s"Tryied to subscribe with RawCallback: ${callback.address}")
+        case cb @ Some(callback: DefinedCallback) => subscription.interval match {
           case Duration(-1, duration.SECONDS) => {
             //normal event subscription
 

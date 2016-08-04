@@ -118,11 +118,11 @@ remove <path>
 
           val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +
             intervals.map{ sub=>
-              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback.uri }"
+              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback.address }"
             }.mkString("\n")
 
           val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
-              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback.uri}"
+              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback.address}"
             }.mkString("\n")
 
           val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" +
@@ -159,11 +159,11 @@ remove <path>
           s"Ends: ${intervalSub.endTime}\n" +
           s"Interval: ${intervalSub.interval}\n" +
           s"Run next: ${intervalSub.nextRunTime}\n" +
-          s"Callback: ${intervalSub.callback.uri}\n" +
+          s"Callback: ${intervalSub.callback.address}\n" +
           s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
         case Some(eventSub: EventSub) =>
           s"Ends: ${eventSub.endTime}\n" +
-          s"Callback: ${eventSub.callback.uri}\n" +
+          s"Callback: ${eventSub.callback.address}\n" +
           s"Paths:\n${eventSub.paths.mkString("\n")}\n"
         case Some(pollSub: PollIntervalSub) =>
           s"Started: ${pollSub.startTime}\n" +

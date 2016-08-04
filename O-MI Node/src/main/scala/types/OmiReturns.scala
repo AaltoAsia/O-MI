@@ -28,9 +28,9 @@ object Returns{
     val returnCode: String = "400"
     val description: Option[String] = Some(s"Bad request: $msg") 
   }
-  case class InvalidCallback(callback: String ) extends OmiReturn{ 
+  case class InvalidCallback(callback: String, reason: Option[String] = None ) extends OmiReturn{ 
     val returnCode: String = "400"
-    val description: Option[String] = Some("Invalid callback address: " + callback)
+    val description: Option[String] = Some("Invalid callback address: " + callback + reason.map{ str => ", reason: " + str}.getOrElse(""))
   }
   case class NotFoundPaths( paths: Vector[Path] ) extends OmiReturn{
     val returnCode: String  = "404"
