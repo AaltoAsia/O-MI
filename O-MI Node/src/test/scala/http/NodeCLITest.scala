@@ -19,12 +19,15 @@ import org.specs2.matcher.FutureMatchers._
 import com.typesafe.config.{ConfigFactory, Config}
 import testHelpers.Actorstest
 import types.Path
+import types.OmiTypes._
 import responses.{RemoveHandler,RemoveSubscription}
 import agentSystem.{AgentName, AgentInfo, TestManager, SSAgent}
 import akka.util.{ByteString, Timeout}
+import akka.http.scaladsl.model.Uri
 import akka.io.Tcp.{Write, Received}
 import database.{EventSub, IntervalSub, PolledSub, PollEventSub, PollIntervalSub, SavedSub}
 import http.CLICmds._
+
 
 
 
@@ -225,19 +228,19 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
     val paths = Vector( 
       Path( "Objects/object/sensor1" ),
       Path( "Objects/object/sensor2" )
     )
     val intervalSubs : Set[IntervalSub] = Set( 
       IntervalSub( 35, paths, endTime, callback, interval, nextRunTime, startTime ),
-      IntervalSub( 55, paths, endTime, callback + "13", interval, nextRunTime, startTime )
+      IntervalSub( 55, paths, endTime, callback, interval, nextRunTime, startTime )
     )
     val eventSubs : Set[EventSub] =Set( 
       EventSub( 40, paths, endTime, callback),
-      EventSub( 430, paths, endTime, callback + "31"),
-      EventSub( 32, paths, endTime, callback + "15")
+      EventSub( 430, paths, endTime, callback),
+      EventSub( 32, paths, endTime, callback)
     )
     val pollSubs : Set[PolledSub] = Set( 
       PollEventSub(59, endTime, nextRunTime, startTime, paths),
@@ -320,7 +323,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -350,7 +353,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -374,7 +377,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -402,7 +405,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -428,7 +431,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender

@@ -511,12 +511,12 @@ class ParserTest extends Specification {
   }
   lazy val readRequestTest = ReadRequest(
     readOdf2,
-    callback = Some("http://testing.test")
+    callback = Some(HTTPCallback("http://testing.test"))
   )
   lazy val subscriptionRequestTest = SubscriptionRequest(
     10 seconds,
     readOdf2,
-    callback = Some("http://testing.test")
+    callback = Some(HTTPCallback("http://testing.test"))
   )
 
   lazy val omiWriteTest =
@@ -608,7 +608,7 @@ class ParserTest extends Specification {
   }
   lazy val writeRequestTest = WriteRequest(
     writeOdf,
-    Some("http://testing.test")
+    Some(HTTPCallback("http://testing.test"))
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(

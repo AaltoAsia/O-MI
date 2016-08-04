@@ -6,9 +6,11 @@ import scala.concurrent.{Await, Future}
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import akka.util.Timeout
+import akka.http.scaladsl.model.Uri
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import testHelpers.{Actors, SystemTestCallbackServer}
+import types.OmiTypes.{HTTPCallback, Responses}
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
@@ -19,22 +21,24 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
     "Send callback to the correct address" in new Actors {
       val port = 20003
       val probe = initCallbackServer(port)
-      val msg  = <msg>success1</msg>
+      val ttl = Duration(2, "seconds")
+      val msg  = Responses.Success( ttl = ttl)
 
-      CallbackHandlers.sendCallback(s"http://localhost:$port",msg,Duration(2, "seconds"))
+      CallbackHandlers.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")),msg)
 
-      probe.expectMsg(2 seconds, Option(msg))
+      probe.expectMsg(ttl, Option(msg.asXML))
     }
 
     "Try to keep sending message until ttl is over" in new Actors {
       val port = 20004
-      val msg  = <msg>success2</msg>
-      CallbackHandlers.sendCallback(s"http://localhost:$port", msg, Duration(10, "seconds"))
+      val ttl = Duration(10, "seconds")
+      val msg  = Responses.Success( ttl = ttl)
+      CallbackHandlers.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       Thread.sleep(1000)
       val probe = initCallbackServer(port)
 
-      probe.expectMsg(10 seconds, Option(msg))
+      probe.expectMsg(ttl, Option(msg.asXML))
 
     }
   }
