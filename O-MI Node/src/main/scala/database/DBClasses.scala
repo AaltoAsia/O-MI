@@ -44,35 +44,7 @@ trait DBBase{
  */
 
 
-case class SubscriptionItem(
-  val subId: Long,
-  val path: Path,
-  val lastValue: Option[String] // for event polling subs
-)
 
-// For db table type, match to and use subclasses of this
-sealed trait DBSubInternal
-
-/**
- * DBSub class to represent subscription information
- * @param ttl time to live. in seconds. subscription expires after ttl seconds
- * @param interval to store the interval value to DB
- * @param callback optional callback address. use None if no address is needed
- */
-case class DBSub(
-  val id: Long,
-  val interval: Duration,
-  val startTime: Timestamp,
-  val ttl: Duration,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal
-
-case class NewDBSub(
-  val interval: Duration,
-  val startTime: Timestamp,
-  val ttl: Duration,
-  val callback: Option[String]
-) extends SubLike with DBSubInternal
 
 
 /**
@@ -207,34 +179,11 @@ trait OmiNodeTables extends DBBase {
 
   protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data
 
-///////////////////////////////////////////////////
-
-
-  class PollSubsTable(tag: Tag)
-    extends Table[SubValue](tag, "POLLSUBVALUES") {
-    /** This is the PrimaryKey */
-    def subId: Rep[Long] = column[Long]("SUBID")
-    def path: Rep[Path] = column[Path]("PATH")
-    def timestamp: Rep[Timestamp] = column[Timestamp]("TIME")
-    def value: Rep[String] = column[String]("VALUE")
-    def valueType: Rep[String] = column[String]("VALUETYPE")
-
-    // Every table needs a * projection with the same type as the table's type parameter
-    def * : ProvenShape[SubValue] = ( subId, path, timestamp, value, valueType) <> (
-      SubValue.tupled,
-      SubValue.unapply
-      )
-  }
-
-  protected[this] val pollSubs = TableQuery[PollSubsTable]
-  ///////////////////////////////////////////////////
-
 
 
   protected[this] val allTables =
     Seq( hierarchyNodes
        , latestValues
-       , pollSubs
        )
 
   protected[this] val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)

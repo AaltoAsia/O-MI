@@ -277,58 +277,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     db.run(addRoot)
   }
 
-  def removePollSub(id: Long): Future[Int] = {
-    val q = pollSubs filter(_.subId === id)
-    val action = q.delete
-    val result = db.run(action)
-    result
-  }
-
- /**
-   * Method used for polling subsription data from database.
-   * Returns and removes
-   * @param id
-   * @return
-   */
-  def pollEventSubscription(id: Long): Future[Seq[SubValue]] = {
-    db.run(pollEventSubscriptionI(id))
-  }
-
-  private def pollEventSubscriptionI(id: Long) = {
-    val subData = pollSubs filter (_.subId === id)
-    for{
-      data <- subData.result
-      _ <- subData.delete
-    } yield data
-  }
-  
-  def pollIntervalSubscription(id: Long): Future[Seq[SubValue]] = {
-    db.run(pollIntervalSubscriptionI(id))
-  }
-  
-  private def pollIntervalSubscriptionI(id: Long) = {
-    val subData = pollSubs filter (_.subId === id)
-    for{
-      data <- subData.result
-      lastValues = data.groupBy(_.path).flatMap{ //group by path
-        case (iPath, pathData) =>
-        //pathData.maxBy(_.timestamp.getTime) maxBy can produce nullpointer exception
-        pathData.foldLeft[Option[SubValue]](None){(col, next) => //find value with newest timestamp
-          col.fold(Option(next)){c => //compare
-            if (c.timestamp.before(next.timestamp)) Option(next) else Option(c)
-         }
-        }
-      }
-      _ <- subData.delete
-      _ <- pollSubs ++= lastValues
-    //_<- //(pollSubs ++= groupedData.map(_._2).flatten)
-    } yield data
-  }
-
-  def addNewPollData(newData: Seq[SubValue]): Future[Option[Int]] = {
-    db.run(pollSubs ++= newData)
-  }
-
   def trimDB(): Future[Seq[Int]] = {
     val historyLen = database.historyLength
     val hIdQuery = (for(h <- hierarchyNodes) yield h.id).result
