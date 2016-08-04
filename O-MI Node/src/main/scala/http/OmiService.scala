@@ -204,7 +204,9 @@ trait OmiService
                   request.callback match {
                     case None  =>
                       requestHandler.handleRequest(request)(system)
-                    case Some(RawCallback("0")) =>
+                    case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
+                      Future.successful( Responses.InvalidCallback("0", Some( "callback 0 is only supported with Websocket connection. Chance server url to start with 'ws:'" ) ) )
+                    case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
                       val modifiedRequest = request.withCallback(  currentConnectionCallback )
                       requestHandler.handleRequest(modifiedRequest)(system)
                     case Some( RawCallback(address))  =>
@@ -383,13 +385,20 @@ trait WebSocketOMISupport { self: OmiService =>
     CallbackHandlers.addCurrentConnection( connectionIdentifier, sendHandler)
     def createZeroCallback = Some(CurrentConnectionCallback(connectionIdentifier)) 
 
-    val msgSink = Sink.foreach[String]{ requestString: String  => 
-      val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
-      queueSend(futureResponse)
+    val stricted = Flow.fromFunction[ws.Message,Future[String]]{
+      case textMessage: ws.TextMessage =>
+        textMessage.textStream.runFold("")(_+_)(materializer)
+      case msg: ws.Message => Future successful ""
+    }
+    val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
+      future.flatMap{ 
+        case requestString: String =>
+        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+        queueSend(futureResponse)
+      }
     }
 
-    val formatter = Flow.fromGraph(new OmiChecker()(materializer))
-    val inSink = formatter.to(msgSink)
+    val inSink = stricted.to(msgSink)
     (inSink, outSource)
   }
 

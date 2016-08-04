@@ -24,7 +24,7 @@ import scala.util.Try
 
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
-import responses.CallbackHandlers.CallbackFailure
+import responses.CallbackHandlers.{ MissingConnection, CallbackFailure}
 import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -293,6 +293,10 @@ class SubscriptionManager extends Actor with ActorLogging {
             log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
         }
         callbackF.onFailure{
+          case fail @ MissingConnection(callback) =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}, subscription is remowed.")
+            removeSubscription(iSub.id)
           case fail: CallbackFailure =>
             log.warning(
               s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")

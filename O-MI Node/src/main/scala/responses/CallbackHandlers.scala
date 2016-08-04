@@ -146,8 +146,9 @@ object CallbackHandlers {
             )
           case Failure(t: Throwable) =>
             system.log.debug(
-              s"Response send  to current connection ${callback.identifier} failed, ${t.getMessage()}"
+              s"Response send  to current connection ${callback.identifier} failed, ${t.getMessage()}. Connection removed."
             )
+            currentConnections -= callback.identifier
         }
         f
     }.getOrElse(

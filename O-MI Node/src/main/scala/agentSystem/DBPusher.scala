@@ -73,6 +73,10 @@ trait  DBPusher  extends BaseAgentSystem{
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
     }
     callbackF.onFailure{
+      case fail @ MissingConnection(callback) =>
+        log.warning(
+          s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is remowed.")
+        SingleStores.subStore execute RemoveEventSub(esub.id)
       case fail: CallbackFailure =>
         failed(fail.toString)
       case e: Throwable =>
