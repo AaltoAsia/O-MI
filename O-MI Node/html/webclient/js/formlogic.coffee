@@ -127,15 +127,15 @@ formLogicExt = ($, WebOmi) ->
     response = omi.parseXml responseString
 
     # get requestID
-    requestID = parseInt omi.evaluateXPath(response, "//omi:requestID/text()")[0] # headOption
-    if (not requestID?) or (not my.callbackSubscriptions[requestID])
+    requestID = parseInt omi.evaluateXPath(response, "//omi:requestID/text()")[0].textContent # headOption
+    if (not requestID?) or (not my.callbackSubscriptions[requestID]?)
       if my.waitingForRequestID
         my.waitingForRequestID = false
         my.callbackSubscriptions[requestID] =
           receivedCount : 1
           userSeenCount : 0
-      else
-        return false
+    else
+      return false
 
     infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
 
@@ -149,7 +149,7 @@ formLogicExt = ($, WebOmi) ->
 
     getPathValues = (infoitemXmlNode) ->
       valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value")
-      path = getPath infoitemXml
+      path = getPath infoitemXmlNode
       for value in valuesXml
         path: path
         values: value
@@ -159,8 +159,7 @@ formLogicExt = ($, WebOmi) ->
     # Utility function; Clone the element above and empty its input fields 
     # callback type: (clonedDom) -> void
     cloneAbove = (target, callback) ->
-      util.cloneAbove target, cloned ->
-      
+      WebOmi.util.cloneAbove target, (cloned) ->
         cloned.slideDown null, ->  # animation, default duration
           # readjusts the position because of size change (see modal docs)
           consts.infoItemDialog.modal 'handleUpdate'
@@ -191,13 +190,13 @@ formLogicExt = ($, WebOmi) ->
       pathValuePairs = (pathValue) ->
         ({path: pathValue.path, value: value} for value in pathValue.values)
 
-      lines = pathValuePairs for pathValue in pathValues
+      lines = (pathValuePairs for pathValue in pathValues)
 
       for pathValue in lines
         $ "<tr><td></td><td>"+pathValue.path+"</td><td>"+pathValue.value+"</td></tr>"
 
     addHistory = ( requestID, pathValues ) ->
-      maybeCBRecord = callbackSubscriptions[requestID]
+      maybeCBRecord = my.callbackSubscriptions[requestID]
       if maybeCBRecord.selector?
         callbackRecord = maybeCBRecord
         callbackRecord.selector
@@ -208,9 +207,10 @@ formLogicExt = ($, WebOmi) ->
         newHistory = createHistory requestID
         newHistory.add (returnStatus 1, 200)
           .after htmlformat pathValues
-        callbackSubscriptions[requestID].selector = newHistory
+        my.callbackSubscriptions[requestID].selector = newHistory
 
     addHistory requestID, pathValues
+    true
 
   
 
@@ -220,23 +220,10 @@ formLogicExt = ($, WebOmi) ->
     consts = WebOmi.consts
     server = consts.serverUrl.val()
     socket = new WebSocket(server)
-    socket.onopen = () ->
-      WebOmi.debug "WebSocket connected."
-      WebOmi.debug "Sending request via WebSocket."
-      socket.send(request)
-    socket.onclose = () ->
-      WebOmi.debug "WebSocket disconnected."
-    socket.onmessage = (message) ->
-      # TODO: Check if response to subscription and put into subscription response view
-      response = message.data
-      consts.progressBar.css "width", "100%"
-      my.setResponse response
-      consts.progressBar.css "width", "0%"
-      consts.progressBar.hide()
-      window.setTimeout (-> consts.progressBar.show()), 2000
-      #callback(response) if (callback?)
-    socket.onerror = (error) ->
-      WebOmi.debug "WebSocket error: ", error
+    socket.onopen = onopen
+    socket.onclose = () -> onclose
+    socket.onmessage = onmessage
+    socket.onerror = onerror
     my.socket = socket
   
   # send, callback is called with response text if successful
@@ -246,48 +233,47 @@ formLogicExt = ($, WebOmi) ->
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
     if server.startsWith("ws://") || server.startsWith("wss://")
-      WebOmi.debug "Sending request via WebSocket."
       my.wsSend request
     else
-      WebOmi.debug "Sending request with HTTP POST."
       my.httpSend callback
 
   my.wsSend = (request) ->
     if( !my.socket || my.socket.readyState != WebSocket.OPEN)
       onopen = () ->
         WebOmi.debug "WebSocket connected."
-
-        # Next message should be rendered to main response area
-        my.waitingForResponse = true
-
-        # Check if request is zero callback request
-        omi = WebOmi.omi
-        maybeParsedXml = Maybe omi.parsedXml(request)
-        maybeVerbXml =
-          maybeParsedXml.bind (parsedXml) ->
-            verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*")
-            Maybe.fromArray verbResult
-
-        maybeVerbXml.fmap (verbXml) ->
-          verb = verbXml.tagName
-          maybeCallback = verbXml.attributes.callback
-
-          if maybeCallback.exists((c) -> c is "0")
-            # commented because user might be waiting for some earlier response
-            #y.waitingForResponse = false
-            
-            my.waitingForRequestID = true
-
-        my.socket.send(request)
+        my.wsSend request
       onclose = () -> WebOmi.debug "WebSocket disconnected."
       onerror = (error) -> WebOmi.debug "WebSocket error: ",error
       onmessage = my.handleWSMessage
       my.createWebSocket onopen, onclose, onmessage, onerror
     else
       WebOmi.debug "Sending request via WebSocket."
+      # Next message should be rendered to main response area
+      my.waitingForResponse = true
+
+      # Check if request is zero callback request
+      omi = WebOmi.omi
+      maybeParsedXml = Maybe omi.parseXml(request)
+      maybeVerbXml =
+        maybeParsedXml.bind (parsedXml) ->
+          verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*")
+          Maybe.fromArray verbResult
+
+      maybeVerbXml.fmap (verbXml) ->
+        verb = verbXml.tagName
+        maybeCallback = Maybe verbXml.attributes.callback
+        maybeInterval = Maybe verbXml.attributes.interval
+
+        if maybeCallback.exists((c) -> c.textContent is "0") and verb == "omi:read" and maybeInterval.exists( (i) -> true ) 
+          # commented because user might be waiting for some earlier response
+          #y.waitingForResponse = false
+          
+          my.waitingForRequestID = true
+
       my.socket.send(request)
 
   my.httpSend = (callback) ->
+    WebOmi.debug "Sending request with HTTP POST."
     consts = WebOmi.consts
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
