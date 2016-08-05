@@ -36,12 +36,12 @@ package xmlGen
 package scalaxb
 
 
-import xmlTypes._
-import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}
-import javax.xml.datatype.{XMLGregorianCalendar}
-import javax.xml.namespace.QName
 import javax.xml.bind.DatatypeConverter
-import scala.language.{postfixOps, existentials, implicitConversions}
+import javax.xml.datatype.XMLGregorianCalendar
+import javax.xml.namespace.QName
+
+import scala.language.{existentials, implicitConversions, postfixOps}
+import scala.xml.{Elem, NamespaceBinding, Node, NodeSeq}
 
 /** Scalaxb library.
   *
@@ -816,14 +816,13 @@ object Helper {
       "%s:%s" format (_, value.getLocalPart)} getOrElse {value.getLocalPart}
 
   def toCalendar(value: String): XMLGregorianCalendar = {
-    import javax.xml.datatype._
     val typeFactory = javax.xml.datatype.DatatypeFactory.newInstance()
     typeFactory.newXMLGregorianCalendar(value)
   }
 
   def toCalendar(value: java.util.GregorianCalendar): XMLGregorianCalendar = {
+    import java.util.{Calendar => JCalendar, GregorianCalendar}
     import javax.xml.datatype._
-    import java.util.{GregorianCalendar, Calendar => JCalendar}
 
     val typeFactory = javax.xml.datatype.DatatypeFactory.newInstance()
     val xmlGregorian = typeFactory.newXMLGregorianCalendar()
@@ -929,7 +928,7 @@ object Helper {
                     (f: (NamespaceBinding, Map[Option[String], Option[String]]) => A): A = {
     val outerList = fromScope(outer)
     def renamePrefix(prefix: Option[String],  n: Int): Option[String] =
-      if (outerList exists { case (p, n) => p == Some((prefix getOrElse {"ns"}) + n.toString)}) renamePrefix(prefix, n + 1)
+      if (outerList exists { case (p, _n) => p == Some((prefix getOrElse {"ns"}) + _n.toString)}) renamePrefix(prefix, n + 1)
       else Some((prefix getOrElse {"ns"}) + n.toString)
 
     val xs: List[((Option[String], String), (Option[String], Option[String]))] = fromScope(scope) flatMap {

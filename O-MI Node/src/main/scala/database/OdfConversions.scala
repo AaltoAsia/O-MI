@@ -1,25 +1,21 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package database
 
 import scala.language.postfixOps
-
-import slick.driver.H2Driver.api._
-
-import scala.collection.JavaConversions.{asJavaIterable,iterableAsScalaIterable}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.{ SortedMap, breakOut }
+import scala.collection.{SortedMap, breakOut}
 
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -76,10 +72,12 @@ trait OdfConversions extends OmiNodeTables {
    * @param items input data for single object (objects and infoitems for the first level of children)
    * @return Single object or infoItem extracted from items
    */
-  protected[this] def singleObjectConversion(items: DBInfoItems): Option[OdfNode] = {
-    //require(items.size > 0, "singleObjectConversion requires data!")
-    if (items.size == 0) return None
+  protected[this] def singleObjectConversion(
+    items: DBInfoItems
+  ): Option[OdfNode] = items.size match {
+      case 0 => None
 
+      case pos if pos > 0 =>
     val nodes = items.keys
 
     // search element with the lowest depth and take only the node
@@ -112,10 +110,13 @@ trait OdfConversions extends OmiNodeTables {
 
       case matchError => throw new MatchError(matchError)
     }
+  
+      case default: Int => 
+      None
   }
 
   protected[this] def odfConversion: DBInfoItem => OdfObjects =
-    fromPath _ compose hasPathConversion
+    createAncestors _ compose hasPathConversion
 
   protected[this] def odfConversion(treeData: DBInfoItems): Option[OdfObjects] = {
     val odfObjectsTrees = treeData map odfConversion

@@ -1,36 +1,55 @@
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package http
 
-import spray.routing.Directives.extract
-import spray.routing.Directive1
-import spray.http.HttpRequest
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import java.lang.{ Iterable => JavaIterable }
-import scala.util.{Try, Success, Failure}
-import org.slf4j.LoggerFactory
+import java.lang.{Iterable => JavaIterable}
 
-import types.Path
-import types.OmiTypes._
-import types.OdfTypes._
-import Authorization.AuthorizationExtension
-import database._
-
+import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.collection.mutable
 import scala.collection.mutable.Buffer
+import scala.util.{Failure, Success, Try}
+
+import database._
+import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest}
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.server.Directives.extract
+import types.OdfTypes._
+import types.OmiTypes._
+import types.Path
 
 
 sealed trait AuthorizationResult
 case object Authorized extends AuthorizationResult {def instance = this}
 case object Unauthorized extends AuthorizationResult {def instance = this}
 case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
+/**
+ * Wraps a new O-MI request that is potentially modified from the original to pass authorization.
+ * Can be used instead of [[Partial]] to define partial authorization. 
+ */
+case class Changed(authorizedRequest: RawRequestWrapper) extends AuthorizationResult
 
 /**
- * Implement this interface and register the class through AuthApiProvider
+ * Implement one method of this interface and register the class through AuthApiProvider.
  */
 trait AuthApi {
 
 
-  /** This can be overridden or isAuthorizedForType can be overridden instead.
-   *  @return True if user is authorized
+  /**
+   * This can be overridden or isAuthorizedForType can be overridden instead. Has scala default implementation for
+   * calling [[isAuthorizedForType]] function correctly.
+   *  @param httpRequest http headers and other data as they were received to O-MI Node.
    */
   def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {
     omiRequest match {
@@ -42,7 +61,7 @@ trait AuthApi {
           case r: PermissiveRequest =>  // Write or Response
             isAuthorizedForType(httpRequest, true, paths)
 
-          case r => // All else odf containing requests (reads)
+          case r : OdfRequest => // All else odf containing requests (reads)
             isAuthorizedForType(httpRequest, false, paths)
 
       }
@@ -52,19 +71,30 @@ trait AuthApi {
 
 
   /** This can be overridden or isAuthorizedForType can be overridden instead.
-   *  @param httpRequest http headers and other data as they was received by Spray.
-   *  @param isWrite True if the request requires write permissions, false if it's read only. 
+   *  @param httpRequest http headers and other data as they were received to O-MI Node.
+   *  @param isWrite True if the request requires write permissions, false if it's read only.
    *  @param paths O-DF paths to all of the requested or to be written InfoItems.
-   *  @return True if user is authorized, false if unauthorized
    */
-  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult
+  def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult = {
+    Unauthorized
+  }
 
+  /**
+   * This is used if the parser is wanted to be skipped, e.g. for forwarding to the 
+   * original request to some authentication/authorization service.
+   *
+   *  @param httpRequest http headers and other data as they were received to O-MI Node.
+   *  @param omiRequestXml contains the original request as received by the server.
+   */
+  def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = {
+    Unauthorized
+  }
 }
 
 trait AuthApiProvider extends AuthorizationExtension {
 
 
-  private[this] val authorizationSystems: Buffer[AuthApi] = Buffer()
+  private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()
 
 
   /**
@@ -75,56 +105,76 @@ trait AuthApiProvider extends AuthorizationExtension {
 
 
   // AuthorizationExtension implementation
-  abstract override def makePermissionTestFunction = combineWithPrevious(
+  abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
-    extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: OmiRequest) =>
+    extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: RequestWrapper) =>
 
+      // for checking if path is infoitem or object
       val currentTree = SingleStores.hierarchyStore execute GetTree()
-      //authorizationSystems exists {authApi =>
 
-      authorizationSystems.foldLeft[Option[OmiRequest]] (None) {(lastTest, nextAuthApi) =>
-        lastTest orElse (
-          Try{nextAuthApi.isAuthorizedForRequest(httpRequest, orgOmiRequest)} match {
-            case Success(Unauthorized) => None
-            case Success(Authorized) => Some(orgOmiRequest)
-            case Success(Partial(maybePaths)) => 
+      // helper function
+      def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
+        case Success(Unauthorized) => Failure(UnauthorizedEx())
+        case Success(Authorized) => Success(orgOmiRequest)
+        case Success(Changed(reqWrapper)) => Success(reqWrapper)
+        case Success(Partial(maybePaths)) => {
 
-              val newOdfOpt = for {
-                paths <- Option(maybePaths) // paths might be null
+          val newOdfOpt = for {
+            paths <- Option(maybePaths) // paths might be null
 
-                // Rebuild the request having only `paths`
-                pathTrees = paths collect {
-                  case path: Path =>              // filter nulls out
-                    currentTree.get(path) match { // figure out is it InfoItem or Object
-                      case Some(nodeType) => fromPath(nodeType)
-                      case None => OdfObjects()
-                    }
+            // Rebuild the request having only `paths`
+            pathTrees = paths collect {
+              case path: Path =>              // filter nulls out
+                currentTree.get(path) match { // figure out is it InfoItem or Object
+                  case Some(nodeType) => createAncestors(nodeType)
+                  case None => OdfObjects()
                 }
+            }
 
-              } yield pathTrees.fold(OdfObjects())(_ union _)
+          } yield pathTrees.fold(OdfObjects())(_ union _)
 
-              newOdfOpt match {
-                case Some(newOdf) if (newOdf.objects.nonEmpty) =>
-                  orgOmiRequest match {
-                    case r: ReadRequest         => Some(r.copy(odf = newOdf))
-                    case r: SubscriptionRequest => Some(r.copy(odf = newOdf))
-                    case r: WriteRequest        => Some(r.copy(odf = newOdf))
-                    case r: ResponseRequest     => Some(r.copy(results = 
-                      asJavaIterable(Iterable(r.results.head.copy(odf = Some(newOdf)))) // TODO: make better copy logic?
-                    ))
-                    case r: Product => throw new NotImplementedError(
-                      s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.productPrefix}' not yet implemented in O-MI node.")
-                    case m => 
-                      (new MatchError(m)).printStackTrace()
-                      None
-                  }
-                case _ => None
+          newOdfOpt match {
+            case Some(newOdf) if (newOdf.objects.nonEmpty) =>
+              orgOmiRequest.unwrapped flatMap {
+                case r: ReadRequest         => Success(r.copy(odf = newOdf))
+                case r: SubscriptionRequest => Success(r.copy(odf = newOdf))
+                case r: WriteRequest        => Success(r.copy(odf = newOdf))
+                case r: ResponseRequest     => Success(r.copy(results =
+                  OdfTreeCollection(r.results.head.copy(odf = Some(newOdf))) // TODO: make better copy logic?
+                ))
+                case r: AnyRef => throw new NotImplementedError(
+                  s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.getClass.getSimpleName}' not yet implemented in O-MI node.")
               }
-            case Failure(exception) =>
-                log.error(exception, "While running AuthPlugins. => Unauthorized, trying next plugin")
-                None
+            case _ => Failure(UnauthorizedEx())
           }
-        )
+        }
+        case f @ Failure(exception) =>
+          log.error("Error while running AuthPlugins. => Unauthorized, trying next plugin", exception)
+          Failure(UnauthorizedEx())
+      }
+
+
+      authorizationSystems.foldLeft[Try[RequestWrapper]] (Failure(UnauthorizedEx())) {(lastTest, nextAuthApi) =>
+        lastTest orElse {
+
+          lazy val rawReqResult = convertToWrapper(
+            Try{nextAuthApi.isAuthorizedForRawRequest(httpRequest, orgOmiRequest.rawRequest)}
+          )
+
+          lazy val reqResult = 
+            orgOmiRequest.unwrapped flatMap {omiReq =>
+              convertToWrapper(
+                Try{nextAuthApi.isAuthorizedForRequest(httpRequest, omiReq)}
+              )
+            }
+
+          // Choose optimal test order
+          orgOmiRequest match {
+            case raw: RawRequestWrapper => rawReqResult orElse reqResult
+            case other: RequestWrapper => reqResult orElse rawReqResult
+
+          }
+        }
       }
     }
   )

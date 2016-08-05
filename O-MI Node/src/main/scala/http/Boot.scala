@@ -1,42 +1,44 @@
-/**
-  Copyright (c) 2015 Aalto University.
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
 package http
 
-import akka.actor.{ActorSystem, Props, ActorRef}
+import java.net.InetSocketAddress
+import java.util.Date
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
+
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
-import spray.can.Http
-import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Awaitable, Future}
-import java.util.Date
-import java.net.InetSocketAddress
-import scala.collection.JavaConversions.asJavaIterable
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
+//import akka.http.WebBoot
+//import akka.http.javadsl.ServerBinding
 
+import database._
 import agentSystem._
 import responses.{RequestHandler, SubscriptionManager}
-import types.Path
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import database._
-
-import scala.util.{Try, Failure, Success}
-import xml._
-
-import scala.language.postfixOps
+import types.Path
 
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
@@ -44,32 +46,32 @@ import scala.language.postfixOps
  */
 trait Starter {
   // we need an ActorSystem to host our application in
-  implicit val system = ActorSystem("on-core")
-
+  implicit val system : ActorSystem = ActorSystem("on-core")
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
   val settings = Settings(system)
 
-  val subHandlerDbConn: DB = new DatabaseConnection
-  val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
+  val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   
 
   import scala.concurrent.ExecutionContext.Implicits.global
   def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
       // Same timestamp for all OdfValues of the settings
-      val date = new Date();
+      val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
 
       // Save settings in db, this works also as a test for writing
       val numDescription =
         "Number of latest values (per sensor) that will be saved to the DB"
       system.log.info(s"$numDescription: ${settings.numLatestValues}")
-      database.setHistoryLength(settings.numLatestValues)
+
+      database.changeHistoryLength(settings.numLatestValues)
+
       system.log.info("Testing InputPusher...")
-      database.setHistoryLength(settings.numLatestValues)
-      val objects = fromPath(
+
+      val objects = createAncestors(
         OdfInfoItem(
           Path(settings.settingsOdfPath + "num-latest-values-stored"), 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
@@ -77,17 +79,16 @@ trait Starter {
         ))
       
       val write = WriteRequest( 60  seconds, objects)
-      var promiseResult = PromiseResult()
+      val promiseResult = PromiseResult()
       agentSystem ! PromiseWrite( promiseResult, write )
       val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
       future.onSuccess{
-        case s =>
+        case _=>
         system.log.info("O-MI InputPusher system working.")
-        true
       }
 
       future.onFailure{
-        case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        case e: Throwable => system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, 60 seconds)
     }
@@ -101,7 +102,7 @@ trait Starter {
    *
    * @return O-MI Service actor which is not yet bound to the configured http port
    */
-  def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
+  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {
 
     // create and start sensor data listener
     // TODO: Maybe refactor to an internal agent!
@@ -110,10 +111,8 @@ trait Starter {
       AgentSystem.props(dbConnection, subManager),
       "agent-system"
     )
-    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
-    
+
     saveSettingsOdf(agentManager)
-    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
     val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
     val omiNodeCLIListener =system.actorOf(
@@ -122,32 +121,34 @@ trait Starter {
     )
 
     // create omi service actor
-    val omiService = system.actorOf(Props(
-      new OmiServiceActor(
-        requestHandler
-      )
-    ), "omi-service")
+    val omiService = new OmiServiceImpl(requestHandler)
 
 
     implicit val timeoutForBind = Timeout(5.seconds)
 
-    IO(Tcp)  ? Tcp.Bind(sensorDataListener,
-      new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
     IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
       new InetSocketAddress("localhost", settings.cliPort))
 
-    return omiService
+    omiService
   }
 
 
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
    */
-  def bindHttp(service: ActorRef): Unit = {
+  def bindHttp(service: OmiServiceImpl): Unit = {
 
     implicit val timeoutForBind = Timeout(5.seconds)
+    implicit val materializer = ActorMaterializer()
 
-    IO(Http) ? Http.Bind(service, interface = settings.interface, port = settings.port)
+    val bindingFuture =
+      Http().bindAndHandle(service.myRoute, settings.interface, settings.webclientPort)
+
+    bindingFuture.onFailure {
+      case ex: Exception =>
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+
+    }
   }
 }
 
@@ -157,7 +158,8 @@ trait Starter {
  * Starting point of the stand-alone program.
  */
 object Boot extends Starter {// with App{
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) : Unit= {
+  system.log.info(this.getClass.toString)
   Try {
     val serviceActor = start()
     bindHttp(serviceActor)
@@ -173,8 +175,8 @@ object Boot extends Starter {// with App{
 /**
  * Starting point of the servlet program.
  */
-class ServletBoot extends Starter with WebBoot {
-  override implicit val system = Boot.system
-  val serviceActor = start()
-  // bindHttp is not called
-}
+//class ServletBoot extends Starter with WebBoot {
+//  override implicit val system = Boot.system
+//  val serviceActor = start()
+//  // bindHttp is not called
+//}

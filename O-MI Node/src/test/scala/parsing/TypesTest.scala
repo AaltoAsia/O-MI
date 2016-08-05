@@ -1,14 +1,15 @@
 package parsing
 
-import org.specs2._
-import parsing._
-import types._
-import types.Path._
-import types.OmiTypes._
-import types.OdfTypes._
-import types.OdfTypes.OdfTreeCollection._
-import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList, iterableAsScalaIterable}
+import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.duration._
+import xml._
+
+import org.specs2._
+import types.OdfTypes.OdfTreeCollection._
+import types.OdfTypes._
+import types.OmiTypes._
+import types.Path._
+import types._
 
 
 /* Test class for testing ODF Types */
@@ -41,51 +42,44 @@ class TypesTest extends Specification {
     Path class instance should
       join with another path correctly			$e300
       join with another path string				$e301
+
+  RawRequestWrapper
+    Pre-parsing should
+      parse finite ttl            $pFiniteTTL
+      parse infinite ttl          $pInfiniteTTL
+      parse message type read     $pRead
+      parse message type write    $pWrite
+      parse message type cancel   $pCancel
+      parse message type response $pResponse
     """
 
-  def e1 = {
-    !new ParseError("test error").isInstanceOf[OmiRequest]
-  }
+  def e1 = !new ParseError("test error").isInstanceOf[OmiRequest]
 
-  def e2 = {
-    new ReadRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
-  }
+  def e2 = new ReadRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
 
-  def e3 = {
-    new WriteRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
-  }
+  def e3 = new WriteRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
 
-  def e4 = {
-    new SubscriptionRequest(0.seconds, 0.seconds, OdfObjects()).isInstanceOf[OmiRequest]
-  }
+  def e4 = new SubscriptionRequest(0.seconds, 0.seconds, OdfObjects()).isInstanceOf[OmiRequest]
 
   def e5 = {
-    new ResponseRequest(Seq(OmiResult("1","200"))).isInstanceOf[OmiRequest]
+    new ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
   }
 
-  def e6 = {
-    new CancelRequest(10.seconds, Seq()).isInstanceOf[OmiRequest]
-  }
+  def e6 = new CancelRequest(10.seconds, Seq()).isInstanceOf[OmiRequest]
   
   def e10 = {
-    !new OdfInfoItem(Seq(), Seq()).isInstanceOf[OmiRequest]
+    !new OdfInfoItem(Seq("Objects", "Typestest","t"), Seq()).isInstanceOf[OmiRequest]
   }
-  
-  def e11 = {
-    !new OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
-  }
+
+  def e11 = !new OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
   
   def e100 = {
-    new OdfInfoItem(Seq(), Seq()).isInstanceOf[OdfNode]
+    new OdfInfoItem(Seq("Ojects", "Typestest", "t"), Seq()).isInstanceOf[OdfNode]
   }
+
+  def e101 = new OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
   
-  def e101 = {
-    new OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
-  }
-  
-  def e200 = {
-    Path("test/test2").toSeq should be equalTo (Path(Seq("test", "test2")))
-  }
+  def e200 = Path("test/test2").toSeq should be equalTo (Path(Seq("test", "test2")))
   
   def e201 = {
     val seq = Seq("test", "test2")
@@ -117,4 +111,35 @@ class TypesTest extends Specification {
     
     (path1 / "test3/test4/test5").toSeq should be equalTo (new Path("test1/test2/test3/test4/test5").toSeq)
   }
+
+  val testOdfMsg: NodeSeq ={
+    <msg xmlns = "omi.xsd">
+      <Objects xmlns="odf.xsd">
+      { for (i <- 0 to 10000)
+        yield <Object><id>TestObject</id><InfoItem name="i"></InfoItem></Object>
+      }
+      </Objects>
+    </msg>
+  }
+
+  def xmlOmi(ttl: String, verb: NodeSeq) = <omiEnvelope xmlns="omi.xsd" ttl={ttl}> {verb} </omiEnvelope>
+  def xmlRead = <read xmlns="omi.xsd" msgformat="odf"> {testOdfMsg} </read>
+  val xmlReadFinite: NodeSeq = xmlOmi("10", xmlRead)
+  def xmlReadInfinite: NodeSeq = xmlOmi("-1", xmlRead)
+  def xmlWrite: NodeSeq = xmlOmi("10", <write xmlns="omi.xsd" msgformat="odf"> {testOdfMsg} </write>)
+  def xmlCancel: NodeSeq = xmlOmi("10", <cancel xmlns="omi.xsd" msgformat="odf"> <requestID>0</requestID> </cancel>)
+  def xmlResponse: NodeSeq = xmlOmi("10", <response xmlns="omi.xsd" msgformat="odf"> {testOdfMsg} </response>)
+
+  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString)
+
+  def pFiniteTTL   = newRawRequestWrapper(xmlReadFinite).ttl mustEqual 10.seconds
+  def pInfiniteTTL = newRawRequestWrapper(xmlReadInfinite).ttl mustEqual Duration.Inf
+
+  import RawRequestWrapper.MessageType._
+
+  def pRead     = newRawRequestWrapper(xmlReadFinite).messageType mustEqual Read
+  def pWrite    = newRawRequestWrapper(xmlWrite).messageType mustEqual Write
+  def pCancel   = newRawRequestWrapper(xmlCancel).messageType mustEqual Cancel
+  def pResponse = newRawRequestWrapper(xmlResponse).messageType mustEqual Response
+
 }

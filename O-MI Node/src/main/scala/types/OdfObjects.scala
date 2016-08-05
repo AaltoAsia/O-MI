@@ -1,24 +1,26 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package OdfTypes
 
 
-import parsing.xmlGen.xmlTypes._
-import types.OdfTypes.OdfTreeCollection._
-
 import scala.collection.immutable.HashMap
+import scala.xml.NodeSeq
+
+import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.{defaultScope, scalaxb}
+import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
@@ -36,8 +38,8 @@ class OdfObjectsImpl(
     OdfObjects(
       thisObjs.merged(anotherObjs){case ((k1, v1),(_, v2)) => (k1,v1.combine(v2))}.values,
     unionOption(version,another.version){
-      case (a,b) if a > b =>a
-      case (a,b) => b
+      case (a, b) if a > b =>a
+      case (a, b) => b
     }
     )
 
@@ -62,7 +64,10 @@ class OdfObjectsImpl(
    * @return
    */
   def intersect(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
-    (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
+    (
+    uniqueObjs: Seq[OdfObject],
+    anotherUniqueObjs: Seq[OdfObject],
+    sharedObjs: Map[Path, Seq[OdfObject]]) =>
     OdfObjects(
       sharedObjs.flatMap{
       case (path: Path, sobj: Seq[OdfObject]) =>
@@ -109,5 +114,9 @@ class OdfObjectsImpl(
       }.toSeq,
       version
     )
+  }
+  implicit def asXML : NodeSeq= {
+    val xml  = scalaxb.toXML[ObjectsType](asObjectsType, Some("odf.xsd"), Some("Objects"), defaultScope)
+    xml//.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 }    

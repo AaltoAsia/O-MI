@@ -1,21 +1,18 @@
 package agents
 
 import agentSystem._ 
-import types._
-import types.OdfTypes._
-import types.OmiTypes._
-import akka.util.Timeout
-import akka.actor.Cancellable
-import akka.pattern.ask
-import scala.util.{Success, Failure}
-import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable }
-import scala.concurrent._
-import scala.concurrent.duration._
-import java.sql.Timestamp;
-import java.util.Random;
-import java.util.Date;
+import agentSystem.AgentTypes._ 
+import types.OmiTypes.WriteRequest
+import scala.concurrent.Promise
+import com.typesafe.config.Config
+import akka.actor.Props
 
-class ResponsibleAgent  extends BasicAgent with ResponsibleInternalAgent{
+object ResponsibleAgent extends PropsCreator{
+  def props(config: Config) : InternalAgentProps = InternalAgentProps( new ResponsibleAgent(config) )
+}
+
+class ResponsibleAgent(config: Config )  extends BasicAgent(config) with ResponsibleInternalAgent{
+  import context.dispatcher
   protected def handleWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
     val result = PromiseResult()
     parent ! PromiseWrite( result, write)
