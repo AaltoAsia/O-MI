@@ -119,15 +119,12 @@ lazy val root = (project in file(".")).
       serverLoading in Debian := SystemV,
     //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "html")),
-      mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "configs")),
+      mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
       mappings in Universal <+= (packageBin in Compile, sourceDirectory in omiNode) map { (_, src) =>
         val conf = src / "main" / "resources" / "application.conf"
         conf -> "configs/application.conf"},
       mappings in Universal <++= (doc in Compile in omiNode, baseDirectory in omiNode) map { (_, base) =>
         directory(base / "html" / "api").map(n => (n._1, "html/" + n._2))},
-      mappings in Universal <++= (baseDirectory in omiNode) map { base =>
-        Seq(
-          base / "configs" / "SmartHouse.xml" -> "SmartHouse.xml")},
       mappings in Universal <++= baseDirectory map { base =>
         Seq(
           base / "tools" / "callbackTestServer.py" -> "callbackTestServer.py",
