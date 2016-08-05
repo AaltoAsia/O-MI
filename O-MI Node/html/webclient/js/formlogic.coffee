@@ -67,89 +67,165 @@ formLogicExt = ($, WebOmi) ->
       mirror.refresh()
     mirror.refresh()
   
-  my.handleSubscriptionHistory = (response) ->
-    start = response.search("<omi:requestID>") + 15
-    end = response.search("</omi:requestID>")
-    requestID = parseInt(response.slice(start, end))
-    start = response.search("<Objects>")
-    end = response.search("</Objects>")
-    odf = response.slice(start, end)
-    infoitemXmls = odf.getElementsByTagName "InfoItem"
-    getPath = (xmlNode) ->
-      switch xmlNode.nodeName
-        when "Object"
-          head = my.evaluateXPath(xmlNode, './odf:id')[0]
-          if head?
-            id = head.textContent.trim()
-            init = getPath xmlNode.parentNode
-            init + "/" + id
-          else
-            null
-        when "InfoItem"
-          nameAttr = xmlNode.attributes.name
-          if nameAttr?
-            name = nameAttr.value
-            init = getPath xmlNode.parentNode
-            init + "/" + name
-          else
-            null
-        when "Objects"  then "Objects"
-        else null
-    getPathValues = (infoitemXml) ->
-      valuesXml = infoitemXml.getChildsByTagName("value")
-      {
-        path:  getPath infoitemXml
-        values:  ( valueXml.textContent for valueXml in valuesXml )
-      }
-    pathValues = ( getPathValues info for info in infoitemXmls )
-    newHistory = (requestID) ->
-            "<div class=\"responseList\" id=\"requestID"+requestID+">"+
-              "<div class=\"panel panel-info\">"+
-                "<div class=\"panel-heading\">"+
-                  "<h3 class=\"panel-title\"><b>RequestID "+requestID+"</b></h3>"+
-                "</div>"+
-                "<table class=\"table table-hover table-condensed\">"+
-                  "<thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>"+
-                  "<tbody>"+
-                  "</tbody>"+
-                "</table>"+
-              "</div>"
-    returnStatus = ( count, returnCode ) ->
-      switch returnCode
-        when 200
-          "<tr class=\"success\"><th>"+count+"</th><th>returnCode</th><th>"+returnCode+"</th></tr>"
-        when 404
-          "<tr class=\"danger\"><th>"+count+"</th><th>returnCode</th><th>"+returnCode+"</th></tr>"
-        else
-          "<tr class=\"danger\"><th>"+count+"</th><th>returnCode</th><th>"+returnCode+"</th></tr>"
-    htmlformat = ( pathValues ) ->
-      lines = ({path: pathValue.path, value: value} for value in pathValue.values) for pathValue in pathValues
-      "<tr><td></td><td>"+pathValue.path+"</td><td>"+pathValue.value+"</td></tr>" for pathValue in lines
-    addHistory = ( requestID, pathValues ) ->
-      requestHistory = $( "requestID"+requestID )
-      if requestHistory?
-         $( "requestID"+requestID+" > table > tbody > tr"  )
-         .prepend( (returnStatus 3, 200) + htmlformat pathValues)
+
+  ########################################################
+  # SUBSCRIPTION HISTORY CODE, TODO: move to another file?
+  ########################################################
+  # Subscription history of WebSocket and callback=0 Features
+
+  # List of subscriptions that uses websocket and should be watched
+  # Type: {String_RequestID : {receivedCount : Number, userSeenCount : Number, listSelector : Jquery}}
+  my.callbackSubscriptions = {}
+  
+  # Set true when the next response should be rendered to main response area
+  my.waitingForResponse = false
+
+  # Set true whene next response with requestID should be saved to my.callbackSubscriptions
+  my.waitingForRequestID = false
+
+  # whether callbackResponseHistoryModal is opened and the user can see the new results
+  #my.historyOpen = false
+
+  consts = WebOmi.consts
+
+  consts.afterJquery ->
+    consts.callbackResponseHistoryModal = $ '.callbackResponseHistory'
+    consts.callbackResponseHistoryModal
+      .on 'shown.bs.modal', ->
+        #my.historyOpen = true
+        my.updateHistoryCounter()
+      .on 'hide.bs.modal', ->
+        #my.historyOpen = false
+        my.updateHistoryCounter()
+
+    consts.responseListCollection  = $ '.responseListCollection'
+    consts.responseListCloneTarget = $ '.responseList.cloneTarget'
+    consts.historyCounter = $ 'label.historyCounter'
+
+  # end afterjquery
+
+  my.updateHistoryCounter = () ->
+    update = (sub) ->
+      sub.userSeenCount = sub.receivedCount
+
+    ####################################
+    # TODO: historyCounter
+    #if my.historyOpen
+    my.callbackSubscriptions =
+      (update sub for sub in my.callbackSubscriptions)
+
+
+  # Called when we receive relevant websocket response
+  # response: String
+  # returns: true if the response was consumed, false otherwise
+  my.handleSubscriptionHistory = (responseString) ->
+    if my.waitingForResponse and not my.waitingForRequestID
+      return false
+    # imports
+    omi = WebOmi.omi
+
+    response = omi.parseXml responseString
+
+    # get requestID
+    requestID = parseInt omi.evaluateXPath(response, "//omi:requestID/text()")[0] # headOption
+    if (not requestID?) or (not my.callbackSubscriptions[requestID])
+      if my.waitingForRequestID
+        my.waitingForRequestID = false
+        my.callbackSubscriptions[requestID] =
+          receivedCount : 1
+          userSeenCount : 0
       else
-        $( ".responseListCollection > .responesList" ).prepend(newHistory requestID)
-        $( "requestID"+requestID+" > table > tbody"  )
-         .add( (returnStatus 1, 200) + htmlformat pathValues)
+        return false
+
+    infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
+
+    getPath = (xmlNode) ->
+      id = omi.getOdfId(xmlNode)
+      if id? and id != "Objects"
+        init = getPath xmlNode.parentNode
+        init + "/" + id
+      else
+        id
+
+    getPathValues = (infoitemXmlNode) ->
+      valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value")
+      path = getPath infoitemXml
+      for value in valuesXml
+        path: path
+        values: value
+
+    pathValues = ( getPathValues info for info in infoitems )
+
+    # Utility function; Clone the element above and empty its input fields 
+    # callback type: (clonedDom) -> void
+    cloneAbove = (target, callback) ->
+      util.cloneAbove target, cloned ->
+      
+        cloned.slideDown null, ->  # animation, default duration
+          # readjusts the position because of size change (see modal docs)
+          consts.infoItemDialog.modal 'handleUpdate'
+
+    createHistory = (requestID) ->
+      newList = cloneAbove consts.responseListCloneTarget
+      newList
+        .removeClass "cloneTarget"
+        .show()
+      newList.find '.requestID'
+        .text requestID
+      newList
+
+    # return: jquery elem
+    returnStatus = ( count, returnCode ) ->
+      row = $ "<tr>"
+        .addClass switch Math.floor(returnCode/100)
+          when 2 then "success" # 2xx
+          when 3 then "warning" # 3xx
+          when 4 then "danger"  # 4xx
+        .append $ "<th>"
+          .text count
+        .append $ "<th>returnCode</th>"
+        .append $ "<th>"
+          .text returnCode
+
+    htmlformat = ( pathValues ) ->
+      pathValuePairs = (pathValue) ->
+        ({path: pathValue.path, value: value} for value in pathValue.values)
+
+      lines = pathValuePairs for pathValue in pathValues
+
+      for pathValue in lines
+        $ "<tr><td></td><td>"+pathValue.path+"</td><td>"+pathValue.value+"</td></tr>"
+
+    addHistory = ( requestID, pathValues ) ->
+      maybeCBRecord = callbackSubscriptions[requestID]
+      if maybeCBRecord.selector?
+        callbackRecord = maybeCBRecord
+        callbackRecord.selector
+          .find "dataTable"
+          .prepend returnStatus callbackRecord.receivedCount, 200
+              .after htmlformat pathValues
+      else
+        newHistory = createHistory requestID
+        newHistory.add (returnStatus 1, 200)
+          .after htmlformat pathValues
+        callbackSubscriptions[requestID].selector = newHistory
+
     addHistory requestID, pathValues
 
   
 
   
   my.createWebSocket = (onopen, onclose, onmessage, onerror) -> # Should socket be created automaticly for my or 
-    console.log("Creating WebSocket.")
+    WebOmi.debug "Creating WebSocket."
     consts = WebOmi.consts
     server = consts.serverUrl.val()
     socket = new WebSocket(server)
     socket.onopen = () ->
-      console.log("WebSocket connected.")
-      console.log("Sending request via WebSocket.")
+      WebOmi.debug "WebSocket connected."
+      WebOmi.debug "Sending request via WebSocket."
       socket.send(request)
     socket.onclose = () ->
-      console.log("WebSocket disconnected.")
+      WebOmi.debug "WebSocket disconnected."
     socket.onmessage = (message) ->
       # TODO: Check if response to subscription and put into subscription response view
       response = message.data
@@ -160,7 +236,7 @@ formLogicExt = ($, WebOmi) ->
       window.setTimeout (-> consts.progressBar.show()), 2000
       #callback(response) if (callback?)
     socket.onerror = (error) ->
-      console.log("WebSocket error: " + error)
+      WebOmi.debug "WebSocket error: ", error
     my.socket = socket
   
   # send, callback is called with response text if successful
@@ -170,23 +246,45 @@ formLogicExt = ($, WebOmi) ->
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
     if server.startsWith("ws://") || server.startsWith("wss://")
-      console.log("Sending request via WebSocket.")
+      WebOmi.debug "Sending request via WebSocket."
       my.wsSend request
     else
-      console.log("Sending request with HTTP POST.")
+      WebOmi.debug "Sending request with HTTP POST."
       my.httpSend callback
 
   my.wsSend = (request) ->
     if( !my.socket || my.socket.readyState != WebSocket.OPEN)
-      onopen = () -> 
-        console.log("WebSocket connected.")
-        my.socket.send(request) 
-      onclose = () -> console.log("WebSocket disconnected.")
-      onerror = (error) -> console.log("WebSocket error: " + error)
+      onopen = () ->
+        WebOmi.debug "WebSocket connected."
+
+        # Next message should be rendered to main response area
+        my.waitingForResponse = true
+
+        # Check if request is zero callback request
+        omi = WebOmi.omi
+        maybeParsedXml = Maybe omi.parsedXml(request)
+        maybeVerbXml =
+          maybeParsedXml.bind (parsedXml) ->
+            verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*")
+            Maybe.fromArray verbResult
+
+        maybeVerbXml.fmap (verbXml) ->
+          verb = verbXml.tagName
+          maybeCallback = verbXml.attributes.callback
+
+          if maybeCallback.exists((c) -> c is "0")
+            # commented because user might be waiting for some earlier response
+            #y.waitingForResponse = false
+            
+            my.waitingForRequestID = true
+
+        my.socket.send(request)
+      onclose = () -> WebOmi.debug "WebSocket disconnected."
+      onerror = (error) -> WebOmi.debug "WebSocket error: ",error
       onmessage = my.handleWSMessage
       my.createWebSocket onopen, onclose, onmessage, onerror
     else
-      console.log("Sending request via WebSocket.")
+      WebOmi.debug "Sending request via WebSocket."
       my.socket.send(request)
 
   my.httpSend = (callback) ->
@@ -222,14 +320,17 @@ formLogicExt = ($, WebOmi) ->
     consts = WebOmi.consts
     # TODO: Check if response to subscription and put into subscription response view
     response = message.data
-    if -1 != response.search("<omi:requestID>") && -1 != response.search("<Objects>")
-      my.handleSubscriptionHistory response
-    else
+    if not my.handleSubscriptionHistory response
       consts.progressBar.css "width", "100%"
       my.setResponse response
       consts.progressBar.css "width", "0%"
       consts.progressBar.hide()
       window.setTimeout (-> consts.progressBar.show()), 2000
+      my.waitingForResponse = false
+
+
+
+
 
   # recursively build odf jstree from the Objects xml node
   my.buildOdfTree = (objectsNode) ->
@@ -288,7 +389,7 @@ formLogicExt = ($, WebOmi) ->
     objectsArr = omi.evaluateXPath parsed, "//odf:Objects"
 
     if objectsArr.length != 1
-      alert "failed to get single Objects odf root"
+      WebOmi.error "failed to get single Objects odf root"
     else
       my.buildOdfTree objectsArr[0] # head, checked above
 

@@ -73,44 +73,8 @@ html {
 }
 
 
-
-
-
-
-
-/* First prototype DELME */
-.mypanel {
-    background-color: #e2e4e6;
-    padding: 0.5em;
-    border-radius: 4px;
-}
-
-/* First prototype DELME */
-.responseListElement {
-    flex: 0 1;
-    padding: 0.5em 0.5em 0.1em;
-    margin: 0.5em 0 0;
-    background-color: white;
-    border-radius: 4px;
-    overflow:hidden;
-}
-
-/* First prototype DELME */
-.responseListElement > div {
-    display: inline-block;
-    width: 100%;
-}
-
-/* First prototype DELME */
-.responseListElement code, .responseListElement b {
-    display: inline-block;
-    overflow:hidden;
-}
-
-/* First prototype DELME */
-.responseListElement code {
-    width: 6em;
-    float: right;
+.cloneTarget {
+    display: none;
 }
 
 

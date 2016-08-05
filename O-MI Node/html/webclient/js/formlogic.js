@@ -4,7 +4,7 @@
     hasProp = {}.hasOwnProperty;
 
   formLogicExt = function($, WebOmi) {
-    var my;
+    var consts, my;
     my = WebOmi.formLogic = {};
     my.setRequest = function(xml) {
       var mirror;
@@ -57,132 +57,170 @@
       });
       return mirror.refresh();
     };
-    my.handleSubscriptionHistory = function(response) {
-      var addHistory, end, getPath, getPathValues, htmlformat, info, infoitemXmls, newHistory, odf, pathValues, requestID, returnStatus, start;
-      start = response.search("<omi:requestID>") + 15;
-      end = response.search("</omi:requestID>");
-      requestID = parseInt(response.slice(start, end));
-      start = response.search("<Objects>");
-      end = response.search("</Objects>");
-      odf = response.slice(start, end);
-      infoitemXmls = odf.getElementsByTagName("InfoItem");
+    my.callbackSubscriptions = {};
+    my.waitingForResponse = false;
+    my.waitingForRequestID = false;
+    consts = WebOmi.consts;
+    consts.afterJquery(function() {
+      consts.callbackResponseHistoryModal = $('.callbackResponseHistory');
+      consts.callbackResponseHistoryModal.on('shown.bs.modal', function() {
+        return my.updateHistoryCounter();
+      }).on('hide.bs.modal', function() {
+        return my.updateHistoryCounter();
+      });
+      consts.responseListCollection = $('.responseListCollection');
+      consts.responseListCloneTarget = $('.responseList.cloneTarget');
+      return consts.historyCounter = $('label.historyCounter');
+    });
+    my.updateHistoryCounter = function() {
+      var sub, update;
+      update = function(sub) {
+        return sub.userSeenCount = sub.receivedCount;
+      };
+      return my.callbackSubscriptions = (function() {
+        var i, len, ref, results;
+        ref = my.callbackSubscriptions;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          sub = ref[i];
+          results.push(update(sub));
+        }
+        return results;
+      })();
+    };
+    my.handleSubscriptionHistory = function(responseString) {
+      var addHistory, cloneAbove, createHistory, getPath, getPathValues, htmlformat, info, infoitems, omi, pathValues, requestID, response, returnStatus;
+      if (my.waitingForResponse && !my.waitingForRequestID) {
+        return false;
+      }
+      omi = WebOmi.omi;
+      response = omi.parseXml(responseString);
+      requestID = parseInt(omi.evaluateXPath(response, "//omi:requestID/text()")[0]);
+      if ((requestID == null) || (!my.callbackSubscriptions[requestID])) {
+        if (my.waitingForRequestID) {
+          my.waitingForRequestID = false;
+          my.callbackSubscriptions[requestID] = {
+            receivedCount: 1,
+            userSeenCount: 0
+          };
+        } else {
+          return false;
+        }
+      }
+      infoitems = omi.evaluateXPath(response, "//odf:InfoItem");
       getPath = function(xmlNode) {
-        var head, id, init, name, nameAttr;
-        switch (xmlNode.nodeName) {
-          case "Object":
-            head = my.evaluateXPath(xmlNode, './odf:id')[0];
-            if (head != null) {
-              id = head.textContent.trim();
-              init = getPath(xmlNode.parentNode);
-              return init + "/" + id;
-            } else {
-              return null;
-            }
-            break;
-          case "InfoItem":
-            nameAttr = xmlNode.attributes.name;
-            if (nameAttr != null) {
-              name = nameAttr.value;
-              init = getPath(xmlNode.parentNode);
-              return init + "/" + name;
-            } else {
-              return null;
-            }
-            break;
-          case "Objects":
-            return "Objects";
-          default:
-            return null;
+        var id, init;
+        id = omi.getOdfId(xmlNode);
+        if ((id != null) && id !== "Objects") {
+          init = getPath(xmlNode.parentNode);
+          return init + "/" + id;
+        } else {
+          return id;
         }
       };
-      getPathValues = function(infoitemXml) {
-        var valueXml, valuesXml;
-        valuesXml = infoitemXml.getChildsByTagName("value");
-        return {
-          path: getPath(infoitemXml),
-          values: (function() {
-            var i, len, results;
-            results = [];
-            for (i = 0, len = valuesXml.length; i < len; i++) {
-              valueXml = valuesXml[i];
-              results.push(valueXml.textContent);
-            }
-            return results;
-          })()
-        };
+      getPathValues = function(infoitemXmlNode) {
+        var i, len, path, results, value, valuesXml;
+        valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value");
+        path = getPath(infoitemXml);
+        results = [];
+        for (i = 0, len = valuesXml.length; i < len; i++) {
+          value = valuesXml[i];
+          results.push({
+            path: path,
+            values: value
+          });
+        }
+        return results;
       };
       pathValues = (function() {
         var i, len, results;
         results = [];
-        for (i = 0, len = infoitemXmls.length; i < len; i++) {
-          info = infoitemXmls[i];
+        for (i = 0, len = infoitems.length; i < len; i++) {
+          info = infoitems[i];
           results.push(getPathValues(info));
         }
         return results;
       })();
-      newHistory = function(requestID) {
-        return "<div class=\"responseList\" id=\"requestID" + requestID + ">" + "<div class=\"panel panel-info\">" + "<div class=\"panel-heading\">" + "<h3 class=\"panel-title\"><b>RequestID " + requestID + "</b></h3>" + "</div>" + "<table class=\"table table-hover table-condensed\">" + "<thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>" + "<tbody>" + "</tbody>" + "</table>" + "</div>";
+      cloneAbove = function(target, callback) {
+        return util.cloneAbove(target, cloned(function() {
+          return cloned.slideDown(null, function() {
+            return consts.infoItemDialog.modal('handleUpdate');
+          });
+        }));
+      };
+      createHistory = function(requestID) {
+        var newList;
+        newList = cloneAbove(consts.responseListCloneTarget);
+        newList.removeClass("cloneTarget").show();
+        newList.find('.requestID').text(requestID);
+        return newList;
       };
       returnStatus = function(count, returnCode) {
-        switch (returnCode) {
-          case 200:
-            return "<tr class=\"success\"><th>" + count + "</th><th>returnCode</th><th>" + returnCode + "</th></tr>";
-          case 404:
-            return "<tr class=\"danger\"><th>" + count + "</th><th>returnCode</th><th>" + returnCode + "</th></tr>";
-          default:
-            return "<tr class=\"danger\"><th>" + count + "</th><th>returnCode</th><th>" + returnCode + "</th></tr>";
-        }
+        var row;
+        return row = $("<tr>").addClass((function() {
+          switch (Math.floor(returnCode / 100)) {
+            case 2:
+              return "success";
+            case 3:
+              return "warning";
+            case 4:
+              return "danger";
+          }
+        })()).append($("<th>")).text(count).append($("<th>returnCode</th>")).append($("<th>")).text(returnCode);
       };
       htmlformat = function(pathValues) {
-        var i, j, len, len1, lines, pathValue, results, value;
+        var i, j, len, len1, lines, pathValue, pathValuePairs, results;
+        pathValuePairs = function(pathValue) {
+          var i, len, ref, results, value;
+          ref = pathValue.values;
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            value = ref[i];
+            results.push({
+              path: pathValue.path,
+              value: value
+            });
+          }
+          return results;
+        };
         for (i = 0, len = pathValues.length; i < len; i++) {
           pathValue = pathValues[i];
-          lines = (function() {
-            var j, len1, ref, results;
-            ref = pathValue.values;
-            results = [];
-            for (j = 0, len1 = ref.length; j < len1; j++) {
-              value = ref[j];
-              results.push({
-                path: pathValue.path,
-                value: value
-              });
-            }
-            return results;
-          })();
+          lines = pathValuePairs;
         }
         results = [];
         for (j = 0, len1 = lines.length; j < len1; j++) {
           pathValue = lines[j];
-          results.push("<tr><td></td><td>" + pathValue.path + "</td><td>" + pathValue.value + "</td></tr>");
+          results.push($("<tr><td></td><td>" + pathValue.path + "</td><td>" + pathValue.value + "</td></tr>"));
         }
         return results;
       };
       addHistory = function(requestID, pathValues) {
-        var requestHistory;
-        requestHistory = $("requestID" + requestID);
-        if (requestHistory != null) {
-          return $("requestID" + requestID + " > table > tbody > tr").prepend((returnStatus(3, 200)) + htmlformat(pathValues));
+        var callbackRecord, maybeCBRecord, newHistory;
+        maybeCBRecord = callbackSubscriptions[requestID];
+        if (maybeCBRecord.selector != null) {
+          callbackRecord = maybeCBRecord;
+          return callbackRecord.selector.find("dataTable").prepend(returnStatus(callbackRecord.receivedCount, 200)).after(htmlformat(pathValues));
         } else {
-          $(".responseListCollection > .responesList").prepend(newHistory(requestID));
-          return $("requestID" + requestID + " > table > tbody").add((returnStatus(1, 200)) + htmlformat(pathValues));
+          newHistory = createHistory(requestID);
+          newHistory.add(returnStatus(1, 200)).after(htmlformat(pathValues));
+          return callbackSubscriptions[requestID].selector = newHistory;
         }
       };
       return addHistory(requestID, pathValues);
     };
     my.createWebSocket = function(onopen, onclose, onmessage, onerror) {
-      var consts, server, socket;
-      console.log("Creating WebSocket.");
+      var server, socket;
+      WebOmi.debug("Creating WebSocket.");
       consts = WebOmi.consts;
       server = consts.serverUrl.val();
       socket = new WebSocket(server);
       socket.onopen = function() {
-        console.log("WebSocket connected.");
-        console.log("Sending request via WebSocket.");
+        WebOmi.debug("WebSocket connected.");
+        WebOmi.debug("Sending request via WebSocket.");
         return socket.send(request);
       };
       socket.onclose = function() {
-        return console.log("WebSocket disconnected.");
+        return WebOmi.debug("WebSocket disconnected.");
       };
       socket.onmessage = function(message) {
         var response;
@@ -196,21 +234,21 @@
         }), 2000);
       };
       socket.onerror = function(error) {
-        return console.log("WebSocket error: " + error);
+        return WebOmi.debug("WebSocket error: ", error);
       };
       return my.socket = socket;
     };
     my.send = function(callback) {
-      var consts, request, server;
+      var request, server;
       consts = WebOmi.consts;
       my.clearResponse();
       server = consts.serverUrl.val();
       request = consts.requestCodeMirror.getValue();
       if (server.startsWith("ws://") || server.startsWith("wss://")) {
-        console.log("Sending request via WebSocket.");
+        WebOmi.debug("Sending request via WebSocket.");
         return my.wsSend(request);
       } else {
-        console.log("Sending request with HTTP POST.");
+        WebOmi.debug("Sending request with HTTP POST.");
         return my.httpSend(callback);
       }
     };
@@ -218,24 +256,43 @@
       var onclose, onerror, onmessage, onopen;
       if (!my.socket || my.socket.readyState !== WebSocket.OPEN) {
         onopen = function() {
-          console.log("WebSocket connected.");
+          var maybeParsedXml, maybeVerbXml, omi;
+          WebOmi.debug("WebSocket connected.");
+          my.waitingForResponse = true;
+          omi = WebOmi.omi;
+          maybeParsedXml = Maybe(omi.parsedXml(request));
+          maybeVerbXml = maybeParsedXml.bind(function(parsedXml) {
+            var verbResult;
+            verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*");
+            return Maybe.fromArray(verbResult);
+          });
+          maybeVerbXml.fmap(function(verbXml) {
+            var maybeCallback, verb;
+            verb = verbXml.tagName;
+            maybeCallback = verbXml.attributes.callback;
+            if (maybeCallback.exists(function(c) {
+              return c === "0";
+            })) {
+              return my.waitingForRequestID = true;
+            }
+          });
           return my.socket.send(request);
         };
         onclose = function() {
-          return console.log("WebSocket disconnected.");
+          return WebOmi.debug("WebSocket disconnected.");
         };
         onerror = function(error) {
-          return console.log("WebSocket error: " + error);
+          return WebOmi.debug("WebSocket error: ", error);
         };
         onmessage = my.handleWSMessage;
         return my.createWebSocket(onopen, onclose, onmessage, onerror);
       } else {
-        console.log("Sending request via WebSocket.");
+        WebOmi.debug("Sending request via WebSocket.");
         return my.socket.send(request);
       }
     };
     my.httpSend = function(callback) {
-      var consts, request, server;
+      var request, server;
       consts = WebOmi.consts;
       server = consts.serverUrl.val();
       request = consts.requestCodeMirror.getValue();
@@ -271,19 +328,18 @@
       });
     };
     my.handleWSMessage = function(message) {
-      var consts, response;
+      var response;
       consts = WebOmi.consts;
       response = message.data;
-      if (-1 !== response.search("<omi:requestID>") && -1 !== response.search("<Objects>")) {
-        return my.handleSubscriptionHistory(response);
-      } else {
+      if (!my.handleSubscriptionHistory(response)) {
         consts.progressBar.css("width", "100%");
         my.setResponse(response);
         consts.progressBar.css("width", "0%");
         consts.progressBar.hide();
-        return window.setTimeout((function() {
+        window.setTimeout((function() {
           return consts.progressBar.show();
         }), 2000);
+        return my.waitingForResponse = false;
       }
     };
     my.buildOdfTree = function(objectsNode) {
@@ -367,7 +423,7 @@
       parsed = omi.parseXml(responseString);
       objectsArr = omi.evaluateXPath(parsed, "//odf:Objects");
       if (objectsArr.length !== 1) {
-        return alert("failed to get single Objects odf root");
+        return WebOmi.error("failed to get single Objects odf root");
       } else {
         return my.buildOdfTree(objectsArr[0]);
       }
