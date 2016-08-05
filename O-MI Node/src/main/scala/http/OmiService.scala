@@ -307,7 +307,9 @@ trait OmiService
  * This trait implements websocket support for O-MI message handling using akka-http
  */
 trait WebSocketOMISupport { self: OmiService =>
-  import system.dispatcher
+  import self.system.dispatcher
+  val system : ActorSystem 
+  implicit val materializer : ActorMaterializer = ActorMaterializer()(system)
   def subscriptionManager : ActorRef
 
   type InSink = Sink[ws.Message, _]
@@ -387,7 +389,7 @@ trait WebSocketOMISupport { self: OmiService =>
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{
       case textMessage: ws.TextMessage =>
-        textMessage.textStream.runFold("")(_+_)(materializer)
+        textMessage.textStream.runFold("")(_+_)
       case msg: ws.Message => Future successful ""
     }
     val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
@@ -402,6 +404,4 @@ trait WebSocketOMISupport { self: OmiService =>
     (inSink, outSource)
   }
 
-  val system : ActorSystem 
-  val materializer : Materializer = ActorMaterializer()(system)
 }
