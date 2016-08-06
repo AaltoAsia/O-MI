@@ -7,24 +7,33 @@ O-MI Node Server
 
 
 Internet of Things data server.
-Implementation of O-MI Node as specified in [Open Messaging Interface](https://www2.opengroup.org/ogsys/catalog/C14B) standard with [Open Data Format](https://www2.opengroup.org/ogsys/catalog/C14A) standard. It is intended to be as reference implementation that shows how these standards work in more detail.
+Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to Issues or email.
 
 
 See `development` branch for latest progress.
 
 Resources
 ---------
+
+* [O-MI Specification (html)](http://www.opengroup.org/iot/omi/index.htm)
+* [O-DF Specification (html)](http://www.opengroup.org/iot/omi/index.htm)
+* [Examples of requests and responses, as handled by this server](https://otaniemi3d.cs.hut.fi/omi/node/html/ImplementationDetails.html)
 * [API Documentation ScalaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/index.html)
-* [API Documentation JavaDoc](http://pesutykki.mooo.com/dump/O-MI-JavaApi/)
 * [Technical Documentation](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
+
+<!--- 
+Not up currently
+* [API Documentation ScalaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/index.html)
+-->
 
 Dependencies
 ------------
 * Java 1.8
+* For building: SBT`>=0.13.9` or SBT enabled IDE
 
 Running
 -------
-Download the pre-compiled zip or tgz package from latest git releases [here](https://github.com/AaltoAsia/O-MI/releases/latest).
+[Download the pre-compiled zip, tgz or debian package from latest git releases here](https://github.com/AaltoAsia/O-MI/releases/latest).
 
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
@@ -32,19 +41,19 @@ To run O-MI Node run the corresponding startup script from the bin directory for
 * `bin/o-mi-node.bat` for Windows
 * `bin/o-mi-node` for Unix and Mac
 
-This will run O-MI Node with configuration in /conf/application.conf.
+This will run O-MI Node with configuration in `/conf/application.conf`.
 By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.
-More Information in the 'Configuration' section.
+More Information in the [Configuration](#Configuration) section.
 
 Compiling and packaging
 -----------------------
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. `sbt release`
-3. Result can be found in ./target/universal/o-mi-Node-version.zip
+3. Result can be found in `./target/universal/o-mi-Node-version.zip`
 
 
-see [Universal Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/universal.html)
-for more packaging methods
+See [SBT Universal Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/universal.html)
+for more packaging methods.
 
 <!---
 Currently not supported
@@ -54,6 +63,7 @@ Currently not supported
 2. `sbt one-jar`
 3. Result can be found in `./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar`
 -->
+
 Setup development environment
 -----------------------------
 
@@ -67,9 +77,9 @@ Setup development environment
         - `re-start`: run the project in background (faster restart and sometimes works better than sbt run)
         - `re-stop`: close the background process
     - `sbt compile`: just compile the project
-    - `sbt stage`: creates file structure used in packaged version to the ./target/universal/stage/ directory
+    - `sbt stage`: creates file structure used in packaged version to the `./target/universal/stage/` directory
     - `sbt release`: create release tar and zip packages
-    - `sbt debian:packageBin`: create release debian package (requires dpkg)
+    - `sbt debian:packageBin`: create release debian package (requires `dpkg`)
     - `sbt doc`: compile api documentation
     - `sbt test`: run tests
     - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
