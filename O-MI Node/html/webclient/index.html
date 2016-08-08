@@ -95,6 +95,26 @@
 	<script type="text/javascript" src="js/omi.js"></script>
 	<script type="text/javascript" src="js/newInfoItemForm.js"></script>
 
+  <!-- FIXME: TEST SCRIPT -->
+  <script>
+    (function (WebOmi, c, r) {
+      c.afterJquery(function () {
+        var params = r.defaults.subscription();
+        params.callback = "0";
+        r.forceLoadParams(params);
+        c.serverUrl.val("ws://localhost:8080/");
+
+        //c.requestSel.select_node("subscription");
+        //c.requestSel.deselect_all();
+        //c.requestSel.select_node("subscription");
+        //c.ui.ttl.set(222);
+        //c.ui.interval.set(22);
+        //c.ui.callback.set("0");
+      })
+    })(WebOmi, WebOmi.consts, WebOmi.requests)
+  </script>
+
+
 </head>
 <body>
   <nav class="navbar navbar-default navbar-static-top navbar-inverse" style="margin-bottom:0;">
@@ -591,7 +611,7 @@
           <h4 class="modal-title" id="myModalLabel">
             <b>[Prototype] Callback Response History:</b>
             <button class="btn btn-sm btn-default" type="button"
-              onclick="javascript: $('.responseListCollection').not('.cloneTarget').empty()">
+              onclick="javascript: $('.responseList').not('.cloneTarget').empty()">
               <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
               Clear History
           </button>

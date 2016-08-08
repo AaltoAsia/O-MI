@@ -93,8 +93,9 @@ utilExt = ($, parent) ->
   # Clone the element above and empty its input fields 
   # callback type: (clonedDom) -> void
   my.cloneAbove = (target, callback) ->
-    target = target
-      .prev()
+    my.cloneElem target.prev(), callback
+      
+  my.cloneElem = (target, callback) ->
 
     cloned = target.clone()
     cloned.find("input").val ""  # empty all cloned inputs

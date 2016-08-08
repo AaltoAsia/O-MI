@@ -1,4 +1,4 @@
-
+""
 ###########################################################################
 #  Copyright (c) 2015 Aalto University.
 #
@@ -93,47 +93,77 @@ formLogicExt = ($, WebOmi) ->
     consts.callbackResponseHistoryModal
       .on 'shown.bs.modal', ->
         #my.historyOpen = true
-        my.updateHistoryCounter()
+        my.updateHistoryCounter true
       .on 'hide.bs.modal', ->
         #my.historyOpen = false
-        my.updateHistoryCounter()
+        my.updateHistoryCounter true
 
     consts.responseListCollection  = $ '.responseListCollection'
     consts.responseListCloneTarget = $ '.responseList.cloneTarget'
-    consts.historyCounter = $ 'label.historyCounter'
+    consts.historyCounter = $ '.label.historyCounter'
 
   # end afterjquery
 
-  my.updateHistoryCounter = () ->
+  # toZero: should counter be reset to 0
+  my.updateHistoryCounter = (toZero=false) ->
     update = (sub) ->
-      sub.userSeenCount = sub.receivedCount
+      if toZero
+        sub.userSeenCount = sub.receivedCount
 
     ####################################
     # TODO: historyCounter
     #if my.historyOpen
-    my.callbackSubscriptions =
-      (update sub for sub in my.callbackSubscriptions)
+    sum = 0
+    for own requestID, sub of my.callbackSubscriptions
+      update sub
+      sum += sub.receivedCount - sub.userSeenCount
 
+    if sum == 0
+      consts.historyCounter
+        .text sum
+        .removeClass "label-warning"
+        .addClass "label-default"
+    else
+      consts.historyCounter
+        .text sum
+        .removeClass "label-default"
+        .addClass "label-warning"
+
+
+    
 
   # Called when we receive relevant websocket response
   # response: String
   # returns: true if the response was consumed, false otherwise
   my.handleSubscriptionHistory = (responseString) ->
-    if my.waitingForResponse and not my.waitingForRequestID
-      return false
     # imports
     omi = WebOmi.omi
 
     response = omi.parseXml responseString
 
     # get requestID
-    requestID = parseInt omi.evaluateXPath(response, "//omi:requestID/text()")[0].textContent # headOption
-    if (not requestID?) or (not my.callbackSubscriptions[requestID]?)
-      if my.waitingForRequestID
-        my.waitingForRequestID = false
-        my.callbackSubscriptions[requestID] =
-          receivedCount : 1
-          userSeenCount : 0
+    maybeRequestID = Maybe omi.evaluateXPath(response, "//omi:requestID/text()")[0] # headOption
+    requestID = (maybeRequestID.bind (idNode) ->
+      textId = idNode.textContent.trim()
+      if textId.length > 0
+        Maybe parseInt(textId)
+      else
+        None
+    ).get()
+    if (requestID?)
+      cbSub = my.callbackSubscriptions[requestID]
+      if cbSub?
+        cbSub.receivedCount += 1
+      else
+        # enable listing of forgotten callback requests
+        if my.waitingForRequestID or not my.waitingForResponse
+          my.waitingForRequestID = false
+          my.callbackSubscriptions[requestID] =
+            receivedCount : 1
+            userSeenCount : 0
+        else
+          return false
+
     else
       return false
 
@@ -154,18 +184,18 @@ formLogicExt = ($, WebOmi) ->
         path: path
         values: value
 
-    pathValues = ( getPathValues info for info in infoitems )
+    pathValues = [].concat ( getPathValues info for info in infoitems )
 
     # Utility function; Clone the element above and empty its input fields 
     # callback type: (clonedDom) -> void
-    cloneAbove = (target, callback) ->
-      WebOmi.util.cloneAbove target, (cloned) ->
+    cloneElem = (target, callback) ->
+      WebOmi.util.cloneElem target, (cloned) ->
         cloned.slideDown null, ->  # animation, default duration
           # readjusts the position because of size change (see modal docs)
           consts.infoItemDialog.modal 'handleUpdate'
 
     createHistory = (requestID) ->
-      newList = cloneAbove consts.responseListCloneTarget
+      newList = cloneElem consts.responseListCloneTarget
       newList
         .removeClass "cloneTarget"
         .show()
@@ -175,16 +205,18 @@ formLogicExt = ($, WebOmi) ->
 
     # return: jquery elem
     returnStatus = ( count, returnCode ) ->
-      row = $ "<tr>"
+      #count = $ "<th/>" .text count
+      row = $ "<tr/>"
         .addClass switch Math.floor(returnCode/100)
           when 2 then "success" # 2xx
           when 3 then "warning" # 3xx
           when 4 then "danger"  # 4xx
-        .append $ "<th>"
-          .text count
-        .append $ "<th>returnCode</th>"
-        .append $ "<th>"
-          .text returnCode
+        .append($ "<th/>"
+          .text count)
+        .append($ "<th>returnCode</th>")
+        .append($ "<th/>"
+          .text returnCode)
+      row
 
     htmlformat = ( pathValues ) ->
       pathValuePairs = (pathValue) ->
@@ -193,24 +225,41 @@ formLogicExt = ($, WebOmi) ->
       lines = (pathValuePairs for pathValue in pathValues)
 
       for pathValue in lines
-        $ "<tr><td></td><td>"+pathValue.path+"</td><td>"+pathValue.value+"</td></tr>"
+        row = $ "<tr/>"
+          .append $ "<td/>"
+          .append($ "<td/>"
+            .text pathValue.path)
+          .append($ "<td/>"
+            .text pathValue.value)
+        row
 
     addHistory = ( requestID, pathValues ) ->
       maybeCBRecord = my.callbackSubscriptions[requestID]
       if maybeCBRecord.selector?
         callbackRecord = maybeCBRecord
         callbackRecord.selector
-          .find "dataTable"
-          .prepend returnStatus callbackRecord.receivedCount, 200
-              .after htmlformat pathValues
+          .find ".dataTable"
+            .prepend(returnStatus callbackRecord.receivedCount, 200
+              .after htmlformat pathValues)
       else
         newHistory = createHistory requestID
-        newHistory.add (returnStatus 1, 200)
-          .after htmlformat pathValues
+        dataTable = newHistory.find ".dataTable"
+        returnS = returnStatus 1, 200
+        
+        dataTable
+          .append returnS
+          .append htmlformat pathValues
+
+        #newHistory
+        #  .find ".dataTable"
+        #  .append(returnStatus 1, 200
+        #    .after htmlformat pathValues)
         my.callbackSubscriptions[requestID].selector = newHistory
 
     addHistory requestID, pathValues
-    true
+
+    # return true if request is not needed for the main area
+    not my.waitingForResponse
 
   
 
@@ -256,15 +305,19 @@ formLogicExt = ($, WebOmi) ->
       maybeParsedXml = Maybe omi.parseXml(request)
       maybeVerbXml =
         maybeParsedXml.bind (parsedXml) ->
-          verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*")
-          Maybe.fromArray verbResult
+          verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*")[0]
+          Maybe verbResult
 
       maybeVerbXml.fmap (verbXml) ->
         verb = verbXml.tagName
         maybeCallback = Maybe verbXml.attributes.callback
         maybeInterval = Maybe verbXml.attributes.interval
 
-        if maybeCallback.exists((c) -> c.textContent is "0") and verb == "omi:read" and maybeInterval.exists( (i) -> true ) 
+        isSubscriptionReq = maybeCallback.exists((c) -> c.value is "0") and
+          verb == "omi:read" and
+          maybeInterval.isDefined
+
+        if isSubscriptionReq
           # commented because user might be waiting for some earlier response
           #y.waitingForResponse = false
           
@@ -313,6 +366,8 @@ formLogicExt = ($, WebOmi) ->
       consts.progressBar.hide()
       window.setTimeout (-> consts.progressBar.show()), 2000
       my.waitingForResponse = false
+    else
+      my.updateHistoryCounter()
 
 
 
