@@ -20,6 +20,7 @@ import java.text.DecimalFormat
 import java.util.Date
 
 import scala.annotation.tailrec
+import scala.collection.immutable.HashMap
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
@@ -43,8 +44,8 @@ import Warp10JsonProtocol.Warp10JsonFormat
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
-  implicit object Warp10JsonFormat extends RootJsonFormat[Seq[OdfObject]] {
-    def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L)))).asInfoItemType))
+  implicit object Warp10JsonFormat extends RootJsonFormat[Seq[(OdfObject,OdfObject)]] {
+    //def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L)))).asInfoItemType))
 
     def getObject(path: Path): OdfObject = {
       val hTree = SingleStores.hierarchyStore execute GetTree()
@@ -60,7 +61,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     }
     def createInfoItems(
                          path: Path,
-                         in: (OdfTreeCollection[OdfValue], OdfTreeCollection[Option[OdfValue]])): OdfTreeCollection[OdfInfoItem] = {
+                         in: (OdfTreeCollection[OdfValue], OdfTreeCollection[Option[OdfValue]])): (OdfTreeCollection[OdfInfoItem], OdfTreeCollection[OdfInfoItem]) = {
       val infoItemPath = path
 
       val locations = {
@@ -68,11 +69,11 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         if(locs.isEmpty) None
         else Some(locs)
       }
-      val locationInfoItem = locations.map( locValues => OdfInfoItem(Path(infoItemPath.init)  / "location", locValues, metaData = warp10MetaData(Path(infoItemPath.init) / "location")))
+      val locationInfoItem = locations.map( locValues => OdfInfoItem(Path(infoItemPath.init)  / "location", locValues))
 
       val result = OdfInfoItem(infoItemPath, in._1.sortBy(_.timestamp.getTime()))//, metaData = metaDatas)
 
-      (OdfTreeCollection(result) ++ OdfTreeCollection(locationInfoItem).flatten)
+      (OdfTreeCollection(result), OdfTreeCollection(locationInfoItem).flatten)
 
     }
 
@@ -124,7 +125,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
                                 lat: Option[BigDecimal],
                                 lon: Option[BigDecimal],
                                 elev: Option[BigDecimal],
-                                typeVal: Map[String, String]): (OdfValue, Option[OdfValue]) = {
+                                typeVal: HashMap[String, String]): (OdfValue, Option[OdfValue]) = {
 
       val timestamp = new Timestamp((_timestamp/1000).toLong)
       val warp10Value = value match {
@@ -146,7 +147,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
       (warp10Value, createLocationValue(timestamp, lat,lon,elev))
     }
-    def parseObjects(in: Seq[JsObject]): Seq[OdfObject] = in match {
+    def parseObjects(in: Seq[JsObject]): Seq[(OdfObject, OdfObject)] = in match {
        case jsObjs: Seq[JsObject] => {
          val idPathValuesTuple = jsObjs.map { jsobj =>
            val path = fromField[Option[String]](jsobj, "c")
@@ -155,12 +156,12 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
            val id = fromField[Option[String]](jsobj,"i")
 
           //edit this to add support for different kinds of labels
-          val typeVal: Map[String, String] = labels match {
+          val typeVal: HashMap[String, String] = labels match {
             case Some(obj) => fromField[Option[String]](obj, "type") match {
-              case Some(typev) => Map("type" -> typev)
-              case None => Map.empty
+              case Some(typev) => HashMap("type" -> typev)
+              case None => HashMap.empty
             }
-            case None => Map.empty
+            case None => HashMap.empty
           }
 
            //parse JsonArray to matching different length arrays contain location, elevation, both or neither
@@ -189,9 +190,9 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
             case (_, Some(_path), _infoItems ) => {
               val path = Path(_path.replaceAll("\\.", "/"))
               val parentObj = getObject(path) //TODO what happens if not in hierarchystore
-              val infoItems = createInfoItems(path, _infoItems.unzip)
+              val (infoItems, locations) = createInfoItems(path, _infoItems.unzip)
 
-              parentObj.copy(infoItems=infoItems)
+              (parentObj.copy(infoItems=infoItems), parentObj.copy(infoItems=locations))
             }
             case _ => throw new DeserializationException("No Path found when deserializing")
           }
@@ -205,11 +206,11 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
             val parentObj = getObject(path) //TODO what happens if not in hierarchystore
             //val infoItems = createInfoItems(path, infoItems)
 
-            val infoItems = createInfoItems(
+            val (infoItems, locations) = createInfoItems(
               path,
               ii.foldLeft(Vector[(OdfValue, Option[OdfValue])]())((col ,next ) => col ++ next._3).unzip)
 
-            Seq(parentObj.copy(infoItems = infoItems))
+            Seq((parentObj.copy(infoItems = infoItems), parentObj.copy(infoItems = locations)))
 
           }
           case _ => throw new DeserializationException("Unknown format")
@@ -219,12 +220,12 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
       }
     }
 
-    def read(v: JsValue): Seq[OdfObject] = v match {
+    def read(v: JsValue): Seq[(OdfObject, OdfObject)] = v match {
       case JsArray(Vector(JsArray(in: Vector[JsObject]))) => parseObjects(in) //sometimes a array of arrays?
       case JsArray(in: Vector[JsObject]) => parseObjects(in)
       case _ => throw new DeserializationException("Unknown format")
     }
-    def write(o: Seq[OdfObject]): JsValue = ??? //not in use
+    def write(o: Seq[(OdfObject, OdfObject)]): JsValue = ??? //not in use
 
 
 
@@ -259,12 +260,12 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
     override def parse(value: String) = Try(new Warp10TokenHeader(value))
   }
 
- def warpAddress : String = settings.warp10Address 
+ def warpAddress : String = settings.warp10Address
  def writeAddress : Uri = Uri( warpAddress + "update")
  def readAddress : Uri = Uri( warpAddress + "exec")
  implicit val readToken : Warp10Token = settings.warp10ReadToken
  implicit val writeToken : Warp10Token = settings.warp10WriteToken
- 
+
  import system.dispatcher // execution context for futures
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
@@ -276,51 +277,62 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
     newest: Option[Int],
     oldest: Option[Int]
   ): Future[Option[OdfObjects]] = {
-    oldest match {
-      case Some(a) => Future.failed( new Exception("Oldest is not supported, since 29.6.2016"))
-      case None =>
-        val selector = nodesToReadPathSelector(requests)
-        val contentFuture : Future[String] = (begin, end, newest) match {
-          case (None, None, None) =>
-            Future.successful( warpReadNBeforeMsg(selector, 1, None)(readToken) )
-          case (None, endTime, Some(sticks)) => 
-            Future.successful( warpReadNBeforeMsg(selector,sticks, end)(readToken) )
-          case (startTime, endTime, None) => 
-            Future.successful( warpReadBetweenMsg(selector,begin, end)(readToken) )
-          case (startTime, endTime, sticks) => 
-             Future.failed( new Exception(s"Unsupported combination ($startTime, $endTime, $sticks), since 29.6.2016"))
-        } 
-        contentFuture.flatMap{
-          content => 
-            read( content)
+   val locationsSeparated = requests.groupBy(_.path.last == "location")
+   val locations: Map[Path, OdfNode] = locationsSeparated
+     .get(true)
+     .toSeq
+     .flatten
+     .groupBy(p => Path(p.path.init))
+     .mapValues(_.head)
+   val requestWithoutLocations = locationsSeparated.get(false).toSeq.flatten
+   oldest match {
+     case Some(a) => Future.failed( new Exception("Oldest is not supported, since 29.6.2016"))
+     case None =>
+       val selector = nodesToReadPathSelector(requestWithoutLocations)
+       val contentFuture : Future[String] = (begin, end, newest) match {
+         case (None, None, None) =>
+           Future.successful( warpReadNBeforeMsg(selector, 1, None)(readToken) )
+         case (None, endTime, Some(sticks)) =>
+           Future.successful( warpReadNBeforeMsg(selector,sticks, end)(readToken) )
+         case (startTime, endTime, None) =>
+           Future.successful( warpReadBetweenMsg(selector,begin, end)(readToken) )
+         case (startTime, endTime, sticks) =>
+           Future.failed( new Exception(s"Unsupported combination ($startTime, $endTime, $sticks), since 29.6.2016"))
+       }
+       contentFuture.flatMap{
+         content =>
+           read( content, locations)
         }
     }
  }
- private def read(content : String ) = { 
+ private def read(content : String, requiredLocations: Map[Path,OdfNode]) = {
         val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
         val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
         responseF.onFailure{
-          case t : Throwable => 
+          case t : Throwable =>
             log.error(t, "Failed to communicate to Warp 10.")
         }
         responseF.flatMap{
           case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
             entity.toStrict(10.seconds)
           case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
-            Unmarshal(entity).to[String].map{ 
-              str => 
+            Unmarshal(entity).to[String].map{
+              str =>
                 log.debug(s"$status with:\n $str")
                 throw new Exception( str)
             }
         }.flatMap{
           case entity : HttpEntity.Strict =>
             //Ugly fix, for wrong/missing content type.
-            val ent = entity.copy(contentType = `application/json`) 
-            Unmarshal(ent).to[Seq[OdfObject]].map{
-              case infos if infos.isEmpty=> 
+            val ent = entity.copy(contentType = `application/json`)
+            Unmarshal(ent).to[Seq[(OdfObject, OdfObject)]].map{
+              case infos if infos.isEmpty=>
                 None
-              case infos => 
-                Some(infos.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
+              case (infos) =>
+                Some(infos.collect{
+                  case (info, location) if requiredLocations.contains(Path(info.path)) => info combine location
+                  case (info, _ ) => info
+                }.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
             }
         }
  }
@@ -369,16 +381,16 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
 
    val response = httpExt.singleRequest(request)//httpHandler(request)
     response.onFailure{
-      case t : Throwable => 
+      case t : Throwable =>
         log.debug(request.toString)
         log.error(t, "Failed to communicate to Warp 10.")
     }
    response.flatMap{
      case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
        Future.successful( OmiReturn( status.value) )
-     case HttpResponse( status, headers, entity, protocol ) if status.isFailure => 
-       Unmarshal(entity).to[String].map{ 
-        str => 
+     case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+       Unmarshal(entity).to[String].map{
+        str =>
           log.debug(s"$status with:\n $str")
           OmiReturn( status.value, Some(str))
        }
@@ -386,27 +398,30 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
 
  }
   def remove(path: Path): Future[Int] = ???
-
- private def toWriteFormat( path: Path, odfValue : OdfValue, location: Option[String]) : String = {
+  private def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L),HashMap.empty))).asInfoItemType))
+  private def toWriteFormat( path: Path, odfValue : OdfValue, location: Option[String]) : String = {
    def handleString(in: Any): String = {
-     val str = URLEncoder.encode(in.toString, "UTF-8") //might cause problems if encoded twice
+     val str = URLEncoder.encode(in.toString, "UTF-8")
 
      s"'$str'"
    }
    val unixEpochTime = odfValue.timestamp.getTime * 1000
-   val pathJS = path.mkString(".") 
+   val pathJS = path.mkString(".")
    val typeValue = odfValue.typeValue
    val labels = s"{ type=$typeValue }"
 
    val matchResult = location.flatMap(loc => locationRegex.findFirstMatchIn(loc))
    val loc = matchResult match {
-     case Some(res) => (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
-       case (None, None, Some(elev)) => s"/${elev.toLong}"
-       case (Some(lat), Some(lon), None) => s"${lat.toDouble}:${lon.toDouble}/"
-       case (Some(lat), Some(lon), Some(elev)) => s"${lat.toDouble}:${lon.toDouble}/${elev.toLong}"
-       case _ => {
-         log.warning(s"Invalid format for location${location}")
-         "/"
+     case Some(res) => {
+       SingleStores.hierarchyStore execute Union(createAncestors(OdfInfoItem(Path(path.init) / "location", metaData = warp10MetaData(path))))
+       (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
+         case (None, None, Some(elev)) => s"/${elev.toLong}"
+         case (Some(lat), Some(lon), None) => s"${lat.toDouble}:${lon.toDouble}/"
+         case (Some(lat), Some(lon), Some(elev)) => s"${lat.toDouble}:${lon.toDouble}/${elev.toLong}"
+         case _ => {
+           log.warning(s"Invalid format for location${location}")
+           "/"
+         }
        }
      }
      case none => {

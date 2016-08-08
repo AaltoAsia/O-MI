@@ -30,7 +30,8 @@ import types.Path
   val metadataStr: Option[OdfMetaData] = None,
   val description: Option[OdfDescription] = None
   ) {
-  def toOdfInfoItem(path: Path, value: OdfValue) = 
+val tetst : Any = 3
+  def toOdfInfoItem(path: Path, value: OdfValue) =
     OdfInfoItem(path, Iterable(value), description, metadataStr)
 }
  */ 
