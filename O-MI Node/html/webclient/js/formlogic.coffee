@@ -1,4 +1,4 @@
-""
+"use strict"
 ###########################################################################
 #  Copyright (c) 2015 Aalto University.
 #
@@ -149,7 +149,7 @@ formLogicExt = ($, WebOmi) ->
         Maybe parseInt(textId)
       else
         None
-    ).get()
+    ).__v
     if (requestID?)
       cbSub = my.callbackSubscriptions[requestID]
       if cbSub?
@@ -177,14 +177,24 @@ formLogicExt = ($, WebOmi) ->
       else
         id
 
+    createShortenedPath = (path) ->
+      pathParts = path.split "/"
+      shortenedParts = (part[0] + "…" for part in pathParts)
+      lastI = pathParts.length - 1
+      shortenedParts[lastI] = pathParts[lastI]
+      shortenedParts.join "/"
+
     getPathValues = (infoitemXmlNode) ->
       valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value")
       path = getPath infoitemXmlNode
       for value in valuesXml
         path: path
-        values: value
+        shortPath: createShortenedPath path
+        value: value
+        stringValue: value.textContent.trim()
 
-    pathValues = [].concat ( getPathValues info for info in infoitems )
+    infoItemPathValues = ( getPathValues info for info in infoitems )
+    pathValues = [].concat infoItemPathValues...
 
     # Utility function; Clone the element above and empty its input fields 
     # callback type: (clonedDom) -> void
@@ -219,42 +229,40 @@ formLogicExt = ($, WebOmi) ->
       row
 
     htmlformat = ( pathValues ) ->
-      pathValuePairs = (pathValue) ->
-        ({path: pathValue.path, value: value} for value in pathValue.values)
 
-      lines = (pathValuePairs for pathValue in pathValues)
-
-      for pathValue in lines
+      for pathValue in pathValues
         row = $ "<tr/>"
           .append $ "<td/>"
           .append($ "<td/>"
-            .text pathValue.path)
+            .text pathValue.shortPath)
           .append($ "<td/>"
-            .text pathValue.value)
+            .text pathValue.stringValue)
         row
 
     addHistory = ( requestID, pathValues ) ->
-      maybeCBRecord = my.callbackSubscriptions[requestID]
-      if maybeCBRecord.selector?
-        callbackRecord = maybeCBRecord
-        callbackRecord.selector
-          .find ".dataTable"
-            .prepend(returnStatus callbackRecord.receivedCount, 200
-              .after htmlformat pathValues)
-      else
-        newHistory = createHistory requestID
-        dataTable = newHistory.find ".dataTable"
-        returnS = returnStatus 1, 200
-        
-        dataTable
-          .append returnS
-          .append htmlformat pathValues
+      # Note: existence of this is handled somewhere above
+      callbackRecord = my.callbackSubscriptions[requestID]
+      
+      responseList =
+        if callbackRecord.selector? and callbackRecord.selector.length > 0
+          callbackRecord.selector
+        else
+          newHistory = createHistory requestID
+          my.callbackSubscriptions[requestID].selector = newHistory
+          newHistory
 
-        #newHistory
-        #  .find ".dataTable"
-        #  .append(returnStatus 1, 200
-        #    .after htmlformat pathValues)
-        my.callbackSubscriptions[requestID].selector = newHistory
+      dataTable = responseList.find ".dataTable"
+
+      returnS = returnStatus callbackRecord.receivedCount, 200
+      
+      dataTable
+        .append returnS
+        .append htmlformat pathValues
+
+      #newHistory
+      #  .find ".dataTable"
+      #  .append(returnStatus 1, 200
+      #    .after htmlformat pathValues)
 
     addHistory requestID, pathValues
 
