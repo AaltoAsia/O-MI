@@ -288,7 +288,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
           case (startTime, endTime, None) => 
             Future.successful( warpReadBetweenMsg(selector,begin, end)(readToken) )
           case (startTime, endTime, sticks) => 
-             Future.failed( new Exception(s"Unsupported compination ($startTime, $endTime, $sticks), since 29.6.2016"))
+             Future.failed( new Exception(s"Unsupported combination ($startTime, $endTime, $sticks), since 29.6.2016"))
         } 
         contentFuture.flatMap{
           content => 
