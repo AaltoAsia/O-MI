@@ -111,7 +111,7 @@
           duplicateInputs = $("input[name='valuetime']").filter(function(_, e) {
             return $(e).val() === duplicateTime;
           });
-          notifyErrorOn(duplicateInputs, "Server doesn't accept multiple values with same timestamp.");
+          notifyErrorOn(duplicateInputs, "Server probably doesn't accept multiple values with the same timestamp.");
           return;
         }
         metas = (function() {

@@ -77,4 +77,7 @@ html {
     display: none;
 }
 
+.dataTable td {
+    word-break: break-all;
+}
 

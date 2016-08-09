@@ -80,7 +80,7 @@ formLogicExt = ($, WebOmi) ->
   # Set true when the next response should be rendered to main response area
   my.waitingForResponse = false
 
-  # Set true whene next response with requestID should be saved to my.callbackSubscriptions
+  # Set true when next response with requestID should be saved to my.callbackSubscriptions
   my.waitingForRequestID = false
 
   # whether callbackResponseHistoryModal is opened and the user can see the new results
@@ -234,9 +234,17 @@ formLogicExt = ($, WebOmi) ->
         row = $ "<tr/>"
           .append $ "<td/>"
           .append($ "<td/>"
-            .text pathValue.shortPath)
+            .text pathValue.shortPath
+            .tooltip
+              container: "body"
+              title: pathValue.path
+          )
           .append($ "<td/>"
-            .text pathValue.stringValue)
+            .text pathValue.stringValue
+            .tooltip
+              container: "body"
+              title: pathValue.value.attributes.dateTime.value
+          )
         row
 
     addHistory = ( requestID, pathValues ) ->
@@ -290,15 +298,18 @@ formLogicExt = ($, WebOmi) ->
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
     if server.startsWith("ws://") || server.startsWith("wss://")
-      my.wsSend request
+      my.wsSend request,callback
     else
       my.httpSend callback
 
-  my.wsSend = (request) ->
+  # String -> void
+  my.wsCallbacks = []
+
+  my.wsSend = (request,callback) ->
     if( !my.socket || my.socket.readyState != WebSocket.OPEN)
       onopen = () ->
         WebOmi.debug "WebSocket connected."
-        my.wsSend request
+        my.wsSend request,callback
       onclose = () -> WebOmi.debug "WebSocket disconnected."
       onerror = (error) -> WebOmi.debug "WebSocket error: ",error
       onmessage = my.handleWSMessage
@@ -307,6 +318,10 @@ formLogicExt = ($, WebOmi) ->
       WebOmi.debug "Sending request via WebSocket."
       # Next message should be rendered to main response area
       my.waitingForResponse = true
+
+      # Note: assume that the next response is for this request
+      if callback?
+        my.wsCallbacks.push callback
 
       # Check if request is zero callback request
       omi = WebOmi.omi
@@ -325,11 +340,15 @@ formLogicExt = ($, WebOmi) ->
           verb == "omi:read" and
           maybeInterval.isDefined
 
+        # done by the callback parameter
+        #isReadAll = verbXml.children[0].children[0].children.length == 0
+
         if isSubscriptionReq
           # commented because user might be waiting for some earlier response
           #y.waitingForResponse = false
           
           my.waitingForRequestID = true
+
 
       my.socket.send(request)
 
@@ -376,6 +395,9 @@ formLogicExt = ($, WebOmi) ->
       my.waitingForResponse = false
     else
       my.updateHistoryCounter()
+
+    cb(response) for cb in my.wsCallbacks
+    my.wsCallbacks = []
 
 
 

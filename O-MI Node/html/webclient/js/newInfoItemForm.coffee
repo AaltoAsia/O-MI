@@ -147,7 +147,7 @@
       duplicateTime = findDuplicate(values.map((val) -> val.time))
       if duplicateTime?
         duplicateInputs = $("input[name='valuetime']").filter((_, e) -> $(e).val() == duplicateTime)
-        notifyErrorOn duplicateInputs, "Server doesn't accept multiple values with same timestamp."
+        notifyErrorOn duplicateInputs, "Server probably doesn't accept multiple values with the same timestamp."
         return # don't close
 
       metas =

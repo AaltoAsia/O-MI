@@ -215,7 +215,13 @@
         results = [];
         for (i = 0, len = pathValues.length; i < len; i++) {
           pathValue = pathValues[i];
-          row = $("<tr/>").append($("<td/>")).append($("<td/>").text(pathValue.shortPath)).append($("<td/>").text(pathValue.stringValue));
+          row = $("<tr/>").append($("<td/>")).append($("<td/>").text(pathValue.shortPath).tooltip({
+            container: "body",
+            title: pathValue.path
+          })).append($("<td/>").text(pathValue.stringValue).tooltip({
+            container: "body",
+            title: pathValue.value.attributes.dateTime.value
+          }));
           results.push(row);
         }
         return results;
@@ -252,17 +258,18 @@
       server = consts.serverUrl.val();
       request = consts.requestCodeMirror.getValue();
       if (server.startsWith("ws://") || server.startsWith("wss://")) {
-        return my.wsSend(request);
+        return my.wsSend(request, callback);
       } else {
         return my.httpSend(callback);
       }
     };
-    my.wsSend = function(request) {
+    my.wsCallbacks = [];
+    my.wsSend = function(request, callback) {
       var maybeParsedXml, maybeVerbXml, omi, onclose, onerror, onmessage, onopen;
       if (!my.socket || my.socket.readyState !== WebSocket.OPEN) {
         onopen = function() {
           WebOmi.debug("WebSocket connected.");
-          return my.wsSend(request);
+          return my.wsSend(request, callback);
         };
         onclose = function() {
           return WebOmi.debug("WebSocket disconnected.");
@@ -275,6 +282,9 @@
       } else {
         WebOmi.debug("Sending request via WebSocket.");
         my.waitingForResponse = true;
+        if (callback != null) {
+          my.wsCallbacks.push(callback);
+        }
         omi = WebOmi.omi;
         maybeParsedXml = Maybe(omi.parseXml(request));
         maybeVerbXml = maybeParsedXml.bind(function(parsedXml) {
@@ -335,7 +345,7 @@
       });
     };
     my.handleWSMessage = function(message) {
-      var response;
+      var cb, i, len, ref, response;
       consts = WebOmi.consts;
       response = message.data;
       if (!my.handleSubscriptionHistory(response)) {
@@ -346,10 +356,16 @@
         window.setTimeout((function() {
           return consts.progressBar.show();
         }), 2000);
-        return my.waitingForResponse = false;
+        my.waitingForResponse = false;
       } else {
-        return my.updateHistoryCounter();
+        my.updateHistoryCounter();
       }
+      ref = my.wsCallbacks;
+      for (i = 0, len = ref.length; i < len; i++) {
+        cb = ref[i];
+        cb(response);
+      }
+      return my.wsCallbacks = [];
     };
     my.buildOdfTree = function(objectsNode) {
       var evaluateXPath, genData, objChildren, tree, treeData;
