@@ -11,7 +11,9 @@ Implementation of O-MI Node as specified in [Open Messaging Interface](http://ww
 
 This project also includes:
 * a developer webapp for building and sending O-MI&O-DF messages.
-* some experimental extensions for the server which can be found in other branches (`omisec-omi-interface` and `warp10integration`).
+* some experimental extensions for the server which can be found in other branches:
+  - `omisec-omi-interface` has O-MI/O-DF interface for authorization of O-MI messages in external service.
+  - `warp10integration` has integration to [Warp10](http://www.warp10.io/) as the DB backend.
 
 See `development` branch for latest progress.
 
