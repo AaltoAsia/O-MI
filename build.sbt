@@ -116,7 +116,6 @@ lazy val root = (project in file(".")).
       bashScriptExtraDefines += """sed 's:read-token\s*=\s*".*":read-token = "'$readtoken'":' "${app_home}/../configs/application.conf" -i""",
       bashScriptExtraDefines += """writetoken=$(grep -oP 'write\":\{"token":"\K[^"]*' "${app_home}/../database/warp10/etc/initial.tokens")""",
       bashScriptExtraDefines += """sed 's:write-token\s*=\s*".*":write-token = "'$writetoken'":' "${app_home}/../configs/application.conf" -i""",
-      bashScriptExtraDefines += """rm "${app_home}/../database/warp10/etc/initial.tokens"""",
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NOD:q

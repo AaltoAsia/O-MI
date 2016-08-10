@@ -53,7 +53,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
         case _ => {
           val id = OdfTreeCollection(QlmID(path.lastOption.getOrElse(
-            throw new DeserializationException(s"found invalid path for Object: $path"))))
+            throw new DeserializationException(s"Found invalid path for Object: $path"))))
 
           OdfObject(id,path)
         }
