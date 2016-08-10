@@ -22,6 +22,8 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
+import org.slf4j.LoggerFactory
+
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
@@ -34,30 +36,85 @@ import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
 
 import database._
 import agentSystem._
-import responses.{RequestHandler, SubscriptionManager}
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
 import types.Path
+import OmiServer._
+import akka.stream.{ActorMaterializer, Materializer}
 
+class OmiServer extends OmiNodeContext {
+
+  // we need an ActorSystem to host our application in
+  implicit val system : ActorSystem = ActorSystem("on-core") 
+  /**
+   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
+   */
+  implicit val settings : OmiConfigExtension = OmiConfig(system)
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher // execution context for futures
+  implicit val dbConnection: DBReadWrite = new DatabaseConnection()(this)
+  val singleStores = new SingleStores()(settings)
+  val callbackHandler: CallbackHandler = new CallbackHandler()( this )
+  override val subscriptionManager = system.actorOf(SubscriptionManager.props()(this), "subscription-handler")
+
+  override val agentSystem = system.actorOf(
+    AgentSystem.props()(this),
+    "agent-system"
+  )
+
+  override val requestHandler : RequestHandler = new RequestHandler()(this)
+
+  override val cliListener =system.actorOf(
+    Props(new OmiNodeCLIListener()(this)),
+    "omi-node-cli-listener"
+  )
+  saveSettingsOdf(this)
+
+
+  // create omi service actor
+  val omiService = new OmiServiceImpl()(this)
+
+
+  implicit val timeoutForBind = Timeout(5.seconds)
+  def bindTCP() : Unit= {
+    IO(Tcp)  ? Tcp.Bind(cliListener,
+      new InetSocketAddress("localhost", settings.cliPort))
+  }
+
+  /** Start a new HTTP server on configured port with our service actor as the handler.
+   */
+  def bindHTTP(): Unit = {
+
+    implicit val timeoutForBind = Timeout(5.seconds)
+    implicit val materializer = ActorMaterializer()
+
+    val bindingFuture =
+      Http().bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
+
+    bindingFuture.onFailure {
+      case ex: Exception =>
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+
+    }
+  }
+
+}
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
  * seperated for testing purposes and for easier implementation of different starting methods (standalone, servlet)
  */
-trait Starter {
-  // we need an ActorSystem to host our application in
-  implicit val system : ActorSystem = ActorSystem("on-core")
-  /**
-   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
-   */
-  val settings = Settings(system)
+object OmiServer {
+  def apply() : OmiServer = {
+    
+    new OmiServer()
+  }
 
-  val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-  
-
-  import scala.concurrent.ExecutionContext.Implicits.global
-  def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
+  def saveSettingsOdf(implicit nodeContext: OmiNodeContext) :Unit = {
+    import nodeContext.{settings, system,dbConnection, agentSystem}
     if ( settings.settingsOdfPath.nonEmpty ) {
+      import system.dispatcher // execution context for futures
       // Same timestamp for all OdfValues of the settings
       val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
@@ -92,63 +149,6 @@ trait Starter {
       Await.result(future, 60 seconds)
     }
   }
-
-
-  /**
-   * Start as stand-alone server.
-   * Creates single Actors.
-   * Binds to configured external agent interface port.
-   *
-   * @return O-MI Service actor which is not yet bound to the configured http port
-   */
-  def start(dbConnection: DB = new DatabaseConnection): OmiServiceImpl = {
-
-    // create and start sensor data listener
-    // TODO: Maybe refactor to an internal agent!
-
-    val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subManager),
-      "agent-system"
-    )
-
-    saveSettingsOdf(agentManager)
-    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
-
-    val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
-      "omi-node-cli-listener"
-    )
-
-    // create omi service actor
-    val omiService = new OmiServiceImpl(requestHandler, subManager)
-
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-
-    IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
-      new InetSocketAddress("localhost", settings.cliPort))
-
-    omiService
-  }
-
-
-
-  /** Start a new HTTP server on configured port with our service actor as the handler.
-   */
-  def bindHttp(service: OmiServiceImpl): Unit = {
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-    implicit val materializer = ActorMaterializer()
-
-    val bindingFuture =
-      Http().bindAndHandle(service.myRoute, settings.interface, settings.webclientPort)
-
-    bindingFuture.onFailure {
-      case ex: Exception =>
-        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
-
-    }
-  }
 }
 
 
@@ -156,16 +156,18 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter {// with App{
+object Boot /*extends Starter */{// with App{
+  val log = LoggerFactory.getLogger("OmiServiceTest")
+
   def main(args: Array[String]) : Unit= {
-  system.log.info(this.getClass.toString)
-  Try {
-    val serviceActor = start()
-    bindHttp(serviceActor)
-  } match {
-    case Failure(ex) => system.log.error(ex, "Error during startup")
-    case Success(_) => system.log.info("Server started successfully")
-  }
+    Try{
+      val server: OmiServer = OmiServer()
+      server.bindTCP()
+      server.bindHTTP()
+    }match {
+      case Failure(ex)  =>  log.error( "Error during startup", ex)
+      case Success(_) => log.info("Server started successfully")
+    }
   }
 
 }

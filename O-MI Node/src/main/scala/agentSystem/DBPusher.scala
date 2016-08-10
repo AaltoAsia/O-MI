@@ -23,15 +23,15 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 import akka.actor.{ActorRef, ActorSystem}
-import database.SingleStores.valueShouldBeUpdated
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
-import responses.CallbackHandlers._
+import responses.CallbackHandler._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
+import http.OmiNodeContext
 
 trait  InputPusher  extends BaseAgentSystem{
   protected def writeValues(
@@ -40,8 +40,7 @@ trait  InputPusher  extends BaseAgentSystem{
   )(implicit system: ActorSystem): Future[SuccessfulWrite] 
 }
 trait  DBPusher  extends BaseAgentSystem{
-  def dbobject: DB
-  def subHandler: ActorRef
+  import nc._
   import context.dispatcher
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
@@ -67,16 +66,17 @@ trait  DBPusher  extends BaseAgentSystem{
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
 
-    val callbackF : Future[Unit] = sendCallback(esub.callback, responseRequest) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
+    val callbackF : Future[Unit] = callbackHandler.sendCallback(esub.callback, responseRequest) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
 
-    callbackF.onSuccess { case () =>
+    callbackF.onSuccess {
+      case () =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
     }
     callbackF.onFailure{
       case fail @ MissingConnection(callback) =>
         log.warning(
           s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is remowed.")
-        SingleStores.subStore execute RemoveEventSub(esub.id)
+        singleStores.subStore execute RemoveEventSub(esub.id)
       case fail: CallbackFailure =>
         failed(fail.toString)
       case e: Throwable =>
@@ -89,7 +89,7 @@ trait  DBPusher  extends BaseAgentSystem{
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events flatMap {
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
 
-        val esubs = SingleStores.subStore execute LookupEventSubs(infoItem.path)
+        val esubs = singleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
     }
     // Aggregate events under same subscriptions (for optimized callbacks)
@@ -139,15 +139,15 @@ trait  DBPusher  extends BaseAgentSystem{
    * @return returns Sequence of SubValues to be added to database
    */
   private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
-    val relatedPollSubs = SingleStores.subStore execute GetSubsForPath(path)
+    val relatedPollSubs = singleStores.subStore execute GetSubsForPath(path)
 
     relatedPollSubs.collect {
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
       case sub if(oldValueOpt.forall(oldValue =>
-        valueShouldBeUpdated(oldValue, newValue) &&
+        singleStores.valueShouldBeUpdated(oldValue, newValue) &&
           (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
-        SingleStores.pollDataPrevayler execute AddPollData(sub.id, path, newValue)
+        singleStores.pollDataPrevayler execute AddPollData(sub.id, path, newValue)
       }
     }
   }
@@ -164,7 +164,7 @@ trait  DBPusher  extends BaseAgentSystem{
     val pathValueOldValueTuples = for {
       info <- infoItems.toSeq
       path = info.path
-      oldValueOpt = SingleStores.latestStore execute LookupSensorData(path)
+      oldValueOpt = singleStores.latestStore execute LookupSensorData(path)
       value <- info.values
     } yield (path, value, oldValueOpt)
 
@@ -178,7 +178,7 @@ trait  DBPusher  extends BaseAgentSystem{
     }
 
     val callbackDataOptions = pathValueOldValueTuples.map{
-      case (path,value, oldValueO) => SingleStores.processData(path,value,oldValueO)}
+      case (path,value, oldValueO) => singleStores.processData(path,value,oldValueO)}
     val triggeringEvents = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
@@ -189,7 +189,7 @@ trait  DBPusher  extends BaseAgentSystem{
       processEvents(triggeringEvents)
     }
 
-    // Save new/changed stuff to transactional in-memory SingleStores and then DB
+    // Save new/changed stuff to transactional in-memory singleStores and then DB
 
     val newItems = triggeringEvents collect {
         case AttachEvent(item) => item
@@ -208,7 +208,7 @@ trait  DBPusher  extends BaseAgentSystem{
         val updateTree: OdfObjects =
           (updatedStaticItems map createAncestors).foldLeft(OdfObjects())(_ union _)
 
-        SingleStores.hierarchyStore execute Union(updateTree)
+        singleStores.hierarchyStore execute Union(updateTree)
     }
 
     // DB + Poll Subscriptions
@@ -220,7 +220,7 @@ trait  DBPusher  extends BaseAgentSystem{
         pathValues._2.reduceOption(_.combine(_)) //Combine infoitems with same paths to single infoitem
       )(collection.breakOut) // breakOut to correct collection type
 
-    val writeFuture = dbobject.writeMany(infosToBeWrittenInDB)
+    val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
     writeFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")

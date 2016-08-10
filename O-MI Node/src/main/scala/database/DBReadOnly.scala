@@ -24,11 +24,14 @@ import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
+import http.OmiNodeContext
 
 /**
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
+  implicit val nodeContext: OmiNodeContext
+  import nodeContext.singleStores
   protected[this] def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
 
   protected[this] def findParentQ(childPath: Path): Query[DBNodesTable, DBNode, Seq] =
@@ -262,15 +265,15 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
         }
 
         def getFromCache(): Seq[Option[OdfObjects]] = {
-          lazy val hTree = SingleStores.hierarchyStore execute GetTree()
+          lazy val hTree = singleStores.hierarchyStore execute GetTree()
           val objectData: Seq[Option[OdfObjects]] = requestsSeq collect {
 
             case obj@OdfObjects(objects, _) => {
               require(objects.isEmpty,
                 s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
-              Some(SingleStores.buildOdfFromValues(
-                SingleStores.latestStore execute LookupAllDatas()))
+              Some(singleStores.buildOdfFromValues(
+                singleStores.latestStore execute LookupAllDatas()))
             }
 
             case obj @ OdfObject(_, path, items, objects, _, _) => {
@@ -281,12 +284,12 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
                   case o: OdfObject => o
                 }
                 paths = getLeafs(odfObject).map(_.path)
-                pathValues = SingleStores.latestStore execute LookupSensorDatas(paths)
-              } yield SingleStores.buildOdfFromValues(pathValues)
+                pathValues = singleStores.latestStore execute LookupSensorDatas(paths)
+              } yield singleStores.buildOdfFromValues(pathValues)
 
               //val paths = getLeafs(obj).map(_.path)
-              //val objs = SingleStores.latestStore execute LookupSensorDatas(paths)
-              //val results = SingleStores.buildOdfFromValues(objs)
+              //val objs = singleStores.latestStore execute LookupSensorDatas(paths)
+              //val results = singleStores.buildOdfFromValues(objs)
 
               resultsO
             }
@@ -296,10 +299,10 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           val reqInfoItems = requestsSeq collect {case ii: OdfInfoItem => ii}
           val paths = reqInfoItems map (_.path)
 
-          val infoItemData = SingleStores.latestStore execute LookupSensorDatas(paths)
+          val infoItemData = singleStores.latestStore execute LookupSensorDatas(paths)
           val foundPaths = (infoItemData map { case (path,_) => path }).toSet
 
-          val resultOdf = SingleStores.buildOdfFromValues(infoItemData)
+          val resultOdf = singleStores.buildOdfFromValues(infoItemData)
 
           objectData :+ Some(
             reqInfoItems.foldLeft(resultOdf){(result, info) =>

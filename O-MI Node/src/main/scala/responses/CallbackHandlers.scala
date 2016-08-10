@@ -23,21 +23,18 @@ import scala.concurrent.duration._
 import scala.util.{Try,Success,Failure}
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{ Http, HttpExt}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, Materializer}
 import types.OmiTypes._
 
-/**
- * Handles sending data to callback addresses 
- */
-object CallbackHandlers {
+import http.{OmiConfigExtension, Storages, OmiNodeContext, Settings, ActorSystemContext, Actors}
+import CallbackHandler._
+object CallbackHandler{
   val supportedProtocols = Vector("http", "https")
   type SendHandler = ResponseRequest => Future[Unit]
-  val currentConnections: MutableMap[Int, SendHandler ] = MutableMap.empty
-  def addCurrentConnection( identifier: Int, handler: SendHandler) = currentConnections += identifier -> handler 
 
   // Base error
   sealed class CallbackFailure(msg: String, callback: Callback) extends Exception(msg)
@@ -53,22 +50,26 @@ object CallbackHandlers {
     CallbackFailure(s"Callback address is forbidden.", callback)
   case class MissingConnection( callback: CurrentConnectionCallback ) extends
     CallbackFailure(s"CurrentConnection not found for ${callback.identifier}",callback)
+}
+/**
+ * Handles sending data to callback addresses 
+ */
+class CallbackHandler( implicit nc : ActorSystemContext with Settings ){
+  import nc._
+  protected val httpExtension: HttpExt = Http(system)
+  val portsUsedByNode =settings.ports.values.toSeq
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
-  implicit val system = http.Boot.system
-  import system.dispatcher // execution context for futures
-  val settings = http.Boot.settings
-  val httpExt = Http(system)
-  implicit val mat: Materializer = ActorMaterializer()
 
-  private def log(implicit system: ActorSystem) = system.log
-
+  private def log = system.log
+  val currentConnections: MutableMap[Int, SendHandler ] = MutableMap.empty
+  def addCurrentConnection( identifier: Int, handler: SendHandler) = currentConnections += identifier -> handler 
   private[this] def sendHttp( callback: HTTPCallback,
                               request: OmiRequest,
                               ttl: Duration): Future[Unit] = {
     val tryUntil =  new Timestamp( new Date().getTime + (ttl match {
       case ttl: FiniteDuration => ttl.toMillis
-      case _ => http.Boot.settings.callbackTimeout.toMillis
+      case _ => settings.callbackTimeout.toMillis
     }))
 
     def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
@@ -76,21 +77,21 @@ object CallbackHandlers {
     val address = callback.uri
     val httpRequest = RequestBuilding.Post(address, request.asXML)
 
-    system.log.info(
+    log.info(
       s"Trying to send POST request to $address, will keep trying until $tryUntil."
     )
 
     val check : HttpResponse => Future[Unit] = { response =>
         if (response.status.isSuccess){
           //TODO: Handle content of response, possible piggypacking
-          system.log.info(
+          log.info(
             s"Successful send POST request to $address."
           )
           Future.successful(())
         } else Future failed HttpError(response.status, callback)
     }
 
-    def trySend = httpExt.singleRequest(httpRequest)//httpHandler(request)
+    def trySend = httpExtension.singleRequest(httpRequest)//httpHandler(request)
 
     val retry = retryUntilWithCheck[HttpResponse, Unit](
             settings.callbackDelay,
@@ -109,6 +110,7 @@ object CallbackHandlers {
   }
 
   private def retryUntilWithCheck[T,U]( delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1 )( check: T => Future[U])( creator: => Future[T] ) : Future[U] = {
+    import system.dispatcher // execution context for futures
     val future = creator
     future.flatMap{ check }.recoverWith{
       case e if tryUntil.after( currentTimestamp ) && !system.isTerminated => 

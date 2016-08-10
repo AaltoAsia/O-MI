@@ -47,22 +47,20 @@ object CLICmds
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
-    sourceAddress: InetSocketAddress,
-    agentSystem: ActorRef,
-    subscriptionHandler: ActorRef,
-    requestHandler: RemoveHandler
-  ) : Props = Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
+    sourceAddress: InetSocketAddress  
+  )(
+implicit nc: Actors with RequestHandling
+  ) : Props = Props( new OmiNodeCLI(sourceAddress))
 }
 /** Command Line Interface for internal agent management. 
   *
   */
 class OmiNodeCLI(
-    sourceAddress: InetSocketAddress,
-    agentLoader: ActorRef,
-    subscriptionHandler: ActorRef,
-    requestHandler: RemoveHandler
+  sourceAddress:  InetSocketAddress)(
+  implicit val nc: Actors with RequestHandling
   ) extends Actor with ActorLogging {
 
+    import nc._
   val commands = """Current commands:
 start <agent classname>
 stop  <agent classname> 
@@ -94,7 +92,7 @@ remove <path>
   }
   private def listAgents(): String = {
     log.info(s"Got list agents command from $ip")
-    val result = (agentLoader ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
+    val result = (agentSystem ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
       .map{
         case agents: Vector[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
@@ -134,7 +132,7 @@ remove <path>
   } 
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
-    val result = (subscriptionHandler ? ListSubsCmd())
+    val result = (subscriptionManager ? ListSubsCmd())
       .map{
         case (intervals: Set[IntervalSub @unchecked],
               events: Set[EventSub] @unchecked,
@@ -152,7 +150,7 @@ remove <path>
   }
   private def subInfo(id: Long): String = {
     log.info(s"Got sub info command from $ip")
-    val result = (subscriptionHandler ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
+    val result = (subscriptionManager ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
       .map{
         case Some(intervalSub: IntervalSub) =>
           s"Started: ${intervalSub.startTime}\n" +
@@ -190,7 +188,7 @@ remove <path>
   
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
-    val result = (agentLoader ? StartAgentCmd(agent)).mapTo[Future[String]]
+    val result = (agentSystem ? StartAgentCmd(agent)).mapTo[Future[String]]
       .flatMap{ case future : Future[String] => future }
       .map{
         case msg: String =>
@@ -205,7 +203,7 @@ remove <path>
 
   private def stopAgent(agent: AgentName): String = {
     log.info(s"Got stop command from $ip for $agent")
-    val result = (agentLoader ? StopAgentCmd(agent)).mapTo[Future[String]]
+    val result = (agentSystem ? StopAgentCmd(agent)).mapTo[Future[String]]
       .flatMap{ case future : Future[String] => future }
       .map{
         case msg:String => 
@@ -225,7 +223,7 @@ remove <path>
       val id = pathOrId.toInt
       log.info(s"Removing subscription with id: $id")
 
-      val result = (subscriptionHandler ? RemoveSubscription(id))
+      val result = (subscriptionManager ? RemoveSubscription(id))
         .map{
           case true =>
             s"Removed subscription with $id successfully.\n"
@@ -279,8 +277,9 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RemoveHandler)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(implicit nc: ActorSystemContext with Actors with RequestHandling)  extends Actor with ActorLogging{
 
+  import nc._
   import Tcp._
 
   def receive : Actor.Receive={
@@ -297,7 +296,7 @@ class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, r
       log.info(s"CLI connected from $remote to $local")
 
       val cli = context.system.actorOf(
-        OmiNodeCLI.props( remote, agentLoader, subscriptionHandler, requestHandler ),
+        OmiNodeCLI.props(remote),
         "cli-" + remote.toString.tail)
         connection ! Register(cli)
     case _ => //noop?

@@ -32,11 +32,12 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import http.{ActorSystemContext, Actors}
 
 
 trait CancelHandler extends OmiRequestHandlerBase{
-  def subscriptionManager : ActorRef
 
+  import nc._
   /** Method for handling CancelRequest.
     * @param cancel request
     * @return (xml response, HTTP status code) wrapped in a Future

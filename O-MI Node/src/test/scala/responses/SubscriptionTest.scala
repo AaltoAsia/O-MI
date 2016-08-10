@@ -47,7 +47,6 @@ case class SubscriptionRequest(
 
  */
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
-  implicit val dbConnection = new TestDB("subscription-test-db")
   implicit val system = ActorSystem("SubscribtionTest-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
@@ -56,6 +55,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
             """))
+  implicit val dbConnection = new TestDB("subscription-test-db" + system.hashCode)
   val subscriptionManager = system.actorOf((Props(new SubscriptionManager)))
   val agentManager = system.actorOf(Props(new AgentSystem(dbConnection, subscriptionManager)))
   val requestHandler = new RequestHandler(subscriptionManager,agentManager)

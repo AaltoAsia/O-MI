@@ -25,8 +25,11 @@ import java.util.Date
 import akka.actor.{ActorSystem, ActorRef}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import database._
-import responses.CallbackHandlers._
 import types.OmiTypes._
+import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
+import http.ContextConversion._
+import scala.language.implicitConversions
+import CallbackHandler._
 
 trait OmiRequestHandlerBase { 
   protected final def handleTTL( ttl: Duration) : FiniteDuration = if( ttl.isFinite ) {
@@ -37,24 +40,24 @@ trait OmiRequestHandlerBase {
       } else {
         FiniteDuration(Int.MaxValue,MILLISECONDS)
       }
-  implicit def  dbConnection: DB
-
-  protected def log: LoggingAdapter
-
+  protected def log : LoggingAdapter
   protected[this] def date = new Date()
+  implicit val nc: ActorSystemContext with Actors with Storages with Settings with Callbacking
+  import nc._
 }
 
 
 trait OmiRequestHandlerCore { 
+  implicit val nc: ActorSystemContext with Actors with Storages with Settings with Callbacking
+  import nc._
   protected def handle: PartialFunction[OmiRequest,Future[ResponseRequest]] 
 
   implicit val logSource: LogSource[OmiRequestHandlerCore]= new LogSource[OmiRequestHandlerCore] {
       def genString(requestHandler:  OmiRequestHandlerCore) = requestHandler.toString
     }
-  protected def log = Logging( http.Boot.system, this)
+  protected def log: LoggingAdapter = Logging( system, this)
 
-  def handleRequest(request: OmiRequest)(implicit system: ActorSystem): Future[ResponseRequest] = {
-    import system.dispatcher // execution context for futures
+  def handleRequest(request: OmiRequest): Future[ResponseRequest] = {
 
     request.callback match {
       case Some(callback: RawCallback) => 
@@ -65,7 +68,7 @@ trait OmiRequestHandlerCore {
             case _ => {
               // TODO: Can't cancel this callback
               runGeneration(request)  map { response =>
-                CallbackHandlers.sendCallback( callback, response )
+                callbackHandler.sendCallback( callback, response )
               }
               Future.successful{
                 Responses.Success(description = Some("OK, callback job started"))
@@ -94,7 +97,7 @@ trait OmiRequestHandlerCore {
    *
    * @param request request is O-MI request to be handled
    */
-  def runGeneration(request: OmiRequest)(implicit ec: ExecutionContext): Future[ResponseRequest] = {
+  def runGeneration(request: OmiRequest): Future[ResponseRequest] = {
     handle(request).recoverWith{
       case e: TimeoutException => Future.successful(Responses.TimeOutError(e.getMessage))
       case e: IllegalArgumentException => Future.successful(Responses.InvalidRequest(e.getMessage))
@@ -107,32 +110,31 @@ trait OmiRequestHandlerCore {
    * Method to be called for handling internal server error, logging and stacktrace.
    *
    */
-  def actionOnInternalError: Throwable => Unit = { error =>
-    log.error(error, "Internal server error: ")
+  def actionOnInternalError: Throwable => Unit = {
+    { error =>
+      log.error(error, "Internal server error: ")
+    }
   }
 }
 
-class RequestHandler(
-  val subscriptionManager: ActorRef,
-  val agentSystem: ActorRef
-)(implicit val dbConnection: DB
-  ) extends OmiRequestHandlerCore
-    with ReadHandler 
-    with WriteHandler
-    with ResponseHandler
-    with SubscriptionHandler
-    with PollHandler
-    with CancelHandler
-    with RESTHandler
-    with RemoveHandler
-  {
-
+class RequestHandler(implicit val nc: ActorSystemContext with Actors with Storages with Settings with Callbacking) 
+extends  OmiRequestHandlerCore
+with ReadHandler 
+with WriteHandler
+with ResponseHandler
+with SubscriptionHandler
+with PollHandler
+with CancelHandler
+with RESTHandler
+with RemoveHandler
+{
   protected def handle: PartialFunction[OmiRequest,Future[ResponseRequest]] = {
-    case sub     : SubscriptionRequest => handleSubscription(sub)
-    case read    : ReadRequest         => handleRead(read)
-    case write   : WriteRequest        => handleWrite(write)
-    case cancel  : CancelRequest       => handleCancel(cancel)
-    case poll    : PollRequest         => handlePoll(poll)
+    case subscription: SubscriptionRequest => handleSubscription(subscription)
+    case read: ReadRequest => handleRead(read)
+    case write: WriteRequest => handleWrite(write)
+    case cancel: CancelRequest => handleCancel(cancel)
+    case poll: PollRequest => handlePoll(poll)
+    case response: ResponseRequest => handleResponse(response)
     case response: ResponseRequest     if response.results.exists{ result => result.odf.nonEmpty } => handleResponse(response)
     case response: ResponseRequest     => Future.successful(Responses.Success())
   }

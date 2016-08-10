@@ -32,7 +32,7 @@ import scala.xml.NodeSeq
 
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
-import responses.CallbackHandlers
+import responses.CallbackHandler
 import types.OdfTypes._
 import agentSystem.ResponsibleAgentResponse
 

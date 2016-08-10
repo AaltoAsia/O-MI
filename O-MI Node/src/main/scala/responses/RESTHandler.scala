@@ -20,8 +20,10 @@ import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types.OdfTypes._
 import types._
+import http.{ActorSystemContext, Storages}
 
 trait RESTHandler extends OmiRequestHandlerBase{
+  import nc._
   private sealed trait ODFRequest {def path: Path} // path is OdfNode path
   private case class Value(path: Path)      extends ODFRequest
   private case class MetaData(path: Path)   extends ODFRequest
@@ -52,14 +54,14 @@ trait RESTHandler extends OmiRequestHandlerBase{
     val request = getODFRequest(orgPath)
     request match {
       case Value(path) =>
-        SingleStores.latestStore execute LookupSensorData(path) map { Left apply _.value.toString }
+        singleStores.latestStore execute LookupSensorData(path) map { Left apply _.value.toString }
 
       case MetaData(path) =>
-        SingleStores.getMetaData(path) map { metaData =>
+        singleStores.getMetaData(path) map { metaData =>
           Right(scalaxb.toXML[xmlTypes.MetaData](metaData, Some("odf"), Some("MetaData"),defaultScope))
         }
       case ObjId(path) =>{  //should this query return the id as plain text or inside Object node?
-        val xmlReturn = SingleStores.getSingle(path).map{
+        val xmlReturn = singleStores.getSingle(path).map{
           case odfObj: OdfObject =>
             scalaxb.toXML[xmlTypes.ObjectType](
               odfObj.copy(infoItems = OdfTreeCollection(),objects = OdfTreeCollection(), description = None)
@@ -79,12 +81,12 @@ trait RESTHandler extends OmiRequestHandlerBase{
         Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}><name>{path.last}</name></InfoItem>))
         // TODO: support for multiple name
       case Description(path) =>
-        SingleStores.hierarchyStore execute GetTree() get path flatMap (
+        singleStores.hierarchyStore execute GetTree() get path flatMap (
           _.description map (_.value)
         ) map Left.apply _
         
       case NodeReq(path) =>
-        val xmlReturn = SingleStores.getSingle(path) map {
+        val xmlReturn = singleStores.getSingle(path) map {
 
           case odfObj: OdfObject =>
             scalaxb.toXML[xmlTypes.ObjectType](

@@ -28,10 +28,11 @@ import akka.util.Timeout
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
+import http.{ActorSystemContext, Actors}
 
 trait PollHandler extends OmiRequestHandlerBase{
-  def subscriptionManager : ActorRef
 
+  import nc._
   /** Method for handling PollRequest.
     * @param poll request
     * @return (xml response, HTTP status code)

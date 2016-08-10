@@ -57,12 +57,12 @@ class OmiServiceTest
 
 
   def beforeAll() = {
-    Boot.saveSettingsOdf(agentManager)//Boot.init(dbConnection)
+    Boot.saveSettingsOdf(agentManager)(system)//Boot.init(dbConnection)
   }
   def afterAll = {
-    Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
     SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    Await.ready(system.terminate(), 2 seconds)
   }
 
   "Data discovery, GET: OmiService" >> {

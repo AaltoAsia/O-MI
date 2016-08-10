@@ -24,8 +24,9 @@ import scala.util.Try
 
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
-import responses.CallbackHandlers.{ MissingConnection, CallbackFailure}
 import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
+import http.{Storages, OmiNodeContext, Settings, ActorSystemContext, Actors, Callbacking}
+import responses.CallbackHandler.{ MissingConnection, CallbackFailure}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
@@ -55,7 +56,7 @@ case class RemoveSubscription(id: Long)
 case class PollSubscription(id: Long)
 
 object SubscriptionManager{
-  def props(): Props = Props(new SubscriptionManager())
+  def props()(implicit nodeContext: Actors with Storages with Callbacking): Props = Props(new SubscriptionManager()(nodeContext))
 }
 
 
@@ -63,7 +64,8 @@ object SubscriptionManager{
  * Class that handles event and interval based subscriptions.
  * Uses Akka scheduler to schedule ttl handling and intervalhandling
  */
-class SubscriptionManager extends Actor with ActorLogging {
+class SubscriptionManager(implicit val nc: Actors with Storages with Callbacking) extends Actor with ActorLogging {
+  import nc._
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler = context.system.scheduler
@@ -76,9 +78,9 @@ class SubscriptionManager extends Actor with ActorLogging {
     log.debug("Scheduling removesubscriptions for the first time...")
     val currentTime = System.currentTimeMillis()
     //event subs
-    val allSubs = (SingleStores.subStore execute  GetAllEventSubs()) ++
-      (SingleStores.subStore execute GetAllIntervalSubs()) ++
-      (SingleStores.subStore execute GetAllPollSubs())
+    val allSubs = (singleStores.subStore execute  GetAllEventSubs()) ++
+      (singleStores.subStore execute GetAllIntervalSubs()) ++
+      (singleStores.subStore execute GetAllPollSubs())
     allSubs.foreach{ sub =>
       if(sub.endTime.getTime() != Long.MaxValue ) {
         val nextRun = Duration(sub.endTime.getTime() - currentTime,MILLISECONDS)
@@ -109,7 +111,7 @@ class SubscriptionManager extends Actor with ActorLogging {
 
   private def handlePollEvent(pollEvent: PollEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
-    val eventData = (SingleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
+    val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
               .map{case (_path,_values) =>
                 OdfInfoItem(_path,_values.sortBy(_.timestamp.getTime()))}
 
@@ -151,7 +153,7 @@ class SubscriptionManager extends Actor with ActorLogging {
 
     log.info(s"Creating response message for Polled Interval Subscription")
 
-    val intervalData= (SingleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
+    val intervalData= (singleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
       .mapValues(_.sortBy(_.timestamp.getTime()))
 
     val combinedWithPaths =
@@ -176,7 +178,7 @@ class SubscriptionManager extends Actor with ActorLogging {
         } //add polltime
         case (p, v) => {
           log.info(s"No values found for path: $p in Interval subscription poll for sub id ${pollInterval.id}")
-          val latestValue = SingleStores.latestStore execute LookupSensorData(p) match {
+          val latestValue = singleStores.latestStore execute LookupSensorData(p) match {
             //lookup latest value from latestStore, if exists use that
             case Some(value) => {
               log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
@@ -218,11 +220,11 @@ class SubscriptionManager extends Actor with ActorLogging {
    */
   private def pollSubscription(id: Long) : Option[OdfObjects] = {
     val pollTime: Long = System.currentTimeMillis()
-    val sub: Option[PolledSub] = SingleStores.subStore execute PollSub(id)
+    val sub: Option[PolledSub] = singleStores.subStore execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
         log.debug(s"Polling subcription with id: ${pollSub.id}")
-        val odfTree = SingleStores.hierarchyStore execute GetTree()
+        val odfTree = singleStores.hierarchyStore execute GetTree()
         val emptyTree = pollSub
           .paths //get subscriptions paths
           .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
@@ -254,8 +256,9 @@ class SubscriptionManager extends Actor with ActorLogging {
 
     log.debug("handling infoitems")
     val currentTime = System.currentTimeMillis()
-    val hTree = SingleStores.hierarchyStore execute GetTree()
-    val (iSubs, nextRunTimeOption) = SingleStores.subStore execute GetIntervals
+    val hTree = singleStores.hierarchyStore execute GetTree()
+    val (iSubs, nextRunTimeOption) = singleStores.subStore execute GetIntervals
+
     if(iSubs.nonEmpty) {
 
       //send new data to callback addresses
@@ -269,7 +272,7 @@ class SubscriptionManager extends Actor with ActorLogging {
         val subscribedInfoItems = OdfTypes
           .getInfoItems(nodes:_*)
 
-        val datas = SingleStores.latestStore execute LookupSensorDatas(subscribedInfoItems.map(_.path))
+        val datas = singleStores.latestStore execute LookupSensorDatas(subscribedInfoItems.map(_.path))
         val objects: Vector[OdfObjects] = datas.map {
           case (iPath, oValue) =>
 
@@ -284,7 +287,7 @@ class SubscriptionManager extends Actor with ActorLogging {
         val responseTTL = iSub.interval
         val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
 
-        val callbackF = CallbackHandlers.sendCallback(iSub.callback,response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
+        val callbackF = callbackHandler.sendCallback(iSub.callback,response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
         callbackF.onSuccess {
           case () =>
             log.debug(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
@@ -317,11 +320,11 @@ class SubscriptionManager extends Actor with ActorLogging {
    * @return Boolean indicating if the removing was successful
    */
   private def removeSubscription(id: Long): Boolean = {
-    lazy val removeIS = SingleStores.subStore execute RemoveIntervalSub(id)
-    lazy val removePS = SingleStores.subStore execute RemovePollSub(id)
-    lazy val removeES = SingleStores.subStore execute RemoveEventSub(id)
+    lazy val removeIS = singleStores.subStore execute RemoveIntervalSub(id)
+    lazy val removePS = singleStores.subStore execute RemovePollSub(id)
+    lazy val removeES = singleStores.subStore execute RemoveEventSub(id)
     if (removePS) {
-      SingleStores.pollDataPrevayler execute RemovePollSubData(id)
+      singleStores.pollDataPrevayler execute RemovePollSubData(id)
       removePS
     } else {
       removeIS || removeES
@@ -330,15 +333,15 @@ class SubscriptionManager extends Actor with ActorLogging {
 
   private def getAllSubs() = {
     log.info("getting list of all subscriptions")
-    val intervalSubs = SingleStores.subStore execute GetAllIntervalSubs()
-    val eventSubs = SingleStores.subStore execute GetAllEventSubs()
-    val pollSubs = SingleStores.subStore execute GetAllPollSubs()
+    val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = singleStores.subStore execute GetAllEventSubs()
+    val pollSubs = singleStores.subStore execute GetAllPollSubs()
     (intervalSubs, eventSubs, pollSubs)
   }
   private def getSub( id: Long ) = {
-    val intervalSubs = SingleStores.subStore execute GetAllIntervalSubs()
-    val eventSubs = SingleStores.subStore execute GetAllEventSubs()
-    val pollSubs = SingleStores.subStore execute GetAllPollSubs()
+    val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = singleStores.subStore execute GetAllEventSubs()
+    val pollSubs = singleStores.subStore execute GetAllPollSubs()
     val allSubs = intervalSubs ++ eventSubs ++ pollSubs 
     allSubs.find{ sub => sub.id == id}
   }
@@ -350,7 +353,7 @@ class SubscriptionManager extends Actor with ActorLogging {
    */
   private def subscribe(subscription: SubscriptionRequest): Try[Long] = {
     Try {
-      val newId = SingleStores.idPrevayler execute GetAndUpdateId
+      val newId = singleStores.idPrevayler execute GetAndUpdateId
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)
@@ -363,7 +366,7 @@ class SubscriptionManager extends Actor with ActorLogging {
             //normal event subscription
 
 
-            SingleStores.subStore execute AddEventSub(
+            singleStores.subStore execute AddEventSub(
               EventSub(
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
@@ -377,7 +380,7 @@ class SubscriptionManager extends Actor with ActorLogging {
           case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported")//subscription for new node
           case dur: FiniteDuration if dur.gteq(minIntervalDuration)=> {
 
-            SingleStores.subStore execute AddIntervalSub(
+            singleStores.subStore execute AddIntervalSub(
               IntervalSub(newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
@@ -403,7 +406,7 @@ class SubscriptionManager extends Actor with ActorLogging {
           subscription.interval match{
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
-              SingleStores.subStore execute AddPollSub(
+              singleStores.subStore execute AddPollSub(
                 PollEventSub(
                   newId,
                   endTime,
@@ -418,7 +421,7 @@ class SubscriptionManager extends Actor with ActorLogging {
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
               //interval poll
-              SingleStores.subStore execute AddPollSub(
+              singleStores.subStore execute AddPollSub(
                 PollIntervalSub(
                   newId,
                   endTime,

@@ -25,12 +25,11 @@ import scala.xml.XML
 
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
-import database.SingleStores.valueShouldBeUpdated
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
-import responses.CallbackHandlers._
+import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
