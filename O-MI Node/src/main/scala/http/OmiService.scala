@@ -205,7 +205,7 @@ trait OmiService
                     case None  =>
                       requestHandler.handleRequest(request)(system)
                     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
-                      Future.successful( Responses.InvalidCallback("0", Some( "callback 0 is only supported with Websocket connection. Chance server url to start with 'ws:'" ) ) )
+                      Future.successful( Responses.InvalidCallback("0", Some( "Callback 0 not supported with http/https try using ws(websocket) instead" ) ) )
                     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
                       val modifiedRequest = request.withCallback(  currentConnectionCallback )
                       requestHandler.handleRequest(modifiedRequest)(system)
