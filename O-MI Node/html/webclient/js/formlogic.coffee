@@ -74,7 +74,12 @@ formLogicExt = ($, WebOmi) ->
   # Subscription history of WebSocket and callback=0 Features
 
   # List of subscriptions that uses websocket and should be watched
-  # Type: {String_RequestID : {receivedCount : Number, userSeenCount : Number, listSelector : Jquery}}
+  # Type: {String_RequestID : {
+  #   receivedCount : Number,
+  #   userSeenCount : Number,
+  #   selector : Jquery,   # selector for sub history list
+  #   responses : [String]
+  #   }}
   my.callbackSubscriptions = {}
   
   # Set true when the next response should be rendered to main response area
@@ -161,6 +166,7 @@ formLogicExt = ($, WebOmi) ->
           my.callbackSubscriptions[requestID] =
             receivedCount : 1
             userSeenCount : 0
+            responses : [responseString]
         else
           return false
 
@@ -184,6 +190,9 @@ formLogicExt = ($, WebOmi) ->
       shortenedParts[lastI] = pathParts[lastI]
       shortenedParts.join "/"
 
+    #createPrefixPath = (path) ->
+    #  generateTrie = (root, )
+
     getPathValues = (infoitemXmlNode) ->
       valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value")
       path = getPath infoitemXmlNode
@@ -202,7 +211,7 @@ formLogicExt = ($, WebOmi) ->
       WebOmi.util.cloneElem target, (cloned) ->
         cloned.slideDown null, ->  # animation, default duration
           # readjusts the position because of size change (see modal docs)
-          consts.infoItemDialog.modal 'handleUpdate'
+          consts.callbackResponseHistoryModal.modal 'handleUpdate'
 
     createHistory = (requestID) ->
       newList = cloneElem consts.responseListCloneTarget
@@ -226,6 +235,15 @@ formLogicExt = ($, WebOmi) ->
         .append($ "<th>returnCode</th>")
         .append($ "<th/>"
           .text returnCode)
+        .tooltip
+          container: "body"
+          title: "click to show the XML"
+        .on 'click', -> # Show the response xml in main response area
+          WebOmi.formLogic.setResponse(responseString)
+          WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
+          url = location.href                   #Save down the URL without hash.
+          location.href = "#response"           #Go to the target element.
+          history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
       row
 
     htmlformat = ( pathValues ) ->
@@ -264,13 +282,8 @@ formLogicExt = ($, WebOmi) ->
       returnS = returnStatus callbackRecord.receivedCount, 200
       
       dataTable
-        .append returnS
-        .append htmlformat pathValues
-
-      #newHistory
-      #  .find ".dataTable"
-      #  .append(returnStatus 1, 200
-      #    .after htmlformat pathValues)
+        .prepend htmlformat pathValues
+        .prepend returnS
 
     addHistory requestID, pathValues
 

@@ -120,7 +120,8 @@
             my.waitingForRequestID = false;
             my.callbackSubscriptions[requestID] = {
               receivedCount: 1,
-              userSeenCount: 0
+              userSeenCount: 0,
+              responses: [responseString]
             };
           } else {
             return false;
@@ -185,7 +186,7 @@
       cloneElem = function(target, callback) {
         return WebOmi.util.cloneElem(target, function(cloned) {
           return cloned.slideDown(null, function() {
-            return consts.infoItemDialog.modal('handleUpdate');
+            return consts.callbackResponseHistoryModal.modal('handleUpdate');
           });
         });
       };
@@ -207,7 +208,17 @@
             case 4:
               return "danger";
           }
-        })()).append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode));
+        })()).append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode)).tooltip({
+          container: "body",
+          title: "click to show the XML"
+        }).on('click', function() {
+          var url;
+          WebOmi.formLogic.setResponse(responseString);
+          WebOmi.consts.callbackResponseHistoryModal.modal('hide');
+          url = location.href;
+          location.href = "#response";
+          return history.replaceState(null, null, url);
+        });
         return row;
       };
       htmlformat = function(pathValues) {
@@ -232,7 +243,7 @@
         responseList = (callbackRecord.selector != null) && callbackRecord.selector.length > 0 ? callbackRecord.selector : (newHistory = createHistory(requestID), my.callbackSubscriptions[requestID].selector = newHistory, newHistory);
         dataTable = responseList.find(".dataTable");
         returnS = returnStatus(callbackRecord.receivedCount, 200);
-        return dataTable.append(returnS).append(htmlformat(pathValues));
+        return dataTable.prepend(htmlformat(pathValues)).prepend(returnS);
       };
       addHistory(requestID, pathValues);
       return !my.waitingForResponse;
