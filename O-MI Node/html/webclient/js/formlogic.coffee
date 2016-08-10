@@ -49,13 +49,14 @@ formLogicExt = ($, WebOmi) ->
     o.evaluateXPath(str, '//odf:Objects')[0]
 
   # Remove current response from its CodeMirror and hide it with animation
-  my.clearResponse = ->
+  my.clearResponse = (doneCallback) ->
     mirror = WebOmi.consts.responseCodeMirror
     mirror.setValue ""
-    WebOmi.consts.responseDiv.slideUp()
+    WebOmi.consts.responseDiv.slideUp complete : ->
+      if doneCallback? then doneCallback()
 
   # Sets response (as a string or xml) and handles slide animation
-  my.setResponse = (xml) ->
+  my.setResponse = (xml, doneCallback) ->
     mirror = WebOmi.consts.responseCodeMirror
     if typeof xml == "string"
       mirror.setValue xml
@@ -65,6 +66,7 @@ formLogicExt = ($, WebOmi) ->
     # refresh as we "resize" so more text will become visible
     WebOmi.consts.responseDiv.slideDown complete : ->
       mirror.refresh()
+      if doneCallback? then doneCallback()
     mirror.refresh()
   
 
@@ -118,6 +120,7 @@ formLogicExt = ($, WebOmi) ->
     ####################################
     # TODO: historyCounter
     #if my.historyOpen
+    orginal = parseInt consts.historyCounter.text()
     sum = 0
     for own requestID, sub of my.callbackSubscriptions
       update sub
@@ -133,6 +136,9 @@ formLogicExt = ($, WebOmi) ->
         .text sum
         .removeClass "label-default"
         .addClass "label-warning"
+
+    if sum > orginal
+      WebOmi.util.flash consts.historyCounter.parent()
 
 
     
@@ -183,22 +189,63 @@ formLogicExt = ($, WebOmi) ->
       else
         id
 
-    createShortenedPath = (path) ->
-      pathParts = path.split "/"
-      shortenedParts = (part[0] + "…" for part in pathParts)
-      lastI = pathParts.length - 1
-      shortenedParts[lastI] = pathParts[lastI]
-      shortenedParts.join "/"
+    #createShortenedPath = (path) ->
+    #  pathParts = path.split "/"
+    #  shortenedParts = (part[0] + "…" for part in pathParts)
+    #  lastI = pathParts.length - 1
+    #  shortenedParts[lastI] = pathParts[lastI]
+    #  shortenedParts.join "/"
 
-    #createPrefixPath = (path) ->
-    #  generateTrie = (root, )
+    pathPrefixTrie = {}
+    insertToTrie = (root, string) ->
+      if string.length == 0
+        root
+      else
+        [head,tail...] = string
+        root[head] ?= {}
+        insertToTrie root[head], tail
+
+    createShortenedPath = (path) ->
+      prefixShorted = getShortenedPath pathPrefixTrie,path
+      [shortedInit..., _] = prefixShorted.split "/"
+      [_..., originalLast] = path.split "/"
+      shortedInit.push originalLast
+      shortedInit.join "/"
+
+    # return longest common prefix path
+    getShortenedPath = (tree, path, shortening=false) ->
+      if path.length == 0
+        return ""
+
+      keys = Object.keys tree
+      [key, tail...] = path
+
+      child = tree[key]
+      if not child?
+        WebOmi.debug "Error: prefix tree failure: does not exist"
+        return
+
+      if key == "/"
+        return "/" + getShortenedPath child, tail
+
+      if keys.length == 1
+        if shortening
+          return getShortenedPath child, tail, true
+        else
+          return "..." + getShortenedPath child, tail, true
+      else
+        return key + getShortenedPath child, tail
+
+
 
     getPathValues = (infoitemXmlNode) ->
       valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value")
       path = getPath infoitemXmlNode
+      insertToTrie pathPrefixTrie, path
+
       for value in valuesXml
         path: path
-        shortPath: createShortenedPath path
+        shortPath: -> createShortenedPath path
         value: value
         stringValue: value.textContent.trim()
 
@@ -236,14 +283,15 @@ formLogicExt = ($, WebOmi) ->
         .append($ "<th/>"
           .text returnCode)
         .tooltip
-          container: "body"
+          #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
         .on 'click', -> # Show the response xml in main response area
-          WebOmi.formLogic.setResponse(responseString)
+          WebOmi.formLogic.setResponse responseString, ->
+            url = window.location.href                   #Save down the URL without hash.
+            window.location.href = "#response"           #Go to the target element.
+            window.history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
+            WebOmi.util.flash WebOmi.consts.responseDiv
           WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
-          url = location.href                   #Save down the URL without hash.
-          location.href = "#response"           #Go to the target element.
-          history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
       row
 
     htmlformat = ( pathValues ) ->
@@ -254,13 +302,14 @@ formLogicExt = ($, WebOmi) ->
           .append($ "<td/>"
             .text pathValue.shortPath
             .tooltip
-              container: "body"
+              #container: "body"
+              container: consts.callbackResponseHistoryModal
               title: pathValue.path
           )
           .append($ "<td/>"
             .text pathValue.stringValue
             .tooltip
-              container: "body"
+              #container: "body"
               title: pathValue.value.attributes.dateTime.value
           )
         row

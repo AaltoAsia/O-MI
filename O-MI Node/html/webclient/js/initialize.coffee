@@ -105,6 +105,12 @@ utilExt = ($, parent) ->
 
     if callback? then callback cloned
 
+  # Yellow flash for a second
+  my.flash = (jqueryElem) ->
+    jqueryElem.addClass 'flash'
+    window.setTimeout (
+      -> jqueryElem.removeClass 'flash'
+    ), 1000
 
   parent
 

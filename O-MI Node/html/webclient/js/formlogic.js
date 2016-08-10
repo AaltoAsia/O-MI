@@ -2,7 +2,8 @@
 (function() {
   "use strict";
   var formLogicExt,
-    hasProp = {}.hasOwnProperty;
+    hasProp = {}.hasOwnProperty,
+    slice = [].slice;
 
   formLogicExt = function($, WebOmi) {
     var consts, my;
@@ -36,13 +37,19 @@
       str = WebOmi.consts.requestCodeMirror.getValue();
       return o.evaluateXPath(str, '//odf:Objects')[0];
     };
-    my.clearResponse = function() {
+    my.clearResponse = function(doneCallback) {
       var mirror;
       mirror = WebOmi.consts.responseCodeMirror;
       mirror.setValue("");
-      return WebOmi.consts.responseDiv.slideUp();
+      return WebOmi.consts.responseDiv.slideUp({
+        complete: function() {
+          if (doneCallback != null) {
+            return doneCallback();
+          }
+        }
+      });
     };
-    my.setResponse = function(xml) {
+    my.setResponse = function(xml, doneCallback) {
       var mirror;
       mirror = WebOmi.consts.responseCodeMirror;
       if (typeof xml === "string") {
@@ -53,7 +60,10 @@
       mirror.autoFormatAll();
       WebOmi.consts.responseDiv.slideDown({
         complete: function() {
-          return mirror.refresh();
+          mirror.refresh();
+          if (doneCallback != null) {
+            return doneCallback();
+          }
         }
       });
       return mirror.refresh();
@@ -74,7 +84,7 @@
       return consts.historyCounter = $('.label.historyCounter');
     });
     my.updateHistoryCounter = function(toZero) {
-      var ref, requestID, sub, sum, update;
+      var orginal, ref, requestID, sub, sum, update;
       if (toZero == null) {
         toZero = false;
       }
@@ -83,6 +93,7 @@
           return sub.userSeenCount = sub.receivedCount;
         }
       };
+      orginal = parseInt(consts.historyCounter.text());
       sum = 0;
       ref = my.callbackSubscriptions;
       for (requestID in ref) {
@@ -92,13 +103,16 @@
         sum += sub.receivedCount - sub.userSeenCount;
       }
       if (sum === 0) {
-        return consts.historyCounter.text(sum).removeClass("label-warning").addClass("label-default");
+        consts.historyCounter.text(sum).removeClass("label-warning").addClass("label-default");
       } else {
-        return consts.historyCounter.text(sum).removeClass("label-default").addClass("label-warning");
+        consts.historyCounter.text(sum).removeClass("label-default").addClass("label-warning");
+      }
+      if (sum > orginal) {
+        return WebOmi.util.flash(consts.historyCounter.parent());
       }
     };
     my.handleSubscriptionHistory = function(responseString) {
-      var addHistory, cbSub, cloneElem, createHistory, createShortenedPath, getPath, getPathValues, htmlformat, info, infoItemPathValues, infoitems, maybeRequestID, omi, pathValues, ref, requestID, response, returnStatus;
+      var addHistory, cbSub, cloneElem, createHistory, createShortenedPath, getPath, getPathValues, getShortenedPath, htmlformat, info, infoItemPathValues, infoitems, insertToTrie, maybeRequestID, omi, pathPrefixTrie, pathValues, ref, requestID, response, returnStatus;
       omi = WebOmi.omi;
       response = omi.parseXml(responseString);
       maybeRequestID = Maybe(omi.evaluateXPath(response, "//omi:requestID/text()")[0]);
@@ -141,32 +155,68 @@
           return id;
         }
       };
-      createShortenedPath = function(path) {
-        var lastI, part, pathParts, shortenedParts;
-        pathParts = path.split("/");
-        shortenedParts = (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = pathParts.length; i < len; i++) {
-            part = pathParts[i];
-            results.push(part[0] + "…");
+      pathPrefixTrie = {};
+      insertToTrie = function(root, string) {
+        var head, tail;
+        if (string.length === 0) {
+          return root;
+        } else {
+          head = string[0], tail = 2 <= string.length ? slice.call(string, 1) : [];
+          if (root[head] == null) {
+            root[head] = {};
           }
-          return results;
-        })();
-        lastI = pathParts.length - 1;
-        shortenedParts[lastI] = pathParts[lastI];
-        return shortenedParts.join("/");
+          return insertToTrie(root[head], tail);
+        }
+      };
+      createShortenedPath = function(path) {
+        var _, i, j, originalLast, prefixShorted, ref, ref1, shortedInit;
+        prefixShorted = getShortenedPath(pathPrefixTrie, path);
+        ref = prefixShorted.split("/"), shortedInit = 2 <= ref.length ? slice.call(ref, 0, i = ref.length - 1) : (i = 0, []), _ = ref[i++];
+        ref1 = path.split("/"), _ = 2 <= ref1.length ? slice.call(ref1, 0, j = ref1.length - 1) : (j = 0, []), originalLast = ref1[j++];
+        shortedInit.push(originalLast);
+        return shortedInit.join("/");
+      };
+      getShortenedPath = function(tree, path, shortening) {
+        var child, key, keys, tail;
+        if (shortening == null) {
+          shortening = false;
+        }
+        if (path.length === 0) {
+          return "";
+        }
+        keys = Object.keys(tree);
+        key = path[0], tail = 2 <= path.length ? slice.call(path, 1) : [];
+        child = tree[key];
+        if (child == null) {
+          WebOmi.debug("Error: prefix tree failure: does not exist");
+          return;
+        }
+        if (key === "/") {
+          return "/" + getShortenedPath(child, tail);
+        }
+        if (keys.length === 1) {
+          if (shortening) {
+            return getShortenedPath(child, tail, true);
+          } else {
+            return "..." + getShortenedPath(child, tail, true);
+          }
+        } else {
+          return key + getShortenedPath(child, tail);
+        }
       };
       getPathValues = function(infoitemXmlNode) {
         var i, len, path, results, value, valuesXml;
         valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value");
         path = getPath(infoitemXmlNode);
+        insertToTrie(pathPrefixTrie, path);
         results = [];
         for (i = 0, len = valuesXml.length; i < len; i++) {
           value = valuesXml[i];
           results.push({
             path: path,
-            shortPath: createShortenedPath(path),
+            shortPath: function() {
+              return createShortenedPath(path);
+            },
             value: value,
             stringValue: value.textContent.trim()
           });
@@ -209,15 +259,16 @@
               return "danger";
           }
         })()).append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode)).tooltip({
-          container: "body",
           title: "click to show the XML"
         }).on('click', function() {
-          var url;
-          WebOmi.formLogic.setResponse(responseString);
-          WebOmi.consts.callbackResponseHistoryModal.modal('hide');
-          url = location.href;
-          location.href = "#response";
-          return history.replaceState(null, null, url);
+          WebOmi.formLogic.setResponse(responseString, function() {
+            var url;
+            url = window.location.href;
+            window.location.href = "#response";
+            window.history.replaceState(null, null, url);
+            return WebOmi.util.flash(WebOmi.consts.responseDiv);
+          });
+          return WebOmi.consts.callbackResponseHistoryModal.modal('hide');
         });
         return row;
       };
@@ -227,10 +278,9 @@
         for (i = 0, len = pathValues.length; i < len; i++) {
           pathValue = pathValues[i];
           row = $("<tr/>").append($("<td/>")).append($("<td/>").text(pathValue.shortPath).tooltip({
-            container: "body",
+            container: consts.callbackResponseHistoryModal,
             title: pathValue.path
           })).append($("<td/>").text(pathValue.stringValue).tooltip({
-            container: "body",
             title: pathValue.value.attributes.dateTime.value
           }));
           results.push(row);

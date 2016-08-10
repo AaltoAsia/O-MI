@@ -99,6 +99,12 @@
         return callback(cloned);
       }
     };
+    my.flash = function(jqueryElem) {
+      jqueryElem.addClass('flash');
+      return window.setTimeout((function() {
+        return jqueryElem.removeClass('flash');
+      }), 1000);
+    };
     return parent;
   };
 
