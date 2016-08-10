@@ -616,8 +616,8 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <h4 class="modal-title" id="myModalLabel">
             <b>[Prototype] Callback Response History:</b>
-            <button class="btn btn-sm btn-default" type="button"
-              onclick="javascript: $('.responseList').not('.cloneTarget').empty()">
+            <button class="btn btn-sm btn-default clearHistory" type="button"
+              onclick="javascript: $('.responseList').not('.cloneTarget').empty(); WebOmi.formlogic.callbackSubscriptions = {}">
               <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
               Clear History
           </button>

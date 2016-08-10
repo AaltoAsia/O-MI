@@ -554,6 +554,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
         for child in consts.odfTree.get_children_dom 'Objects'
           consts.odfTree.close_all child, closetime
         formLogic.clearResponse()
+        $('.clearHistory').trigger 'click'
 
 
     # TODO: maybe move these to centralized place consts.ui._.something

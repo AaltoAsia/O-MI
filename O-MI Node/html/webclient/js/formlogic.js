@@ -537,7 +537,8 @@
           child = ref[i];
           consts.odfTree.close_all(child, closetime);
         }
-        return formLogic.clearResponse();
+        formLogic.clearResponse();
+        return $('.clearHistory').trigger('click');
       });
       consts.ui.odf.ref.on("changed.jstree", function(_, data) {
         var odfTreePath;
