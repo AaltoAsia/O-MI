@@ -52,3 +52,29 @@ html {
     color:#1E90FF; /* dodgerblue */
 }
 
+
+/* Response history modal */
+
+.responseTitle > .btn {
+    margin-left: 2em;
+}
+
+.responseListCollection {
+    align-items: flex-start;
+    display: flex;
+}
+
+.responseList {
+    flex: 0 1;
+    display: flex;
+    flex-flow: column nowrap;
+    min-width: 30rem;
+    margin: 1em 0 1em 1em;
+}
+
+
+.cloneTarget {
+    display: none;
+}
+
+

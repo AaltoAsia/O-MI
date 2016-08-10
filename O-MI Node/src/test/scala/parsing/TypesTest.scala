@@ -53,31 +53,31 @@ class TypesTest extends Specification {
       parse message type response $pResponse
     """
 
-  def e1 = !new ParseError("test error").isInstanceOf[OmiRequest]
+  def e1 = !ParseError("test error").isInstanceOf[OmiRequest]
 
-  def e2 = new ReadRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
+  def e2 = ReadRequest(OdfObjects(), None, None, None, None, None, 0.seconds).isInstanceOf[OmiRequest]
 
-  def e3 = new WriteRequest(10.seconds, OdfObjects()).isInstanceOf[OmiRequest]
+  def e3 = WriteRequest( OdfObjects(), None, 10.seconds).isInstanceOf[OmiRequest]
 
-  def e4 = new SubscriptionRequest(0.seconds, 0.seconds, OdfObjects()).isInstanceOf[OmiRequest]
+  def e4 = SubscriptionRequest(1.seconds, OdfObjects(), None, None, None,  0.seconds).isInstanceOf[OmiRequest]
 
   def e5 = {
-    new ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
+    ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
   }
 
-  def e6 = new CancelRequest(10.seconds, Seq()).isInstanceOf[OmiRequest]
+  def e6 = CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
   
   def e10 = {
-    !new OdfInfoItem(Seq("Objects", "Typestest","t"), Seq()).isInstanceOf[OmiRequest]
+    !  OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OmiRequest]
   }
 
-  def e11 = !new OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
+  def e11 = !OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
   
   def e100 = {
-    new OdfInfoItem(Seq("Ojects", "Typestest", "t"), Seq()).isInstanceOf[OdfNode]
+      OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OdfNode]
   }
 
-  def e101 = new OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
+  def e101 = OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
   
   def e200 = Path("test/test2").toSeq should be equalTo (Path(Seq("test", "test2")))
   
@@ -100,16 +100,16 @@ class TypesTest extends Specification {
   }
   
   def e300 = {
-    val path1 = new Path("test1/test2")
-    val path2 = new Path("test3/test4/test5")
+    val path1 =   Path("test1/test2")
+    val path2 =   Path("test3/test4/test5")
     
-    (path1 / path2).toSeq should be equalTo (new Path("test1/test2/test3/test4/test5").toSeq)
+    (path1 / path2).toSeq should be equalTo (  Path("test1/test2/test3/test4/test5").toSeq)
   }
   
   def e301 = {
-    val path1 = new Path("test1/test2")
+    val path1 =   Path("test1/test2")
     
-    (path1 / "test3/test4/test5").toSeq should be equalTo (new Path("test1/test2/test3/test4/test5").toSeq)
+    (path1 / "test3/test4/test5").toSeq should be equalTo (  Path("test1/test2/test3/test4/test5").toSeq)
   }
 
   val testOdfMsg: NodeSeq ={

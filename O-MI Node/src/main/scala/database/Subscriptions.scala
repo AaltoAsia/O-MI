@@ -24,6 +24,7 @@ import scala.concurrent.duration.Duration
 import org.prevayler._
 import types.OdfTypes.OdfValue
 import types._
+import types.OmiTypes._
 
 
 object IntervalSubOrdering extends Ordering[IntervalSub] {
@@ -64,7 +65,7 @@ case class IntervalSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
-  callback: String,
+  callback: DefinedCallback,
   interval: Duration,
   nextRunTime: Timestamp,
   startTime: Timestamp
@@ -74,8 +75,8 @@ case class EventSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
-  callback: String
-  ) extends SavedSub
+  callback: DefinedCallback
+  ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
 
@@ -185,4 +186,19 @@ case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
     (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 
+case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
+  def executeAndQuery(store: Subs, d: Date): Unit= {
+    store.intervalSubs = store.intervalSubs.filter{ 
+      case IntervalSub(_,_,_,callback: CurrentConnectionCallback,_,_,_) => false
+      case sub : IntervalSub => true
+    }
+  store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{ 
+    subs => 
+      subs.filter{ 
+        case EventSub(_,_,_,callback: CurrentConnectionCallback) => false
+        case sub: EventSub => true
+      }
+  }.toSeq:_*)
+  }
+}
 // Other transactions are in responses/SubscriptionHandler.scala

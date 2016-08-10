@@ -26,7 +26,6 @@ import scala.xml.NodeSeq
 //import akka.http.StatusCode
 
 import akka.actor.ActorRef
-import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
 
@@ -36,12 +35,13 @@ trait ResponseHandler extends OmiRequestHandlerBase{
     * @param response request
     * @return (xml response, HTTP status code)
     */
-  def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={
+  def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
     val ttl = handleTTL(response.ttl)
-    val resultFuture = Future.sequence(response.results.map{ 
-        case OmiResult(_,_,Some(odf)) =>
+    val resultFuture = Future.sequence(response.results.collect{ 
+        case omiResult : OmiResult if omiResult.odf.nonEmpty =>
+        val odf = omiResult.odf.get
         val promiseResult = PromiseResult()
-        val write = WriteRequest( ttl, odf)
+        val write = WriteRequest( odf, None,ttl)
         agentSystem ! PromiseWrite(promiseResult, write)
         val successF = promiseResult.isSuccessful
         successF.recoverWith{
@@ -51,21 +51,20 @@ trait ResponseHandler extends OmiRequestHandlerBase{
           }
 
           val response = successF.map{
-            succ => Results.success 
+            succ => Results.Success()
           }
           response
-        case OmiResult(_,_,None) =>
-          Future.successful(Results.success)
-        
+          //We do not want response request loops between O-MI Nodes
+          /*
+        case omiResult : OmiResult if omiResult.odf.isEmpty =>
+          Future.successful(Results.Success())
+          */
       }.toSeq
     )
 
-  resultFuture.map(results =>
-    xmlFromResults(
-      1.0,
-      results:_*
-    )
-)
+  resultFuture.map{
+    results => ResponseRequest(results.toVector)
+  }
 
   }
 }

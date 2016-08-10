@@ -30,8 +30,6 @@ import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
-import responses.OmiGenerator.xmlFromResults
-import responses.Results
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
@@ -113,7 +111,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
         (name,
         agents.get(name).map{
           agent : AgentInfo => 
-          val write = WriteRequest( ttl, objects) 
+          val write = WriteRequest( objects, None,ttl) 
           (agent, write) 
         })
       }

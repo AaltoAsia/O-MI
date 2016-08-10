@@ -27,7 +27,6 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
 
@@ -39,33 +38,29 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
     * @param _subscription request
     * @return (xml response, HTTP status code)
     */
-  def handleSubscription(_subscription: SubscriptionRequest): Future[NodeSeq] = {
+  def handleSubscription(_subscription: SubscriptionRequest): Future[ResponseRequest] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest( _, interval, _, _, _, _) if interval < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+      case SubscriptionRequest( interval, _, _, _, _, _) if interval < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
         _subscription.copy(interval=Boot.settings.minSubscriptionInterval)
       case s : SubscriptionRequest=> s
     }
     val ttl = handleTTL(subscription.ttl)
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val subFuture: Future[RequestResultType] = (subscriptionManager ? NewSubscription(subscription))
+    val subFuture: Future[OmiResult] = (subscriptionManager ? NewSubscription(subscription))
       .mapTo[Try[Long]]
       .map{
         case Success(id: Long) if _subscription.interval != subscription.interval =>
-          Results.subscription(id.toString,subscription.interval.toSeconds)
+          Results.Subscription(id,Some(subscription.interval))
         case Success(id: Long) =>
-          Results.subscription(id.toString)
+          Results.Subscription(id)
         case Failure(ex) => throw ex
       }.recoverWith{
-      case e: IllegalArgumentException => Future.successful(Results.invalidRequest(e.getMessage()))
+      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(e.getMessage()))
       case e : Throwable => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }
-    subFuture.map{ response =>{
-
-        xmlFromResults(
-          1.0,
-          response)
-
-    }}
+    subFuture.map{ results =>
+      ResponseRequest( Vector(results) )
+    }
   }
 }

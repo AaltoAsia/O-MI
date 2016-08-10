@@ -21,6 +21,8 @@ import responses.{RequestHandler, SubscriptionManager}
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
+import akka.stream._
+import akka.stream.ActorMaterializer
 import testHelpers.Specs2Interface
 import types._
 
@@ -36,16 +38,17 @@ class OmiServiceTest
   with BeforeAfterAll
 {
 
+  implicit override val materializer : ActorMaterializer = ActorMaterializer()(system)
   def actorRefFactory = system
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
   implicit val dbConnection = new TestDB("system-test")
-  val subscriptionHandler = TestActorRef(Props(new SubscriptionManager()))
+  val subscriptionManager = TestActorRef(Props(new SubscriptionManager()))
 
   val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subscriptionHandler),
+      AgentSystem.props(dbConnection, subscriptionManager),
       "agent-system"
   )
-  val requestHandler = new RequestHandler(subscriptionHandler, agentManager)(dbConnection)
+  val requestHandler = new RequestHandler(subscriptionManager, agentManager)(dbConnection)
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
   val localHost = RemoteAddress(InetAddress.getLoopbackAddress)
@@ -150,7 +153,7 @@ class OmiServiceTest
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("OmiParser: Invalid XML, schema failure:")
+        description must startWith("types.ParseError: OmiParser: Invalid XML, schema failure:")
       }
     }
 
@@ -180,7 +183,7 @@ class OmiServiceTest
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("OdfParser: Invalid XML, schema failure:")
+        description must startWith("types.ParseError: OdfParser: Invalid XML, schema failure:")
       }
     }
 
@@ -210,7 +213,7 @@ class OmiServiceTest
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
         val description = resp.\("response").\("result").\("return").\@("description")
-        description === "Such item/s not found."
+        description === "Following O-DF paths not found: Objects/non-existing/PowerConsumption"
       }
     }
 
@@ -232,7 +235,7 @@ class OmiServiceTest
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
         val description = resp.\("response").\("result").\("return").\@("description")
-        description === "A subscription with this id has expired or doesn't exist"
+        description === "Following requestIDs not found: 9999."
       }
     }
 
