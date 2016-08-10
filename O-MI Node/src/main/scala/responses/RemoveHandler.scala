@@ -23,22 +23,24 @@ import scala.util.{Failure, Success}
 import database._
 import types.OdfTypes._
 import types._
+import http.{ActorSystemContext, Storages}
 
 trait RemoveHandler extends OmiRequestHandlerBase{
 
+  import nc._
   def handlePathRemove(parentPath: Path): Boolean = {
-    val objects = SingleStores.hierarchyStore execute GetTree()
+    val objects = singleStores.hierarchyStore execute GetTree()
     val node = objects.get(parentPath)
     node match {
       case Some(_node) => {
 
         val leafs = getInfoItems(_node).map(_.path)
 
-        SingleStores.hierarchyStore execute TreeRemovePath(parentPath)
+        singleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
         leafs.foreach{path =>
           log.info(s"removing $path")
-          SingleStores.latestStore execute EraseSensorData(path)
+          singleStores.latestStore execute EraseSensorData(path)
         }
 
         val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath)

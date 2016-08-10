@@ -92,7 +92,7 @@ trait AuthApi {
 }
 
 trait AuthApiProvider extends AuthorizationExtension {
-
+  val singleStores: SingleStores
 
   private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()
 
@@ -110,7 +110,7 @@ trait AuthApiProvider extends AuthorizationExtension {
     extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: RequestWrapper) =>
 
       // for checking if path is infoitem or object
-      val currentTree = SingleStores.hierarchyStore execute GetTree()
+      val currentTree = singleStores.hierarchyStore execute GetTree()
 
       // helper function
       def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {

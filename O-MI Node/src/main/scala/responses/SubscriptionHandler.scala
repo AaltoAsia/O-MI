@@ -29,11 +29,11 @@ import akka.pattern.ask
 import akka.util.Timeout
 import types.OmiTypes._
 import types._
+import http.{ActorSystemContext, Actors, Settings}
 
 trait SubscriptionHandler extends OmiRequestHandlerBase{
-  import http.Boot
-  def subscriptionManager : ActorRef
 
+  import nc._
   /** Method for handling SubscriptionRequest.
     * @param _subscription request
     * @return (xml response, HTTP status code)
@@ -41,8 +41,8 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
   def handleSubscription(_subscription: SubscriptionRequest): Future[ResponseRequest] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest( interval, _, _, _, _, _) if interval < Boot.settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
-        _subscription.copy(interval=Boot.settings.minSubscriptionInterval)
+      case SubscriptionRequest(  interval, _, _, _, _,  _) if interval < settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+        _subscription.copy(interval= settings.minSubscriptionInterval)
       case s : SubscriptionRequest=> s
     }
     val ttl = handleTTL(subscription.ttl)

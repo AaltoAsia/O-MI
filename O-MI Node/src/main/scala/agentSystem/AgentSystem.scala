@@ -23,23 +23,30 @@ import akka.util.Timeout
 import com.typesafe.config.Config
 import database.DB
 import http.CLICmds._
+import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
 import types.Path
+import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
 
 object AgentSystem {
-  def props(dbobject: DB ,subHandler: ActorRef): Props = Props(
-  {val as = new AgentSystem(dbobject,subHandler)
+  def props()(
+  implicit nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
+      ): Props = Props(
+  {val as = new AgentSystem()
   as.start()
   as})
 }
-class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
-  extends BaseAgentSystem 
+class AgentSystem(
+  implicit val nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
+  ) extends BaseAgentSystem 
   with InternalAgentLoader
   with InternalAgentManager
   with ResponsibleAgentManager
   with DBPusher{
+  import nc._
+  protected[this] def settings: AgentSystemConfigExtension  = nc.settings
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
-  protected[this] val settings = http.Boot.settings
+  //protected[this] val settings = http.Boot.settings
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
@@ -75,4 +82,7 @@ abstract class BaseAgentSystem extends Actor with ActorLogging{
   protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
   protected[this] def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
+  implicit val nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
+
+  import nc._
 }

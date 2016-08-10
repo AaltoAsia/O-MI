@@ -28,9 +28,10 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import types.OmiTypes._
 import types._
+import http.{ActorSystemContext, Actors}
 
 trait ResponseHandler extends OmiRequestHandlerBase{
-  def agentSystem : ActorRef
+  import nc._
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)

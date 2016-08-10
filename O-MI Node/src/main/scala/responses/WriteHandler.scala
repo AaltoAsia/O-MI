@@ -25,9 +25,10 @@ import scala.xml.NodeSeq
 import agentSystem.{PromiseResult, PromiseWrite, SuccessfulWrite}
 import akka.actor.ActorRef
 import types.OmiTypes._
+import http.{ActorSystemContext, Actors}
 
 trait WriteHandler extends OmiRequestHandlerBase{
-  def agentSystem : ActorRef
+  import nc._
   /** Method for handling WriteRequest.
     * @param write request
     * @return (xml response, HTTP status code)

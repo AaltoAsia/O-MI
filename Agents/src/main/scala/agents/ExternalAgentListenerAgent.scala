@@ -26,7 +26,7 @@ import akka.io.{IO, Tcp}
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import http.Authorization.ExtensibleAuthorization
-import http.IpAuthorization
+import http.{OmiConfig, IpAuthorization, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
@@ -49,6 +49,7 @@ class ExternalAgentListener(override val config: Config)
   {
   class ExtAgentAuthorization extends {
     override val log = LoggerFactory.getLogger(classOf[ExternalAgentListener])
+    val settings :OmiConfigExtension = OmiConfig(actorSystem)
   } with ExtensibleAuthorization with IpAuthorization
 
   private val authorization = new ExtAgentAuthorization

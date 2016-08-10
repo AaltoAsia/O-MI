@@ -41,9 +41,10 @@ import akka.http.scaladsl.model.ws
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.{RequestHandler, RemoveSubscription, CallbackHandlers}
+import responses.{RequestHandler, RemoveSubscription, CallbackHandler}
 import types.OmiTypes._
 import types.{ParseError, Path}
+import database.SingleStores
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -56,18 +57,16 @@ trait OmiServiceAuthorization
 
 /**
  * Actor that handles incoming http messages
- * @param reqHandler ActorRef that is used in subscription handling
  */
-class OmiServiceImpl(reqHandler: RequestHandler, val subscriptionManager: ActorRef)(implicit val system: ActorSystem)
+class OmiServiceImpl()(implicit val nc: OmiNodeContext)
      extends {
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
-
+  val settings : OmiConfigExtension = nc.settings
+  val singleStores : SingleStores = nc.singleStores
   registerApi(new AuthAPIService())
 
-  //Used for O-MI subscriptions
-  val requestHandler = reqHandler
 
 }
 
@@ -81,10 +80,9 @@ trait OmiService
      with OmiServiceAuthorization
      {
 
-  val system : ActorSystem
-  import system.dispatcher
+  implicit val nc: OmiNodeContext
+  import nc._
   def log: org.slf4j.Logger
-  val requestHandler: RequestHandler
 
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
@@ -194,7 +192,6 @@ trait OmiService
         case Success(req: RequestWrapper) => { // Authorized
            req.parsed match {
             case Right(requests) =>
-
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
@@ -203,23 +200,23 @@ trait OmiService
                 case Success(request : OmiRequest) =>
                   request.callback match {
                     case None  =>
-                      requestHandler.handleRequest(request)(system)
+                      requestHandler.handleRequest(request)
                     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
                       Future.successful( Responses.InvalidCallback("0", Some( "callback 0 is only supported with Websocket connection. Chance server url to start with 'ws:'" ) ) )
                     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
                       val modifiedRequest = request.withCallback(  currentConnectionCallback )
-                      requestHandler.handleRequest(modifiedRequest)(system)
+                      requestHandler.handleRequest(modifiedRequest)
                     case Some( RawCallback(address))  =>
                       Callback.tryHTTPUri(address).map{ 
                         httpCallback => 
                         val modifiedRequest =  request.withCallback( Some( HTTPCallback( httpCallback ) ) )
-                        requestHandler.handleRequest(modifiedRequest)(system)
+                        requestHandler.handleRequest(modifiedRequest)
                       }.recover{ 
                         case throwable : Throwable =>
                         Future.successful( Responses.InvalidCallback(address, Some( throwable.getMessage() ) ) )
                       }.get
                     case Some(definedCallback : DefinedCallback ) => 
-                      requestHandler.handleRequest(request)(system)
+                      requestHandler.handleRequest(request)
                   }
               }
             case Left(errors) => { // Parsing errors found
@@ -307,11 +304,7 @@ trait OmiService
  * This trait implements websocket support for O-MI message handling using akka-http
  */
 trait WebSocketOMISupport { self: OmiService =>
-  import self.system.dispatcher
-  val system : ActorSystem 
-  implicit val materializer : ActorMaterializer = ActorMaterializer()(system)
-  def subscriptionManager : ActorRef
-
+  import self.nc._
   type InSink = Sink[ws.Message, _]
   type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 
@@ -384,7 +377,7 @@ trait WebSocketOMISupport { self: OmiService =>
     }
     val connectionIdentifier = futureQueue.hashCode
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
-    CallbackHandlers.addCurrentConnection( connectionIdentifier, sendHandler)
+    callbackHandler.addCurrentConnection( connectionIdentifier, sendHandler)
     def createZeroCallback = Some(CurrentConnectionCallback(connectionIdentifier)) 
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{

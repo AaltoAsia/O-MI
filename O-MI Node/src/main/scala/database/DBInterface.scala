@@ -19,8 +19,9 @@ import java.sql.Timestamp
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 
+import http.OmiConfigExtension
 import akka.actor.ActorSystem
-import http.Boot.settings
+import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
 import parsing.xmlGen.xmlTypes.MetaData
 import slick.driver.H2Driver.api._
@@ -28,6 +29,7 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.OmiReturn
 import types.Path
+import http.OmiNodeContext
 
 
 package object database {
@@ -72,10 +74,10 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
 /**
  * Contains all stores that requires only one instance for interfacing
  */
-object SingleStores {
-  val journalFileSizeLimit = settings.maxJournalSizeBytes
+class SingleStores(implicit val settings: OmiConfigExtension) {
   private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
+      val journalFileSizeLimit = settings.maxJournalSizeBytes
       val factory = new PrevaylerFactory[P]()
 
       val directory = new File(settings.journalsDirectory++s"/$name")
@@ -194,12 +196,13 @@ object SingleStores {
  * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
-class DatabaseConnection(implicit val system: ActorSystem) extends DBReadWrite with DBBase with DB {
+class DatabaseConnection()(implicit val nodeContext: OmiNodeContext) extends DBReadWrite with DBBase with DB {
 
+  import nodeContext.system
   val db = Database.forConfig(dbConfigName)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props( this), "db-maintainer")
+  val dbmaintainer = system.actorOf(DBMaintainer.props(nodeContext), "db-maintainer")
 
   def destroy(): Unit = {
      dropDB()
@@ -224,20 +227,22 @@ class DatabaseConnection(implicit val system: ActorSystem) extends DBReadWrite w
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(val name:String = "") extends DBReadWrite with DBBase with DB
+class TestDB(val name:String = "")(implicit val nodeContext: OmiNodeContext ) extends DBReadWrite with DBBase with DB
 {
-  implicit val system = ActorSystem()
-  println("Creating TestDB: " + name)
-  val db = Database.forURL(s"jdbc:h2:mem:$name;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver",
+  import nodeContext.system
+  private val log = LoggerFactory.getLogger("TestDB")
+  log.debug("Creating TestDB: " + name)
+  val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
     keepAliveConnection=true)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props( this ), "db-maintainer")
+  val dbmaintainer = system.actorOf(DBMaintainer.props( nodeContext), "db-maintainer")
   /**
   * Should be called after tests.
   */
   def destroy(): Unit = {
-    println("Removing TestDB: " + name)
+    system.stop(dbmaintainer)
+    log.debug("Removing TestDB: " + name)
     db.close()
   }
 }
@@ -285,6 +290,4 @@ trait DB {
    * @param path Parent path to be removed.
    */
   def remove(path: Path): Future[Int]
-
-
 }
