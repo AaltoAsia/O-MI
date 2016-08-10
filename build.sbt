@@ -108,9 +108,19 @@ lazy val root = (project in file(".")).
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
     ///////////////////////////////////////////////////////////////////////
+
+//      bashScriptExtraDefines += """java io.warp10.word.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${app_home}/../configs/conf-standalone.template -o ${app_home}/../configs/conf-standalone.conf >> ${app_home}/../configs/initial.tokens""",
+      bashScriptExtraDefines += """"${app_home}/../database/warp10/bin/warp10-standalone.bootstrap"""",
+      bashScriptExtraDefines += """"${app_home}/../database/warp10/bin/warp10-standalone.init" start""",
+      bashScriptExtraDefines += """readtoken=$(grep -oP 'read\":\{"token":"\K[^"]*' "${app_home}/../database/warp10/etc/initial.tokens")""",
+      bashScriptExtraDefines += """sed 's:read-token\s*=\s*".*":read-token = "'$readtoken'":' "${app_home}/../configs/application.conf" -i""",
+      bashScriptExtraDefines += """writetoken=$(grep -oP 'write\":\{"token":"\K[^"]*' "${app_home}/../database/warp10/etc/initial.tokens")""",
+      bashScriptExtraDefines += """sed 's:write-token\s*=\s*".*":write-token = "'$writetoken'":' "${app_home}/../configs/application.conf" -i""",
+      bashScriptExtraDefines += """rm "${app_home}/../database/warp10/etc/initial.tokens"""",
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
-      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NOD:q
+E_HOME%\\configs\\application.conf""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
 
     ////////////////////////////
