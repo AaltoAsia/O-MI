@@ -19,12 +19,14 @@ import java.util.jar.JarFile
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-import agentSystem.AgentTypes._
 import akka.actor.{Props, ActorRef}
 import akka.pattern.ask
+import akka.util.Timeout
+
 import com.typesafe.config.Config
 import types.Path
 
@@ -68,38 +70,21 @@ trait InternalAgentLoader extends BaseAgentSystem {
     name : AgentName,
     classname : String,
     config : Config,
+    language : Option[Language],
     ownedPaths: Seq[Path]
-  ) : Unit = Try {
-      log.info("Instantiating agent: " + name + " of class " + classname)
+  ) : Unit = {
       val classLoader           = Thread.currentThread.getContextClassLoader
-      val actorClazz            = classLoader.loadClass(classname)
-      val objectClazz           = classLoader.loadClass(classname + "$")
-      val objectInterface       = classOf[PropsCreator]
-      val agentInterface        = classOf[InternalAgent]
-      val responsibleInterface  = classOf[ResponsibleInternalAgent]
-      actorClazz match {
-        //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
-        case actorClass if agentInterface.isAssignableFrom(actorClass) =>
-          objectClazz match { 
-            case objectClass if objectInterface.isAssignableFrom(objectClass) =>
-              //Static field MODULE$ contains Object it self
-              //Method get is used to get value of field for a Object.
-              //Because field MODULE$ is static, it return  the companion object recardles of argument
-              //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
-              val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
-              //Get props and create agent
-              val props = propsCreator.props(config).props
-              props.actorClass match {
-                case clazz if clazz == actorClazz =>
-                  val agent = context.actorOf( props, name.toString )
-                  startAgent(agent)
-                case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
-              }
-            case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
-          }
-          case clazz: Class[_] => throw new InternalAgentNotImplemented(clazz)
+      val initialization = language match{
+        case Some( Scala()) => scalaAgentInit(name, classname, config, ownedPaths)
+        case Some( Java()) => javaAgentInit(name, classname, config, ownedPaths)
+        case None => //Lets try to figure it out ourselves
+        scalaAgentInit(name, classname, config, ownedPaths).recoverWith{ 
+          case _ =>
+          javaAgentInit(name, classname, config, ownedPaths)
+        }
+        case Some( Unknown( lang ) ) =>
       }
-    } match {
+    initialization match {
       case Success(startF: Future[ActorRef]) => 
         startF.onSuccess{ 
           case agentRef: ActorRef =>
@@ -117,19 +102,88 @@ trait InternalAgentLoader extends BaseAgentSystem {
         log.warning(s"Classloading failed. Could not load: $classname. Received $e")
       case Failure(e:ClassNotFoundException ) =>
         log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+      case Failure( e:NoSuchMethodException ) => 
+        log.warning(s"Class $classname did not have method props. Received $e")
       case Failure(e: Throwable) =>
         log.warning(s"Class $classname could not be loaded or created. Received $e")
         log.warning(e.getStackTrace.mkString("\n"))
     }
+  }
     
+  private def scalaAgentInit(
+    name : AgentName,
+    classname : String,
+    config : Config,
+    ownedPaths: Seq[Path]
+  ) = Try{
+      log.info("Instantiating agent: " + name + " of class " + classname)
+      val classLoader           = Thread.currentThread.getContextClassLoader
+      val actorClazz            = classLoader.loadClass(classname)
+      val objectClazz           = classLoader.loadClass(classname + "$")
+      val objectInterface       = classOf[PropsCreator]
+      val agentInterface        = classOf[ScalaInternalAgent]
+      val responsibleInterface  = classOf[ResponsibleInternalAgent]
+      actorClazz match {
+        //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
+        case actorClass if agentInterface.isAssignableFrom(actorClass) =>
+          objectClazz match { 
+            case objectClass if objectInterface.isAssignableFrom(objectClass) =>
+              //Static field MODULE$ contains Object it self
+              //Method get is used to get value of field for a Object.
+              //Because field MODULE$ is static, it return  the companion object recardles of argument
+              //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
+              val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
+              //Get props and create agent
+              val props = propsCreator.props(config)
+              props.actorClass match {
+                case clazz if clazz == actorClazz =>
+                  val agent = context.actorOf( props, name.toString )
+                  startAgent(agent)
+                case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
+              }
+            case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
+          }
+          case clazz: Class[_] => throw new InternalAgentNotImplemented(clazz)
+      }
+  
+  }
+  private def javaAgentInit(
+    name : AgentName,
+    classname : String,
+    config : Config,
+    ownedPaths: Seq[Path]
+  ) = Try{
+    log.info("Instantiating agent: " + name + " of class " + classname)
+    val classLoader           = Thread.currentThread.getContextClassLoader
+    val actorClazz            = classLoader.loadClass(classname)
+    val creatorInterface       = classOf[PropsCreator]
+    val agentInterface        = classOf[JavaInternalAgent]
+    val responsibleInterface  = classOf[ResponsibleInternalAgent]
+    actorClazz match {
+        //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
+        case actorClass if agentInterface.isAssignableFrom(actorClass) => //&& 
+                         // creatorInterface.isAssignableFrom(actorClass)) =>
+          //Get props and create agent
+          val method = actorClass.getDeclaredMethod("props",classOf[Config])
+          val props : Props = method.invoke(null,config).asInstanceOf[Props]
+          props.actorClass match {
+            case clazz if clazz == actorClazz =>
+              val agent = context.actorOf( props, name.toString )
+              startAgent(agent)
+            case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
+          }
+        case clazz: Class[_] if !creatorInterface.isAssignableFrom(clazz) =>
+          throw new PropsCreatorNotImplemented(clazz)
+        case clazz: Class[_] if !agentInterface.isAssignableFrom(clazz) => 
+          throw new InternalAgentNotImplemented(clazz)
+    }
+  }
   
 
   protected def startAgent(agent: ActorRef) = { 
-    val timeout = settings.internalAgentsStartTimout
-    val startF = ask(agent,Start())(timeout)
-    val resultF = startF.flatMap{ 
-      case result : Try[InternalAgentSuccess @unchecked] =>  Future.fromTry(result) // internal type is unchecked
-    }.map{
+    implicit val timeout = settings.internalAgentsStartTimout
+    val startF = (agent ? Start())(timeout).mapTo[InternalAgentSuccess]
+    val resultF = startF.map{
       case success : InternalAgentSuccess => agent
     }
     resultF.onFailure{ 
@@ -139,7 +193,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     resultF
   }
   protected def loadAndStart(configEntry: AgentConfigEntry) : Unit =
-    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.ownedPaths)
+    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.language, configEntry.ownedPaths)
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.

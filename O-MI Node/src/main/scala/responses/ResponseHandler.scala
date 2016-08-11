@@ -19,13 +19,17 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import agentSystem.{PromiseResult, PromiseWrite}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
-
 import akka.actor.ActorRef
+import akka.util.Timeout
+import akka.pattern.ask
+import parsing.xmlGen.xmlTypes.RequestResultType
+
+
+import agentSystem._
 import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
@@ -38,22 +42,27 @@ trait ResponseHandler extends OmiRequestHandlerBase{
     */
   def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={
     val ttl = handleTTL(response.ttl)
-    val resultFuture = Future.sequence(response.results.map{ 
+    implicit val timeout = Timeout(ttl)
+    val resultFuture = Future.sequence(
+      response.results.map{ 
         case OmiResult(_,_,Some(odf)) =>
-        val promiseResult = PromiseResult()
+
         val write = WriteRequest( ttl, odf)
-        agentSystem ! PromiseWrite(promiseResult, write)
-        val successF = promiseResult.isSuccessful
-        successF.recoverWith{
-          case e : Throwable=>
+        val result = (agentSystem ? ResponsibilityRequest("ResponseHandler", write)).mapTo[ResponsibleAgentResponse]
+        result.recoverWith{
+          case e : Throwable =>
             log.error(e, "Failure when writing")
             Future.failed(e)
-          }
+        }
 
-          val response = successF.map{
-            succ => Results.success 
-          }
-          response
+
+        result.onSuccess{ case succ => log.info( succ.toString) }
+        val response : Future[RequestResultType]= result.map{
+          case SuccessfulWrite(_) => Results.success 
+          case FailedWrite(paths, reasons) => Results.success 
+          case MixedWrite(successfulPaths, failed)=> Results.success 
+        }
+        response
         case OmiResult(_,_,None) =>
           Future.successful(Results.success)
         

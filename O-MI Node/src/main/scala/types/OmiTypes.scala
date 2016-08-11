@@ -44,6 +44,14 @@ sealed trait OmiRequest extends RequestWrapper {
   def parsed: OmiParseResult = Right(asJavaIterable(collection.Iterable(this)))
   def unwrapped: Try[OmiRequest] = Success(this)
   def rawRequest: String = asXML.toString
+  final def handleTTL : FiniteDuration = if( ttl.isFinite ) {
+        if(ttl.toSeconds != 0)
+          FiniteDuration(ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
 }
 sealed trait PermissiveRequest
 sealed trait OdfRequest {

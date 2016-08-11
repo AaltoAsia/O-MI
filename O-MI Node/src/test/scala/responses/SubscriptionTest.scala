@@ -1,7 +1,9 @@
 package responses
 
-import agentSystem.{PromiseResult, PromiseWrite, AgentSystem, DBPusher}
+import agentSystem.{AgentSystem, DBPusher}
+import akka.util.Timeout
 import akka.testkit.EventFilter
+import akka.pattern.ask
 import akka.testkit.TestEvent.{UnMute, Mute}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.execute.Result
@@ -19,6 +21,7 @@ import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
 
 import akka.actor._
+import agentSystem.ResponsibilityRequest
 import com.typesafe.config.ConfigFactory
 import database._
 import types.OmiTypes._
@@ -276,11 +279,11 @@ case class OdfValue(
   //add new value easily
   def addValue(path: String, nv: Vector[OdfValue]): Unit = {
     val pp = Path("Objects/SubscriptionTest/")
-    val promiseResult = PromiseResult()
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest(0 seconds, odf)
-    agentManager ! PromiseWrite(promiseResult, writeReq)
-    Await.ready(promiseResult.futures, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
+    implicit val timeout = Timeout( 10 seconds )
+    val future = agentManager ? ResponsibilityRequest("Test", writeReq)
+    Await.ready(future, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
 
   //create new odfValue value easily

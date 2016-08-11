@@ -79,9 +79,8 @@ trait Starter {
         ))
       
       val write = WriteRequest( 60  seconds, objects)
-      val promiseResult = PromiseResult()
-      agentSystem ! PromiseWrite( promiseResult, write )
-      val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
+      implicit val timeout = Timeout( 60 seconds)
+      val future : Future[ResponsibleAgentResponse]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponsibleAgentResponse]
       future.onSuccess{
         case _=>
         system.log.info("O-MI InputPusher system working.")

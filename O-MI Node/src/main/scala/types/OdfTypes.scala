@@ -40,6 +40,7 @@ sealed trait OdfNode {
   def description: Option[OdfDescription]
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path): Option[OdfNode]
+  def createAncestors : OdfObjects = OdfTypes.createAncestors(this)
 }
 
 /** Class presenting O-DF Objects structure*/

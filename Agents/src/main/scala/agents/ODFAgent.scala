@@ -1,13 +1,14 @@
 package agents
 
-import agentSystem.AgentTypes._ 
 import agentSystem._ 
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.actor.{Cancellable, Props}
 import parsing.OdfParser
 import types.Path
 import types.Path._
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
-import akka.actor.{Cancellable, Props}
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
@@ -22,12 +23,12 @@ import java.io.File
 import com.typesafe.config.Config
 
 object ODFAgent extends PropsCreator{
-  def props(config: Config) : InternalAgentProps = InternalAgentProps( new ODFAgent(config) )
+  def props(config: Config) : Props = Props( new ODFAgent(config) )
 }
 // Scala XML contains also parsing package
-class ODFAgent( override val config: Config) extends InternalAgent {
-  protected val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
-	protected val odfQueue : MutableQueue[OdfObjects]= MutableQueue{
+class ODFAgent( override val config: Config) extends ScalaInternalAgent {
+   val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
+	 val odfQueue : MutableQueue[OdfObjects]= MutableQueue{
       val file =  new File(config.getString("file"))
       if( file.exists() && file.canRead() ){
         val xml = XML.loadFile(file)
@@ -43,29 +44,32 @@ class ODFAgent( override val config: Config) extends InternalAgent {
             log.warning(s"File $config did not exists or could not read it. $name could not be configured.")
             throw CommandFailed("ParserErrer, view log.")
       }
-    }
+  }
+  
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
-	protected val rnd: Random = new Random()
-  protected def date = new java.util.Date();
+	
+  val rnd: Random = new Random()
+  def date = new java.util.Date();
+
   private val  updateSchelude : MutableQueue[Cancellable] = MutableQueue.empty
-  protected def start = Try{
+   def start = {
     // Schelude update and save job, for stopping
     // Will send Update message to self every interval
     updateSchelude.enqueue(context.system.scheduler.schedule(
       Duration(0, SECONDS),
       interval,
       self,
-      Update
+      Update()
     ))
     CommandSuccessful()
   }
 
-  protected def update() : Unit = {
+   def update() : Unit = {
+    log.debug(s"$name pushing data.")
     odfQueue.dequeueFirst{o: OdfObjects => true}
     .foreach{
       objects =>
-      val promiseResult = PromiseResult()
       val infoItems = getInfoItems(objects)
 
       // Collect metadata 
@@ -91,21 +95,31 @@ class ODFAgent( override val config: Config) extends InternalAgent {
       val allNodes = updated ++ objectsWithMetaData
       val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
       
+      implicit val timeout = Timeout(interval)
       val write = WriteRequest( interval, newObjects )
-      context.parent ! PromiseWrite( promiseResult, write ) 
-      promiseResult.isSuccessful.onSuccess{
+      val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]
+      result.onSuccess{
         //Check if failed promises
         case _ =>
         log.debug(s"$name pushed data successfully.")
+      }
+      result.onFailure{
+        //Check if failed promises
+        case _ =>
+        log.debug(s"$name failed pushing data.")
       }
       odfQueue.enqueue(newObjects)
     } 
   }
 
-  override protected def receiver={
-    case Update => update
+  override  def receive  = {
+    case Start() => sender() ! start 
+    case Restart() => sender() ! restart 
+    case Stop() => sender() ! stop 
+    case Update() => update()
   }
-  protected def stop = Try{updateSchelude.dequeueFirst{ j => true } match{
+   def stop = {
+    updateSchelude.dequeueFirst{ j => true } match{
       //If agent has scheluded update, cancel job
       case Some(job) =>
       job.cancel() 

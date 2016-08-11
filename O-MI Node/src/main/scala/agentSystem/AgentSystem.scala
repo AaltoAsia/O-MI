@@ -20,6 +20,9 @@ import scala.language.postfixOps
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
+import akka.actor.OneForOneStrategy
+import akka.actor.SupervisorStrategy
+import akka.actor.SupervisorStrategy._
 import com.typesafe.config.Config
 import database.DB
 import http.CLICmds._
@@ -45,7 +48,7 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
     case  stop: StopAgentCmd  => handleStop( stop)
     case  restart: ReStartAgentCmd  => handleRestart( restart )
     case ListAgentsCmd() => sender() ! agents.values.toVector
-    case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)  
+    case ResponsibilityRequest(senderName, write: WriteRequest ) => handleWrite(senderName, write)  
   }  
 }
 
@@ -59,7 +62,8 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
     name:       AgentName,
     classname:  String,
     config:     Config,
-    ownedPaths: Seq[Path]
+    ownedPaths: Seq[Path],
+    language:   Option[Language]
   ) extends AgentInfoBase
   case class AgentInfo(
     name:       AgentName,
@@ -75,4 +79,15 @@ abstract class BaseAgentSystem extends Actor with ActorLogging{
   protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
   protected[this] def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      case fail: StartFailed => 
+        SupervisorStrategy.Stop
+      case fail: InternalAgentFailure => 
+        log.warning( "InternalAgent failure: " + sender().path.name )
+        SupervisorStrategy.Restart
+      case t =>
+        log.warning( "Child: " + sender().path.name )
+        super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
+    }
 }

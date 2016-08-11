@@ -40,8 +40,8 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
   trait TestManager extends BaseAgentSystem with ResponsibleAgentManager{
     protected[this] val settings = http.Boot.settings
     def receive : Actor.Receive = {
-      case ListAgentsCmd() => sender() ! agents.values.toSeq
-      case PromiseWrite(result: PromiseResult, write: WriteRequest) => handleWrite(result,write)
+      case ListAgentsCmd() => sender() ? agents.values.toSeq
+      case ResponsibilityRequest( senderName: String, write: WriteRequest) => handleWrite(senderName,write)
     }
   }
   class TestSuccessManager(paths: Vector[Path ],  testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])  extends TestManager{
@@ -107,9 +107,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
         )
       ))
     )
-    val promiseResult = PromiseResult()
-    managerRef ! PromiseWrite(promiseResult, write)
-    val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}
+    
+    val successF : Future[ResponsibleAgentResponse]= (managerRef ? ResponsibilityRequest(name, write)
+      ).mapTo[ResponsibleAgentResponse]
     successF must beEqualTo(SuccessfulWrite(_paths)).await(0, timeoutDuration) 
   }
   def ownedWriteFailTest = new Actorstest(AS){
@@ -136,9 +136,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
         )
       ))
     )
-    val promiseResult = PromiseResult()
-    managerRef ! PromiseWrite(promiseResult, write)
-    val successF = promiseResult.isSuccessful
+    
+    val successF : Future[ResponsibleAgentResponse] =( managerRef ? ResponsibilityRequest(name, write)
+    ).mapTo[ResponsibleAgentResponse]
     successF must throwAn(new Exception("Test failure")).await(0, timeoutDuration)
 
   }
@@ -164,9 +164,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
         )
       ))
     )
-    val promiseResult = PromiseResult()
-    managerRef ! PromiseWrite(promiseResult, write)
-    val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}
+    
+    val successF : Future[ResponsibleAgentResponse]= (managerRef ? ResponsibilityRequest(name, write)
+      ).mapTo[ResponsibleAgentResponse]
     successF must beEqualTo(SuccessfulWrite(paths)).await(0, timeoutDuration)
   }
   def notOwnedWriteFailTest = new Actorstest(AS){
@@ -190,12 +190,10 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
         )
       ))
     )
-    val promiseResult = PromiseResult()
-    managerRef ! PromiseWrite(promiseResult, write)
-    val successF = promiseResult.isSuccessful
+    
+    val successF : Future[ResponsibleAgentResponse] = (managerRef ? ResponsibilityRequest(name, write)
+      ).mapTo[ResponsibleAgentResponse]
     successF must throwAn(new Exception("Test failure")).await(0, timeoutDuration)
-  }
-  def test = new Actorstest(AS){
   }
 }
 
