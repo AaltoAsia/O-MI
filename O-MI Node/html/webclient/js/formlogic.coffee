@@ -262,9 +262,7 @@ formLogicExt = ($, WebOmi) ->
 
     # Move "Latest subscription" and "Older subscriptions"
     moveHistoryHeaders = (latestDom) ->
-      #latestH = consts.callbackResponseHistoryModal.find '.latestSubHeader'
       olderH = consts.callbackResponseHistoryModal.find '.olderSubsHeader'
-      #latestDom.before latestH
       latestDom.after olderH
 
     createHistory = (requestID) ->
@@ -285,6 +283,7 @@ formLogicExt = ($, WebOmi) ->
           when 2 then "success" # 2xx
           when 3 then "warning" # 3xx
           when 4 then "danger"  # 4xx
+        .addClass "respRet"
         .append($ "<th/>"
           .text count)
         .append($ "<th>returnCode</th>")

@@ -264,7 +264,7 @@
             case 4:
               return "danger";
           }
-        })()).append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode)).tooltip({
+        })()).addClass("respRet").append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode)).tooltip({
           title: "click to show the XML"
         }).on('click', function() {
           WebOmi.formLogic.setResponse(responseString, function() {

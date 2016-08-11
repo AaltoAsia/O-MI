@@ -124,3 +124,12 @@ html {
     100% { background-color: none;  }
 
 }
+
+.callbackResponseHistory .tooltip-inner {
+    word-break: break-all;
+}
+
+/* response return code row that can be clicked */
+tr.respRet{
+    cursor: pointer;
+}
