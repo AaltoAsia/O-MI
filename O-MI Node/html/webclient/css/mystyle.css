@@ -59,17 +59,28 @@ html {
     margin-left: 2em;
 }
 
+/* FOR VERTICAL SUB HISTORY
+.callbackResponseHistory .modal-body {
+    overflow:scroll;
+}
+*/
+
+/*
 .responseListCollection {
     align-items: flex-start;
     display: flex;
 }
+*/
 
 .responseList {
+    /*
     flex: 0 1;
     display: flex;
     flex-flow: column nowrap;
-    min-width: 30rem;
     margin: 1em 0 1em 1em;
+    */
+    margin: 3rem 2rem 6rem 2rem;
+    min-width: 30rem;
 }
 
 

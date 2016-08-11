@@ -260,8 +260,16 @@ formLogicExt = ($, WebOmi) ->
           # readjusts the position because of size change (see modal docs)
           consts.callbackResponseHistoryModal.modal 'handleUpdate'
 
+    # Move "Latest subscription" and "Older subscriptions"
+    moveHistoryHeaders = (latestDom) ->
+      #latestH = consts.callbackResponseHistoryModal.find '.latestSubHeader'
+      olderH = consts.callbackResponseHistoryModal.find '.olderSubsHeader'
+      #latestDom.before latestH
+      latestDom.after olderH
+
     createHistory = (requestID) ->
       newList = cloneElem consts.responseListCloneTarget
+      moveHistoryHeaders newList
       newList
         .removeClass "cloneTarget"
         .show()
@@ -307,10 +315,10 @@ formLogicExt = ($, WebOmi) ->
               title: pathValue.path
           )
           .append($ "<td/>"
-            .text pathValue.stringValue
             .tooltip
               #container: "body"
               title: pathValue.value.attributes.dateTime.value
+            .append($("<code/>").text pathValue.stringValue)
           )
         row
 

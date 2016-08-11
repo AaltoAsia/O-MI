@@ -112,7 +112,7 @@
       }
     };
     my.handleSubscriptionHistory = function(responseString) {
-      var addHistory, cbSub, cloneElem, createHistory, createShortenedPath, getPath, getPathValues, getShortenedPath, htmlformat, info, infoItemPathValues, infoitems, insertToTrie, maybeRequestID, omi, pathPrefixTrie, pathValues, ref, requestID, response, returnStatus;
+      var addHistory, cbSub, cloneElem, createHistory, createShortenedPath, getPath, getPathValues, getShortenedPath, htmlformat, info, infoItemPathValues, infoitems, insertToTrie, maybeRequestID, moveHistoryHeaders, omi, pathPrefixTrie, pathValues, ref, requestID, response, returnStatus;
       omi = WebOmi.omi;
       response = omi.parseXml(responseString);
       maybeRequestID = Maybe(omi.evaluateXPath(response, "//omi:requestID/text()")[0]);
@@ -240,9 +240,15 @@
           });
         });
       };
+      moveHistoryHeaders = function(latestDom) {
+        var olderH;
+        olderH = consts.callbackResponseHistoryModal.find('.olderSubsHeader');
+        return latestDom.after(olderH);
+      };
       createHistory = function(requestID) {
         var newList;
         newList = cloneElem(consts.responseListCloneTarget);
+        moveHistoryHeaders(newList);
         newList.removeClass("cloneTarget").show();
         newList.find('.requestID').text(requestID);
         return newList;
@@ -280,9 +286,9 @@
           row = $("<tr/>").append($("<td/>")).append($("<td/>").text(pathValue.shortPath).tooltip({
             container: consts.callbackResponseHistoryModal,
             title: pathValue.path
-          })).append($("<td/>").text(pathValue.stringValue).tooltip({
+          })).append($("<td/>").tooltip({
             title: pathValue.value.attributes.dateTime.value
-          }));
+          }).append($("<code/>").text(pathValue.stringValue)));
           results.push(row);
         }
         return results;
