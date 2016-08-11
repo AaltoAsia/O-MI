@@ -276,8 +276,8 @@ constsExt = ($, parent, util) ->
     my.resetAllBtn  = $ '#resetall'
     my.progressBar  = $ '.response .progress-bar'
 
-    loc = window.location.href
-    my.serverUrl.val loc.substr 0, loc.indexOf "html/"
+    loc = window.location
+    my.serverUrl.val "ws://" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
 
 
     # Odf tree is using jstree; The requested odf nodes are selected from this tree

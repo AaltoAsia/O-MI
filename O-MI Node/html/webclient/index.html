@@ -95,10 +95,14 @@
 	<script type="text/javascript" src="js/omi.js"></script>
 	<script type="text/javascript" src="js/newInfoItemForm.js"></script>
 
-  <!-- FIXME: TEST SCRIPT -->
+  <!-- TEST SCRIPT EXAMPLE
   <script>
     (function (WebOmi, c, r) {
       c.afterJquery(function () {
+
+        c.requestSel.select_node("subscription");
+        c.requestSel.deselect_all();
+        c.requestSel.select_node("subscription");
 
         var params = r.defaults.subscription();
         params.callback = "0";
@@ -112,12 +116,9 @@
         r.forceLoadParams(params);
         c.serverUrl.val("ws://localhost:8080/");
 
-        //c.requestSel.select_node("subscription");
-        //c.requestSel.deselect_all();
-        //c.requestSel.select_node("subscription");
       })
     })(WebOmi, WebOmi.consts, WebOmi.requests)
-  </script>
+  </script> -->
 
 
 </head>
@@ -639,51 +640,6 @@
               </div>
             </div>
             <h4 class="olderSubsHeader"><b>Older Subscriptions</b></h4>
-            <!--
-            <div class="responseList">
-              <div class="panel panel-info">
-                <div class="panel-heading">
-                  <h3 class="panel-title"><b>RequestID </b><b class="requestID">7</b></h3>
-                </div>
-                <table class="table table-hover table-condensed">
-                  <thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>
-                  <tbody class="dataTable">
-                    <tr class="success"><th>4</th><th>returnCode</th><th>200</th></tr>
-                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
-                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
-                    <tr><td/><td/><td/></tr>
-                    <tr class="success"><th>3</th><th>returnCode</th><th>200</th></tr>
-                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
-                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
-                    <tr><td/><td/><td/></tr>
-                    <tr class="danger"><th>2</th><th>returnCode</th><th>404</th></tr>
-                    <tr><td/><td/><td/></tr>
-                    <tr class="danger"><th>1</th><th>returnCode</th><th>404</th></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div class="responseList">
-              <div class="panel panel-info">
-                <div class="panel-heading">
-                  <h3 class="panel-title"><b>RequestID 6</b></h3>
-                </div>
-                <table class="table table-hover table-condensed">
-                  <thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>
-                  <tbody class="dataTable">
-                    <tr class="success"><th>4</th><th>returnCode</th><th>200</th></tr>
-                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
-                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
-                    <tr class="success"><th>3</th><th>returnCode</th><th>200</th></tr>
-                    <tr><td></td><td>S…/FrontDoor</td><td><code>true</code></td></tr>
-                    <tr><td></td><td>S…/BackDoor</td><td><code>true</code></td></tr>
-                    <tr class="danger"><th>2</th><th>returnCode</th><th>404</th></tr>
-                    <tr class="danger"><th>1</th><th>returnCode</th><th>404</th></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            -->
           </div>
         </div>
       </div>
