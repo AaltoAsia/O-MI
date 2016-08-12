@@ -29,9 +29,8 @@ import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
-import responses.OmiGenerator.xmlFromResults
-import responses.Results
 import types.OdfTypes._
+import types.OmiTypes._
 import types.Path
 
 trait  InputPusher  extends BaseAgentSystem{
@@ -54,10 +53,12 @@ trait  DBPusher  extends BaseAgentSystem{
   private def sendEventCallback(esub: EventSub, odf: OdfObjects) : Unit = {
     val id = esub.id
     val callbackAddr = esub.callback
+    val responseTTL =
+      Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
+        .toOption.getOrElse(Duration.Inf)
+
     log.debug(s"Sending data to event sub: $id.")
-    val xmlMsg = xmlFromResults(
-      1.0,
-      Results.poll(id.toString, odf))
+    val responseRequest = Responses.Poll(id, odf, responseTTL)
     log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
@@ -66,19 +67,16 @@ trait  DBPusher  extends BaseAgentSystem{
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
 
-    val callbackF = sendCallback(
-      callbackAddr,
-      xmlMsg,
-      Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
-        .toOption.getOrElse(Duration.Inf)
-    ) 
-    callbackF.onSuccess {
-      case CallbackSuccess() =>
+    val callbackF : Future[Unit] = sendCallback(esub.callback, responseRequest) // FIXME: change xmlMsg to ResponseRequest(..., responseTTL)
+
+    callbackF.onSuccess { case () =>
         log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
-      case success : CallbackResult =>
-        log.error(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1, default math, The impossible happened?")
     }
     callbackF.onFailure{
+      case fail @ MissingConnection(callback) =>
+        log.warning(
+          s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is remowed.")
+        SingleStores.subStore execute RemoveEventSub(esub.id)
       case fail: CallbackFailure =>
         failed(fail.toString)
       case e: Throwable =>

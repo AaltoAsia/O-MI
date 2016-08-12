@@ -89,7 +89,7 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
     val objects : OdfObjects = createAncestors( infoItem )
 
     //interval as time to live
-    val write = WriteRequest( interval, objects )
+    val write = WriteRequest( objects, None, interval )
 
     //PromiseResults contains Promise containing Iterable of Promises and has some helper methods.
     //First level Promise is used for getting answer from AgentSystem and second level Promises are
