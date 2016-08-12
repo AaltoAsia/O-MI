@@ -125,19 +125,18 @@ lazy val root = (project in file(".")).
       bashScriptExtraDefines += """WARP10_LOG4J_CONF="${WARP10_HOME}/etc/log4j.properties"""",
       bashScriptExtraDefines += """WARP10_JAVA_HEAP_DUMP="${WARP10_HOME}/logs/java.heapdump"""",
       bashScriptExtraDefines += """WARP10_JAVA_OPTS="-Djava.awt.headless=true -Dlog4j.configuration=file:${WARP10_LOG4J_CONF} -Xms${WARP10_HEAP} -Xmx${WARP10_HEAP_MAX} -XX:+UseG1GC"""",
-      bashScriptExtraDefines += """
-if [ "`jps -lm|grep ${WARP10_CLASS}|cut -f 1 -d' '`" != "" ]
-then
-  echo "Start failed ! - A Warp 10 instance is currently running"
-  exit 1
-fi
-""",
       bashScriptExtraDefines += """if [ ! -f "${WARP10_CONFIG}" ]; then""",
       bashScriptExtraDefines += """  java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens""",
       bashScriptExtraDefines += """  java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"""",
       bashScriptExtraDefines += """fi""",
-      bashScriptExtraDefines += """java ${WARP10_JAVA_OPTS} -cp ${WARP10_CP} ${WARP10_CLASS} ${WARP10_CONFIG} >> ${WARP10_HOME}/logs/nohup.out 2>&1 &""",
-      //bashScriptExtraDefines += """"${app_home}/../database/warp10/bin/warp10-standalone.init" start""",
+      bashScriptExtraDefines += """
+if [ "`jps -lm|grep ${WARP10_CLASS}|cut -f 1 -d' '`" == "" ]
+then
+  java ${WARP10_JAVA_OPTS} -cp ${WARP10_CP} ${WARP10_CLASS} ${WARP10_CONFIG} >> ${WARP10_HOME}/logs/nohup.out 2>&1 &
+else
+  echo "A Warp 10 instance is already running"
+fi
+""",
 
 
     ///////////////////////////////////////////////////////////////////////
