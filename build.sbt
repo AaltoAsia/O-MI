@@ -132,12 +132,10 @@ then
   exit 1
 fi
 """,
-      bashScriptExtraDefines += """#remove old config so that generating new tokens is possible""",
-      bashScriptExtraDefines += """rm "${WARP10_CONFIG}"""",
-      bashScriptExtraDefines += """java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens""",
-      bashScriptExtraDefines += """java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"""",
-      bashScriptExtraDefines += """#remove initial tokens file so that it does not contain old tokens next time the start script is run""",
-      bashScriptExtraDefines += """rm "${WARP10_HOME}/etc/initial.tokens"""",
+      bashScriptExtraDefines += """if [ ! -f "${WARP10_CONFIG}" ]; then""",
+      bashScriptExtraDefines += """  java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens""",
+      bashScriptExtraDefines += """  java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"""",
+      bashScriptExtraDefines += """fi""",
       bashScriptExtraDefines += """java ${WARP10_JAVA_OPTS} -cp ${WARP10_CP} ${WARP10_CLASS} ${WARP10_CONFIG} >> ${WARP10_HOME}/logs/nohup.out 2>&1 &""",
       //bashScriptExtraDefines += """"${app_home}/../database/warp10/bin/warp10-standalone.init" start""",
 
