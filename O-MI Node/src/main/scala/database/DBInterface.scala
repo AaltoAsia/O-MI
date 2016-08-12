@@ -101,7 +101,7 @@ object SingleStores {
   val subStore          = createPrevayler(Subs.empty,"subscriptionStore")
   val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
   val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
-
+  subStore execute RemoveWebsocketSubs()
 
   def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
 

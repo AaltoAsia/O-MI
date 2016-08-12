@@ -1,4 +1,5 @@
 package testHelpers
+import scala.language.postfixOps
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
