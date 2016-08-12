@@ -105,13 +105,14 @@ lazy val root = (project in file(".")).
         IO.write(file, s"${currentVersion}")
         Seq(file)},
 
-    ///////////////////////////////////////////////////////////////////////
-    //Configure program to read application.conf from the right direction//
-    ///////////////////////////////////////////////////////////////////////
-
 //      bashScriptExtraDefines += """java io.warp10.word.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${app_home}/../configs/conf-standalone.template -o ${app_home}/../configs/conf-standalone.conf >> ${app_home}/../configs/initial.tokens""",
+
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    //additional lines to be added to start script to generate tokens for database and//
+    //start the warp10 database before starting O-MI node.//////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """WARP10_HOME="${app_home}/../database/warp10"""",
-      bashScriptExtraDefines += """""",
       bashScriptExtraDefines += """WARP10_CONFIG="${WARP10_HOME}/etc/conf-standalone.conf"""",
       bashScriptExtraDefines += """WARP10_REVISION=1.0.7""",
       bashScriptExtraDefines += """WARP10_JAR="${WARP10_HOME}"/bin/warp10-${WARP10_REVISION}.jar""",
@@ -130,13 +131,20 @@ then
   exit 1
 fi
 """,
+      bashScriptExtraDefines += """#remove old config so that generating new tokens is possible""",
+      bashScriptExtraDefines += """rm "${WARP10_CONFIG}"""",
       bashScriptExtraDefines += """java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens""",
       bashScriptExtraDefines += """java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"""",
       bashScriptExtraDefines += """#remove initial tokens file so that it does not contain old tokens next time the start script is run""",
       bashScriptExtraDefines += """rm "${WARP10_HOME}/etc/initial.tokens"""",
-      //bashScriptExtraDefines += """"${app_home}/../database/warp10/bin/warp10-standalone.bootstrap"""",
       bashScriptExtraDefines += """java ${WARP10_JAVA_OPTS} -cp ${WARP10_CP} ${WARP10_CLASS} ${WARP10_CONFIG} >> ${WARP10_HOME}/logs/nohup.out 2>&1 &""",
       //bashScriptExtraDefines += """"${app_home}/../database/warp10/bin/warp10-standalone.init" start""",
+
+
+    ///////////////////////////////////////////////////////////////////////
+    //Configure program to read application.conf from the right direction//
+    ///////////////////////////////////////////////////////////////////////
+
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NOD:q

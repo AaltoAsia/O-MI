@@ -1,1 +1,1 @@
-script to configure paths and tokens when running the program compiled version can be found in bin directory
+Simple Java program to configure paths and tokens when running the program. Compiled version can be found in bin directory. Takes path to warp10 directory as parameter and then fixes all config paths required to start Warp10.
