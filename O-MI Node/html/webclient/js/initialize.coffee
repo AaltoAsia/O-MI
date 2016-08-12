@@ -247,7 +247,7 @@ constsExt = ($, parent, util) ->
 
   # All of jquery initiliazation code is here
   $ ->
-    responseCMSettings = $.extend(
+    my.responseCMSettings = $.extend(
       readOnly : true
       , my.codeMirrorSettings
     )
@@ -255,7 +255,7 @@ constsExt = ($, parent, util) ->
     
     # initialize UI
     my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
-    my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], responseCMSettings
+    my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], my.responseCMSettings
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     

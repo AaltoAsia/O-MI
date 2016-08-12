@@ -289,16 +289,37 @@ formLogicExt = ($, WebOmi) ->
         .append($ "<th>returnCode</th>")
         .append($ "<th/>"
           .text returnCode)
-        .tooltip
+      row.tooltip
           #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
-        .on 'click', -> # Show the response xml in main response area
-          WebOmi.formLogic.setResponse responseString, ->
-            url = window.location.href                   #Save down the URL without hash.
-            window.location.href = "#response"           #Go to the target element.
-            window.history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
-            WebOmi.util.flash WebOmi.consts.responseDiv
-          WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
+        .on 'click', -> # Show the response xml instead of list
+          if row.data.dataRows
+            tmpRow = row.nextUntil '.respRet'
+            tmpRow.remove()
+            row.after row.data.dataRows
+            delete row.data.dataRows
+          else
+            dataRows = row.nextUntil '.respRet'
+            row.data.dataRows = dataRows.clone()
+            dataRows.remove()
+
+            tmpTr = $ '<tr/>'
+            codeMirrorContainer = $ '<td colspan=3/>'
+            tmpTr.append codeMirrorContainer
+            row.after tmpTr
+              
+            responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings)
+            responseCodeMirror.setValue responseString
+            responseCodeMirror.autoFormatAll()
+          
+          ## Old function was to close the history and show response in the main area and flash it
+          #
+          #WebOmi.formLogic.setResponse responseString, ->
+          #  url = window.location.href                   #Save down the URL without hash.
+          #  window.location.href = "#response"           #Go to the target element.
+          #  window.history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
+          #  WebOmi.util.flash WebOmi.consts.responseDiv
+          #WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
       row
 
     htmlformat = ( pathValues ) ->
