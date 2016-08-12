@@ -29,6 +29,7 @@ import types.Path;
 import types.OmiTypes.*;
 import types.OdfTypes.OdfValue;
 import types.OdfTypes.*;
+import types.OdfFactory;
 import types.OdfTypes.OdfInfoItem;
 
 public class JavaAgent extends JavaInternalAgent {
@@ -115,18 +116,13 @@ public class JavaAgent extends JavaInternalAgent {
     String typeStr = "xs:integer";
     String newValueStr = rnd.nextInt() +""; 
     Vector<OdfValue> values = new Vector();
-    //Ugly. "Calls static method of OdfValue to construct an OdfValue."
-    OdfValue value = OdfValue$.MODULE$.apply( newValueStr, typeStr, timestamp, new HashMap());
+    OdfValue value = OdfFactory.createOdfValue( newValueStr, typeStr, timestamp);
     values.add(value);
 
     //Create OdfInfoItem. 
-    OdfInfoItem infoItem = new OdfInfoItem(
+    OdfInfoItem infoItem = OdfFactory.createOdfInfoItem(
         path, 
-        //Convert to Scala Vector. For more conversion between Java and Scala
-        //look for scala.collectio.JavaConversions
-        scala.collection.JavaConversions.iterableAsScalaIterable(values).toVector(),
-        scala.Option.empty(), //None
-        scala.Option.empty() //None
+        values
     );
 
     //createAncestors generate O-DF structure from an OdfNode's path and retuns OdfObjects
