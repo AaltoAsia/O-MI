@@ -113,23 +113,24 @@ lazy val root = (project in file(".")).
     //additional lines to be added to start script to generate tokens for database and//
     //start the warp10 database before starting O-MI node.//////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////
-      bashScriptExtraDefines += """WARP10_HOME="${app_home}/../database/warp10"""",
-      bashScriptExtraDefines += """WARP10_CONFIG="${WARP10_HOME}/etc/conf-standalone.conf"""",
-      bashScriptExtraDefines += """WARP10_REVISION=1.0.7""",
-      bashScriptExtraDefines += """WARP10_JAR="${WARP10_HOME}"/bin/warp10-${WARP10_REVISION}.jar""",
-      bashScriptExtraDefines += """WARP10_CLASS=io.warp10.standalone.Warp""",
-      bashScriptExtraDefines += """WARP10_CP="${WARP10_JAR}"""",
-      bashScriptExtraDefines += """WARP10_HEAP=512m""",
-      bashScriptExtraDefines += """WARP10_HEAP_MAX=1g""",
-      bashScriptExtraDefines += """WARP10_SENSISION_EVENTS_DIR="${WARP10_HOME}/data/sensision/data/metrics"""",
-      bashScriptExtraDefines += """WARP10_LOG4J_CONF="${WARP10_HOME}/etc/log4j.properties"""",
-      bashScriptExtraDefines += """WARP10_JAVA_HEAP_DUMP="${WARP10_HOME}/logs/java.heapdump"""",
-      bashScriptExtraDefines += """WARP10_JAVA_OPTS="-Djava.awt.headless=true -Dlog4j.configuration=file:${WARP10_LOG4J_CONF} -Xms${WARP10_HEAP} -Xmx${WARP10_HEAP_MAX} -XX:+UseG1GC"""",
-      bashScriptExtraDefines += """if [ ! -f "${WARP10_CONFIG}" ]; then""",
-      bashScriptExtraDefines += """  java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens""",
-      bashScriptExtraDefines += """  java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"""",
-      bashScriptExtraDefines += """fi""",
       bashScriptExtraDefines += """
+WARP10_HOME="${app_home}/../database/warp10"
+WARP10_CONFIG="${WARP10_HOME}/etc/conf-standalone.conf"
+WARP10_REVISION=1.0.7
+WARP10_JAR="${WARP10_HOME}"/bin/warp10-${WARP10_REVISION}.jar
+WARP10_CLASS=io.warp10.standalone.Warp
+WARP10_CP="${WARP10_JAR}"
+WARP10_HEAP=512m
+WARP10_HEAP_MAX=1g
+WARP10_SENSISION_EVENTS_DIR="${WARP10_HOME}/data/sensision/data/metrics"
+WARP10_LOG4J_CONF="${WARP10_HOME}/etc/log4j.properties"
+WARP10_JAVA_HEAP_DUMP="${WARP10_HOME}/logs/java.heapdump"
+WARP10_JAVA_OPTS="-Djava.awt.headless=true -Dlog4j.configuration=file:${WARP10_LOG4J_CONF} -Xms${WARP10_HEAP} -Xmx${WARP10_HEAP_MAX} -XX:+UseG1GC"
+if [ ! -f "${WARP10_CONFIG}" ]; then
+  java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens
+  java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"
+fi
+
 if [ "`jps -lm|grep ${WARP10_CLASS}|cut -f 1 -d' '`" == "" ]
 then
   java ${WARP10_JAVA_OPTS} -cp ${WARP10_CP} ${WARP10_CLASS} ${WARP10_CONFIG} >> ${WARP10_HOME}/logs/nohup.out 2>&1 &
