@@ -28,18 +28,18 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
   "InternalAgentLoader should " >> { 
     "log warnings when loading fails when " >> {
       "agent's class is not found" >> missingAgentTest
-      "agent's companion object is not found" >> missingObjectTest.pendingUntilFixed
+      "agent's companion object is not found" >> missingObjectTest
     }
 
     "log warnings when loaded classes are invalid when " >> {
-      "agent's class does not implement trait InternalAgent" >> unimplementedIATest.pendingUntilFixed
+      "agent's class does not implement trait InternalAgent" >> unimplementedIATest
       "agent's companion object does not implement trait PropsCreator" >> unimplementedPCTest
-      "agent's companion object creates props for something else than agent">> wrongPropsTest.pendingUntilFixed
+      "agent's companion object creates props for something else than agent">> wrongPropsTest
       "agent's companion object is actually something else" >> oddObjectTest 
     }
     "log warnings when loaded classes throw exceptions when " >> {
-      "props are created " >> propsTest .pendingUntilFixed
-      "agent is started  " >> startTest.pendingUntilFixed
+      "props are created " >> propsTest 
+      "agent is started  " >> startTest
     }
 
     "store successfully started agents to agents " >> successfulAgents 
@@ -69,6 +69,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
       "Missing" ={
+        language = "scala"
         class = "$classname"
         config = {}
       }
@@ -90,6 +91,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
        "Missing" ={
+         language = "scala"
          class = "$classname"
          config = {}
        }
@@ -110,6 +112,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
        "UnimplementedIA" ={
+         language = "scala"
          class = "$classname"
          config = {}
        }
@@ -130,6 +133,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
        "UnimplementedPC" ={
+         language = "scala"
          class = "$classname"
          config = {}
        }
@@ -151,6 +155,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
        "WrongProps" ={
+         language = "scala"
          class = "$classname"
          config = {}
        }
@@ -177,6 +182,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
        "FailureProps" ={
+         language = "scala"
          class = "$classname"
          config = {}
        }
@@ -199,6 +205,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      starting-timeout = 2 seconds
      internal-agents {
        "FailureAgent" ={
+         language = "scala"
          class = "$classname"
          config = {}
        }
@@ -232,30 +239,37 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      internal-agents {
        "A1" ={
          class = "$classname"
+         language = "scala"
          config = {}
        }
        "A2" ={
          class = "$classname"
+         language = "scala"
          config = {}
        }
        "A3" ={
          class = "$classname"
+         language = "scala"
          config = {}
        }
        "A4" ={
          class = "$classname2"
+         language = "scala"
          config = {}
        }
        "A5" ={
          class = "$classname3"
+         language = "scala"
          config = {}
        }
        "A6" ={
          class = "$classname2"
+         language = "scala"
          config = {}
        }
        "A7" ={
          class = "$classname3"
+         language = "scala"
          config = {}
        }
      }

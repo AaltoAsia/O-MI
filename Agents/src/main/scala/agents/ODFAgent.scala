@@ -128,9 +128,9 @@ class ODFAgent( override val config: Config) extends ScalaInternalAgent {
       case true =>
         CommandSuccessful()
       case false =>
-        throw CommandFailed("Failed to stop agent.")
+        CommandFailed("Failed to stop agent.")
     }
-    case None => throw CommandFailed("Failed to stop agent, no job found.")
+    case None => CommandFailed("Failed to stop agent, no job found.")
   }}
   
   private def genValue(sensorType: String, oldval: Double ) : String = {

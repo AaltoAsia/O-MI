@@ -85,18 +85,17 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   def parent = context.parent
   def agentSystem = context.parent
   def name = self.path.name
-  def restart : InternalAgentSuccess = {
+  def restart : InternalAgentResponse = {
     stop 
     start
   }
   //These need to be implemented 
-  def start   : InternalAgentSuccess 
-  def stop    : InternalAgentSuccess 
+  def start   : InternalAgentResponse 
+  def stop    : InternalAgentResponse 
   def receive  = {
     case Start() => sender() ! start 
     case Restart() => sender() ! restart
     case Stop() => sender() ! stop
-
    }
 
 }
@@ -105,6 +104,12 @@ trait ResponsibleInternalAgent extends ScalaInternalAgent {
   import context.dispatcher
   protected def handleWrite( write: WriteRequest ) :Unit
 
+  override def receive  = {
+    case Start() => sender() ! start 
+    case Restart() => sender() ! restart
+    case Stop() => sender() ! stop
+    case write: WriteRequest => handleWrite(write)
+   }
   final protected def passWrite(write: WriteRequest) = {
     implicit val timeout = Timeout( write.handleTTL)
 

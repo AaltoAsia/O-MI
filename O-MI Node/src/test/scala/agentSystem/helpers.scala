@@ -11,49 +11,49 @@ import http.CLICmds._
 
 
 trait StartFailure{
-   final def start: InternalAgentSuccess  = {  
-    throw  CommandFailed("Test failure.")
+   final def start: InternalAgentResponse  = {  
+      CommandFailed("Test failure.")
   }
 }
 trait StopFailure{
-   final def stop: InternalAgentSuccess = { 
-    throw  CommandFailed("Test failure.")
+   final def stop: InternalAgentResponse = { 
+      CommandFailed("Test failure.")
   }
 }
 trait StartSuccess{
-   final def start: InternalAgentSuccess ={  
+   final def start: InternalAgentResponse ={  
     CommandSuccessful()
   }
 }
 trait StopSuccess{
-   final def stop: InternalAgentSuccess  = { 
+   final def stop: InternalAgentResponse  = { 
     CommandSuccessful()
   }
 }
 class FailurePropsAgent extends ScalaInternalAgent with StartFailure with StopFailure{
-  def config = throw  CommandFailed("Test failure.")
+  def config = throw CommandFailed("Test failure.")
 }
 object FailurePropsAgent extends PropsCreator{
   final def props(config: Config) : Props = { 
-    throw  CommandFailed("Test failure.")
+     throw CommandFailed("Test failure.")
   }
 }
 
 class FFAgent extends ScalaInternalAgent with StartFailure with StopFailure{
-  def config = throw  CommandFailed("Test failure.")
+  def config = throw CommandFailed("Test failure.")
 }
 class FSAgent extends ScalaInternalAgent with StartFailure with StopSuccess{
-  def config = throw  CommandFailed("Test failure.")
+  def config = throw CommandFailed("Test failure.")
 }
 class SFAgent extends ScalaInternalAgent with StartSuccess with StopFailure{
-  def config = throw  CommandFailed("Test failure.")
+  def config = throw CommandFailed("Test failure.")
 }
 class SSAgent extends ScalaInternalAgent with StartSuccess with StopSuccess{
-  def config = throw  CommandFailed("Test failure.")
+  def config = throw CommandFailed("Test failure.")
 }
 class WSAgent extends SSAgent with ResponsibleInternalAgent{
    def handleWrite(write: WriteRequest ) :Unit = {
-    passWrite( write)
+     sender() ! FailedWrite( Vector.empty, throw CommandFailed("Test failure."))
   }
 
 }
@@ -79,7 +79,7 @@ object FSAgent extends PropsCreator{
 }
 
 class CompanionlessAgent extends ScalaInternalAgent with StartFailure with StopFailure{
-  def config = throw  CommandFailed("Test failure.")
+  def config =  throw  CommandFailed("Test failure.")
 }
 
 object ClasslessCompanion extends PropsCreator {
@@ -89,21 +89,21 @@ object ClasslessCompanion extends PropsCreator {
 }
 
 class WrongInterfaceAgent {
-  def config = throw  CommandFailed("Test failure.")
+  def config =  throw  CommandFailed("Test failure.")
 }
 object WrongInterfaceAgent {
 
 }
 
 class NotPropsCreatorAgent  extends ScalaInternalAgent with StartFailure with StopFailure{
-  def config = throw  CommandFailed("Test failure.")
+  def config =  throw  CommandFailed("Test failure.")
 }
 object NotPropsCreatorAgent {
 
 }
 
 class WrongPropsAgent  extends ScalaInternalAgent with StartFailure with StopFailure{
-  def config = throw  CommandFailed("Test failure.")
+  def config =  throw  CommandFailed("Test failure.")
 }
 object WrongPropsAgent extends PropsCreator{
   final def props(config: Config) : Props = { 

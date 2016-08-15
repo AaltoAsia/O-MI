@@ -77,12 +77,8 @@ trait InternalAgentLoader extends BaseAgentSystem {
       val initialization = language match{
         case Some( Scala()) => scalaAgentInit(name, classname, config, ownedPaths)
         case Some( Java()) => javaAgentInit(name, classname, config, ownedPaths)
-        case None => //Lets try to figure it out ourselves
-        scalaAgentInit(name, classname, config, ownedPaths).recoverWith{ 
-          case _ =>
-          javaAgentInit(name, classname, config, ownedPaths)
-        }
         case Some( Unknown( lang ) ) =>
+        case None => //Lets try to figure it out ourselves
       }
     initialization match {
       case Success(startF: Future[ActorRef]) => 
@@ -182,9 +178,11 @@ trait InternalAgentLoader extends BaseAgentSystem {
 
   protected def startAgent(agent: ActorRef) = { 
     implicit val timeout = settings.internalAgentsStartTimout
-    val startF = (agent ? Start())(timeout).mapTo[InternalAgentSuccess]
+    val startF = (agent ? Start())(timeout).mapTo[InternalAgentResponse]
     val resultF = startF.map{
       case success : InternalAgentSuccess => agent
+      case failure : InternalAgentFailure => context.stop(agent)
+      throw failure
     }
     resultF.onFailure{ 
       case e: Throwable => 

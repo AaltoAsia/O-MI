@@ -41,7 +41,7 @@ class BasicAgent( override val config: Config)  extends ScalaInternalAgent{
   case class UpdateSchedule( var option: Option[Cancellable]  = None)
   private val updateSchedule = UpdateSchedule( None )
   
-   def start : InternalAgentSuccess  ={
+   def start : InternalAgentResponse  ={
     log.debug(s"Starting: $name")
   
     // Schelude update and save job, for stopping
@@ -58,7 +58,7 @@ class BasicAgent( override val config: Config)  extends ScalaInternalAgent{
     CommandSuccessful()
   }
   
-   def stop : InternalAgentSuccess = {
+   def stop : InternalAgentResponse = {
     updateSchedule.option match{
       //If agent has scheluded update, cancel job
       case Some(job: Cancellable) =>

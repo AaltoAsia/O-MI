@@ -64,7 +64,7 @@ public class JavaAgent extends JavaInternalAgent {
    * Method to be called when a Start() message is received.
    */
   @Override
-  public InternalAgentSuccess start() throws StartFailed {
+  public InternalAgentResponse start() throws StartFailed {
     try{
       //Lets schelude a messge to us on every interval
       //and save it for possibility that we want to stop agent.
@@ -82,7 +82,7 @@ public class JavaAgent extends JavaInternalAgent {
       //passed to its parent. That uses SupervisorStrategy to decide 
       //what to do. With StartFailed we can tell AgentSystem that an 
       //Exceptian was thrown during handling of Start() message.
-      throw new StartFailed( exp.getMessage(), exp);
+      return new StartFailed( exp.getMessage(), exp);
     }
   }
 
@@ -90,7 +90,7 @@ public class JavaAgent extends JavaInternalAgent {
    * Method to be called when a Stop() message is received.
    */
   @Override
-  public InternalAgentSuccess stop()  throws CommandFailed {
+  public InternalAgentResponse stop()  throws CommandFailed {
 
     if( job != null){//Job is defined? 
       job.cancel(); //Cancel job
@@ -99,7 +99,7 @@ public class JavaAgent extends JavaInternalAgent {
       if( job.isCancelled() ){
         job = null;
       } else {
-        throw new CommandFailed("Failed to stop agent.");
+        return new CommandFailed("Failed to stop agent.");
       }
     } 
     return new CommandSuccessful();

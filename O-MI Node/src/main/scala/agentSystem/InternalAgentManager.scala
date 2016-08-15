@@ -70,8 +70,8 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.ownedPaths
             )
             msg
-          case t @ CommandFailed(msg) =>
-            t.toString
+          case failure : InternalAgentFailure => 
+            failure.toString
         }.recover{
           case t : Throwable => 
           t.toString
@@ -100,8 +100,8 @@ trait InternalAgentManager extends BaseAgentSystem {
             val msg = successfulStopMsg(agentName)
             log.info(msg)
             msg
-          case t @ CommandFailed(msg) =>
-            t.toString
+          case failure : InternalAgentFailure => 
+            failure.toString
         }.recover{
           case t : Throwable => 
           t.toString

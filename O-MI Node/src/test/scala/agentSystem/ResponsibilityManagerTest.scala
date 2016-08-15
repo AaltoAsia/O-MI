@@ -71,10 +71,11 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     "write not owned values " >> notOwnedWriteTest
     "send owned path to agents to handle " >> ownedWriteTest
     //"write owned values when received from owner " >> test
-    "return error when a write fails " >> notOwnedWriteFailTest
+    "return error when a write fails " >> notOwnedWriteFailTest.pendingUntilFixed
     //"return error when agent denies write " >> test
-    "return error when agent's write fails" >> ownedWriteFailTest
+    "return error when agent's write fails" >> ownedWriteFailTest.pendingUntilFixed
   }
+
   val timeoutDuration = 10.seconds
   implicit val timeout = Timeout( timeoutDuration )
   def timestamp = new Timestamp( new Date().getTime())
@@ -112,7 +113,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       ).mapTo[ResponsibleAgentResponse]
     successF must beEqualTo(SuccessfulWrite(_paths)).await(0, timeoutDuration) 
   }
-
   def ownedWriteFailTest = new Actorstest(AS){
     import system.dispatcher
     val name = "WriteSuccess"
@@ -140,9 +140,10 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     
     val successF : Future[ResponsibleAgentResponse] =( managerRef ? ResponsibilityRequest(name, write)
     ).mapTo[ResponsibleAgentResponse]
-    successF must throwAn(new Exception("Test failure")).await(0, timeoutDuration)
+    val equal =MixedWrite(Vector(),FailedWrite(Vector(Path("Objects/object1/sensor1"), Path("Objects/object1/sensor1")),Vector( new Exception("Test failure"),  new Exception("Test failure"))))
+    successF must beEqualTo(equal).await(0, timeoutDuration) 
 
-  }.pendingUntilFixed
+  }
 
   def notOwnedWriteTest = new Actorstest(AS){
     import system.dispatcher
@@ -194,9 +195,10 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       ))
     )
     
+    val equal =MixedWrite(Vector(),FailedWrite(Vector(Path("Objects/object1/sensor1")),Vector( new Exception("Test failure"))))
     val successF : Future[ResponsibleAgentResponse] = (managerRef ? ResponsibilityRequest(name, write)
       ).mapTo[ResponsibleAgentResponse]
-    successF must throwAn(new Exception("Test failure")).await(0, timeoutDuration)
-  }.pendingUntilFixed
+    successF must beEqualTo(equal).await(0, timeoutDuration) 
+  }
 }
 

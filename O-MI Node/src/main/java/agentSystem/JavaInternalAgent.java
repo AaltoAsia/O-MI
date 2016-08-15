@@ -19,7 +19,7 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
   protected ActorRef agentSystem = context().parent();
   protected String name = self().path().name();
   @Override
-  public InternalAgentSuccess restart()throws StartFailed, CommandFailed {
+  public InternalAgentResponse restart()throws StartFailed, CommandFailed {
     stop();
     return start();
   }
