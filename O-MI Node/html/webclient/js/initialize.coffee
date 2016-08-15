@@ -12,8 +12,111 @@
 #  limitations under the License.
 ##########################################################################
 
+
+###################
+# UTILITY FUNCTIONS
+# extend module webOmi; public helper functions, TODO: move to other file?
+utilExt = ($, parent) ->
+
+  my = parent.util = {}
+
+  #private, https+http + "0"-callback
+  my.urlmatch = /^(0$|(https?):\/\/((((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)|(localhost))(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s|$))/i
+
+  #save the old version just in case
+  #/^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s|$)/i
+
+
+  ## do syntax in coffee! :D
+  # ma.bind (a) ->
+  #   mb.bind (b) ->
+  #     mc.bind (c) ->
+  #       ret a+b+c
+  #
+  #do [
+  #  bind a : ma,
+  #  bind b : mb,
+  #  bind c : mc,
+  #  (x) -> ret x.a + x.b + x.c
+  #]
+  # not yet implemented
+
+  my.validators = validators = {}
+
+  # Validators,
+  # minimal Maybe/Option operations
+  # return null if invalid else the extracted value
+
+  # in: string, out: string
+  validators.nonEmpty = (s) ->
+    if s != "" then s else null
+
+  # in: string, out: number
+  validators.number   = (s) ->
+    if not s? then return s
+    # special user experience enchancement:
+    # convert ',' -> '.'
+    a = s.replace(',', '.')
+    if $.isNumeric a then parseFloat a else null
+
+  # in: number, out: number
+  validators.integer  = (x) ->
+    if x? and x % 1 == 0 then x else null
+
+  # in: number, out: number
+  validators.greaterThan = (y) -> (x) ->
+    if x? and x > y then x else null
+
+  # in: number, out: number
+  validators.greaterThanEq = (y) -> (x) ->
+    if x? and x >= y then x else null
+
+  # in: any, out: any
+  validators.equals = (y) -> (x) ->
+    if x? and x == y then x else null
+
+  # in: t->t, t->t, ... ; out: t->t
+  # returns function that tests its input with all the arguments given to this function
+  validators.or = (vs...) -> (c) ->
+    if vs.length == 0 then return null
+    for v in vs
+      res = v c
+      if res? then return res
+    null
+
+  validators.url = (s) ->
+    if parent.util.urlmatch.test s
+      s
+    else null
+
+
+  # Clone the element above and empty its input fields 
+  # callback type: (clonedDom) -> void
+  my.cloneAbove = (target, callback) ->
+    my.cloneElem target.prev(), callback
+      
+  my.cloneElem = (target, callback) ->
+
+    cloned = target.clone()
+    cloned.find("input").val ""  # empty all cloned inputs
+    cloned.hide()  # make unvisible for animation
+
+    target.after cloned  # insert after the target
+
+    if callback? then callback cloned
+
+  # Yellow flash for a second
+  my.flash = (jqueryElem) ->
+    jqueryElem.addClass 'flash'
+    window.setTimeout (
+      -> jqueryElem.removeClass 'flash'
+    ), 1000
+
+  parent
+
 # extend module webOmi; public vars
-constsExt = ($, parent) ->
+constsExt = ($, parent, util) ->
+
 
   # Module WebOmi constants
   my = parent.consts = {}
@@ -22,6 +125,7 @@ constsExt = ($, parent) ->
     mode: "text/xml"
     lineNumbers: true
     lineWrapping: true
+    viewportMargin: 150
 
 
   my.icon =
@@ -130,26 +234,20 @@ constsExt = ($, parent) ->
   # use afterJquery(<callback>) for things that depend on const module
   my.afterJquery = (fn) -> afterWaits.push fn
 
-  #private
-  urlmatch = /^(https?|ftp):\/\/((((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)|(localhost))(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s|$)/i
-
-#save the old version just in case
-#/^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?(?:<|"|\s|$)/i
-
   # private; url matcher for response codemirror links
   URLHighlightOverlay =
     token: (stream, state) ->
-      if stream.match(urlmatch)
+      if stream.match(parent.util.urlmatch)
         stream.backUp(1)
         return "link"
       
-      while stream.next()? and not stream.match(urlmatch,false)   
+      while stream.next()? and not stream.match(parent.util.urlmatch,false)
         null
       return null
 
   # All of jquery initiliazation code is here
   $ ->
-    responseCMSettings = $.extend(
+    my.responseCMSettings = $.extend(
       readOnly : true
       , my.codeMirrorSettings
     )
@@ -157,7 +255,7 @@ constsExt = ($, parent) ->
     
     # initialize UI
     my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
-    my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], responseCMSettings
+    my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], my.responseCMSettings
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
@@ -178,8 +276,8 @@ constsExt = ($, parent) ->
     my.resetAllBtn  = $ '#resetall'
     my.progressBar  = $ '.response .progress-bar'
 
-    loc = window.location.href
-    my.serverUrl.val loc.substr 0, loc.indexOf "html/"
+    loc = window.location
+    my.serverUrl.val "ws://" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
 
 
     # Odf tree is using jstree; The requested odf nodes are selected from this tree
@@ -224,61 +322,10 @@ constsExt = ($, parent) ->
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
 
 
-    # TODO: move to some WebOmi.util etc.
-    my.validators = validators = {}
-
-    # Validators,
-    # minimal Maybe/Option operations
-    # return null if invalid else the extracted value
-
-    # in: string, out: string
-    validators.nonEmpty = (s) ->
-      if s != "" then s else null
-
-    # in: string, out: number
-    validators.number   = (s) ->
-      if not s? then return s
-      # special user experience enchancement:
-      # convert ',' -> '.'
-      a = s.replace(',', '.')
-      if $.isNumeric a then parseFloat a else null
-
-    # in: number, out: number
-    validators.integer  = (x) ->
-      if x? and x % 1 == 0 then x else null
-
-    # in: number, out: number
-    validators.greaterThan = (y) -> (x) ->
-      if x? and x > y then x else null
-
-    # in: number, out: number
-    validators.greaterThanEq = (y) -> (x) ->
-      if x? and x >= y then x else null
-
-    # in: any, out: any
-    validators.equals = (y) -> (x) ->
-      if x? and x == y then x else null
-
-    # in: t->t, t->t, ... ; out: t->t
-    # returns function that tests its input with all the arguments given to this function
-    validators.or = (vs...) -> (c) ->
-      if vs.length == 0 then return null
-      for v in vs
-        res = v c
-        if res? then return res
-      null
-
-    validators.url = (s) ->
-      if urlmatch.test s
-        s
-      else null
-
-    # shortcut
-    v = validators
 
 
     # private; Constructs some functions for basic input fields (see my.ui below)
-    basicInput = (selector, validator=validators.nonEmpty) ->
+    basicInput = (selector, validator=util.validators.nonEmpty) ->
       ref : $ selector
       get :       -> @ref.val()
       set : (val) -> @ref.val val
@@ -288,7 +335,7 @@ constsExt = ($, parent) ->
 
           validatedVal = validator val #:: null or the result
 
-          if validatedVal?
+          if validatedVal? or @ref.prop "disabled"
             validationContainer
               .removeClass "has-error"
               .addClass "has-success"
@@ -302,6 +349,10 @@ constsExt = ($, parent) ->
         @ref.on "input", =>  # =>: preserving this
           callback @validate()
       
+
+    # shortcut
+    v = util.validators
+
 
     # refs, setters, getters for the parameters
     my.ui =
@@ -408,12 +459,21 @@ constsExt = ($, parent) ->
     # callbacks
     my.afterJquery = (fn) -> fn()
     fn() for fn in afterWaits
-    # end of jquery init
+
+  # end of jquery init
+
+
+
 
   parent # export module
 
+
 # extend WebOmi
-window.WebOmi = constsExt($, window.WebOmi || {})
+window.WebOmi = utilExt($, window.WebOmi || {})
+
+# extend WebOmi
+window.WebOmi = constsExt($, window.WebOmi, window.WebOmi.util)
+
 window.WebOmi.error = (msgs...) -> alert msgs.join ", "
 window.WebOmi.debug = (msgs...) -> console.log msgs... # TODO: remove console.log
 

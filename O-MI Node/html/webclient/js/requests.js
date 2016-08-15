@@ -382,9 +382,8 @@
           return paths;
         },
         add: function(path) {
-          var currentObjectsHead, fl, msg, o, objects, odfTreeNode, req;
+          var currentObjectsHead, msg, o, objects, odfTreeNode, req;
           o = WebOmi.omi;
-          fl = WebOmi.formLogic;
           odfTreeNode = $(jqesc(path));
           req = currentParams.requestDoc;
           if (req != null) {
@@ -410,9 +409,8 @@
           return path;
         },
         remove: function(path) {
-          var fl, o, odfObjects, odfTreeNode, req;
+          var o, odfObjects, odfTreeNode, req;
           o = WebOmi.omi;
-          fl = WebOmi.formLogic;
           req = currentParams.requestDoc;
           if (currentParams.msg && (req != null)) {
             odfTreeNode = $(jqesc(path));

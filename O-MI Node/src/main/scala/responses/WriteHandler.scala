@@ -24,7 +24,6 @@ import scala.xml.NodeSeq
 
 import agentSystem.{PromiseResult, PromiseWrite, SuccessfulWrite}
 import akka.actor.ActorRef
-import responses.OmiGenerator._
 import types.OmiTypes._
 
 trait WriteHandler extends OmiRequestHandlerBase{
@@ -33,7 +32,7 @@ trait WriteHandler extends OmiRequestHandlerBase{
     * @param write request
     * @return (xml response, HTTP status code)
     */
-  def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
+  def handleWrite( write: WriteRequest ) : Future[ResponseRequest] ={
       handleTTL(write.ttl)
 
       val promiseResult = PromiseResult()
@@ -49,7 +48,7 @@ trait WriteHandler extends OmiRequestHandlerBase{
 
       successF.onSuccess{ case succ => log.info( succ.toString) }
       val response = successF.map{
-        succ => success 
+        succ => Responses.Success()
       }
       response
   }
