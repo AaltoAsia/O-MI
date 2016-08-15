@@ -10,322 +10,337 @@ import types.OmiTypes.*;
 
 public class OmiFactory{
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    Timestamp begin,
-    Timestamp end,
-    int newest,
-    int oldest,
-    String callback
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin,
+      Timestamp end,
+      int newest,
+      int oldest,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
-        scala.Option.apply(callback)
-      );
-  }
-  
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
+
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    Timestamp begin,
-    Timestamp end,
-    int newest,
-    int oldest
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin,
+      Timestamp end,
+      int newest,
+      int oldest
+      ){
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
-        scala.Option.empty()
-      );
-  }
+        scala.Option.empty(),
+        ttl
+        );
+      }
 
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    Timestamp begin,
-    Timestamp end
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin,
+      Timestamp end
+      ){
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.empty(),
         scala.Option.empty(),
-        scala.Option.empty()
-      );
-  }
+        scala.Option.empty(),
+        ttl
+        );
+      }
 
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    Timestamp begin
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin
+      ){
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.apply(begin),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
-        scala.Option.empty()
-      );
-  }
-  
+        scala.Option.empty(),
+        ttl
+
+        );
+      }
+
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    int newest,
-    int oldest
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      int newest,
+      int oldest
+      ){
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
-        scala.Option.empty()
-      );
-  }
+        scala.Option.empty(),
+        ttl
+
+        );
+      }
 
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    int newest
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      int newest
+      ){
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(newest),
         scala.Option.empty(),
-        scala.Option.empty()
-      );
-  }
+        scala.Option.empty(),
+        ttl
+
+        );
+      }
 
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    Timestamp begin,
-    Timestamp end,
-    String callback
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin,
+      Timestamp end,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.empty(),
         scala.Option.empty(),
-        scala.Option.apply(callback)
-      );
-  }
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
 
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    Timestamp begin,
-    String callback
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin,
+      String callback
 
-  ){
+      ){
+    Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.apply(begin),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
-        scala.Option.apply(callback)
-      );
-  }
-  
-  public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    int newest,
-    int oldest,
-    String callback
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
 
-  ){
+  public static ReadRequest createReadRequest(
+      Duration ttl,
+      OdfObjects odf,
+      int newest,
+      int oldest,
+      String callback
+
+      ){
+    Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
-        scala.Option.apply(callback)
-      );
-  }
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
 
   public static ReadRequest createReadRequest(
-    Duration ttl,
-    OdfObjects odf,
-    int newest,
-    String callback
-
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      int newest,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        ttl,
         odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(newest),
         scala.Option.empty(),
-        scala.Option.apply(callback)
-      );
-  }
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
 
   public static PollRequest createPollRequest(
-    Duration ttl,
-    Iterable<Long > requestIDs,
-    String callback
-  ){
+      Duration ttl,
+      Iterable<Long > requestIDs,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
     return new PollRequest(
-      ttl,
-      scala.Option.apply(callback),
-      types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs)
-    );
-  }
+        scala.Option.apply(cb),
+        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        ttl
+
+        );
+      }
   public static PollRequest createPollRequest(
-    Duration ttl,
-    Iterable<Long > requestIDs
-  ){
+      Duration ttl,
+      Iterable<Long > requestIDs
+      ){
     return new PollRequest(
-      ttl,
-      scala.Option.empty(),
-      types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs)
-    );
-  }
-  
+        scala.Option.empty(),
+        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        ttl
+
+        );
+      }
+
   public static SubscriptionRequest createSubscriptionRequest(
-    Duration ttl,
-    Duration interval,
-    OdfObjects odf,
-    String callback
-  ){
+      Duration ttl,
+      Duration interval,
+      OdfObjects odf,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
     return new SubscriptionRequest(
-      ttl,
-      interval,
-      odf,
-      scala.Option.empty(),
-      scala.Option.empty(),
-      scala.Option.apply(callback)
-    );
-  }
-  
+        interval,
+        odf,
+        scala.Option.empty(),
+        scala.Option.empty(),
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
+
   public static SubscriptionRequest createSubscriptionRequest(
-    Duration ttl,
-    Duration interval,
-    OdfObjects odf
-  ){
+      Duration ttl,
+      Duration interval,
+      OdfObjects odf
+      ){
     return new SubscriptionRequest(
-      ttl,
-      interval,
-      odf,
-      scala.Option.empty(),
-      scala.Option.empty(),
-      scala.Option.empty()
-    );
-  }
-  
+        interval,
+        odf,
+        scala.Option.empty(),
+        scala.Option.empty(),
+        scala.Option.empty(),
+        ttl
+
+        );
+      }
+
   public static ResponseRequest createResponseRequest(
-    Duration ttl,
-    Iterable<OmiResult> results
-  ){
-    return new ResponseRequest(
-      OdfTreeCollection.fromJava(results),
-      ttl
-    );
-  }
-  
+      Duration ttl,
+      Iterable<OmiResult> results
+      ){
+    return ResponseRequest$.MODULE$.apply(
+        OdfTreeCollection.fromJava(results),
+        ttl
+        );
+      }
+
   public static CancelRequest createCancelRequest(
-    Duration ttl,
-    Iterable<Long > requestIDs
-  ){
+      Duration ttl,
+      Iterable<Long > requestIDs
+      ){
     return new CancelRequest(
-      ttl,
-      types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs)
-    ); 
-  }
-  
-  public static OmiResult createOmiResult(
-    OmiReturn returnValue,
-    Iterable<Long > requestIDs,
-    OdfObjects odf
-  ){
-    return new OmiResult(
-      returnValue,
-      types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
-      scala.Option.apply(odf)
-    );
-  }
+        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        ttl
+
+        ); 
+      }
 
   public static OmiResult createOmiResult(
-    OmiReturn returnValue,
-    Iterable<Long > requestIDs
-  ){
-    return new OmiResult(
-      returnValue,
-      types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
-      scala.Option.empty()
-    );
-  }
+      OmiReturn returnValue,
+      Iterable<Long > requestIDs,
+      OdfObjects odf
+      ){
+    return OmiResult$.MODULE$.apply(
+        returnValue,
+        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        scala.Option.apply(odf)
+        );
+      }
 
   public static OmiResult createOmiResult(
-    OmiReturn returnValue
-  ){
+      OmiReturn returnValue,
+      Iterable<Long > requestIDs
+      ){
+    return OmiResult$.MODULE$.apply(
+        returnValue,
+        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        scala.Option.empty()
+        );
+      }
+
+  public static OmiResult createOmiResult(
+      OmiReturn returnValue
+      ){
     scala.collection.immutable.Vector<java.lang.Object> empty = OdfTreeCollection.empty();
-    return new OmiResult(
-      returnValue,
-      empty,
-      scala.Option.empty()
-    );
-  }
+    return OmiResult$.MODULE$.apply(
+        returnValue,
+        empty,
+        scala.Option.empty()
+        );
+      }
 
   public static OmiReturn createOmiReturn(
-    String returnCode,
-    String description
-  ){
-    return new OmiReturn(
-      returnCode,
-      scala.Option.apply(description)
-    );
-  }
-  
-  public static WriteRequest createWriteRequest(
-    Duration ttl,
-    OdfObjects odf,
-    String callback
-  ){
-    return new WriteRequest(
-      ttl,
-      odf,
-      scala.Option.apply(callback)
-    );
-  }
+      String returnCode,
+      String description
+      ){
+    return OmiReturn$.MODULE$.apply(
+        returnCode,
+        scala.Option.apply(description)
+        );
+      }
 
   public static WriteRequest createWriteRequest(
-    Duration ttl,
-    OdfObjects odf
-  ){
+      Duration ttl,
+      OdfObjects odf,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
     return new WriteRequest(
-      ttl,
-      odf,
-      scala.Option.empty()
-    );
-  }
-  
+        odf,
+        scala.Option.apply(cb),
+        ttl
+        );
+      }
+
+  public static WriteRequest createWriteRequest(
+      Duration ttl,
+      OdfObjects odf
+      ){
+    return new WriteRequest(
+        odf,
+        scala.Option.empty(),
+        ttl
+
+        );
+      }
+
 }
 

@@ -96,7 +96,7 @@ class ODFAgent( override val config: Config) extends ScalaInternalAgent {
       val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
       
       implicit val timeout = Timeout(interval)
-      val write = WriteRequest( interval, newObjects )
+      val write = WriteRequest( newObjects, None, interval)
       val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]
       result.onSuccess{
         //Check if failed promises

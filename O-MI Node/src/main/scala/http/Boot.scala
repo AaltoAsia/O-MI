@@ -78,7 +78,7 @@ trait Starter {
           Some(OdfDescription(numDescription))
         ))
       
-      val write = WriteRequest( 60  seconds, objects)
+      val write = WriteRequest( objects, None,  60  seconds)
       implicit val timeout = Timeout( 60 seconds)
       val future : Future[ResponsibleAgentResponse]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponsibleAgentResponse]
       future.onSuccess{
@@ -120,7 +120,7 @@ trait Starter {
     )
 
     // create omi service actor
-    val omiService = new OmiServiceImpl(requestHandler)
+    val omiService = new OmiServiceImpl(requestHandler, subManager)
 
 
     implicit val timeoutForBind = Timeout(5.seconds)

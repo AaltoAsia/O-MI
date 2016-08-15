@@ -1,4 +1,4 @@
-
+"use strict"
 ###########################################################################
 #  Copyright (c) 2015 Aalto University.
 #
@@ -49,32 +49,404 @@ formLogicExt = ($, WebOmi) ->
     o.evaluateXPath(str, '//odf:Objects')[0]
 
   # Remove current response from its CodeMirror and hide it with animation
-  my.clearResponse = ->
+  my.clearResponse = (doneCallback) ->
     mirror = WebOmi.consts.responseCodeMirror
     mirror.setValue ""
-    WebOmi.consts.responseDiv.slideUp()
+    WebOmi.consts.responseDiv.slideUp complete : ->
+      if doneCallback? then doneCallback()
 
   # Sets response (as a string or xml) and handles slide animation
-  my.setResponse = (xml) ->
+  my.setResponse = (xml, doneCallback) ->
     mirror = WebOmi.consts.responseCodeMirror
     if typeof xml == "string"
       mirror.setValue xml
     else
       mirror.setValue new XMLSerializer().serializeToString xml
     mirror.autoFormatAll()
-
     # refresh as we "resize" so more text will become visible
-    WebOmi.consts.responseDiv.slideDown complete : -> mirror.refresh()
+    WebOmi.consts.responseDiv.slideDown complete : ->
+      mirror.refresh()
+      if doneCallback? then doneCallback()
     mirror.refresh()
+  
+
+  ########################################################
+  # SUBSCRIPTION HISTORY CODE, TODO: move to another file?
+  ########################################################
+  # Subscription history of WebSocket and callback=0 Features
+
+  # List of subscriptions that uses websocket and should be watched
+  # Type: {String_RequestID : {
+  #   receivedCount : Number,
+  #   userSeenCount : Number,
+  #   selector : Jquery,   # selector for sub history list
+  #   responses : [String]
+  #   }}
+  my.callbackSubscriptions = {}
+  
+  # Set true when the next response should be rendered to main response area
+  my.waitingForResponse = false
+
+  # Set true when next response with requestID should be saved to my.callbackSubscriptions
+  my.waitingForRequestID = false
+
+  # whether callbackResponseHistoryModal is opened and the user can see the new results
+  #my.historyOpen = false
+
+  consts = WebOmi.consts
+
+  consts.afterJquery ->
+    consts.callbackResponseHistoryModal = $ '.callbackResponseHistory'
+    consts.callbackResponseHistoryModal
+      .on 'shown.bs.modal', ->
+        #my.historyOpen = true
+        my.updateHistoryCounter true
+      .on 'hide.bs.modal', ->
+        #my.historyOpen = false
+        my.updateHistoryCounter true
+
+    consts.responseListCollection  = $ '.responseListCollection'
+    consts.responseListCloneTarget = $ '.responseList.cloneTarget'
+    consts.historyCounter = $ '.label.historyCounter'
+
+  # end afterjquery
+
+  # toZero: should counter be reset to 0
+  my.updateHistoryCounter = (toZero=false) ->
+    update = (sub) ->
+      if toZero
+        sub.userSeenCount = sub.receivedCount
+
+    ####################################
+    # TODO: historyCounter
+    #if my.historyOpen
+    orginal = parseInt consts.historyCounter.text()
+    sum = 0
+    for own requestID, sub of my.callbackSubscriptions
+      update sub
+      sum += sub.receivedCount - sub.userSeenCount
+
+    if sum == 0
+      consts.historyCounter
+        .text sum
+        .removeClass "label-warning"
+        .addClass "label-default"
+    else
+      consts.historyCounter
+        .text sum
+        .removeClass "label-default"
+        .addClass "label-warning"
+
+    if sum > orginal
+      WebOmi.util.flash consts.historyCounter.parent()
 
 
+    
+
+  # Called when we receive relevant websocket response
+  # response: String
+  # returns: true if the response was consumed, false otherwise
+  my.handleSubscriptionHistory = (responseString) ->
+    # imports
+    omi = WebOmi.omi
+
+    response = omi.parseXml responseString
+
+    # get requestID
+    maybeRequestID = Maybe omi.evaluateXPath(response, "//omi:requestID/text()")[0] # headOption
+    requestID = (maybeRequestID.bind (idNode) ->
+      textId = idNode.textContent.trim()
+      if textId.length > 0
+        Maybe parseInt(textId)
+      else
+        None
+    ).__v
+    if (requestID?)
+      cbSub = my.callbackSubscriptions[requestID]
+      if cbSub?
+        cbSub.receivedCount += 1
+      else
+        # enable listing of forgotten callback requests
+        if my.waitingForRequestID or not my.waitingForResponse
+          my.waitingForRequestID = false
+          my.callbackSubscriptions[requestID] =
+            receivedCount : 1
+            userSeenCount : 0
+            responses : [responseString]
+        else
+          return false
+
+    else
+      return false
+
+    infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
+
+    getPath = (xmlNode) ->
+      id = omi.getOdfId(xmlNode)
+      if id? and id != "Objects"
+        init = getPath xmlNode.parentNode
+        init + "/" + id
+      else
+        id
+
+    #createShortenedPath = (path) ->
+    #  pathParts = path.split "/"
+    #  shortenedParts = (part[0] + "…" for part in pathParts)
+    #  lastI = pathParts.length - 1
+    #  shortenedParts[lastI] = pathParts[lastI]
+    #  shortenedParts.join "/"
+
+    pathPrefixTrie = {}
+    insertToTrie = (root, string) ->
+      if string.length == 0
+        root
+      else
+        [head,tail...] = string
+        root[head] ?= {}
+        insertToTrie root[head], tail
+
+    createShortenedPath = (path) ->
+      prefixShorted = getShortenedPath pathPrefixTrie,path
+      [shortedInit..., _] = prefixShorted.split "/"
+      [_..., originalLast] = path.split "/"
+      shortedInit.push originalLast
+      shortedInit.join "/"
+
+    # return longest common prefix path
+    getShortenedPath = (tree, path, shortening=false) ->
+      if path.length == 0
+        return ""
+
+      keys = Object.keys tree
+      [key, tail...] = path
+
+      child = tree[key]
+      if not child?
+        WebOmi.debug "Error: prefix tree failure: does not exist"
+        return
+
+      if key == "/"
+        return "/" + getShortenedPath child, tail
+
+      if keys.length == 1
+        if shortening
+          return getShortenedPath child, tail, true
+        else
+          return "..." + getShortenedPath child, tail, true
+      else
+        return key + getShortenedPath child, tail
+
+
+
+    getPathValues = (infoitemXmlNode) ->
+      valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value")
+      path = getPath infoitemXmlNode
+      insertToTrie pathPrefixTrie, path
+
+      for value in valuesXml
+        path: path
+        shortPath: -> createShortenedPath path
+        value: value
+        stringValue: value.textContent.trim()
+
+    infoItemPathValues = ( getPathValues info for info in infoitems )
+    pathValues = [].concat infoItemPathValues...
+
+    # Utility function; Clone the element above and empty its input fields 
+    # callback type: (clonedDom) -> void
+    cloneElem = (target, callback) ->
+      WebOmi.util.cloneElem target, (cloned) ->
+        cloned.slideDown null, ->  # animation, default duration
+          # readjusts the position because of size change (see modal docs)
+          consts.callbackResponseHistoryModal.modal 'handleUpdate'
+
+    # Move "Latest subscription" and "Older subscriptions"
+    moveHistoryHeaders = (latestDom) ->
+      olderH = consts.callbackResponseHistoryModal.find '.olderSubsHeader'
+      latestDom.after olderH
+
+    createHistory = (requestID) ->
+      newList = cloneElem consts.responseListCloneTarget
+      moveHistoryHeaders newList
+      newList
+        .removeClass "cloneTarget"
+        .show()
+      newList.find '.requestID'
+        .text requestID
+      newList
+
+    # return: jquery elem
+    returnStatus = ( count, returnCode ) ->
+      #count = $ "<th/>" .text count
+      row = $ "<tr/>"
+        .addClass switch Math.floor(returnCode/100)
+          when 2 then "success" # 2xx
+          when 3 then "warning" # 3xx
+          when 4 then "danger"  # 4xx
+        .addClass "respRet"
+        .append($ "<th/>"
+          .text count)
+        .append($ "<th>returnCode</th>")
+        .append($ "<th/>"
+          .text returnCode)
+      row.tooltip
+          #container: consts.callbackResponseHistoryModal
+          title: "click to show the XML"
+        .on 'click', -> # Show the response xml instead of list
+          if row.data.dataRows
+            tmpRow = row.nextUntil '.respRet'
+            tmpRow.remove()
+            row.after row.data.dataRows
+            delete row.data.dataRows
+          else
+            dataRows = row.nextUntil '.respRet'
+            row.data.dataRows = dataRows.clone()
+            dataRows.remove()
+
+            tmpTr = $ '<tr/>'
+            codeMirrorContainer = $ '<td colspan=3/>'
+            tmpTr.append codeMirrorContainer
+            row.after tmpTr
+              
+            responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings)
+            responseCodeMirror.setValue responseString
+            responseCodeMirror.autoFormatAll()
+          
+          ## Old function was to close the history and show response in the main area and flash it
+          #
+          #WebOmi.formLogic.setResponse responseString, ->
+          #  url = window.location.href                   #Save down the URL without hash.
+          #  window.location.href = "#response"           #Go to the target element.
+          #  window.history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
+          #  WebOmi.util.flash WebOmi.consts.responseDiv
+          #WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
+      row
+
+    htmlformat = ( pathValues ) ->
+
+      for pathValue in pathValues
+        row = $ "<tr/>"
+          .append $ "<td/>"
+          .append($ "<td/>"
+            .text pathValue.shortPath
+            .tooltip
+              #container: "body"
+              container: consts.callbackResponseHistoryModal
+              title: pathValue.path
+          )
+          .append($ "<td/>"
+            .tooltip
+              #container: "body"
+              title: pathValue.value.attributes.dateTime.value
+            .append($("<code/>").text pathValue.stringValue)
+          )
+        row
+
+    addHistory = ( requestID, pathValues ) ->
+      # Note: existence of this is handled somewhere above
+      callbackRecord = my.callbackSubscriptions[requestID]
+      
+      responseList =
+        if callbackRecord.selector? and callbackRecord.selector.length > 0
+          callbackRecord.selector
+        else
+          newHistory = createHistory requestID
+          my.callbackSubscriptions[requestID].selector = newHistory
+          newHistory
+
+      dataTable = responseList.find ".dataTable"
+
+      returnS = returnStatus callbackRecord.receivedCount, 200
+      
+      dataTable
+        .prepend htmlformat pathValues
+        .prepend returnS
+
+    addHistory requestID, pathValues
+
+    # return true if request is not needed for the main area
+    not my.waitingForResponse
+
+  
+
+  
+  my.createWebSocket = (onopen, onclose, onmessage, onerror) -> # Should socket be created automaticly for my or 
+    WebOmi.debug "Creating WebSocket."
+    consts = WebOmi.consts
+    server = consts.serverUrl.val()
+    socket = new WebSocket(server)
+    socket.onopen = onopen
+    socket.onclose = () -> onclose
+    socket.onmessage = onmessage
+    socket.onerror = onerror
+    my.socket = socket
+  
   # send, callback is called with response text if successful
   my.send = (callback) ->
     consts = WebOmi.consts
     my.clearResponse()
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
+    if server.startsWith("ws://") || server.startsWith("wss://")
+      my.wsSend request,callback
+    else
+      my.httpSend callback
 
+  # String -> void
+  my.wsCallbacks = []
+
+  my.wsSend = (request,callback) ->
+    if( !my.socket || my.socket.readyState != WebSocket.OPEN)
+      onopen = () ->
+        WebOmi.debug "WebSocket connected."
+        my.wsSend request,callback
+      onclose = () -> WebOmi.debug "WebSocket disconnected."
+      onerror = (error) -> WebOmi.debug "WebSocket error: ",error
+      onmessage = my.handleWSMessage
+      my.createWebSocket onopen, onclose, onmessage, onerror
+    else
+      WebOmi.debug "Sending request via WebSocket."
+      # Next message should be rendered to main response area
+      my.waitingForResponse = true
+
+      # Note: assume that the next response is for this request
+      if callback?
+        my.wsCallbacks.push callback
+
+      # Check if request is zero callback request
+      omi = WebOmi.omi
+      maybeParsedXml = Maybe omi.parseXml(request)
+      maybeVerbXml =
+        maybeParsedXml.bind (parsedXml) ->
+          verbResult = omi.evaluateXPath(parsedXml, "//omi:omiEnvelope/*")[0]
+          Maybe verbResult
+
+      maybeVerbXml.fmap (verbXml) ->
+        verb = verbXml.tagName
+        maybeCallback = Maybe verbXml.attributes.callback
+        maybeInterval = Maybe verbXml.attributes.interval
+
+        isSubscriptionReq = maybeCallback.exists((c) -> c.value is "0") and
+          verb == "omi:read" and
+          maybeInterval.isDefined
+
+        # done by the callback parameter
+        #isReadAll = verbXml.children[0].children[0].children.length == 0
+
+        if isSubscriptionReq
+          # commented because user might be waiting for some earlier response
+          #y.waitingForResponse = false
+          
+          my.waitingForRequestID = true
+
+
+      my.socket.send(request)
+
+  my.httpSend = (callback) ->
+    WebOmi.debug "Sending request with HTTP POST."
+    consts = WebOmi.consts
+    server  = consts.serverUrl.val()
+    request = consts.requestCodeMirror.getValue()
     consts.progressBar.css "width", "95%"
     $.ajax
       type: "POST"
@@ -99,6 +471,27 @@ formLogicExt = ($, WebOmi) ->
         consts.progressBar.hide()
         window.setTimeout (-> consts.progressBar.show()), 2000
         callback(response) if (callback?)
+  
+  my.handleWSMessage = (message) ->
+    consts = WebOmi.consts
+    # TODO: Check if response to subscription and put into subscription response view
+    response = message.data
+    if not my.handleSubscriptionHistory response
+      consts.progressBar.css "width", "100%"
+      my.setResponse response
+      consts.progressBar.css "width", "0%"
+      consts.progressBar.hide()
+      window.setTimeout (-> consts.progressBar.show()), 2000
+      my.waitingForResponse = false
+    else
+      my.updateHistoryCounter()
+
+    cb(response) for cb in my.wsCallbacks
+    my.wsCallbacks = []
+
+
+
+
 
   # recursively build odf jstree from the Objects xml node
   my.buildOdfTree = (objectsNode) ->
@@ -157,7 +550,7 @@ formLogicExt = ($, WebOmi) ->
     objectsArr = omi.evaluateXPath parsed, "//odf:Objects"
 
     if objectsArr.length != 1
-      alert "failed to get single Objects odf root"
+      WebOmi.error "failed to get single Objects odf root"
     else
       my.buildOdfTree objectsArr[0] # head, checked above
 
@@ -189,6 +582,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
         for child in consts.odfTree.get_children_dom 'Objects'
           consts.odfTree.close_all child, closetime
         formLogic.clearResponse()
+        $('.clearHistory').trigger 'click'
 
 
     # TODO: maybe move these to centralized place consts.ui._.something

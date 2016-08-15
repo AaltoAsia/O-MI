@@ -31,8 +31,6 @@ import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandlers._
-import responses.OmiGenerator.xmlFromResults
-import responses.Results
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
@@ -78,18 +76,18 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
     val allExists = ownerToObjects.map{
       case (name: AgentName, objects: OdfObjects) =>
         (name,
-          agents.get(name).map{
-            agent : AgentInfo => 
-              val write = WriteRequest( ttl, objects) 
-              (agent, write) 
-          })
-    }
-    val nonExistingOwner = allExists.find{ case (name, exists) => exists.isEmpty }
-    val agentsToWrite = allExists.values.flatten
-    val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }
-    if( nonExistingOwner.nonEmpty ){
-      nonExistingOwner.map{ 
-        case (agent, write) =>
+        agents.get(name).map{
+          agent : AgentInfo => 
+          val write = WriteRequest( objects, None,ttl) 
+          (agent, write) 
+        })
+      }
+      val nonExistingOwner = allExists.find{ case (name, exists) => exists.isEmpty }
+      val agentsToWrite = allExists.values.flatten
+      val stoppedOwner = agentsToWrite.find{ case (agent, write) => !agent.running }
+      if( nonExistingOwner.nonEmpty ){
+        nonExistingOwner.map{ 
+          case (agent, write) =>
           val name = agent
           val msg = s"Received write for nonexistent agent." 
           log.warning(msg + s"Agent $name.")

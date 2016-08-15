@@ -74,11 +74,13 @@ trait InternalAgentLoader extends BaseAgentSystem {
     ownedPaths: Seq[Path]
   ) : Unit = {
       val classLoader           = Thread.currentThread.getContextClassLoader
-      val initialization = language match{
+      val initialization : Try[Future[ActorRef]]= language match{
         case Some( Scala()) => scalaAgentInit(name, classname, config, ownedPaths)
         case Some( Java()) => javaAgentInit(name, classname, config, ownedPaths)
-        case Some( Unknown( lang ) ) =>
+        case Some( Unknown( lang ) ) => 
+          Try{ throw new Exception( s"Agent's language is not supported: $lang ")}
         case None => //Lets try to figure it out ourselves
+          Try{ throw new Exception( s"Agent's language not provided")} 
       }
     initialization match {
       case Success(startF: Future[ActorRef]) => 

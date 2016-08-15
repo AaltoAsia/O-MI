@@ -30,7 +30,6 @@ import parsing.xmlGen.xmlTypes.RequestResultType
 
 
 import agentSystem._
-import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
 
@@ -40,14 +39,13 @@ trait ResponseHandler extends OmiRequestHandlerBase{
     * @param response request
     * @return (xml response, HTTP status code)
     */
-  def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={
+  def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
     val ttl = handleTTL(response.ttl)
     implicit val timeout = Timeout(ttl)
-    val resultFuture = Future.sequence(
-      response.results.map{ 
-        case OmiResult(_,_,Some(odf)) =>
-
-        val write = WriteRequest( ttl, odf)
+    val resultFuture = Future.sequence(response.results.collect{ 
+        case omiResult : OmiResult if omiResult.odf.nonEmpty =>
+        val odf = omiResult.odf.get
+        val write = WriteRequest( odf, None,ttl)
         val result = (agentSystem ? ResponsibilityRequest("ResponseHandler", write)).mapTo[ResponsibleAgentResponse]
         result.recoverWith{
           case e : Throwable =>
@@ -57,24 +55,23 @@ trait ResponseHandler extends OmiRequestHandlerBase{
 
 
         result.onSuccess{ case succ => log.info( succ.toString) }
-        val response : Future[RequestResultType]= result.map{
-          case SuccessfulWrite(_) => Results.success 
-          case FailedWrite(paths, reasons) => Results.success 
-          case MixedWrite(successfulPaths, failed)=> Results.success 
+        val response : Future[OmiResult]= result.map{
+          case SuccessfulWrite(_) => Results.Success()
+          case FailedWrite(paths, reasons) => Results.Success()
+          case MixedWrite(successfulPaths, failed)=> Results.Success() 
         }
         response
-        case OmiResult(_,_,None) =>
-          Future.successful(Results.success)
-        
+          //We do not want response request loops between O-MI Nodes
+          /*
+        case omiResult : OmiResult if omiResult.odf.isEmpty =>
+          Future.successful(Results.Success())
+          */
       }.toSeq
     )
 
-  resultFuture.map(results =>
-    xmlFromResults(
-      1.0,
-      results:_*
-    )
-)
+  resultFuture.map{
+    results => ResponseRequest(results.toVector)
+  }
 
   }
 }

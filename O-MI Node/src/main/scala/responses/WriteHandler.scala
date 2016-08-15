@@ -26,7 +26,6 @@ import akka.util.Timeout
 import akka.pattern.ask
 
 import agentSystem._
-import responses.OmiGenerator._
 import types.OmiTypes._
 
 trait WriteHandler extends OmiRequestHandlerBase{
@@ -35,8 +34,9 @@ trait WriteHandler extends OmiRequestHandlerBase{
     * @param write request
     * @return (xml response, HTTP status code)
     */
-  def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
-      implicit val timeout = Timeout( handleTTL(write.ttl))
+  def handleWrite( write: WriteRequest ) : Future[ResponseRequest] ={
+    val ttl = handleTTL(write.ttl)
+    implicit val timeout = Timeout(ttl)
 
       val result = (agentSystem ? ResponsibilityRequest("WriteHandler", write)).mapTo[ResponsibleAgentResponse]
 
@@ -49,9 +49,9 @@ trait WriteHandler extends OmiRequestHandlerBase{
 
       result.onSuccess{ case succ => log.info( succ.toString) }
       val response = result.map{
-        case SuccessfulWrite(_) => success 
-        case FailedWrite(paths, reasons) => success 
-        case MixedWrite(successfulPaths, failed)=> success 
+        case SuccessfulWrite(_) => Responses.Success()
+        case FailedWrite(paths, reasons) =>  Responses.Success()
+        case MixedWrite(successfulPaths, failed)=> Responses.Success()
       }
       response
   }

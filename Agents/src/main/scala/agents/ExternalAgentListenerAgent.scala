@@ -99,7 +99,7 @@ class ExternalAgentListener(override val config: Config)
 
       // Code for ip address authorization check
       val user = Some(remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
+      val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
         log.info(s"Agent connected from $remote to $local")
@@ -176,7 +176,7 @@ class ExternalAgentHandler(
           case Right(odf) =>
             val ttl  = Duration(5,SECONDS)
             implicit val timeout = Timeout(ttl)
-            val write = WriteRequest(ttl, odf)
+            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
             val result = (agentSystem ? ResponsibilityRequest(sourceAddress.toString, write)).mapTo[ResponsibleAgentResponse]
             result.onSuccess{
               case s: SuccessfulWrite =>

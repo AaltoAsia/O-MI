@@ -96,8 +96,8 @@ class BasicAgent( override val config: Config)  extends ScalaInternalAgent{
 
     log.debug(s"$name pushing data...")
     //interval as time to live
-    val write = WriteRequest( interval, objects )
     implicit val timeout = Timeout(interval)
+    val write = WriteRequest( objects, None, interval )
 
     //Let's tell agentSystem about our write, results will be received and handled througth promiseResult
     val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]

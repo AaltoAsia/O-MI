@@ -96,7 +96,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
           path,
           OdfTreeCollection(
@@ -106,7 +105,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      None,
+      ttl
     )
     
     val successF : Future[ResponsibleAgentResponse]= (managerRef ? ResponsibilityRequest(name, write)
@@ -125,7 +126,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
           Path("Objects/object1/sensor1"),
           OdfTreeCollection(
@@ -135,7 +135,8 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      ttl = ttl
     )
     
     val successF : Future[ResponsibleAgentResponse] =( managerRef ? ResponsibilityRequest(name, write)
@@ -155,7 +156,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
         path,
           OdfTreeCollection(
@@ -165,7 +165,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      None,
+      ttl
     )
     
     val successF : Future[ResponsibleAgentResponse]= (managerRef ? ResponsibilityRequest(name, write)
@@ -182,7 +184,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      ttl, 
       createAncestors( OdfInfoItem(
           Path("Objects/object1/sensor1"),
           OdfTreeCollection(
@@ -192,7 +193,9 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               timestamp
             )
         )
-      ))
+      )),
+      None,
+      ttl
     )
     
     val equal =MixedWrite(Vector(),FailedWrite(Vector(Path("Objects/object1/sensor1")),Vector( new Exception("Test failure"))))

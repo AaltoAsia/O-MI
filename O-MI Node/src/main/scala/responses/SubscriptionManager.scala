@@ -24,11 +24,11 @@ import scala.util.Try
 
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
+import responses.CallbackHandlers.{ MissingConnection, CallbackFailure}
 import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
-import responses.CallbackHandlers.{CallbackFailure, CallbackSuccess}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.SubscriptionRequest
+import types.OmiTypes._
 import types._
 
 /**
@@ -256,7 +256,6 @@ class SubscriptionManager extends Actor with ActorLogging {
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.subStore execute GetIntervals
-
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no intervals passed")
     } else {
@@ -282,27 +281,28 @@ class SubscriptionManager extends Actor with ActorLogging {
         val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None){
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
-        val succResult = optionObjects.map(odfObjects => responses.Results.odf("200", None, Some(iSub.id.toString), odfObjects)).toSeq
-        val failedResults = failures.map(fail => Results.simple("404", Some(s"Could not find path: ${fail}.")))
-        val resultXml = OmiGenerator.xmlFromResults(iSub.interval.toSeconds.toDouble, (succResult ++ failedResults): _*)
+        val succResult = Vector(Results.Success(Some(iSub.id), optionObjects))
+        val failedResults = if(failures.nonEmpty ) Vector(Results.NotFoundPaths(failures)) else Vector.empty
+        val responseTTL = iSub.interval
+        val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
 
-
-
-        val callbackF = CallbackHandlers.sendCallback(iSub.callback, resultXml, iSub.interval)
-          callbackF.onSuccess {
-            case CallbackSuccess() =>
-              log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-              case _ =>
-                log.warning( s"Callback success, default case should not happen; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
-            }
-            callbackF.onFailure{
-            case fail: CallbackFailure =>
-              log.warning(
-                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
-            case e : Throwable=>
-              log.warning(
-                s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
-          }
+        val callbackF = CallbackHandlers.sendCallback(iSub.callback,response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
+        callbackF.onSuccess {
+          case () =>
+            log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+        }
+        callbackF.onFailure{
+          case fail @ MissingConnection(callback) =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}, subscription is remowed.")
+            removeSubscription(iSub.id)
+          case fail: CallbackFailure =>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}")
+          case e : Throwable=>
+            log.warning(
+              s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${e.getMessage}")
+        }
       }
     }
 
@@ -358,7 +358,9 @@ class SubscriptionManager extends Actor with ActorLogging {
       val currentTimestamp = new Timestamp(currentTime)
 
       val subId = subscription.callback match {
-        case cb @ Some(callback) => subscription.interval match {
+        case cb @ Some(callback: RawCallback ) =>
+          throw RawCallbackFound(s"Tried to subscribe with RawCallback: ${callback.address}")
+        case cb @ Some(callback: DefinedCallback) => subscription.interval match {
           case Duration(-1, duration.SECONDS) => {
             //normal event subscription
 

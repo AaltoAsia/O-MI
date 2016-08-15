@@ -15,25 +15,18 @@
 # which is found with right click in the odf tree and selecting new InfoItem
 
 # imports
-((consts, requests, omi) ->
+((consts, requests, omi, util) ->
   
   # Utility function; Clone the element above and empty its input fields 
   # callback type: (clonedDom) -> void
   cloneAbove = (target, callback) ->
-    target = target
-      .prev()
+    util.cloneAbove target, cloned ->
 
-    cloned = target.clone()
-    cloned.find("input").val ""  # empty all cloned inputs
-    cloned.hide()  # make unvisible for animation
+      if callback? then callback cloned
 
-    target.after cloned  # insert after the target
-
-    if callback? then callback cloned
-
-    cloned.slideDown null, ->  # animation, default duration
-      # readjusts the position because of size change (see modal docs)
-      consts.infoItemDialog.modal 'handleUpdate'
+      cloned.slideDown null, ->  # animation, default duration
+        # readjusts the position because of size change (see modal docs)
+        consts.infoItemDialog.modal 'handleUpdate'
 
   # Utility; create timestamp picker gui
   createTimestampPicker = (dom) ->
@@ -154,7 +147,7 @@
       duplicateTime = findDuplicate(values.map((val) -> val.time))
       if duplicateTime?
         duplicateInputs = $("input[name='valuetime']").filter((_, e) -> $(e).val() == duplicateTime)
-        notifyErrorOn duplicateInputs, "Server doesn't accept multiple values with same timestamp."
+        notifyErrorOn duplicateInputs, "Server probably doesn't accept multiple values with the same timestamp."
         return # don't close
 
       metas =
@@ -207,5 +200,5 @@
     return
 
 
-)(WebOmi.consts, WebOmi.requests, WebOmi.omi)
+)(WebOmi.consts, WebOmi.requests, WebOmi.omi, WebOmi.util)
 
