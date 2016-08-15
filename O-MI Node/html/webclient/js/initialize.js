@@ -244,12 +244,12 @@
       }
     };
     $(function() {
-      var basicInput, fn, i, language, len, loc, requestTip, responseCMSettings, results, v;
-      responseCMSettings = $.extend({
+      var basicInput, fn, i, language, len, loc, requestTip, results, v;
+      my.responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
       my.requestCodeMirror = CodeMirror.fromTextArea($("#requestArea")[0], my.codeMirrorSettings);
-      my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], responseCMSettings);
+      my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], my.responseCMSettings);
       my.responseDiv = $('.response .CodeMirror');
       my.responseDiv.hide();
       my.responseCodeMirror.addOverlay(URLHighlightOverlay);

@@ -191,7 +191,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
 
   case object GetIntervals extends TransactionWithQuery[Subs, (Set[IntervalSub], Option[Timestamp])] {
     def executeAndQuery(store: Subs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
-      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.before(d))// match { case (a,b) => (a, b.headOption)}
+      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.getTime < d.getTime)// match { case (a,b) => (a, b.headOption)}
+
       val newIntervals = passedIntervals.map{a =>
           val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
           val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))

@@ -69,7 +69,17 @@ case class IntervalSub(
   interval: Duration,
   nextRunTime: Timestamp,
   startTime: Timestamp
-  ) extends SavedSub
+  ) extends SavedSub {
+  override def equals(o: Any): Boolean = {
+    o match{
+      case IntervalSub(oId, _, _, _, _, _, _) => id.equals(oId)
+      case _ => false
+    }
+  }
+  override def hashCode(): Int = {
+    id.toInt
+  }
+}
 
 case class EventSub(
   id: Long,
