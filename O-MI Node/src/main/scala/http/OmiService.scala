@@ -63,8 +63,8 @@ class OmiServiceImpl(reqHandler: RequestHandler, val subscriptionManager: ActorR
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
-
-  registerApi(new AuthAPIService())
+  //example auth API service code in java directory of the project
+  //registerApi(new AuthAPIService())
 
   //Used for O-MI subscriptions
   val requestHandler = reqHandler
