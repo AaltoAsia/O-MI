@@ -93,9 +93,9 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   def start   : InternalAgentSuccess 
   def stop    : InternalAgentSuccess 
   def receive  = {
-    case Start => sender() ! start 
-    case Restart => sender() ! restart
-    case Stop => sender() ! stop
+    case Start() => sender() ! start 
+    case Restart() => sender() ! restart
+    case Stop() => sender() ! stop
 
    }
 

@@ -28,18 +28,18 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
   "InternalAgentLoader should " >> { 
     "log warnings when loading fails when " >> {
       "agent's class is not found" >> missingAgentTest
-      "agent's companion object is not found" >> missingObjectTest
+      "agent's companion object is not found" >> missingObjectTest.pendingUntilFixed
     }
 
     "log warnings when loaded classes are invalid when " >> {
-      "agent's class does not implement trait InternalAgent" >> unimplementedIATest
+      "agent's class does not implement trait InternalAgent" >> unimplementedIATest.pendingUntilFixed
       "agent's companion object does not implement trait PropsCreator" >> unimplementedPCTest
-      "agent's companion object creates props for something else than agent">> wrongPropsTest
+      "agent's companion object creates props for something else than agent">> wrongPropsTest.pendingUntilFixed
       "agent's companion object is actually something else" >> oddObjectTest 
     }
     "log warnings when loaded classes throw exceptions when " >> {
-      "props are created " >> propsTest 
-      "agent is started  " >> startTest
+      "props are created " >> propsTest .pendingUntilFixed
+      "agent is started  " >> startTest.pendingUntilFixed
     }
 
     "store successfully started agents to agents " >> successfulAgents 

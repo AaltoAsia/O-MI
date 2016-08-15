@@ -58,7 +58,7 @@ trait InternalAgentManager extends BaseAgentSystem {
         log.info(s"Starting: " + agentInfo.name)
         val result = agentInfo.agent ? Start()
         result.map{
-          case Success(CommandSuccessful()) =>
+          case CommandSuccessful() =>
             val msg = successfulStartMsg(agentName)
             log.info(msg)
             agents += agentInfo.name -> AgentInfo(
@@ -70,7 +70,7 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.ownedPaths
             )
             msg
-          case Failure( t: Throwable ) =>
+          case t @ CommandFailed(msg) =>
             t.toString
         }.recover{
           case t : Throwable => 
@@ -88,7 +88,7 @@ trait InternalAgentManager extends BaseAgentSystem {
         log.warning(s"Stopping: " + agentInfo.name)
         val result = agentInfo.agent ? Stop()
         result.map{
-          case Success(CommandSuccessful()) =>
+          case CommandSuccessful() =>
             agents += agentInfo.name -> AgentInfo(
               agentInfo.name,
               agentInfo.classname,
@@ -100,7 +100,7 @@ trait InternalAgentManager extends BaseAgentSystem {
             val msg = successfulStopMsg(agentName)
             log.info(msg)
             msg
-          case Failure( t: Throwable ) =>
+          case t @ CommandFailed(msg) =>
             t.toString
         }.recover{
           case t : Throwable => 

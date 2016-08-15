@@ -22,6 +22,7 @@ import java.sql.Timestamp
 
 import scala.language.existentials
 import scala.xml.NodeSeq
+import scala.collection.JavaConversions
 import javax.xml.datatype.XMLGregorianCalendar
 
 import parsing.xmlGen.xmlTypes._
@@ -56,6 +57,9 @@ package object OmiTypes  {
    val cal = new GregorianCalendar()
    cal.setTime(timestamp)
    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+ }
+ def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
+   JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
  }
 }
 /**

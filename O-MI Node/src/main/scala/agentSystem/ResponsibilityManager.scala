@@ -196,6 +196,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
         }
         senderRef ! result
       case Failure( t ) => 
+        senderRef ! FailedWrite(write.odf.paths, Vector(t))
     
     }
 

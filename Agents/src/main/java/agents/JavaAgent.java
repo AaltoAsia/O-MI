@@ -30,6 +30,7 @@ import types.OmiTypes.*;
 import types.OdfTypes.OdfValue;
 import types.OdfTypes.*;
 import types.OdfFactory;
+import types.OmiFactory;
 import types.OdfTypes.OdfInfoItem;
 
 public class JavaAgent extends JavaInternalAgent {
@@ -131,26 +132,19 @@ public class JavaAgent extends JavaInternalAgent {
     log.debug( name + " pushing data...");
     //Create O-MI write request
     //interval as time to live
-    WriteRequest write = new WriteRequest(
+    WriteRequest write = OmiFactory.createWriteRequest(
         interval, //ttl
-        objects, //O-DF
-        scala.Option.empty()//Callback, optional
+        objects //O-DF
     );
     
     Timeout timeout = new Timeout(interval);
-    ExecutionContext ec = context().system().dispatcher();
     //We need to tell AgentSystem who is askinng request to be handled, so we wrap write
     //in ResponsibilityRequest.
     ResponsibilityRequest rw = new ResponsibilityRequest(name, write);
 
-    //Lets ask AgentSystem to handle our write
-    Future<Object> future = ask( agentSystem,rw, timeout);
-    //Map Object to ResponsibleAgentResponse
-    Future<ResponsibleAgentResponse> result = future.map(new Mapper<Object,ResponsibleAgentResponse>() {
-        public ResponsibleAgentResponse apply(Object obj) {
-            return (ResponsibleAgentResponse) obj;
-        }
-    }, ec);
+    Future<ResponsibleAgentResponse> result = writeToNode(write,timeout);
+
+    ExecutionContext ec = context().system().dispatcher();
     //Call LogResult if write was successful.
     result.onSuccess(new LogResult(), ec);
 
