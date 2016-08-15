@@ -126,6 +126,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val correct = s"agentSystem.CommandFailed: Test failure."
    resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
+
  def agentStartFailTest = new Actorstest(AS){
    import system.dispatcher
    val name = "Startfail"

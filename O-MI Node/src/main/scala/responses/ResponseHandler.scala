@@ -19,13 +19,17 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import agentSystem.{PromiseResult, PromiseWrite}
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
-
 import akka.actor.ActorRef
+import akka.util.Timeout
+import akka.pattern.ask
+import parsing.xmlGen.xmlTypes.RequestResultType
+
+
+import agentSystem._
 import types.OmiTypes._
 import types._
 
@@ -37,23 +41,26 @@ trait ResponseHandler extends OmiRequestHandlerBase{
     */
   def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
     val ttl = handleTTL(response.ttl)
+    implicit val timeout = Timeout(ttl)
     val resultFuture = Future.sequence(response.results.collect{ 
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
         val odf = omiResult.odf.get
-        val promiseResult = PromiseResult()
         val write = WriteRequest( odf, None,ttl)
-        agentSystem ! PromiseWrite(promiseResult, write)
-        val successF = promiseResult.isSuccessful
-        successF.recoverWith{
-          case e : Throwable=>
+        val result = (agentSystem ? ResponsibilityRequest("ResponseHandler", write)).mapTo[ResponsibleAgentResponse]
+        result.recoverWith{
+          case e : Throwable =>
             log.error(e, "Failure when writing")
             Future.failed(e)
-          }
+        }
 
-          val response = successF.map{
-            succ => Results.Success()
-          }
-          response
+
+        result.onSuccess{ case succ => log.info( succ.toString) }
+        val response : Future[OmiResult]= result.map{
+          case SuccessfulWrite(_) => Results.Success()
+          case FailedWrite(paths, reasons) => Results.Success()
+          case MixedWrite(successfulPaths, failed)=> Results.Success() 
+        }
+        response
           //We do not want response request loops between O-MI Nodes
           /*
         case omiResult : OmiResult if omiResult.odf.isEmpty =>

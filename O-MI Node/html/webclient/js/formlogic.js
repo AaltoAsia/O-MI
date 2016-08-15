@@ -264,17 +264,28 @@
             case 4:
               return "danger";
           }
-        })()).addClass("respRet").append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode)).tooltip({
+        })()).addClass("respRet").append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode));
+        row.tooltip({
           title: "click to show the XML"
         }).on('click', function() {
-          WebOmi.formLogic.setResponse(responseString, function() {
-            var url;
-            url = window.location.href;
-            window.location.href = "#response";
-            window.history.replaceState(null, null, url);
-            return WebOmi.util.flash(WebOmi.consts.responseDiv);
-          });
-          return WebOmi.consts.callbackResponseHistoryModal.modal('hide');
+          var codeMirrorContainer, dataRows, responseCodeMirror, tmpRow, tmpTr;
+          if (row.data.dataRows) {
+            tmpRow = row.nextUntil('.respRet');
+            tmpRow.remove();
+            row.after(row.data.dataRows);
+            return delete row.data.dataRows;
+          } else {
+            dataRows = row.nextUntil('.respRet');
+            row.data.dataRows = dataRows.clone();
+            dataRows.remove();
+            tmpTr = $('<tr/>');
+            codeMirrorContainer = $('<td colspan=3/>');
+            tmpTr.append(codeMirrorContainer);
+            row.after(tmpTr);
+            responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings);
+            responseCodeMirror.setValue(responseString);
+            return responseCodeMirror.autoFormatAll();
+          }
         });
         return row;
       };

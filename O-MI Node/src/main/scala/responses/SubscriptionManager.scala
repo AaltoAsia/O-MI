@@ -256,7 +256,6 @@ class SubscriptionManager extends Actor with ActorLogging {
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.subStore execute GetIntervals
-
     if(iSubs.isEmpty) {
       log.warning("HandleIntervals called when no intervals passed")
     } else {
@@ -360,7 +359,7 @@ class SubscriptionManager extends Actor with ActorLogging {
 
       val subId = subscription.callback match {
         case cb @ Some(callback: RawCallback ) =>
-          throw RawCallbackFound(s"Tryied to subscribe with RawCallback: ${callback.address}")
+          throw RawCallbackFound(s"Tried to subscribe with RawCallback: ${callback.address}")
         case cb @ Some(callback: DefinedCallback) => subscription.interval match {
           case Duration(-1, duration.SECONDS) => {
             //normal event subscription
