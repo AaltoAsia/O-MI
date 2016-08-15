@@ -139,15 +139,16 @@ else
 fi
 """,
 
+      batScriptExtraDefines += """
 
+""",
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
     ///////////////////////////////////////////////////////////////////////
 
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
-      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NOD:q
-E_HOME%\\configs\\application.conf""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
 
     ////////////////////////////
