@@ -176,10 +176,14 @@ formLogicExt = ($, WebOmi) ->
         else
           return false
 
+    else if not my.waitingForResponse
+      requestID = "not given"
+      my.callbackSubscriptions[requestID] =
+        receivedCount : 1
+        userSeenCount : 0
+        responses : [responseString]
     else
       return false
-
-    infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
 
     getPath = (xmlNode) ->
       id = omi.getOdfId(xmlNode)
@@ -252,9 +256,6 @@ formLogicExt = ($, WebOmi) ->
         value: value
         stringValue: value.textContent.trim()
 
-    infoItemPathValues = ( getPathValues info for info in infoitems )
-    pathValues = [].concat infoItemPathValues...
-
     # Utility function; Clone the element above and empty its input fields 
     # callback type: (clonedDom) -> void
     cloneElem = (target, callback) ->
@@ -325,6 +326,7 @@ formLogicExt = ($, WebOmi) ->
           #WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
       row
 
+
     htmlformat = (pathValues) ->
 
       for pathValue in pathValues
@@ -369,6 +371,11 @@ formLogicExt = ($, WebOmi) ->
       dataTable
         .prepend htmlformat pathValues
         .prepend returnS
+
+    infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
+
+    infoItemPathValues = ( getPathValues info for info in infoitems )
+    pathValues = [].concat infoItemPathValues...
 
     addHistory requestID, pathValues
 

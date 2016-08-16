@@ -141,10 +141,16 @@
             return false;
           }
         }
+      } else if (!my.waitingForResponse) {
+        requestID = "not given";
+        my.callbackSubscriptions[requestID] = {
+          receivedCount: 1,
+          userSeenCount: 0,
+          responses: [responseString]
+        };
       } else {
         return false;
       }
-      infoitems = omi.evaluateXPath(response, "//odf:InfoItem");
       getPath = function(xmlNode) {
         var id, init;
         id = omi.getOdfId(xmlNode);
@@ -226,16 +232,6 @@
         }
         return results;
       };
-      infoItemPathValues = (function() {
-        var i, len, results;
-        results = [];
-        for (i = 0, len = infoitems.length; i < len; i++) {
-          info = infoitems[i];
-          results.push(getPathValues(info));
-        }
-        return results;
-      })();
-      pathValues = (ref = []).concat.apply(ref, infoItemPathValues);
       cloneElem = function(target, callback) {
         return WebOmi.util.cloneElem(target, function(cloned) {
           return cloned.slideDown(null, function() {
@@ -315,6 +311,17 @@
         returnS = returnStatus(callbackRecord.receivedCount, 200);
         return dataTable.prepend(htmlformat(pathValues)).prepend(returnS);
       };
+      infoitems = omi.evaluateXPath(response, "//odf:InfoItem");
+      infoItemPathValues = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = infoitems.length; i < len; i++) {
+          info = infoitems[i];
+          results.push(getPathValues(info));
+        }
+        return results;
+      })();
+      pathValues = (ref = []).concat.apply(ref, infoItemPathValues);
       addHistory(requestID, pathValues);
       return !my.waitingForResponse;
     };
