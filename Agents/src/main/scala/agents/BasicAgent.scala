@@ -1,11 +1,12 @@
 package agents
 
-import agentSystem.AgentTypes._ 
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.actor.{Cancellable, Props}
 import agentSystem._ 
 import types.Path
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
-import akka.actor.{Cancellable, Props}
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import java.sql.Timestamp;
@@ -18,15 +19,19 @@ import java.util.concurrent.TimeUnit
 
 object BasicAgent extends PropsCreator {
 
-  def props( config: Config) : InternalAgentProps = { InternalAgentProps(new BasicAgent(config)) }  
+  def props( config: Config) : Props = { 
+    Props(new BasicAgent(config)) 
+  }  
 
 }
 
-class BasicAgent( override val config: Config)  extends InternalAgent{
+class BasicAgent( override val config: Config)  extends ScalaInternalAgent{
+    log.debug(s"Constructing: $name")
 
-  protected val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
+     
+   val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
 	
-  protected val path : Path = Path(config.getString("path"))
+   val path : Path = Path(config.getString("path"))
 
   //Message for updating values
   case class Update()
@@ -36,7 +41,8 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
   case class UpdateSchedule( var option: Option[Cancellable]  = None)
   private val updateSchedule = UpdateSchedule( None )
   
-  protected def start : Try[InternalAgentSuccess ] = Try{
+   def start : InternalAgentResponse  ={
+    log.debug(s"Starting: $name")
   
     // Schelude update and save job, for stopping
     // Will send Update message to self every interval
@@ -45,14 +51,14 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
         Duration(0, SECONDS),
         interval,
         self,
-        Update
+        Update()
       )
     )
   
     CommandSuccessful()
   }
   
-  protected def stop : Try[InternalAgentSuccess ] = Try{
+   def stop : InternalAgentResponse = {
     updateSchedule.option match{
       //If agent has scheluded update, cancel job
       case Some(job: Cancellable) =>
@@ -70,14 +76,14 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
   }
 
   //Random number generator for generating new values
-  protected val rnd: Random = new Random()
-  protected def newValueStr = rnd.nextInt().toString 
+   val rnd: Random = new Random()
+   def newValueStr = rnd.nextInt().toString 
   
   //Helper function for current timestamps
-  protected def currentTimestamp = new Timestamp(  new java.util.Date().getTime() )
+   def currentTimestamp = new Timestamp(  new java.util.Date().getTime() )
   
   //Update values in paths
-  protected def update() : Unit = {
+   def update() : Unit = {
 
     val timestamp = currentTimestamp
     val typeStr = "xs:integer"
@@ -88,32 +94,31 @@ class BasicAgent( override val config: Config)  extends InternalAgent{
     //createAncestors generate O-DF structure from a node's path and retuns OdfObjects
     val objects : OdfObjects = createAncestors( infoItem )
 
+    log.debug(s"$name pushing data...")
     //interval as time to live
+    implicit val timeout = Timeout(interval)
     val write = WriteRequest( objects, None, interval )
 
-    //PromiseResults contains Promise containing Iterable of Promises and has some helper methods.
-    //First level Promise is used for getting answer from AgentSystem and second level Promises are
-    //used to get results of actual writes and from agents that owned paths that this agent wanted to write.
-    val result = PromiseResult()
-
     //Let's tell agentSystem about our write, results will be received and handled througth promiseResult
-    agentSystem.tell( PromiseWrite( result, write ), self )
+    val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]
 
-    //isSuccessful will return combined result or first failed write.
-    val succ = result.isSuccessful
-
-    succ.onSuccess{
+    result.onSuccess{
       case s: SuccessfulWrite =>
       log.debug(s"$name pushed data successfully.")
     }
 
-    succ.onFailure{
+    result.onFailure{
       case e: Throwable => 
       log.warning(s"$name failed to write all data, error: $e")
     }
   }
 
-  override protected def receiver = {
-    case Update => update
+  override  def receive  = {
+    case Start() => 
+      log.debug(s"Received Start: $name")
+      sender() ! start 
+    case Restart() => sender() ! restart 
+    case Stop() => sender() ! stop 
+    case Update() => update
   }
 }

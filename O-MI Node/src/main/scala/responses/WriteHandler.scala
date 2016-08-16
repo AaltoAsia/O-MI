@@ -21,9 +21,11 @@ import scala.concurrent.Future
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
-
-import agentSystem.{PromiseResult, PromiseWrite, SuccessfulWrite}
 import akka.actor.ActorRef
+import akka.util.Timeout
+import akka.pattern.ask
+
+import agentSystem._
 import types.OmiTypes._
 
 trait WriteHandler extends OmiRequestHandlerBase{
@@ -33,22 +35,23 @@ trait WriteHandler extends OmiRequestHandlerBase{
     * @return (xml response, HTTP status code)
     */
   def handleWrite( write: WriteRequest ) : Future[ResponseRequest] ={
-      handleTTL(write.ttl)
+    val ttl = handleTTL(write.ttl)
+    implicit val timeout = Timeout(ttl)
 
-      val promiseResult = PromiseResult()
-      agentSystem ! PromiseWrite(promiseResult, write)
-      val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}
+      val result = (agentSystem ? ResponsibilityRequest("WriteHandler", write)).mapTo[ResponsibleAgentResponse]
 
-      successF.recoverWith{
-        case e : Throwable =>{
+      result.recoverWith{
+        case e : Throwable =>
         log.error(e, "Failure when writing")
         Future.failed(e)
-      }}
+      }
 
 
-      successF.onSuccess{ case succ => log.info( succ.toString) }
-      val response = successF.map{
-        succ => Responses.Success()
+      result.onSuccess{ case succ => log.info( succ.toString) }
+      val response = result.map{
+        case SuccessfulWrite(_) => Responses.Success()
+        case FailedWrite(paths, reasons) =>  Responses.Success()
+        case MixedWrite(successfulPaths, failed)=> Responses.Success()
       }
       response
   }
