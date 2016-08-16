@@ -10,7 +10,7 @@ public class OdfFactory{
     String typeValue,
     Timestamp timestamp
   ){
-    HashMap<String,String> attr = new HashMap();
+    HashMap<String,String> attr = new HashMap<String,String>();
     return OdfValue$.MODULE$.apply(
         value,
         typeValue,

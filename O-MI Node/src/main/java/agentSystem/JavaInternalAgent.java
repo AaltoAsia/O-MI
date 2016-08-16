@@ -44,9 +44,11 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
    * Default restart behaviour: call stop(); start();
    */
   @Override
-  public InternalAgentResponse restart()throws StartFailed, CommandFailed {
-    stop();
-    return start();
+  public InternalAgentResponse restart(){
+    InternalAgentResponse result = stop();
+    if( result instanceof InternalAgentSuccess ){
+      return start();
+    } else return result;
   }
 
   /**

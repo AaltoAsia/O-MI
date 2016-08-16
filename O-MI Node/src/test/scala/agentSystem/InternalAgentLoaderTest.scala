@@ -174,7 +174,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
   after
  }
  def propsTest            = new Actorstest(logTestActorSystem){
-   val exception : Throwable = CommandFailed("Test failure.") 
+   val exception : Throwable =  new Exception("Test failure.") 
    val classname = "agentSystem.FailurePropsAgent"
    val configStr =
    s"""
@@ -197,8 +197,8 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
  }
  
  def startTest            = new Actorstest(logTestActorSystem/*ActorSystem()*/){
-   val exception : Throwable = CommandFailed("Test failure.") 
-   val classname = "agentSystem.FFAgent"
+ val exception : Throwable =  new Exception("Test failure.") 
+ val classname = "agentSystem.FFAgent"
    val configStr =
    s"""
    agent-system{

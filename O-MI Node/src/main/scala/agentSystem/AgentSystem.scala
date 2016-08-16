@@ -74,6 +74,20 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
     ownedPaths: Seq[Path]
   ) extends AgentInfoBase 
 
+
+  sealed trait Language{}
+  final case class Unknown(val lang : String ) extends Language
+  final case class Scala() extends Language
+  final case class Java() extends Language
+
+object Language{
+  def apply( str: String ) = str.toLowerCase() match {
+    case "java" => Java()
+    case "scala" => Scala()
+    case str: String => Unknown(str)
+  }
+}
+
 abstract class BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
   protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]

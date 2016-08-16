@@ -1,4 +1,3 @@
-
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  +    Copyright (c) 2015 Aalto University.                                        +
  +                                                                                +
@@ -15,15 +14,4 @@
 
 package object agentSystem{
   type AgentName = String
-  object Language{
-    def apply( str: String ) = str.toLowerCase() match {
-      case "java" => Java()
-      case "scala" => Scala()
-      case str: String => Unknown(str)
-    }
-  }
-  sealed trait Language 
-  final case class Unknown(val lang : String ) extends Language
-  final case class Scala() extends Language
-  final case class Java() extends Language
 }

@@ -41,9 +41,10 @@ trait InternalAgentResponse
 trait InternalAgentSuccess     extends InternalAgentResponse 
 case class CommandSuccessful() extends InternalAgentSuccess 
 
-class InternalAgentFailure(msg : String , exp : Throwable )  extends  Exception(msg, exp) with InternalAgentResponse
-case class CommandFailed(msg : String ) extends InternalAgentFailure(msg, null) 
-case class StartFailed(msg : String, exp : Throwable ) extends InternalAgentFailure(msg, exp) 
+class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.getOrElse(null)) with InternalAgentResponse
+class CommandFailed(msg : String, exp : Option[Throwable] ) extends InternalAgentFailure(msg, exp) 
+case class StopFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
+case class StartFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
 
 sealed trait ResponsibleAgentMsg
 case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
@@ -82,9 +83,8 @@ case class MixedWrite( successed: Vector[Path], failed: FailedWrite ) extends Re
 
 trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   def config : Config
-  def parent = context.parent
   def agentSystem = context.parent
-  def name = self.path.name
+  final def name = self.path.name
   def restart : InternalAgentResponse = {
     stop 
     start
@@ -97,10 +97,17 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
     case Restart() => sender() ! restart
     case Stop() => sender() ! stop
    }
+  final def writeToNode(write: WriteRequest) : Future[ResponsibleAgentResponse] = {
+    // timeout for the write request, which means how long this agent waits for write results
+    implicit val timeout : Timeout = Timeout(write.handleTTL)
 
+    // Execute the request, execution is asynchronous (will not block)
+    (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]
+  }
 }
 
-trait ResponsibleInternalAgent extends ScalaInternalAgent {
+case class ResponsibilityRequest( senderName: String, request: OmiRequest)
+trait ResponsibleScalaInternalAgent extends ScalaInternalAgent {
   import context.dispatcher
   protected def handleWrite( write: WriteRequest ) :Unit
 
@@ -110,7 +117,7 @@ trait ResponsibleInternalAgent extends ScalaInternalAgent {
     case Stop() => sender() ! stop
     case write: WriteRequest => handleWrite(write)
    }
-  final protected def passWrite(write: WriteRequest) = {
+  final protected def passWrite(write: WriteRequest) : Unit = {
     implicit val timeout = Timeout( write.handleTTL)
 
     val senderRef = sender()
@@ -121,10 +128,10 @@ trait ResponsibleInternalAgent extends ScalaInternalAgent {
     }
 
   }
-  final protected def incorrectWrite(write: WriteRequest) = {
+  final protected def incorrectWrite(write: WriteRequest) : Unit = {
     sender() ! FailedWrite(write.odf.paths, Vector(new Exception(s"Write incorrect. Tryed to write incorrect value.")))
   }
-  final protected def forbiddenWrite(write: WriteRequest) = {
+  final protected def forbiddenWrite(write: WriteRequest) : Unit = {
     sender() ! FailedWrite(write.odf.paths, Vector(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen.")))
   }
 }

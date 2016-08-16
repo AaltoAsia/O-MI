@@ -1,3 +1,12 @@
+JavaAgent.java
+================
+Let's create an *interanal agent*, that gets a path to O-DF InfoItem from 
+configuration and writes random generated values to it every interval given in 
+configuration. First create class `JavaAgent` that extends `JavaInternalAgent`.
+and have `config` as constructor parameter. Get interval from config as
+FiniteDuration and path as String and create a Path from it.
+
+```Java
 package agents;
 
 import java.lang.Exception;
@@ -253,3 +262,38 @@ public class JavaAgent extends JavaInternalAgent {
     } else unhandled(message);
   }
 }
+```
+
+Now we have an *internal agent*, but to get O-MI Node to run it, we need to compile it to a .jar
+file and put it to `deploy` directory, or if compiled with O-MI Node project, `InternalAgentLoader`
+will find it from project's .jar file.
+
+After this we have the final step, open the `application.conf` and add new object to
+`agent-system.internal-agents`. Object's format is: 
+
+```
+"<name of agent>" = {
+  language = "<scala or java>"
+  class = "<class of agent>"
+  owns = ["<O-DF path owned by agent>", ...]
+  config = <json object> 
+}
+```
+
+Field `owns` is only needed for `ResponsibleInternalAgent`.
+
+Lines to add for our example:
+
+```
+    "JavaAgent" = {
+      class = "agents.JavaAgent"
+      language = "java"
+      config = {
+        path = "Objects/JavaAgent/sensor"
+        interval = 60 seconds
+      }
+    }
+```
+
+Finally you need to restart O-MI Node to update its configuration.
+
