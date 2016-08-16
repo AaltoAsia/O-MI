@@ -53,7 +53,7 @@ class SSAgent extends ScalaInternalAgent with StartSuccess with StopSuccess{
 }
 class WSAgent extends SSAgent with ResponsibleScalaInternalAgent{
    def handleWrite(write: WriteRequest ) :Unit = {
-     sender() ! FailedWrite( Vector.empty, new Exception("Test failure."))
+     sender() ! FailedWrite( Vector.empty, Vector( new Exception("Test failure.")))
   }
 
 }

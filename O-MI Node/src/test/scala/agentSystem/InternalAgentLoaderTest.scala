@@ -196,11 +196,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    logWarningTest(new AgentSystemSettings(config), warnings )
  }
  
- def startTest            = new Actorstest(logTestActorSystem/*ActorSystem()*/){
- val exception : Throwable =  new Exception("Test failure.") 
- val classname = "agentSystem.FFAgent"
+ def startTest = new Actorstest(logTestActorSystem/*ActorSystem()*/){
+   val exception : Throwable =  StartFailed("Test failure.",None) 
+   val classname = "agentSystem.FFAgent"
    val configStr =
-   s"""
+     s"""
    agent-system{
      starting-timeout = 2 seconds
      internal-agents {
@@ -215,7 +215,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val config = ConfigFactory.parseString(configStr)
    val warnings = Vector(
      s"Class $classname could not be started. Received $exception"
-    )
+   )
    logWarningTest(new AgentSystemSettings(config), warnings )
  }
  def successfulAgents     = new Actorstest(ActorSystem()){
