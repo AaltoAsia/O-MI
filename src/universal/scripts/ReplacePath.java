@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -20,21 +21,21 @@ public class ReplacePath {
     }
     Path currentPath = Paths.get(inputPath);
 
-    Path templatePath = currentPath.resolve("etc/conf-standalone.conf");
-    Path logPath = currentPath.resolve("etc/log4j.properties");
-    Path tokensPath = currentPath.resolve("etc/initial.tokens");
-    Path confPath = currentPath.getParent().getParent().resolve("configs/application.conf");
+    Path templatePath = currentPath.resolve("etc" + File.separator + "conf-standalone.conf");
+    Path logPath = currentPath.resolve("etc" + File.separator + "log4j.properties");
+    Path tokensPath = currentPath.resolve("etc" + File.separator + "initial.tokens");
+    Path confPath = currentPath.getParent().getParent().resolve("configs" + File.separator + "application.conf");
     try{
       String template = new String(Files.readAllBytes(templatePath), charset);
-      template = template.replaceAll("(?m)^standalone\\.home.*", "standalone.home = " + currentPath.toAbsolutePath().toString());
+      template = template.replaceAll("(?m)^standalone\\.home.*", "standalone.home = " + currentPath.toAbsolutePath().toString().replace('\\', '/'));
       Files.write(templatePath, template.getBytes(charset));
 
       String logString = new String(Files.readAllBytes(logPath),charset);
-      logString = logString.replaceAll("(?m)^log4j\\.appender\\.warpLog\\.File=.*", "log4j.appender.warpLog.File=" + currentPath.resolve("logs/nohup.out"));
+      logString = logString.replaceAll("(?m)^log4j\\.appender\\.warpLog\\.File=.*", "log4j.appender.warpLog.File=" + currentPath.resolve("logs" + File.separator + "nohup.out").toAbsolutePath().toString().replace('\\', '/'));
       Files.write(logPath, logString.getBytes(charset));
 
       String warpLog = new String(Files.readAllBytes(logPath), charset);
-      warpLog = warpLog.replaceAll("(?m)^log4j\\.appender\\.warpscriptLog\\.File=.*","log4j.appender.warpscriptLog.File=" + currentPath.resolve("logs/warpscript.out"));
+      warpLog = warpLog.replaceAll("(?m)^log4j\\.appender\\.warpscriptLog\\.File=.*","log4j.appender.warpscriptLog.File=" + currentPath.resolve("logs" + File.separator + "warpscript.out").toAbsolutePath().toString().replace('\\', '/'));
       Files.write(logPath, warpLog.getBytes(charset));
 
       String tokens = new String(Files.readAllBytes(tokensPath), charset);

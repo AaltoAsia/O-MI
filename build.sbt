@@ -138,10 +138,30 @@ else
   echo "A Warp 10 instance is already running"
 fi
 """,
-
-      batScriptExtraDefines += """
-
-""",
+batScriptExtraDefines += """set "WARP10_HOME=%O_MI_NODE_HOME%\database\warp10"""",
+batScriptExtraDefines += """set "WARP10_CONFIG=%WARP10_HOME%\etc\conf-standalone.conf"""",
+batScriptExtraDefines += """set "WARP10_REVISION=1.0.7""",
+batScriptExtraDefines += """set "WARP10_JAR=%WARP10_HOME%\bin\warp10-%WARP10_REVISION%.jar"""",
+batScriptExtraDefines += """set "WARP10_CLASS=io.warp10.standalone.Warp"""",
+batScriptExtraDefines += """set "WARP10_CP=%WARP10_JAR%"""",
+batScriptExtraDefines += """set "WARP10_HEAP=512m"""",
+batScriptExtraDefines += """set "WARP10_HEAP_MAX=1g"""",
+batScriptExtraDefines += """set "WARP10_SENSISION_EVENTS_DIR=%WARP10_HOME%\data\sensision\data\metrics"""",
+batScriptExtraDefines += """set "WARP10_LOG4J_CONF=%WARP10_HOME%\etc\log4j.properties"""",
+batScriptExtraDefines += """set "WARP10_JAVA_HEAP_DUMP=%WARP10_HOME%\logs\java.heapdump"""",
+batScriptExtraDefines += """set "WARP10_JAVA_OPTS=-Djava.awt.headless=true -Dlog4j.configuration=file:%WARP10_LOG4J_CONF% -Xms%WARP10_HEAP% -Xmx%WARP10_HEAP_MAX% -XX:+UseG1GC"""",
+batScriptExtraDefines += """if not exist %WARP10_CONFIG% (""",
+batScriptExtraDefines += """  "%_JAVACMD%" -cp %WARP10_JAR% io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 %WARP10_HOME%/templates/conf-standalone.template -o %WARP10_HOME%/etc/conf-standalone.conf >> %WARP10_HOME%\\etc\\initial.tokens""",
+batScriptExtraDefines += """  "%_JAVACMD%" -cp %O_MI_NODE_HOME%\\bin\\fixpaths.jar ReplacePath %WARP10_HOME%""",
+batScriptExtraDefines += """)""",
+batScriptExtraDefines += """""",
+batScriptExtraDefines += """jps -l | findstr %WARP10_CLASS%""",
+batScriptExtraDefines += """""",
+batScriptExtraDefines += """if %ERRORLEVEL% gtr "0" (""",
+batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp !WARP10_CP! !WARP10_CLASS! !WARP10_CONFIG! ^>^> !WARP10_HOME!\\logs\\nohup.out ^2^>^&^1""",
+batScriptExtraDefines += """) else (""",
+batScriptExtraDefines += """  echo Warp10 is already running!""",
+batScriptExtraDefines += """)""",
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
     ///////////////////////////////////////////////////////////////////////
