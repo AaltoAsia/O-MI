@@ -205,15 +205,18 @@
         }
       };
       getPathValues = function(infoitemXmlNode) {
-        var i, len, path, results, value, valuesXml;
+        var i, infoItemName, j, len, path, pathObject, ref, results, value, valuesXml;
         valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value");
         path = getPath(infoitemXmlNode);
         insertToTrie(pathPrefixTrie, path);
+        ref = path.split("/"), pathObject = 2 <= ref.length ? slice.call(ref, 0, i = ref.length - 1) : (i = 0, []), infoItemName = ref[i++];
         results = [];
-        for (i = 0, len = valuesXml.length; i < len; i++) {
-          value = valuesXml[i];
+        for (j = 0, len = valuesXml.length; j < len; j++) {
+          value = valuesXml[j];
           results.push({
             path: path,
+            pathObject: pathObject.join('/'),
+            infoItemName: infoItemName,
             shortPath: function() {
               return createShortenedPath(path);
             },
@@ -294,7 +297,7 @@
         results = [];
         for (i = 0, len = pathValues.length; i < len; i++) {
           pathValue = pathValues[i];
-          row = $("<tr/>").append($("<td/>")).append($("<td/>").text(pathValue.shortPath).tooltip({
+          row = $("<tr/>").append($("<td/>")).append($("<td/>").append($('<span class="hidden-lg hidden-md" />').text(pathValue.shortPath)).append($('<span class="hidden-xs hidden-sm" />').text(pathValue.pathObject + '/').append($('<b/>').text(pathValue.infoItemName))).tooltip({
             container: consts.callbackResponseHistoryModal,
             title: pathValue.path
           })).append($("<td/>").tooltip({

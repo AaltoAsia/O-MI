@@ -243,8 +243,11 @@ formLogicExt = ($, WebOmi) ->
       path = getPath infoitemXmlNode
       insertToTrie pathPrefixTrie, path
 
+      [pathObject..., infoItemName] = path.split "/"
       for value in valuesXml
         path: path
+        pathObject: pathObject.join '/'
+        infoItemName: infoItemName
         shortPath: -> createShortenedPath path
         value: value
         stringValue: value.textContent.trim()
@@ -322,13 +325,18 @@ formLogicExt = ($, WebOmi) ->
           #WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
       row
 
-    htmlformat = ( pathValues ) ->
+    htmlformat = (pathValues) ->
 
       for pathValue in pathValues
         row = $ "<tr/>"
           .append $ "<td/>"
           .append($ "<td/>"
-            .text pathValue.shortPath
+            .append($('<span class="hidden-lg hidden-md" />').text pathValue.shortPath)
+            .append(
+              $('<span class="hidden-xs hidden-sm" />')
+              .text pathValue.pathObject + '/'
+              .append($('<b/>').text pathValue.infoItemName)
+            )
             .tooltip
               #container: "body"
               container: consts.callbackResponseHistoryModal
@@ -342,7 +350,7 @@ formLogicExt = ($, WebOmi) ->
           )
         row
 
-    addHistory = ( requestID, pathValues ) ->
+    addHistory = (requestID, pathValues) ->
       # Note: existence of this is handled somewhere above
       callbackRecord = my.callbackSubscriptions[requestID]
       
