@@ -25,16 +25,33 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
    */
   // TODO: static method cannot be defined in the interface?
 
+  /**
+   * This sends debug log message to O-MI Node logs if
+   * debug level is enabled (in logback.xml and application.conf)
+   */
   protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-  protected Config config;
+
+  //protected Config config;
+
   protected ActorRef agentSystem = context().parent();
+
+  /**
+   * Contains name of the agent as was given in application.conf
+   */
   protected String name = self().path().name();
+
+  /**
+   * Default restart behaviour: call stop(); start();
+   */
   @Override
   public InternalAgentResponse restart()throws StartFailed, CommandFailed {
     stop();
     return start();
   }
 
+  /**
+   * Wrapper for easier request execution.
+   */
   final public Future<ResponsibleAgentResponse> writeToNode( WriteRequest write, Timeout timeout ){
     ResponsibilityRequest rw = new ResponsibilityRequest(name, write);
     Future<Object> future = ask( agentSystem,rw, timeout);
