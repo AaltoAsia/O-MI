@@ -176,10 +176,14 @@ formLogicExt = ($, WebOmi) ->
         else
           return false
 
+    else if not my.waitingForResponse
+      requestID = "not given"
+      my.callbackSubscriptions[requestID] =
+        receivedCount : 1
+        userSeenCount : 0
+        responses : [responseString]
     else
       return false
-
-    infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
 
     getPath = (xmlNode) ->
       id = omi.getOdfId(xmlNode)
@@ -243,14 +247,14 @@ formLogicExt = ($, WebOmi) ->
       path = getPath infoitemXmlNode
       insertToTrie pathPrefixTrie, path
 
+      [pathObject..., infoItemName] = path.split "/"
       for value in valuesXml
         path: path
+        pathObject: pathObject.join '/'
+        infoItemName: infoItemName
         shortPath: -> createShortenedPath path
         value: value
         stringValue: value.textContent.trim()
-
-    infoItemPathValues = ( getPathValues info for info in infoitems )
-    pathValues = [].concat infoItemPathValues...
 
     # Utility function; Clone the element above and empty its input fields 
     # callback type: (clonedDom) -> void
@@ -322,13 +326,19 @@ formLogicExt = ($, WebOmi) ->
           #WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
       row
 
-    htmlformat = ( pathValues ) ->
+
+    htmlformat = (pathValues) ->
 
       for pathValue in pathValues
         row = $ "<tr/>"
           .append $ "<td/>"
           .append($ "<td/>"
-            .text pathValue.shortPath
+            .append($('<span class="hidden-lg hidden-md" />').text pathValue.shortPath)
+            .append(
+              $('<span class="hidden-xs hidden-sm" />')
+              .text pathValue.pathObject + '/'
+              .append($('<b/>').text pathValue.infoItemName)
+            )
             .tooltip
               #container: "body"
               container: consts.callbackResponseHistoryModal
@@ -342,7 +352,7 @@ formLogicExt = ($, WebOmi) ->
           )
         row
 
-    addHistory = ( requestID, pathValues ) ->
+    addHistory = (requestID, pathValues) ->
       # Note: existence of this is handled somewhere above
       callbackRecord = my.callbackSubscriptions[requestID]
       
@@ -361,6 +371,11 @@ formLogicExt = ($, WebOmi) ->
       dataTable
         .prepend htmlformat pathValues
         .prepend returnS
+
+    infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
+
+    infoItemPathValues = ( getPathValues info for info in infoitems )
+    pathValues = [].concat infoItemPathValues...
 
     addHistory requestID, pathValues
 
