@@ -33,7 +33,6 @@ final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier)
 
 final case class HTTPCallback(val uri: Uri) extends DefinedCallback{
   val address: String = uri.toString
-
 }
 
 final case class RawCallbackFound(msg: String) extends Exception(msg)

@@ -14,7 +14,7 @@
 package agentSystem
 
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
 import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 import akka.actor.{
   Actor,
@@ -24,85 +24,108 @@ import akka.actor.{
 }
 import akka.actor.Actor.Receive
 import akka.pattern.ask
+import akka.util.Timeout
 import com.typesafe.config.Config
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
-import agentSystem.AgentTypes._
-  /**
-    Commands that can be received from InternalAgentLoader.
-  **/
+/**
+ Commands that can be received from InternalAgentLoader.
+ **/
 sealed trait InternalAgentCmd
-  case class Start()                    extends InternalAgentCmd
-  case class Restart()                  extends InternalAgentCmd
-  case class Stop()                     extends InternalAgentCmd
+case class Start()                    extends InternalAgentCmd
+case class Restart()                  extends InternalAgentCmd
+case class Stop()                     extends InternalAgentCmd
 
-  sealed trait InternalAgentResponse
-  trait InternalAgentSuccess     extends InternalAgentResponse 
-  case class CommandSuccessful() extends InternalAgentSuccess 
+trait InternalAgentResponse
+trait InternalAgentSuccess     extends InternalAgentResponse 
+case class CommandSuccessful() extends InternalAgentSuccess 
 
-  abstract class InternalAgentFailure(msg : String )  extends  Exception(msg) with InternalAgentResponse
-  case class CommandFailed(msg : String ) extends InternalAgentFailure(msg) 
+class InternalAgentFailure(msg : String , exp : Throwable )  extends  Exception(msg, exp) with InternalAgentResponse
+case class CommandFailed(msg : String ) extends InternalAgentFailure(msg, null) 
+case class StartFailed(msg : String, exp : Throwable ) extends InternalAgentFailure(msg, exp) 
 
-  sealed trait ResponsibleAgentMsg
-  case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
+sealed trait ResponsibleAgentMsg
+case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
 
-  sealed trait ResponsibleAgentResponse
-  case class SuccessfulWrite( paths: Vector[Path] ) extends ResponsibleAgentResponse 
-
-object AgentTypes {
-  trait InternalAgent extends Actor with ActorLogging {
-    protected def config : Config
-    protected def parent = context.parent
-    protected def agentSystem = context.parent
-    protected def name = self.path.name
-    protected def start   : Try[InternalAgentSuccess ]
-    protected def restart : Try[InternalAgentSuccess ] = stop flatMap{
-      case success  : InternalAgentSuccess => start
-    }
-    protected def stop    : Try[InternalAgentSuccess ]
-    private[AgentTypes] def forcer : Actor.Receive = {
-      case Start()                    => sender() ! start
-      case Restart()                  => sender() ! restart
-      case Stop()                     => sender() ! stop
-    }
-    protected def receiver : Actor.Receive = Actor.emptyBehavior 
-    final def receive : Actor.Receive= forcer orElse receiver
-  }
-
-  trait ResponsibleInternalAgent extends InternalAgent {
-      import context.dispatcher
-    protected def handleWrite(promise: Promise[ResponsibleAgentResponse], write: WriteRequest ) :Unit
-    override private[AgentTypes] def forcer: Actor.Receive = super.forcer orElse {
-      case ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)  =>  handleWrite(promise, write)
-    }
-
-    final protected def passWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-      val result = PromiseResult()
-      parent ! PromiseWrite( result, write)
-      promise.completeWith( result.isSuccessful ) 
-    }
-    final protected def incorrectWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-      promise.failure(new Exception(s"Write incorrect. Tryed to write incorrect value."))
-    }
-    final protected def forbiddenWrite(promise:Promise[ResponsibleAgentResponse], write: WriteRequest) = {
-      promise.failure(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen."))
+sealed trait ResponsibleAgentResponse{
+  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse 
+}
+case class SuccessfulWrite( paths: Vector[Path] ) extends ResponsibleAgentResponse{
+  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse = {
+    other match{
+      case SuccessfulWrite( opaths ) => SuccessfulWrite( paths ++ opaths)
+      case fw @ FailedWrite( opaths, reason ) => MixedWrite( paths, fw )
+      case MixedWrite( successed, failed ) => MixedWrite( paths ++ successed, failed )
     }
   }
-
-  trait PropsCreator{
-    def props( config: Config ) : InternalAgentProps
+} 
+case class FailedWrite( paths: Vector[Path], reasons: Vector[Throwable] ) extends ResponsibleAgentResponse {
+  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse = {
+    other match{
+      case SuccessfulWrite( opaths ) => MixedWrite(opaths, this)
+      case fw @ FailedWrite( opaths, oreasons ) => FailedWrite( paths ++ opaths, reasons ++ oreasons )
+      case MixedWrite( successed, failed ) => MixedWrite( successed, FailedWrite( paths ++ failed.paths, reasons ++ failed.reasons) )
+    }
   }
-  final case class InternalAgentProps private[InternalAgentProps](props: Props)
-  object InternalAgentProps{
-    final def apply[T <: InternalAgent: ClassTag](creator: =>T): InternalAgentProps ={
-      new InternalAgentProps( Props( creator ))
+} 
+case class MixedWrite( successed: Vector[Path], failed: FailedWrite ) extends ResponsibleAgentResponse{
+  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse = {
+    other match{
+      case SuccessfulWrite( opaths ) => MixedWrite( successed ++ opaths, failed)
+      case fw @ FailedWrite( opaths, reason ) => MixedWrite( successed , FailedWrite( failed.paths ++ fw.paths, failed.reasons ++ fw.reasons))
+      case MixedWrite( osuccessed, ofailed ) => MixedWrite( successed ++ osuccessed, FailedWrite( failed.paths ++ ofailed.paths, failed.reasons ++ ofailed.reasons) )
     }
-    final def apply[T <: InternalAgent]()(implicit arg0: ClassTag[T]): InternalAgentProps ={
-      new InternalAgentProps( Props()(arg0))
+  }
+}  
+
+
+trait ScalaInternalAgent extends InternalAgent with ActorLogging{
+  def config : Config
+  def parent = context.parent
+  def agentSystem = context.parent
+  def name = self.path.name
+  def restart : InternalAgentResponse = {
+    stop 
+    start
+  }
+  //These need to be implemented 
+  def start   : InternalAgentResponse 
+  def stop    : InternalAgentResponse 
+  def receive  = {
+    case Start() => sender() ! start 
+    case Restart() => sender() ! restart
+    case Stop() => sender() ! stop
+   }
+
+}
+
+trait ResponsibleInternalAgent extends ScalaInternalAgent {
+  import context.dispatcher
+  protected def handleWrite( write: WriteRequest ) :Unit
+
+  override def receive  = {
+    case Start() => sender() ! start 
+    case Restart() => sender() ! restart
+    case Stop() => sender() ! stop
+    case write: WriteRequest => handleWrite(write)
+   }
+  final protected def passWrite(write: WriteRequest) = {
+    implicit val timeout = Timeout( write.handleTTL)
+
+    val senderRef = sender()
+    val future = (agentSystem ? write).mapTo[ResponsibleAgentResponse]
+    future.onComplete{
+      case Success( result ) => senderRef ! result 
+      case Failure( t ) => senderRef ! FailedWrite(write.odf.paths, Vector(t))
     }
-    final def apply[T <: InternalAgent](clazz: Class[T], args: Any*): InternalAgentProps ={
-      new InternalAgentProps( Props( clazz, args) )
-    } 
+
+  }
+  final protected def incorrectWrite(write: WriteRequest) = {
+    sender() ! FailedWrite(write.odf.paths, Vector(new Exception(s"Write incorrect. Tryed to write incorrect value.")))
+  }
+  final protected def forbiddenWrite(write: WriteRequest) = {
+    sender() ! FailedWrite(write.odf.paths, Vector(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen.")))
   }
 }
+

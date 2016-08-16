@@ -176,7 +176,11 @@ sealed trait OdfValue{
   final case class  OdfStringPresentedValue(value: String,  timestamp: Timestamp, typeValue : String = "xs:string", attributes: Map[String, String]  ) extends OdfValue
 
 object OdfValue{
-  def apply(value: Any, timestamp: Timestamp, attributes: Map[String, String]) : OdfValue = {
+  def apply(
+    value: Any,
+    timestamp: Timestamp,
+    attributes: Map[String, String]
+  ) : OdfValue = {
     value match {
       case s: Short => OdfShortValue(s, timestamp, attributes)
       case i: Int   => OdfIntValue(i, timestamp, attributes)
@@ -188,7 +192,12 @@ object OdfValue{
       case a: Any => OdfStringPresentedValue(a.toString, timestamp, attributes = attributes)
     }
   }
-  def apply(value: String, typeValue: String, timestamp: Timestamp, attributes: Map[String, String] = Map.empty) : OdfValue = {
+  def apply(
+    value: String,
+    typeValue: String,
+    timestamp: Timestamp,
+    attributes: Map[String, String] = Map.empty
+  ) : OdfValue = {
     Try{
       typeValue match {
         case "xs:float" =>
