@@ -59,7 +59,7 @@ When *external agents* are enabled, any program that pushes O-DF formatted data 
 port will be writen to O-MI Node.  
 
 Program that act as *external agent* can be written with any programming language. See
-[the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
+[the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/tools/agentExample.py).
 Starting and stopping of external agents are the user's responsibility.
 
 If your external agent is run on a different computer, you will need to add its IP-address to
