@@ -1,47 +1,41 @@
 Other Guides
 ============
 
-[Developnig agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
-[Developnig agents using Java](https://github.com/AaltoAsia/O-MI/blob/developmentr/JavaAgentDeveloperGuide.md).
+* [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+* [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
 
 What are Agents?
 ================
 
-Agents are small programs that are connect to devices and push received data to
-O-MI Node. 
+Agents are small plugin programs that can be run on the same JVM as the server or otherwise easily connect to the Node. For example, an agent can be connected to devices and push received data to O-MI Node. 
 
-There are two kinds of Agents using different interfaces: 
+There are two kinds of agents using different interfaces: 
 
-- *Internal agents* that are loaded from .jar file and instantiated to be run 
-inside the same JVM as O-MI Node. They can be created using Scala or Java. Only
-scala implementations can also own paths and receive any authorized write to 
-them for futher handling. *Internal agents* that owns any paths is called 
-*responsible*.
+- *Internal agents* that are loaded from a .jar file and instantiated to be run 
+inside the same JVM as O-MI Node. They can be created using Scala or Java (or other JVM compatible language). Only
+scala implementations can also "own" paths and decide if the write is succesful or failed/rejected. *Internal agents* that "owns" paths is called *responsible*.
 
-- *External agents* that push O-DF formatted sensor data to a TCP port of 
-O-MI Node. O-MI Nodes standart configuration in `application.conf` does not 
-enable support *external agents*. They can be enabled by uncommenting 
-*ExternalAgentListener* from `agent-system.internal-agents`. 
-*ExternalAgentListener* is *internal agent*, that opens a port on an interface 
-to listen O-DF formatted data. 
+- *External agents* push O-DF formatted data to a TCP port of 
+O-MI Node. The default configuration of O-MI Node (in `application.conf`) does not 
+enable support for *external agents*. *External agents* are implemented as a simple *internal agent*.
+
 
 Internal Agent 
 ================
 
 *Internal agents* are classes that extend `InternalAgent` interface. 
-`InternalAgent` interface extends `Akka.actor.Actor`. Both Scala and Java have 
-own interfaces that need to be implemented to be instantiated by `InternalAgentLoader`.
+`InternalAgent` interface extends `akka.actor.Actor`. Both Scala and Java have 
+own interfaces that need to be implemented to be loaded by `InternalAgentLoader`.
 
-[Developnig agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
-[Developnig agents using Java](https://github.com/AaltoAsia/O-MI/blob/developmentr/JavaAgentDeveloperGuide.md).
+[Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+[Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
 
 External Agent
 ==============
 
-The recommended option for writing data from outside of O-MI Node is to send O-MI write request to it. 
-This is prefered way because there are more security options. 
+The recommended option for writing data from outside of O-MI Node is to send O-MI write request to it, because there are more security options and possibility to change to different O-MI compatible service. External agents can be used for prototyping or implementing simple adapters, usually in the same machine or local network as the server. For security reasons, don't change the interface setting (or firewalls) to allow external network to this feature.
 
-To enable *external agents* add following lines to `agent-system.internal-agents` in `application.conf`: 
+To enable *external agents* uncomment/add following lines to `agent-system.internal-agents` in `application.conf`: 
 
 ```
     "ExternalAgentListener" = {
@@ -55,14 +49,14 @@ To enable *external agents* add following lines to `agent-system.internal-agents
     }
 ```
 
-This adds an *internal agent* of class `agents.ExternalAgentListener` named 
-ExternalAgentListener to O-MI Node. ExternalAgentListener will now listen to 
+This adds an *internal agent* of class `agents.ExternalAgentListener` with agent name 
+`ExternalAgentListener`. *ExternalAgentListener* will now listen to 
 given port of given interface for O-DF formatted data. Timeout in config 
-definens how long will ExternalAgentListener wait for binding and unbinding of
+defines how long will *ExternalAgentListener* wait for binding and unbinding of
 given port before failing.
 
 When *external agents* are enabled, any program that pushes O-DF formatted data to the TCP
-port defined in configuration of `ExternalAgentListener` will be writen to O-MI Node.  
+port will be writen to O-MI Node.  
 
 Program that act as *external agent* can be written with any programming language. See
 [the simple python example](https://github.com/AaltoAsia/O-MI/blob/master/agentExample.py).
