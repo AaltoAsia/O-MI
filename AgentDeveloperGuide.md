@@ -27,8 +27,8 @@ Internal Agent
 `InternalAgent` interface extends `akka.actor.Actor`. Both Scala and Java have 
 own interfaces that need to be implemented to be loaded by `InternalAgentLoader`.
 
-[Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
-[Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
+* [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+* [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
 
 External Agent
 ==============
