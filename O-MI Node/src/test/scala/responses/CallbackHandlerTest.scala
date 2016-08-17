@@ -29,7 +29,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       probe.expectMsg(ttl, Option(msg.asXML))
     }
 
-    "Try to keep sending message until ttl is over" in new Actors {
+    "Try to keep sending message until ttl is over" in skipped(new Actors {
       val port = 20004
       val ttl = Duration(10, "seconds")
       val msg  = Responses.Success( ttl = ttl)
@@ -40,7 +40,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
       probe.expectMsg(ttl, Option(msg.asXML))
 
-    }
+    })
   }
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem): TestProbe = {
