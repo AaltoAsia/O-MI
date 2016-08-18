@@ -91,7 +91,7 @@ formLogicExt = ($, WebOmi) ->
   my.waitingForRequestID = false
 
   # whether callbackResponseHistoryModal is opened and the user can see the new results
-  #my.historyOpen = false
+  my.historyOpen = false
 
   consts = WebOmi.consts
 
@@ -99,11 +99,13 @@ formLogicExt = ($, WebOmi) ->
     consts.callbackResponseHistoryModal = $ '.callbackResponseHistory'
     consts.callbackResponseHistoryModal
       .on 'shown.bs.modal', ->
-        #my.historyOpen = true
+        my.historyOpen = true
         my.updateHistoryCounter true
       .on 'hide.bs.modal', ->
-        #my.historyOpen = false
+        my.historyOpen = false
         my.updateHistoryCounter true
+        $ '.tooltip' # hotfix: tooltip hiding was broken
+          .tooltip 'hide'
 
     consts.responseListCollection  = $ '.responseListCollection'
     consts.responseListCloneTarget = $ '.responseList.cloneTarget'
@@ -149,6 +151,7 @@ formLogicExt = ($, WebOmi) ->
   my.handleSubscriptionHistory = (responseString) ->
     # imports
     omi = WebOmi.omi
+    util = WebOmi.util
 
     response = omi.parseXml responseString
 
@@ -259,7 +262,7 @@ formLogicExt = ($, WebOmi) ->
     # Utility function; Clone the element above and empty its input fields 
     # callback type: (clonedDom) -> void
     cloneElem = (target, callback) ->
-      WebOmi.util.cloneElem target, (cloned) ->
+      util.cloneElem target, (cloned) ->
         cloned.slideDown null, ->  # animation, default duration
           # readjusts the position because of size change (see modal docs)
           consts.callbackResponseHistoryModal.modal 'handleUpdate'
@@ -274,7 +277,6 @@ formLogicExt = ($, WebOmi) ->
       moveHistoryHeaders newList
       newList
         .removeClass "cloneTarget"
-        .show()
       newList.find '.requestID'
         .text requestID
       newList
@@ -297,11 +299,15 @@ formLogicExt = ($, WebOmi) ->
           #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
         .on 'click', -> # Show the response xml instead of list
-          if row.data.dataRows
+          if row.data.dataRows?
             tmpRow = row.nextUntil '.respRet'
             tmpRow.remove()
             row.after row.data.dataRows
+
+            row.removeData 'mirror'
             delete row.data.dataRows
+            $ '.tooltip' # hotfix: tooltip hiding was broken
+              .remove()
           else
             dataRows = row.nextUntil '.respRet'
             row.data.dataRows = dataRows.clone()
@@ -315,6 +321,7 @@ formLogicExt = ($, WebOmi) ->
             responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings)
             responseCodeMirror.setValue responseString
             responseCodeMirror.autoFormatAll()
+            row.data 'mirror', responseCodeMirror
           
           ## Old function was to close the history and show response in the main area and flash it
           #
@@ -352,6 +359,7 @@ formLogicExt = ($, WebOmi) ->
           )
         row
 
+
     addHistory = (requestID, pathValues) ->
       # Note: existence of this is handled somewhere above
       callbackRecord = my.callbackSubscriptions[requestID]
@@ -361,6 +369,7 @@ formLogicExt = ($, WebOmi) ->
           callbackRecord.selector
         else
           newHistory = createHistory requestID
+          newHistory.slideDown()
           my.callbackSubscriptions[requestID].selector = newHistory
           newHistory
 
@@ -368,9 +377,18 @@ formLogicExt = ($, WebOmi) ->
 
       returnS = returnStatus callbackRecord.receivedCount, 200
       
-      dataTable
-        .prepend htmlformat pathValues
-        .prepend returnS
+      pathVals = [].concat returnS, htmlformat pathValues
+      pathVals = $ $(pathVals).map -> this.toArray()
+
+      if my.historyOpen
+        util.animatedShowRow pathVals, (-> dataTable.prepend pathVals)
+          #pathVals.last().nextAll 'tr'
+          #  .each ->
+          #    if $(this).data('mirror')?.refresh?
+
+      else
+        dataTable.prepend pathVals
+
 
     infoitems = omi.evaluateXPath(response, "//odf:InfoItem")
 

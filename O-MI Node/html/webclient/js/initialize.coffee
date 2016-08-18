@@ -103,7 +103,7 @@ utilExt = ($, parent) ->
 
     target.after cloned  # insert after the target
 
-    if callback? then callback cloned
+    callback? cloned
 
   # Yellow flash for a second
   my.flash = (jqueryElem) ->
@@ -111,6 +111,42 @@ utilExt = ($, parent) ->
     window.setTimeout (
       -> jqueryElem.removeClass 'flash'
     ), 1000
+
+  my.animatedShowRow = (jqueryElem, insertFunction=null, callback=null) ->
+    if jqueryElem.length is 0 then return
+
+    ## SKIP
+    insertFunction?()
+    callback?()
+    return
+  #  # FIXME: SLIDEDOWN() BREAKS ALL OPEN CODEMIRRORS BELOW
+
+  #  # table rows cannot be animated but td > div can be
+  #  tds = jqueryElem.find 'td,th'
+  #    .wrapInner '<div style="display: none;" />'
+
+  #  # insert elements now as they are hidden
+  #  insertFunction?()
+
+  #  # animate padding also
+  #  padding = $(tds[0]).css ['padding-top', 'padding-bottom']
+  #  tds
+  #    .css 'padding-top', 0
+  #    .css 'padding-bottom', 0
+  #    .animate padding , duration: 800
+
+  #  # callback should be called once only
+  #  callMade = false
+
+  #  jqueryElem.parent()
+  #    .find 'td > div, th > div'
+  #    .slideDown 800, ->
+  #      set = $ this
+  #      # Remove extra divs
+  #      set.replaceWith set.contents()
+  #      if not callMade
+  #        callback?()
+  #        callMade = true
 
   parent
 
@@ -142,7 +178,7 @@ constsExt = ($, parent, util) ->
       type : treeTypeName
     , "first", (node) ->
       tree.open_node parent, null, 500
-      if callback? then callback(node)
+      callback? node
       tree.select_node node
 
 
