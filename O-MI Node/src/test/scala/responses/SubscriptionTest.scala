@@ -207,7 +207,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
     }
 
-    "return no new values for event subscription if there are no new events" >> {
+    "return no new values for event subscription if there are no new events" >> skipped{
       val subIdO: Option[Long] = addSub(5, -1, Seq("r/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
       pollValues(subIdO) must be empty
     }

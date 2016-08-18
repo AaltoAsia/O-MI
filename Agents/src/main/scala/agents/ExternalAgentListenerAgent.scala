@@ -58,26 +58,34 @@ class ExternalAgentListener(override val config: Config)
    val interface = config.getString("interface")
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
-   def start : InternalAgentSuccess = {
+
+  def start : InternalAgentResponse = {
     val binding = (IO(Tcp)  ? Tcp.Bind(self,
       new InetSocketAddress(interface, port)))(timeout)
     Await.result(
       binding.map{
         case Bound(localAddress: InetSocketAddress) =>
-        CommandSuccessful()
+          CommandSuccessful()
+      }.recover{
+        case t : Throwable =>
+          StartFailed(t.getMessage, Some(t))
       }, timeout
     )
-  
+
   }
-   def stop : InternalAgentSuccess = {
+
+  def stop : InternalAgentResponse = {
     val unbinding = (IO(Tcp)  ? Tcp.Unbind)(timeout)
     Await.result(
       unbinding.map{
         case Tcp.Unbound =>
-        CommandSuccessful()
+          CommandSuccessful()
+      }.recover{
+        case t : Throwable =>
+          StopFailed(t.getMessage, Some(t))
       }, timeout
-    )
-  
+      )
+
   }
   
   /** Partial function for handling received messages.

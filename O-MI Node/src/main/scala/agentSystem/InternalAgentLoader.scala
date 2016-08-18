@@ -120,7 +120,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
       val objectClazz           = classLoader.loadClass(classname + "$")
       val objectInterface       = classOf[PropsCreator]
       val agentInterface        = classOf[ScalaInternalAgent]
-      val responsibleInterface  = classOf[ResponsibleInternalAgent]
+      val responsibleInterface  = classOf[ResponsibleScalaInternalAgent]
       actorClazz match {
         //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
         case actorClass if agentInterface.isAssignableFrom(actorClass) =>
@@ -156,9 +156,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     val actorClazz            = classLoader.loadClass(classname)
     val creatorInterface       = classOf[PropsCreator]
     val agentInterface        = classOf[JavaInternalAgent]
-    val responsibleInterface  = classOf[ResponsibleInternalAgent]
     actorClazz match {
-        //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
         case actorClass if agentInterface.isAssignableFrom(actorClass) => //&& 
                          // creatorInterface.isAssignableFrom(actorClass)) =>
           //Get props and create agent

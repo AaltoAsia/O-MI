@@ -47,11 +47,31 @@ trait WriteHandler extends OmiRequestHandlerBase{
       }
 
 
-      result.onSuccess{ case succ => log.info( succ.toString) }
+      result.onSuccess{ case succ => log.debug( succ.toString) }
       val response = result.map{
         case SuccessfulWrite(_) => Responses.Success()
-        case FailedWrite(paths, reasons) =>  Responses.Success()
-        case MixedWrite(successfulPaths, failed)=> Responses.Success()
+        case FailedWrite(paths, reasons) =>  
+          val returnV : OmiReturn = OmiReturn(
+            "400",
+            Some(
+              "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
+            )
+          )
+          val result : OmiResult = OmiResult(returnV)
+          ResponseRequest( Vector( result ))
+          
+        case MixedWrite(successfulPaths, failed)=> 
+          val returnV : OmiReturn = OmiReturn(
+            "400",
+            Some(
+              "Following paths failed:\n" +
+              failed.paths.mkString("\n") + 
+              " reason:\n" + failed.reasons.mkString("\n")
+            )
+          )
+          val result : OmiResult = OmiResult(returnV)
+          ResponseRequest( Vector( result))
+          
       }
       response
   }

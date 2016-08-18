@@ -164,7 +164,7 @@ object Boot extends Starter {// with App{
     bindHttp(serviceActor)
   } match {
     case Failure(ex) => system.log.error(ex, "Error during startup")
-    case Success(_) => system.log.info("Process exited normally")
+    case Success(_) => system.log.info("Server started successfully")
   }
   }
 

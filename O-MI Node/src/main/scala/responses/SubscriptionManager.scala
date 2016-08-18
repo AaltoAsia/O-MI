@@ -221,7 +221,7 @@ class SubscriptionManager extends Actor with ActorLogging {
     val sub: Option[PolledSub] = SingleStores.subStore execute PollSub(id)
     sub match {
       case Some(pollSub) =>{
-        log.info(s"Polling subcription with id: ${pollSub.id}")
+        log.debug(s"Polling subcription with id: ${pollSub.id}")
         val odfTree = SingleStores.hierarchyStore execute GetTree()
         val emptyTree = pollSub
           .paths //get subscriptions paths
@@ -252,17 +252,15 @@ class SubscriptionManager extends Actor with ActorLogging {
   private def handleIntervals(): Unit = {
     //TODO add error messages from requesthandler
 
-    log.info("handling infoitems")
+    log.debug("handling infoitems")
     val currentTime = System.currentTimeMillis()
     val hTree = SingleStores.hierarchyStore execute GetTree()
     val (iSubs, nextRunTimeOption) = SingleStores.subStore execute GetIntervals
-    if(iSubs.isEmpty) {
-      log.warning("HandleIntervals called when no intervals passed")
-    } else {
+    if(iSubs.nonEmpty) {
 
       //send new data to callback addresses
       iSubs.foreach { iSub =>
-        log.info(s"Trying to send subscription data to ${iSub.callback}")
+        log.debug(s"Trying to send subscription data to ${iSub.callback}")
         val subPaths = iSub.paths.map(path => (path,hTree.get(path)))
         val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
             case ((paths, _nodes), (p,Some(node))) => (paths, _nodes.:+(node))
@@ -289,7 +287,7 @@ class SubscriptionManager extends Actor with ActorLogging {
         val callbackF = CallbackHandlers.sendCallback(iSub.callback,response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
         callbackF.onSuccess {
           case () =>
-            log.info(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
+            log.debug(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
         }
         callbackF.onFailure{
           case fail @ MissingConnection(callback) =>

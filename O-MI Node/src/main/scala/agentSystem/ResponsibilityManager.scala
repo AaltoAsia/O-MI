@@ -36,7 +36,6 @@ import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
 
-case class ResponsibilityRequest( senderName: String, request: OmiRequest)
 trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
   import context.{system, dispatcher}
   /*
