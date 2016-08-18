@@ -107,7 +107,7 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
 }
 
 case class ResponsibilityRequest( senderName: String, request: OmiRequest)
-trait ResponsibleScalaInternalAgent extends ScalaInternalAgent {
+trait ResponsibleScalaInternalAgent extends ScalaInternalAgent with ResponsibleInternalAgent{
   import context.dispatcher
   protected def handleWrite( write: WriteRequest ) :Unit
 

@@ -3,8 +3,9 @@ ScalaAgent.scala
 Let's create an *interanal agent*, that gets a path to O-DF InfoItem from 
 configuration and writes random generated values to it every interval given in 
 configuration. First create class `ScalaAgent` that extends `ScalaInternalAgent`.
-and have `config` as constructor parameter. Get interval from config as
-FiniteDuration and path as String and create a Path from it.
+and have `config` as constructor parameter.
+
+
 
 ```Scala
 package agents

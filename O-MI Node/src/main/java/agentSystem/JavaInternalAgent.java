@@ -60,4 +60,22 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
     Future<ResponsibleAgentResponse> result = types.OmiTypes.JavaHelpers.formatWriteFuture(future);
     return result;
   }
+
+  @Override
+  public void onReceive(Object message) throws StartFailed, CommandFailed {
+    if( message instanceof Start) {
+      // Start is received when this agent should start it's functionality
+      getSender().tell(start(),getSelf());
+
+    } else if( message instanceof Stop) {
+      // Stop is received when this agent should stop it's functionality
+      getSender().tell(stop(),getSelf());
+
+    } else if( message instanceof Restart) {
+      // Restart is received when this agent should restart
+      // default behaviour is to call stop() and then start()
+      getSender().tell(restart(),getSelf());
+
+    }
+  }
 }
