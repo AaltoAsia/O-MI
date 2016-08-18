@@ -47,7 +47,7 @@ trait WriteHandler extends OmiRequestHandlerBase{
       }
 
 
-      result.onSuccess{ case succ => log.info( succ.toString) }
+      result.onSuccess{ case succ => log.debug( succ.toString) }
       val response = result.map{
         case SuccessfulWrite(_) => Responses.Success()
         case FailedWrite(paths, reasons) =>  
