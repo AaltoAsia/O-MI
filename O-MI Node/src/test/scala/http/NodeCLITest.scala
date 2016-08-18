@@ -234,8 +234,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       Path( "Objects/object/sensor2" )
     )
     val intervalSubs : Set[IntervalSub] = Set( 
-      IntervalSub( 35, paths, endTime, callback, interval, nextRunTime, startTime ),
-      IntervalSub( 55, paths, endTime, callback, interval, nextRunTime, startTime )
+      IntervalSub( 35, paths, endTime, callback, interval, startTime ),
+      IntervalSub( 55, paths, endTime, callback, interval, startTime )
     )
     val eventSubs : Set[EventSub] =Set( 
       EventSub( 40, paths, endTime, callback),
@@ -334,13 +334,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       endTime,
       callback,
       interval,
-      nextRunTime,
       startTime
     ))
     val correct: String  =s"Started: ${startTime}\n" +
     s"Ends: ${endTime}\n" +
     s"Interval: ${interval}\n" +
-    s"Run next: ${nextRunTime}\n" +
     s"Callback: ${callback}\n" +
     s"Paths:\n${paths.mkString("\n")}\n"
     showSubTestBase(sub,correct)
