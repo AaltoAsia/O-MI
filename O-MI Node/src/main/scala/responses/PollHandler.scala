@@ -14,6 +14,8 @@
 
 package responses
 
+import java.util.Date
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,15 +34,15 @@ import http.{ActorSystemContext, Actors}
 
 trait PollHandler extends OmiRequestHandlerBase{
 
-  import nc._
+  protected def subscriptionManager : ActorRef
   /** Method for handling PollRequest.
     * @param poll request
     * @return (xml response, HTTP status code)
     */
   def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
-    val ttl = handleTTL(poll.ttl)
+    val ttl = poll.handleTTL
     implicit val timeout = Timeout(ttl) 
-    val time = date.getTime
+    val time = new Date().getTime
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id =>
 

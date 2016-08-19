@@ -28,7 +28,7 @@ import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub}
-import responses.{RemoveSubscription, RemoveHandler}
+import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
 import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
@@ -47,17 +47,20 @@ object CLICmds
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
-    sourceAddress: InetSocketAddress  
+    sourceAddress: InetSocketAddress,   
+    removeHandler: RemoveHandlerT
   )(
-implicit nc: Actors with RequestHandling
-  ) : Props = Props( new OmiNodeCLI(sourceAddress))
+implicit nc: Actors
+  ) : Props = Props( new OmiNodeCLI(sourceAddress, removeHandler))
 }
 /** Command Line Interface for internal agent management. 
   *
   */
 class OmiNodeCLI(
-  sourceAddress:  InetSocketAddress)(
-  implicit val nc: Actors with RequestHandling
+  sourceAddress:  InetSocketAddress,   
+  removeHandler: RemoveHandlerT
+)(
+  implicit val nc: Actors
   ) extends Actor with ActorLogging {
 
     import nc._
@@ -237,7 +240,7 @@ remove <path>
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
-      if (requestHandler.handlePathRemove(Path(pathOrId))) {
+      if (removeHandler.handlePathRemove(Path(pathOrId))) {
           log.info(s"Successfully removed path")
           s"Successfully removed path $pathOrId\n"
       } else {
@@ -277,7 +280,7 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(implicit nc: ActorSystemContext with Actors with RequestHandling)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(implicit val nc: ActorSystemContext with Actors with Storages)  extends Actor with ActorLogging{
 
   import nc._
   import Tcp._
@@ -294,9 +297,10 @@ class OmiNodeCLIListener(implicit nc: ActorSystemContext with Actors with Reques
     case Connected(remote, local) =>
       val connection = sender()
       log.info(s"CLI connected from $remote to $local")
+      val remover = new RemoveHandler( nc.singleStores, nc.dbConnection )
 
       val cli = context.system.actorOf(
-        OmiNodeCLI.props(remote),
+        OmiNodeCLI.props(remote,remover),
         "cli-" + remote.toString.tail)
         connection ! Register(cli)
     case _ => //noop?

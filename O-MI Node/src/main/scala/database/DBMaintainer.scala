@@ -23,20 +23,25 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
-import http.OmiNodeContext
+import http.OmiConfigExtension
 
 object DBMaintainer{
-  def props(nodeContext: OmiNodeContext) : Props = Props( new DBMaintainer(nodeContext) )
+  def props(
+    dbConnection : DBReadWrite,
+    singleStores : SingleStores,
+    settings : OmiConfigExtension
+  ) : Props = Props( new DBMaintainer(dbConnection, singleStores, settings) )
 }
-class DBMaintainer(nodeContext: OmiNodeContext)
+class DBMaintainer(
+  protected val dbConnection : DBReadWrite,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
   {
-  import nodeContext.dbConnection
-  import nodeContext.singleStores
-  import nodeContext.settings
-
+  
   case object TrimDB
   case object TakeSnapshot
   private val scheduler = context.system.scheduler

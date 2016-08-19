@@ -28,9 +28,11 @@ import scala.xml.NodeSeq
 import types.OdfTypes._
 import types.OmiTypes._
 import http.{ActorSystemContext, Storages}
+import database.{ DBReadWrite, SingleStores }
 
 trait ReadHandler extends OmiRequestHandlerBase {
-  import nc._
+  protected implicit def dbConnection: DBReadWrite
+  protected implicit def singleStores: SingleStores
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)

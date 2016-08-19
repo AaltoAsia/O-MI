@@ -24,32 +24,41 @@ import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
 import akka.actor.SupervisorStrategy._
 import com.typesafe.config.Config
-import database.DB
+
+import responses.CallbackHandler
+import database.{ SingleStores, DBReadWrite}
 import http.CLICmds._
 import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
 import types.Path
-import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
 
 object AgentSystem {
   def props()(
-  implicit nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
+    implicit settings: AgentSystemConfigExtension,
+    dbConnection: DBReadWrite,
+    singleStores: SingleStores,
+    callbackHandler: CallbackHandler
       ): Props = Props(
-  {val as = new AgentSystem()
+  {val as = new AgentSystem()(
+    settings, 
+    dbConnection,
+    singleStores,
+    callbackHandler
+  )
   as.start()
   as})
 }
-class AgentSystem(
-  implicit val nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
+class AgentSystem()(
+    protected[this] val settings: AgentSystemConfigExtension,
+    protected implicit val dbConnection: DBReadWrite,
+    protected implicit val singleStores: SingleStores,
+    protected implicit val callbackHandler: CallbackHandler
   ) extends BaseAgentSystem 
   with InternalAgentLoader
   with InternalAgentManager
   with ResponsibleAgentManager
   with DBPusher{
-  import nc._
-  protected[this] def settings: AgentSystemConfigExtension  = nc.settings
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
-  //protected[this] val settings = http.Boot.settings
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
@@ -111,7 +120,7 @@ abstract class BaseAgentSystem extends Actor with ActorLogging{
         log.warning( "Child: " + sender().path.name )
         super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
     }
-  implicit val nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
+  //implicit val nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
 
-  import nc._
+  //import nc._
 }

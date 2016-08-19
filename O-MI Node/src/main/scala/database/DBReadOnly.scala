@@ -24,14 +24,12 @@ import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
-import http.OmiNodeContext
 
 /**
  * Read only restricted interface methods for db tables
  */
 trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeTables {
-  implicit val nodeContext: OmiNodeContext
-  import nodeContext.singleStores
+  protected def singleStores : SingleStores
   protected[this] def findParentI(childPath: Path): DBIOro[Option[DBNode]] = findParentQ(childPath).result.headOption
 
   protected[this] def findParentQ(childPath: Path): Query[DBNodesTable, DBNode, Seq] =

@@ -20,14 +20,24 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+import akka.event.{LogSource, Logging, LoggingAdapter}
+import akka.actor.ActorSystem
+
 import database._
 import types.OdfTypes._
 import types._
 import http.{ActorSystemContext, Storages}
 
-trait RemoveHandler extends OmiRequestHandlerBase{
+trait RemoveHandlerT{
+  def handlePathRemove(parentPath: Path): Boolean 
+  }
+class RemoveHandler(val singleStores: SingleStores, dbConnection: DBReadWrite )(implicit system: ActorSystem) extends RemoveHandlerT{
 
-  import nc._
+  implicit val logSource: LogSource[RemoveHandler]= new LogSource[RemoveHandler] {
+      def genString( handler:  RemoveHandler) = handler.toString
+    }
+  protected val log: LoggingAdapter = Logging( system, this)
+
   def handlePathRemove(parentPath: Path): Boolean = {
     val objects = singleStores.hierarchyStore execute GetTree()
     val node = objects.get(parentPath)

@@ -22,15 +22,26 @@ import types.OdfTypes._
 import types._
 import http.{ActorSystemContext, Storages}
 
-trait RESTHandler extends OmiRequestHandlerBase{
-  import nc._
-  private sealed trait ODFRequest {def path: Path} // path is OdfNode path
-  private case class Value(path: Path)      extends ODFRequest
-  private case class MetaData(path: Path)   extends ODFRequest
-  private case class Description(path: Path)extends ODFRequest
-  private case class ObjId(path: Path)      extends ODFRequest
-  private case class InfoName(path: Path)   extends ODFRequest
-  private case class NodeReq(path: Path)    extends ODFRequest
+sealed trait RESTRequest{def path: Path} // path is OdfNode path
+case class Value(path: Path)      extends RESTRequest
+case class MetaData(path: Path)   extends RESTRequest
+case class Description(path: Path)extends RESTRequest
+case class ObjId(path: Path)      extends RESTRequest
+case class InfoName(path: Path)   extends RESTRequest
+case class NodeReq(path: Path)    extends RESTRequest
+
+object RESTRequest{
+    def apply(path: Path): RESTRequest = path.lastOption match {
+      case attr @ Some("value")      => Value(path.init)
+      case attr @ Some("MetaData")   => MetaData(path.init)
+      case attr @ Some("description")=> Description(path.init)
+      case attr @ Some("id")         => ObjId(path.init)
+      case attr @ Some("name")       => InfoName(path.init)
+      case _                         => NodeReq(path)
+    }
+}
+
+object RESTHandler{
 
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
@@ -39,19 +50,16 @@ trait RESTHandler extends OmiRequestHandlerBase{
    * @param orgPath The path as String, elements split by a slash "/"
    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
    */
-  def generateODFREST(orgPath: Path): Option[Either[String, xml.NodeSeq]] = {
-    def getODFRequest(path: Path): ODFRequest = path.lastOption match {
-      case attr @ Some("value")      => Value(path.init)
-      case attr @ Some("MetaData")   => MetaData(path.init)
-      case attr @ Some("description")=> Description(path.init)
-      case attr @ Some("id")         => ObjId(path.init)
-      case attr @ Some("name")       => InfoName(path.init)
-      case _                         => NodeReq(path)
-    }
-    // safeguard
-    assert(!orgPath.isEmpty, "Undefined url data discovery: empty path")
-
-    val request = getODFRequest(orgPath)
+  def handle(orgPath: Path)(implicit singleStores: SingleStores): Option[Either[String, xml.NodeSeq]] = {
+    handle( RESTRequest(orgPath) )
+  }
+  /**
+   * Generates ODF containing only children of the specified path's (with path as root)
+   * or if path ends with "value" it returns only that value.
+   *
+   * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
+   */
+  def handle(request: RESTRequest)(implicit singleStores: SingleStores): Option[Either[String, xml.NodeSeq]] = {
     request match {
       case Value(path) =>
         singleStores.latestStore execute LookupSensorData(path) map { Left apply _.value.toString }

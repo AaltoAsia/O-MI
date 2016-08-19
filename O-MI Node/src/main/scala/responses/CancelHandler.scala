@@ -37,7 +37,7 @@ import http.{ActorSystemContext, Actors}
 
 trait CancelHandler extends OmiRequestHandlerBase{
 
-  import nc._
+  protected def subscriptionManager : ActorRef 
   /** Method for handling CancelRequest.
     * @param cancel request
     * @return (xml response, HTTP status code) wrapped in a Future

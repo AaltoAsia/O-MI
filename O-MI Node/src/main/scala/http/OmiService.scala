@@ -17,8 +17,8 @@ package http
 import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
+import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
 import org.slf4j.LoggerFactory
@@ -41,8 +41,9 @@ import akka.http.scaladsl.model.ws
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.{RequestHandler, RemoveSubscription, CallbackHandler}
+import responses.{RequestHandler, RemoveSubscription, CallbackHandler, RESTHandler, RESTRequest, OmiRequestHandlerBase}
 import types.OmiTypes._
+import types.OmiTypes.Callback._
 import types.{ParseError, Path}
 import database.SingleStores
 
@@ -58,7 +59,7 @@ trait OmiServiceAuthorization
 /**
  * Actor that handles incoming http messages
  */
-class OmiServiceImpl()(implicit val nc: OmiNodeContext)
+class OmiServiceImpl(val requestHandler : OmiRequestHandlerBase)(implicit val nc: OmiNodeContext)
      extends {
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
@@ -83,6 +84,7 @@ trait OmiService
   implicit val nc: OmiNodeContext
   import nc._
   def log: org.slf4j.Logger
+  val requestHandler : OmiRequestHandlerBase
 
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
@@ -145,7 +147,7 @@ trait OmiService
         val pathStr = uriPath // pathToString(uriPath)
         val path = Path(pathStr)
 
-        requestHandler.generateODFREST(path) match {
+        RESTHandler.handle(path)(nc.singleStores) match {
           case Some(Left(value)) =>
             complete(value)
           case Some(Right(xmlData)) =>
@@ -194,30 +196,20 @@ trait OmiService
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
-                // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
-                case Success(respRequest: ResponseRequest) if respRequest.results.forall{ result => result.odf.isEmpty } =>
-                  Future.successful(Responses.NoResponse())
                 case Success(request : OmiRequest) =>
-                  request.callback match {
-                    case None  =>
-                      requestHandler.handleRequest(request)
-                    case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
-                      Future.successful( Responses.InvalidCallback("0", Some( "Callback 0 not supported with http/https try using ws(websocket) instead" ) ) )
-                    case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
-                      val modifiedRequest = request.withCallback(  currentConnectionCallback )
-                      requestHandler.handleRequest(modifiedRequest)
-                    case Some( RawCallback(address))  =>
-                      Callback.tryHTTPUri(address).map{ 
-                        httpCallback => 
-                        val modifiedRequest =  request.withCallback( Some( HTTPCallback( httpCallback ) ) )
-                        requestHandler.handleRequest(modifiedRequest)
-                      }.recover{ 
-                        case throwable : Throwable =>
-                        Future.successful( Responses.InvalidCallback(address, Some( throwable.getMessage() ) ) )
-                      }.get
-                    case Some(definedCallback : DefinedCallback ) => 
-                      requestHandler.handleRequest(request)
+                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{ 
+                    case request: OmiRequest => handleRequest( request ) 
+                  }.recover{
+                    case e: TimeoutException => Responses.TimeOutError(e.getMessage)
+                    case e: IllegalArgumentException => Responses.InvalidRequest(e.getMessage)
+                    case icb : InvalidCallback => Responses.InvalidCallback(icb.address,Some(icb.message))
+                    case t : Throwable =>
+                      log.error("Internal Server Error: ",t)
+                      Responses.InternalError(t)
                   }
+                case Failure(t : Throwable)=>
+                  log.error("Internal Server Error: ",t)
+                  Future.successful( Responses.InternalError(t) )
               }
             case Left(errors) => { // Parsing errors found
 
@@ -238,6 +230,8 @@ trait OmiService
         case Failure(ex) =>
           Future.successful(Responses.InternalError(ex))
       }
+
+      
 
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
@@ -260,6 +254,52 @@ trait OmiService
     }
   }
 
+  def handleRequest(request : OmiRequest ): Future[ResponseRequest ]= {
+    request match {
+      // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
+      case respRequest: ResponseRequest if respRequest.results.forall{ result => result.odf.isEmpty } =>
+        Future.successful( Responses.NoResponse() ) 
+      case sub: SubscriptionRequest => requestHandler.handle(sub)
+      case other : OmiRequest => 
+        request.callback match {
+          case None => requestHandler.handle(other)
+          case Some(callback: RawCallback) => 
+            Future.successful(
+              Responses.InvalidCallback(
+                callback.address,
+                Some("Callback 0 not supported with http/https try using ws(websocket) instead")
+              )
+            )
+          case Some(callback: DefinedCallback) => {
+            requestHandler.handle(other)  map { response =>
+              callbackHandler.sendCallback( callback, response )
+            }
+            Future.successful(
+              Responses.Success(description = Some("OK, callback job started"))
+            )
+          }
+        }
+    }
+  }
+
+  def defineCallbackForRequest(request: OmiRequest,currentConnectionCallback: Option[Callback] ): Future[OmiRequest] = request.callback match {
+    case None  => Future.successful( request )
+    case Some(definedCallback : DefinedCallback ) => Future.successful( request )
+    case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
+      Future.successful( request.withCallback(  currentConnectionCallback ) )
+    case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
+      Future.failed( InvalidCallback("0", "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
+    case Some( RawCallback(address))  =>
+      val cbTry = Callback.tryHTTPUri(address)
+      val result = cbTry.map{ 
+        case httpCallback =>
+          request.withCallback( Some( HTTPCallback( httpCallback ) ) )
+          }.recoverWith{ 
+            case throwable : Throwable =>
+              Try{ throw InvalidCallback(address, throwable.getMessage(), throwable  ) }
+          }
+          Future.fromTry(result ) 
+  }
 
   /** 
    * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)

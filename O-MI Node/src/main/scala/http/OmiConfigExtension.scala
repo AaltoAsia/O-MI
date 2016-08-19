@@ -50,8 +50,6 @@ class OmiConfigExtension( val config: Config) extends Extension
 
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
-  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
-  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
 
   val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
 
@@ -94,7 +92,11 @@ class OmiConfigExtension( val config: Config) extends Extension
   }
  
 
+  /** Time in seconds how long to wait until retrying sending.*/
   val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds 
+
+  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
+  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
 }
 
 

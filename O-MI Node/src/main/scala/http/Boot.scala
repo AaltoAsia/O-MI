@@ -36,7 +36,7 @@ import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
 
 import database._
 import agentSystem._
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler, OmiRequestHandlerBase}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
@@ -44,27 +44,43 @@ import types.Path
 import OmiServer._
 import akka.stream.{ActorMaterializer, Materializer}
 
-class OmiServer extends OmiNodeContext {
+class OmiServer extends OmiNode{
+
 
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core") 
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher // execution context for futures
+
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
   implicit val settings : OmiConfigExtension = OmiConfig(system)
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  import system.dispatcher // execution context for futures
-  implicit val dbConnection: DBReadWrite = new DatabaseConnection()(this)
-  val singleStores = new SingleStores()(settings)
-  val callbackHandler: CallbackHandler = new CallbackHandler()( this )
-  override val subscriptionManager = system.actorOf(SubscriptionManager.props()(this), "subscription-handler")
 
+
+  implicit val singleStores = new SingleStores(settings)
+  implicit val dbConnection: DBReadWrite = new DatabaseConnection()(
+    system,
+    singleStores,
+    settings
+  )
+
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+
+  override val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   override val agentSystem = system.actorOf(
-    AgentSystem.props()(this),
+    AgentSystem.props(),
     "agent-system"
   )
 
-  override val requestHandler : RequestHandler = new RequestHandler()(this)
+  val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
+    )
 
   override val cliListener =system.actorOf(
     Props(new OmiNodeCLIListener()(this)),
@@ -74,10 +90,18 @@ class OmiServer extends OmiNodeContext {
 
 
   // create omi service actor
-  val omiService = new OmiServiceImpl()(this)
+  val omiService = new OmiServiceImpl(requestHandler)(this)
 
 
   implicit val timeoutForBind = Timeout(5.seconds)
+
+}
+trait OmiNode extends OmiNodeContext {
+  val requestHandler : OmiRequestHandlerBase
+  val omiService : OmiService 
+
+
+  implicit val timeoutForBind : Timeout
   def bindTCP() : Unit= {
     IO(Tcp)  ? Tcp.Bind(cliListener,
       new InetSocketAddress("localhost", settings.cliPort))
@@ -86,9 +110,6 @@ class OmiServer extends OmiNodeContext {
   /** Start a new HTTP server on configured port with our service actor as the handler.
    */
   def bindHTTP(): Unit = {
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-    implicit val materializer = ActorMaterializer()
 
     val bindingFuture =
       Http().bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
@@ -111,8 +132,8 @@ object OmiServer {
     new OmiServer()
   }
 
-  def saveSettingsOdf(implicit nodeContext: OmiNodeContext) :Unit = {
-    import nodeContext.{settings, system,dbConnection, agentSystem}
+  def saveSettingsOdf(implicit nc: Settings with ActorSystemContext with Actors with Storages) :Unit = {
+    import nc._
     if ( settings.settingsOdfPath.nonEmpty ) {
       import system.dispatcher // execution context for futures
       // Same timestamp for all OdfValues of the settings

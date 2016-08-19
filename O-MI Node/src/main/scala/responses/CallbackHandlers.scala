@@ -54,10 +54,15 @@ object CallbackHandler{
 /**
  * Handles sending data to callback addresses 
  */
-class CallbackHandler( implicit nc : ActorSystemContext with Settings ){
-  import nc._
+class CallbackHandler(
+  protected val settings: OmiConfigExtension
+  )(
+  protected implicit val system : ActorSystem,
+  protected implicit val materializer : ActorMaterializer
+){
+  import system.dispatcher
   protected val httpExtension: HttpExt = Http(system)
-  val portsUsedByNode =settings.ports.values.toSeq
+  val portsUsedByNode = settings.ports.values.toSeq
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
 

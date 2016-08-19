@@ -28,6 +28,7 @@ import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandler._
+import responses.CallbackHandler
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
@@ -39,9 +40,12 @@ trait  InputPusher  extends BaseAgentSystem{
     objectMetadatas: Vector[OdfObject] = Vector()
   )(implicit system: ActorSystem): Future[SuccessfulWrite] 
 }
-trait  DBPusher  extends BaseAgentSystem{
-  import nc._
+
+trait DBPusher extends BaseAgentSystem{
   import context.dispatcher
+  protected implicit def dbConnection: DBReadWrite
+  protected implicit def singleStores: SingleStores
+  protected implicit def callbackHandler: CallbackHandler
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,

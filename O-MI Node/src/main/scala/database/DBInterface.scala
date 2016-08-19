@@ -29,7 +29,7 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.OmiReturn
 import types.Path
-import http.OmiNodeContext
+import http.{ActorSystemContext, Settings, Storages}
 
 
 package object database {
@@ -74,7 +74,7 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
 /**
  * Contains all stores that requires only one instance for interfacing
  */
-class SingleStores(implicit val settings: OmiConfigExtension) {
+class SingleStores(protected val settings: OmiConfigExtension) {
   private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
       val journalFileSizeLimit = settings.maxJournalSizeBytes
@@ -196,13 +196,20 @@ class SingleStores(implicit val settings: OmiConfigExtension) {
  * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
-class DatabaseConnection()(implicit val nodeContext: OmiNodeContext) extends DBReadWrite with DBBase with DB {
+class DatabaseConnection()(
+  protected val system : ActorSystem,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+  ) extends DBReadWrite with DBBase with DB {
 
-  import nodeContext.system
   val db = Database.forConfig(dbConfigName)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props(nodeContext), "db-maintainer")
+  val dbmaintainer = system.actorOf(DBMaintainer.props(
+    this,
+    singleStores,
+    settings
+    ), "db-maintainer")
 
   def destroy(): Unit = {
      dropDB()
@@ -227,16 +234,23 @@ class DatabaseConnection()(implicit val nodeContext: OmiNodeContext) extends DBR
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(val name:String = "")(implicit val nodeContext: OmiNodeContext ) extends DBReadWrite with DBBase with DB
-{
-  import nodeContext.system
+class TestDB(val name:String = "")(
+  protected val system : ActorSystem,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+) extends DBReadWrite with DBBase with DB {
+
   private val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
   val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
     keepAliveConnection=true)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props( nodeContext), "db-maintainer")
+  val dbmaintainer = system.actorOf(DBMaintainer.props(
+    this,
+    singleStores,
+    settings
+    ), "db-maintainer")
   /**
   * Should be called after tests.
   */

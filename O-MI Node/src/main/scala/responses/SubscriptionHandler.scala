@@ -33,7 +33,7 @@ import http.{ActorSystemContext, Actors, Settings}
 
 trait SubscriptionHandler extends OmiRequestHandlerBase{
 
-  import nc._
+  protected def subscriptionManager : ActorRef
   /** Method for handling SubscriptionRequest.
     * @param _subscription request
     * @return (xml response, HTTP status code)
@@ -45,7 +45,7 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
         _subscription.copy(interval= settings.minSubscriptionInterval)
       case s : SubscriptionRequest=> s
     }
-    val ttl = handleTTL(subscription.ttl)
+    val ttl = subscription.handleTTL
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture: Future[OmiResult] = (subscriptionManager ? NewSubscription(subscription))
       .mapTo[Try[Long]]

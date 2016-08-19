@@ -38,6 +38,7 @@ final case class HTTPCallback(val uri: Uri) extends DefinedCallback{
 final case class RawCallbackFound(msg: String) extends Exception(msg)
 object Callback {
 
+  case class InvalidCallback( address: String, message: String, cause: Throwable = null ) extends Exception(message,cause) 
   type ConnectionIdentifier = Int
   def tryHTTPUri(address: String): Try[Uri] = {
     Try{

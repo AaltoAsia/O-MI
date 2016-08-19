@@ -30,13 +30,13 @@ import types.OmiTypes._
 import http.{ActorSystemContext, Actors}
 
 trait WriteHandler extends OmiRequestHandlerBase{
-  import nc._
+  protected def agentSystem : ActorRef
   /** Method for handling WriteRequest.
     * @param write request
     * @return (xml response, HTTP status code)
     */
   def handleWrite( write: WriteRequest ) : Future[ResponseRequest] ={
-    val ttl = handleTTL(write.ttl)
+    val ttl = write.handleTTL
     implicit val timeout = Timeout(ttl)
 
       val result = (agentSystem ? ResponsibilityRequest("WriteHandler", write)).mapTo[ResponsibleAgentResponse]

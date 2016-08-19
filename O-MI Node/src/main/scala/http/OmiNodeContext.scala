@@ -7,33 +7,32 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.HttpExt
 
-import responses.{CallbackHandler, RequestHandler}
+import responses.{CallbackHandler, OmiRequestHandlerBase}
 import database.{DBReadWrite, SingleStores, DBReadOnly}
 
-sealed trait Storages {
+trait Storages {
   implicit val singleStores: SingleStores
   implicit val dbConnection: DBReadWrite
 }
 
-sealed trait Actors {
+trait Actors {
    val subscriptionManager: ActorRef
    val agentSystem: ActorRef
    val cliListener: ActorRef
 }
 
-sealed trait Settings {
+trait Settings {
   implicit val settings: OmiConfigExtension
 }
 
-sealed trait ActorSystemContext{
+trait ActorSystemContext{
   implicit val system: ActorSystem
   implicit def ec: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer 
 }
-sealed trait RequestHandling {
-  val requestHandler: RequestHandler
-}
-sealed trait Callbacking{
+
+
+trait Callbacking{
   implicit val callbackHandler : CallbackHandler
 }
 
@@ -41,7 +40,6 @@ trait OmiNodeContext
   extends ActorSystemContext
   with    Actors
   with    Settings
-  with    RequestHandling
   with    Storages
   with    Callbacking
 {}

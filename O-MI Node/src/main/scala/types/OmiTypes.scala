@@ -47,11 +47,12 @@ object JavaHelpers{
  }
 }
 
+
 /**
   * Trait that represents any Omi request. Provides some data that are common
   * for all omi requests.
   */
-sealed trait OmiRequest extends RequestWrapper {
+sealed trait OmiRequest extends RequestWrapper{
   def callback: Option[Callback]
   def callbackAsUri: Option[URI] = callback map {cb => new URI(cb.address)}
   def withCallback: Option[Callback] => OmiRequest

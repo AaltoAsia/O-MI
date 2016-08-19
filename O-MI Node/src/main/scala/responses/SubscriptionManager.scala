@@ -25,7 +25,7 @@ import scala.util.Try
 import akka.actor.{Actor, ActorLogging, Props}
 import database._
 import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
-import http.{Storages, OmiNodeContext, Settings, ActorSystemContext, Actors, Callbacking}
+import http.{OmiConfigExtension}
 import responses.CallbackHandler.{ MissingConnection, CallbackFailure}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -56,7 +56,19 @@ case class RemoveSubscription(id: Long)
 case class PollSubscription(id: Long)
 
 object SubscriptionManager{
-  def props()(implicit nodeContext: Actors with Storages with Callbacking): Props = Props(new SubscriptionManager()(nodeContext))
+  def props()(
+    implicit settings: OmiConfigExtension,
+   dbConnection: DBReadWrite,
+   singleStores: SingleStores,
+   callbackHandler: CallbackHandler
+  ): Props = Props(
+    new SubscriptionManager(
+      settings,
+      dbConnection,
+      singleStores,
+      callbackHandler
+    )
+  )
 }
 
 
@@ -64,8 +76,12 @@ object SubscriptionManager{
  * Class that handles event and interval based subscriptions.
  * Uses Akka scheduler to schedule ttl handling and intervalhandling
  */
-class SubscriptionManager(implicit val nc: Actors with Storages with Callbacking) extends Actor with ActorLogging {
-  import nc._
+class SubscriptionManager(
+  protected val settings: OmiConfigExtension,
+  protected val dbConnection: DBReadWrite,
+  protected val singleStores: SingleStores,
+  protected val callbackHandler: CallbackHandler
+) extends Actor with ActorLogging {
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler = context.system.scheduler

@@ -35,13 +35,14 @@ import types._
 import http.{ActorSystemContext, Actors}
 
 trait ResponseHandler extends OmiRequestHandlerBase{
-  import nc._
+
+  protected def agentSystem : ActorRef
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)
     */
   def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
-    val ttl = handleTTL(response.ttl)
+    val ttl = response.handleTTL
     implicit val timeout = Timeout(ttl)
     val resultFuture = Future.sequence(response.results.collect{ 
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
