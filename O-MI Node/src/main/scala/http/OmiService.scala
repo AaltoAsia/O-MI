@@ -41,7 +41,14 @@ import akka.http.scaladsl.model.ws
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.{RequestHandler, RemoveSubscription, CallbackHandler, RESTHandler, RESTRequest, OmiRequestHandlerBase}
+import responses.{
+  RequestHandler,
+  RemoveSubscription,
+  CallbackHandler,
+  RESTHandler,
+  RESTRequest,
+  OmiRequestHandlerBase
+}
 import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}

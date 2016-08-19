@@ -57,7 +57,6 @@ class OmiServer extends OmiNode{
    */
   implicit val settings : OmiConfigExtension = OmiConfig(system)
 
-
   implicit val singleStores = new SingleStores(settings)
   implicit val dbConnection: DBReadWrite = new DatabaseConnection()(
     system,
@@ -87,7 +86,6 @@ class OmiServer extends OmiNode{
     "omi-node-cli-listener"
   )
   saveSettingsOdf(this)
-
 
   // create omi service actor
   val omiService = new OmiServiceImpl(requestHandler)(this)

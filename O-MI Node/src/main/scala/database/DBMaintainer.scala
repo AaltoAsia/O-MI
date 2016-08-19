@@ -41,7 +41,7 @@ class DBMaintainer(
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
   {
-  
+
   case object TrimDB
   case object TakeSnapshot
   private val scheduler = context.system.scheduler

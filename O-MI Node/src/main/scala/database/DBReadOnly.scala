@@ -24,6 +24,7 @@ import slick.driver.H2Driver.api._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types._
+import http.OmiNodeContext
 
 /**
  * Read only restricted interface methods for db tables

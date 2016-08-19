@@ -35,7 +35,6 @@ import types._
 import http.{ActorSystemContext, Actors}
 
 trait ResponseHandler extends OmiRequestHandlerBase{
-
   protected def agentSystem : ActorRef
   /** Method for handling ResponseRequest.
     * @param response request

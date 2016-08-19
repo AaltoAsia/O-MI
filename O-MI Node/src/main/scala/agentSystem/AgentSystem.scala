@@ -31,6 +31,7 @@ import http.CLICmds._
 import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
 import types.Path
+import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
 
 object AgentSystem {
   def props()(
@@ -120,7 +121,4 @@ abstract class BaseAgentSystem extends Actor with ActorLogging{
         log.warning( "Child: " + sender().path.name )
         super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
     }
-  //implicit val nc: ActorSystemContext with Actors with Callbacking with Settings with Storages
-
-  //import nc._
 }
