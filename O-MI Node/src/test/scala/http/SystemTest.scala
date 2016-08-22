@@ -8,7 +8,7 @@ import scala.util.Try
 import scala.xml._
 
 import agentSystem.AgentSystem
-import akka.actor.Props
+import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -22,14 +22,15 @@ import database._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import responses.{RequestHandler, SubscriptionManager}
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
 import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
 
-class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter with BeforeAfterAll {
+class SystemTest(implicit ee: ExecutionEnv) extends Specification with OmiNode with BeforeAfterAll {
+  implicit val timeoutForBind: akka.util.Timeout = 5.seconds
 
   // TODO: better cleaning after tests
   def beforeAll() = {
-    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
 
   val conf = ConfigFactory.load("testconfig")
@@ -37,41 +38,60 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
     conf
   )
 
-  override val settings = testSettings
+  implicit def system: akka.actor.ActorSystem = ActorSystem("systemTest",conf)
+  implicit val settings = testSettings
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
 
-  //start the program
-  implicit val dbConnection = new TestDB("SystemTest")
+  implicit val singleStores = new SingleStores(settings)
+  implicit val dbConnection: DBReadWrite = new TestDB("SystemTest")(
+    system,
+    singleStores,
+    settings
+  )
 
+  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler-test")
+  val agentSystem = system.actorOf(
+    AgentSystem.props(),
+    "agent-system-test"
+  )
 
-  override val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler-test")
-
-  override def start(dbConnection: DB): OmiServiceImpl = {
-    val agentManager = system.actorOf(
-      Props({val as = new AgentSystem(dbConnection,subManager) {
-        override val settings = testSettings
-      }
-      as.start()
-      as}),
-      "agent-system"
+  val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
     )
-    
-    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
 
-    // create omi service actor
-    val omiService = new OmiServiceImpl(requestHandler,subManager)
+  implicit val cliListener : ActorRef = system.actorOf(
+    Props(
+      new OmiNodeCLIListener(
+        system,
+        agentSystem,
+        subscriptionManager,
+        singleStores,
+        dbConnection
+      )),
+    "omi-node-cli-listener"
+  )
 
-    implicit val timeoutForBind = Timeout(Duration.apply(5, "second"))
-
-
-    omiService
-  }
-
+  // create omi service actor
+  val omiService = new OmiServiceImpl(
+    system,
+    materializer,
+    subscriptionManager,
+    settings,
+    singleStores,
+    requestHandler,
+    callbackHandler
+  )
   sequential
 
 
 
-  bindHttp(start(dbConnection))
-  implicit val materializer = ActorMaterializer()
+  bindHTTP()
   val probe = TestProbe()
   val testServer = new SystemTestCallbackServer(probe.ref, "localhost", 20002)
   val http = Http(system)
@@ -140,7 +160,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with Starter w
   def afterAll = {
     Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
-    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
 
   }
 

@@ -112,8 +112,8 @@ object WrongPropsAgent extends PropsCreator{
 }
 class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])
 extends BaseAgentSystem with InternalAgentManager{
-  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
-  protected[this] val settings : AgentSystemConfigExtension = http.Boot.settings
+  protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
+  protected def settings : AgentSystemConfigExtension = ???
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
@@ -123,3 +123,4 @@ extends BaseAgentSystem with InternalAgentManager{
   def getAgents = agents
 }
 
+ class AgentSystemSettings( val config : Config ) extends AgentSystemConfigExtension

@@ -38,13 +38,12 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
   //def AS = ActorSystem()
   def emptyConfig = ConfigFactory.empty()
   trait TestManager extends BaseAgentSystem with ResponsibleAgentManager{
-    protected[this] val settings = http.Boot.settings
     def receive : Actor.Receive = {
       case ListAgentsCmd() => sender() ? agents.values.toSeq
       case ResponsibilityRequest( senderName: String, write: WriteRequest) => handleWrite(senderName,write)
     }
   }
-  class TestSuccessManager(paths: Vector[Path ],  testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])  extends TestManager{
+  class TestSuccessManager(paths: Vector[Path ],  testAgents: scala.collection.mutable.Map[AgentName, AgentInfo], val settings:  AgentSystemConfigExtension )  extends TestManager{
     import context.dispatcher
     protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
     override protected def writeValues(
@@ -58,7 +57,7 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
         Future.successful( SuccessfulWrite( Vector()) )
     }
   }
-  class TestFailureManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])  extends TestManager{
+  class TestFailureManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo], val settings:  AgentSystemConfigExtension )  extends TestManager{
     import context.dispatcher
     protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
     override protected def writeValues(
@@ -87,7 +86,23 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val _paths = Vector(path)
     val clazz = "agentSystem.WSAgent"
     val testAgents : Map[AgentName, AgentInfo ]= Map.empty
-    val managerRef = TestActorRef( new TestSuccessManager(_paths,testAgents){
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+      "$name" ={
+        language = "scala"
+        class = "$clazz"
+        config = {}
+      }
+    }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val asce =new AgentSystemSettings(config)
+
+    val managerRef = TestActorRef( new TestSuccessManager(_paths,testAgents,asce){
       
       val ref = context.actorOf( Props( new WSAgent), name)
       val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, _paths)
@@ -114,6 +129,7 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       ).mapTo[ResponsibleAgentResponse]
     successF must beEqualTo(SuccessfulWrite(_paths)).await(0, timeoutDuration) 
   }
+
   def ownedWriteFailTest = new Actorstest(AS){
     import system.dispatcher
     val name = "WriteSuccess"
@@ -122,7 +138,22 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val clazz = "agentSystem.WSAgent"
     val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, paths)
     val testAgents = Map( name -> agentInfo)
-    val managerRef = TestActorRef( new TestFailureManager(testAgents)) 
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+      "$name" ={
+        language = "scala"
+        class = "$clazz"
+        config = {}
+      }
+    }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val asce =new AgentSystemSettings(config)
+    val managerRef = TestActorRef( new TestFailureManager(testAgents, asce)) 
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
@@ -152,7 +183,17 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val path = Path( "Objects/object1/sensor1" )
     val paths = Vector(path)
     val testAgents : Map[AgentName, AgentInfo ]= Map.empty
-    val managerRef = TestActorRef( new TestSuccessManager(paths,testAgents)) 
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+     }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val asce =new AgentSystemSettings(config)
+    val managerRef = TestActorRef( new TestSuccessManager(paths,testAgents, asce)) 
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
@@ -180,7 +221,17 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val name = "WriteSuccess"
     val paths = Vector(Path( "Objects/object1/sensor1" ))
     val testAgents : Map[AgentName, AgentInfo ]= Map.empty
-    val managerRef = TestActorRef( new TestFailureManager(testAgents)) 
+   val configStr =
+   s"""
+   agent-system{
+     starting-timeout = 2 seconds
+     internal-agents {
+    }
+   }
+   """
+   val config = ConfigFactory.parseString(configStr)
+   val asce =new AgentSystemSettings(config)
+    val managerRef = TestActorRef( new TestFailureManager(testAgents,asce)) 
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(

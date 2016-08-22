@@ -49,13 +49,14 @@ object AgentSystem {
   as.start()
   as})
 }
+
 class AgentSystem()(
-    protected[this] val settings: AgentSystemConfigExtension,
+    protected implicit val settings: AgentSystemConfigExtension,
     protected implicit val dbConnection: DBReadWrite,
     protected implicit val singleStores: SingleStores,
     protected implicit val callbackHandler: CallbackHandler
-  ) extends BaseAgentSystem 
-  with InternalAgentLoader
+  ) 
+  extends InternalAgentLoader
   with InternalAgentManager
   with ResponsibleAgentManager
   with DBPusher{
@@ -105,10 +106,10 @@ object Language{
   }
 }
 
-abstract class BaseAgentSystem extends Actor with ActorLogging{
+trait BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
-  protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
-  protected[this] def settings: AgentSystemConfigExtension 
+  protected def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
+  protected implicit def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

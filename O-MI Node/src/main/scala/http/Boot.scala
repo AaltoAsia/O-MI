@@ -18,7 +18,7 @@ import java.net.InetSocketAddress
 import java.util.Date
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -66,13 +66,13 @@ class OmiServer extends OmiNode{
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
 
-  override val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-  override val agentSystem = system.actorOf(
+   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+   val agentSystem = system.actorOf(
     AgentSystem.props(),
     "agent-system"
   )
 
-  val requestHandler : RequestHandler = new RequestHandler(
+  implicit val requestHandler : RequestHandler = new RequestHandler(
     )(system,
     agentSystem,
     subscriptionManager,
@@ -81,33 +81,52 @@ class OmiServer extends OmiNode{
     singleStores
     )
 
-  override val cliListener =system.actorOf(
-    Props(new OmiNodeCLIListener()(this)),
+  implicit val cliListener =system.actorOf(
+    Props(
+      new OmiNodeCLIListener(
+        system,
+        agentSystem,
+        subscriptionManager,
+        singleStores,
+        dbConnection
+      )),
     "omi-node-cli-listener"
   )
-  saveSettingsOdf(this)
+  saveSettingsOdf(system,agentSystem,settings)
 
   // create omi service actor
-  val omiService = new OmiServiceImpl(requestHandler)(this)
+  val omiService = new OmiServiceImpl(
+    system,
+    materializer,
+    subscriptionManager,
+    settings,
+    singleStores,
+    requestHandler,
+    callbackHandler
+  )
 
 
   implicit val timeoutForBind = Timeout(5.seconds)
 
 }
-trait OmiNode extends OmiNodeContext {
-  val requestHandler : OmiRequestHandlerBase
-  val omiService : OmiService 
+trait OmiNode {
+  implicit def system : ActorSystem 
+  implicit def materializer: ActorMaterializer
+  implicit def requestHandler : OmiRequestHandlerBase
+  implicit def omiService : OmiService 
+  implicit def settings : OmiConfigExtension 
+  implicit def cliListener : ActorRef
 
 
   implicit val timeoutForBind : Timeout
-  def bindTCP() : Unit= {
+  def bindTCP()(implicit ec: ExecutionContext): Unit= {
     IO(Tcp)  ? Tcp.Bind(cliListener,
       new InetSocketAddress("localhost", settings.cliPort))
   }
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
    */
-  def bindHTTP(): Unit = {
+  def bindHTTP()(implicit ec: ExecutionContext): Unit = {
 
     val bindingFuture =
       Http().bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
@@ -130,8 +149,7 @@ object OmiServer {
     new OmiServer()
   }
 
-  def saveSettingsOdf(implicit nc: Settings with ActorSystemContext with Actors with Storages) :Unit = {
-    import nc._
+  def saveSettingsOdf(system: ActorSystem, agentSystem: ActorRef, settings: OmiConfigExtension) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
       import system.dispatcher // execution context for futures
       // Same timestamp for all OdfValues of the settings
@@ -181,6 +199,7 @@ object Boot /*extends Starter */{// with App{
   def main(args: Array[String]) : Unit= {
     Try{
       val server: OmiServer = OmiServer()
+      import server.system.dispatcher
       server.bindTCP()
       server.bindHTTP()
     }match {

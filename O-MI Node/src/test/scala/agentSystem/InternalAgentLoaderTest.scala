@@ -58,7 +58,6 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     loader
    })
  }
- class AgentSystemSettings( val config : Config ) extends AgentSystemConfigExtension
 
  def missingAgentTest      = new Actorstest(logTestActorSystem){
    val classname = "unexisting"
@@ -102,7 +101,8 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val warnings = Vector(
      s"Classloading failed. Could not load: $classname. Received $exception"
    )
-   logWarningTest(new AgentSystemSettings(config), warnings )
+   val asce =new AgentSystemSettings(config)
+   logWarningTest( asce, warnings )
  }
  def unimplementedIATest   = new Actorstest(logTestActorSystem){
    val classname = "agentSystem.WrongInterfaceAgent"
@@ -123,7 +123,8 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val warnings = Vector(
      s"Class $classname does not implement InternalAgent trait."
    )
-   logWarningTest(new AgentSystemSettings(config), warnings )
+   val asce =new AgentSystemSettings(config)
+   logWarningTest( asce, warnings )
  }
  def unimplementedPCTest   = new Actorstest(logTestActorSystem){
    val classname = "agentSystem.NotPropsCreatorAgent"

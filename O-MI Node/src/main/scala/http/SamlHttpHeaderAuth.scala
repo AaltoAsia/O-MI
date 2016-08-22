@@ -45,7 +45,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
     val tmp= settings.inputWhiteListUsers.map(Eppn(_)).toVector
 
     log.info(s"O-MI node is configured to allow SAML users: $tmp")
-    if (whitelistedUsers.nonEmpty)
+    if (tmp.nonEmpty)
       log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
     
     tmp

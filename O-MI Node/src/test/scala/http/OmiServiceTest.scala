@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
-import responses.{RequestHandler, SubscriptionManager}
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
@@ -40,15 +40,32 @@ class OmiServiceTest
 
   implicit override val materializer : ActorMaterializer = ActorMaterializer()(system)
   def actorRefFactory = system
-  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
-  implicit val dbConnection = new TestDB("system-test")
-  val subscriptionManager = TestActorRef(Props(new SubscriptionManager()))
+  implicit val settings : OmiConfigExtension = OmiConfig(system)
 
-  val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subscriptionManager),
-      "agent-system"
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+  implicit val singleStores : SingleStores = new SingleStores(settings)
+  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
+  implicit val dbConnection = new TestDB("system-test")(
+    system,
+    singleStores,
+    settings
   )
-  val requestHandler = new RequestHandler(subscriptionManager, agentManager)(dbConnection)
+
+  val subscriptionManager = TestActorRef(SubscriptionManager.props())
+
+   val agentSystem = system.actorOf(
+    AgentSystem.props(),
+    "agent-system"
+  )
+
+  implicit val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
+    )
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
   val localHost = RemoteAddress(InetAddress.getLoopbackAddress)
@@ -57,11 +74,11 @@ class OmiServiceTest
 
 
   def beforeAll() = {
-    Boot.saveSettingsOdf(agentManager)(system)//Boot.init(dbConnection)
+    OmiServer.saveSettingsOdf(system,agentSystem, settings)//Boot.init(dbConnection)
   }
   def afterAll = {
     dbConnection.destroy()
-    SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
     Await.ready(system.terminate(), 2 seconds)
   }
 
@@ -96,7 +113,7 @@ class OmiServiceTest
         responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
       }
     }
-    val settingsPath = "/" + Path(Boot.settings.settingsOdfPath).toString
+    val settingsPath = "/" + Path(settings.settingsOdfPath).toString
     "respond successfully to GET to some value" >> {
       Get(settingsPath + "/num-latest-values-stored/value") ~> myRoute ~> check {
         mediaType === `text/plain`

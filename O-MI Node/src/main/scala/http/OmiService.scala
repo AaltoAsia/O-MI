@@ -66,13 +66,19 @@ trait OmiServiceAuthorization
 /**
  * Actor that handles incoming http messages
  */
-class OmiServiceImpl(val requestHandler : OmiRequestHandlerBase)(implicit val nc: OmiNodeContext)
+class OmiServiceImpl(
+  protected val system : ActorSystem,
+  protected val materializer: ActorMaterializer,
+  protected val subscriptionManager : ActorRef,
+  val settings : OmiConfigExtension,
+  val singleStores : SingleStores,
+  protected val requestHandler : OmiRequestHandlerBase,
+  protected val callbackHandler : CallbackHandler
+  )
      extends {
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
-  val settings : OmiConfigExtension = nc.settings
-  val singleStores : SingleStores = nc.singleStores
   registerApi(new AuthAPIService())
 
 
@@ -88,11 +94,12 @@ trait OmiService
      with OmiServiceAuthorization
      {
 
-  implicit val nc: OmiNodeContext
-  import nc._
-  def log: org.slf4j.Logger
-  val requestHandler : OmiRequestHandlerBase
 
+  protected def log: org.slf4j.Logger
+  protected def requestHandler : OmiRequestHandlerBase
+  protected def callbackHandler : CallbackHandler
+  protected val system : ActorSystem
+  import system.dispatcher
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version words with 'sbt run' and 're-start' as well as the packaged version
@@ -154,7 +161,7 @@ trait OmiService
         val pathStr = uriPath // pathToString(uriPath)
         val path = Path(pathStr)
 
-        RESTHandler.handle(path)(nc.singleStores) match {
+        RESTHandler.handle(path)(singleStores) match {
           case Some(Left(value)) =>
             complete(value)
           case Some(Right(xmlData)) =>
@@ -351,7 +358,10 @@ trait OmiService
  * This trait implements websocket support for O-MI message handling using akka-http
  */
 trait WebSocketOMISupport { self: OmiService =>
-  import self.nc._
+  protected def system : ActorSystem
+  protected implicit def materializer: ActorMaterializer
+  protected def subscriptionManager : ActorRef
+  import system.dispatcher
   type InSink = Sink[ws.Message, _]
   type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 

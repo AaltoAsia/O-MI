@@ -22,12 +22,12 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 import agentSystem.{AgentInfo, AgentName}
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, ActorSystem}
 import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub}
+import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub, SingleStores, DBReadWrite}
 import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
 import types.Path
 
@@ -48,22 +48,29 @@ import http.CLICmds._
 object OmiNodeCLI{
   def props(
     sourceAddress: InetSocketAddress,   
-    removeHandler: RemoveHandlerT
+    removeHandler: RemoveHandlerT,
+    agentSystem: ActorRef,
+    subscriptionManager: ActorRef
   )(
-implicit nc: Actors
-  ) : Props = Props( new OmiNodeCLI(sourceAddress, removeHandler))
+  ) : Props = Props(
+    new OmiNodeCLI(
+      sourceAddress,
+      removeHandler,
+      agentSystem,
+      subscriptionManager
+    )
+  )
 }
 /** Command Line Interface for internal agent management. 
   *
   */
 class OmiNodeCLI(
-  sourceAddress:  InetSocketAddress,   
-  removeHandler: RemoveHandlerT
-)(
-  implicit val nc: Actors
+  protected val sourceAddress: InetSocketAddress,   
+  protected val removeHandler: RemoveHandlerT,
+  protected val agentSystem: ActorRef,
+  protected val subscriptionManager: ActorRef
   ) extends Actor with ActorLogging {
 
-    import nc._
   val commands = """Current commands:
 start <agent classname>
 stop  <agent classname> 
@@ -280,9 +287,15 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(implicit val nc: ActorSystemContext with Actors with Storages)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(
+    protected val system: ActorSystem,
+    protected val agentSystem: ActorRef,
+    protected val subscriptionManager: ActorRef,
+    protected val singleStores: SingleStores,
+    protected val dbConnection: DBReadWrite
+    
+  )  extends Actor with ActorLogging{
 
-  import nc._
   import Tcp._
 
   def receive : Actor.Receive={
@@ -297,10 +310,10 @@ class OmiNodeCLIListener(implicit val nc: ActorSystemContext with Actors with St
     case Connected(remote, local) =>
       val connection = sender()
       log.info(s"CLI connected from $remote to $local")
-      val remover = new RemoveHandler( nc.singleStores, nc.dbConnection )
+      val remover = new RemoveHandler(singleStores, dbConnection )(system)
 
       val cli = context.system.actorOf(
-        OmiNodeCLI.props(remote,remover),
+        OmiNodeCLI.props(remote,remover,agentSystem, subscriptionManager),
         "cli-" + remote.toString.tail)
         connection ! Register(cli)
     case _ => //noop?
