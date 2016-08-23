@@ -52,3 +52,84 @@ html {
     color:#1E90FF; /* dodgerblue */
 }
 
+
+/* Response history modal */
+
+.responseTitle > .btn {
+    margin-left: 2em;
+}
+
+/* FOR VERTICAL SUB HISTORY
+.callbackResponseHistory .modal-body {
+    overflow:scroll;
+}
+*/
+
+/*
+.responseListCollection {
+    align-items: flex-start;
+    display: flex;
+}
+*/
+
+.responseList {
+    /*
+    flex: 0 1;
+    display: flex;
+    flex-flow: column nowrap;
+    margin: 1em 0 1em 1em;
+    */
+    margin: 3rem 2rem 6rem 2rem;
+    min-width: 30rem;
+}
+
+
+.cloneTarget {
+    display: none;
+}
+
+.dataTable td {
+    word-break: break-all;
+}
+
+.flash {
+    -moz-animation: flash 1s ease-out;
+    -moz-animation-iteration-count: 1;
+
+    -webkit-animation: flash 1s ease-out;
+    -webkit-animation-iteration-count: 1;
+
+    -ms-animation: flash 1s ease-out;
+    -ms-animation-iteration-count: 1;
+
+}
+
+@-webkit-keyframes flash {
+    0% { background-color: none;  }
+    50% { background-color: #f0ad4e;  }
+    100% { background-color: none;  }
+
+}
+
+@-moz-keyframes flash {
+    0% { background-color: none;  }
+    50% { background-color: #f0ad4e;  }
+    100% { background-color: none;  }
+
+}
+
+@-ms-keyframes flash {
+    0% { background-color: none;  }
+    50% { background-color: #f0ad4e;  }
+    100% { background-color: none;  }
+
+}
+
+.callbackResponseHistory .tooltip-inner {
+    word-break: break-all;
+}
+
+/* response return code row that can be clicked */
+tr.respRet{
+    cursor: pointer;
+}

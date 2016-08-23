@@ -1,15 +1,19 @@
-/*package responses
+package responses
 
-import agentSystem.{DBPusher, InputPusher}
+import agentSystem.{AgentSystem, DBPusher}
+import akka.util.Timeout
 import akka.testkit.EventFilter
+import akka.pattern.ask
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestEvent.{UnMute, Mute}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.execute.Result
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import org.specs2.matcher.XmlMatchers._
+import org.specs2.matcher._
 import testHelpers.Actors
-import types.OdfTypes.OdfValue
+import types.OdfTypes.{OdfInfoItem, OdfValue}
 
 import scala.concurrent.{Future, Await}
 import scala.util.Try
@@ -19,10 +23,13 @@ import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
 
 import akka.actor._
+import agentSystem.ResponsibilityRequest
 import com.typesafe.config.ConfigFactory
 import database._
 import types.OmiTypes._
+import types.OdfTypes._
 import types._
+import http.{ OmiConfig, OmiConfigExtension }
 
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList}
 import scala.concurrent.duration._
@@ -42,8 +49,7 @@ case class SubscriptionRequest(
 
  */
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
-  implicit val dbConnection = new TestDB("subscription-test-db")
-  implicit val system = ActorSystem("on-core", ConfigFactory.parseString(
+  implicit val system = ActorSystem("SubscribtionTest-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
             akka.stdout-loglevel = INFO
@@ -51,23 +57,66 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
             """))
-  val subscriptionHandlerRef = system.actorOf((Props(new SubscriptionHandler())))
-  val requestHandler = new RequestHandler(subscriptionHandlerRef)
-  InputPusher.ipdb = system.actorOf(Props(new DBPusher(dbConnection, subscriptionHandlerRef)), "test-input-pusher")
+
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+      val conf = ConfigFactory.load("testconfig")
+  implicit val settings = new OmiConfigExtension(
+        conf
+      )
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+
+  implicit val singleStores = new SingleStores(settings)
+  implicit val dbConnection: DBReadWrite = new TestDB("subscription-test-db")(
+    system,
+    singleStores,
+    settings
+  )
+
+  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+  val agentSystem = system.actorOf(
+    AgentSystem.props(),
+    "agent-system-test"
+  )
+
+  val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
+    )
+
   val calendar = Calendar.getInstance()
   // try to fix bug with travis
   val timeZone = TimeZone.getTimeZone("Etc/GMT+2")
   calendar.setTimeZone(timeZone)
   val date = calendar.getTime
   val testtime = new java.sql.Timestamp(date.getTime)
+      def pollValues(subIdO: Option[Long]): Vector[OdfValue] = subIdO.flatMap{ 
+        subId => 
+          pollSub(subId).results.headOption.flatMap{ 
+            result => 
+              result.odf.headOption.map{ 
+                objects => 
+                  getInfoItems(objects).flatMap{ 
+                    info => info.values
+                  } 
+              }
+          }
+      }.toVector.flatten
 
   def beforeAll = {
-    system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
-    Await.ready(initDB, 5 seconds)
+    //comment line below for detailed debug information
+    //system.eventStream.publish(Mute(EventFilter.debug(), EventFilter.info(), EventFilter.warning()))
+    initDB()
+
+    //SingleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
   def afterAll = {
-    system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
+    //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
     cleanAndShutdown
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -80,18 +129,17 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }*/
 
     "return incrementing id for new subscription" >> {
-      val ns1 = addSub(1,5, Seq("p/1"))
+      val ns1 = addSub(1,5, Seq("p/1")) 
       val ns2 = addSub(1,5, Seq("p/1"))
       val ns3 = addSub(1,5, Seq("p/1"))
       val ns4 = addSub(1,5, Seq("p/1"))
-
-      ns2.\\("requestID").text.toInt must be_>(ns1.\\("requestID").text.toInt)
-      ns3.\\("requestID").text.toInt must be_>(ns2.\\("requestID").text.toInt)
-      ns4.\\("requestID").text.toInt must be_>(ns3.\\("requestID").text.toInt)
+      val rIDs = Vector( ns1, ns2, ns3, ns4).flatMap{ n => n.results.headOption }.flatMap{ result => result.requestIDs.headOption }
+      val (check, last) = rIDs.foldLeft(( 0l must be_<(1l),0l)){ case ( l, r) => (l._1 and( l._2 must be_<( r )) , r) }
+      rIDs must be size(4) and check
     }
 
     "fail when trying to use invalid interval" in new Actors {
-      val actor = system.actorOf(Props(new SubscriptionHandler))
+      //val actor = system.actorOf(Props(new SubscriptionHandler))
 
       val dur = -5
       val res = Try(addSub(1, dur, Seq("p/1")))
@@ -110,111 +158,117 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "be able to handle multiple event subscriptions on the same path" >> {
-      val sub1Id: Long = addSub(5,-1, Seq("p/2")).\\("requestID").text.toInt
-      val sub2Id: Long = addSub(5,-1, Seq("p/2")).\\("requestID").text.toInt
-      val sub3Id: Long = addSub(5,-1, Seq("p/1")).\\("requestID").text.toInt
+      val sub1Id = addSub(5,-1, Seq("p/2"))
+      val sub2Id = addSub(5,-1, Seq("p/2"))
+      val sub3Id = addSub(5,-1, Seq("p/1"))
+      def pollIds: Vector[Vector[OdfValue]] = for {
+        response <- Vector( sub1Id, sub2Id, sub3Id)
+        
+        vectorResult <- (for {
+            result <- response.results.headOption
 
-      pollSub(sub1Id).\\("value").size === 0
-      pollSub(sub2Id).\\("value").size === 0
-      pollSub(sub3Id).\\("value").size === 0
+            rID <- result.requestIDs.headOption
 
-      val fut1 = addValue("p/2", nv("1", 10000))
-      val fut2 = addValue("p/2", nv("2", 20000))
-      val fut3 = addValue("p/2", nv("3", 30000))
+            response = pollSub(rID)
 
-      Await.ready(Future.sequence(Seq(fut1,fut2,fut3)), 2 seconds)
+            result <- response.results.headOption
+            objects <- result.odf
+          } yield getInfoItems(objects) flatMap {info => info.values}
+        ).toVector
 
-      pollSub(sub1Id).\\("value").size === 3
-      pollSub(sub2Id).\\("value").size === 3
-      pollSub(sub3Id).\\("value").size === 0
+      } yield vectorResult
+      val pollsBefore = pollIds
+      val emptyCheck = pollsBefore.foldLeft( Vector.empty must have size(0) ){ case (l, r) => l and (r must be empty)}
+
+      addValue("p/2", nv("1", 10000))
+      addValue("p/2", nv("2", 20000))
+      addValue("p/2", nv("3", 30000))
+      val pollsAfter = pollIds
+      val sizes = pollsAfter.map{ values => values.size }
+      val sizeCheck = sizes must contain(3,3,0)
+      emptyCheck and sizeCheck
     }
 
     "return no values for interval subscriptions if the interval has not passed" >> {
-      val subId: Long = addSub(5, 4, Seq("p/1")).\\("requestID").text.toInt
+      val subIdO: Option[Long] = addSub(5, 4, Seq("p/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
-      pollSub(subId).\\("value").size === 0
-
+      val values: Vector[OdfValue] = pollValues(subIdO)
+      values must have size(0)
     }
 
     "be able to 'remember' last poll time to correctly return values for intervalsubs" >> {
-      val subId: Long = addSub(5, 4, Seq("p/1")).\\("requestID").text.toInt
+      val subIdO: Option[Long] = addSub(5, 4, Seq("p/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
-      pollSub(subId).\\("value").size === 0
+      val valuesEmpty: Vector[OdfValue] = pollValues(subIdO)
+      val emptyCheck = valuesEmpty must have size(0)
       Thread.sleep(2000)
-      pollSub(subId).\\("value").size === 1
+      val values: Vector[OdfValue] = pollValues(subIdO)
+      val sizeCheck = values must have size(1)
+      emptyCheck and sizeCheck
     }
 
     "return copy of previous value for interval subs if previous value exists" >> {
-      Await.ready(addValue("p/3", nv("4")), 2 seconds)
+      addValue("p/3", nv("4"))
 
-      val subId: Long = addSub(5, 1, Seq("p/3")).\\("requestID").text.toInt
+      val subIdO: Option[Long] = addSub(5, 1, Seq("p/3")).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
-      pollSub(subId).\\("value").size === 2
+      val values1: Vector[OdfValue] = pollValues(subIdO) 
+      val sizeCheck1 = values1 must have size(2)
       Thread.sleep(2000)
-      pollSub(subId).\\("value").size ===  2
+      val values2: Vector[OdfValue] = pollValues(subIdO)
+      val sizeCheck2 = values2 must have size(2)
+      sizeCheck1 and sizeCheck2
 
     }
 
     "return failure notification with correct structure when polling a nonexistent subscription" >> {
       val id = 5000
-      val returnMsg = pollSub(id)
+      val returnMsg = pollSub(id).asXML
 
       returnMsg must \("response") \ ("result") \ ("return",
         "returnCode" -> "404",
-        "description" -> "A subscription with this id has expired or doesn't exist")
+        "description" -> s"Following requestIDs not found: $id.")
 
-      returnMsg must \("response") \ ("result") \ ("requestID") \> (s"$id")
     }
 
-    "return no new values for event subscription if there are no new events" >> {
-      val res = addSub(5, -1, Seq("p/1"))
-      val subId = res.\\("requestID").text.toInt
-
-      pollSub(subId).\\("value").size === 0
+    "return no new values for event subscription if there are no new events" >> skipped{
+      val subIdO: Option[Long] = addSub(5, -1, Seq("r/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      pollValues(subIdO) must be empty
     }
 
     "return value for event sub when the value changes and return no values after polling" >> {
-      val subId = addSub(5, -1, Seq("r/1")).\\("requestID").text.toInt
-
-
-      Await.ready(addValue("r/1", nv("2", 10000)), 2 seconds)
-      pollSub(subId).\\("value").size === 1
-      Await.ready(addValue("r/1", nv("3",20000)), 2 seconds)
-      pollSub(subId).\\("value").size === 1
-      pollSub(subId).\\("value").size === 0
+      val subIdO: Option[Long] = addSub(5, -1, Seq("r/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      addValue("r/1", nv("2", 10000))
+      val c1 = pollValues(subIdO) must have size(1)
+      addValue("r/1", nv("3",20000))
+      val c2 = pollValues(subIdO) must have size(1)
+      val c3 = pollValues(subIdO) must have size(0)
+      c1 and c2 and c3
     }
 
     "return no new value for event sub if the value is same as the old one" >> {
-      val subId = addSub(5, -1, Seq("r/2")).\\("requestID").text.toInt
+      val subIdO: Option[Long] = addSub(5, -1, Seq("r/2")).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
+      addValue("r/2", nv("0", 20000))
+      val c1 = pollValues(subIdO) must have size(1)
 
-      Await.ready(addValue("r/2", nv("0", 20000)), 2 seconds)
-      pollSub(subId).\\("value").size === 1
-
-      Await.ready(addValue("r/2", nv("0", 22000)), 2 seconds)
-      Await.ready(addValue("r/2", nv("0", 23000)), 2 seconds)
-      pollSub(subId).\\("value").size === 0
-
+      addValue("r/2", nv("0", 22000))
+      addValue("r/2", nv("0", 23000))
+      val c2 = pollValues(subIdO) must have size(0)
+      val c3 = pollValues(subIdO) must have size(0)
+      c1 and c2 and c3
     }
 
     "subscription should be removed when the ttl expired" >> {
-      val subId = addSub(1, 5, Seq("p/1")).\\("requestID").text.toInt
-      pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      val subId = addSub(1, 5, Seq("p/1")).asXML.\\("requestID").text.toInt
+      pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
       Thread.sleep(2000)
-      pollSub(subId) must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+      pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "404")
     }
-
-
-
-
-
-
   }
-
-
 
   def initDB() = {
     /*
@@ -234,26 +288,27 @@ case class OdfValue(
  */
     //pathPrefix
     val pp = Path("Objects/SubscriptionTest/")
-    val pathAndvalues: Iterable[(Path, OdfValue)] = Seq(
-      (pp / "p/1", nv("1")),
-      (pp / "p/2", nv("2")),
-      (pp / "p/3", nv("3")),
-      (pp / "r/1", nv("0")),
-      (pp / "r/2", nv("0")),
-      (pp / "r/3", nv("0")),
-      (pp / "u/7", nv("0"))
+    val pathAndvalues: Iterable[(String, Vector[OdfValue])] = Seq(
+      ("p/1", nv("1")),
+      ("p/2", nv("2")),
+      ("p/3", nv("3")),
+      ("r/1", nv("0")),
+      ("r/2", nv("0")),
+      ("r/3", nv("0")),
+      ("u/7", nv("0"))
     )
-    InputPusher.handlePathValuePairs(pathAndvalues)
+
+    pathAndvalues.foreach{case (path, values) => addValue(path,values)}//InputPusher.handlePathValuePairs(pathAndvalues)
   }
 
   def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {
-    val hTree = SingleStores.hierarchyStore execute GetTree()
+    val hTree = singleStores.hierarchyStore execute GetTree()
     val p = paths.flatMap(p => hTree.get(Path("Objects/SubscriptionTest/" + p)))
-              .map(types.OdfTypes.fromPath(_))
+              .map(types.OdfTypes.createAncestors(_))
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
 
-    Await.result(requestHandler.handleSubscription(SubscriptionRequest(ttl seconds, interval seconds, p)), Duration.Inf)
+    Await.result(requestHandler.handleSubscription(SubscriptionRequest( interval seconds, p, None, None, None, ttl seconds)), Duration.Inf)
   }
 //  case class PollRequest(
 //  ttl: Duration,
@@ -261,26 +316,31 @@ case class OdfValue(
 //  requestIDs: Iterable[ Long ] = asJavaIterable(Seq.empty[Long])
 //) extends OmiRequest
   def pollSub(id: Long) = {
-    Await.result(requestHandler.handlePoll(PollRequest(0 seconds, None, Iterable(id))), Duration.Inf)
+    Await.result(requestHandler.handlePoll(PollRequest( None, Vector(id))), Duration.Inf)
   }
   def cleanAndShutdown() = {
-    system.shutdown()
+    Await.ready(system.terminate(), 2 seconds)
     dbConnection.destroy()
+
   }
 
   //add new value easily
-  def addValue(path: String, nv: OdfValue) = {
+  def addValue(path: String, nv: Vector[OdfValue]): Unit = {
     val pp = Path("Objects/SubscriptionTest/")
-    InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
+    val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
+    val writeReq = WriteRequest( odf)
+    implicit val timeout = Timeout( 10 seconds )
+    val future = agentSystem ? ResponsibilityRequest("Test", writeReq)
+    Await.ready(future, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
 
   //create new odfValue value easily
-  def nv(value: String, timestamp: Long = 0L): OdfValue = {
-    OdfValue(
+  def nv(value: String, timestamp: Long = 0L): Vector[OdfValue] = {
+    Vector(OdfValue(
     value,
     "",
     new Timestamp(testtime.getTime + timestamp)
-    )
+    ))
   }
 
 }
@@ -532,7 +592,7 @@ class oldSubscriptionTest(implicit ee: ExecutionEnv) extends Specification with 
         <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns="odf.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
           <omi:response>
             <omi:result>
-              <omi:return returnCode="404" description="A subscription with this id has expired or doesn't exist"/>
+              <omi:return description="Following requestIDs not found: 5000." returnCode="404"/>
               <omi:requestID>{ rid }</omi:requestID>
             </omi:result>
           </omi:response>
@@ -817,4 +877,4 @@ class oldSubscriptionTest(implicit ee: ExecutionEnv) extends Specification with 
 
 
 */
-*/
+

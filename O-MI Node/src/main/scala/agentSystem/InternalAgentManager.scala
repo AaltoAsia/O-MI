@@ -1,129 +1,144 @@
-/**
-  Copyright (c) 2016 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  **/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import agentSystem._
-import http.CLICmds._
-import http._
-import types.Path
-import akka.actor.SupervisorStrategy._
+import scala.concurrent.Future
+import scala.util.{Try, Success, Failure}
 import akka.pattern.ask
-import akka.util.Timeout
-import akka.actor.{
-  Actor, 
-  ActorRef, 
-  ActorInitializationException, 
-  ActorKilledException, 
-  ActorLogging, 
-  OneForOneStrategy, 
-  Props, 
-  SupervisorStrategy
-}
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-import scala.collection.mutable.Map
-import java.io.File
-import java.net.URLClassLoader
-import java.sql.Timestamp
-import java.util.Date
-import java.util.jar.JarFile
 import http.CLICmds._
 
 
 trait InternalAgentManager extends BaseAgentSystem {
   import context.dispatcher
 
+  def successfulCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name $cmd succesfully."
+  def successfulStartMsg( name : AgentName) : String = successfulCmdMsg( name, "started" )
+  def successfulStopMsg( name : AgentName ) : String = successfulCmdMsg( name, "stopped" )
+  def wasAlreadyCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name was already $cmd."
+  def wasAlreadyStartedMsg( name : AgentName) : String = wasAlreadyCmdMsg( name, "started" )
+  def wasAlreadyStoppedMsg( name : AgentName) : String = wasAlreadyCmdMsg( name, "stopped" )
+  def commandForNonexistingMsg( name : AgentName ) : String = s"Command for nonexistent agent: $name."
+  def couldNotFindMsg( name : AgentName ) : String = s"Could not find agent: $name."
+
   /** Helper method for checking is agent even stored. If was handle will be processed.
     *
     */
-  private def handleAgentCmd(agentName: String)(handle: AgentInfo => String): String = {
-    agents.get(agentName) match {
+  private def handleAgentCmd(agentName: String)(handle: AgentInfo => Future[String]): Future[String] = {
+    val msg : Future[String] = agents.get(agentName) match {
       case None =>
-      log.warning("Command for not stored agent!: " + agentName)
-      "Could not find agent: " + agentName
+      log.warning(commandForNonexistingMsg(agentName))
+        Future.successful(couldNotFindMsg(agentName))
       case Some(agentInfo) =>
-      handle(agentInfo)
+        handle(agentInfo)
+    }
+    sender() ! msg
+    msg
+  }
+
+  protected def handleStart( start: StartAgentCmd ) = {
+    val agentName = start.agent
+    handleAgentCmd(agentName) { 
+      agentInfo: AgentInfo =>
+      if(agentInfo.running ){
+        val msg = wasAlreadyStartedMsg(agentName)
+        log.info(msg)
+        Future.successful(msg)
+      }else{
+        log.info(s"Starting: " + agentInfo.name)
+        val result = agentInfo.agent ? Start()
+        result.map{
+          case CommandSuccessful() =>
+            val msg = successfulStartMsg(agentName)
+            log.info(msg)
+            agents += agentInfo.name -> AgentInfo(
+              agentInfo.name,
+              agentInfo.classname,
+              agentInfo.config,
+              agentInfo.agent,
+              true,
+              agentInfo.ownedPaths
+            )
+            msg
+          case failure : InternalAgentFailure => 
+            failure.toString
+        }.recover{
+          case t : Throwable => 
+          t.toString
+        }
+
+      }
+    }
+  }
+  protected def handleStop( stop: StopAgentCmd ) = {
+    val agentName = stop.agent
+    handleAgentCmd(agentName){
+      agentInfo: AgentInfo =>
+      if (agentInfo.running) {
+        log.warning(s"Stopping: " + agentInfo.name)
+        val result = agentInfo.agent ? Stop()
+        result.map{
+          case CommandSuccessful() =>
+            agents += agentInfo.name -> AgentInfo(
+              agentInfo.name,
+              agentInfo.classname,
+              agentInfo.config,
+              agentInfo.agent,
+              false,
+              agentInfo.ownedPaths
+            )
+            val msg = successfulStopMsg(agentName)
+            log.info(msg)
+            msg
+          case failure : InternalAgentFailure => 
+            failure.toString
+        }.recover{
+          case t : Throwable => 
+          t.toString
+        }
+      } else {
+        val msg = wasAlreadyStoppedMsg(agentName)
+        log.info(msg)
+        Future.successful(msg)
+      }
     }
   }
 
-  /**
-    * Method for handling received messages.
-    * Should handle:
-    *   -- ConfigUpdate with updating running AgentActors.
-    *   -- Terminated with trying to restart AgentActor.
-    */
-  receiver {
-    case  start: StartAgentCmd  => handleStart( start)
-    case  stop: StopAgentCmd  => handleStop( stop)
-    case  restart: ReStartAgentCmd  => handleRestart( restart )
-    case ListAgentsCmd() => sender() ! agents.values.toSeq
-  } 
-  def handleStart( start: StartAgentCmd ) = {
-     val agentName = start.agent
-    sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
-    agentInfo.running match{
-      case false=>
-      log.info(s"Starting: " + agentInfo.name)
-      val result = agentInfo.agent ? Start()
-      val msg = s"Agent $agentName started succesfully."
-      log.info(msg)
-      agents += agentInfo.name -> AgentInfo(agentInfo.name,agentInfo.classname, agentInfo.config, agentInfo.agent, true)
-      msg
-      case true =>
-      val msg = s"Agent $agentName was already Running. 're-start' should be used to restart running Agents"
-      log.info(msg)
-      msg
-    }
-  }
-}
-def handleStop( stop: StopAgentCmd ) = {
-  val agentName = stop.agent
-  sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
-  if (agentInfo.running) {
-      log.warning(s"Stopping: " + agentInfo.name)
-      val result = agentInfo.agent ? Stop()
-      agents += agentInfo.name -> AgentInfo(agentInfo.name,agentInfo.classname, agentInfo.config, agentInfo.agent, false)
-      val msg = s"Agent $agentName stopped succesfully."
-      log.info(msg)
-      msg
-  } else {
-      val msg = s"Agent $agentName was already stopped."
-      log.info(msg)
-      msg
-    }
-  }
-}
+  protected def handleRestart( restart: ReStartAgentCmd ) = {
+    val agentName = restart.agent
+    handleAgentCmd(agentName) { 
+      agentInfo: AgentInfo =>
+    if( agentInfo.running) {
+      log.info(s"Restarting: " + agentInfo.name)
+      val result = agentInfo.agent ? Restart()
+      result.map{
+        case Success(CommandSuccessful()) =>
+          val msg = s"Agent $agentName restarted succesfullyi."
+          log.info(msg)
+          msg
+          case Failure( t: Throwable ) =>
+            t.toString
+      }.recover{
+          case t : Throwable => 
+          t.toString
+        }
 
-def handleRestart( restart: ReStartAgentCmd ) = {
-  val agentName = restart.agent
-  sender() ! handleAgentCmd(agentName) { agentInfo: AgentInfo =>
-  agentInfo.running match{
-    case true=>
-    log.info(s"Restarting: " + agentInfo.name)
-    val result = agentInfo.agent ? Restart()
-    val msg = s"Agent $agentName restarted succesfully."
-    log.info(msg)
-    msg
-    case false =>
-    val msg = s"Agent $agentName was not running. 'start' should be used to start stopped Agents."
-    log.info(msg)
-    msg
-  }
-}
+    }else {
+      val msg = s"Agent $agentName was not running. 'start' should be used to start stopped Agents."
+      log.info(msg)
+        Future.successful(msg)
     }
+  }
+      }
 
   }

@@ -54,6 +54,8 @@ omiExt = (WebOmi) ->
     my.ns[name] || my.ns.odf
 
   # Generic Xpath evaluator
+  # elem: used as root for relative queries
+  # xpath: xpath as string
   my.evaluateXPath = (elem, xpath) ->
     xpe = elem.ownerDocument || elem
     iter = xpe.evaluate(xpath, elem, my.nsResolver, 0, null)

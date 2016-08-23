@@ -1,153 +1,198 @@
-/**
-  Copyright (c) 2015 Aalto University.
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
 package http
 
-import akka.actor.{ActorSystem, Props, ActorRef}
+import java.net.InetSocketAddress
+import java.util.Date
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future, ExecutionContext}
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
+
+import org.slf4j.LoggerFactory
+
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
-import spray.can.Http
-import spray.servlet.WebBoot
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Awaitable, Future}
-import java.util.Date
-import java.net.InetSocketAddress
-import scala.collection.JavaConversions.asJavaIterable
+import akka.http.scaladsl.{HttpExt, Http}
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
+//import akka.http.WebBoot
+//import akka.http.javadsl.ServerBinding
 
+import database._
 import agentSystem._
-import responses.{RequestHandler, SubscriptionManager}
-import types.Path
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler, OmiRequestHandlerBase}
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import database._
+import types.Path
+import OmiServer._
+import akka.stream.{ActorMaterializer, Materializer}
 
-import scala.util.{Try, Failure, Success}
-import xml._
+class OmiServer extends OmiNode{
 
-import scala.language.postfixOps
 
-/**
- * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
- * seperated for testing purposes and for easier implementation of different starting methods (standalone, servlet)
- */
-trait Starter {
   // we need an ActorSystem to host our application in
-  implicit val system = ActorSystem("on-core")
+  implicit val system : ActorSystem = ActorSystem("on-core") 
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher // execution context for futures
 
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
-  val settings = Settings(system)
+  implicit val settings : OmiConfigExtension = OmiConfig(system)
 
-  val subHandlerDbConn: DB = new DatabaseConnection
-  val subManager = system.actorOf(SubscriptionManager.props()(subHandlerDbConn), "subscription-handler")
-  
+  implicit val singleStores = new SingleStores(settings)
+  implicit val dbConnection: DBReadWrite = new DatabaseConnection()(
+    system,
+    singleStores,
+    settings
+  )
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-  def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+
+   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+   val agentSystem = system.actorOf(
+    AgentSystem.props(),
+    "agent-system"
+  )
+
+  implicit val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
+    )
+
+  implicit val cliListener =system.actorOf(
+    Props(
+      new OmiNodeCLIListener(
+        system,
+        agentSystem,
+        subscriptionManager,
+        singleStores,
+        dbConnection
+      )),
+    "omi-node-cli-listener"
+  )
+  saveSettingsOdf(system,agentSystem,settings)
+
+  implicit val httpExt = Http()
+  // create omi service actor
+  val omiService = new OmiServiceImpl(
+    system,
+    materializer,
+    subscriptionManager,
+    settings,
+    singleStores,
+    requestHandler,
+    callbackHandler
+  )
+
+
+  implicit val timeoutForBind = Timeout(5.seconds)
+
+}
+trait OmiNode {
+  implicit def system : ActorSystem 
+  implicit def materializer: ActorMaterializer
+  implicit def requestHandler : OmiRequestHandlerBase
+  implicit def omiService : OmiService 
+  implicit def settings : OmiConfigExtension 
+  implicit def cliListener : ActorRef
+
+  implicit def httpExt: HttpExt
+
+  implicit val timeoutForBind : Timeout
+  def bindTCP()(implicit ec: ExecutionContext): Unit= {
+    IO(Tcp)  ? Tcp.Bind(cliListener,
+      new InetSocketAddress("localhost", settings.cliPort))
+  }
+
+  /** Start a new HTTP server on configured port with our service actor as the handler.
+   */
+  def bindHTTP()(implicit ec: ExecutionContext): Future[ServerBinding] = {
+
+    val bindingFuture =
+      httpExt.bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
+    
+    bindingFuture.onFailure {
+      case ex: Exception =>
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+
+    }
+    bindingFuture
+  }
+  def shutdown()(implicit ec: ExecutionContext): Future[akka.actor.Terminated] = {
+
+    system.terminate()
+  }
+
+}
+/**
+ * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
+ * seperated for testing purposes and for easier implementation of different starting methods (standalone, servlet)
+ */
+object OmiServer {
+  def apply() : OmiServer = {
+    
+    new OmiServer()
+  }
+
+  def saveSettingsOdf(system: ActorSystem, agentSystem: ActorRef, settings: OmiConfigExtension) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
+      import system.dispatcher // execution context for futures
       // Same timestamp for all OdfValues of the settings
-      val date = new Date();
+      val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
 
       // Save settings in db, this works also as a test for writing
       val numDescription =
         "Number of latest values (per sensor) that will be saved to the DB"
       system.log.info(s"$numDescription: ${settings.numLatestValues}")
-      database.setHistoryLength(settings.numLatestValues)
+
+      database.changeHistoryLength(settings.numLatestValues)
+
       system.log.info("Testing InputPusher...")
-      database.setHistoryLength(settings.numLatestValues)
-      val objects = fromPath(
+
+      val objects = createAncestors(
         OdfInfoItem(
           Path(settings.settingsOdfPath + "num-latest-values-stored"), 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
         ))
       
-      val write = WriteRequest( 60  seconds, objects)
-      var promiseResult = PromiseResult()
-      agentSystem ! PromiseWrite( promiseResult, write )
-      val future : Future[ResponsibleAgentResponse]= promiseResult.isSuccessful
+      val write = WriteRequest( objects, None,  60  seconds)
+      implicit val timeout = Timeout( 60 seconds)
+      val future : Future[ResponsibleAgentResponse]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponsibleAgentResponse]
       future.onSuccess{
-        case s =>
+        case _=>
         system.log.info("O-MI InputPusher system working.")
-        true
       }
 
       future.onFailure{
-        case e => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        case e: Throwable => system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, 60 seconds)
     }
-  }
-
-
-  /**
-   * Start as stand-alone server.
-   * Creates single Actors.
-   * Binds to configured external agent interface port.
-   *
-   * @return O-MI Service actor which is not yet bound to the configured http port
-   */
-  def start(dbConnection: DB = new DatabaseConnection): ActorRef = {
-
-    // create and start sensor data listener
-    // TODO: Maybe refactor to an internal agent!
-
-    val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subManager),
-      "agent-system"
-    )
-    val sensorDataListener = system.actorOf(ExternalAgentListener.props(agentManager), "agent-listener")
-    
-    saveSettingsOdf(agentManager)
-    val dbmaintainer = system.actorOf(DBMaintainer.props( dbConnection ), "db-maintainer")
-    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
-
-    val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
-      "omi-node-cli-listener"
-    )
-
-    // create omi service actor
-    val omiService = system.actorOf(Props(
-      new OmiServiceActor(
-        requestHandler
-      )
-    ), "omi-service")
-
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-
-    IO(Tcp)  ? Tcp.Bind(sensorDataListener,
-      new InetSocketAddress(settings.externalAgentInterface, settings.externalAgentPort))
-    IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
-      new InetSocketAddress("localhost", settings.cliPort))
-
-    return omiService
-  }
-
-
-
-  /** Start a new HTTP server on configured port with our service actor as the handler.
-   */
-  def bindHttp(service: ActorRef): Unit = {
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-
-    IO(Http) ? Http.Bind(service, interface = settings.interface, port = settings.port)
   }
 }
 
@@ -156,15 +201,19 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter {// with App{
-  def main(args: Array[String]) = {
-  Try {
-    val serviceActor = start()
-    bindHttp(serviceActor)
-  } match {
-    case Failure(ex) => system.log.error(ex, "Error during startup")
-    case Success(_) => system.log.info("Process exited normally")
-  }
+object Boot /*extends Starter */{// with App{
+  val log = LoggerFactory.getLogger("OmiServiceTest")
+
+  def main(args: Array[String]) : Unit= {
+    Try{
+      val server: OmiServer = OmiServer()
+      import server.system.dispatcher
+      server.bindTCP()
+      server.bindHTTP()
+    }match {
+      case Failure(ex)  =>  log.error( "Error during startup", ex)
+      case Success(_) => log.info("Server started successfully")
+    }
   }
 
 }
@@ -173,8 +222,8 @@ object Boot extends Starter {// with App{
 /**
  * Starting point of the servlet program.
  */
-class ServletBoot extends Starter with WebBoot {
-  override implicit val system = Boot.system
-  val serviceActor = start()
-  // bindHttp is not called
-}
+//class ServletBoot extends Starter with WebBoot {
+//  override implicit val system = Boot.system
+//  val serviceActor = start()
+//  // bindHttp is not called
+//}

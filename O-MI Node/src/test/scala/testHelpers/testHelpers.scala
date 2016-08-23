@@ -1,74 +1,134 @@
 package testHelpers
+import scala.language.postfixOps
 
-import akka.actor.{ActorSystem, _}
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.xml._
+import scala.xml.parsing._
+
+import akka.actor._
+import akka.util.Timeout
+import akka.stream.ActorMaterializer
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.testkit.TestFrameworkInterface
+import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestKit}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
+import org.specs2.execute.{Failure, FailureException}
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
 import responses.RemoveSubscription
+import database._
+import agentSystem._
+import responses._
+import http._
 
-import scala.xml._
-import scala.xml.parsing._
+class TestOmiServer( config: Config )  extends OmiNode {
 
-class Actorstest(_system: ActorSystem) extends TestKit(_system) with Scope with After with ImplicitSender {
+  // we need an ActorSystem to host our application in
+  implicit val system : ActorSystem = ActorSystem("on-core") 
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher // execution context for futures
 
-  def after = TestKit.shutdownActorSystem(system)
+  /**
+   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
+   */
+  implicit val settings : OmiConfigExtension = new OmiConfigExtension(config)
+
+  implicit val singleStores = new SingleStores(settings)
+  implicit val dbConnection = new TestDB("system-test")(
+    system,
+    singleStores,
+    settings
+  )
+
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+
+   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+   val agentSystem = system.actorOf(
+    AgentSystem.props(),
+    "agent-system"
+  )
+
+  implicit val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
+    )
+
+  implicit val cliListener =system.actorOf(
+    Props(
+      new OmiNodeCLIListener(
+        system,
+        agentSystem,
+        subscriptionManager,
+        singleStores,
+        dbConnection
+      )),
+    "omi-node-cli-listener"
+  )
+
+  implicit val httpExt = Http() 
+  // create omi service actor
+  val omiService = new OmiServiceImpl(
+    system,
+    materializer,
+    subscriptionManager,
+    settings,
+    singleStores,
+    requestHandler,
+    callbackHandler
+  )
+
+
+  implicit val timeoutForBind = Timeout(5.seconds)
+
 }
 
-class SystemTestCallbackServer(destination: ActorRef) extends Actor with ActorLogging {
-  import spray.can.Http
-  import spray.http._
-  import HttpMethods._
-  import spray.httpx.unmarshalling._
-  import spray.util._
+class Actorstest(system: ActorSystem) extends TestKit(system) with Scope with After with ImplicitSender {
+
+  def after = {
+    //TestKit.shutdownActorSystem(system)
+    system.terminate
+  }
+}
+
+class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int){
 
   implicit val system = ActorSystem()
-  //vvv in test
-  //  IO(Http) ! Http.Bind(this, interface = "localhost", port = "12345"
-  def receive = {
-    case _: Http.Connected => sender ! Http.Register(self)
+  implicit val materializer = ActorMaterializer()
 
-    case post @ HttpRequest(POST, _, _, entity: HttpEntity.NonEmpty, _) => {
-      val xmldata: Option[NodeSeq] = entity.as[NodeSeq].toOption//.asInstanceOf[NodeSeq]
-      //log.debug("server received\n:" + xmldata )
-      destination ! xmldata
-//      println("\n\ndata sent to listener")
+  val route = post {
+    decodeRequest{
+      entity(as[NodeSeq]) { data =>
+        destination ! Option(data)
+        complete{
+          "OK"
+        }
+      }
     }
-//    case Timedout(_) => log.info("Callback test server connection timed out")
-    
-    
-  }
-}
-
-/*trait BeforeAll extends Specification {
-  override def map(fs: => Fragments) = {
-    Step(beforeAll) ^ fs
   }
 
-  protected[this] def beforeAll()
+
+  val bindFuture = Http().bindAndHandle(route, interface, port)
+  Await.ready(bindFuture, 5 seconds)
 }
 
-trait AfterAll extends Specification {
-  override def map(fs: => Fragments) = {
-    fs ^ Step(afterAll)
-  }
 
-  protected[this] def afterAll()
-}
-
-trait BeforeAfterAll extends Specification {
-  override def map(fs: => Fragments) = {
-    Step(beforeAll) ^ fs ^ Step(afterAll)
-  }
-  protected[this] def beforeAll()
-  protected[this] def afterAll()
-}
-*/
-abstract class Actors extends TestKit(ActorSystem("testsystem", ConfigFactory.parseString("""
+abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""
   akka.loggers = ["akka.testkit.TestEventListener"]
-  """))) with After with Scope {
-  def after = system.shutdown()
+  """)))extends TestKit(as) with After with Scope {
+  //def after = system.shutdown()
+  def after = {
+    //TestKit.shutdownActorSystem(system)
+    system.terminate
+  }
 }
 
 class SubscriptionHandlerTestActor extends Actor {
@@ -113,8 +173,12 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
   }
 }
 
-/* depracated
-// Disable implicit from specs2 Specification so concurrent.Duration int.seconds etc can be used
-trait DeactivatedTimeConversions extends org.specs2.time.TimeConversions {
-  override def intToRichLong(v: Int) = super.intToRichLong(v)
-} */
+
+trait Specs2Interface extends TestFrameworkInterface {
+
+  def failTest(msg: String): Nothing = {
+    val trace = new Exception().getStackTrace.toList
+    val fixedTrace = trace.drop(trace.indexWhere(_.getClassName.startsWith("org.specs2")) - 1)
+    throw new FailureException(Failure(msg, stackTrace = fixedTrace))
+  }
+}

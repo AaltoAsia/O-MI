@@ -1,51 +1,69 @@
 package responses
 
-import akka.actor.{ActorSystem, Props}
-import akka.io.IO
-import akka.testkit.TestProbe
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.matcher.Matchers
-import org.specs2.mutable._
-import spray.can.Http
-import org.specs2.specification.core._
-import testHelpers.{Actors, SystemTestCallbackServer}
-
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+
+import akka.actor.ActorSystem
+import akka.testkit.TestProbe
+import akka.util.Timeout
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.http.scaladsl.model.Uri
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.mutable._
+import com.typesafe.config.ConfigFactory
+
+import http.OmiConfigExtension
+import testHelpers.{Actors, SystemTestCallbackServer}
+import types.OmiTypes.{HTTPCallback, Responses}
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
+
+  sequential
+
   "CallbackHandler" should {
+
     "Send callback to the correct address" in new Actors {
       val port = 20003
       val probe = initCallbackServer(port)
-      val msg  = <msg>success1</msg>
+      val ttl = Duration(2, "seconds")
+      val msg  = Responses.Success( ttl = ttl)
 
-      CallbackHandlers.sendCallback(s"http://localhost:$port",msg,Duration(2, "seconds"))
+      val conf = ConfigFactory.load("testconfig")
+      val settings = new OmiConfigExtension(
+        conf
+      )
+      val materializer = ActorMaterializer()(system)
+      val callbackHandler = new CallbackHandler(settings)(system,materializer)
+      callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")),msg)
 
-      probe.expectMsg(2 seconds, Option(msg))
+      probe.expectMsg(ttl, Option(msg.asXML))
     }
 
-    "Try to keep sending message until ttl is over" in new Actors {
+    "Try to keep sending message until ttl is over" in skipped(new Actors {
       val port = 20004
-      val msg  = <msg>success2</msg>
-      import Matchers._
-      Future{CallbackHandlers.sendCallback(s"http://localhost:$port", msg, Duration(10, "seconds"))}
+      val ttl = Duration(10, "seconds")
+      val msg  = Responses.Success( ttl = ttl)
 
-      Future{
-        Thread.sleep(4000)
-        initCallbackServer(port)
-      }
+      val conf = ConfigFactory.load("testconfig")
+      val settings = new OmiConfigExtension(
+        conf
+      )
+      val materializer = ActorMaterializer()(system)
+      val callbackHandler = new CallbackHandler(settings)(system,materializer)
+      callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
+      Thread.sleep(1000)
+      val probe = initCallbackServer(port)
 
-      //val probe = initCallbackServer(port)
-      //probe.expectMsg(5 seconds, Option(msg))
-    }
+      probe.expectMsg(ttl, Option(msg.asXML))
+
+    })
   }
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem): TestProbe = {
+      implicit val timeout = Timeout(5 seconds)
       val probe = TestProbe()
-      val testServer = system.actorOf(Props(classOf[SystemTestCallbackServer], probe.ref))
-      IO(Http) ! Http.Bind(testServer, interface = "localhost", port = 20003)
+      val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
       probe
   }
 }

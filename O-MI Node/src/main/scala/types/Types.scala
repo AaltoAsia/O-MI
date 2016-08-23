@@ -1,27 +1,30 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /** Package containing internal types used between different modules.
   *
   **/
 package types
-
-import java.sql.Timestamp
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */
-  case class ParseError(msg: String) 
+  case class ParseError(msg: String) extends Exception(msg) 
+  object ParseError{
+    def combineErrors( errors: Iterable[ParseError] ) : ParseError = ParseError(
+      errors.map{ e => e.msg }.mkString("\n")
+    )
+  }
 
   /**
    * Path is a wrapper for Seq[String] representing path to an O-DF Object
@@ -71,6 +74,12 @@ import java.sql.Timestamp
      * Representation doesn't start nor end with a '/'.
      */
     override def toString: String = this.mkString("/")
+    
+    def isAncestor( child: Path) : Boolean ={
+      if( child.length > this.length ){ 
+        child.startsWith(this.pathSeq)
+      } else false
+    }
   }
 
   /** Helper object for Path, contains implicit conversion between Path and Seq[String]

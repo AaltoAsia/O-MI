@@ -1,33 +1,35 @@
 
-/**
-  Copyright (c) 2015 Aalto University.
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
 package http
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.io.Tcp
-import akka.pattern.ask
-import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub}
-import responses.{RequestHandler, RemoveSubscription}
-import types.Path
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-import agentSystem.AgentInfo
+import scala.concurrent.{Await, Future}
+
+import agentSystem.{AgentInfo, AgentName}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, ActorSystem}
+import akka.io.Tcp
+import akka.io.Tcp._
+import akka.pattern.ask
+import akka.util.{ByteString, Timeout}
+import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub, SingleStores, DBReadWrite}
+import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
+import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -38,26 +40,35 @@ object CLICmds
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
   case class ListSubsCmd()
+  case class SubInfoCmd(id: Long)
   case class RemovePath(path: String)
 }
 
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
-    sourceAddress: InetSocketAddress,
+    sourceAddress: InetSocketAddress,   
+    removeHandler: RemoveHandlerT,
     agentSystem: ActorRef,
-    subscriptionHandler: ActorRef,
-    requestHandler: RequestHandler
-  )= Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
+    subscriptionManager: ActorRef
+  )(
+  ) : Props = Props(
+    new OmiNodeCLI(
+      sourceAddress,
+      removeHandler,
+      agentSystem,
+      subscriptionManager
+    )
+  )
 }
 /** Command Line Interface for internal agent management. 
   *
   */
 class OmiNodeCLI(
-    sourceAddress: InetSocketAddress,
-    agentLoader: ActorRef,
-    subscriptionHandler: ActorRef,
-    requestHandler: RequestHandler
+  protected val sourceAddress: InetSocketAddress,   
+  protected val removeHandler: RemoveHandlerT,
+  protected val agentSystem: ActorRef,
+  protected val subscriptionManager: ActorRef
   ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -65,131 +76,207 @@ start <agent classname>
 stop  <agent classname> 
 list agents 
 list subs 
+showSub <id>
 remove <subsription id>
 remove <path>
 """
   val ip = sourceAddress.toString.tail
-  implicit val timeout : Timeout = 5.seconds
-  import Tcp._
-  def receive = {
+  implicit val timeout : Timeout = 1.minute
+
+  val commandTimeout = 1.minute
+
+  private def help(): String = {
+    log.info(s"Got help command from $ip")
+    commands
+  }
+
+  private[http] def agentsStrChart( agents: Vector[AgentInfo] ) : String ={
+    val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
+    val msg =
+      f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
+    agents.map{
+      case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
+        f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
+    }.mkString("\n")
+    msg +"\n"
+  }
+  private def listAgents(): String = {
+    log.info(s"Got list agents command from $ip")
+    val result = (agentSystem ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
+      .map{
+        case agents: Vector[AgentInfo @unchecked] =>  // internal type 
+          log.info("Received list of Agents. Sending ...")
+          agentsStrChart( agents.sortBy{ info => info.name} )
+        case _ => ""
+      }
+      .recover[String]{
+        case a : Throwable =>
+          log.warning(s"Failed to get list of Agents. Sending error message. " + a.toString)
+          "Something went wrong. Could not get list of Agents.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+
+  def subsStrChart (intervals: Set[IntervalSub @unchecked],
+              events: Set[EventSub] @unchecked,
+              polls: Set[PolledSub] @unchecked) : String = {
+  
+          val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
+            ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
+
+          val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +
+            intervals.map{ sub=>
+              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback.address }"
+            }.mkString("\n")
+
+          val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
+              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback.address}"
+            }.mkString("\n")
+
+          val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" +
+            polls.map{ sub=>
+              f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
+            }.mkString("\n")
+
+          s"$intMsg\n$eventMsg\n$pollMsg\n"
+  } 
+  private def listSubs(): String = {
+    log.info(s"Got list subs command from $ip")
+    val result = (subscriptionManager ? ListSubsCmd())
+      .map{
+        case (intervals: Set[IntervalSub @unchecked],
+              events: Set[EventSub] @unchecked,
+              polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
+          log.info("Received list of Subscriptions. Sending ...")
+
+          subsStrChart( intervals, events, polls)
+      }
+      .recover{
+        case a: Throwable  =>
+          log.info("Failed to get list of Subscriptions.\n Sending ...")
+          "Failed to get list of subscriptions.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+  private def subInfo(id: Long): String = {
+    log.info(s"Got sub info command from $ip")
+    val result = (subscriptionManager ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
+      .map{
+        case Some(intervalSub: IntervalSub) =>
+          s"Started: ${intervalSub.startTime}\n" +
+          s"Ends: ${intervalSub.endTime}\n" +
+          s"Interval: ${intervalSub.interval}\n" +
+          s"Callback: ${intervalSub.callback.address}\n" +
+          s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
+        case Some(eventSub: EventSub) =>
+          s"Ends: ${eventSub.endTime}\n" +
+          s"Callback: ${eventSub.callback.address}\n" +
+          s"Paths:\n${eventSub.paths.mkString("\n")}\n"
+        case Some(pollSub: PollIntervalSub) =>
+          s"Started: ${pollSub.startTime}\n" +
+          s"Ends: ${pollSub.endTime}\n" +
+          s"Interval: ${pollSub.interval}\n" +
+          s"Last polled: ${pollSub.lastPolled}\n" +
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+        case Some(pollSub: PollEventSub) =>
+          s"Started: ${pollSub.startTime}\n" +
+          s"Ends: ${pollSub.endTime}\n" +
+          s"Last polled: ${pollSub.lastPolled}\n" +
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+        case None => 
+          log.info(s"Subscription with id $id not found.\n Sending ...")
+          s"Subscription with id $id not found.\n"
+      }
+      .recover{
+        case a: Throwable  =>
+          log.info(s"Failed to get subscription with $id.\n Sending ...")
+          s"Failed to get subscription with $id.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+  
+  private def startAgent(agent: AgentName): String = {
+    log.info(s"Got start command from $ip for $agent")
+    val result = (agentSystem ? StartAgentCmd(agent)).mapTo[Future[String]]
+      .flatMap{ case future : Future[String] => future }
+      .map{
+        case msg: String =>
+          msg +"\n"
+      }
+      .recover{
+        case a : Throwable =>
+          "Command failure unknown.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+
+  private def stopAgent(agent: AgentName): String = {
+    log.info(s"Got stop command from $ip for $agent")
+    val result = (agentSystem ? StopAgentCmd(agent)).mapTo[Future[String]]
+      .flatMap{ case future : Future[String] => future }
+      .map{
+        case msg:String => 
+          msg +"\n"
+      }
+      .recover{
+        case a : Throwable =>
+          "Command failure unknown.\n"
+      }
+    Await.result(result, commandTimeout)
+  }
+
+  private def remove(pathOrId: String): String = {
+    log.info(s"Got remove command from $ip with parameter $pathOrId")
+
+    if(pathOrId.forall(_.isDigit)){
+      val id = pathOrId.toInt
+      log.info(s"Removing subscription with id: $id")
+
+      val result = (subscriptionManager ? RemoveSubscription(id))
+        .map{
+          case true =>
+            s"Removed subscription with $id successfully.\n"
+          case false =>
+            s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
+        }
+        .recover{
+          case a : Throwable =>
+            "Command failure unknown.\n"
+        }
+      Await.result(result, commandTimeout)
+    } else {
+      log.info(s"Trying to remove path $pathOrId")
+      if (removeHandler.handlePathRemove(Path(pathOrId))) {
+          log.info(s"Successfully removed path")
+          s"Successfully removed path $pathOrId\n"
+      } else {
+          log.info(s"Given path does not exist")
+          s"Given path does not exist\n"
+      }
+    } //requestHandler isn't actor
+
+  }
+
+  private def send(receiver: ActorRef)(msg: String): Unit =
+    receiver ! Write(ByteString(msg)) 
+
+
+  def receive : Actor.Receive = {
     case Received(data) =>{ 
       val dataString : String = data.decodeString("UTF-8")
 
-      val args : Array[String] = dataString.split("( |\n)")
+      val args = dataString.split("( |\n)").toVector
       args match {
-        case Array("help") =>
-          log.info(s"Got help command from $ip")
-          sender ! Write(ByteString( commands )) 
-        case Array("list", "agents") =>
-          log.info(s"Got list agents command from $ip")
-          val trueSender = sender()
-          val future = (agentLoader ? ListAgentsCmd())
-          future.map{
-            case agents: Seq[AgentInfo] => 
-              log.info("Received list of Agents. Sending ...")
-              val colums = Vector("NAME","CLASS","RUNNING","CONFIG")
-              val msg = f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}\n"+ agents.map{
-                case AgentInfo(name, classname, config, ref, running) => 
-                f"$name%-20s | $classname%-40s | $running%-7s | $config " 
-              }.mkString("\n")
-              trueSender ! Write(ByteString(msg +"\n"))
-          }
-          future.recover{
-            case a =>
-              log.info("Failed to get list of Agents.\n Sending ...")
-              trueSender ! Write(ByteString("Failed to get list of Agents.\n"))
-
-          }
-
-        case Array("list", "subs") =>
-          log.info(s"Got list subs command from $ip")
-          val trueSender = sender()
-          val future = (subscriptionHandler ? ListSubsCmd())
-          future.map{
-            case (intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub]) =>
-              log.info("Received list of Subscriptions. Sending ...")
-              val intMsg= "Interval subscriptions:\n" ++ intervals.map{ sub=>
-                 s" id: ${sub.id} | interval: ${sub.interval} | started: ${sub.startTime} | end time: ${sub.endTime} | callback: ${ sub.callback }"
-              }.mkString("\n")
-              val eventMsg = "Event subscriptions:\n" ++ events.map{ sub=>
-                 s" id: ${sub.id} | end time: ${sub.endTime} | callback: ${ sub.callback }"
-              }.mkString("\n")
-              val pollMsg = "Poll subscriptions:\n" ++ polls.map{ sub=>
-                 s" id: ${sub.id} | started: ${sub.startTime} | end time: ${sub.endTime} | last polled: ${ sub.lastPolled }"
-              }.mkString("\n")
-              trueSender ! Write(ByteString(intMsg + "\n" + eventMsg + "\n"+ pollMsg+ "\n"))
-            }
-            future.recover{
-            case a =>
-              log.info("Failed to get list of Subscriptions.\n Sending ...")
-              trueSender ! Write(ByteString("Failed to get list of subscriptions.\n"))
-
-          }
-        case Array("start", agent) =>
-          val trueSender = sender()
-          log.info(s"Got start command from $ip for $agent")
-          val future = (agentLoader ? StartAgentCmd(agent))
-          future.map{
-            case msg:String  =>
-            trueSender ! Write(ByteString(msg +"\n"))
-          }
-          future.recover{
-            case a =>
-              trueSender ! Write(ByteString("Command failure unknown.\n"))
-          }
-        case Array("stop", agent) => 
-          val trueSender = sender()
-          log.info(s"Got stop command from $ip for $agent")
-          val future = (agentLoader ? StopAgentCmd(agent))
-          future.map{
-            case msg:String => 
-              trueSender ! Write(ByteString(msg +"\n"))
-          }
-          future.recover{
-            case a =>
-              trueSender ! Write(ByteString("Command failure unknown.\n"))
-          }
-
-        case Array("remove", pathOrId) => {
-          val trueSender = sender()
-          log.info(s"Got remove command from $ip with parameter $pathOrId")
-
-          if(pathOrId.forall(_.isDigit)){
-            val id = pathOrId.toInt
-            log.info(s"Removing subscription with id: $id")
-
-            val future = (subscriptionHandler ? RemoveSubscription(id))
-            future.map{
-              case true =>
-                trueSender ! Write(ByteString(s"Removed subscription with $id successfully.\n"))
-              case false =>
-                trueSender ! Write(ByteString(s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"))
-            }
-            future.recover{
-              case a =>
-                trueSender ! Write(ByteString("Command failure unknown.\n"))
-            }
-          } else {
-              log.info(s"Trying to remove path $pathOrId")
-            requestHandler.handlePathRemove(Path(pathOrId)) match {
-              case true => {
-                trueSender ! Write(ByteString(s"Successfully removed path $pathOrId\n"))
-                log.info(s"Successfully removed path")
-              }
-              case _    => {
-                trueSender ! Write(ByteString(s"Given path does not exist\n"))
-                log.info(s"Given path does not exist")
-              }
-            } //requestHandler isn't actor
-
-          }
-        }
-        case cmd: Array[String] => 
+        case Vector("help") => send(sender)(help())
+        case Vector("showSub", id) => send(sender)(subInfo(id.toLong))
+        case Vector("list", "agents") => send(sender)(listAgents())
+        case Vector("list", "subs") => send(sender)(listSubs())
+        case Vector("start", agent) => send(sender)(startAgent(agent))
+        case Vector("stop", agent)  => send(sender)(stopAgent(agent))
+        case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
+        case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
-          sender() ! Write(ByteString(
-            "Unknown command. Use help to get information of current commands.\n" 
-          ))
-        case a => log.warning(s"Unknown message from $ip: "+ a) 
+          send(sender)("Unknown command. Use help to get information of current commands.\n") 
       }
     }
     case PeerClosed =>{
@@ -199,11 +286,18 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RequestHandler)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(
+    protected val system: ActorSystem,
+    protected val agentSystem: ActorRef,
+    protected val subscriptionManager: ActorRef,
+    protected val singleStores: SingleStores,
+    protected val dbConnection: DBReadWrite
+    
+  )  extends Actor with ActorLogging{
 
   import Tcp._
 
-  def receive ={
+  def receive : Actor.Receive={
     case Bound(localAddress) =>
     // TODO: do something?
     // It seems that this branch was not executed?
@@ -215,9 +309,10 @@ class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, r
     case Connected(remote, local) =>
       val connection = sender()
       log.info(s"CLI connected from $remote to $local")
+      val remover = new RemoveHandler(singleStores, dbConnection )(system)
 
       val cli = context.system.actorOf(
-        OmiNodeCLI.props( remote, agentLoader, subscriptionHandler, requestHandler ),
+        OmiNodeCLI.props(remote,remover,agentSystem, subscriptionManager),
         "cli-" + remote.toString.tail)
         connection ! Register(cli)
     case _ => //noop?

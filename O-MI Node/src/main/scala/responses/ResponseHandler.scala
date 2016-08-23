@@ -1,75 +1,95 @@
 
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package responses
 
-import parsing.xmlGen.xmlTypes.RequestResultType
-
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException, Promise }
-import agentSystem.{SuccessfulWrite, ResponsibleAgentResponse, PromiseWrite, PromiseResult }
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.collection.breakOut
-import scala.xml.{ NodeSeq, XML }
-//import spray.http.StatusCode
-
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+import scala.xml.NodeSeq
+//import akka.http.StatusCode
+import akka.actor.ActorRef
 import akka.util.Timeout
 import akka.pattern.ask
+import parsing.xmlGen.xmlTypes.RequestResultType
 
 
+import agentSystem._
+import types.OmiTypes._
 import types._
-import OmiTypes._
-import OdfTypes._
-import OmiGenerator._
-import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import CallbackHandlers._
-import database._
+import http.{ActorSystemContext, Actors}
 
-trait ResponseHandler extends OmiRequestHandler{
-  def agentSystem : ActorRef
-  handler{
-    case response: ResponseRequest => handleResponse(response)
-  }
+trait ResponseHandler extends OmiRequestHandlerBase{
+  protected def agentSystem : ActorRef
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)
     */
-  def handleResponse( response: ResponseRequest ) : Future[NodeSeq] ={
-    val ttl = handleTTL(response.ttl)
-    val resultFuture = Future.sequence(response.results.map{ result =>
-      result.odf match {
-        case Some(odf) =>
-
-        val promiseResult = PromiseResult()
-        val write = WriteRequest( ttl, odf)
-        agentSystem ! PromiseWrite(promiseResult, write)
-        val successF = promiseResult.isSuccessful
-        successF.recoverWith{
-          case e =>{
+  def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
+    val ttl = response.handleTTL
+    implicit val timeout = Timeout(ttl)
+    val resultFuture = Future.sequence(response.results.collect{ 
+        case omiResult : OmiResult if omiResult.odf.nonEmpty =>
+        val odf = omiResult.odf.get
+        val write = WriteRequest( odf, None,ttl)
+        val result = (agentSystem ? ResponsibilityRequest("ResponseHandler", write)).mapTo[ResponsibleAgentResponse]
+        result.recoverWith{
+          case e : Throwable =>
             log.error(e, "Failure when writing")
             Future.failed(e)
-          }}
-
-          val response = successF.map{
-            succ => Results.success 
-          }
-          response
-          case None => //noop?
-          Future.successful(Results.success)
         }
+
+
+        result.onSuccess{ case succ => log.info( succ.toString) }
+          val response : Future[OmiResult]= result.map{
+            case SuccessfulWrite(_) => Results.Success() 
+          case FailedWrite(paths, reasons) =>  
+            val returnV : OmiReturn = OmiReturn(
+              "400",
+              Some(
+                "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
+              )
+            )
+            OmiResult(returnV)
+            
+        case MixedWrite(successfulPaths, failed)=> 
+          val returnV : OmiReturn = OmiReturn(
+            "400",
+            Some(
+              "Following paths failed:\n" +
+              failed.paths.mkString("\n") + 
+              " reason:\n" + failed.reasons.mkString("\n")
+            )
+          )
+          OmiResult(returnV) 
+        }
+        response
+          //We do not want response request loops between O-MI Nodes
+          /*
+        case omiResult : OmiResult if omiResult.odf.isEmpty =>
+          Future.successful(Results.Success())
+          */
       }.toSeq
     )
 
-  resultFuture.map(results =>
-    xmlFromResults(
-      1.0,
-      results:_*
-    )
-)
+  resultFuture.map{
+    results => ResponseRequest(results.toVector)
+  }
 
   }
 }

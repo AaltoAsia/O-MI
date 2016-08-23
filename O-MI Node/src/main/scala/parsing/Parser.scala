@@ -1,31 +1,32 @@
-/**
-  Copyright (c) 2015 Aalto University.
-
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package parsing
 
-import types.ParseError
-
-import scala.xml.Node
-import scala.util.{Try, Success, Failure}
-import java.util.Date
+import java.io.{File, IOException, StringReader}
 import java.sql.Timestamp
-import java.io.{StringReader, IOException, File}
-import org.xml.sax.SAXException;
+import java.util.Date
 import javax.xml.XMLConstants
+import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
-import javax.xml.parsers.SAXParserFactory
-import scala.xml.XML
+
+import scala.util.{Failure, Success, Try}
+import scala.xml.factory.XMLLoader
+import scala.xml.{Elem, Node, XML}
+
+import org.xml.sax.SAXException
+import types.ParseError
 
 /**
  * Parser trait that parsers inherit,
@@ -35,7 +36,7 @@ import scala.xml.XML
 abstract trait Parser[Result] {
 
   // Secure parser that has a fix for xml external entity attack (and xml bomb)
-  def XMLParser = {
+  def XMLParser : XMLLoader[Elem] = {
     val spf = SAXParserFactory.newInstance()
     spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
     spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -75,10 +76,10 @@ abstract trait Parser[Result] {
           Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
         case e: Exception=>
           Seq(ParseError("Unknown exception: " + e.getMessage))
-        case t => throw t
+        case _ => throw e
       }
     }
   }
 
-  def currentTime() = new Timestamp( new Date().getTime ) 
+  def currentTime() : Timestamp= new Timestamp( new Date().getTime ) 
 }

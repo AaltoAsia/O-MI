@@ -1,69 +1,71 @@
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 package responses
 
-import parsing.xmlGen.xmlTypes.RequestResultType
+import java.util.Date
 
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await, ExecutionContext, TimeoutException }
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConversions.asJavaIterable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.collection.breakOut
-import scala.xml.{ NodeSeq, XML }
-//import spray.http.StatusCode
+import scala.xml.NodeSeq
+//import akka.http.StatusCode
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.util.Timeout
+import akka.actor.ActorRef
 import akka.pattern.ask
-
-
+import akka.util.Timeout
+import types.OdfTypes._
+import types.OmiTypes._
 import types._
-import OmiTypes._
-import OdfTypes._
-import OmiGenerator._
-import parsing.xmlGen.{ xmlTypes, scalaxb, defaultScope }
-import CallbackHandlers._
-import database._
+import http.{ActorSystemContext, Actors}
 
-trait PollHandler extends OmiRequestHandler{
-  def subscriptionManager : ActorRef
-  handler{
-    case poll: PollRequest => handlePoll(poll)
-  }
+trait PollHandler extends OmiRequestHandlerBase{
 
+  protected def subscriptionManager : ActorRef
   /** Method for handling PollRequest.
     * @param poll request
     * @return (xml response, HTTP status code)
     */
-  def handlePoll(poll: PollRequest): Future[NodeSeq] = {
-    val ttl = handleTTL(poll.ttl)
+  def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
+    val ttl = poll.handleTTL
     implicit val timeout = Timeout(ttl) 
-    val time = date.getTime
+    val time = new Date().getTime
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id =>
 
-      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = (subscriptionManager ? PollSubscription(id)).mapTo[Future[Option[OdfObjects]]].flatMap(n=>n)
-      objectsF.recoverWith{case e => Future.failed(new RuntimeException(
-        s"Error when trying to poll subscription: ${e.getMessage}"))}
+      val objectsF: Future[ Any /* Option[OdfObjects] */ ] = (subscriptionManager ? PollSubscription(id)).mapTo[Option[OdfObjects]]
+      objectsF.recoverWith{
+        case e: Throwable => Future.failed(new RuntimeException(
+        s"Error when trying to poll subscription: ${e.getMessage}"))
+      }
 
-      objectsF.map(res => res match {
+      objectsF.map{
         case Some(objects: OdfObjects) =>
-          Results.poll(id.toString, objects)
+          Results.Poll(id, objects)
         case None =>
-          Results.notFoundSub(id.toString)
+          Results.NotFoundRequestIDs(Vector(id))
         //case Failure(e) =>
         //  throw new RuntimeException(
         //    s"Error when trying to poll subscription: ${e.getMessage}")
-      })
+      }
     })
-    val returnTuple = resultsFut.map(results =>
-      xmlFromResults(
-        1.0,
-        results.toSeq: _*)
+    val response = resultsFut.map(results =>
+        ResponseRequest(results.toVector)
     )
 
-    returnTuple
+    response
   }
 }

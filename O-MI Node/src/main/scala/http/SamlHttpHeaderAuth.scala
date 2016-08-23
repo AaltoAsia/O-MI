@@ -1,26 +1,28 @@
-/**
-  Copyright (c) 2015 Aalto University.
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +    Copyright (c) 2015 Aalto University.                                        +
+ +                                                                                +
+ +    Licensed under the 4-clause BSD (the "License");                            +
+ +    you may not use this file except in compliance with the License.            +
+ +    You may obtain a copy of the License at top most directory of project.      +
+ +                                                                                +
+ +    Unless required by applicable law or agreed to in writing, software         +
+ +    distributed under the License is distributed on an "AS IS" BASIS,           +
+ +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
+ +    See the License for the specific language governing permissions and         +
+ +    limitations under the License.                                              +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-  Licensed under the 4-clause BSD (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at top most directory of project.
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-**/
 package http
 
-import spray.routing.Directives.optionalHeaderValue
-import spray.routing.Directive1
-import spray.http.HttpHeader
 import scala.collection.JavaConversions.collectionAsScalaIterable
+import scala.util.{Failure, Success}
+
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.optionalHeaderValue
 
 import types.OmiTypes._
-import Boot.settings
-import Authorization.AuthorizationExtension
+import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
 
 // TODO: maybe move to Authorization package
 
@@ -37,14 +39,17 @@ case class Eppn(user: String)
  */
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
+  val settings: OmiConfigExtension
 
-  private[this] def whitelistedUsers: Vector[Eppn] =
-    settings.inputWhiteListUsers.map(Eppn(_)).toVector
+  private[this] lazy val  whitelistedUsers: Vector[Eppn] ={
+    val tmp= settings.inputWhiteListUsers.map(Eppn(_)).toVector
 
-  log.info(s"O-MI node is configured to allow SAML users: $whitelistedUsers")
-  if (whitelistedUsers.nonEmpty)
-    log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
-
+    log.info(s"O-MI node is configured to allow SAML users: $tmp")
+    if (tmp.nonEmpty)
+      log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
+    
+    tmp
+  }
   /** 
    * Select header with the right data in it.
    * EduPersonPrincipalName
@@ -60,8 +65,8 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
       None
   )
 
-  private def hasPermission: User => OmiRequest => Option[OmiRequest] = {
-    case u @ Some(user) => {
+  private def hasPermission: User => PermissionTest = {
+    case u @ Some(user) => (wrap: RequestWrapper) => wrap.unwrapped flatMap {
 
       case r : PermissiveRequest =>
 
@@ -69,19 +74,19 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
 
         if (result) {
           log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
-          Some(r)
+          Success(r)
         } else {
-          log.warning(s"Unauthorized user: $u")
-          None
+          log.warn(s"Unauthorized user: $u")
+          Failure(UnauthorizedEx())
         }
 
-      case _ => None
+      case _ => Failure(UnauthorizedEx())
     }
     case _ =>
-      {_ =>  None}
+      {_ =>  Failure(UnauthorizedEx())}
   }
 
-  abstract override def makePermissionTestFunction =
+  abstract override def makePermissionTestFunction: CombinedTest =
     combineWithPrevious(
       super.makePermissionTestFunction,
       extractUserData map hasPermission)
