@@ -23,7 +23,6 @@ import akka.http.scaladsl.server.Directives.optionalHeaderValue
 
 import types.OmiTypes._
 import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
-import Boot.settings
 
 // TODO: maybe move to Authorization package
 
@@ -40,14 +39,17 @@ case class Eppn(user: String)
  */
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
+  val settings: OmiConfigExtension
 
-  private[this] def whitelistedUsers: Vector[Eppn] =
-    settings.inputWhiteListUsers.map(Eppn(_)).toVector
+  private[this] lazy val  whitelistedUsers: Vector[Eppn] ={
+    val tmp= settings.inputWhiteListUsers.map(Eppn(_)).toVector
 
-  log.info(s"O-MI node is configured to allow SAML users: $whitelistedUsers")
-  if (whitelistedUsers.nonEmpty)
-    log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
-
+    log.info(s"O-MI node is configured to allow SAML users: $tmp")
+    if (tmp.nonEmpty)
+      log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
+    
+    tmp
+  }
   /** 
    * Select header with the right data in it.
    * EduPersonPrincipalName

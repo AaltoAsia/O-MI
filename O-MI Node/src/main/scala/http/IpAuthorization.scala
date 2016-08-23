@@ -20,7 +20,6 @@ import scala.collection.JavaConverters._
 import scala.util.{Success, Failure}
 
 import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
-import http.Boot.settings
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.extractClientIP
 import types.OmiTypes._
@@ -31,34 +30,20 @@ import types.OmiTypes._
   * Tests against whitelisted ips and ip masks in configuration.
   */
 trait IpAuthorization extends AuthorizationExtension {
+  val settings : OmiConfigExtension
   private type UserData = Option[InetAddress]
 
   /** Contains white listed IPs
     *
     **/
-  private[this] lazy val whiteIPs = settings.inputWhiteListIps.asScala.map{
-    case s: String => 
-    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
-    log.debug("IPv" + ip.length + ": " + ip.mkString("."))  // TODO: bytes should be printed as unsigned
-    ip
-  }.toVector
-
-  log.debug(s"Totally ${whiteIPs.length} IPs")
+  private[this] lazy val whiteIPs = settings.inputWhiteListIps
+  //log.debug(s"Totally ${whiteIPs.length} IPs")
 
   /** Contains masks of white listed subnets.
     *
     **/
-  private[this] lazy val whiteMasks = settings.inputWhiteListSubnets.asScala.map{ 
-    case (str: String) => 
-    val parts = str.split("/")
-    require(parts.length == 2)
-    val mask = parts.head
-    val bits = parts.last
-    val ip = InetAddress.getByName(mask)//inetAddrToBytes(InetAddress.getByName(mask))
-    log.debug("Mask IP: " + ip.getHostAddress) // TODO: bytes should be printed as unsigned
-    (ip, bits.toInt)
-  }.toMap 
-  log.debug(s"Totally ${whiteMasks.keys.size} masks")
+  private[this] lazy val whiteMasks = settings.inputWhiteListSubnets
+  //log.debug(s"Totally ${whiteMasks.keys.size} masks")
 
 
   // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"

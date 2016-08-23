@@ -97,7 +97,7 @@ object Authorization {
           case s @ Success(_) => s
           case f @ Failure(UnauthorizedEx(_)) => f
           case f @ Failure(ex) =>
-            log.error("While running authorization extensions", ex)
+            //log.error("While running authorization extensions", ex)
             f
         } // If any authentication method succeeds
           /*match {  // catch any exceptions, because we want to try other, possibly working extensions too

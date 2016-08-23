@@ -24,6 +24,9 @@ trait AgentSystemConfigExtension  extends Extension {
       name =>
       val conf = internalAgents.toConfig()
       val classname : String= conf.getString(s"$name.class")
+      val language : Option[Language] = Try{
+        conf.getString(s"$name.language")
+      }.toOption.map( Language(_) )
 
       val ownedPaths : Seq[Path] = Try{
         conf.getStringList(s"$name.owns").map{ str => Path(str)}
@@ -33,7 +36,7 @@ trait AgentSystemConfigExtension  extends Extension {
         case Failure(e) => throw e
       }
       val config = conf.getObject(s"$name.config").toConfig
-      AgentConfigEntry(name, classname.toString, config, ownedPaths) 
+      AgentConfigEntry(name, classname.toString, config, ownedPaths, language) 
     }.toArray
   }
 }

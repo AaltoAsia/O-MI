@@ -17,20 +17,17 @@ package database
 import java.sql.Timestamp
 import java.util.Date
 
+import scala.annotation.meta.field
 import scala.collection.immutable.{HashMap, SortedSet}
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{FiniteDuration, Duration}
 
+import akka.actor.Cancellable
 import org.prevayler._
 import types.OdfTypes.OdfValue
 import types._
 import types.OmiTypes._
 
-
-object IntervalSubOrdering extends Ordering[IntervalSub] {
-  def compare(a: IntervalSub, b: IntervalSub) : Int =
-    a.nextRunTime.getTime compare b.nextRunTime.getTime
-}
 
 sealed trait SavedSub {
   val id: Long
@@ -66,20 +63,9 @@ case class IntervalSub(
   paths: Vector[Path],
   endTime: Timestamp,
   callback: DefinedCallback,
-  interval: Duration,
-  nextRunTime: Timestamp,
+  interval: FiniteDuration,
   startTime: Timestamp
-  ) extends SavedSub {
-  override def equals(o: Any): Boolean = {
-    o match{
-      case IntervalSub(oId, _, _, _, _, _, _) => id.equals(oId)
-      case _ => false
-    }
-  }
-  override def hashCode(): Int = {
-    id.toInt
-  }
-}
+  ) extends SavedSub
 
 case class EventSub(
   id: Long,
@@ -94,13 +80,13 @@ case class Subs(
                var eventSubs: HashMap[Path, Vector[EventSub]],
                var idToSub: HashMap[Long, PolledSub], 
                var pathToSubs: HashMap[Path, Set[Long]],
-               var intervalSubs: SortedSet[IntervalSub])
+               var intervalSubs: HashMap[Long, IntervalSub])
 object Subs {
   def empty: Subs = Subs(
     HashMap.empty,
     HashMap.empty,
     HashMap.empty,
-    SortedSet.empty(IntervalSubOrdering))
+    HashMap.empty)
 }
 
 case class PollSubData(
@@ -198,17 +184,19 @@ case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
 
 case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
   def executeAndQuery(store: Subs, d: Date): Unit= {
-    store.intervalSubs = store.intervalSubs.filter{ 
-      case IntervalSub(_,_,_,callback: CurrentConnectionCallback,_,_,_) => false
-      case sub : IntervalSub => true
-    }
-  store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{ 
-    subs => 
-      subs.filter{ 
-        case EventSub(_,_,_,callback: CurrentConnectionCallback) => false
-        case sub: EventSub => true
+    store.intervalSubs = store.intervalSubs.filter{
+      case (_, IntervalSub(_,_,_,cb: CurrentConnectionCallback, _, _)) =>{
+      false
       }
-  }.toSeq:_*)
+      case _  => true
+    }
+    store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{
+      subs =>
+        subs.filter{
+          case EventSub(_,_,_,callback: CurrentConnectionCallback) => false
+          case sub: EventSub => true
+          }
+          }.toSeq:_*)
   }
 }
 // Other transactions are in responses/SubscriptionHandler.scala

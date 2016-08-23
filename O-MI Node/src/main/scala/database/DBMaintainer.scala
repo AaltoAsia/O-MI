@@ -23,11 +23,20 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
+import http.OmiConfigExtension
 
 object DBMaintainer{
-  def props(dbobject: DBReadWrite) : Props = Props( new DBMaintainer(dbobject) )
+  def props(
+    dbConnection : DBReadWrite,
+    singleStores : SingleStores,
+    settings : OmiConfigExtension
+  ) : Props = Props( new DBMaintainer(dbConnection, singleStores, settings) )
 }
-class DBMaintainer(val dbobject: DBReadWrite)
+class DBMaintainer(
+  protected val dbConnection : DBReadWrite,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+)
   extends Actor
   with ActorLogging
   with RequiresMessageQueue[BoundedMessageQueueSemantics]
@@ -36,11 +45,11 @@ class DBMaintainer(val dbobject: DBReadWrite)
   case object TrimDB
   case object TakeSnapshot
   private val scheduler = context.system.scheduler
-  private val trimInterval: FiniteDuration = http.Boot.settings.trimInterval
-  private val snapshotInterval = http.Boot.settings.snapshotInterval
+  private val trimInterval: FiniteDuration = settings.trimInterval
+  private val snapshotInterval = settings.snapshotInterval
   log.info(s"scheduling databse trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
-  if(http.Boot.settings.writeToDisk){
+  if( settings.writeToDisk){
     log.info(s"scheduling prevayler snapshot every $snapshotInterval")
     scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
   } else {
@@ -57,10 +66,10 @@ class DBMaintainer(val dbobject: DBReadWrite)
     log.info("Taking prevyaler snapshot")
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
 
-    trySnapshot(SingleStores.latestStore, "latestStore")
-    trySnapshot(SingleStores.hierarchyStore, "hierarchyStore")
-    trySnapshot(SingleStores.subStore, "subStore")
-    trySnapshot(SingleStores.idPrevayler, "idPrevayler")
+    trySnapshot(singleStores.latestStore, "latestStore")
+    trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
+    trySnapshot(singleStores.subStore, "subStore")
+    trySnapshot(singleStores.idPrevayler, "idPrevayler")
 
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
     val duration : FiniteDuration = end - start
@@ -72,13 +81,13 @@ class DBMaintainer(val dbobject: DBReadWrite)
    */
   override def receive: Actor.Receive = {
     case TrimDB                         => {
-      val numDel = dbobject.trimDB()
+      val numDel = dbConnection.trimDB()
       numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")
       // remove unnecessary files (might otherwise grow until disk is full)
-      val dirs = SingleStores.prevaylerDirectories
+      val dirs = singleStores.prevaylerDirectories
       for (dir <- dirs) {
         val prevaylerDir = new org.prevayler.implementation.PrevaylerDirectory(dir)
         Try{prevaylerDir.necessaryFiles()} match {

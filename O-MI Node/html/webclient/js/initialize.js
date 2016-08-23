@@ -95,15 +95,30 @@
       cloned.find("input").val("");
       cloned.hide();
       target.after(cloned);
-      if (callback != null) {
-        return callback(cloned);
-      }
+      return typeof callback === "function" ? callback(cloned) : void 0;
     };
     my.flash = function(jqueryElem) {
       jqueryElem.addClass('flash');
       return window.setTimeout((function() {
         return jqueryElem.removeClass('flash');
       }), 1000);
+    };
+    my.animatedShowRow = function(jqueryElem, insertFunction, callback) {
+      if (insertFunction == null) {
+        insertFunction = null;
+      }
+      if (callback == null) {
+        callback = null;
+      }
+      if (jqueryElem.length === 0) {
+        return;
+      }
+      if (typeof insertFunction === "function") {
+        insertFunction();
+      }
+      if (typeof callback === "function") {
+        callback();
+      }
     };
     return parent;
   };
@@ -135,7 +150,7 @@
         type: treeTypeName
       }, "first", function(node) {
         tree.open_node(parent, null, 500);
-        if (callback != null) {
+        if (typeof callback === "function") {
           callback(node);
         }
         return tree.select_node(node);

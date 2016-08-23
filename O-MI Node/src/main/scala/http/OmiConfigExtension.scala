@@ -15,6 +15,7 @@
 package http
 
 import java.util.concurrent.TimeUnit
+import java.net.InetAddress
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -49,8 +50,6 @@ class OmiConfigExtension( val config: Config) extends Extension
 
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
-  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
-  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
 
   val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
 
@@ -71,19 +70,40 @@ class OmiConfigExtension( val config: Config) extends Extension
 
   // Authorization
   
-  val inputWhiteListUsers = config.getStringList("omi-service.input-whitelist-users") 
+  val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
 
-  val inputWhiteListIps = config.getStringList("omi-service.input-whitelist-ips") 
-  val inputWhiteListSubnets = config.getStringList("omi-service.input-whitelist-subnets") 
+  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map{
+    case s: String => 
+    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
+    ip.toVector
+  }.toVector
 
+  val inputWhiteListSubnets : Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").map{ 
+    case (str: String) => 
+    val parts = str.split("/")
+    require(parts.length == 2)
+    val mask = parts.head
+    val bits = parts.last
+    val ip = InetAddress.getByName(mask)//inetAddrToBytes(InetAddress.getByName(mask))
+    (ip, bits.toInt)
+  }.toMap 
+  private[this] def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {
+    addr.getAddress().toList
+  }
+ 
+
+  /** Time in seconds how long to wait until retrying sending.*/
   val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds 
+
+  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
+  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
 }
 
 
 
-object Settings extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {
+object OmiConfig extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {
  
-  override def lookup: Settings.type = Settings
+  override def lookup: OmiConfig.type = OmiConfig
    
   override def createExtension(system: ExtendedActorSystem) : OmiConfigExtension =
     new OmiConfigExtension(system.settings.config)

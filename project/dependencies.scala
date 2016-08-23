@@ -4,7 +4,7 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.4.7"
+  val akkaV = "2.4.8"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
 
@@ -42,14 +42,14 @@ object Dependencies {
 
 
 
-  val schwatcher   = "com.beachape.filemanagement" %% "schwatcher"   % "0.3.1" //common
+  //val schwatcher   = "com.beachape.filemanagement" %% "schwatcher"   % "0.3.1" //common
   val commonsLang  = "commons-lang"                 % "commons-lang" % "2.6" //common
 
   //Scala XML      
   //val scalaXML     = "org.scala-lang.modules"      %% "scala-xml"    % "2.11.0-M4"
 
   //STM            
-  val stm          = "org.scala-stm"               %% "scala-stm"    % "0.7"
+//  val stm          = "org.scala-stm"               %% "scala-stm"    % "0.7"
 
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.6.2"
@@ -70,7 +70,6 @@ object Dependencies {
     h2,
     sprayJson,//json4s,
     //scalaXML,
-    schwatcher,
     commonsLang,
     prevaylerCore,
     prevaylerFactory,
