@@ -166,7 +166,6 @@ remove <path>
           s"Started: ${intervalSub.startTime}\n" +
           s"Ends: ${intervalSub.endTime}\n" +
           s"Interval: ${intervalSub.interval}\n" +
-          s"Run next: ${intervalSub.nextRunTime}\n" +
           s"Callback: ${intervalSub.callback.address}\n" +
           s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
         case Some(eventSub: EventSub) =>

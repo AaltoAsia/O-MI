@@ -109,10 +109,10 @@ case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
   }
 }
 case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolean] {
-    def executeAndQuery(store: Subs, d: Date): Boolean={
-      val target = store.intervalSubs.find( _.id == id)
+    def executeAndQuery(store: Subs, d: Date): Boolean = {
+      val target = store.intervalSubs.get(id)
       target.fold(false){ sub =>
-        store.intervalSubs = store.intervalSubs - sub
+        store.intervalSubs = store.intervalSubs - id
         true
       }
 
@@ -184,24 +184,6 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  /**
-   * Transaction to get the intervalSub with the earliest interval
-   */
-
-  case object GetIntervals extends TransactionWithQuery[Subs, (Set[IntervalSub], Option[Timestamp])] {
-    def executeAndQuery(store: Subs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
-      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.getTime < d.getTime)// match { case (a,b) => (a, b.headOption)}
-
-      val newIntervals = passedIntervals.map{a =>
-          val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
-          val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
-          a.copy(nextRunTime = newTime)}
-      store.intervalSubs = rest ++ newIntervals
-      //val nextRun = if(store.intervalSubs.isEmpty) None else {Some(store.intervalSubs.firstKey.nextRunTime)}
-      (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
-    }
-
-  }
 
 //TODO EventSub
   case class AddEventSub(eventSub: EventSub) extends Transaction[Subs] {
@@ -228,7 +210,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     def executeOn(store: Subs, d: Date) = {
       val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
       if(scheduleTime > 0){
-        store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
+        store.intervalSubs = store.intervalSubs.updated(intervalSub.id, intervalSub)//) intervalSub//TODO check this
       }
     }
   }
@@ -258,7 +240,13 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
 
   case class GetAllIntervalSubs() extends Query[Subs, Set[IntervalSub]] {
     def query(store: Subs, d: Date): Set[IntervalSub] = {
-      store.intervalSubs.toSet
+      store.intervalSubs.values.toSet
+    }
+  }
+
+  case class GetIntervalSub(id: Long) extends Query[Subs, Option[IntervalSub]] {
+    def  query(store: Subs, d: Date): Option[IntervalSub] = {
+      store.intervalSubs.get(id)
     }
   }
 
