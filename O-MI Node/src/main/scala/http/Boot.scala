@@ -29,7 +29,8 @@ import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{HttpExt, Http}
+import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
@@ -94,6 +95,7 @@ class OmiServer extends OmiNode{
   )
   saveSettingsOdf(system,agentSystem,settings)
 
+  implicit val httpExt = Http()
   // create omi service actor
   val omiService = new OmiServiceImpl(
     system,
@@ -117,6 +119,7 @@ trait OmiNode {
   implicit def settings : OmiConfigExtension 
   implicit def cliListener : ActorRef
 
+  implicit def httpExt: HttpExt
 
   implicit val timeoutForBind : Timeout
   def bindTCP()(implicit ec: ExecutionContext): Unit= {
@@ -126,16 +129,21 @@ trait OmiNode {
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
    */
-  def bindHTTP()(implicit ec: ExecutionContext): Unit = {
+  def bindHTTP()(implicit ec: ExecutionContext): Future[ServerBinding] = {
 
     val bindingFuture =
-      Http().bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
-
+      httpExt.bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
+    
     bindingFuture.onFailure {
       case ex: Exception =>
         system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
 
     }
+    bindingFuture
+  }
+  def shutdown()(implicit ec: ExecutionContext): Future[akka.actor.Terminated] = {
+
+    system.terminate()
   }
 
 }

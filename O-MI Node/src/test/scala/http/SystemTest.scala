@@ -2,6 +2,7 @@ package http
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
+import akka.http.scaladsl.model.ContentTypes
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
@@ -23,75 +24,26 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
-import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer}
+import testHelpers.{BeEqualFormatted, HTML5Parser, SystemTestCallbackServer, TestOmiServer}
 
-class SystemTest(implicit ee: ExecutionEnv) extends Specification with OmiNode with BeforeAfterAll {
-  implicit val timeoutForBind: akka.util.Timeout = 5.seconds
+class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
 
+
+  val conf = ConfigFactory.load("testconfig")
+  val omiServer = new TestOmiServer(conf)
+
+  omiServer.bindTCP()
+  val serverBinding = omiServer.bindHTTP()
+
+  import omiServer.{ singleStores, dbConnection, system, materializer}
   // TODO: better cleaning after tests
   def beforeAll() = {
     singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
-
-  val conf = ConfigFactory.load("testconfig")
-  val testSettings = new OmiConfigExtension(
-    conf
-  )
-
-  implicit def system: akka.actor.ActorSystem = ActorSystem("systemTest",conf)
-  implicit val settings = testSettings
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
-
-  implicit val singleStores = new SingleStores(settings)
-  implicit val dbConnection: DBReadWrite = new TestDB("SystemTest")(
-    system,
-    singleStores,
-    settings
-  )
-
-  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler-test")
-  val agentSystem = system.actorOf(
-    AgentSystem.props(),
-    "agent-system-test"
-  )
-
-  val requestHandler : RequestHandler = new RequestHandler(
-    )(system,
-    agentSystem,
-    subscriptionManager,
-    settings,
-    dbConnection,
-    singleStores
-    )
-
-  implicit val cliListener : ActorRef = system.actorOf(
-    Props(
-      new OmiNodeCLIListener(
-        system,
-        agentSystem,
-        subscriptionManager,
-        singleStores,
-        dbConnection
-      )),
-    "omi-node-cli-listener"
-  )
-
-  // create omi service actor
-  val omiService = new OmiServiceImpl(
-    system,
-    materializer,
-    subscriptionManager,
-    settings,
-    singleStores,
-    requestHandler,
-    callbackHandler
-  )
   sequential
 
 
 
-  bindHTTP()
   val probe = TestProbe()
   val testServer = new SystemTestCallbackServer(probe.ref, "localhost", 20002)
   val http = Http(system)
@@ -158,14 +110,25 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with OmiNode w
   }
 
   def afterAll = {
-    Await.ready(system.terminate(), 2 seconds)
+    val future = serverBinding.flatMap{
+      case sb => sb.unbind()
+    }.flatMap{
+      case s: Unit =>
+      system.terminate()
+    }
+    future.onFailure{ 
+      case t: Throwable =>
+        system.log.error( t,"AfterAll encountered:")
+    }
+    Await.ready(future, 2 seconds)
     dbConnection.destroy()
     singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
-
   }
 
   def getPostRequest(in: NodeSeq): HttpRequest = {
-    RequestBuilding.Post("http://localhost:8080", in)
+    val tmp = RequestBuilding.Post("http://localhost:8080/", in)
+    //println(tmp)
+    tmp
   }
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
@@ -244,7 +207,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with OmiNode w
 
         val responseFuture = http.singleRequest(getPostRequest(request.get))//pipeline(Post("http://localhost:8080/", request.get))
 
-        val response = Try(Await.result(responseFuture.flatMap(n => Unmarshal(n).to[NodeSeq]), Duration(10, "second")))
+        val response = Try(Await.result(responseFuture.flatMap{
+          case n => 
+            Unmarshal(n).to[NodeSeq]
+        }, Duration(10, "second")))
 
         response must beSuccessfulTry
 
@@ -263,17 +229,25 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with OmiNode w
         val (request, correctResponse, testDescription) = i
         (testDescription.trim + "\n") in {
 
-          request aka "Read request message" must beSuccessfulTry
-          correctResponse aka "Correct read response message" must beSuccessfulTry
+          val t1 = request aka "Read request message" must beSuccessfulTry
+          val t2 = correctResponse aka "Correct read response message" must beSuccessfulTry
 
-          val responseFuture = http.singleRequest(getPostRequest(request.get))
-          val responseXML = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
+          val responseFuture = http.singleRequest(getPostRequest(request.get)).flatMap{
+            case n => 
+              Unmarshal(n).to[NodeSeq]
+          }
+          responseFuture.onFailure{
+            case t : Throwable =>
+             system.log.error( t, "Ummarshalling failure loq: ")
 
-          responseXML must beSuccessfulTry
+          }
+          val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))
+
+          val t3 = responseXML must beSuccessfulTry
           val response = XML.loadString(removeDateTime(responseXML.get.toString))
-          response showAs (n =>
+          t1 and t2 and t3 and (response showAs (n =>
             "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
-          ) must new BeEqualFormatted(correctResponse.get)
+          ) must new BeEqualFormatted(correctResponse.get))
         }
       })
     }

@@ -19,7 +19,7 @@ import java.nio.file.{Files, Paths}
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
 import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
+import scala.xml.{XML,NodeSeq}
 
 import org.slf4j.LoggerFactory
 
@@ -28,7 +28,7 @@ import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshallable}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Directives._
@@ -118,7 +118,7 @@ trait OmiService
 
   // Change default to xml mediatype and require explicit type for html
   val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
-  implicit val xml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
+  implicit val xmlCT = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
 
   // should be removed?
   val helloWorld = get {
@@ -174,7 +174,7 @@ trait OmiService
               ToResponseMarshallable(
               <error>No object found</error>
               )(
-                fromToEntityMarshaller(StatusCodes.NotFound)(xml)
+                fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
               )
             )
           }
@@ -321,7 +321,10 @@ trait OmiService
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
-        complete(handleRequest(hasPermissionTest, requestString))
+        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
+        //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+        complete(response)
       }
     }
   }
@@ -332,7 +335,10 @@ trait OmiService
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
-        complete(handleRequest(hasPermissionTest, requestString))
+        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
+        val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+        complete(response)
       }
     }
   }
