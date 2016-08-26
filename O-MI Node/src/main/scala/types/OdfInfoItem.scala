@@ -196,6 +196,11 @@ object OdfValue{
     }
   }
   def apply(
+    value: Any,
+    timestamp: Timestamp
+  ) : OdfValue[Any] = apply(value,timestamp,Map.empty[String,String])
+  
+  def apply(
     value: String,
     typeValue: String,
     timestamp: Timestamp,

@@ -79,8 +79,7 @@ public class JavaAgent extends JavaInternalAgent {
             config.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    // Parse configuration for target O-DF path
-    path = new Path(config.getString("path"));
+    path = new Path("Objects/SensorBox/temperature");
   }
 
 
@@ -146,22 +145,41 @@ public class JavaAgent extends JavaInternalAgent {
     // timestamp for the value
     Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
     // type metadata, default is xs:string
-    String typeStr = "xs:integer";
+    String typeStr = "xs:double";
     // value as String
-    String newValueStr = rnd.nextInt() +""; 
+    String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
     Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
 
+    //OdfValues value can be stored as: string, short, int, long, float or double
     OdfValue<Object> value = OdfFactory.createOdfValue(
         newValueStr, typeStr, timestamp
     );
     values.add(value);
+    //Create description
+    OdfDescription description = OdfFactory.createOdfDescription( "Temperature sensor in SensorBox");
+
+    // Create O-DF MetaData
+    Vector<OdfInfoItem> metaItems = new Vector<OdfInfoItem>();
+    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    OdfValue<Object> metaValue = OdfFactory.createOdfValue(
+        "Celsius", "xs:string", timestamp
+    );
+    metaValues.add(metaValue);
+    OdfInfoItem metaItem = OdfFactory.createOdfInfoItem(
+        new Path( path + "/MetaData/Units"),
+        metaValues
+    );
+    OdfMetaData metaData = OdfFactory.createOdfMetaData(metaItems);
+
 
     // Create OdfInfoItem to contain the value. 
     OdfInfoItem infoItem = OdfFactory.createOdfInfoItem(
         path, 
-        values
+        values,
+        description,
+        metaData
     );
 
     // createAncestors generates O-DF structure from the path of an OdfNode 

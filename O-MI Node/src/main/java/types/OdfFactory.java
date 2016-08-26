@@ -35,6 +35,22 @@ public class OdfFactory{
 
   /**
    *
+   * @param value Value inside of O-DF value element. 
+   * @param timestamp Timestamp when value was measured or received.
+   */
+  public static OdfValue<Object> createOdfValue(
+    Object value,
+    Timestamp timestamp
+  ){
+    HashMap<String,String> attr = new HashMap<String,String>();
+    return OdfValue$.MODULE$.apply(
+        value,
+        timestamp
+        );
+  }
+
+  /**
+   *
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItew.
    * @param description Description of InfoItem.

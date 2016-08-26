@@ -59,6 +59,14 @@ object JavaHelpers{
       normalized.toVector // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
+    /**
+     * Removes extra path elements and holds the Path as Seq[String]
+     */
+    val toArray: Array[String] = {
+      val normalized = pathSeq.filterNot(_ == "")
+      normalized.toArray // make sure that it is Vector, hashcode problems with Seq (Array?)
+    }
+
     def this(pathStr: String) = this{
       pathStr.split("/").toVector
     }

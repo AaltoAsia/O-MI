@@ -6,6 +6,7 @@ import java.lang.Number;
 import java.text.NumberFormat;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Vector;
@@ -42,8 +43,7 @@ import types.OmiFactory;
 import types.OdfTypes.OdfInfoItem;
 
 /**
- * Pushes random numbers to given O-DF path at given interval.
- * Can be used in testing or as a base for other agents.
+ * Parses given file for O-DF structure and updates it's values.
  */
 public class JavaFileAgent extends JavaInternalAgent {
   /**
@@ -53,6 +53,7 @@ public class JavaFileAgent extends JavaInternalAgent {
    *  <a href="http://doc.akka.io/docs/akka/current/java/untyped-actors.html#Recommended_Practices">Akka recommends to</a>.
    *
    *  @param _config Contains configuration for this agent, as given in application.conf.
+   *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
   static public Props props(final Config _config) {
     return Props.create(new Creator<JavaFileAgent>() {
@@ -73,7 +74,7 @@ public class JavaFileAgent extends JavaInternalAgent {
   protected File file;
   protected OdfObjects odf;
 
-  protected boolean metaDatasAndDescriptionsNotWriten = true;
+  protected int writeCount = 0;
 
   protected Cancellable intervalJob = null;
 
@@ -93,7 +94,6 @@ public class JavaFileAgent extends JavaInternalAgent {
     // Parse configuration for target O-DF path
     pathToFile = config.getString("file");
     file = new File(pathToFile);
-    metaDatasAndDescriptionsNotWriten = true;
   }
 
 
@@ -123,6 +123,7 @@ public class JavaFileAgent extends JavaInternalAgent {
             );
         } else {
           odf = parseResult.right().get();
+          writeCount = 0;
           return new CommandSuccessful();
         }
       } else {
@@ -161,40 +162,53 @@ public class JavaFileAgent extends JavaInternalAgent {
     return new CommandSuccessful();
   }
 
-
   /**
-   * Method to be called when a "Update" message is received.
-   * Made specifically for this agent to be used with the Akka scheduler.
-   * Updates values in target path.
+   * Method to be called when for updating values stored in odf.
    */
-  public void update() {
+  public void updateOdf() {
 
-    // Generate new OdfValue<Object> 
+    // Generate new values for O-DF structure
+
+    //Helper for parsing Numbers from old values
     NumberFormat nf = NumberFormat.getInstance();
+
+    //All O-DF InfoItems in O-DF structure 
     Collection<OdfInfoItem> infoItems = JavaConversions.asJavaCollection(odf.infoItems());
+
+    //Collection of new values per path
     Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap();
+
+    //Generate new value for each O-DF InfoItem
     for( OdfInfoItem item : infoItems){
+      //Get old values
       Collection<OdfValue<Object>> oldValues = JavaConversions.asJavaCollection(item.values());
+
       // timestamp for the value
       Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
       // type metadata, default is xs:string
-      String typeStr = "xs:string";
-      // value as String
+      String typeStr = "";
+
       String newValueStr = ""; 
       String oldValueStr = ""; 
 
-      if( !oldValues.isEmpty() ){
-        OdfValue<Object> old = oldValues.iterator().next();
+      //There should be only one value stored in oldValues
+      Iterator<OdfValue<Object>> iterator = oldValues.iterator();
+      if( iterator.hasNext() ){
+        OdfValue<Object> old = iterator.next();
+
+        //Multiplier for generating new value 
         double multiplier = 1 + rnd.nextGaussian() * 0.05 ; 
+
+        //Extract type and value of old
         typeStr = old.typeValue();
         oldValueStr = old.value().toString();
-        log.debug( item.path().toString() + ": ");
-        log.debug( "Type: " + typeStr);
-        log.debug( "Multiplier: " + multiplier);
-        log.debug( "Old: " + oldValueStr);
 
         try{
+
+          //Try to parse string to a Number
           Number oldValue = nf.parse(oldValueStr);
+          
+          //Generate new number
           if( oldValue instanceof Long ) {
             long oldV = oldValue.longValue(); 
             typeStr = "xs:long";
@@ -221,7 +235,10 @@ public class JavaFileAgent extends JavaInternalAgent {
             newValueStr = (multiplier * oldV)+"";
 
           }
+
         } catch(java.text.ParseException pe){
+          //Value was not a Number
+          //Check if it is a Boolean
           if( oldValueStr.toLowerCase().equals("false") ){
             typeStr = "xs:boolean";
             if( multiplier > 1.05 || multiplier < -1.05 ) {
@@ -237,29 +254,44 @@ public class JavaFileAgent extends JavaInternalAgent {
               newValueStr = "true";
             }
           } else {
-            typeStr = "xs:string";
+            //Was not a Boolean. Keep old value as string 
             newValueStr = oldValueStr;
           }
         }
-        log.debug( "New: " + newValueStr);
       }
+
       // Multiple values can be added at the same time but we add one
       Vector<OdfValue<Object>> newValues = new Vector<OdfValue<Object>>();
-
       OdfValue<Object> value = OdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );
       newValues.add(value);
 
+      //Add to pathValuePairs
       pathValuePairs.put(item.path(), OdfTreeCollection.fromJava(newValues));
     }
+
+    //Convert Map to Scala Map
     scala.collection.mutable.Map<Path,scala.collection.immutable.Vector<OdfValue<Object>>> scalaMap= 
       JavaConversions.mapAsScalaMap(pathValuePairs);
 
+    //Replaces old values with new
+    //Odf* classes are immutable, so they need be copied to be edited.
+    //We should change as much as we can with single copy to avoid creating garbage.
     odf = odf.withValues( JavaHelpers.mutableMapToImmutable(scalaMap) );
-    if( !metaDatasAndDescriptionsNotWriten ){
+  }
+
+  /**
+   * Method to be called when a "Update" message is received.
+   * Made specifically for this agent to be used with the Akka scheduler.
+   * Updates values in target path.
+   */
+  public void update() {
+    updateOdf();
+    //MetaData and description should be writen only once
+    if( writeCount == 2 ){
       odf = odf.allMetaDatasRemoved();
-    } else metaDatasAndDescriptionsNotWriten = false;
+    } else writeCount += 1;
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
@@ -308,6 +340,7 @@ public class JavaFileAgent extends JavaInternalAgent {
           );
         }
       }
+
   }
   // Contains function for the asynchronous handling of write failure
   public final class LogFailure extends OnFailure{
