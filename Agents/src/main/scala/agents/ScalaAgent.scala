@@ -116,7 +116,7 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
    */
   def update() : Unit = {
 
-    // Generate new OdfValue 
+    // Generate new OdfValue[Any] 
 
     // timestamp for the value
     val timestamp : Timestamp = currentTimestamp
@@ -125,13 +125,26 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
     //New value as String
     val valueStr : String = newValueStr
 
-    val odfValue : OdfValue = OdfValue( newValueStr, typeStr, timestamp ) 
+    val odfValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp ) 
 
     // Multiple values can be added at the same time but we add one
-    val odfValues : Vector[OdfValue] = Vector( odfValue )
+    val odfValues : Vector[OdfValue[Any]] = Vector( odfValue )
+
+    val metaValueStr : String = newValueStr
+
+    val metaValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp ) 
+
+    // Multiple values can be added at the same time but we add one
+    val metaValues : Vector[OdfValue[Any]] = Vector( odfValue )
 
     // Create OdfInfoItem to contain the value. 
-    val infoItem : OdfInfoItem = OdfInfoItem( path, odfValues)
+    val metaInfoItem : OdfInfoItem = OdfInfoItem( path / "MetaData" / "test", metaValues)
+
+    val metaData = OdfMetaData( Vector(metaInfoItem) )
+
+    val description = OdfDescription("test")
+    // Create OdfInfoItem to contain the value. 
+    val infoItem : OdfInfoItem = OdfInfoItem( path, odfValues, Some(description), Some(metaData))
 
     // Method createAncestors generates O-DF structure from the path of an OdfNode 
     // and returns the root, OdfObjects

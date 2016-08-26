@@ -139,7 +139,7 @@ class SubscriptionManager(
     log.debug(s"Creating response message for Polled Event Subscription")
     val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
       .map { case (_path, _values) =>
-        OdfInfoItem(_path, _values.sortBy(_.timestamp.getTime()))
+        OdfInfoItem(_path, _values.sortBy(_.timestamp.getTime()).toVector)
       }
 
       .map(i => createAncestors(i)) //Map to OdfObjects
@@ -147,9 +147,9 @@ class SubscriptionManager(
     eventData //eventData.map(eData => Some(eData))
   }
 
-  private def calculateIntervals(pollInterval: PollIntervalSub, values: Seq[OdfValue], pollTime: Long) = {
+  private def calculateIntervals(pollInterval: PollIntervalSub, values: Seq[OdfValue[Any]], pollTime: Long) = {
     //Refactor
-    val buffer: collection.mutable.Buffer[OdfValue] = collection.mutable.Buffer()
+    val buffer: collection.mutable.Buffer[OdfValue[Any]] = collection.mutable.Buffer()
     val lastPolled = pollInterval.lastPolled.getTime()
     val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
     val interval = pollInterval.interval.toMillis
@@ -189,7 +189,7 @@ class SubscriptionManager(
       OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
               .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
         .map(n => n.path)
-        .map(p => p -> Vector[OdfValue]()).toMap ++ intervalData
+        .map(p => p -> Vector[OdfValue[Any]]()).toMap ++ intervalData
 
     val pollData = combinedWithPaths.map(pathValuesTuple => {
 

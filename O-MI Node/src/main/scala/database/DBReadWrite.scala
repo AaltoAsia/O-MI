@@ -161,7 +161,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     val returnId = db.run(updateAction.transactionally)
 
-    //val infoitem = OdfInfoItem( path, Iterable( OdfValue(value, valueType, timestamp ) ) )
+    //val infoitem = OdfInfoItem( path, Iterable( OdfValue[Any](value, valueType, timestamp ) ) )
 
     //Call hooks
     returnId
@@ -171,10 +171,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
   /**
    * Used to set many values efficiently to the database.
-   * @param data list item to be added consisting of Path and OdfValue tuples.
+   * @param data list item to be added consisting of Path and OdfValue[Any] tuples.
    */
   def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
-    val pathsData: Map[Path, Seq[OdfValue]] = infos.map(ii => (ii.path -> ii.values.sortBy(_.timestamp.getTime))).toMap
+    val pathsData: Map[Path, Seq[OdfValue[Any]]] = infos.map(ii => (ii.path -> ii.values.sortBy(_.timestamp.getTime))).toMap
 
     val writeAction = for {
       addObjectsAction <- DBIO.sequence(

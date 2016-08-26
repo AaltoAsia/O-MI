@@ -276,7 +276,7 @@ final public class OmiFactory{
     Callback cb = new RawCallback(callback);
     return new PollRequest(
         scala.Option.apply(cb),
-        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl
 
         );
@@ -293,7 +293,7 @@ final public class OmiFactory{
       ){
     return new PollRequest(
         scala.Option.empty(),
-        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl
 
         );
@@ -370,7 +370,7 @@ final public class OmiFactory{
       Iterable<Long > requestIDs
       ){
     return new CancelRequest(
-        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl
 
         ); 
@@ -389,7 +389,7 @@ final public class OmiFactory{
       ){
     return OmiResult$.MODULE$.apply(
         returnValue,
-        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        types.JavaHelpers.requestIDsFromJava(requestIDs),
         scala.Option.apply(odf)
         );
       }
@@ -405,7 +405,7 @@ final public class OmiFactory{
       ){
     return OmiResult$.MODULE$.apply(
         returnValue,
-        types.OmiTypes.JavaHelpers.requestIDsFromJava(requestIDs),
+        types.JavaHelpers.requestIDsFromJava(requestIDs),
         scala.Option.empty()
         );
       }

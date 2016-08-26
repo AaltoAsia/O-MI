@@ -9,7 +9,6 @@ import java.sql.Timestamp;
 import scala.concurrent.duration.*;
 import scala.concurrent.Future;
 import scala.concurrent.ExecutionContext;
-import scala.collection.immutable.HashMap;
 import scala.collection.JavaConverters.*;
 import scala.util.*;
 import akka.actor.Props;
@@ -38,7 +37,7 @@ import types.OdfTypes.OdfInfoItem;
  * Pushes random numbers to given O-DF path at given interval.
  * Can be used in testing or as a base for other agents.
  */
-public class JavaAgent extends JavaInternalAgent {
+public class JavaRoomAgent extends JavaInternalAgent {
   /**
    *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
    *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
@@ -48,12 +47,12 @@ public class JavaAgent extends JavaInternalAgent {
    *  @param _config Contains configuration for this agent, as given in application.conf.
    */
   static public Props props(final Config _config) {
-    return Props.create(new Creator<JavaAgent>() {
-      private static final long serialVersionUID = 3573L;
+    return Props.create(new Creator<JavaRoomAgent>() {
+      private static final long serialVersionUID = 35735155L;
 
       @Override
-      public JavaAgent create() throws Exception {
-        return new JavaAgent(_config);
+      public JavaRoomAgent create() throws Exception {
+        return new JavaRoomAgent(_config);
       }
     });
   }
@@ -62,8 +61,6 @@ public class JavaAgent extends JavaInternalAgent {
 
   protected FiniteDuration interval;
 
-  protected Path path;
-
   protected Cancellable intervalJob = null;
 
   //Random for generating new values for path.
@@ -71,7 +68,7 @@ public class JavaAgent extends JavaInternalAgent {
 
 
   // Constructor
-  public JavaAgent(Config conf){
+  public JavaRoomAgent(Config conf){
     config = conf;
 
     // Parse configuration for interval
@@ -79,8 +76,6 @@ public class JavaAgent extends JavaInternalAgent {
             config.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    // Parse configuration for target O-DF path
-    path = new Path(config.getString("path"));
   }
 
 
@@ -140,33 +135,11 @@ public class JavaAgent extends JavaInternalAgent {
    * Updates values in target path.
    */
   public void update() {
-
-    // Generate new OdfValue<Object> 
-
-    // timestamp for the value
-    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
-    // type metadata, default is xs:string
-    String typeStr = "xs:integer";
-    // value as String
-    String newValueStr = rnd.nextInt() +""; 
-
-    // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
-
-    OdfValue<Object> value = OdfFactory.createOdfValue(
-        newValueStr, typeStr, timestamp
-    );
-    values.add(value);
-
-    // Create OdfInfoItem to contain the value. 
-    OdfInfoItem infoItem = OdfFactory.createOdfInfoItem(
-        path, 
-        values
-    );
-
     // createAncestors generates O-DF structure from the path of an OdfNode 
     // and returns the root, OdfObjects
-    OdfObjects objects = infoItem.createAncestors();
+    Vector<OdfObject> objects = new Vector<OdfObject>();
+    objects.add(createExampleRoom());
+    OdfObjects odf = OdfFactory.createOdfObjects(objects);
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
@@ -176,7 +149,7 @@ public class JavaAgent extends JavaInternalAgent {
     // interval as time to live
     WriteRequest write = OmiFactory.createWriteRequest(
         interval, // ttl
-        objects   // O-DF
+        odf   // O-DF
     );
     
     // timeout for the write request, which means how long this agent waits for write results
@@ -223,6 +196,143 @@ public class JavaAgent extends JavaInternalAgent {
             name + " failed to write to all paths, reason: " + t.getMessage()
           );
       }
+  }
+
+
+  public OdfObject createExampleRoom(){
+
+    Path path = new Path( "Objects/ExampleRoom" );
+
+    OdfDescription description = OdfFactory.createOdfDescription(
+        ""
+    );
+
+    Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
+    Vector<OdfObject> objects = new Vector<OdfObject>();
+    objects.add( createSensorBox());
+    return OdfFactory.createOdfObject(
+        path,
+        infoItems,
+        objects
+    );
+  }
+  public OdfObject createSensorBox(){
+
+    Path path = new Path( "Objects/ExampleRoom/SensorBox" );
+
+    OdfDescription description = OdfFactory.createOdfDescription(
+        "SensorBox in ExampleRoom"
+    );
+
+    Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
+    Vector<OdfObject> objects = new Vector<OdfObject>();
+    infoItems.add( createTemperature() );
+    infoItems.add( createHumidity() );
+    return OdfFactory.createOdfObject(
+        path,
+        infoItems,
+        objects
+    );
+
+  }
+
+  public OdfInfoItem createTemperature(){
+    Path path = new Path( "Objects/ExampleRoom/SensorBox/Temperature" );
+    // Generate new OdfValue<Object> 
+
+    // timestamp for the value
+    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
+    // type metadata, default is xs:string
+    String typeStr = "xs:double";
+    // value as String
+    String newValueStr = rnd.nextDouble() +""; 
+
+    // Multiple values can be added at the same time but we add one
+    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+
+    OdfValue<Object> value = OdfFactory.createOdfValue(
+        newValueStr, typeStr, timestamp
+    );
+    values.add(value);
+
+    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    OdfValue<Object> metavalue = OdfFactory.createOdfValue(
+        "Celsius", typeStr, timestamp
+    );
+    metaValues.add(value);
+
+    Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
+    OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
+       new Path( path.toString() +"/MetaData/Unit"), 
+       metaValues
+    );
+    metaInfoItems.add(metaInfoItem);
+
+    OdfMetaData metaData = OdfFactory.createOdfMetaData(
+      metaInfoItems    
+    );
+
+    OdfDescription description = OdfFactory.createOdfDescription(
+        "Temperature of  ExampleRoom"
+    );
+    // Create OdfInfoItem to contain the value. 
+    OdfInfoItem infoItem = OdfFactory.createOdfInfoItem(
+        path, 
+        values,
+        description,
+        metaData
+
+    );
+    return infoItem;
+  }
+
+  public OdfInfoItem createHumidity(){
+    Path path = new Path( "Objects/ExampleRoom/SensorBox/Humidity" );
+    // Generate new OdfValue<Object> 
+
+    // timestamp for the value
+    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
+    // type metadata, default is xs:string
+    String typeStr = "xs:double";
+    // value as String
+    String newValueStr = rnd.nextDouble() +""; 
+
+    // Multiple values can be added at the same time but we add one
+    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+
+    OdfValue<Object> value = OdfFactory.createOdfValue(
+        newValueStr, typeStr, timestamp
+    );
+    values.add(value);
+
+    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    OdfValue<Object> metavalue = OdfFactory.createOdfValue(
+        "Celsius", typeStr, timestamp
+    );
+    metaValues.add(value);
+
+    Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
+    OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
+       new Path( path.toString() +"/MetaData/Unit"), 
+       metaValues
+    );
+    metaInfoItems.add(metaInfoItem);
+
+    OdfMetaData metaData = OdfFactory.createOdfMetaData(
+      metaInfoItems    
+    );
+
+    OdfDescription description = OdfFactory.createOdfDescription(
+        "Humidity of ExampleRoom"
+    );
+    // Create OdfInfoItem to contain the value. 
+    OdfInfoItem infoItem = OdfFactory.createOdfInfoItem(
+        path, 
+        values,
+        description,
+        metaData
+    );
+    return infoItem;
   }
 
   

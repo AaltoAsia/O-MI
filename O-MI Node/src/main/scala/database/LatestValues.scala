@@ -30,7 +30,7 @@ import types.Path
   val metadataStr: Option[OdfMetaData] = None,
   val description: Option[OdfDescription] = None
   ) {
-  def toOdfInfoItem(path: Path, value: OdfValue) = 
+  def toOdfInfoItem(path: Path, value: OdfValue[Any]) = 
     OdfInfoItem(path, Iterable(value), description, metadataStr)
 }
  */ 
@@ -38,18 +38,18 @@ import types.Path
 /**
  * The latest values should be stored here. Contains only the latest value for each path.
  */
-case class LatestValues(var allData: Map[Path, OdfValue])
+case class LatestValues(var allData: Map[Path, OdfValue[Any]])
 object LatestValues {
   type LatestStore = Prevayler[LatestValues]
   def empty = LatestValues(Map.empty)
 }
 
 
-case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[OdfValue]] {
+case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[OdfValue[Any]]] {
   def query(ls: LatestValues, d: Date) = ls.allData.get(sensor)
 }
 
-case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, Vector[(Path, OdfValue)]] {
+case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, Vector[(Path, OdfValue[Any])]] {
   def query(ls: LatestValues, d: Date) = {
     (for (sensorPath <- sensors) yield {
       val dataOpt = ls.allData get sensorPath
@@ -57,11 +57,11 @@ case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, 
     }).flatten
   }
 }
-case class LookupAllDatas() extends Query[LatestValues, Map[Path, OdfValue]] {
+case class LookupAllDatas() extends Query[LatestValues, Map[Path, OdfValue[Any]]] {
   def query(ls: LatestValues, d: Date) = ls.allData
 }
 
-case class SetSensorData(sensor: Path, value: OdfValue) extends Transaction[LatestValues] {
+case class SetSensorData(sensor: Path, value: OdfValue[Any]) extends Transaction[LatestValues] {
   def executeOn(ls: LatestValues, d: Date) = ls.allData = ls.allData + (sensor -> value)
 }
 
@@ -157,8 +157,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  /*case class NewPollDataEvent(paths: Vector[(Path,OdfValue)]) extends Query[Subs, Seq[((Path, OdfValue), Set[Long])]] {
-    def query(store: Subs, d: Date): Vector[((Path, OdfValue), Set[Long])] = {
+  /*case class NewPollDataEvent(paths: Vector[(Path,OdfValue[Any])]) extends Query[Subs, Seq[((Path, OdfValue[Any]), Set[Long])]] {
+    def query(store: Subs, d: Date): Vector[((Path, OdfValue[Any]), Set[Long])] = {
       paths.map(path => (path, store.pathToSubs(path._1)))
     }
   }*/

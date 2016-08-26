@@ -57,7 +57,7 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
   final public Future<ResponsibleAgentResponse> writeToNode( WriteRequest write, Timeout timeout ){
     ResponsibilityRequest rw = new ResponsibilityRequest(name, write);
     Future<Object> future = ask( agentSystem,rw, timeout);
-    Future<ResponsibleAgentResponse> result = types.OmiTypes.JavaHelpers.formatWriteFuture(future);
+    Future<ResponsibleAgentResponse> result = types.JavaHelpers.formatWriteFuture(future);
     return result;
   }
 

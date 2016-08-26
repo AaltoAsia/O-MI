@@ -67,11 +67,25 @@ class ParserTest extends Specification {
         Seq(),
           Path("Objects/SmartCar"), Iterable(
             OdfInfoItem(
-              Path("Objects/SmartCar/Fuel"), Iterable(
-                OdfValue(
-                  "30", "xs:string",
-                    Timestamp.valueOf("2014-12-18 15:34:52"))), None, Some(
-                MetaData(InfoItemType(value = Seq(ValueType("Litre", attributes = Map.empty)),name = "Units", attributes = Map.empty))))), Iterable(), None, None), OdfObject(
+              Path("Objects/SmartCar/Fuel"),
+              Vector(OdfValue(
+                  "30",
+                  "xs:string",
+                  Timestamp.valueOf("2014-12-18 15:34:52")
+              )), 
+              None, 
+              Some(OdfMetaData(
+                Vector(OdfInfoItem(
+                  Path("Objects/SmartCar/Fuel/MetaData/Units"),
+                  Vector(OdfValue(
+                    "Litre",
+                    "xs:string",
+                    Timestamp.valueOf("2014-12-18 15:34:52")
+                  ))
+                ))
+              ))
+            )),
+          Iterable(), None, None), OdfObject(
         Seq(),
           Path("Objects/SmartCottage"), Iterable(), Iterable(
             OdfObject(
@@ -580,7 +594,13 @@ class ParserTest extends Specification {
         OdfValue( "1.1", "xs:double", timestamp = testTimestamp )
       ), 
       Some( OdfDescription( " test" )), Some(
-        MetaData(List(InfoItemType(value = Seq(ValueType("Litre", attributes = Map.empty,dateTime = None,unixTime = Some(400000000L))),name = "Units", attributes = Map.empty)): _*))
+        OdfMetaData(Vector(OdfInfoItem(
+          Path( "Objects/SmartHouse/Moisture/MetaData/Units"),
+          Vector(OdfValue(
+            "Litre",
+            "xs:string",
+            testTimestamp
+          ))))))
       //Some( OdfMetaData(
       //  "<MetaData xmlns=\"odf.xsd\" xmlns:omi=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
       //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
