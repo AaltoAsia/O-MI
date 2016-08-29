@@ -1,5 +1,6 @@
 package types;
 
+import java.lang.Object;
 import types.OdfTypes.*;
 import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
@@ -18,7 +19,7 @@ public class OdfFactory{
    *  type will be String.
    * @param timestamp Timestamp when value was measured or received.
    */
-  public static OdfValue createOdfValue(
+  public static OdfValue<Object> createOdfValue(
     String value,
     String typeValue,
     Timestamp timestamp
@@ -34,13 +35,49 @@ public class OdfFactory{
 
   /**
    *
+   * @param value Value inside of O-DF value element. 
+   * @param timestamp Timestamp when value was measured or received.
+   */
+  public static OdfValue<Object> createOdfValue(
+    Object value,
+    Timestamp timestamp
+  ){
+    HashMap<String,String> attr = new HashMap<String,String>();
+    return OdfValue$.MODULE$.apply(
+        value,
+        timestamp
+        );
+  }
+
+  /**
+   *
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItew.
    * @param description Description of InfoItem.
    */
   public static OdfInfoItem createOdfInfoItem(
     Path path,
-    Iterable<OdfValue> values,
+    Iterable<OdfValue<Object>> values,
+    OdfDescription description,
+    OdfMetaData metaData
+  ){
+    return new OdfInfoItem(
+        path,
+        OdfTreeCollection.fromJava(values),
+        scala.Option.apply(description),
+        scala.Option.apply(metaData)
+        );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItew.
+   * @param description Description of InfoItem.
+   */
+  public static OdfInfoItem createOdfInfoItem(
+    Path path,
+    Iterable<OdfValue<Object>> values,
     OdfDescription description
   ){
     return new OdfInfoItem(
@@ -58,13 +95,31 @@ public class OdfFactory{
    */
   public static OdfInfoItem createOdfInfoItem(
     Path path,
-    Iterable<OdfValue> values
-  ){
+    Iterable<OdfValue<Object>> values
+    ){
     return new OdfInfoItem(
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
         scala.Option.empty()//Look at type of MetaData. 
+        );
+    }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItew.
+   */
+  public static OdfInfoItem createOdfInfoItem(
+      Path path,
+      Iterable<OdfValue<Object>> values,
+    OdfMetaData metaData
+  ){
+    return new OdfInfoItem(
+        path,
+        OdfTreeCollection.fromJava(values),
+        scala.Option.empty(),
+        scala.Option.apply(metaData)//Look at type of MetaData. 
         );
   }
 
@@ -178,7 +233,7 @@ public class OdfFactory{
    *
    * @param value Text of description.
    */
-  public static OdfDescription createOdfDescprition(
+  public static OdfDescription createOdfDescription(
     String value
   ) {
     return new OdfDescription(
@@ -212,6 +267,14 @@ public class OdfFactory{
     return new OdfObjects(
         OdfTreeCollection.fromJava(objects),
         scala.Option.empty()
+    );
+  }
+
+  public static OdfMetaData createOdfMetaData(
+    Iterable<OdfInfoItem> infoItems
+  ){
+    return new OdfMetaData(
+        OdfTreeCollection.fromJava(infoItems)
     );
   }
 

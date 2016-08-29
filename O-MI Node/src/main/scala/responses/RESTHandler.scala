@@ -66,7 +66,7 @@ object RESTHandler{
 
       case MetaData(path) =>
         singleStores.getMetaData(path) map { metaData =>
-          Right(scalaxb.toXML[xmlTypes.MetaData](metaData, Some("odf"), Some("MetaData"),defaultScope))
+          Right(scalaxb.toXML[xmlTypes.MetaData](metaData.asMetaData, Some("odf"), Some("MetaData"),defaultScope))
         }
       case ObjId(path) =>{  //should this query return the id as plain text or inside Object node?
         val xmlReturn = singleStores.getSingle(path).map{

@@ -23,7 +23,6 @@ import javax.xml.datatype.DatatypeFactory
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
 import scala.collection.JavaConversions
 import scala.concurrent.duration._
-import scala.concurrent.{Future}
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Try, Success, Failure}
 import scala.language.existentials
@@ -35,18 +34,6 @@ import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
 import responses.CallbackHandler
 import types.OdfTypes._
 import agentSystem.ResponsibleAgentResponse
-
-object JavaHelpers{
-
- def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
-   JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
- }
- 
- def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponsibleAgentResponse] ={
-   writeFuture.mapTo[ResponsibleAgentResponse]
- }
-}
-
 
 /**
   * Trait that represents any Omi request. Provides some data that are common

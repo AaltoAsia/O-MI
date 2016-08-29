@@ -105,7 +105,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
   val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
   subStore execute RemoveWebsocketSubs()
 
-  def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
+  def buildOdfFromValues(items: Seq[(Path,OdfValue[Any])]): OdfObjects = {
 
     val odfObjectsTrees = items map { case (path, value) =>
       val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
@@ -123,7 +123,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
    * @param newValue the new value to be added
    * @return
    */
-  def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
+  def valueShouldBeUpdated(oldValue: OdfValue[Any], newValue: OdfValue[Any]): Boolean = {
     oldValue.timestamp before newValue.timestamp
   }
 
@@ -137,7 +137,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
    * @param newValue Actual incoming data
    * @return Triggered responses
    */
-  def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
+  def processData(path: Path, newValue: OdfValue[Any], oldValueOpt: Option[OdfValue[Any]]): Option[InfoItemEvent] = {
 
     // TODO: Replace metadata and description if given
 
@@ -164,7 +164,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
   }
 
 
-  def getMetaData(path: Path) : Option[MetaData] = {
+  def getMetaData(path: Path) : Option[OdfMetaData] = {
     (hierarchyStore execute GetTree()).get(path).collect{
       case OdfInfoItem(_,_,_,Some(mData)) => mData
     }
@@ -295,7 +295,7 @@ trait DB {
 
   /**
    * Used to set many values efficiently to the database.
-   * @param data list item to be added consisting of Path and OdfValue tuples.
+   * @param data list item to be added consisting of Path and OdfValue[Any] tuples.
    */
   def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn]
 

@@ -23,6 +23,7 @@ import scala.concurrent.duration._
 import scala.util.{Try,Success,Failure}
 
 import akka.actor.ActorSystem
+import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.http.scaladsl.{ Http, HttpExt}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -66,7 +67,11 @@ class CallbackHandler(
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
 
-  private def log = system.log
+  implicit val logSource: LogSource[CallbackHandler]= new LogSource[CallbackHandler] {
+      def genString(requestHandler:  CallbackHandler) = requestHandler.toString
+    }
+
+  protected val log: LoggingAdapter = Logging( system, this)
   val currentConnections: MutableMap[Int, SendHandler ] = MutableMap.empty
   def addCurrentConnection( identifier: Int, handler: SendHandler) = currentConnections += identifier -> handler 
   private[this] def sendHttp( callback: HTTPCallback,
@@ -90,10 +95,15 @@ class CallbackHandler(
         if (response.status.isSuccess){
           //TODO: Handle content of response, possible piggypacking
           log.info(
-            s"Successful send POST request to $address."
+            s"Successful send POST request to $address with ${response.status}"
           )
+          response.discardEntityBytes()
           Future.successful(())
-        } else Future failed HttpError(response.status, callback)
+        } else {
+          response.discardEntityBytes()
+          log.warning( s"Http status: ${response.status}")
+          Future failed HttpError(response.status, callback)
+        }
     }
 
     def trySend = httpExtension.singleRequest(httpRequest)//httpHandler(request)
@@ -109,7 +119,6 @@ class CallbackHandler(
           s"Failed to send POST request to $address after trying until ttl ended."
         )
     }
-
     retry
 
   }
@@ -119,7 +128,7 @@ class CallbackHandler(
     val future = creator
     future.flatMap{ check }.recoverWith{
       case e if tryUntil.after( currentTimestamp ) && !system.isTerminated => 
-        system.log.debug(
+        log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
         )
         Thread.sleep(delay.toMillis)
@@ -142,17 +151,17 @@ class CallbackHandler(
     currentConnections.get(callback.identifier).map{
       case handler: (ResponseRequest => Future[Unit]) => 
 
-            system.log.debug(
+            log.debug(
               s"Trying to send response to current connection ${callback.identifier}"
             )
         val f = handler(request)
         f.onComplete{
           case Success(_) => 
-            system.log.debug(
+            log.debug(
               s"Response  send successfully to current connection ${callback.identifier}"
             )
           case Failure(t: Throwable) =>
-            system.log.debug(
+            log.debug(
               s"Response send  to current connection ${callback.identifier} failed, ${t.getMessage()}. Connection removed."
             )
             currentConnections -= callback.identifier

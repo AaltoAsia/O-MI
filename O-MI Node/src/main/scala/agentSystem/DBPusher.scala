@@ -142,7 +142,7 @@ trait DBPusher extends BaseAgentSystem{
    * @param oldValueOpt
    * @return returns Sequence of SubValues to be added to database
    */
-  private def handlePollData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]) = {
+  private def handlePollData(path: Path, newValue: OdfValue[Any], oldValueOpt: Option[OdfValue[Any]]) = {
     val relatedPollSubs = singleStores.subStore execute GetSubsForPath(path)
 
     relatedPollSubs.collect {
@@ -238,17 +238,5 @@ trait DBPusher extends BaseAgentSystem{
 
   }
 
-  /**
-   * Check metadata XML validity and O-DF validity
-   */
-  private def checkMetaData(metaO: Option[OdfMetaData]): Try[String] = metaO match {
-    case Some(meta) => checkMetaData(meta.data)
-    case None => Failure(new MatchError(None))
-  }
-  private def checkMetaData(metaStr: String): Try[String] = Try{
-        val xml = XML.loadString(metaStr)
-        val meta = xmlGen.scalaxb.fromXML[MetaData](xml)
-        metaStr
-      }
   
 }
