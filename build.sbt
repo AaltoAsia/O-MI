@@ -27,7 +27,7 @@ def commonSettings(moduleName: String) = Seq(
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
 )
 
-lazy val JavaDoc = config("genjavadoc") extend Compile
+//lazy val JavaDoc = config("genjavadoc") extend Compile
 
 // Something is broken
 //lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
@@ -45,10 +45,10 @@ lazy val JavaDoc = config("genjavadoc") extend Compile
 //)
 
 lazy val omiNode = (project in file("O-MI Node")).
-  configs(JavaDoc).
+  //configs(JavaDoc).
   settings(
     (commonSettings("Backend") ++ 
-     /*javadocSettings*/ ++ Seq(
+     /*javadocSettings ++*/ Seq(
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
       cleanFiles <+= baseDirectory { base => base / "logs"},
