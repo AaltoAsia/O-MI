@@ -60,6 +60,6 @@ class CallbackHandler(BaseHTTPRequestHandler):
         global responseNum
         responseNum += 1
 
-server_address = ('', 5432)
+server_address = ('localhost', 6432)
 httpd = HTTPServer(server_address, CallbackHandler)
 httpd.serve_forever()

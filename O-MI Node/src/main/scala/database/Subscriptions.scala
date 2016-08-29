@@ -17,19 +17,17 @@ package database
 import java.sql.Timestamp
 import java.util.Date
 
+import scala.annotation.meta.field
 import scala.collection.immutable.{HashMap, SortedSet}
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{FiniteDuration, Duration}
 
+import akka.actor.Cancellable
 import org.prevayler._
-import types.OdfTypes.OdfValue
+import types.OdfTypes._
 import types._
+import types.OmiTypes._
 
-
-object IntervalSubOrdering extends Ordering[IntervalSub] {
-  def compare(a: IntervalSub, b: IntervalSub) : Int =
-    a.nextRunTime.getTime compare b.nextRunTime.getTime
-}
 
 sealed trait SavedSub {
   val id: Long
@@ -64,9 +62,8 @@ case class IntervalSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
-  callback: String,
-  interval: Duration,
-  nextRunTime: Timestamp,
+  callback: DefinedCallback,
+  interval: FiniteDuration,
   startTime: Timestamp
   ) extends SavedSub
 
@@ -74,8 +71,8 @@ case class EventSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
-  callback: String
-  ) extends SavedSub
+  callback: DefinedCallback
+  ) extends SavedSub//startTime: Duration) extends SavedSub
 
 /** from Path string to event subs for that path */
 
@@ -83,17 +80,17 @@ case class Subs(
                var eventSubs: HashMap[Path, Vector[EventSub]],
                var idToSub: HashMap[Long, PolledSub], 
                var pathToSubs: HashMap[Path, Set[Long]],
-               var intervalSubs: SortedSet[IntervalSub])
+               var intervalSubs: HashMap[Long, IntervalSub])
 object Subs {
   def empty: Subs = Subs(
     HashMap.empty,
     HashMap.empty,
     HashMap.empty,
-    SortedSet.empty(IntervalSubOrdering))
+    HashMap.empty)
 }
 
 case class PollSubData(
-  val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue]]])
+  val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue[Any]]]])
 
 object PollSubData {
   def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
@@ -106,7 +103,7 @@ object PollSubData {
  * @param path
  * @param value
  */
-case class AddPollData(subId: Long, path: Path, value: OdfValue) extends Transaction[PollSubData] {
+case class AddPollData(subId: Long, path: Path, value: OdfValue[Any]) extends Transaction[PollSubData] {
   def executeOn(p: PollSubData, date: Date): Unit = {
     p.idToData.get(subId) match {
       case Some(pathToValues) => pathToValues.get(path) match {
@@ -128,9 +125,9 @@ case class AddPollData(subId: Long, path: Path, value: OdfValue) extends Transac
  * Used to Poll event subscription data from the prevayler. Can also used to remove data from subscription
  * @param subId
  */
-case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[OdfValue]]] {
-  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[OdfValue]] = {
-    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[OdfValue]])
+case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[OdfValue[Any]]]] {
+  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[OdfValue[Any]]] = {
+    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[OdfValue[Any]]])
   }
 }
 
@@ -140,8 +137,8 @@ case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollS
  * so this can't be used to remove subscriptions.
  * @param subId
  */
-case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[OdfValue]]]{
-  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue]] = {
+case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[OdfValue[Any]]]]{
+  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = {
     val removed = p.idToData.remove(subId)
 
     removed match {
@@ -185,4 +182,21 @@ case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
     (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
 }
 
+case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
+  def executeAndQuery(store: Subs, d: Date): Unit= {
+    store.intervalSubs = store.intervalSubs.filter{
+      case (_, IntervalSub(_,_,_,cb: CurrentConnectionCallback, _, _)) =>{
+      false
+      }
+      case _  => true
+    }
+    store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{
+      subs =>
+        subs.filter{
+          case EventSub(_,_,_,callback: CurrentConnectionCallback) => false
+          case sub: EventSub => true
+          }
+          }.toSeq:_*)
+  }
+}
 // Other transactions are in responses/SubscriptionHandler.scala

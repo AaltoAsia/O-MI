@@ -19,12 +19,15 @@ import org.specs2.matcher.FutureMatchers._
 import com.typesafe.config.{ConfigFactory, Config}
 import testHelpers.Actorstest
 import types.Path
-import responses.{RemoveHandler,RemoveSubscription}
+import types.OmiTypes._
+import responses.{RemoveHandlerT,RemoveSubscription}
 import agentSystem.{AgentName, AgentInfo, TestManager, SSAgent}
 import akka.util.{ByteString, Timeout}
+import akka.http.scaladsl.model.Uri
 import akka.io.Tcp.{Write, Received}
 import database.{EventSub, IntervalSub, PolledSub, PollEventSub, PollIntervalSub, SavedSub}
 import http.CLICmds._
+
 
 
 
@@ -67,9 +70,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     }
   }
 
-  class RemoveTester( path: Path)extends RemoveHandler{
-    implicit def dbConnection: database.DB = ???
-    protected def log: akka.event.LoggingAdapter = ???
+  class RemoveTester( path: Path)extends RemoveHandlerT{
 
     override def handlePathRemove(parentPath: Path): Boolean = { 
       path == parentPath || path.isAncestor(parentPath)
@@ -83,9 +84,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("help"))    
@@ -108,9 +109,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystemRef,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg("list agents"))    
@@ -132,9 +133,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       managerRef,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    
@@ -155,9 +156,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       managerRef,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    
@@ -173,9 +174,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("aueo"))    
@@ -191,9 +192,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
@@ -209,9 +210,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove " + path +"ueaueo" ))    
@@ -225,19 +226,19 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
     val paths = Vector( 
       Path( "Objects/object/sensor1" ),
       Path( "Objects/object/sensor2" )
     )
     val intervalSubs : Set[IntervalSub] = Set( 
-      IntervalSub( 35, paths, endTime, callback, interval, nextRunTime, startTime ),
-      IntervalSub( 55, paths, endTime, callback + "13", interval, nextRunTime, startTime )
+      IntervalSub( 35, paths, endTime, callback, interval, startTime ),
+      IntervalSub( 55, paths, endTime, callback, interval, startTime )
     )
     val eventSubs : Set[EventSub] =Set( 
       EventSub( 40, paths, endTime, callback),
-      EventSub( 430, paths, endTime, callback + "31"),
-      EventSub( 32, paths, endTime, callback + "15")
+      EventSub( 430, paths, endTime, callback),
+      EventSub( 32, paths, endTime, callback)
     )
     val pollSubs : Set[PolledSub] = Set( 
       PollEventSub(59, endTime, nextRunTime, startTime, paths),
@@ -256,9 +257,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("list subs"))    
@@ -280,9 +281,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
@@ -304,9 +305,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val remote = new InetSocketAddress("Tester",22)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
@@ -320,7 +321,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -331,13 +332,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       endTime,
       callback,
       interval,
-      nextRunTime,
       startTime
     ))
     val correct: String  =s"Started: ${startTime}\n" +
     s"Ends: ${endTime}\n" +
     s"Interval: ${interval}\n" +
-    s"Run next: ${nextRunTime}\n" +
     s"Callback: ${callback}\n" +
     s"Paths:\n${paths.mkString("\n")}\n"
     showSubTestBase(sub,correct)
@@ -350,7 +349,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -374,7 +373,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -402,7 +401,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -428,7 +427,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
     val interval = 5.minutes
     val nextRunTime = new Timestamp( new Date().getTime() + interval.toMillis)
-    val callback = "http://test.org:31"
+    val callback = HTTPCallback(Uri("http://test.org:31"))
 
     val remote = new InetSocketAddress("Tester",22)
     val agentSystem =ActorRef.noSender
@@ -448,9 +447,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     })
     val listenerRef = TestActorRef(new OmiNodeCLI(
       remote,
+      removeHandler,
       agentSystem,
-      subscriptionManager,
-      removeHandler
+      subscriptionManager
     ))
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"showSub ${sub.map{s => s.id}.getOrElse(57171)}"))    
     resF should beEqualTo(correct ).await( 0, timeoutDuration)

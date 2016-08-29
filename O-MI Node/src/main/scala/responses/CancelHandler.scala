@@ -22,7 +22,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import responses.OmiGenerator._
 import types.OmiTypes._
 import types._
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
@@ -33,39 +32,38 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import http.{ActorSystemContext, Actors}
 
 
 trait CancelHandler extends OmiRequestHandlerBase{
-  def subscriptionManager : ActorRef
 
+  protected def subscriptionManager : ActorRef 
   /** Method for handling CancelRequest.
     * @param cancel request
     * @return (xml response, HTTP status code) wrapped in a Future
     */
-  def handleCancel(cancel: CancelRequest): Future[NodeSeq] = {
+  def handleCancel(cancel: CancelRequest): Future[ResponseRequest] = {
     log.debug("Handling cancel.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
-    val jobs = Future.sequence(cancel.requestIDs.map { id =>
+    val jobs: Future[Seq[OmiResult]] = Future.sequence(cancel.requestIDs.map {
+      id =>
       (subscriptionManager ? RemoveSubscription(id)).mapTo[Boolean].map( res =>
         if(res){
-          Results.success
+          Results.Success()
         }else{
-          Results.notFoundSub
+          Results.NotFoundRequestIDs(Vector(id))
         }
       ).recoverWith{
         case e : Throwable => {
           val error = "Error when trying to cancel subcription: "
           log.error(e, error)
-          Future.successful(Results.internalError(error + e.toString))
+          Future.successful(Results.InternalError(error + e.toString))
         }
       }
     })
 
-    jobs.map( res =>
-    (
-      xmlFromResults(
-        1.0,
-      res.toSeq: _*
-        )))
+    jobs.map{
+      results => ResponseRequest(results.toVector)
+    }
   }
 }

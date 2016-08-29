@@ -22,6 +22,7 @@ import java.sql.Timestamp
 
 import scala.language.existentials
 import scala.xml.NodeSeq
+import scala.collection.JavaConversions
 import javax.xml.datatype.XMLGregorianCalendar
 
 import parsing.xmlGen.xmlTypes._
@@ -57,6 +58,19 @@ package object OmiTypes  {
    cal.setTime(timestamp)
    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
  }
+ def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
+   JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
+ }
+  /** Wraps O-DF format to O-MI msg tag.
+    * @param odf O-DF Structure.
+    * @return O-MI msg tag.
+    */
+  def odfMsg( odf: NodeSeq ):  NodeSeq ={
+    <omi:msg xmlns="odf.xsd">
+      {odf}
+    </omi:msg>
+  }
+
 }
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
@@ -170,7 +184,7 @@ package object OdfTypes {
     }
   }
 
-  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={
+  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue[Any])]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
   def timestampToXML(timestamp: Timestamp) ={ 

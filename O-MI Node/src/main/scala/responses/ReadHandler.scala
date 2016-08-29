@@ -18,35 +18,37 @@ package responses
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import database.{GetTree, SingleStores}
+import database.GetTree
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
 
-import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
+import http.{ActorSystemContext, Storages}
+import database.{ DBReadWrite, SingleStores }
 
 trait ReadHandler extends OmiRequestHandlerBase {
+  protected implicit def dbConnection: DBReadWrite
+  protected implicit def singleStores: SingleStores
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
     */
-   def handleRead(read: ReadRequest): Future[NodeSeq] = {
+  def handleRead(read: ReadRequest): Future[ResponseRequest] = {
      log.debug("Handling read.")
      read match{
        case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_) =>
          Future.successful(
-           xmlFromResults(
-             1.0,
-             Results.simple(
-               "400",
-               Some("Both newest and oldest at the same time not supported!")
+           ResponseRequest( Vector(
+             Results.InvalidRequest(
+               "Both newest and oldest at the same time not supported!"
              )
-           )
-         )
+           ))
+       )
+         
          /*
        case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
          Future.successful(
@@ -62,7 +64,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
          val leafs = getLeafs(read.odf)
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
-         val metadataTree = SingleStores.hierarchyStore execute GetTree()
+         val metadataTree = singleStores.hierarchyStore execute GetTree()
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
@@ -79,26 +81,19 @@ trait ReadHandler extends OmiRequestHandlerBase {
          objectsO.map {
            case Some(objects) =>
              val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
-             val found = Results.read(metaCombined)
-             val requestsPaths = leafs.map {
-               _.path
-             }
-             val foundOdfAsPaths = getLeafs(metaCombined).flatMap {
-               _.path.getParentsAndSelf
-             }.toSet
+             val found = Results.Read(metaCombined)
+             val requestsPaths = leafs.map { _.path }
+             val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-             val results = Seq(found) ++ {
+             val omiResults = Vector(found) ++ {
                if (notFound.nonEmpty)
-                 Seq(Results.simple("404", Some("Could not find the following elements from the database:\n" + notFound.mkString("\n"))))
-               else Seq.empty
+                 Vector(Results.NotFoundPaths(notFound.toVector))
+               else Vector.empty
              }
 
-             xmlFromResults(
-               1.0,
-               results: _*)
-             case None =>
-               xmlFromResults(
-                 1.0, Results.notFound)
+             ResponseRequest( omiResults )
+           case None =>
+             ResponseRequest( Vector(Results.NotFoundPaths(leafs.map{ p => p.path}.toVector)))
          }
      }
    }

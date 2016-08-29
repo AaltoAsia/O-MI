@@ -21,35 +21,58 @@ import scala.concurrent.Future
 //import scala.collection.JavaConversions.asJavaIterator
 import scala.xml.NodeSeq
 //import akka.http.StatusCode
-
-import agentSystem.{PromiseResult, PromiseWrite, SuccessfulWrite}
 import akka.actor.ActorRef
-import responses.OmiGenerator._
+import akka.util.Timeout
+import akka.pattern.ask
+
+import agentSystem._
 import types.OmiTypes._
+import http.{ActorSystemContext, Actors}
 
 trait WriteHandler extends OmiRequestHandlerBase{
-  def agentSystem : ActorRef
+  protected def agentSystem : ActorRef
   /** Method for handling WriteRequest.
     * @param write request
     * @return (xml response, HTTP status code)
     */
-  def handleWrite( write: WriteRequest ) : Future[NodeSeq] ={
-      handleTTL(write.ttl)
+  def handleWrite( write: WriteRequest ) : Future[ResponseRequest] ={
+    val ttl = write.handleTTL
+    implicit val timeout = Timeout(ttl)
 
-      val promiseResult = PromiseResult()
-      agentSystem ! PromiseWrite(promiseResult, write)
-      val successF = promiseResult.isSuccessful.map{ case s : SuccessfulWrite => s}
+      val result = (agentSystem ? ResponsibilityRequest("WriteHandler", write)).mapTo[ResponsibleAgentResponse]
 
-      successF.recoverWith{
-        case e : Throwable =>{
+      result.recoverWith{
+        case e : Throwable =>
         log.error(e, "Failure when writing")
         Future.failed(e)
-      }}
+      }
 
 
-      successF.onSuccess{ case succ => log.info( succ.toString) }
-      val response = successF.map{
-        succ => success 
+      result.onSuccess{ case succ => log.debug( succ.toString) }
+      val response = result.map{
+        case SuccessfulWrite(_) => Responses.Success()
+        case FailedWrite(paths, reasons) =>  
+          val returnV : OmiReturn = OmiReturn(
+            "400",
+            Some(
+              "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
+            )
+          )
+          val result : OmiResult = OmiResult(returnV)
+          ResponseRequest( Vector( result ))
+          
+        case MixedWrite(successfulPaths, failed)=> 
+          val returnV : OmiReturn = OmiReturn(
+            "400",
+            Some(
+              "Following paths failed:\n" +
+              failed.paths.mkString("\n") + 
+              " reason:\n" + failed.reasons.mkString("\n")
+            )
+          )
+          val result : OmiResult = OmiResult(returnV)
+          ResponseRequest( Vector( result))
+          
       }
       response
   }

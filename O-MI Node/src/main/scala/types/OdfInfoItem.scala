@@ -30,42 +30,26 @@ import types.OdfTypes.OdfTreeCollection._
 /** Class implementing OdfInfoItem. */
 class  OdfInfoItemImpl(
   path:                 Path,
-  values:               OdfTreeCollection[OdfValue] = OdfTreeCollection(),
+  values:               OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
   description:          Option[OdfDescription] = None,
-  metaData:             Option[MetaData] = None
+  metaData:             Option[OdfMetaData] = None
 ) extends Serializable {
 
-  def combineMetaData(another: Option[MetaData], first: Option[MetaData]): Option[MetaData] = {
-    (another, first) match {
-        case (Some(amData), Some(bmData)) => {
-          val mInfoItems = (amData.InfoItem ++ bmData.InfoItem).groupBy(_.name).map{
-            case (path, infos) => InfoItemType(
-              infos.collectFirst{
-                case InfoItemType(ids @ id::b, _,_,_,_,_) => ids
-              }.getOrElse(Nil), // TODO: better merging of QLMIDS currently find first with Id and use that.
-              infos.collectFirst{
-                case InfoItemType(_, Some(des), _, _, _, _) => des}, // Find first metadata with description and use that
-              infos.foldLeft[Option[MetaData]](None)( (col, next ) => combineMetaData(col, next.MetaData)), //recursively merge metadatas
-              infos.flatMap(_.value).distinct, // combine values by flatmapping and remove duplicates
-              path,
-              //merge attributes by preferring the attributes of another over first
-              infos.map(_.attributes).foldRight[Map[String, DataRecord[Any]]](Map.empty)((col, next) => col ++ next)
-            )
-          }
-          Some(MetaData(mInfoItems: _*))
-        }
-        case (a, b) => a orElse b
-      }
-  }
   /** Method for combining two OdfInfoItems with same path */
   def combine(another: OdfInfoItem) : OdfInfoItem ={
     require(path == another.path, s"Should have same paths, got $path versus ${another.path}")
     OdfInfoItem(
       path,
       (values ++ another.values),
-      another.description orElse description,
-      combineMetaData(another.metaData, this.metaData)
-      //another.metaData orElse metaData
+      another.description orElse description,{
+      val combined : Option[OdfMetaData] = for{
+        t <- metaData
+        o <- another.metaData
+        i = t.combine(o)
+      } yield i
+      if( combined.isEmpty )
+        if( this.metaData.isEmpty ) another.metaData else this.metaData
+      else combined}
     )
   }
 
@@ -84,10 +68,10 @@ class  OdfInfoItemImpl(
   implicit def asInfoItemType: InfoItemType = {
     InfoItemType(
       description = description.map( des => des.asDescription ),
-      MetaData = metaData,
+      MetaData = metaData.map(_.asMetaData),
       name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")),
       value = values.map{ 
-        value : OdfValue =>
+        value : OdfValue[Any] =>
         value.asValueType
       }.toSeq,
       attributes = Map.empty
@@ -98,19 +82,38 @@ class  OdfInfoItemImpl(
 
 /** Class presenting MetaData structure of O-DF format. */
 case class OdfMetaData(
-  data:                 String
+  infoItems: OdfTreeCollection[OdfInfoItem]
 ) {
   /** Method to convert to scalaxb generated class. */
-  implicit def asMetaData : MetaData = {
-    scalaxb.fromXML[MetaData]( XML.loadString( data ) ) // What if agent inserts malformed xml string with InputPushe/DBPusher functions
+  implicit def asMetaData : MetaData = MetaData( infoItems.map(_.asInfoItemType ):_* )
+  
+  def combine(another: OdfMetaData) : OdfMetaData ={
+    OdfMetaData(
+      (infoItems ++another.infoItems).groupBy(_.path).flatMap{
+        case (p:Path, items:Seq[OdfInfoItem]) =>
+          assert(items.size < 3)
+          items.size match {
+            case 1 => items.headOption
+            case 2 => 
+            for{
+              head <- items.headOption
+              last <- items.lastOption
+              infoI <- Some(head.combine(last))
+            } yield infoI
+          }
+      }.map{
+        info: OdfInfoItem =>//Is this what is really wanted? May need all history values, not only neewst 
+          info.copy( values = info.values.sortBy{ v: OdfValue[Any] => v.timestamp.getTime }.lastOption.toVector )
+      }
+    )
   }
 }
 
 trait SerializableAttribute[A]
 
 /** Class presenting Value tag of O-DF format. */
-sealed trait OdfValue{
-  def value:                Any
+sealed trait OdfValue[+T]{
+  def value:                T
   def typeValue:            String 
   def timestamp:            Timestamp
   def attributes:           Map[String, String]
@@ -155,28 +158,32 @@ sealed trait OdfValue{
        true
    }
 }
-  final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue{
+  final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Int]{
     def typeValue:            String = "xs:int"
   } 
-  final case class  OdfLongValue(value: Long, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue{
+  final case class  OdfLongValue(value: Long, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Long]{
     def typeValue:            String = "xs:long"
   } 
-  final case class  OdfShortValue(value: Short, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue{
+  final case class  OdfShortValue(value: Short, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Short]{
     def typeValue:            String = "xs:short"
   } 
-  final case class  OdfFloatValue(value: Float, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue{
+  final case class  OdfFloatValue(value: Float, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Float]{
     def typeValue:            String = "xs:float"
   } 
-  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue{
+  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Double]{
     def typeValue:            String = "xs:double"
   } 
-  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue{
+  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Boolean]{
     def typeValue:            String = "xs:boolean"
   } 
-  final case class  OdfStringPresentedValue(value: String,  timestamp: Timestamp, typeValue : String = "xs:string", attributes: Map[String, String]  ) extends OdfValue
+  final case class  OdfStringPresentedValue(value: String,  timestamp: Timestamp, typeValue : String = "xs:string", attributes: Map[String, String]  ) extends OdfValue[String]
 
 object OdfValue{
-  def apply(value: Any, timestamp: Timestamp, attributes: Map[String, String]) : OdfValue = {
+  def apply(
+    value: Any,
+    timestamp: Timestamp,
+    attributes: Map[String, String]
+  ) : OdfValue[Any] = {
     value match {
       case s: Short => OdfShortValue(s, timestamp, attributes)
       case i: Int   => OdfIntValue(i, timestamp, attributes)
@@ -188,7 +195,17 @@ object OdfValue{
       case a: Any => OdfStringPresentedValue(a.toString, timestamp, attributes = attributes)
     }
   }
-  def apply(value: String, typeValue: String, timestamp: Timestamp, attributes: Map[String, String] = Map.empty) : OdfValue = {
+  def apply(
+    value: Any,
+    timestamp: Timestamp
+  ) : OdfValue[Any] = apply(value,timestamp,Map.empty[String,String])
+  
+  def apply(
+    value: String,
+    typeValue: String,
+    timestamp: Timestamp,
+    attributes: Map[String, String] = Map.empty
+  ) : OdfValue[Any] = {
     Try{
       typeValue match {
         case "xs:float" =>

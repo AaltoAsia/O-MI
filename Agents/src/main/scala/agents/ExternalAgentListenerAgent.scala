@@ -21,67 +21,80 @@ import scala.concurrent.Await
 import scala.util.Try
 
 import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.util.Timeout
 import akka.pattern.ask
+import akka.actor.{Cancellable, Props}
 import akka.io.{IO, Tcp}
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import http.Authorization.ExtensibleAuthorization
-import http.IpAuthorization
+import http.{OmiConfig, IpAuthorization, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
 import types._
 import agentSystem._
-import agentSystem.AgentTypes._
 import com.typesafe.config.Config
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object  ExternalAgentListener extends PropsCreator{
-  def props( config: Config ): InternalAgentProps = {
-          InternalAgentProps(new ExternalAgentListener(config))
+  def props( config: Config ): Props = {
+          Props(new ExternalAgentListener(config))
   }
 }
 /** AgentListener handles connections from agents.
   */
 class ExternalAgentListener(override val config: Config)
-  extends InternalAgent
+  extends ScalaInternalAgent
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
   class ExtAgentAuthorization extends {
     override val log = LoggerFactory.getLogger(classOf[ExternalAgentListener])
+    val settings :OmiConfigExtension = OmiConfig(actorSystem)
   } with ExtensibleAuthorization with IpAuthorization
 
   private val authorization = new ExtAgentAuthorization
-  protected implicit val timeout = config.getDuration("timeout", SECONDS).seconds
-  protected val port = config.getInt("port")
-  protected val interface = config.getString("interface")
+   implicit val timeout = config.getDuration("timeout", SECONDS).seconds
+   val port = config.getInt("port")
+   val interface = config.getString("interface")
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
-  protected def start : Try[InternalAgentSuccess ] = Try{
+
+  def start : InternalAgentResponse = {
     val binding = (IO(Tcp)  ? Tcp.Bind(self,
       new InetSocketAddress(interface, port)))(timeout)
     Await.result(
       binding.map{
         case Bound(localAddress: InetSocketAddress) =>
-        CommandSuccessful()
+          CommandSuccessful()
+      }.recover{
+        case t : Throwable =>
+          StartFailed(t.getMessage, Some(t))
       }, timeout
     )
-  
+
   }
-  protected def stop : Try[InternalAgentSuccess ] = Try{
+
+  def stop : InternalAgentResponse = {
     val unbinding = (IO(Tcp)  ? Tcp.Unbind)(timeout)
     Await.result(
       unbinding.map{
         case Tcp.Unbound =>
-        CommandSuccessful()
+          CommandSuccessful()
+      }.recover{
+        case t : Throwable =>
+          StopFailed(t.getMessage, Some(t))
       }, timeout
-    )
-  
+      )
+
   }
   
   /** Partial function for handling received messages.
     */
-  override protected def receiver : Actor.Receive = {
+  override  def receive  = {
+    case Start() => sender() ! start 
+    case Restart() => sender() ! restart 
+    case Stop() => sender() ! stop 
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?
@@ -95,7 +108,7 @@ class ExternalAgentListener(override val config: Config)
 
       // Code for ip address authorization check
       val user = Some(remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(Duration.Inf, OdfObjects())
+      val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
         log.info(s"Agent connected from $remote to $local")
@@ -170,9 +183,19 @@ class ExternalAgentHandler(
           case Left(errors) =>
             log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
           case Right(odf) =>
-            val write = WriteRequest( Duration(5,SECONDS), odf)
-            val promiseResult = PromiseResult()
-            agentSystem ! PromiseWrite( promiseResult, write) 
+            val ttl  = Duration(5,SECONDS)
+            implicit val timeout = Timeout(ttl)
+            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
+            val result = (agentSystem ? ResponsibilityRequest(sourceAddress.toString, write)).mapTo[ResponsibleAgentResponse]
+            result.onSuccess{
+              case s: SuccessfulWrite =>
+                log.debug(s"$sourceAddress pushed data successfully.")
+            }
+
+            result.onFailure{
+              case e: Throwable => 
+                log.warning(s"$sourceAddress failed to write all data, error: $e")
+            }
             log.info(s"External agent sent data from $sender to AgentSystem")
           case _ => // not possible
         }

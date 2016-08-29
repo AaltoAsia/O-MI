@@ -14,6 +14,8 @@
 
 package responses
 
+import java.util.Date
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -25,22 +27,22 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import responses.OmiGenerator._
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
+import http.{ActorSystemContext, Actors}
 
 trait PollHandler extends OmiRequestHandlerBase{
-  def subscriptionManager : ActorRef
 
+  protected def subscriptionManager : ActorRef
   /** Method for handling PollRequest.
     * @param poll request
     * @return (xml response, HTTP status code)
     */
-  def handlePoll(poll: PollRequest): Future[NodeSeq] = {
-    val ttl = handleTTL(poll.ttl)
+  def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
+    val ttl = poll.handleTTL
     implicit val timeout = Timeout(ttl) 
-    val time = date.getTime
+    val time = new Date().getTime
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id =>
 
@@ -52,20 +54,18 @@ trait PollHandler extends OmiRequestHandlerBase{
 
       objectsF.map{
         case Some(objects: OdfObjects) =>
-          Results.poll(id.toString, objects)
+          Results.Poll(id, objects)
         case None =>
-          Results.notFoundSub(id.toString)
+          Results.NotFoundRequestIDs(Vector(id))
         //case Failure(e) =>
         //  throw new RuntimeException(
         //    s"Error when trying to poll subscription: ${e.getMessage}")
       }
     })
-    val returnTuple = resultsFut.map(results =>
-      xmlFromResults(
-        1.0,
-        results.toSeq: _*)
+    val response = resultsFut.map(results =>
+        ResponseRequest(results.toVector)
     )
 
-    returnTuple
+    response
   }
 }
