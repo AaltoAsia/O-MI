@@ -628,13 +628,10 @@ Scala can avoid checking for variables having possibly `null` as value.
 We have implemented all methods in original templatep. But because of using custom `"Update"`
 message as our way to implement main loop, we have to add it to handled messages. To  handle
 receiving of `"Update"` we have to override Akka `UntypedActor`'s method `onReceive(Object message)`
-Because we want to keep handling other messages too, let's copy `JavaInternalAgent`'s implementation.
-
-We need to check type of received `message` to be able to cast it to correct type. For predefined
-`Start()`, `Stop()` and `Restart()` we want to call corresponding methods and tell the result to
-sender of message and tell which Actor answered.
-
-For our custom `"Update"` message we want just run method `update`.
+We need to check type of received `message` to be able to cast it to `String`. If `message` is 
+`String` and equals `"Update"`, `update` method is called. Handling of other messages is done
+by JavaInternalAgent class implementation of `onReceive` method, so we can call `super.onReceive` for
+unmatched message.
 
 ```Java
   /**
@@ -643,25 +640,12 @@ For our custom `"Update"` message we want just run method `update`.
    */
   @Override
   public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      getSender().tell(start(),getSelf());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      getSender().tell(stop(),getSelf());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      getSender().tell(restart(),getSelf());
-
-    } else if( message instanceof String) {
+    if( message instanceof String) {
       String str = (String) message;
       if( str.equals("Update"))
         update();
-
-    } else unhandled(message);
+      else super.onReceive(message)
+    } else super.onReceive(message);
   }
 ```
 
