@@ -79,7 +79,7 @@ public class JavaAgent extends JavaInternalAgent {
             config.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    path = new Path("Objects/SensorBox/temperature");
+    path = new Path(config.getString("path"));
   }
 
 

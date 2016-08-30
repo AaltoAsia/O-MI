@@ -2,6 +2,7 @@ Other Guides
 ============
 
 * [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+
 * [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
 
 What are Agents?
@@ -24,11 +25,44 @@ Internal Agent
 ================
 
 *Internal agents* are classes that extend `InternalAgent` interface. 
-`InternalAgent` interface extends `akka.actor.Actor`. Both Scala and Java have 
-own interfaces that need to be implemented to be loaded by `InternalAgentLoader`.
+`InternalAgent` interface extends `akka.actor.Actor`, because of this it is
+recommended to read:
+
+* [Akka's Actor Java documentation](http://doc.akka.io/docs/akka/2.4/java/untyped-actors.html)
+
+* [Akka's Actor Scala documentation](http://doc.akka.io/docs/akka/2.4/scala/actors.html)
+
+to know how to work with them.
+
+Both Scala and Java have own`*InternalAgent` interfaces that need to be implemented.
 
 * [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+
 * [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
+
+Configuration
+------
+
+To get O-MI Node to run a  *internal agent*, we need to compile it to a .jar
+file and put it to `deploy` directory, or if compiled with O-MI Node project, `InternalAgentLoader`
+will find it from .jar file of the project.
+
+After this we have to open the `application.conf` and add a new object to
+`agent-system.internal-agents`. The format is: 
+
+```
+"<name of agent>" = {
+  language = "<scala or java>"
+  class = "<full class path of agent>"
+  owns = ["<O-DF path owned by agent>", ...]
+  config = <json object to be passed to constructor of agent> 
+}
+```
+
+Field `owns` is only needed for `ResponsibleInternalAgent`.
+Field config is agent specific configuration.
+
+To update `application.conf` used by O-MI Node, it needs to be restarted. 
 
 External Agent
 ==============
