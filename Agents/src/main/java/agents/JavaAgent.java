@@ -171,6 +171,7 @@ public class JavaAgent extends JavaInternalAgent {
         new Path( path + "/MetaData/Units"),
         metaValues
     );
+    metaItems.add(metaItem);
     OdfMetaData metaData = OdfFactory.createOdfMetaData(metaItems);
 
 
