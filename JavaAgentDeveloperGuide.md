@@ -19,7 +19,7 @@ parses O-DF structure from given file ands writes random generated values to it.
 Development enviroment
 ------
 
-(Note that it is also possible to develop with the O-MI Node environment with sbt (see Readme.md). Directory for the agents is at root `Agents/src/main/java/`)
+(Note that it is also possible to develop with the O-MI Node environment with sbt (see Readme.md). Directory for the agents is at `Agents/src/main/java/`)
 
 1. Get the release package
   a. Download the latest release
@@ -647,7 +647,7 @@ receiving of `"Update"` we have to override Akka `UntypedActor`'s method `onRece
 We need to check type of received `message` to be able to cast it to `String`. If `message` is 
 `String` and equals `"Update"`, `update` method is called. Handling of other messages is done
 by JavaInternalAgent class implementation of `onReceive` method, so we can call `super.onReceive` for
-unmatched message.
+nonmatched message.
 
 ```Java
   /**
