@@ -5,35 +5,44 @@ Agents implemented using Java
 -------
 
 * [JavaTemplateAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaTemplateAgent.java), 
-template class for starting to development of your own agents.
+template class for starting development of your own agents.
 
 * [JavaAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaAgent.java), simplest InternalAgent.
-Takes a O-DF path of InfoItem and write random generated values to it.
+Takes an O-DF path of InfoItem and writes random generated values to it.
 
 * [JavaRoomAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaRoomAgent.java), 
 creates O-DF structure using OdfFactory and writes random generated values to it.
 
 * [JavaFileAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaFileAgent.java).
-parses O-DF structure from given file ands write random generated values to it.
+parses O-DF structure from given file ands writes random generated values to it.
 
 Development enviroment
 ------
-Add O-MI Node's `lib` directory to your IDE. `lib` directory can be found add 
-root level of release package. You can create release package by running `sbt release`, 
-that creates release .jar file to `target/scala-2.11/`.
+
+(Note that it is also possible to develop with the O-MI Node environment with sbt (see Readme.md). Directory for the agents is at root `Agents/src/main/java/`)
+
+1. Get the release package
+  a. Download the latest release
+  b. or you can create a new release package by running `sbt release` (see Readme.md) that creates release packages to `target/scala-2.11/`.
+2. Add O-MI Node's `lib` directory to the project libraries in your IDE. `lib` directory can be found add root level of release package.
+
+
 
 Java agent example
 --------
+
 *Internal agents* are classes implementing `InternalAgent` interface. 
 `InternalAgent` interface extends Akka's `Actor` interface. This makes every 
-*internal agent* to [Akka Actor](http://doc.akka.io/docs/akka/2.4/java/untyped-actors.html).
+*internal agent* to an [Akka Actor](http://doc.akka.io/docs/akka/2.4/java/untyped-actors.html) which is a higher level abstraction of a thread, see the Akka documentation for details.
+
 To implement *internal agent* using Java you need to create a class extending 
 `JavaInternalAgent`. `JavaInternalAgent` is abstract class providing some 
 default and utility members. It also extends Akka's `UntyppedActor`. 
 We enforce AKka's recommended practice for `Props` creation by requiring every 
-`JavaInternalAgent` to have public static `Props props(final [Config config](https://github.com/typesafehub/config))`.
+`JavaInternalAgent` to have public static `Props props(final `[Config](https://github.com/typesafehub/config)` config)`.
 
-Let's copy [`Agents/src/main/java/agents/JavaTemplateAgent.java`](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaTemplateAgent.java) to start developing new *internal agent*:
+Let's copy [`Agents/src/main/java/agents/JavaTemplateAgent.java`](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaTemplateAgent.java) to start developing a new *internal agent*:
+
 ```Java
 package agents;
 
@@ -95,7 +104,7 @@ but it does not do anything. It has implementation of methods `props`, `start` a
 constructor taking a [Typesafe Config](https://github.com/typesafehub/config) as parameter.
 
 For this example let's create an *interanal agent*, that creates O-DF structure 
-and writes random generated values to it. Firstly let's replace all `JavaTemplateAgent`s with `JavaRoomAgent`.
+and writes random generated values to it. First, let's replace all `JavaTemplateAgent`s with `JavaRoomAgent`.
 
 We want to be able to change how often our agent will generate new values and 
 write them without recompiling. So we parse a `FiniteDuration` from Config 
@@ -126,9 +135,10 @@ create our O-DF structure by calling `createOdf` method in constructor.
 ```
 
 In Java instead of calling Scala code directly, we use `OdfFactory` and `OmiFactory` to create
-Scala classes. To create `OdfObjects` we need to create a `Vector` of `OdfObject`s and call 
-`OdfFactory.createOdfObjects` with it. Let's create a O-DF Object in O-DF path "Objects/ExampleRoom" by calling method `createExampleRoom` and it to the `Vector` and then create and return
-a `OdfObjects`. We also set count of writes to zero.
+O-DF classes. To create `OdfObjects` we need to create a `Vector` of `OdfObject`s and call 
+`OdfFactory.createOdfObjects` with it.
+
+Let's create an O-DF Object in O-DF path "Objects/ExampleRoom" by calling method `createExampleRoom` and add it to the `Vector` and then create and return an `OdfObjects`. We also set the count of writes to zero.
 
 ```Java
   protected int writeCount = 0;
@@ -149,16 +159,20 @@ a `OdfObjects`. We also set count of writes to zero.
   }
 
 ```
+
 In `createExampleRoom` we create `OdfObject` for O-DF Path with "Objects/ExampleRoom", 
-O-DF's Path's constructor takes O-DF path as `String` with following format: 
-"Objects/<Id of O-DF Object>/../<Id of O-DF Object>/<Name of O-DF InfoItem>".
+constructor of O-DF `Path` takes an O-DF path as `String` with the following format: 
+`"Objects/<Id of O-DF Object>/../<Id of O-DF Object>/<Name of O-DF InfoItem>"` 
+which is basicly the same as in O-MI/O-DF Http GET api.
 
 `OdfDescription` for `OdfObject` is created from a `String`. It could also have 
 language specified as second parameter. 
 
-For child `OdfObject`s and `OdfInfoItem`s we create two `Vector`s and populae them
-with corresponding elements. `createLocation` creates `OdfInfoItem` that contains
-location of ExampleRoom in format specifed in 
+For child `OdfObject`s and `OdfInfoItem`s we create two `Vector`s and populate them
+with corresponding elements.
+
+`createLocation` creates `OdfInfoItem` that contains
+location of ExampleRoom in format specifed in the
 [Warp10 integration documentation](https://github.com/AaltoAsia/O-MI/blob/warp10integration/warp10-documentation.md).
 We do not cover it in this example because of later explained `createSensor` does 
 mostly the same thing.
@@ -194,11 +208,11 @@ mostly the same thing.
   }
 ```
 
-In `createSensorBox` we do pretty much the same that in `createExampleRoom`, but take O-DF `Path` of 
-parent as a parameter. O-DF Path can be converted to a sequence containing O-DF Object Ids and InfoItem name.
-By converting parent O-DF Object's path to a array we can extract it's Id. This time we do not have any child 
-O-DF Objects, but we child O-DF InfoItems by calling `createSensor` with a name, units measured and 
-a O-DF path.
+In `createSensorBox` we do pretty much the same thing as in `createExampleRoom`, but take the O-DF `Path` of 
+ parent as a parameter. O-DF Path can be converted to a sequence containing O-DF Object Ids and InfoItem name.
+By converting parent O-DF Object's path to an array we can extract it's Id.
+
+This time we don't have any child O-DF Objects, but instead we create child O-DF InfoItems by calling `createSensor` with a name, units measured and an O-DF path.
 
 ```Java
   /**
@@ -228,7 +242,7 @@ a O-DF path.
     //SensorBox doesn't have child O-DF Object s
     Vector<OdfObject> objects = new Vector<OdfObject>();
 
-    //Create O-DY Object for SensorBox
+    //Create O-DF Object for SensorBox
     return OdfFactory.createOdfObject(
         path,
         infoItems,
@@ -239,17 +253,17 @@ a O-DF path.
 ```
 
 In `createSensor` we create new O-DF `Path` and extract parent O-DF Object's id like in 
-`createSensor`, but we also create `OdfMetaData` and `OdfValue`s for `OdfInfoItem` 
+`createSensorBox`, but we also create `OdfMetaData` and `OdfValue`s for `OdfInfoItem` 
 at the new `Path`. 
 
-`OdfValue` has a type parameter defining type of stored value. Currently
+`OdfValue` has a type parameter defining type of the stored value. Currently
 only basic datatypes work with it and everything else is stored as `String`.
 Using `java.lang.Object` as type parameter avoids problems having multiple differently
 typed values in same collection. Value of `typeStr` can be any built-in data type defined in
 [XML Schema documentation](https://www.w3.org/TR/xmlschema-2/#built-in-datatypes).
 
-`OdfInfoItem`s in `OdfMetaData` need O-DF `Path`s. The recommended format for these `Path`s is
-".../<name of O-DF InfoItem>/MetaData/<name of O-DF InfoItem in MetaData>".
+`OdfInfoItem`s in `OdfMetaData` needs O-DF `Path`s. The recommended format for these `Path`s is
+`".../<name of O-DF InfoItem>/MetaData/<name of O-DF InfoItem in MetaData>"`.
 
 
 ```Java
@@ -323,18 +337,18 @@ typed values in same collection. Value of `typeStr` can be any built-in data typ
   }
 ```
 
-Now we have generated a O-DF structure using `OdfFactory`, but we have not writen it to
-O-MI Node yet. Let's create method `update` that is called when our agent receives "Update".
-Updating O-DF structure is larger operation so we put it in `updateOdf`, but call it as first 
-in `update`.
+Now we have generated an O-DF structure using `OdfFactory`, but we have not writen it to
+O-MI Node yet. Let's create method `update` that is called when our agent receives an "Update".
+Updating O-DF structure is larger operation so we put it in `updateOdf`, but call it at the beginning 
+of the `update` method.
 
-We do not want write metadate multiple times so we call `allMetaDatasRemoved` method for `odf`
-before writing second time. Then we create O-MI Write request using `OmiFactory`. 
+We do not want to write metadata multiple times so we call `allMetaDatasRemoved` method for `odf`
+before writing the second time. Then we create an O-MI Write request using `OmiFactory`. 
 
-Writing to O-MI Node happens asyncronously and need a timeout to wait for results. `writeToNode`
-method returns `Future` that contains our results. `Future` is placeholder objet for a value that 
-may net yet exist. Its value is supplied in future by a asyncronous task. We could wait for it 
-to complete. but that coulde block processing. So instead we handle it's result also asyncronously. 
+Writing to O-MI Node happens asyncronously and need a timeout to wait for the results. `writeToNode`
+method returns `Future` that contains our results. `Future` is placeholder object for a value that 
+may not yet exist. Its value is supplied in future by an asyncronous task. We could wait for it 
+to complete, but that could block processing. So instead we handle it's result also asyncronously. 
 To do so we need create two classes.
 
 ```Java
@@ -375,8 +389,8 @@ To do so we need create two classes.
   }
 ```
 
-LogResult and LogFailure simply logs information about result.
-Please prefer to [Akka's Future documentation](http://doc.akka.io/docs/akka/2.4/java/futures.html).
+Classes for the `Future`: LogResult and LogFailure simply logs information about the result.
+Please refer to [Akka's Future documentation](http://doc.akka.io/docs/akka/2.4/java/futures.html).
 
 ```Java
   // Contains function for the asynchronous handling of write result
@@ -415,16 +429,17 @@ Please prefer to [Akka's Future documentation](http://doc.akka.io/docs/akka/2.4/
 ```
 
 Let's go back to updating O-DF structure's values and implement `updateOdf`.
-We take all InfoItems and their values, then generate new values and store them
+First, we take all InfoItems and their values, then generate new values and store them
 as Path and value pairs, then replace old values with new values.
 
-Two important things here. First thing is that all classes starting with "Odf" are immutable so for
+There are two important things here. First thing is that all classes starting with "Odf" are immutable, so for
 better performance we want to do as much changes at once with single copying of O-DF structure.
 
-Second thing is that scala.collection.JavaConversions contains useful converters between
-Scala and Java, and that types.JavaHelpers has also some helper methods.
+Second thing is that `scala.collection.JavaConversions` contains useful converters between
+Scala and Java, and that `types.JavaHelpers` has also some helper methods. (We probably have more helper functions in the future.)
 
-New values generated will differ less than 5% from old value with probability of 68%.
+The placeholder update logic for values is: New values generated will differ less than 5% from old value with probability of 68%.
+You should have methods for getting values from your devices here.
 
 ```Java
   /**
@@ -548,20 +563,20 @@ New values generated will differ less than 5% from old value with probability of
 ```
 
 We have not yet really implemented `start` and `stop` methods needed by our agent.
-We wanted to have method `update` called every time an `"Update"` message was received,
-but we have not yet send such message to our agent. We also want to write after every 
-interval of seconds. To do so we can use `ActorSystem`'s scheduler to schedule repeated 
-sending of message on every interval. We want to be able to stop agent from receiving 
+We wanted to have method `update` called every time an `"Update"` message is received,
+but we have not yet sent such message to our agent. We also want to write after every 
+interval of seconds. To do so we can use the scheduler of `ActorSystem` to schedule repeated 
+sending of a message on every interval. We want to be able to stop agent from receiving 
 `"Update"` messages. This can be done with return value of `schedule` message, so we store it
 to `intervalJob`.
 
-If something throws an exception during `start` method we want to still answer to sender 
+If something throws an exception during `start` method we still want to answer to the sender 
 of command. If we do not answer, the sender will have to wait until the asyncronous call
 timeouts. 
 
 In Akka every Actor have a supervisor, usually parent Actor or ActorSystem, that
 has SupervisorStrategy for handling exceptions thrown by their childs. Options for handling 
-exceptions are limited, so agent should handle all exception by itself and only throw exception
+exceptions are limited, so agent should handle all exception by itself and only throw an exception
 when nothing can be done and agent should be terminated.
 
 ```Java
@@ -596,12 +611,12 @@ when nothing can be done and agent should be terminated.
 ```
 
 Another method that we have not implemented is `stop`. When `Stop()` message is received we want
-to stop writing data to O-MI Node. We saved our scheduled sending of `"Update"` message so that 
-it could be stopped. Now we simple check if `intervalJob` exist and cancel it.
+to stop writing data to O-MI Node. We saved our scheduled job for sending of `"Update"` message so that 
+it could be stopped. Now we make a simple check if `intervalJob` exist and cancel it.
 
-Scala `Option`s are objects that may contain `Some` value. Method `apply` is factor method that creates 
+Scala `Option`s are objects that may contain `Some` value. Method `apply` is a factory method that creates 
 an `Option` with given value or if given `null`, creates an empty `Option` containing `None`. With this
-Scala can avoid checking for variables having possibly `null` as value.
+Scala code can enforce checking for variables having possibly `null` as value.
 
 ```Java
   /**
@@ -625,14 +640,14 @@ Scala can avoid checking for variables having possibly `null` as value.
   }
 ```
 
-We have implemented all methods in original templatep. But because of using custom `"Update"`
-message as our way to implement main loop, we have to add it to handled messages. To  handle
+We have implemented all methods in original template. But because of using custom `"Update"`
+message as our way to implement main loop, we have to add it to handled messages. To handle
 receiving of `"Update"` we have to override Akka `UntypedActor`'s method `onReceive(Object message)`
 Because we want to keep handling other messages too, let's copy `JavaInternalAgent`'s implementation.
 
 We need to check type of received `message` to be able to cast it to correct type. For predefined
 `Start()`, `Stop()` and `Restart()` we want to call corresponding methods and tell the result to
-sender of message and tell which Actor answered.
+the sender of message and tell which Actor answered.
 
 For our custom `"Update"` message we want just run method `update`.
 
