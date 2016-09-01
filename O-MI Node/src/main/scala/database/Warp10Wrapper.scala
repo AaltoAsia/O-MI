@@ -41,14 +41,15 @@ import types.OdfTypes._
 import types.Path
 import types.OmiTypes.OmiReturn
 import Warp10JsonProtocol.Warp10JsonFormat
+
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
-  implicit object Warp10JsonFormat extends RootJsonFormat[Seq[(OdfObject,OdfObject)]] {
+  class Warp10JsonFormat(implicit singleStores: SingleStores) extends RootJsonFormat[Seq[(OdfObject,OdfObject)]] {
     //def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L)))).asInfoItemType))
 
-    def getObject(path: Path): OdfObject = {
-      val hTree = SingleStores.hierarchyStore execute GetTree()
+    def getObject(path: Path) : OdfObject = {
+      val hTree = singleStores.hierarchyStore execute GetTree()
       hTree.get(path.init) match {
         case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
         case _ => {
@@ -61,7 +62,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     }
     def createInfoItems(
                          path: Path,
-                         in: (OdfTreeCollection[OdfValue], OdfTreeCollection[Option[OdfValue]])): (OdfTreeCollection[OdfInfoItem], OdfTreeCollection[OdfInfoItem]) = {
+                         in: (OdfTreeCollection[OdfValue[Any]], OdfTreeCollection[Option[OdfValue[Any]]])): (OdfTreeCollection[OdfInfoItem], OdfTreeCollection[OdfInfoItem]) = {
       val infoItemPath = path
 
       val locations = {
@@ -102,7 +103,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
                              timestamp: Timestamp,
                              latitude:Option[BigDecimal],
                              longitude:Option[BigDecimal],
-                             elevation: Option[BigDecimal]): Option[OdfValue] = {
+                             elevation: Option[BigDecimal]): Option[OdfValue[Any]] = {
       val latlon = for {
         lat <- latitude
         lon <- longitude
@@ -125,7 +126,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
                                 lat: Option[BigDecimal],
                                 lon: Option[BigDecimal],
                                 elev: Option[BigDecimal],
-                                typeVal: HashMap[String, String]): (OdfValue, Option[OdfValue]) = {
+                                typeVal: HashMap[String, String]): (OdfValue[Any], Option[OdfValue[Any]]) = {
 
       val timestamp = new Timestamp((_timestamp/1000).toLong)
       val warp10Value = value match {
@@ -147,7 +148,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
       (warp10Value, createLocationValue(timestamp, lat,lon,elev))
     }
-    def parseObjects(in: Seq[JsObject]): Seq[(OdfObject, OdfObject)] = in match {
+    def parseObjects(in: Seq[JsObject])(implicit singleStores: SingleStores): Seq[(OdfObject, OdfObject)] = in match {
        case jsObjs: Seq[JsObject] => {
          val idPathValuesTuple = jsObjs.map { jsobj =>
            val path = fromField[Option[String]](jsobj, "c")
@@ -165,7 +166,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
           }
 
            //parse JsonArray to matching different length arrays contain location, elevation, both or neither
-          val values: Vector[(OdfValue, Option[OdfValue])] = vals match {
+          val values: Vector[(OdfValue[Any], Option[OdfValue[Any]])] = vals match {
             case JsArray(valueVectors: Vector[JsArray]) => valueVectors.collect{
               case JsArray(Vector(JsNumber(timestamp), value: JsValue)) =>{
                 createOdfValue(value, timestamp, None, None, None, typeVal)
@@ -208,7 +209,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
             val (infoItems, locations) = createInfoItems(
               path,
-              ii.foldLeft(Vector[(OdfValue, Option[OdfValue])]())((col ,next ) => col ++ next._3).unzip)
+              ii.foldLeft(Vector[(OdfValue[Any], Option[OdfValue[Any]])]())((col ,next ) => col ++ next._3).unzip)
 
             Seq((parentObj.copy(infoItems = infoItems), parentObj.copy(infoItems = locations)))
 
@@ -233,9 +234,11 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
 }
 
-class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSystem = ActorSystem()) extends DB {
-  import Warp10JsonProtocol.Warp10JsonFormat._
+class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: ActorSystem, val singleStores: SingleStores) extends DB {
+
+ def destroy(): Unit = {}
   type Warp10Token = String
+  implicit val forwatter : Warp10JsonFormat = new Warp10JsonFormat()(singleStores)
 
   val locationRegex = """([+-]\d\d\.\d*)?([+-]\d\d\d\.\d*)?(?:([+-]\d*)CRSWGS_84)?\/""".r
 
@@ -352,7 +355,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    }
 
  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] ={
-   val hTree = SingleStores.hierarchyStore execute GetTree()
+   val hTree = singleStores.hierarchyStore execute GetTree()
    val grouped = infos.groupBy(_.path.lastOption.exists(_ == "location"))
 
    val locations = grouped.get(true).map(_.groupBy(_.path))
@@ -398,8 +401,19 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
 
  }
   def remove(path: Path): Future[Int] = ???
-  private def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L),HashMap.empty))).asInfoItemType))
-  private def toWriteFormat( path: Path, odfValue : OdfValue, location: Option[String]) : String = {
+  private def warp10MetaData(path: Path) = Some(
+    OdfMetaData(
+      OdfTreeCollection(
+        OdfInfoItem(
+          path / "MetaData" / "type",
+          OdfTreeCollection(
+            OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L),HashMap.empty)
+          )
+        )
+      )
+    )
+  )
+  private def toWriteFormat( path: Path, odfValue : OdfValue[Any], location: Option[String]) : String = {
    def handleString(in: Any): String = {
      val str = URLEncoder.encode(in.toString, "UTF-8")
 
@@ -413,7 +427,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit system: ActorSys
    val matchResult = location.flatMap(loc => locationRegex.findFirstMatchIn(loc))
    val loc = matchResult match {
      case Some(res) => {
-       SingleStores.hierarchyStore execute Union(createAncestors(OdfInfoItem(Path(path.init) / "location", metaData = warp10MetaData(path))))
+       singleStores.hierarchyStore execute Union(createAncestors(OdfInfoItem(Path(path.init) / "location", metaData = warp10MetaData(path))))
        (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
          case (None, None, Some(elev)) => s"/${elev.toLong}"
          case (Some(lat), Some(lon), None) => s"${lat.toDouble}:${lon.toDouble}/"

@@ -123,7 +123,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val managerActor = managerRef.underlyingActor
    val msg = StopAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
-   val correct = s"agentSystem.CommandFailed: Test failure."
+   val correct = s"agentSystem.StopFailed: Test failure."
    resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 
@@ -138,7 +138,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val managerActor = managerRef.underlyingActor
    val msg = StartAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
-   val correct = s"agentSystem.CommandFailed: Test failure."
+   val correct = s"agentSystem.StartFailed: Test failure."
    resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 

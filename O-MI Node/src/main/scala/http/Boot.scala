@@ -18,46 +18,153 @@ import java.net.InetSocketAddress
 import java.util.Date
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
+
+import org.slf4j.LoggerFactory
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{HttpExt, Http}
+import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
 
 import database._
 import agentSystem._
-import responses.{RequestHandler, SubscriptionManager}
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler, OmiRequestHandlerBase}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
 import types.Path
+import OmiServer._
+import akka.stream.{ActorMaterializer, Materializer}
 
+class OmiServer extends OmiNode{
+
+
+  // we need an ActorSystem to host our application in
+  implicit val system : ActorSystem = ActorSystem("on-core") 
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher // execution context for futures
+
+  /**
+   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
+   */
+  implicit val settings : OmiConfigExtension = OmiConfig(system)
+
+  implicit val singleStores = new SingleStores(settings)
+  implicit val dbConnection: DB = new Warp10Wrapper(settings)(
+    system,
+    singleStores
+  )
+  /*
+  DatabaseConnection()(
+    system,
+    singleStores,
+    settings
+  )*/
+
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+
+   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+   val agentSystem = system.actorOf(
+    AgentSystem.props(),
+    "agent-system"
+  )
+
+  implicit val requestHandler : RequestHandler = new RequestHandler(
+    )(system,
+    agentSystem,
+    subscriptionManager,
+    settings,
+    dbConnection,
+    singleStores
+    )
+
+  implicit val cliListener =system.actorOf(
+    Props(
+      new OmiNodeCLIListener(
+        system,
+        agentSystem,
+        subscriptionManager,
+        singleStores,
+        dbConnection
+      )),
+    "omi-node-cli-listener"
+  )
+  saveSettingsOdf(system,agentSystem,settings)
+
+  implicit val httpExt = Http()
+  // create omi service actor
+  val omiService = new OmiServiceImpl(
+    system,
+    materializer,
+    subscriptionManager,
+    settings,
+    singleStores,
+    requestHandler,
+    callbackHandler
+  )
+
+
+  implicit val timeoutForBind = Timeout(5.seconds)
+
+}
+trait OmiNode {
+  implicit def system : ActorSystem 
+  implicit def materializer: ActorMaterializer
+  implicit def requestHandler : OmiRequestHandlerBase
+  implicit def omiService : OmiService 
+  implicit def settings : OmiConfigExtension 
+  implicit def cliListener : ActorRef
+
+  implicit def httpExt: HttpExt
+
+  implicit val timeoutForBind : Timeout
+  def bindTCP()(implicit ec: ExecutionContext): Unit= {
+    IO(Tcp)  ? Tcp.Bind(cliListener,
+      new InetSocketAddress("localhost", settings.cliPort))
+  }
+
+  /** Start a new HTTP server on configured port with our service actor as the handler.
+   */
+  def bindHTTP()(implicit ec: ExecutionContext): Future[ServerBinding] = {
+
+    val bindingFuture =
+      httpExt.bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
+    
+    bindingFuture.onFailure {
+      case ex: Exception =>
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+
+    }
+    bindingFuture
+  }
+  def shutdown()(implicit ec: ExecutionContext): Future[akka.actor.Terminated] = {
+
+    system.terminate()
+  }
+
+}
 /**
  * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
  * seperated for testing purposes and for easier implementation of different starting methods (standalone, servlet)
  */
-trait Starter {
-  // we need an ActorSystem to host our application in
-  implicit val system : ActorSystem = ActorSystem("on-core")
-  /**
-   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
-   */
-  val settings = Settings(system)
+object OmiServer {
+  def apply() : OmiServer = {
+    
+    new OmiServer()
+  }
 
-  val subManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-  
-
-  import scala.concurrent.ExecutionContext.Implicits.global
-  def saveSettingsOdf(agentSystem: ActorRef) :Unit = {
+  def saveSettingsOdf(system: ActorSystem, agentSystem: ActorRef, settings: OmiConfigExtension) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
+      import system.dispatcher // execution context for futures
       // Same timestamp for all OdfValues of the settings
       val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
@@ -93,62 +200,6 @@ trait Starter {
     }
   }
 
-
-  /**
-   * Start as stand-alone server.
-   * Creates single Actors.
-   * Binds to configured external agent interface port.
-   *
-   * @return O-MI Service actor which is not yet bound to the configured http port
-   */
-  def start(dbConnection: DB =  new Warp10Wrapper(settings)): OmiServiceImpl = {
-
-    // create and start sensor data listener
-    // TODO: Maybe refactor to an internal agent!
-
-    val agentManager = system.actorOf(
-      AgentSystem.props(dbConnection, subManager),
-      "agent-system"
-    )
-
-    saveSettingsOdf(agentManager)
-    val requestHandler = new RequestHandler(subManager, agentManager)(dbConnection)
-
-    val omiNodeCLIListener =system.actorOf(
-      Props(new OmiNodeCLIListener(  agentManager, subManager, requestHandler)),
-      "omi-node-cli-listener"
-    )
-
-    // create omi service actor
-    val omiService = new OmiServiceImpl(requestHandler, subManager)
-
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-
-    IO(Tcp)  ? Tcp.Bind(omiNodeCLIListener,
-      new InetSocketAddress("localhost", settings.cliPort))
-
-    omiService
-  }
-
-
-
-  /** Start a new HTTP server on configured port with our service actor as the handler.
-   */
-  def bindHttp(service: OmiServiceImpl): Unit = {
-
-    implicit val timeoutForBind = Timeout(5.seconds)
-    implicit val materializer = ActorMaterializer()
-
-    val bindingFuture =
-      Http().bindAndHandle(service.myRoute, settings.interface, settings.webclientPort)
-
-    bindingFuture.onFailure {
-      case ex: Exception =>
-        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
-
-    }
-  }
 }
 
 
@@ -156,16 +207,19 @@ trait Starter {
 /**
  * Starting point of the stand-alone program.
  */
-object Boot extends Starter {// with App{
+object Boot /*extends Starter */{// with App{
+  val log = LoggerFactory.getLogger("OmiServiceTest")
+
   def main(args: Array[String]) : Unit= {
-  system.log.info(this.getClass.toString)
-  Try {
-    val serviceActor = start()
-    bindHttp(serviceActor)
-  } match {
-    case Failure(ex) => system.log.error(ex, "Error during startup")
-    case Success(_) => system.log.info("Process exited normally")
-  }
+    Try{
+      val server: OmiServer = OmiServer()
+      import server.system.dispatcher
+      server.bindTCP()
+      server.bindHTTP()
+    }match {
+      case Failure(ex)  =>  log.error( "Error during startup", ex)
+      case Success(_) => log.info("Server started successfully")
+    }
   }
 
 }

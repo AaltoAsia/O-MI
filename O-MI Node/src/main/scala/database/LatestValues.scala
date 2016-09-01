@@ -30,8 +30,7 @@ import types.Path
   val metadataStr: Option[OdfMetaData] = None,
   val description: Option[OdfDescription] = None
   ) {
-val tetst : Any = 3
-  def toOdfInfoItem(path: Path, value: OdfValue) =
+  def toOdfInfoItem(path: Path, value: OdfValue[Any]) = 
     OdfInfoItem(path, Iterable(value), description, metadataStr)
 }
  */ 
@@ -39,18 +38,18 @@ val tetst : Any = 3
 /**
  * The latest values should be stored here. Contains only the latest value for each path.
  */
-case class LatestValues(var allData: Map[Path, OdfValue])
+case class LatestValues(var allData: Map[Path, OdfValue[Any]])
 object LatestValues {
   type LatestStore = Prevayler[LatestValues]
   def empty = LatestValues(Map.empty)
 }
 
 
-case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[OdfValue]] {
+case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[OdfValue[Any]]] {
   def query(ls: LatestValues, d: Date) = ls.allData.get(sensor)
 }
 
-case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, Vector[(Path, OdfValue)]] {
+case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, Vector[(Path, OdfValue[Any])]] {
   def query(ls: LatestValues, d: Date) = {
     (for (sensorPath <- sensors) yield {
       val dataOpt = ls.allData get sensorPath
@@ -58,11 +57,11 @@ case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, 
     }).flatten
   }
 }
-case class LookupAllDatas() extends Query[LatestValues, Map[Path, OdfValue]] {
+case class LookupAllDatas() extends Query[LatestValues, Map[Path, OdfValue[Any]]] {
   def query(ls: LatestValues, d: Date) = ls.allData
 }
 
-case class SetSensorData(sensor: Path, value: OdfValue) extends Transaction[LatestValues] {
+case class SetSensorData(sensor: Path, value: OdfValue[Any]) extends Transaction[LatestValues] {
   def executeOn(ls: LatestValues, d: Date) = ls.allData = ls.allData + (sensor -> value)
 }
 
@@ -110,10 +109,10 @@ case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
   }
 }
 case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolean] {
-    def executeAndQuery(store: Subs, d: Date): Boolean={
-      val target = store.intervalSubs.find( _.id == id)
+    def executeAndQuery(store: Subs, d: Date): Boolean = {
+      val target = store.intervalSubs.get(id)
       target.fold(false){ sub =>
-        store.intervalSubs = store.intervalSubs - sub
+        store.intervalSubs = store.intervalSubs - id
         true
       }
 
@@ -158,8 +157,8 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  /*case class NewPollDataEvent(paths: Vector[(Path,OdfValue)]) extends Query[Subs, Seq[((Path, OdfValue), Set[Long])]] {
-    def query(store: Subs, d: Date): Vector[((Path, OdfValue), Set[Long])] = {
+  /*case class NewPollDataEvent(paths: Vector[(Path,OdfValue[Any])]) extends Query[Subs, Seq[((Path, OdfValue[Any]), Set[Long])]] {
+    def query(store: Subs, d: Date): Vector[((Path, OdfValue[Any]), Set[Long])] = {
       paths.map(path => (path, store.pathToSubs(path._1)))
     }
   }*/
@@ -185,24 +184,6 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  /**
-   * Transaction to get the intervalSub with the earliest interval
-   */
-
-  case object GetIntervals extends TransactionWithQuery[Subs, (Set[IntervalSub], Option[Timestamp])] {
-    def executeAndQuery(store: Subs, d: Date): (Set[IntervalSub], Option[Timestamp]) = {
-      val (passedIntervals, rest) = store.intervalSubs.span(_.nextRunTime.getTime < d.getTime)// match { case (a,b) => (a, b.headOption)}
-
-      val newIntervals = passedIntervals.map{a =>
-          val numOfCalls = (d.getTime() - a.startTime.getTime) / a.interval.toMillis
-          val newTime = new Timestamp(a.startTime.getTime + a.interval.toMillis * (numOfCalls + 1))
-          a.copy(nextRunTime = newTime)}
-      store.intervalSubs = rest ++ newIntervals
-      //val nextRun = if(store.intervalSubs.isEmpty) None else {Some(store.intervalSubs.firstKey.nextRunTime)}
-      (newIntervals, store.intervalSubs.headOption.map(_.nextRunTime))
-    }
-
-  }
 
 //TODO EventSub
   case class AddEventSub(eventSub: EventSub) extends Transaction[Subs] {
@@ -229,7 +210,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     def executeOn(store: Subs, d: Date) = {
       val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
       if(scheduleTime > 0){
-        store.intervalSubs = store.intervalSubs + intervalSub//TODO check this
+        store.intervalSubs = store.intervalSubs.updated(intervalSub.id, intervalSub)//) intervalSub//TODO check this
       }
     }
   }
@@ -259,7 +240,13 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
 
   case class GetAllIntervalSubs() extends Query[Subs, Set[IntervalSub]] {
     def query(store: Subs, d: Date): Set[IntervalSub] = {
-      store.intervalSubs.toSet
+      store.intervalSubs.values.toSet
+    }
+  }
+
+  case class GetIntervalSub(id: Long) extends Query[Subs, Option[IntervalSub]] {
+    def  query(store: Subs, d: Date): Option[IntervalSub] = {
+      store.intervalSubs.get(id)
     }
   }
 

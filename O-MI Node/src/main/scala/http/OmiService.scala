@@ -17,9 +17,9 @@ package http
 import java.nio.file.{Files, Paths}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success}
-import scala.xml.NodeSeq
+import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
+import scala.util.{Failure, Success, Try}
+import scala.xml.{XML,NodeSeq}
 
 import org.slf4j.LoggerFactory
 
@@ -28,7 +28,7 @@ import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshallable}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.Directives._
@@ -41,9 +41,18 @@ import akka.http.scaladsl.model.ws
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.{RequestHandler, RemoveSubscription, CallbackHandlers}
+import responses.{
+  RequestHandler,
+  RemoveSubscription,
+  CallbackHandler,
+  RESTHandler,
+  RESTRequest,
+  OmiRequestHandlerBase
+}
 import types.OmiTypes._
+import types.OmiTypes.Callback._
 import types.{ParseError, Path}
+import database.SingleStores
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -56,18 +65,23 @@ trait OmiServiceAuthorization
 
 /**
  * Actor that handles incoming http messages
- * @param reqHandler ActorRef that is used in subscription handling
  */
-class OmiServiceImpl(reqHandler: RequestHandler, val subscriptionManager: ActorRef)(implicit val system: ActorSystem)
+class OmiServiceImpl(
+  protected val system : ActorSystem,
+  protected val materializer: ActorMaterializer,
+  protected val subscriptionManager : ActorRef,
+  val settings : OmiConfigExtension,
+  val singleStores : SingleStores,
+  protected val requestHandler : OmiRequestHandlerBase,
+  protected val callbackHandler : CallbackHandler
+  )
      extends {
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
+  //example auth API service code in java directory of the project
+  //registerApi(new AuthAPIService())
 
-  registerApi(new AuthAPIService())
-
-  //Used for O-MI subscriptions
-  val requestHandler = reqHandler
 
 }
 
@@ -81,11 +95,12 @@ trait OmiService
      with OmiServiceAuthorization
      {
 
-  val system : ActorSystem
-  import system.dispatcher
-  def log: org.slf4j.Logger
-  val requestHandler: RequestHandler
 
+  protected def log: org.slf4j.Logger
+  protected def requestHandler : OmiRequestHandlerBase
+  protected def callbackHandler : CallbackHandler
+  protected val system : ActorSystem
+  import system.dispatcher
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version words with 'sbt run' and 're-start' as well as the packaged version
@@ -104,7 +119,7 @@ trait OmiService
 
   // Change default to xml mediatype and require explicit type for html
   val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
-  implicit val xml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
+  implicit val xmlCT = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
 
   // should be removed?
   val helloWorld = get {
@@ -147,7 +162,7 @@ trait OmiService
         val pathStr = uriPath // pathToString(uriPath)
         val path = Path(pathStr)
 
-        requestHandler.generateODFREST(path) match {
+        RESTHandler.handle(path)(singleStores) match {
           case Some(Left(value)) =>
             complete(value)
           case Some(Right(xmlData)) =>
@@ -160,7 +175,7 @@ trait OmiService
               ToResponseMarshallable(
               <error>No object found</error>
               )(
-                fromToEntityMarshaller(StatusCodes.NotFound)(xml)
+                fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
               )
             )
           }
@@ -194,33 +209,22 @@ trait OmiService
         case Success(req: RequestWrapper) => { // Authorized
            req.parsed match {
             case Right(requests) =>
-
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
-                // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
-                case Success(respRequest: ResponseRequest) if respRequest.results.forall{ result => result.odf.isEmpty } =>
-                  Future.successful(Responses.NoResponse())
                 case Success(request : OmiRequest) =>
-                  request.callback match {
-                    case None  =>
-                      requestHandler.handleRequest(request)(system)
-                    case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
-                      Future.successful( Responses.InvalidCallback("0", Some( "Callback 0 not supported with http/https try using ws(websocket) instead" ) ) )
-                    case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
-                      val modifiedRequest = request.withCallback(  currentConnectionCallback )
-                      requestHandler.handleRequest(modifiedRequest)(system)
-                    case Some( RawCallback(address))  =>
-                      Callback.tryHTTPUri(address).map{ 
-                        httpCallback => 
-                        val modifiedRequest =  request.withCallback( Some( HTTPCallback( httpCallback ) ) )
-                        requestHandler.handleRequest(modifiedRequest)(system)
-                      }.recover{ 
-                        case throwable : Throwable =>
-                        Future.successful( Responses.InvalidCallback(address, Some( throwable.getMessage() ) ) )
-                      }.get
-                    case Some(definedCallback : DefinedCallback ) => 
-                      requestHandler.handleRequest(request)(system)
+                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{ 
+                    case request: OmiRequest => handleRequest( request ) 
+                  }.recover{
+                    case e: TimeoutException => Responses.TimeOutError(e.getMessage)
+                    case e: IllegalArgumentException => Responses.InvalidRequest(e.getMessage)
+                    case icb : InvalidCallback => Responses.InvalidCallback(icb.address,Some(icb.message))
+                    case t : Throwable =>
+                      log.error("Internal Server Error: ",t)
+                      Responses.InternalError(t)
                   }
+                case Failure(t : Throwable)=>
+                  log.error("Internal Server Error: ",t)
+                  Future.successful( Responses.InternalError(t) )
               }
             case Left(errors) => { // Parsing errors found
 
@@ -241,6 +245,8 @@ trait OmiService
         case Failure(ex) =>
           Future.successful(Responses.InternalError(ex))
       }
+
+      
 
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
@@ -263,6 +269,52 @@ trait OmiService
     }
   }
 
+  def handleRequest(request : OmiRequest ): Future[ResponseRequest ]= {
+    request match {
+      // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
+      case respRequest: ResponseRequest if respRequest.results.forall{ result => result.odf.isEmpty } =>
+        Future.successful( Responses.NoResponse() ) 
+      case sub: SubscriptionRequest => requestHandler.handle(sub)
+      case other : OmiRequest => 
+        request.callback match {
+          case None => requestHandler.handle(other)
+          case Some(callback: RawCallback) => 
+            Future.successful(
+              Responses.InvalidCallback(
+                callback.address,
+                Some("Callback 0 not supported with http/https try using ws(websocket) instead")
+              )
+            )
+          case Some(callback: DefinedCallback) => {
+            requestHandler.handle(other)  map { response =>
+              callbackHandler.sendCallback( callback, response )
+            }
+            Future.successful(
+              Responses.Success(description = Some("OK, callback job started"))
+            )
+          }
+        }
+    }
+  }
+
+  def defineCallbackForRequest(request: OmiRequest,currentConnectionCallback: Option[Callback] ): Future[OmiRequest] = request.callback match {
+    case None  => Future.successful( request )
+    case Some(definedCallback : DefinedCallback ) => Future.successful( request )
+    case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
+      Future.successful( request.withCallback(  currentConnectionCallback ) )
+    case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
+      Future.failed( InvalidCallback("0", "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
+    case Some( RawCallback(address))  =>
+      val cbTry = Callback.tryHTTPUri(address)
+      val result = cbTry.map{ 
+        case httpCallback =>
+          request.withCallback( Some( HTTPCallback( httpCallback ) ) )
+          }.recoverWith{ 
+            case throwable : Throwable =>
+              Try{ throw InvalidCallback(address, throwable.getMessage(), throwable  ) }
+          }
+          Future.fromTry(result ) 
+  }
 
   /** 
    * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)
@@ -270,7 +322,10 @@ trait OmiService
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
-        complete(handleRequest(hasPermissionTest, requestString))
+        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
+        //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+        complete(response)
       }
     }
   }
@@ -281,7 +336,10 @@ trait OmiService
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
-        complete(handleRequest(hasPermissionTest, requestString))
+        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
+        val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+        complete(response)
       }
     }
   }
@@ -307,11 +365,10 @@ trait OmiService
  * This trait implements websocket support for O-MI message handling using akka-http
  */
 trait WebSocketOMISupport { self: OmiService =>
-  import self.system.dispatcher
-  val system : ActorSystem 
-  implicit val materializer : ActorMaterializer = ActorMaterializer()(system)
-  def subscriptionManager : ActorRef
-
+  protected def system : ActorSystem
+  protected implicit def materializer: ActorMaterializer
+  protected def subscriptionManager : ActorRef
+  import system.dispatcher
   type InSink = Sink[ws.Message, _]
   type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 
@@ -384,7 +441,7 @@ trait WebSocketOMISupport { self: OmiService =>
     }
     val connectionIdentifier = futureQueue.hashCode
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
-    CallbackHandlers.addCurrentConnection( connectionIdentifier, sendHandler)
+    callbackHandler.addCurrentConnection( connectionIdentifier, sendHandler)
     def createZeroCallback = Some(CurrentConnectionCallback(connectionIdentifier)) 
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{

@@ -147,7 +147,14 @@ object OdfParser extends Parser[OdfParseResult] {
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
       },
-      addTimeStampToMetaDataValues(item.MetaData,requestProcessTime)
+      item.MetaData.map{ 
+        md => 
+          OdfMetaData(
+            md.InfoItem.map{ 
+              mItem => parseInfoItem( requestProcessTime, mItem, npath / "MetaData" ) 
+            }
+          )
+      }
         //.map{ meta =>
         // tests that conversion works before it is in the db and fails when in read request
         //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)

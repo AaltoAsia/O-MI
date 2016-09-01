@@ -71,13 +71,17 @@
     my.callbackSubscriptions = {};
     my.waitingForResponse = false;
     my.waitingForRequestID = false;
+    my.historyOpen = false;
     consts = WebOmi.consts;
     consts.afterJquery(function() {
       consts.callbackResponseHistoryModal = $('.callbackResponseHistory');
       consts.callbackResponseHistoryModal.on('shown.bs.modal', function() {
+        my.historyOpen = true;
         return my.updateHistoryCounter(true);
       }).on('hide.bs.modal', function() {
-        return my.updateHistoryCounter(true);
+        my.historyOpen = false;
+        my.updateHistoryCounter(true);
+        return $('.tooltip').tooltip('hide');
       });
       consts.responseListCollection = $('.responseListCollection');
       consts.responseListCloneTarget = $('.responseList.cloneTarget');
@@ -112,8 +116,9 @@
       }
     };
     my.handleSubscriptionHistory = function(responseString) {
-      var addHistory, cbSub, cloneElem, createHistory, createShortenedPath, getPath, getPathValues, getShortenedPath, htmlformat, info, infoItemPathValues, infoitems, insertToTrie, maybeRequestID, moveHistoryHeaders, omi, pathPrefixTrie, pathValues, ref, requestID, response, returnStatus;
+      var addHistory, cbSub, cloneElem, createHistory, createShortenedPath, getPath, getPathValues, getShortenedPath, htmlformat, info, infoItemPathValues, infoitems, insertToTrie, maybeRequestID, moveHistoryHeaders, omi, pathPrefixTrie, pathValues, ref, requestID, response, returnStatus, util;
       omi = WebOmi.omi;
+      util = WebOmi.util;
       response = omi.parseXml(responseString);
       maybeRequestID = Maybe(omi.evaluateXPath(response, "//omi:requestID/text()")[0]);
       requestID = (maybeRequestID.bind(function(idNode) {
@@ -141,10 +146,16 @@
             return false;
           }
         }
+      } else if (!my.waitingForResponse) {
+        requestID = "not given";
+        my.callbackSubscriptions[requestID] = {
+          receivedCount: 1,
+          userSeenCount: 0,
+          responses: [responseString]
+        };
       } else {
         return false;
       }
-      infoitems = omi.evaluateXPath(response, "//odf:InfoItem");
       getPath = function(xmlNode) {
         var id, init;
         id = omi.getOdfId(xmlNode);
@@ -205,15 +216,18 @@
         }
       };
       getPathValues = function(infoitemXmlNode) {
-        var i, len, path, results, value, valuesXml;
+        var i, infoItemName, j, len, path, pathObject, ref, results, value, valuesXml;
         valuesXml = omi.evaluateXPath(infoitemXmlNode, "./odf:value");
         path = getPath(infoitemXmlNode);
         insertToTrie(pathPrefixTrie, path);
+        ref = path.split("/"), pathObject = 2 <= ref.length ? slice.call(ref, 0, i = ref.length - 1) : (i = 0, []), infoItemName = ref[i++];
         results = [];
-        for (i = 0, len = valuesXml.length; i < len; i++) {
-          value = valuesXml[i];
+        for (j = 0, len = valuesXml.length; j < len; j++) {
+          value = valuesXml[j];
           results.push({
             path: path,
+            pathObject: pathObject.join('/'),
+            infoItemName: infoItemName,
             shortPath: function() {
               return createShortenedPath(path);
             },
@@ -223,18 +237,8 @@
         }
         return results;
       };
-      infoItemPathValues = (function() {
-        var i, len, results;
-        results = [];
-        for (i = 0, len = infoitems.length; i < len; i++) {
-          info = infoitems[i];
-          results.push(getPathValues(info));
-        }
-        return results;
-      })();
-      pathValues = (ref = []).concat.apply(ref, infoItemPathValues);
       cloneElem = function(target, callback) {
-        return WebOmi.util.cloneElem(target, function(cloned) {
+        return util.cloneElem(target, function(cloned) {
           return cloned.slideDown(null, function() {
             return consts.callbackResponseHistoryModal.modal('handleUpdate');
           });
@@ -249,7 +253,7 @@
         var newList;
         newList = cloneElem(consts.responseListCloneTarget);
         moveHistoryHeaders(newList);
-        newList.removeClass("cloneTarget").show();
+        newList.removeClass("cloneTarget");
         newList.find('.requestID').text(requestID);
         return newList;
       };
@@ -269,11 +273,13 @@
           title: "click to show the XML"
         }).on('click', function() {
           var codeMirrorContainer, dataRows, responseCodeMirror, tmpRow, tmpTr;
-          if (row.data.dataRows) {
+          if (row.data.dataRows != null) {
             tmpRow = row.nextUntil('.respRet');
             tmpRow.remove();
             row.after(row.data.dataRows);
-            return delete row.data.dataRows;
+            row.removeData('mirror');
+            delete row.data.dataRows;
+            return $('.tooltip').remove();
           } else {
             dataRows = row.nextUntil('.respRet');
             row.data.dataRows = dataRows.clone();
@@ -284,7 +290,8 @@
             row.after(tmpTr);
             responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings);
             responseCodeMirror.setValue(responseString);
-            return responseCodeMirror.autoFormatAll();
+            responseCodeMirror.autoFormatAll();
+            return row.data('mirror', responseCodeMirror);
           }
         });
         return row;
@@ -294,7 +301,7 @@
         results = [];
         for (i = 0, len = pathValues.length; i < len; i++) {
           pathValue = pathValues[i];
-          row = $("<tr/>").append($("<td/>")).append($("<td/>").text(pathValue.shortPath).tooltip({
+          row = $("<tr/>").append($("<td/>")).append($("<td/>").append($('<span class="hidden-lg hidden-md" />').text(pathValue.shortPath)).append($('<span class="hidden-xs hidden-sm" />').text(pathValue.pathObject + '/').append($('<b/>').text(pathValue.infoItemName))).tooltip({
             container: consts.callbackResponseHistoryModal,
             title: pathValue.path
           })).append($("<td/>").tooltip({
@@ -305,13 +312,34 @@
         return results;
       };
       addHistory = function(requestID, pathValues) {
-        var callbackRecord, dataTable, newHistory, responseList, returnS;
+        var callbackRecord, dataTable, newHistory, pathVals, responseList, returnS;
         callbackRecord = my.callbackSubscriptions[requestID];
-        responseList = (callbackRecord.selector != null) && callbackRecord.selector.length > 0 ? callbackRecord.selector : (newHistory = createHistory(requestID), my.callbackSubscriptions[requestID].selector = newHistory, newHistory);
+        responseList = (callbackRecord.selector != null) && callbackRecord.selector.length > 0 ? callbackRecord.selector : (newHistory = createHistory(requestID), newHistory.slideDown(), my.callbackSubscriptions[requestID].selector = newHistory, newHistory);
         dataTable = responseList.find(".dataTable");
         returnS = returnStatus(callbackRecord.receivedCount, 200);
-        return dataTable.prepend(htmlformat(pathValues)).prepend(returnS);
+        pathVals = [].concat(returnS, htmlformat(pathValues));
+        pathVals = $($(pathVals).map(function() {
+          return this.toArray();
+        }));
+        if (my.historyOpen) {
+          return util.animatedShowRow(pathVals, (function() {
+            return dataTable.prepend(pathVals);
+          }));
+        } else {
+          return dataTable.prepend(pathVals);
+        }
       };
+      infoitems = omi.evaluateXPath(response, "//odf:InfoItem");
+      infoItemPathValues = (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = infoitems.length; i < len; i++) {
+          info = infoitems[i];
+          results.push(getPathValues(info));
+        }
+        return results;
+      })();
+      pathValues = (ref = []).concat.apply(ref, infoItemPathValues);
       addHistory(requestID, pathValues);
       return !my.waitingForResponse;
     };

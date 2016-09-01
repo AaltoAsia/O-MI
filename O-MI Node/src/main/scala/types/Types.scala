@@ -16,6 +16,23 @@
   *
   **/
 package types
+
+import scala.collection.JavaConversions
+import scala.concurrent.{Future, ExecutionContext}
+import agentSystem.ResponsibleAgentResponse
+
+object JavaHelpers{
+
+ def mutableMapToImmutable[K,V]( mutable: scala.collection.mutable.Map[K,V] ) : scala.collection.immutable.Map[K,V] = mutable.toMap[K,V] 
+ def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
+   JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
+ }
+ 
+ def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponsibleAgentResponse] ={
+   writeFuture.mapTo[ResponsibleAgentResponse]
+ }
+}
+
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */
@@ -40,6 +57,14 @@ package types
     val toSeq: Vector[String] = {
       val normalized = pathSeq.filterNot(_ == "")
       normalized.toVector // make sure that it is Vector, hashcode problems with Seq (Array?)
+    }
+
+    /**
+     * Removes extra path elements and holds the Path as Seq[String]
+     */
+    val toArray: Array[String] = {
+      val normalized = pathSeq.filterNot(_ == "")
+      normalized.toArray // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
     def this(pathStr: String) = this{
@@ -76,9 +101,7 @@ package types
     override def toString: String = this.mkString("/")
     
     def isAncestor( child: Path) : Boolean ={
-      if( child.length > this.length ){ 
-        child.startsWith(this.pathSeq)
-      } else false
+      child.length > this.length && child.startsWith(this.pathSeq)
     }
   }
 

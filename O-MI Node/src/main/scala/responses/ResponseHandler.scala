@@ -32,15 +32,16 @@ import parsing.xmlGen.xmlTypes.RequestResultType
 import agentSystem._
 import types.OmiTypes._
 import types._
+import http.{ActorSystemContext, Actors}
 
 trait ResponseHandler extends OmiRequestHandlerBase{
-  def agentSystem : ActorRef
+  protected def agentSystem : ActorRef
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)
     */
   def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
-    val ttl = handleTTL(response.ttl)
+    val ttl = response.handleTTL
     implicit val timeout = Timeout(ttl)
     val resultFuture = Future.sequence(response.results.collect{ 
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
@@ -55,10 +56,27 @@ trait ResponseHandler extends OmiRequestHandlerBase{
 
 
         result.onSuccess{ case succ => log.info( succ.toString) }
-        val response : Future[OmiResult]= result.map{
-          case SuccessfulWrite(_) => Results.Success()
-          case FailedWrite(paths, reasons) => Results.Success()
-          case MixedWrite(successfulPaths, failed)=> Results.Success() 
+          val response : Future[OmiResult]= result.map{
+            case SuccessfulWrite(_) => Results.Success() 
+          case FailedWrite(paths, reasons) =>  
+            val returnV : OmiReturn = OmiReturn(
+              "400",
+              Some(
+                "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
+              )
+            )
+            OmiResult(returnV)
+            
+        case MixedWrite(successfulPaths, failed)=> 
+          val returnV : OmiReturn = OmiReturn(
+            "400",
+            Some(
+              "Following paths failed:\n" +
+              failed.paths.mkString("\n") + 
+              " reason:\n" + failed.reasons.mkString("\n")
+            )
+          )
+          OmiResult(returnV) 
         }
         response
           //We do not want response request loops between O-MI Nodes

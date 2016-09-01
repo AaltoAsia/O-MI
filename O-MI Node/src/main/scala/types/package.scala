@@ -184,7 +184,7 @@ package object OdfTypes {
     }
   }
 
-  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue)]={
+  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue[Any])]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
   def timestampToXML(timestamp: Timestamp) ={ 

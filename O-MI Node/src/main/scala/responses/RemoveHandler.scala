@@ -20,25 +20,37 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+import akka.event.{LogSource, Logging, LoggingAdapter}
+import akka.actor.ActorSystem
+
 import database._
 import types.OdfTypes._
 import types._
+import http.{ActorSystemContext, Storages}
 
-trait RemoveHandler extends OmiRequestHandlerBase{
+trait RemoveHandlerT{
+  def handlePathRemove(parentPath: Path): Boolean 
+  }
+class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends RemoveHandlerT{
+
+  implicit val logSource: LogSource[RemoveHandler]= new LogSource[RemoveHandler] {
+      def genString( handler:  RemoveHandler) = handler.toString
+    }
+  protected val log: LoggingAdapter = Logging( system, this)
 
   def handlePathRemove(parentPath: Path): Boolean = {
-    val objects = SingleStores.hierarchyStore execute GetTree()
+    val objects = singleStores.hierarchyStore execute GetTree()
     val node = objects.get(parentPath)
     node match {
       case Some(_node) => {
 
         val leafs = getInfoItems(_node).map(_.path)
 
-        SingleStores.hierarchyStore execute TreeRemovePath(parentPath)
+        singleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
         leafs.foreach{path =>
           log.info(s"removing $path")
-          SingleStores.latestStore execute EraseSensorData(path)
+          singleStores.latestStore execute EraseSensorData(path)
         }
 
         val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath)

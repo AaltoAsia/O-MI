@@ -28,23 +28,7 @@ object ODFAgent extends PropsCreator{
 // Scala XML contains also parsing package
 class ODFAgent( override val config: Config) extends ScalaInternalAgent {
    val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
-	 val odfQueue : MutableQueue[OdfObjects]= MutableQueue{
-      val file =  new File(config.getString("file"))
-      if( file.exists() && file.canRead() ){
-        val xml = XML.loadFile(file)
-        OdfParser.parse( xml) match {
-          case Left( errors ) =>
-            log.warning(s"Odf has errors, $name could not be configured.")
-            log.warning("ParseError: "+errors.mkString("\n"))
-            throw CommandFailed("ParserErrer, view log.")
-            
-          case Right(odfObjects) => odfObjects  
-        }
-      } else {
-            log.warning(s"File $config did not exists or could not read it. $name could not be configured.")
-            throw CommandFailed("ParserErrer, view log.")
-      }
-  }
+   val odfQueue : MutableQueue[OdfObjects]= MutableQueue()
   
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
@@ -53,16 +37,33 @@ class ODFAgent( override val config: Config) extends ScalaInternalAgent {
   def date = new java.util.Date();
 
   private val  updateSchelude : MutableQueue[Cancellable] = MutableQueue.empty
-   def start = {
-    // Schelude update and save job, for stopping
-    // Will send Update message to self every interval
-    updateSchelude.enqueue(context.system.scheduler.schedule(
-      Duration(0, SECONDS),
-      interval,
-      self,
-      Update()
-    ))
-    CommandSuccessful()
+  def start = {
+    val file =  new File(config.getString("file"))
+    if( file.exists() && file.canRead() ){
+      val xml = XML.loadFile(file)
+      OdfParser.parse( xml) match {
+        case Left( errors ) =>
+          val msg = errors.mkString("\n")
+          log.warning(s"Odf has errors, $name could not be configured.")
+          log.debug(msg)
+          StartFailed(msg, None)
+        case Right(odfObjects) =>
+        odfQueue.enqueue(odfObjects)
+        // Schelude update and save job, for stopping
+        // Will send Update message to self every interval
+        updateSchelude.enqueue(context.system.scheduler.schedule(
+          Duration(0, SECONDS),
+          interval,
+          self,
+          Update()
+        ))
+        CommandSuccessful()
+      }
+    } else {
+      val msg = s"File $config did not exists or could not read it. $name could not be configured."
+      log.warning(msg)
+      StartFailed(msg, None)
+    }
   }
 
    def update() : Unit = {
@@ -128,9 +129,10 @@ class ODFAgent( override val config: Config) extends ScalaInternalAgent {
       case true =>
         CommandSuccessful()
       case false =>
-        CommandFailed("Failed to stop agent.")
+        StopFailed("Failed to stop agent.", None)
     }
-    case None => CommandFailed("Failed to stop agent, no job found.")
+    case None => 
+        CommandSuccessful()
   }}
   
   private def genValue(sensorType: String, oldval: Double ) : String = {

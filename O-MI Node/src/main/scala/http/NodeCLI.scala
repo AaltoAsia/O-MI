@@ -22,13 +22,13 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 import agentSystem.{AgentInfo, AgentName}
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, ActorSystem}
 import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub}
-import responses.{RemoveSubscription, RemoveHandler}
+import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub, SingleStores, DB}
+import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
 import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
@@ -47,20 +47,28 @@ object CLICmds
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
-    sourceAddress: InetSocketAddress,
+    sourceAddress: InetSocketAddress,   
+    removeHandler: RemoveHandlerT,
     agentSystem: ActorRef,
-    subscriptionHandler: ActorRef,
-    requestHandler: RemoveHandler
-  ) : Props = Props( new OmiNodeCLI( sourceAddress, agentSystem, subscriptionHandler, requestHandler ))
+    subscriptionManager: ActorRef
+  )(
+  ) : Props = Props(
+    new OmiNodeCLI(
+      sourceAddress,
+      removeHandler,
+      agentSystem,
+      subscriptionManager
+    )
+  )
 }
 /** Command Line Interface for internal agent management. 
   *
   */
 class OmiNodeCLI(
-    sourceAddress: InetSocketAddress,
-    agentLoader: ActorRef,
-    subscriptionHandler: ActorRef,
-    requestHandler: RemoveHandler
+  protected val sourceAddress: InetSocketAddress,   
+  protected val removeHandler: RemoveHandlerT,
+  protected val agentSystem: ActorRef,
+  protected val subscriptionManager: ActorRef
   ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -94,7 +102,7 @@ remove <path>
   }
   private def listAgents(): String = {
     log.info(s"Got list agents command from $ip")
-    val result = (agentLoader ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
+    val result = (agentSystem ? ListAgentsCmd()).mapTo[Vector[AgentInfo]]
       .map{
         case agents: Vector[AgentInfo @unchecked] =>  // internal type 
           log.info("Received list of Agents. Sending ...")
@@ -134,7 +142,7 @@ remove <path>
   } 
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
-    val result = (subscriptionHandler ? ListSubsCmd())
+    val result = (subscriptionManager ? ListSubsCmd())
       .map{
         case (intervals: Set[IntervalSub @unchecked],
               events: Set[EventSub] @unchecked,
@@ -152,13 +160,12 @@ remove <path>
   }
   private def subInfo(id: Long): String = {
     log.info(s"Got sub info command from $ip")
-    val result = (subscriptionHandler ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
+    val result = (subscriptionManager ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
       .map{
         case Some(intervalSub: IntervalSub) =>
           s"Started: ${intervalSub.startTime}\n" +
           s"Ends: ${intervalSub.endTime}\n" +
           s"Interval: ${intervalSub.interval}\n" +
-          s"Run next: ${intervalSub.nextRunTime}\n" +
           s"Callback: ${intervalSub.callback.address}\n" +
           s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
         case Some(eventSub: EventSub) =>
@@ -190,7 +197,7 @@ remove <path>
   
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
-    val result = (agentLoader ? StartAgentCmd(agent)).mapTo[Future[String]]
+    val result = (agentSystem ? StartAgentCmd(agent)).mapTo[Future[String]]
       .flatMap{ case future : Future[String] => future }
       .map{
         case msg: String =>
@@ -205,7 +212,7 @@ remove <path>
 
   private def stopAgent(agent: AgentName): String = {
     log.info(s"Got stop command from $ip for $agent")
-    val result = (agentLoader ? StopAgentCmd(agent)).mapTo[Future[String]]
+    val result = (agentSystem ? StopAgentCmd(agent)).mapTo[Future[String]]
       .flatMap{ case future : Future[String] => future }
       .map{
         case msg:String => 
@@ -225,7 +232,7 @@ remove <path>
       val id = pathOrId.toInt
       log.info(s"Removing subscription with id: $id")
 
-      val result = (subscriptionHandler ? RemoveSubscription(id))
+      val result = (subscriptionManager ? RemoveSubscription(id))
         .map{
           case true =>
             s"Removed subscription with $id successfully.\n"
@@ -239,7 +246,7 @@ remove <path>
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
-      if (requestHandler.handlePathRemove(Path(pathOrId))) {
+      if (removeHandler.handlePathRemove(Path(pathOrId))) {
           log.info(s"Successfully removed path")
           s"Successfully removed path $pathOrId\n"
       } else {
@@ -279,7 +286,14 @@ remove <path>
   }
 }
 
-class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, requestHandler: RemoveHandler)  extends Actor with ActorLogging{
+class OmiNodeCLIListener(
+    protected val system: ActorSystem,
+    protected val agentSystem: ActorRef,
+    protected val subscriptionManager: ActorRef,
+    protected val singleStores: SingleStores,
+    protected val dbConnection: DB
+    
+  )  extends Actor with ActorLogging{
 
   import Tcp._
 
@@ -295,9 +309,10 @@ class OmiNodeCLIListener(agentLoader: ActorRef, subscriptionHandler: ActorRef, r
     case Connected(remote, local) =>
       val connection = sender()
       log.info(s"CLI connected from $remote to $local")
+      val remover = new RemoveHandler(singleStores, dbConnection )(system)
 
       val cli = context.system.actorOf(
-        OmiNodeCLI.props( remote, agentLoader, subscriptionHandler, requestHandler ),
+        OmiNodeCLI.props(remote,remover,agentSystem, subscriptionManager),
         "cli-" + remote.toString.tail)
         connection ! Register(cli)
     case _ => //noop?

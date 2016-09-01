@@ -19,8 +19,9 @@ import java.sql.Timestamp
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 
+import http.OmiConfigExtension
 import akka.actor.ActorSystem
-import http.Boot.settings
+import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
 import parsing.xmlGen.xmlTypes.MetaData
 import slick.driver.H2Driver.api._
@@ -28,6 +29,7 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.OmiReturn
 import types.Path
+import http.{ActorSystemContext, Settings, Storages}
 
 
 package object database {
@@ -72,10 +74,10 @@ case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(i
 /**
  * Contains all stores that requires only one instance for interfacing
  */
-object SingleStores {
-  val journalFileSizeLimit = settings.maxJournalSizeBytes
+class SingleStores(protected val settings: OmiConfigExtension) {
   private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
+      val journalFileSizeLimit = settings.maxJournalSizeBytes
       val factory = new PrevaylerFactory[P]()
 
       val directory = new File(settings.journalsDirectory++s"/$name")
@@ -103,7 +105,7 @@ object SingleStores {
   val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
   subStore execute RemoveWebsocketSubs()
 
-  def buildOdfFromValues(items: Seq[(Path,OdfValue)]): OdfObjects = {
+  def buildOdfFromValues(items: Seq[(Path,OdfValue[Any])]): OdfObjects = {
 
     val odfObjectsTrees = items map { case (path, value) =>
       val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
@@ -121,7 +123,7 @@ object SingleStores {
    * @param newValue the new value to be added
    * @return
    */
-  def valueShouldBeUpdated(oldValue: OdfValue, newValue: OdfValue): Boolean = {
+  def valueShouldBeUpdated(oldValue: OdfValue[Any], newValue: OdfValue[Any]): Boolean = {
     oldValue.timestamp before newValue.timestamp
   }
 
@@ -135,7 +137,7 @@ object SingleStores {
    * @param newValue Actual incoming data
    * @return Triggered responses
    */
-  def processData(path: Path, newValue: OdfValue, oldValueOpt: Option[OdfValue]): Option[InfoItemEvent] = {
+  def processData(path: Path, newValue: OdfValue[Any], oldValueOpt: Option[OdfValue[Any]]): Option[InfoItemEvent] = {
 
     // TODO: Replace metadata and description if given
 
@@ -162,7 +164,7 @@ object SingleStores {
   }
 
 
-  def getMetaData(path: Path) : Option[MetaData] = {
+  def getMetaData(path: Path) : Option[OdfMetaData] = {
     (hierarchyStore execute GetTree()).get(path).collect{
       case OdfInfoItem(_,_,_,Some(mData)) => mData
     }
@@ -194,12 +196,20 @@ object SingleStores {
  * Database class for sqlite. Actually uses config parameters through forConfig.
  * To be used during actual runtime.
  */
-class DatabaseConnection(implicit val system: ActorSystem) extends DBReadWrite with DBBase with DB {
+class DatabaseConnection()(
+  protected val system : ActorSystem,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+  ) extends DBReadWrite with DBBase with DB {
 
   val db = Database.forConfig(dbConfigName)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props( this), "db-maintainer")
+  val dbmaintainer = system.actorOf(DBMaintainer.props(
+    this,
+    singleStores,
+    settings
+    ), "db-maintainer")
 
   def destroy(): Unit = {
      dropDB()
@@ -224,20 +234,29 @@ class DatabaseConnection(implicit val system: ActorSystem) extends DBReadWrite w
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(val name:String = "") extends DBReadWrite with DBBase with DB
-{
-  implicit val system = ActorSystem()
-  println("Creating TestDB: " + name)
-  val db = Database.forURL(s"jdbc:h2:mem:$name;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver",
+class TestDB(val name:String = "")(
+  protected val system : ActorSystem,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+) extends DBReadWrite with DBBase with DB {
+
+  private val log = LoggerFactory.getLogger("TestDB")
+  log.debug("Creating TestDB: " + name)
+  val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
     keepAliveConnection=true)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props( this ), "db-maintainer")
+  val dbmaintainer = system.actorOf(DBMaintainer.props(
+    this,
+    singleStores,
+    settings
+    ), "db-maintainer")
   /**
   * Should be called after tests.
   */
   def destroy(): Unit = {
-    println("Removing TestDB: " + name)
+    system.stop(dbmaintainer)
+    log.debug("Removing TestDB: " + name)
     db.close()
   }
 }
@@ -276,7 +295,7 @@ trait DB {
 
   /**
    * Used to set many values efficiently to the database.
-   * @param data list item to be added consisting of Path and OdfValue tuples.
+   * @param data list item to be added consisting of Path and OdfValue[Any] tuples.
    */
   def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn]
 
@@ -285,6 +304,6 @@ trait DB {
    * @param path Parent path to be removed.
    */
   def remove(path: Path): Future[Int]
-
-
+  
+  def destroy(): Unit  
 }

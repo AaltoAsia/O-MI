@@ -57,7 +57,7 @@ case class DBValue(
   valueType: String,
     valueId: Option[Long] = None
 ) {
-  def toOdf: OdfValue = OdfValue(value, valueType, timestamp)
+  def toOdf: OdfValue[Any] = OdfValue(value, valueType, timestamp)
 }
 
 case class SubValue(
@@ -67,7 +67,7 @@ case class SubValue(
                      value: String,
                      valueType: String
                      ) {
-  def toOdf: OdfValue = OdfValue(value, valueType, timestamp)
+  def toOdf: OdfValue[Any] = OdfValue(value, valueType, timestamp)
 }
 
 
@@ -117,7 +117,7 @@ trait OmiNodeTables extends DBBase {
 
 
     def toOdfInfoItem: OdfInfoItem = toOdfInfoItem()
-    def toOdfInfoItem(values: Iterable[OdfValue] = Iterable()): OdfInfoItem =
+    def toOdfInfoItem(values: Iterable[OdfValue[Any]] = Iterable()): OdfInfoItem =
       OdfInfoItem(path, values, descriptionOdfOption, None)
   }
 

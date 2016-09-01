@@ -13,7 +13,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.5.1-warp10",
+  version := "0.6.0-warp10",
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -27,27 +27,28 @@ def commonSettings(moduleName: String) = Seq(
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
 )
 
-lazy val JavaDoc = config("genjavadoc") extend Compile
+//lazy val JavaDoc = config("genjavadoc") extend Compile
 
-lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" %
-    "0.9" cross CrossVersion.full),
-  scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
-  packageDoc in Compile := (packageDoc in JavaDoc).value,
-  sources in JavaDoc := 
-    (target.value / "java" ** "*.java").get ++ (sources in Compile).value.
-      filter(_.getName.endsWith(".java")),
-  javacOptions in JavaDoc := Seq(),
-  artifactName in packageDoc in JavaDoc :=
-    ((sv, mod, art) =>
-      "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
-)
+// Something is broken
+//lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
+//  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" %
+//    "0.9" cross CrossVersion.full),
+//  scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
+//  packageDoc in Compile := (packageDoc in JavaDoc).value,
+//  sources in JavaDoc := 
+//    (target.value / "java" ** "*.java").get ++ (sources in Compile).value.
+//      filter(_.getName.endsWith(".java")),
+//  javacOptions in JavaDoc := Seq(),
+//  artifactName in packageDoc in JavaDoc :=
+//    ((sv, mod, art) =>
+//      "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
+//)
 
 lazy val omiNode = (project in file("O-MI Node")).
-  configs(JavaDoc).
+  //configs(JavaDoc).
   settings(
     (commonSettings("Backend") ++ 
-     javadocSettings ++ Seq(
+     /*javadocSettings ++*/ Seq(
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
       cleanFiles <+= baseDirectory { base => base / "logs"},

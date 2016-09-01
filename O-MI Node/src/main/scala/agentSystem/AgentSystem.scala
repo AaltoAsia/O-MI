@@ -24,25 +24,43 @@ import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
 import akka.actor.SupervisorStrategy._
 import com.typesafe.config.Config
-import database.DB
+
+import responses.CallbackHandler
+import database.{ SingleStores, DB}
 import http.CLICmds._
+import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
 import types.Path
+import http._
 
 object AgentSystem {
-  def props(dbobject: DB ,subHandler: ActorRef): Props = Props(
-  {val as = new AgentSystem(dbobject,subHandler)
+  def props()(
+    implicit settings: AgentSystemConfigExtension,
+    dbConnection: DB,
+    singleStores: SingleStores,
+    callbackHandler: CallbackHandler
+      ): Props = Props(
+  {val as = new AgentSystem()(
+    settings, 
+    dbConnection,
+    singleStores,
+    callbackHandler
+  )
   as.start()
   as})
 }
-class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
-  extends BaseAgentSystem 
-  with InternalAgentLoader
+
+class AgentSystem()(
+    protected implicit val settings: AgentSystemConfigExtension,
+    protected implicit val dbConnection: DB,
+    protected implicit val singleStores: SingleStores,
+    protected implicit val callbackHandler: CallbackHandler
+  ) 
+  extends InternalAgentLoader
   with InternalAgentManager
   with ResponsibleAgentManager
   with DBPusher{
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
-  protected[this] val settings = http.Boot.settings
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
@@ -74,10 +92,24 @@ class AgentSystem(val dbobject: DB, val subHandler: ActorRef)
     ownedPaths: Seq[Path]
   ) extends AgentInfoBase 
 
-abstract class BaseAgentSystem extends Actor with ActorLogging{
+
+  sealed trait Language{}
+  final case class Unknown(val lang : String ) extends Language
+  final case class Scala() extends Language
+  final case class Java() extends Language
+
+object Language{
+  def apply( str: String ) = str.toLowerCase() match {
+    case "java" => Java()
+    case "scala" => Scala()
+    case str: String => Unknown(str)
+  }
+}
+
+trait BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
-  protected[this] def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
-  protected[this] def settings: AgentSystemConfigExtension 
+  protected def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
+  protected implicit def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

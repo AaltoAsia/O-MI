@@ -9,11 +9,19 @@ import parsing.xmlGen.xmlTypes.MetaData
 import spray.json._
 import types.OdfTypes._
 import types.Path
+import akka.actor.{ActorSystem}
+import http.{OmiConfig,OmiConfigExtension}
 
 import database.Warp10JsonProtocol._
+import database.SingleStores
 
 class Warp10JsonParsingTest extends Specification {
 
+  implicit val system : ActorSystem = ActorSystem("on-core") 
+  implicit val settings : OmiConfigExtension = OmiConfig(system)
+
+  implicit val singleStores = new SingleStores(settings)
+  implicit val forwatter : Warp10JsonFormat = new Warp10JsonFormat()(singleStores)
 
   def is =
     s2"""

@@ -28,7 +28,7 @@ import akka.io.{IO, Tcp}
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import http.Authorization.ExtensibleAuthorization
-import http.IpAuthorization
+import http.{OmiConfig, IpAuthorization, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
 import types.OmiTypes.WriteRequest
@@ -50,6 +50,7 @@ class ExternalAgentListener(override val config: Config)
   {
   class ExtAgentAuthorization extends {
     override val log = LoggerFactory.getLogger(classOf[ExternalAgentListener])
+    val settings :OmiConfigExtension = OmiConfig(actorSystem)
   } with ExtensibleAuthorization with IpAuthorization
 
   private val authorization = new ExtAgentAuthorization
@@ -58,26 +59,34 @@ class ExternalAgentListener(override val config: Config)
    val interface = config.getString("interface")
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
-   def start : InternalAgentSuccess = {
+
+  def start : InternalAgentResponse = {
     val binding = (IO(Tcp)  ? Tcp.Bind(self,
       new InetSocketAddress(interface, port)))(timeout)
     Await.result(
       binding.map{
         case Bound(localAddress: InetSocketAddress) =>
-        CommandSuccessful()
+          CommandSuccessful()
+      }.recover{
+        case t : Throwable =>
+          StartFailed(t.getMessage, Some(t))
       }, timeout
     )
-  
+
   }
-   def stop : InternalAgentSuccess = {
+
+  def stop : InternalAgentResponse = {
     val unbinding = (IO(Tcp)  ? Tcp.Unbind)(timeout)
     Await.result(
       unbinding.map{
         case Tcp.Unbound =>
-        CommandSuccessful()
+          CommandSuccessful()
+      }.recover{
+        case t : Throwable =>
+          StopFailed(t.getMessage, Some(t))
       }, timeout
-    )
-  
+      )
+
   }
   
   /** Partial function for handling received messages.
