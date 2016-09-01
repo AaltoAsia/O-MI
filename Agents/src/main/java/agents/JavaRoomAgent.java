@@ -309,7 +309,9 @@ public class JavaRoomAgent extends JavaInternalAgent {
     // type metadata, default is xs:string
     String typeStr = "";
     // value as String
-    String newValueStr = "+" + rnd.nextDouble() + "+" +rnd.nextDouble() + "+" + rnd.nextInt(15000) +"CRSWGS_84"; 
+    // ISO 6709
+    // [+-]\d\d(\.\d+)?[+-]\d\d\d(\.\d+)?([+-]\d+CRSWGS_84|CRSWGS_84)?/
+    String newValueStr = "+0" + rnd.nextDouble() + "+00" +rnd.nextDouble() + "+" + rnd.nextInt(15000) +"CRSWGS_84/"; 
 
     // Multiple values can be added at the same time but we add one
     Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();

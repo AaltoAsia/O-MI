@@ -227,7 +227,7 @@ trait DBPusher extends BaseAgentSystem{
     val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
     writeFuture.onFailure{
-      case t: Throwable => log.error(t, "Error when writing values for paths $paths")
+      case t: Throwable => log.error(t, s"Error when writing values for paths ${infoItems.map(_.path)}")
     }
 
     for{

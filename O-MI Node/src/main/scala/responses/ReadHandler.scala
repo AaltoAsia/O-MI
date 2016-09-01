@@ -49,17 +49,15 @@ trait ReadHandler extends OmiRequestHandlerBase {
            ))
        )
          
-         /*
        case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
          Future.successful(
-           xmlFromResults(
-             1.0,
-             Results.simple(
-               "400",
-               Some("Oldest not supported with Warp10 integration!")
+           ResponseRequest( Vector(
+             Results.InvalidRequest(
+               "Oldest not supported with Warp10 integration!"
              )
            )
-         )*/
+         )
+       )
        case default: ReadRequest =>
          val leafs = getLeafs(read.odf)
          // NOTE: Might go off sync with tree or values if the request is large,

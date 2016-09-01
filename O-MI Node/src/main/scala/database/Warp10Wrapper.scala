@@ -311,19 +311,15 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
  private def read(content : String, requiredLocations: Map[Path,OdfNode]) = {
         val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
         val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
-        responseF.onFailure{
-          case t : Throwable =>
-            log.error(t, "Failed to communicate to Warp 10.")
-        }
-        responseF.flatMap{
+        val formatedResponse = responseF.flatMap{
           case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
             entity.toStrict(10.seconds)
           case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
-            Unmarshal(entity).to[String].map{
+            entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
               str =>
                 log.debug(s"$status with:\n $str")
                 throw new Exception( str)
-            }
+            }}
         }.flatMap{
           case entity : HttpEntity.Strict =>
             //Ugly fix, for wrong/missing content type.
@@ -338,6 +334,13 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
                 }.map(createAncestors).foldLeft(OdfObjects())( _ union _ ))
             }
         }
+        formatedResponse.onFailure{
+          case t : Throwable =>
+            log.error(t, "Failed to communicate to Warp 10.")
+            log.debug(t.getStackTrace().mkString("\n"))
+        }
+        formatedResponse
+
  }
 
   private def findClosestLocation(path: Path, locs: Map[Path,Seq[OdfInfoItem]]): Option[OdfInfoItem] = {
@@ -380,6 +383,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
     case (path, odfValue, location) =>
     toWriteFormat(path,odfValue, location)
    }.mkString("")
+   log.debug(content)
    val request = RequestBuilding.Post(writeAddress, content).withHeaders(Warp10TokenHeader(writeToken))
 
    val response = httpExt.singleRequest(request)//httpHandler(request)
