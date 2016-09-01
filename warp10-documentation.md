@@ -42,9 +42,9 @@ Example Object
      <MetaData>
       <InfoItem name="type"><value>ISO 6709</value></InfoItem>
      </MetaData>
-     <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00">+51.50198796764016+000.005952995270490646+12345CRSWGS_84/</value>
-     <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00">+51.50198796764016+000.005952995270490646+42313CRSWGS_84/</value>
-     <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00">+51.50198796764016+000.005952995270490646+12423CRSWGS_84/</value>
+     <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00">+51.50198796764016+000.005952995270490646+12345CRSWGS_84</value>
+     <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00">+51.50198796764016+000.005952995270490646+42313CRSWGS_84</value>
+     <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00">+51.50198796764016+000.005952995270490646+12423CRSWGS_84</value>
     </InfoItem>
     <InfoItem name="humidity">
       <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00" type="xs:double">79.16</value>
