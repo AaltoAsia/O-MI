@@ -25,7 +25,7 @@ Location format (ISO 6709)
 
 * https://en.wikipedia.org/wiki/ISO_6709
 * Supported coordinate system is [WGS 84](https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84)
-* We only support the decimal representation: `±00.0±000.0/`
+* We only support the decimal representation: `±00.0±000.0/` (There can be any number of digits after the dot.)
 * height/depth:
   - By the standard: "When height or depth is present, CRS identifier must follow." So it becomes `±00.0±000.0±0CRSWGS_84/`
   - Unit is millimeters above/below sea level.
