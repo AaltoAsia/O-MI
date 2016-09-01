@@ -1,4 +1,15 @@
 
+Warp10 replaces our db containing historical data. That means all values that are older than the newest value. Warp10 has also a field for geographical position for every value so it is included as special data model (see below).
+
+O-MI with Warp10 differences to normal version
+==============================================
+
+v0.5.1 - v0.6.0:
+
+* `oldest` parameter in read requests is not supported (newest and timeframe is supported)
+* if writing to warp10 database directly (without an O-MI message): Then O-MI subscriptions and caches don't update.
+
+
 Data model, O-MI conversion
 ===========================
 
@@ -52,10 +63,18 @@ Warp10 details
   - So the above example would become `Objects.model.humidity`
 * Writes include the location data if it is sent in the same request as MetaData (as described above)
 * Reads include the location MetaData automatically
-* Tokens should be pasted to `application.conf` configuration file of O-MI Node
+* Tokens should be pasted to `application.conf` configuration file of O-MI Node but it is done automatically by the startup script if using warp10 release version.
+* `<value type="">`: type is saved to warp10 db as *label*
 
 Change log
 ==========
+
+2016-09-01
+----------
+
+* Added introduction
+* Added documentation about differences to normal version
+* Added doc about value type and automatic tokens.
 
 2016-08-03
 ----------
