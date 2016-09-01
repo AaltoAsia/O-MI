@@ -25,9 +25,9 @@ Location format (ISO 6709)
 
 * https://en.wikipedia.org/wiki/ISO_6709
 * Supported coordinate system is [WGS 84](https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84)
-* We only support the decimal representation: `±00.0±000.0`
+* We only support the decimal representation: `±00.0±000.0/`
 * height/depth:
-  - By the standard: "When height or depth is present, CRS identifier must follow." So it becomes `±00.0±000.0±0CRSWGS_84`
+  - By the standard: "When height or depth is present, CRS identifier must follow." So it becomes `±00.0±000.0±0CRSWGS_84/`
   - Unit is millimeters above/below sea level.
 * Recommended place for MetaData about the location format is in the `<MetaData>` with InfoItem named `type`. It is also added automatically by this server.
 
@@ -42,9 +42,9 @@ Example Object
      <MetaData>
       <InfoItem name="type"><value>ISO 6709</value></InfoItem>
      </MetaData>
-     <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00">+51.50198796764016+000.005952995270490646+12345CRSWGS_84</value>
-     <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00">+51.50198796764016+000.005952995270490646+42313CRSWGS_84</value>
-     <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00">+51.50198796764016+000.005952995270490646+12423CRSWGS_84</value>
+     <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00">+51.50198796764016+000.005952995270490646+12345CRSWGS_84/</value>
+     <value unixTime="1382441237" dateTime="2013-10-22T14:27:17.727+03:00">+51.50198796764016+000.005952995270490646+42313CRSWGS_84/</value>
+     <value unixTime="1382441267" dateTime="2013-10-22T14:27:47.504+03:00">+51.50198796764016+000.005952995270490646+12423CRSWGS_84/</value>
     </InfoItem>
     <InfoItem name="humidity">
       <value unixTime="1382441207" dateTime="2013-10-22T14:26:47.762+03:00" type="xs:double">79.16</value>
@@ -75,6 +75,7 @@ Change log
 * Added introduction
 * Added documentation about differences to normal version
 * Added doc about value type and automatic tokens.
+* Correct the trailing `/` to location format
 
 2016-08-03
 ----------
