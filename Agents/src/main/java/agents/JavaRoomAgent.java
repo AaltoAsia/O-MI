@@ -45,7 +45,7 @@ import types.*;
  */
 public class JavaRoomAgent extends JavaInternalAgent {
   /**
-   *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
+   *  THIS STATIC FACTORY METHOD MUST EXISTS FOR JavaInternalAgent 
    *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
    *  Implement it in way that
    *  <a href="http://doc.akka.io/docs/akka/current/java/untyped-actors.html#Recommended_Practices">Akka recommends to</a>.
@@ -55,7 +55,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    */
   static public Props props(final Config _config) {
     return Props.create(new Creator<JavaRoomAgent>() {
-      //Randow serialVersionUID, for serialization.
+      //Random serialVersionUID, for serialization.
       private static final long serialVersionUID = 35735155L;
 
       @Override
@@ -65,24 +65,22 @@ public class JavaRoomAgent extends JavaInternalAgent {
     });
   }
 
-  protected Config config;
-
+  //Interval between writes and cancellable job run after every interval. 
   protected FiniteDuration interval;
-
-  protected Cancellable intervalJob = null;
+  protected Cancellable intervalJob;
 
   //Random for generating new values for path.
   protected Random rnd = new Random();
 
+  //Our O-DF structure
   protected OdfObjects odf;
 
   // Constructor
   public JavaRoomAgent(Config conf){
-    config = conf;
 
     // Parse configuration for interval
     interval = new FiniteDuration(
-            config.getDuration("interval", TimeUnit.SECONDS),
+            conf.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
     odf = createOdf();
@@ -178,7 +176,8 @@ public class JavaRoomAgent extends JavaInternalAgent {
     return OdfFactory.createOdfObject(
         path,
         infoItems,
-        objects
+        objects,
+        description
     );
   }
 
@@ -213,9 +212,10 @@ public class JavaRoomAgent extends JavaInternalAgent {
     return OdfFactory.createOdfObject(
         path,
         infoItems,
-        objects
-    );
+        objects,
+        description
 
+    );
   }
 
   /**
@@ -256,10 +256,10 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     //Create Unit meta data for the sensor. 
     Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
-    OdfValue<Object> metavalue = OdfFactory.createOdfValue(
+    OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         unit, "xs:string", timestamp
     );
-    metaValues.add(value);
+    metaValues.add(metaValue);
 
     Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
     OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
@@ -327,10 +327,10 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     //Create type meta data about loceation.
     Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
-    OdfValue<Object> metavalue = OdfFactory.createOdfValue(
+    OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         "ISO 6709", timestamp
     );
-    metaValues.add(value);
+    metaValues.add(metaValue);
 
     Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
     OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
@@ -553,24 +553,11 @@ public class JavaRoomAgent extends JavaInternalAgent {
    */
   @Override
   public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      getSender().tell(start(),getSelf());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      getSender().tell(stop(),getSelf());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      getSender().tell(restart(),getSelf());
-
-    } else if( message instanceof String) {
+    if( message instanceof String) {
       String str = (String) message;
       if( str.equals("Update"))
         update();
-
-    } else unhandled(message);
+      else super.onReceive(message);
+    } else super.onReceive(message);
   }
 }

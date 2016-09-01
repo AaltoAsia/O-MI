@@ -152,10 +152,7 @@ trait OmiNode {
   }
 
 }
-/**
- * Initialize functionality with [[Starter.init]] and then start standalone app with [[Starter.start]],
- * seperated for testing purposes and for easier implementation of different starting methods (standalone, servlet)
- */
+
 object OmiServer {
   def apply() : OmiServer = {
     
