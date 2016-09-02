@@ -142,11 +142,12 @@ public class JavaRoomAgent extends JavaInternalAgent {
    */
   public OdfObjects createOdf(){
 
+    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
     //Reset writeCount
     writeCount = 0;
     //O-DF Object s as child of O-DF Objects
     Vector<OdfObject> objects = new Vector<OdfObject>();
-    objects.add( createExampleRoom() );
+    objects.add( createExampleRoom(timestamp) );
     
     //Create O-DF Objects
     return OdfFactory.createOdfObjects(objects); 
@@ -155,7 +156,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
   /**
    * Method for creating O-DF Object for path Objects/ExampleRoom.
    */
-  public OdfObject createExampleRoom(){
+  public OdfObject createExampleRoom(Timestamp timestamp ){
 
     Path path = new Path( "Objects/ExampleRoom" );
 
@@ -165,12 +166,12 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     //Child O-DF InfoItems of ExampleRoom
     Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
-    OdfInfoItem location = createLocation(path); 
+    OdfInfoItem location = createLocation(path, timestamp); 
     infoItems.add(location);
 
     //Child O-DF Object of ExampleRoom
     Vector<OdfObject> objects = new Vector<OdfObject>();
-    objects.add( createSensorBox(path));
+    objects.add( createSensorBox(path, timestamp));
 
     //Creata actual O-DF Object
     return OdfFactory.createOdfObject(
@@ -185,7 +186,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    * Method for creating O-DF Object for a SensorBox.
    * @param parentPath Path of parent O-DF Object.
    */
-  public OdfObject createSensorBox( Path parentPath){
+  public OdfObject createSensorBox( Path parentPath, Timestamp timestamp ){
 
     //Generate path from path of parent O-DF Object 
     Path path = new Path( parentPath.toString() +"/SensorBox" );
@@ -201,9 +202,9 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     //O-DF InfoItems of sensors in SensorBox
     Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
-    infoItems.add( createLocation(path) );
-    infoItems.add( createSensor("Temperature","Celsius",path) );
-    infoItems.add( createSensor("Humidity","Percentage of water in air",path) );
+    infoItems.add( createLocation(path, timestamp) );
+    infoItems.add( createSensor("Temperature","Celsius",path, timestamp) );
+    infoItems.add( createSensor("Humidity","Percentage of water in air",path, timestamp) );
 
     //SensorBox doesn't have child O-DF Object s
     Vector<OdfObject> objects = new Vector<OdfObject>();
@@ -224,7 +225,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    * @param unit Unit of measured values.
    * @param parentPath Path of parent O-DF Object.
    */
-  public OdfInfoItem createSensor( String name, String unit, Path parentPath){
+  public OdfInfoItem createSensor( String name, String unit, Path parentPath,Timestamp timestamp ){
     //Generate path from path of parent O-DF Object 
     Path path = new Path( parentPath.toString() + "/" + name );
 
@@ -233,8 +234,6 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String parentId = parentArray[ parentArray.length - 1];//Last
 
     // Generate new OdfValue<Object> 
-    // timestamp for the value
-    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
     // type metadata, default is xs:string
     String typeStr = "xs:double";
     // value as String
@@ -294,7 +293,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    *  <a href="https://github.com/AaltoAsia/O-MI/blob/warp10integration/warp10-documentation.md">warp10 integration documentation</a>.
    * @param parentPath Path of parent O-DF Object.
    */
-  public OdfInfoItem createLocation( Path parentPath){
+  public OdfInfoItem createLocation( Path parentPath, Timestamp timestamp){
     //Generate path from path of parent O-DF Object 
     Path path = new Path( parentPath.toString() + "/location"  );
 
@@ -304,8 +303,6 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     // Generate new OdfValue<Object> 
 
-    // timestamp for the value
-    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
     // type metadata, default is xs:string
     String typeStr = "";
     // value as String
