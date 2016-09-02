@@ -57,7 +57,7 @@ sealed trait InfoItemEvent {
 
 /**
  * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
- * Not a case class because pattern matching didn't work as expected.
+ * Not a case class because pattern matching didn't work as expected (this class is extended).
  */
 class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent {
   override def toString: String = s"ChangeEvent($infoItem)"
@@ -69,7 +69,7 @@ object ChangeEvent {
 }
 
 /**
- *
+ * Received new value with newer timestamp but value is the same as the previous
  */
 case class SameValueEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
 
@@ -154,8 +154,10 @@ class SingleStores(protected val settings: OmiConfigExtension) {
           val onChangeData =
             if (oldValue.value != newValue.value) {
               Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
-            } else None  // Value is same as the previous
-
+            } else {
+              // Value is same as the previous
+              Some(SameValueEvent(OdfInfoItem(path, Iterable(newValue))))
+            }
           // NOTE: This effectively discards incoming data that is older than the latest received value
           latestStore execute SetSensorData(path, newValue)
 
