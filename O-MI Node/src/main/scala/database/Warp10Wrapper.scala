@@ -240,7 +240,7 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
   type Warp10Token = String
   implicit val forwatter : Warp10JsonFormat = new Warp10JsonFormat()(singleStores)
 
-  val locationRegex = """([+-]\d\d\.\d*)?([+-]\d\d\d\.\d*)?(?:([+-]\d*)CRSWGS_84)?\/""".r
+  val locationRegex = """([+-]\d\d(?:\.\d+)?)?([+-]\d\d\d(?:\.\d+)?)?(?:([+-]\d+)CRSWGS_84|CRSWGS_84)?\/""".r
 
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests = true
