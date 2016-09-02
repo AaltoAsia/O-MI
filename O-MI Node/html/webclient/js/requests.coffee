@@ -219,6 +219,27 @@ requestsExt = (WebOmi) ->
           when "object"
             object = o.createOdfObject odfDoc, id
             currentOdfNode.appendChild object
+
+          when "description"
+            description = o.createOdfDescription odfDoc
+
+            # find the first value and insert before it (schema restriction)
+
+            beforInfos = o.evaluateXPath(currentOdfNode, "odf:InfoItem[1]")[0]
+            beforObjects = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0]
+            beforMetas = o.evaluateXPath(currentOdfNode, "odf:MetaData[1]")[0]
+            beforValues = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0]
+            if beforInfos?
+              siblingValue = beforInfos
+            else if beforObjects?
+              siblingValue = beforObjects
+            else if beforMetas?
+              siblingValue = beforMetas
+            else
+              siblingValue = beforValues
+
+            maybeInsertBefore currentOdfNode, siblingValue, description
+
           when "metadata"
             meta = o.createOdfMetaData odfDoc
 
