@@ -553,7 +553,7 @@ formLogicExt = ($, WebOmi) ->
           text : name
           type : "object"
           children :
-            genData(child, path) for child in objChildren(xmlNode)
+            [genData {nodeName:"description"}, path].concat (genData(child, path) for child in objChildren(xmlNode))
         when "InfoItem"
           name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
           path = "#{parentPath}/#{name}"
@@ -561,12 +561,21 @@ formLogicExt = ($, WebOmi) ->
           text : name
           type : "infoitem"
           children :
-            [genData {nodeName:"MetaData"}, path]
+            [
+              (genData {nodeName:"description"}, path),
+              (genData {nodeName:"MetaData"}, path)
+            ]
         when "MetaData"
           path = "#{parentPath}/MetaData"
           id   : idesc path
           text : "MetaData"
           type : "metadata"
+          children : []
+        when "description"
+          path = "#{parentPath}/description"
+          id   : idesc path
+          text : "description"
+          type : "description"
           children : []
 
     treeData = genData objectsNode
