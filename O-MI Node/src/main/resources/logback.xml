@@ -31,17 +31,19 @@
 
 
 
-    <logger name="akka" level="INFO" />
     <logger name="slick" level="INFO" />
     <logger name="com.zaxxer.hikari" level="INFO" />
     <logger name="HikariPool" level="INFO" />
     <logger name="com.typesafe.sslconfig" level="INFO" />
-    
-
-    <logger name="agentSystem" level="INFO" />
-    <logger name="accessControl" level="INFO" />
     <logger name="spray.can" level="INFO" />
     <logger name="akka.io.TcpListener" level="INFO" />
+    
+
+    <!--
+    <logger name="akka" level="INFO" />
+    <logger name="agentSystem" level="INFO" />
+    <logger name="accessControl" level="INFO" />
+    -->
 
     <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
