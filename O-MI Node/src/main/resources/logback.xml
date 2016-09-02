@@ -39,11 +39,9 @@
     <logger name="akka.io.TcpListener" level="INFO" />
     
 
-    <!--
     <logger name="akka" level="INFO" />
     <logger name="agentSystem" level="INFO" />
     <logger name="accessControl" level="INFO" />
-    -->
 
     <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
