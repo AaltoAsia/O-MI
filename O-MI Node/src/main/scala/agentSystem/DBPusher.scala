@@ -172,7 +172,6 @@ trait DBPusher extends BaseAgentSystem{
       value <- info.values
     } yield (path, value, oldValueOpt)
 
-    log.debug(s"###### pathValueOldValueTuples $pathValueOldValueTuples")
 
     val pollFuture = Future{pathValueOldValueTuples.foreach{
       case (path, oldValue, value) =>
@@ -187,8 +186,6 @@ trait DBPusher extends BaseAgentSystem{
       case (path,value, oldValueO) => singleStores.processData(path,value,oldValueO)}
     val triggeringEvents = callbackDataOptions.flatten
     
-    log.debug(s"###### EVENTS $triggeringEvents")
-
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
       // TODO: implement responsible agent check here or processEvents method
       // return false  // command was not accepted or failed in agent or physical world but no internal server errors

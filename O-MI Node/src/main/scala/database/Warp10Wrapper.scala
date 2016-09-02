@@ -410,21 +410,16 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
          }
        }
      }
-     val ret = inner(path.init).flatMap(_.headOption)//should only contain 1 location per path
-     log.debug(s"############## findClosestLocation: $ret")
-     ret
+     inner(path.init).flatMap(_.headOption)//should only contain 1 location per path
    }
 
  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] ={
    // val hTree = singleStores.hierarchyStore execute GetTree()
-   log.debug(s"##############Warp10 write with paths: ${infos.map(_.path)}")
    val grouped = infos.groupBy(_.path.lastOption.exists(_ == "location"))
 
    val locations = grouped.get(true).map(_.groupBy(_.path))
    val newInfos = grouped.get(false).toSeq.flatten // Option[Seq[InfoItem]] -> Seq[Seq[InfoItem]] -> Seq[InfoItem]
 
-   log.debug(s"##############Warp10 write with infos: $newInfos")
-   log.debug(s"##############Warp10 write with locations: $locations")
    val data = newInfos.flatMap( ii =>
      ii.values.map(value =>
        (
@@ -439,16 +434,12 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
          )
      )
    )
-   log.debug(s"##############Warp10 write with DATA: $data")
 
 
    val content = data.map{
     case (path, odfValue, location) =>
     toWriteFormat(path,odfValue, location)
    }.mkString("")
-
-   log.debug(s"CONTENT: $content")
-   log.debug(s"==================================================")
 
    val request = RequestBuilding.Post(writeAddress, content).withHeaders(Warp10TokenHeader(writeToken))
 
