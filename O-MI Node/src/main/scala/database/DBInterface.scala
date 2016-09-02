@@ -55,16 +55,23 @@ sealed trait InfoItemEvent {
   val infoItem: OdfInfoItem
 }
 
-/*
+/**
  * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
  * Not a case class because pattern matching didn't work as expected.
  */
-class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
+class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent {
+  override def toString: String = s"ChangeEvent($infoItem)"
+  override def hashCode: Int = infoItem.hashCode
+}
 object ChangeEvent {
   def apply(ii: OdfInfoItem): ChangeEvent = new ChangeEvent(ii)
   def unapply(ce: ChangeEvent): Option[OdfInfoItem] = Some(ce.infoItem)
 }
 
+/**
+ *
+ */
+case class SameValueEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
 
 /*
  * New InfoItem (is also ChangeEvent)
