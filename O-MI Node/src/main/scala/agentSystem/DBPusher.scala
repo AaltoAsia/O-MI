@@ -90,12 +90,12 @@ trait DBPusher extends BaseAgentSystem{
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
 
-    val esubLists: Seq[(EventSub, OdfInfoItem)] = events flatMap {
+    val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
 
         val esubs = singleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
-    }
+    }.flatten
     // Aggregate events under same subscriptions (for optimized callbacks)
     val esubAggregation /*: Map[EventSub, Seq[(EventSub, OdfInfoItem)]]*/ =
         esubLists groupBy { case (eventSub, _) => eventSub }
