@@ -273,6 +273,8 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
  def log = system.log
+
+
  def getNBetween(
     requests: Iterable[OdfNode],
     begin: Option[Timestamp],
@@ -280,33 +282,87 @@ class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: Acto
     newest: Option[Int],
     oldest: Option[Int]
   ): Future[Option[OdfObjects]] = {
-   val locationsSeparated = requests.groupBy(_.path.last == "location")
-   val locations: Map[Path, OdfNode] = locationsSeparated
-     .get(true)
-     .toSeq
-     .flatten
-     .groupBy(p => Path(p.path.init))
-     .mapValues(_.head)
-   val requestWithoutLocations = locationsSeparated.get(false).toSeq.flatten
-   oldest match {
-     case Some(a) => Future.failed( new Exception("Oldest is not supported, since 29.6.2016"))
-     case None =>
-       val selector = nodesToReadPathSelector(requestWithoutLocations)
-       val contentFuture : Future[String] = (begin, end, newest) match {
-         case (None, None, None) =>
-           Future.successful( warpReadNBeforeMsg(selector, 1, None)(readToken) )
-         case (None, endTime, Some(sticks)) =>
-           Future.successful( warpReadNBeforeMsg(selector,sticks, end)(readToken) )
-         case (startTime, endTime, None) =>
-           Future.successful( warpReadBetweenMsg(selector,begin, end)(readToken) )
-         case (startTime, endTime, sticks) =>
-           Future.failed( new Exception(s"Unsupported combination ($startTime, $endTime, $sticks), since 29.6.2016"))
-       }
-       contentFuture.flatMap{
-         content =>
-           read( content, locations)
-        }
-    }
+   if((newest.isEmpty || newest.contains(1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty)){
+     def getFromCache(): Seq[Option[OdfObjects]] = {
+       lazy val hTree = singleStores.hierarchyStore execute GetTree()
+       val objectData: Seq[Option[OdfObjects]] = requests.collect{
+
+         case obj@OdfObjects(objects, _) => {
+           require(objects.isEmpty,
+             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
+
+           Some(singleStores.buildOdfFromValues(
+             (singleStores.latestStore execute LookupAllDatas()).toSeq))
+         }
+
+         case obj @ OdfObject(_, path, items, objects, _, _) => {
+           require(items.isEmpty && objects.isEmpty,
+             s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
+           val resultsO = for {
+             odfObject <- hTree.get(path).collect{
+               case o: OdfObject => o
+             }
+             paths = getLeafs(odfObject).map(_.path)
+             pathValues = singleStores.latestStore execute LookupSensorDatas(paths)
+           } yield singleStores.buildOdfFromValues(pathValues)
+
+           //val paths = getLeafs(obj).map(_.path)
+           //val objs = singleStores.latestStore execute LookupSensorDatas(paths)
+           //val results = singleStores.buildOdfFromValues(objs)
+
+           resultsO
+         }
+       }.toSeq
+
+       // And then get all InfoItems with the same call
+       val reqInfoItems = requests collect {case ii: OdfInfoItem => ii}
+       val paths = reqInfoItems map (_.path)
+
+       val infoItemData = singleStores.latestStore execute LookupSensorDatas(paths.toVector)
+       val foundPaths = (infoItemData map { case (path,_) => path }).toSet
+
+       val resultOdf = singleStores.buildOdfFromValues(infoItemData)
+
+       objectData :+ Some(
+         reqInfoItems.foldLeft(resultOdf){(result, info) =>
+           info match {
+             case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
+               result union createAncestors(qry)
+             case _ => result // else discard
+           }
+         }
+       )
+     }
+     Future{getFromCache().flatten.reduceOption(_.union(_))}
+   } else {
+     val locationsSeparated = requests.groupBy(_.path.last == "location")
+     val locations: Map[Path, OdfNode] = locationsSeparated
+       .get(true)
+       .toSeq
+       .flatten
+       .groupBy(p => Path(p.path.init))
+       .mapValues(_.head)
+     val requestWithoutLocations = locationsSeparated.get(false).toSeq.flatten
+     oldest match {
+       case Some(a) => Future.failed(new Exception("Oldest is not supported, since 29.6.2016"))
+       case None =>
+         val selector = nodesToReadPathSelector(requestWithoutLocations)
+         val contentFuture: Future[String] = (begin, end, newest) match {
+           case (None, None, None) =>
+             Future.successful(warpReadNBeforeMsg(selector, 1, None)(readToken))
+           case (None, endTime, Some(sticks)) =>
+             Future.successful(warpReadNBeforeMsg(selector, sticks, end)(readToken))
+           case (startTime, endTime, None) =>
+             Future.successful(warpReadBetweenMsg(selector, begin, end)(readToken))
+           case (startTime, endTime, sticks) =>
+             Future.failed(new Exception(s"Unsupported combination ($startTime, $endTime, $sticks), since 29.6.2016"))
+         }
+         contentFuture.flatMap {
+           content =>
+             read(content, locations)
+         }
+     }
+   }
  }
  private def read(content : String, requiredLocations: Map[Path,OdfNode]) = {
         val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
