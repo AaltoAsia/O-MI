@@ -122,7 +122,7 @@ sealed trait OdfValue[+T]{
     ValueType(
       value.toString,
       typeValue,
-      unixTime = Option(timestamp.getTime),
+      unixTime = Option(timestamp.getSeconds),
       dateTime = Option{
         timestampToXML(timestamp)
       },
