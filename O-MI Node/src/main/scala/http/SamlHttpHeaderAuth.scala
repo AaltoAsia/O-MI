@@ -34,7 +34,7 @@ case class Eppn(user: String)
 /**
  * SAML authorization using http headers got from some reverse-proxying server (e.g. nginx, apache)
  * preferrably running on the same computer (for security reasons).
- * Authorize [[PermissiveRequest]]s for all users who are specified by EPPN in config whitelist
+ * Authorize PermissiveRequests for all users who are specified by EPPN in config whitelist
  * EPPNs are usually in format "username@organizationdomain"
  */
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
