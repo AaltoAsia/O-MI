@@ -5,6 +5,8 @@ Releasing
 **Before** releasing:
 
 1. Check that configuration is right (see below)
+  * `O-MI Node/src/main/resources/application.conf`
+  * remove excess logging (in `O-MI Node/src/main/resources/logback.xml`)
 2. Change version number in `/build.sbt` only
 3. Check that tests succeed: `sbt test`
 
