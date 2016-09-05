@@ -36,7 +36,10 @@ class  OdfInfoItemImpl(
   metaData:             Option[OdfMetaData] = None
 ) extends Serializable {
 
-  /** Method for combining two OdfInfoItems with same path */
+
+  /** 
+   * Method for combining two OdfInfoItems with same path 
+   */
   def combine(another: OdfInfoItem) : OdfInfoItem ={
     require(path == another.path, s"Should have same paths, got $path versus ${another.path}")
     OdfInfoItem(
@@ -100,7 +103,7 @@ case class OdfMetaData(
               head <- items.headOption
               last <- items.lastOption
               infoI <- Some(head.combine(last))
-            } yield infoI
+            } yield infoI.withNewest
           }
       }.map{
         info: OdfInfoItem =>//Is this what is really wanted? May need all history values, not only neewst 
@@ -123,7 +126,7 @@ sealed trait OdfValue[+T]{
     ValueType(
       value.toString,
       typeValue,
-      unixTime = Option(timestamp.getTime),
+      unixTime = Option(timestamp.getSeconds),
       dateTime = Option{
         timestampToXML(timestamp)
       },

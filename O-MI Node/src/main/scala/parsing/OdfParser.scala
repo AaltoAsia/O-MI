@@ -189,7 +189,7 @@ object OdfParser extends Parser[OdfParseResult] {
   private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = value.dateTime match {
     case None => value.unixTime match {
       case None => requestProcessTime
-      case Some(seconds) => new Timestamp(seconds.toLong)
+      case Some(seconds) => new Timestamp(seconds.toLong * 1000)
     }
     case Some(cal) => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
   }

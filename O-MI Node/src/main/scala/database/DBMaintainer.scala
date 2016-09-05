@@ -34,47 +34,16 @@ object DBMaintainer{
 }
 class DBMaintainer(
   protected val dbConnection : DBReadWrite,
-  protected val singleStores : SingleStores,
-  protected val settings : OmiConfigExtension
+  override protected val singleStores : SingleStores,
+  override protected val settings : OmiConfigExtension
 )
-  extends Actor
-  with ActorLogging
-  with RequiresMessageQueue[BoundedMessageQueueSemantics]
-  {
+extends SingleStoresMaintainer(singleStores, settings)
+{
 
   case object TrimDB
-  case object TakeSnapshot
-  private val scheduler = context.system.scheduler
   private val trimInterval: FiniteDuration = settings.trimInterval
-  private val snapshotInterval = settings.snapshotInterval
   log.info(s"scheduling databse trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
-  if( settings.writeToDisk){
-    log.info(s"scheduling prevayler snapshot every $snapshotInterval")
-    scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
-  } else {
-    log.info("using transient prevayler, taking snapshots is not in use.")
-  }
-  type Hole
-  private def takeSnapshot: FiniteDuration = {
-    def trySnapshot[T](p: Prevayler[T], errorName: String): Unit = {
-      Try[Unit]{
-        p.takeSnapshot() // returns snapshot File
-      }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
-    }
-
-    log.info("Taking prevyaler snapshot")
-    val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
-
-    trySnapshot(singleStores.latestStore, "latestStore")
-    trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
-    trySnapshot(singleStores.subStore, "subStore")
-    trySnapshot(singleStores.idPrevayler, "idPrevayler")
-
-    val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
-    val duration : FiniteDuration = end - start
-    duration
-  }
   /**
    * Function for handling InputPusherCmds.
    *
@@ -82,37 +51,13 @@ class DBMaintainer(
   override def receive: Actor.Receive = {
     case TrimDB                         => {
       val numDel = dbConnection.trimDB()
-      numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
-    case TakeSnapshot                   => {
+    numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
+    case TakeSnapshot                   => 
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")
-      // remove unnecessary files (might otherwise grow until disk is full)
-      val dirs = singleStores.prevaylerDirectories
-      for (dir <- dirs) {
-        val prevaylerDir = new org.prevayler.implementation.PrevaylerDirectory(dir)
-        Try{prevaylerDir.necessaryFiles()} match {
-          case Failure(e) =>
-            log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
-          case Success(necessaryFiles) =>
-            val allFiles = dir.listFiles(new FilenameFilter {
-              def accept(dir: File, name: String) = (name endsWith ".journal") || (name endsWith ".snapshot")
-            })
-            
-            val extraFiles = allFiles filterNot (necessaryFiles contains _)
-
-            extraFiles foreach {file =>
-              Try{file.delete} match {
-                case Success(true) => // noop
-                case Success(false) =>
-                  log.warning(s"File $file was listed unnecessary but couldn't be deleted")
-                case Failure(e) => 
-                  log.warning(s"Exception when trying to delete unnecessary file $file: $e")
-              }
-            }
-        }
-        
-      }
-    }
+      cleanPrevayler
+    
     case _ => log.warning("Unknown message received.")
+
   }
 }
