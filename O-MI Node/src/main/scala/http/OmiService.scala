@@ -79,7 +79,8 @@ class OmiServiceImpl(
        // Early initializer needed (-- still doesn't seem to work)
        override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
-  registerApi(new AuthAPIService())
+
+  //registerApi(new AuthAPIService())
 
 
 }
