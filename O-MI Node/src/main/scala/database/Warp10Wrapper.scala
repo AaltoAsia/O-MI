@@ -37,6 +37,7 @@ import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
 import parsing.xmlGen.xmlTypes.{MetaData, QlmID}
 import spray.json._
+import http.OmiConfigExtension
 import types.OdfTypes._
 import types.Path
 import types.OmiTypes.OmiReturn
@@ -234,8 +235,9 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 
 }
 
-class Warp10Wrapper( settings: Warp10ConfigExtension )(implicit val system: ActorSystem, val singleStores: SingleStores) extends DB {
+class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(implicit val system: ActorSystem, val singleStores: SingleStores) extends DB {
 
+ val singleStoresMaintainer = system.actorOf(SingleStoresMaintainer.props(singleStores, settings), "SingleStoreMaintainer")
  def destroy(): Unit = {}
   type Warp10Token = String
   implicit val forwatter : Warp10JsonFormat = new Warp10JsonFormat()(singleStores)
