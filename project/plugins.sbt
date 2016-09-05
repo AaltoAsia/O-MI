@@ -20,4 +20,5 @@ addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "1.1.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.3")
 
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 

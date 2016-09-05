@@ -20,7 +20,7 @@
   # Utility function; Clone the element above and empty its input fields 
   # callback type: (clonedDom) -> void
   cloneAbove = (target, callback) ->
-    util.cloneAbove target, cloned ->
+    util.cloneAbove target, (cloned) ->
 
       if callback? then callback cloned
 
@@ -135,7 +135,7 @@
     else
 
       # TODO: use validators on higher level and set gui indicators (has-success/has-error)
-      v = WebOmi.consts.validators
+      v = WebOmi.util.validators
 
 
       values =
@@ -168,6 +168,10 @@
       if newInfoItem.metadatas.length > 0
         consts.addOdfTreeNode path, path+"/MetaData", "MetaData", "metadata", (node) ->
           $(jqesc node.id).data "metadatas", metas
+
+      if newInfoItem.description?
+        consts.addOdfTreeNode path, path+"/description", "description", "description", (node) ->
+          $(jqesc node.id).data "description", newInfoItem.description
 
       # close the dialog
       consts.infoItemDialog.modal 'hide'

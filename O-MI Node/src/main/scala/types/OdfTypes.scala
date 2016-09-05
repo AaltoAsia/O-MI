@@ -246,6 +246,14 @@ case class OdfInfoItem(
       metaData = if( metaData.nonEmpty ) metaData else this.metaData
     )
   }
+
+  /** 
+   * Method for reducing values to newest
+   */
+  def withNewest : OdfInfoItem ={
+    this.copy( values = this.values.sortBy{ v => v.timestamp.getTime }.lastOption.toVector )
+  }
+
 }
 
 /** Class presenting O-DF description element*/
