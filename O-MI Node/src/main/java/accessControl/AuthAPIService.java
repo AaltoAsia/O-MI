@@ -17,6 +17,7 @@ package accessControl;
 import akka.http.scaladsl.model.HttpHeader;
 import akka.http.scaladsl.model.HttpRequest;
 import akka.http.scaladsl.model.headers.HttpCookie;
+import akka.http.scaladsl.model.headers.HttpCookiePair;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -36,6 +37,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+
+import java.util.Iterator;
 
 
 /**
@@ -65,133 +68,133 @@ public class AuthAPIService implements AuthApi {
     }
 
 
-//    @Override
-//    public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
-//                                boolean isWrite,
-//                                java.lang.Iterable<Path> paths) {
-//
-//        logger.debug("isAuthorizedForType EXECUTED!");
-//
-//
-//        String subjectInfo = null;
-//        boolean success = false;
-//        boolean authenticated = false;
-//
-//        // First try authenticate user by cookies
-//        scala.collection.Iterator  iter = httpRequest.cookies().iterator();
-//        if (!iter.hasNext()) {
-//            logger.debug("No cookies!");
-//
-//        } else {
-//
-//            HttpCookie ck = null;
-//            while (iter.hasNext()) {
-//                HttpCookie nextCookie = (HttpCookie) iter.next();
-//                logger.debug(nextCookie.name() + ":" + nextCookie.value());
-//
-//                if (nextCookie.name().equals("JSESSIONID")) {
-//                    ck = nextCookie;
-//                    break;
-//                }
-//            }
-//
-//            if (ck != null)
-//            {
-//                authenticated = true;
-//                subjectInfo = ck.toString();
-//            }
-//
-//        }
-//
-//
-//        // If there is not certificate present we try to find the certificate
-//        if (!authenticated) {
-//
-//            iter = httpRequest.headers().iterator();
-//
-//            while (iter.hasNext()) {
-//
-//                HttpHeader nextHeader = (HttpHeader)iter.next();
-//                if (nextHeader.name().equals("X-SSL-CLIENT")) {
-//                    String allInfo = nextHeader.value();
-//                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
-//
-//                    if (success)
-//                        break;
-//
-//                } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
-//                    success = nextHeader.value().contains("SUCCESS");
-//
-//                    if (subjectInfo != null)
-//                        break;
-//                }
-//            }
-//
-//            authenticated = (subjectInfo != null) && success;
-//            if (authenticated)
-//            {
-//                logger.debug("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
-//            }
-//        }
-//
-//
-//        // Start parsing request
-//        if (authenticated) {
-//
-//            Iterator<Path> iterator = paths.iterator();
-//            while (iterator.hasNext()) {
-//                String nextObj = iterator.next().toString();
-//
-//                // the very first query to read the tree
-//                if (nextObj.equalsIgnoreCase("Objects")) {
-//                    logger.debug("Root tree requested. forwarding to Partial API.");
-//
-//                    //Getting paths according to the policies
-//                    ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
-//
-//                    if (res_paths == null)
-//                        return Unauthorized.instance();
-//
-//                    // Check if security module return "all" means allowing all tree (administrator mode or read_all mode)
-//                    if (res_paths.size() == 1) {
-//                        String obj_path = res_paths.get(0).toString();
-//                        if (obj_path.equalsIgnoreCase("all"))
-//                            return Authorized.instance();
-//                    }
-//
-//                    return new Partial(res_paths);
-//                } else
-//                    break;
-//            }
-//
-//            String requestBody = "{\"paths\":[";
-//            Iterator<Path> it = paths.iterator();
-//            while (it.hasNext()) {
-//                String nextObj = it.next().toString();
-//
-//                // the very first query to read the tree
-//                if (nextObj.equalsIgnoreCase("Objects"))
-//                    return Authorized.instance();
-//
-//                requestBody += "\"" + nextObj + "\"";
-//
-//                if (it.hasNext())
-//                    requestBody += ",";
-//            }
-//
-//            if (success)
-//                requestBody += "],\"user\":\"" + subjectInfo + "\"}";
-//            else
-//                requestBody += "]}";
-//
-//            logger.debug("isWrite:" + isWrite);
-//            logger.debug("Paths:" + requestBody);
-//
-//            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
-//        } else {
-//            return Unauthorized.instance();
-//        }
-//    }
+    @Override
+    public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
+                                boolean isWrite,
+                                java.lang.Iterable<Path> paths) {
+
+        logger.debug("isAuthorizedForType EXECUTED!");
+
+
+        String subjectInfo = null;
+        boolean success = false;
+        boolean authenticated = false;
+
+        // First try authenticate user by cookies
+        scala.collection.Iterator<HttpCookiePair> iter = httpRequest.cookies().iterator();
+        if (!iter.hasNext()) {
+            logger.debug("No cookies!");
+
+        } else {
+
+            HttpCookie ck = null;
+            while (iter.hasNext()) {
+                HttpCookie nextCookie = (HttpCookie) iter.next().toCookie();
+                logger.debug(nextCookie.name() + ":" + nextCookie.value());
+
+                if (nextCookie.name().equals("JSESSIONID")) {
+                    ck = nextCookie;
+                    break;
+                }
+            }
+
+            if (ck != null)
+            {
+                authenticated = true;
+                subjectInfo = ck.toString();
+            }
+
+        }
+
+
+        // If there is not certificate present we try to find the certificate
+        if (!authenticated) {
+
+            scala.collection.Iterator<HttpHeader> iterh = httpRequest.headers().iterator();
+
+            while (iterh.hasNext()) {
+
+                HttpHeader nextHeader = (HttpHeader)iterh.next();
+                if (nextHeader.name().equals("X-SSL-CLIENT")) {
+                    String allInfo = nextHeader.value();
+                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
+
+                    if (success)
+                        break;
+
+                } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
+                    success = nextHeader.value().contains("SUCCESS");
+
+                    if (subjectInfo != null)
+                        break;
+                }
+            }
+
+            authenticated = (subjectInfo != null) && success;
+            if (authenticated)
+            {
+                logger.debug("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
+            }
+        }
+
+
+        // Start parsing request
+        if (authenticated) {
+
+            Iterator<Path> iterator = paths.iterator();
+            while (iterator.hasNext()) {
+                String nextObj = iterator.next().toString();
+
+                // the very first query to read the tree
+                if (nextObj.equalsIgnoreCase("Objects")) {
+                    logger.debug("Root tree requested. forwarding to Partial API.");
+
+                    //Getting paths according to the policies
+                    ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
+
+                    if (res_paths == null)
+                        return Unauthorized.instance();
+
+                    // Check if security module return "all" means allowing all tree (administrator mode or read_all mode)
+                    if (res_paths.size() == 1) {
+                        String obj_path = res_paths.get(0).toString();
+                        if (obj_path.equalsIgnoreCase("all"))
+                            return Authorized.instance();
+                    }
+
+                    return new Partial(res_paths);
+                } else
+                    break;
+            }
+
+            String requestBody = "{\"paths\":[";
+            Iterator<Path> it = paths.iterator();
+            while (it.hasNext()) {
+                String nextObj = it.next().toString();
+
+                // the very first query to read the tree
+                if (nextObj.equalsIgnoreCase("Objects"))
+                    return Authorized.instance();
+
+                requestBody += "\"" + nextObj + "\"";
+
+                if (it.hasNext())
+                    requestBody += ",";
+            }
+
+            if (success)
+                requestBody += "],\"user\":\"" + subjectInfo + "\"}";
+            else
+                requestBody += "]}";
+
+            logger.debug("isWrite:" + isWrite);
+            logger.debug("Paths:" + requestBody);
+
+            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
+        } else {
+            return Unauthorized.instance();
+        }
+    }
 
     private void createOMIRequest(String escapedData, String userInfo) {
         ObjectFactory omiObjFactory = new ObjectFactory();
@@ -258,90 +261,98 @@ public class AuthAPIService implements AuthApi {
         }
     }
 
-    public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
-                                boolean isWrite,
-                                java.lang.Iterable<Path> paths) {
-        return  AuthApi$class.isAuthorizedForType(this, httpRequest, isWrite, paths);
-    }
+    //// when disabled, use the default
+    //public AuthorizationResult isAuthorizedForType(HttpRequest httpRequest,
+    //                            boolean isWrite,
+    //                            java.lang.Iterable<Path> paths) {
+    //    return  AuthApi$class.isAuthorizedForType(this, httpRequest, isWrite, paths);
+    //}
 
     public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
                                    OmiRequest omiRequest) {
         return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
 
-    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
     public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
                                    String request) {
         logger.debug("isAuthorizedForRawRequest EXECUTED!");
-        System.out.println("isAuthorizedForRawRequest EXECUTED!");
-//        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
-
-        String subjectInfo = null;
-        boolean success = false;
-        boolean authenticated = false;
-
-        // First try authenticate user by cookies
-        scala.collection.Iterator  iter = httpRequest.cookies().iterator();
-        if (!iter.hasNext()) {
-            logger.debug("No cookies!");
-
-        } else {
-
-            HttpCookie ck = null;
-            while (iter.hasNext()) {
-                HttpCookie nextCookie = (HttpCookie) iter.next();
-                logger.debug(nextCookie.name() + ":" + nextCookie.value());
-
-                if (nextCookie.name().equals("JSESSIONID")) {
-                    ck = nextCookie;
-                    break;
-                }
-            }
-
-            if (ck != null)
-            {
-                authenticated = true;
-                subjectInfo = ck.toString();
-            }
-
-        }
-
-        // If there is not certificate present we try to find the certificate
-        if (!authenticated) {
-
-            iter = httpRequest.headers().iterator();
-
-            while (iter.hasNext()) {
-
-                HttpHeader nextHeader = (HttpHeader)iter.next();
-                if (nextHeader.name().equals("X-SSL-CLIENT")) {
-                    String allInfo = nextHeader.value();
-                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
-
-                    if (success)
-                        break;
-
-                } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
-                    success = nextHeader.value().contains("SUCCESS");
-
-                    if (subjectInfo != null)
-                        break;
-                }
-            }
-
-            authenticated = (subjectInfo != null) && success;
-            if (authenticated)
-            {
-                logger.debug("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
-            }
-        }
-
-        if (authenticated) {
-            createOMIRequest(request,subjectInfo);
-            return Authorized.instance();
-        }
-        return Unauthorized.instance();
+        //System.out.println("isAuthorizedForRawRequest EXECUTED!");
+        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
     }
+
+//    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
+//    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
+//                                   String request) {
+//        logger.debug("isAuthorizedForRawRequest EXECUTED!");
+//        //System.out.println("isAuthorizedForRawRequest EXECUTED!");
+///        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
+//
+//        String subjectInfo = null;
+//        boolean success = false;
+//        boolean authenticated = false;
+//
+//        // First try authenticate user by cookies
+//        scala.collection.Iterator  iter = httpRequest.cookies().iterator();
+//        if (!iter.hasNext()) {
+//            logger.debug("No cookies!");
+//
+//        } else {
+//
+//            HttpCookie ck = null;
+//            while (iter.hasNext()) {
+//                HttpCookie nextCookie = (HttpCookie) iter.next();
+//                logger.debug(nextCookie.name() + ":" + nextCookie.value());
+//
+//                if (nextCookie.name().equals("JSESSIONID")) {
+//                    ck = nextCookie;
+//                    break;
+//                }
+//            }
+//
+//            if (ck != null)
+//            {
+//                authenticated = true;
+//                subjectInfo = ck.toString();
+//            }
+//
+//        }
+//
+//        // If there is not certificate present we try to find the certificate
+//        if (!authenticated) {
+//
+//            iter = httpRequest.headers().iterator();
+//
+//            while (iter.hasNext()) {
+//
+//                HttpHeader nextHeader = (HttpHeader)iter.next();
+//                if (nextHeader.name().equals("X-SSL-CLIENT")) {
+//                    String allInfo = nextHeader.value();
+//                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
+//
+//                    if (success)
+//                        break;
+//
+//                } else if (nextHeader.name().equals("X-SSL-VERIFY")) {
+//                    success = nextHeader.value().contains("SUCCESS");
+//
+//                    if (subjectInfo != null)
+//                        break;
+//                }
+//            }
+//
+//            authenticated = (subjectInfo != null) && success;
+//            if (authenticated)
+//            {
+//                logger.debug("Received user certificate, data:\nemailAddress="+subjectInfo+"\nvalidated="+success);
+//            }
+//        }
+//
+//        if (authenticated) {
+//            createOMIRequest(request,subjectInfo);
+//            return Authorized.instance();
+//        }
+//        return Unauthorized.instance();
+//    }
 
     public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
 
