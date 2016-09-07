@@ -23,7 +23,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
 
 import akka.actor.ActorSystem
 import akka.event.slf4j.Logger
@@ -39,8 +39,8 @@ import parsing.xmlGen.xmlTypes.{MetaData, QlmID}
 import spray.json._
 import http.OmiConfigExtension
 import types.OdfTypes._
-import types.Path
-import types.OmiTypes.OmiReturn
+import types.{ParseError, Path}
+import types.OmiTypes.{Returns, OmiReturn}
 import Warp10JsonProtocol.Warp10JsonFormat
 
 //serializer and deserializer for warp10 json formats
@@ -438,16 +438,35 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
    )
 
 
-   val content = data.map{
+   val requestContent = Try(data.map{
     case (path, odfValue, location) =>
     toWriteFormat(path,odfValue, location)
-   }.mkString("")
-
-   val request = RequestBuilding.Post(writeAddress, content).withHeaders(Warp10TokenHeader(writeToken))
+   }).map(_.mkString(""))
 
 
-   val response = httpExt.singleRequest(request)//httpHandler(request)
-    response.onFailure{
+   val request = requestContent.map(content =>
+     RequestBuilding.Post(writeAddress, content).withHeaders(Warp10TokenHeader(writeToken)
+     )
+   )
+
+
+   val response = {
+     if(request.isFailure) Future.failed(request.failed.get)
+     else httpExt.singleRequest(request.get)
+   }//httpHandler(request)
+   /*response.recover{
+     case pe: ParseError => {
+       log.warning("invalid location syntax")
+       Returns.ParseErrors(Vector(pe))
+     }
+     case nfe: NumberFormatException => {
+       log.warning("failed to parse locations")
+       Returns.ParseErrors(Vector(ParseError(nfe.getMessage)))
+
+     }
+   }*/
+
+   response.onFailure{
       case t : Throwable =>
         log.debug(request.toString)
         log.error(t, "Failed to communicate to Warp 10.")
@@ -477,66 +496,103 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
       )
     )
   )
-  private def toWriteFormat( path: Path, odfValue : OdfValue[Any], location: Option[String]) : String = {
-   def handleString(in: Any): String = {
-     val str = URLEncoder.encode(in.toString, "UTF-8")
+  private def toWriteFormat( path: Path, odfValue : OdfValue[Any], location: Option[String]): String = {
+    def handleString(in: Any): String = {
+      val str = URLEncoder.encode(in.toString, "UTF-8")
 
-     s"'$str'"
-   }
-   val unixEpochTime = odfValue.timestamp.getTime * 1000
-   val pathJS = path.mkString(".")
-   val typeValue = odfValue.typeValue
-   val labels = s"{ type=$typeValue }"
+      s"'$str'"
+    }
+    def updateHierarchy = {
+      singleStores.hierarchyStore execute Union(createAncestors(OdfInfoItem(Path(path.init) / "location", metaData = warp10MetaData(path))))
+    }
 
-   val matchResult = location.flatMap(loc => locationRegex.findFirstMatchIn(loc))
-   val loc = matchResult match {
-     case Some(res) => {
-       singleStores.hierarchyStore execute Union(createAncestors(OdfInfoItem(Path(path.init) / "location", metaData = warp10MetaData(path))))
-       (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
-         case (None, None, Some(elev)) => s"/${elev.toLong}"
-         case (Some(lat), Some(lon), None) => s"${lat.toDouble}:${lon.toDouble}/"
-         case (Some(lat), Some(lon), Some(elev)) => s"${lat.toDouble}:${lon.toDouble}/${elev.toLong}"
-         case _ => {
-           log.warning(s"Invalid format for location${location}")
-           "/"
-         }
-       }
-     }
-     case none => {
-       "/"
-     }
-   }
+    val unixEpochTime = odfValue.timestamp.getTime * 1000
+    val pathJS = path.mkString(".")
+    val typeValue = odfValue.typeValue
+    val labels = s"{ type=$typeValue }"
 
-   val value =
-     if( odfValue.isNumeral )
-       odfValue.value
-     else {
-       val resString = odfValue.typeValue match {
-         case "xs:boolean" => odfValue.value match {
-           case b: Boolean => if(b) "T" else "F"
-           case default: Any => handleString(default)
-         }
-         case _ => handleString(odfValue.value)
-       }
+    val parsedLoc = location match {
+      case Some(loc) =>{
+        val matchResult = locationRegex.findFirstMatchIn(loc)
+        matchResult match {
+          case Some(res) => {
+            (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
+              case (None, None, Some(elev)) => {
+                updateHierarchy
+                s"/${elev.toLong}"
+              }
+              case (Some(lat), Some(lon), None) => {
+                updateHierarchy
+                s"${lat.toDouble}:${lon.toDouble}/"
+              }
+              case (Some(lat), Some(lon), Some(elev)) => {
+                updateHierarchy
+                s"${lat.toDouble}:${lon.toDouble}/${elev.toLong}"
+              }
+              case _ => {
+                log.warning(s"Invalid format for location: ${location}")
+                throw ParseError(s"Invalid format for location: $location")
+              }
+            }
+          }
+          case none => {
+            log.warning(s"Invalid format for location: ${location}")
+            throw ParseError(s"Invalid format for location: $location")
+          }
+        }
+      }
+      case None => "/"
+    }
+    /*val matchResult = location.flatMap(loc => locationRegex.findFirstMatchIn(loc))
+    val loc = matchResult match {
+      case Some(res) => {
+        singleStores.hierarchyStore execute Union(createAncestors(OdfInfoItem(Path(path.init) / "location", metaData = warp10MetaData(path))))
+        (Option(res.group(1)),Option(res.group(2)),Option(res.group(3))) match {
+          case (None, None, Some(elev)) => s"/${elev.toLong}"
+          case (Some(lat), Some(lon), None) => s"${lat.toDouble}:${lon.toDouble}/"
+          case (Some(lat), Some(lon), Some(elev)) => s"${lat.toDouble}:${lon.toDouble}/${elev.toLong}"
+          case _ => {
+            log.warning(s"Invalid format for location${location}")
+            "/"
+          }
+        }
+      }
+      case none => {
+        log.warning(s"Invalid format for location${location}")
+        "/"
+      }
+    }*/
 
-       s"$resString"
-     }
+    val value =
+      if( odfValue.isNumeral )
+        odfValue.value
+      else {
+        val resString = odfValue.typeValue match {
+          case "xs:boolean" => odfValue.value match {
+            case b: Boolean => if(b) "T" else "F"
+            case default: Any => handleString(default)
+          }
+          case _ => handleString(odfValue.value)
+        }
 
-   val result = s"$unixEpochTime/$loc $pathJS$labels $value\n"
-   //log.debug(s"sent message: $result")
-   result
- }
- 
+        s"$resString"
+      }
+
+    s"$unixEpochTime/$parsedLoc $pathJS$labels $value\n"
+    //log.debug(s"sent message: $result")
+
+  }
+
  private def nodesToReadPathSelector( nodes : Iterable[OdfNode] ) = {
-   val paths = nodes.map{ 
+   val paths = nodes.map{
      case obj : OdfObject => obj.path.mkString(".") + ".*"
-     case objs : OdfObjects => objs.path.mkString(".") + ".*" 
-     case info : OdfInfoItem => info.path.mkString(".") 
+     case objs : OdfObjects => objs.path.mkString(".") + ".*"
+     case info : OdfInfoItem => info.path.mkString(".")
    }
    "~(" + paths.mkString("|") + ")"
  }
- 
- 
+
+
  private def warpReadNBeforeMsg(
    pathSelector: String,
    sticks: Int,
@@ -566,7 +622,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
     time => time.getTime * 1000
    }.getOrElse( currentEpoch )
    val timespan =  begin.map{
-    time => startEpoch - time.getTime * 1000 
+    time => startEpoch - time.getTime * 1000
    }.getOrElse( startEpoch )
    s"""[
    '$readToken'
