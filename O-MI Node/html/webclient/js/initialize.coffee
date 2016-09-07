@@ -319,7 +319,8 @@ constsExt = ($, parent, util) ->
     my.progressBar  = $ '.response .progress-bar'
 
     loc = window.location
-    my.serverUrl.val "ws://" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
+    proto = if loc.protocol == "https:" then "wss:" else "ws:"
+    my.serverUrl.val proto + "//" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
 
 
     # Odf tree is using jstree; The requested odf nodes are selected from this tree
