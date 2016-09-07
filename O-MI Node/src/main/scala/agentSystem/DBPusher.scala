@@ -205,15 +205,7 @@ trait DBPusher extends BaseAgentSystem{
 
     val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetadatas
 
-    // Update our hierarchy data structures if needed
-    if (updatedStaticItems.nonEmpty) {
 
-        // aggregate all updates to single odf tree
-        val updateTree: OdfObjects =
-          (updatedStaticItems map createAncestors).foldLeft(OdfObjects())(_ union _)
-
-        singleStores.hierarchyStore execute Union(updateTree)
-    }
 
     // DB + Poll Subscriptions
     val infosToBeWrittenInDB: Seq[OdfInfoItem] =
@@ -227,12 +219,23 @@ trait DBPusher extends BaseAgentSystem{
     val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
     writeFuture.onSuccess{
-      case _ =>
+      case _ =>{
+            // Update our hierarchy data structures if needed
+
+        if (updatedStaticItems.nonEmpty) {
+          // aggregate all updates to single odf tree
+          val updateTree: OdfObjects =
+            (updatedStaticItems map createAncestors).foldLeft(OdfObjects())(_ union _)
+
+          singleStores.hierarchyStore execute Union(updateTree)
+        }
+        
         triggeringEvents.foreach(iie =>
           iie.infoItem.values.headOption.map(newValue=>
             singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
           )
         )
+      }
     }
     writeFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
