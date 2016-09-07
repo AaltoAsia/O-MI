@@ -151,21 +151,17 @@ class SingleStores(protected val settings: OmiConfigExtension) {
     oldValueOpt match {
       case Some(oldValue) =>
         if (valueShouldBeUpdated(oldValue, newValue)) {
-          val onChangeData =
-            if (oldValue.value != newValue.value) {
-              Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
-            } else {
-              // Value is same as the previous
-              Some(SameValueEvent(OdfInfoItem(path, Iterable(newValue))))
-            }
           // NOTE: This effectively discards incoming data that is older than the latest received value
-          latestStore execute SetSensorData(path, newValue)
+          if (oldValue.value != newValue.value) {
+            Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
+          } else {
+            // Value is same as the previous
+            Some(SameValueEvent(OdfInfoItem(path, Iterable(newValue))))
+          }
 
-          onChangeData
         } else None  // Newer data found
 
       case None =>  // no data was found => new sensor
-        latestStore execute SetSensorData(path, newValue)
         val newInfo = OdfInfoItem(path, Iterable(newValue))
         Some(AttachEvent(newInfo))
     }
