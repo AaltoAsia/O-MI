@@ -27,7 +27,7 @@ def commonSettings(moduleName: String) = Seq(
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
 )
 
-//lazy val JavaDoc = config("genjavadoc") extend Compile
+lazy val JavaDoc = config("genjavadoc") extend Compile
 
 //Something is broken
 lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
