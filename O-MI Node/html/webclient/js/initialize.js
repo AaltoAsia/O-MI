@@ -80,7 +80,7 @@
       };
     };
     validators.url = function(s) {
-      if (parent.util.urlmatch.test(s)) {
+      if (my.urlmatch.test(s)) {
         return s;
       } else {
         return null;
@@ -136,7 +136,8 @@
       objects: "glyphicon glyphicon-tree-deciduous",
       object: "glyphicon glyphicon-folder-open",
       infoitem: "glyphicon glyphicon-apple",
-      metadata: "glyphicon glyphicon-info-sign"
+      metadata: "glyphicon glyphicon-info-sign",
+      description: "glyphicon glyphicon-info-sign"
     };
     my.addOdfTreeNode = function(parent, path, name, treeTypeName, callback) {
       var tree;
@@ -197,7 +198,8 @@
           }
         }),
         add_obj: createNode("an", "Object", "object", "MyObject"),
-        add_metadata: createNode("a", "MetaData", "metadata", null)
+        add_metadata: createNode("a", "MetaData", "metadata", null),
+        add_decsription: createNode("a", "description", "description", null)
       };
     };
     my.odfTreeSettings = {
@@ -216,7 +218,7 @@
         },
         object: {
           icon: "odf-object " + my.icon.object,
-          valid_children: ["object", "infoitem"]
+          valid_children: ["object", "infoitem", "description"]
         },
         objects: {
           icon: "odf-objects " + my.icon.objects,
@@ -224,10 +226,14 @@
         },
         infoitem: {
           icon: "odf-infoitem " + my.icon.infoitem,
-          valid_children: ["metadata"]
+          valid_children: ["metadata", "description"]
         },
         metadata: {
           icon: "odf-metadata " + my.icon.metadata,
+          valid_children: []
+        },
+        description: {
+          icon: "odf-description " + my.icon.description,
           valid_children: []
         }
       },
@@ -248,11 +254,11 @@
     };
     URLHighlightOverlay = {
       token: function(stream, state) {
-        if (stream.match(parent.util.urlmatch)) {
+        if (stream.match(util.urlmatch)) {
           stream.backUp(1);
           return "link";
         }
-        while ((stream.next() != null) && !stream.match(parent.util.urlmatch, false)) {
+        while ((stream.next() != null) && !stream.match(util.urlmatch, false)) {
           null;
         }
         return null;

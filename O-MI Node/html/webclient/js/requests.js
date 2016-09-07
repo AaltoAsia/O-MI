@@ -166,7 +166,7 @@
       }
     };
     my.addPathToOdf = function(odfTreeNode, odfObjects) {
-      var currentOdfNode, i, id, info, len, maybeChild, maybeDesc, maybeValues, meta, metadata, metainfo, metas, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
+      var beforInfos, beforMetas, beforObjects, beforValues, currentOdfNode, description, i, id, info, len, maybeChild, maybeDesc, maybeValues, meta, metadata, metainfo, metas, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
       o = WebOmi.omi;
       odfDoc = odfObjects.ownerDocument || odfObjects;
       if ((odfTreeNode[0] == null) || odfTreeNode[0].id === "Objects") {
@@ -189,6 +189,22 @@
               case "object":
                 object = o.createOdfObject(odfDoc, id);
                 return currentOdfNode.appendChild(object);
+              case "description":
+                description = o.createOdfDescription(odfDoc);
+                beforInfos = o.evaluateXPath(currentOdfNode, "odf:InfoItem[1]")[0];
+                beforObjects = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
+                beforMetas = o.evaluateXPath(currentOdfNode, "odf:MetaData[1]")[0];
+                beforValues = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0];
+                if (beforInfos != null) {
+                  siblingValue = beforInfos;
+                } else if (beforObjects != null) {
+                  siblingValue = beforObjects;
+                } else if (beforMetas != null) {
+                  siblingValue = beforMetas;
+                } else {
+                  siblingValue = beforValues;
+                }
+                return maybeInsertBefore(currentOdfNode, siblingValue, description);
               case "metadata":
                 meta = o.createOdfMetaData(odfDoc);
                 metas = $(node).data("metadatas");

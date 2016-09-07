@@ -90,12 +90,12 @@ trait DBPusher extends BaseAgentSystem{
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
 
-    val esubLists: Seq[(EventSub, OdfInfoItem)] = events flatMap {
+    val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
 
         val esubs = singleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
-    }
+    }.flatten
     // Aggregate events under same subscriptions (for optimized callbacks)
     val esubAggregation /*: Map[EventSub, Seq[(EventSub, OdfInfoItem)]]*/ =
         esubLists groupBy { case (eventSub, _) => eventSub }
@@ -226,6 +226,14 @@ trait DBPusher extends BaseAgentSystem{
 
     val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
+    writeFuture.onSuccess{
+      case _ =>
+        triggeringEvents.foreach(iie =>
+          iie.infoItem.values.headOption.map(newValue=>
+            singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
+          )
+        )
+    }
     writeFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }

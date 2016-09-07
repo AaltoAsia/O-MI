@@ -21,14 +21,10 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
    *  Implement it in way that
    *  <a href="http://doc.akka.io/docs/akka/current/java/untyped-actors.html#Recommended_Practices">Akka recommends to</a>.
    *
-   *  @param _config Contains configuration for this agent, as given in application.conf.
+   *  param config Contains configuration for this agent, as given in application.conf.
    */
   // TODO: static method cannot be defined in the interface?
 
-  /**
-   * This sends debug log message to O-MI Node logs if
-   * debug level is enabled (in logback.xml and application.conf)
-   */
   protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   //protected Config config;

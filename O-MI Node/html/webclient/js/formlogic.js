@@ -510,7 +510,11 @@
               id: idesc(path),
               text: name,
               type: "object",
-              children: (function() {
+              children: [
+                genData({
+                  nodeName: "description"
+                }, path)
+              ].concat((function() {
                 var i, len, ref, results;
                 ref = objChildren(xmlNode);
                 results = [];
@@ -519,7 +523,7 @@
                   results.push(genData(child, path));
                 }
                 return results;
-              })()
+              })())
             };
           case "InfoItem":
             name = WebOmi.omi.getOdfId(xmlNode);
@@ -530,6 +534,8 @@
               type: "infoitem",
               children: [
                 genData({
+                  nodeName: "description"
+                }, path), genData({
                   nodeName: "MetaData"
                 }, path)
               ]
@@ -540,6 +546,14 @@
               id: idesc(path),
               text: "MetaData",
               type: "metadata",
+              children: []
+            };
+          case "description":
+            path = parentPath + "/description";
+            return {
+              id: idesc(path),
+              text: "description",
+              type: "description",
               children: []
             };
         }

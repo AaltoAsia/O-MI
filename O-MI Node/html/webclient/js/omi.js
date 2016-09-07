@@ -79,8 +79,10 @@
     my.createOdfDescription = function(doc, text) {
       var descElem, textElem;
       descElem = createOdf("description", doc);
-      textElem = doc.createTextNode(text);
-      descElem.appendChild(textElem);
+      if (text != null) {
+        textElem = doc.createTextNode(text);
+        descElem.appendChild(textElem);
+      }
       return descElem;
     };
     my.createOdfObjects = function(doc) {
@@ -138,6 +140,8 @@
           return "Objects";
         case "MetaData":
           return "MetaData";
+        case "description":
+          return "description";
         default:
           return null;
       }

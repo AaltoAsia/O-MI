@@ -55,16 +55,23 @@ sealed trait InfoItemEvent {
   val infoItem: OdfInfoItem
 }
 
-/*
+/**
  * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
- * Not a case class because pattern matching didn't work as expected.
+ * Not a case class because pattern matching didn't work as expected (this class is extended).
  */
-class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
+class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent {
+  override def toString: String = s"ChangeEvent($infoItem)"
+  override def hashCode: Int = infoItem.hashCode
+}
 object ChangeEvent {
   def apply(ii: OdfInfoItem): ChangeEvent = new ChangeEvent(ii)
   def unapply(ce: ChangeEvent): Option[OdfInfoItem] = Some(ce.infoItem)
 }
 
+/**
+ * Received new value with newer timestamp but value is the same as the previous
+ */
+case class SameValueEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
 
 /*
  * New InfoItem (is also ChangeEvent)
@@ -144,19 +151,17 @@ class SingleStores(protected val settings: OmiConfigExtension) {
     oldValueOpt match {
       case Some(oldValue) =>
         if (valueShouldBeUpdated(oldValue, newValue)) {
-          val onChangeData =
-            if (oldValue.value != newValue.value) {
-              Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
-            } else None  // Value is same as the previous
-
           // NOTE: This effectively discards incoming data that is older than the latest received value
-          latestStore execute SetSensorData(path, newValue)
+          if (oldValue.value != newValue.value) {
+            Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
+          } else {
+            // Value is same as the previous
+            Some(SameValueEvent(OdfInfoItem(path, Iterable(newValue))))
+          }
 
-          onChangeData
         } else None  // Newer data found
 
       case None =>  // no data was found => new sensor
-        latestStore execute SetSensorData(path, newValue)
         val newInfo = OdfInfoItem(path, Iterable(newValue))
         Some(AttachEvent(newInfo))
     }

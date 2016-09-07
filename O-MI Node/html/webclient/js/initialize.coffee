@@ -85,7 +85,7 @@ utilExt = ($, parent) ->
     null
 
   validators.url = (s) ->
-    if parent.util.urlmatch.test s
+    if my.urlmatch.test s
       s
     else null
 
@@ -169,6 +169,7 @@ constsExt = ($, parent, util) ->
     object   : "glyphicon glyphicon-folder-open"
     infoitem : "glyphicon glyphicon-apple"
     metadata : "glyphicon glyphicon-info-sign"
+    description : "glyphicon glyphicon-info-sign"
 
   my.addOdfTreeNode = (parent, path, name, treeTypeName, callback=null) ->
     tree = WebOmi.consts.odfTree
@@ -232,6 +233,8 @@ constsExt = ($, parent, util) ->
       createNode "an", "Object", "object", "MyObject"
     add_metadata :
       createNode "a", "MetaData", "metadata", null
+    add_decsription :
+      createNode "a", "description", "description", null
 
   my.odfTreeSettings =
     plugins : ["checkbox", "types", "contextmenu"]
@@ -245,15 +248,18 @@ constsExt = ($, parent, util) ->
         valid_children : ["object"]
       object :
         icon : "odf-object " + my.icon.object
-        valid_children : ["object", "infoitem"]
+        valid_children : ["object", "infoitem", "description"]
       objects :
         icon : "odf-objects " + my.icon.objects
         valid_children : ["object"]
       infoitem :
         icon : "odf-infoitem " + my.icon.infoitem
-        valid_children : ["metadata"]
+        valid_children : ["metadata", "description"]
       metadata :
         icon : "odf-metadata " + my.icon.metadata
+        valid_children : []
+      description :
+        icon : "odf-description " + my.icon.description
         valid_children : []
 
     checkbox :
@@ -273,11 +279,11 @@ constsExt = ($, parent, util) ->
   # private; url matcher for response codemirror links
   URLHighlightOverlay =
     token: (stream, state) ->
-      if stream.match(parent.util.urlmatch)
+      if stream.match(util.urlmatch)
         stream.backUp(1)
         return "link"
       
-      while stream.next()? and not stream.match(parent.util.urlmatch,false)
+      while stream.next()? and not stream.match(util.urlmatch,false)
         null
       return null
 
@@ -313,7 +319,8 @@ constsExt = ($, parent, util) ->
     my.progressBar  = $ '.response .progress-bar'
 
     loc = window.location
-    my.serverUrl.val "ws://" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
+    proto = if loc.protocol == "https:" then "wss:" else "ws:"
+    my.serverUrl.val proto + "//" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
 
 
     # Odf tree is using jstree; The requested odf nodes are selected from this tree

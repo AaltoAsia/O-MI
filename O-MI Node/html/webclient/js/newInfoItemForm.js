@@ -3,14 +3,14 @@
   (function(consts, requests, omi, util) {
     var cloneAbove, createTimestampPicker, findDuplicate, getGroups, notifyErrorOn, readValues, resetInfoItemForm, updateOdf;
     cloneAbove = function(target, callback) {
-      return util.cloneAbove(target, cloned(function() {
+      return util.cloneAbove(target, function(cloned) {
         if (callback != null) {
           callback(cloned);
         }
         return cloned.slideDown(null, function() {
           return consts.infoItemDialog.modal('handleUpdate');
         });
-      }));
+      });
     };
     createTimestampPicker = function(dom) {
       return dom.find('.timestamp').datetimepicker({
@@ -89,7 +89,7 @@
         tree.select_node(path);
         notifyErrorOn($('#infoItemName')("InfoItem with this name already exists"));
       } else {
-        v = WebOmi.consts.validators;
+        v = WebOmi.util.validators;
         values = (function() {
           var i, len, ref, results1;
           ref = newInfoItem.values;
@@ -135,6 +135,11 @@
         if (newInfoItem.metadatas.length > 0) {
           consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata", function(node) {
             return $(jqesc(node.id)).data("metadatas", metas);
+          });
+        }
+        if (newInfoItem.description != null) {
+          consts.addOdfTreeNode(path, path + "/description", "description", "description", function(node) {
+            return $(jqesc(node.id)).data("description", newInfoItem.description);
           });
         }
         consts.infoItemDialog.modal('hide');

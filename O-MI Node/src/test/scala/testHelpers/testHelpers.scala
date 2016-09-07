@@ -34,7 +34,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
   import system.dispatcher // execution context for futures
 
   /**
-   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
+   * Settings loaded by akka (typesafe config) and our OmiConfigExtension
    */
   implicit val settings : OmiConfigExtension = new OmiConfigExtension(config)
 

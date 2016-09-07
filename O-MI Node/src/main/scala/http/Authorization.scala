@@ -45,10 +45,10 @@ import types.OmiTypes._
    */
   //private def extractUserData: Directive1[UserData]
 
-  /** Tests if user specified by [[UserData]] has permission for request [[OmiRequest]].
+  /** Tests if user specified by UserData has permission for request OmiRequest.
    * Function is in curried format.
    *
-   * @return Boolean, true if connection is permited to do input.
+   * return Boolean, true if connection is permited to do input.
    */
   //private def hasPermission: UserData => OmiRequest => Boolean
 
@@ -145,7 +145,7 @@ object Authorization {
      * // This directive gets the user identification data from the request.
      * private def extractUserData: Directive1[UserData]
      *
-     * // Tests if user specified by [[UserData]] has permission for request [[OmiRequest]].
+     * // Tests if user specified by UserData has permission for request OmiRequest.
      * // Function is in curried format.
      * // @return Boolean, true if connection is permited to do input.
      * private def hasPermission: UserData => OmiRequest => Boolean
@@ -182,7 +182,7 @@ trait AllowAllAuthorization extends AuthorizationExtension {
 }
 
 
-/** Allows non [[PermissiveRequest]] to all users (currently read, subs, cancel,
+/** Allows non PermissiveRequest to all users (currently read, subs, cancel,
  *  but not write and response). Intended to be used as a last catch-all test (due to logging).
  */
 trait AllowNonPermissiveToAll extends AuthorizationExtension {
