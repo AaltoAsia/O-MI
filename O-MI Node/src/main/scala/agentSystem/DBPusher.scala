@@ -226,6 +226,14 @@ trait DBPusher extends BaseAgentSystem{
 
     val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
+    writeFuture.onSuccess{
+      case _ =>
+        triggeringEvents.foreach(iie =>
+          iie.infoItem.values.headOption.map(newValue=>
+            singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
+          )
+        )
+    }
     writeFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
