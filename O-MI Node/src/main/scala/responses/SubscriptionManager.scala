@@ -51,6 +51,13 @@ case class NewSubscription(subscription: SubscriptionRequest)
 case class RemoveSubscription(id: Long)
 
 /**
+ * Remove subscription event, used for removing subscrpitions when ttl is over
+ *
+ * @param id
+ */
+case class SubscriptionTimeout(id: Long)
+
+/**
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
  */
@@ -112,9 +119,9 @@ class SubscriptionManager(
         val nextRun = (sub.endTime.getTime() - currentTime).millis
 
         if (nextRun.toMillis > 0L) {
-          ttlScheduler.scheduleOnce(nextRun, self, RemoveSubscription(sub.id))
+          ttlScheduler.scheduleOnce(nextRun, self, SubscriptionTimeout(sub.id))
         } else {
-          self ! RemoveSubscription(sub.id)
+          self ! SubscriptionTimeout(sub.id)
         }
       }
     }
@@ -130,6 +137,7 @@ class SubscriptionManager(
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals(id) => handleIntervals(id)
     case RemoveSubscription(id) => sender () ! removeSubscription(id)
+    case SubscriptionTimeout(id) => removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
     case SubInfoCmd(id) => sender() ! getSub(id)
@@ -467,7 +475,7 @@ class SubscriptionManager(
         }
       }
       subscription.ttl match {
-        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
+        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, SubscriptionTimeout(newId))
         case _ =>
       }
       subId
