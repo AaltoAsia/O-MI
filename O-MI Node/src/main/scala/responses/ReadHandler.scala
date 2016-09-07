@@ -64,23 +64,27 @@ trait ReadHandler extends OmiRequestHandlerBase {
          val leafs = getLeafs(read.odf)
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
-         val metadataTree = singleStores.hierarchyStore execute GetTree()
+         val metadataTree = (singleStores.hierarchyStore execute GetTree())
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
            case oii@OdfInfoItem(_, _, desc, mData)
-           if desc.isDefined || mData.isDefined => createAncestors(oii.copy(values = OdfTreeCollection()))
-             case obj@OdfObject(pat, _, _, _, des, tv)
-             if des.isDefined || tv.isDefined => createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
+            if desc.isDefined || mData.isDefined => 
+              createAncestors(oii.copy(values = OdfTreeCollection()))
+           case obj@OdfObject(pat, _, _, _, des, _)
+             if des.isDefined  => 
+               createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
          }.reduceOption(_.union(_))
 
-         def objectsWithMetadata = nodesWithoutMetadata.map(objs => metadataTree.intersect(objs))
-
+         def objectsWithMetadata = 
+           nodesWithoutMetadata.map( objs => metadataTree.intersect( objs ) )
+          
+         def objectsWithAttributes = metadataTree.intersect( read.odf ).allMetaDatasRemoved
          val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
          objectsO.map {
            case Some(objects) =>
-             val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas))
+             val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas).union(objectsWithAttributes) )
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
              val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
