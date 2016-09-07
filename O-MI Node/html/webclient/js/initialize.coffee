@@ -85,7 +85,7 @@ utilExt = ($, parent) ->
     null
 
   validators.url = (s) ->
-    if parent.util.urlmatch.test s
+    if my.urlmatch.test s
       s
     else null
 
@@ -279,11 +279,11 @@ constsExt = ($, parent, util) ->
   # private; url matcher for response codemirror links
   URLHighlightOverlay =
     token: (stream, state) ->
-      if stream.match(parent.util.urlmatch)
+      if stream.match(util.urlmatch)
         stream.backUp(1)
         return "link"
       
-      while stream.next()? and not stream.match(parent.util.urlmatch,false)
+      while stream.next()? and not stream.match(util.urlmatch,false)
         null
       return null
 
@@ -319,7 +319,8 @@ constsExt = ($, parent, util) ->
     my.progressBar  = $ '.response .progress-bar'
 
     loc = window.location
-    my.serverUrl.val "ws://" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
+    proto = if loc.protocol == "https:" then "wss:" else "ws:"
+    my.serverUrl.val proto + "//" + loc.host + loc.pathname.substr 0, loc.pathname.indexOf "html/"
 
 
     # Odf tree is using jstree; The requested odf nodes are selected from this tree
