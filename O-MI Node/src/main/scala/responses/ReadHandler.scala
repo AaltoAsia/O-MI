@@ -18,7 +18,7 @@ package responses
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import database.GetTree
+import database.{DB, GetTree, DBReadWrite, SingleStores}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
@@ -28,10 +28,9 @@ import scala.xml.NodeSeq
 import types.OdfTypes._
 import types.OmiTypes._
 import http.{ActorSystemContext, Storages}
-import database.{ DBReadWrite, SingleStores }
 
 trait ReadHandler extends OmiRequestHandlerBase {
-  protected implicit def dbConnection: DBReadWrite
+  protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   /** Method for handling ReadRequest.
     * @param read request

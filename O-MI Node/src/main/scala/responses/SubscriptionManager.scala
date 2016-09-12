@@ -66,13 +66,11 @@ case class PollSubscription(id: Long)
 object SubscriptionManager{
   def props()(
     implicit settings: OmiConfigExtension,
-   dbConnection: DBReadWrite,
    singleStores: SingleStores,
    callbackHandler: CallbackHandler
   ): Props = Props(
     new SubscriptionManager(
       settings,
-      dbConnection,
       singleStores,
       callbackHandler
     )
@@ -86,7 +84,6 @@ object SubscriptionManager{
  */
 class SubscriptionManager(
   protected val settings: OmiConfigExtension,
-  protected val dbConnection: DBReadWrite,
   protected val singleStores: SingleStores,
   protected val callbackHandler: CallbackHandler
 ) extends Actor with ActorLogging {

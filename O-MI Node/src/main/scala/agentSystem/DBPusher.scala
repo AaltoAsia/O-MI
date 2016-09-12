@@ -43,7 +43,7 @@ trait  InputPusher  extends BaseAgentSystem{
 
 trait DBPusher extends BaseAgentSystem{
   import context.dispatcher
-  protected implicit def dbConnection: DBReadWrite
+  protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
 
