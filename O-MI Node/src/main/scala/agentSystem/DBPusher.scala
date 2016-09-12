@@ -218,10 +218,13 @@ trait DBPusher extends BaseAgentSystem{
         pathValues._2.reduceOption(_.combine(_)) //Combine infoitems with same paths to single infoitem
       )(collection.breakOut) // breakOut to correct collection type
 
-    val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
+    val dbWriteFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
-    writeFuture.onSuccess{
-      case _ =>{
+    dbWriteFuture.onFailure{
+      case t: Throwable => log.error(t, "Error when writing values for paths $paths")
+    }
+
+    val writeFuture = dbWriteFuture.map{ n =>
             // Update our hierarchy data structures if needed
 
         if (updatedStaticItems.nonEmpty) {
@@ -238,10 +241,11 @@ trait DBPusher extends BaseAgentSystem{
           )
         )
       }
+    dbWriteFuture.onFailure{
+      case t: Throwable => log.error(t, "Error when trying to update hierarchy.")
     }
-    writeFuture.onFailure{
-      case t: Throwable => log.error(t, "Error when writing values for paths $paths")
-    }
+
+
 
     for{
       _ <- pollFuture
