@@ -26,7 +26,7 @@ import akka.actor.SupervisorStrategy._
 import com.typesafe.config.Config
 
 import responses.CallbackHandler
-import database.{ SingleStores, DBReadWrite}
+import database.{DB, SingleStores, DBReadWrite}
 import http.CLICmds._
 import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
@@ -36,7 +36,7 @@ import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Cal
 object AgentSystem {
   def props()(
     implicit settings: AgentSystemConfigExtension,
-    dbConnection: DBReadWrite,
+    dbConnection: DB,
     singleStores: SingleStores,
     callbackHandler: CallbackHandler
       ): Props = Props(
@@ -52,7 +52,7 @@ object AgentSystem {
 
 class AgentSystem()(
     protected implicit val settings: AgentSystemConfigExtension,
-    protected implicit val dbConnection: DBReadWrite,
+    protected implicit val dbConnection: DB,
     protected implicit val singleStores: SingleStores,
     protected implicit val callbackHandler: CallbackHandler
   ) 
