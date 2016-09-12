@@ -4,10 +4,12 @@ Warp10 replaces our db containing historical data. That means all values that ar
 O-MI with Warp10 differences to normal version
 ==============================================
 
-v0.5.1 - v0.6.0:
-
-* `oldest` parameter in read requests is not supported (newest and timeframe is supported)
-* if writing to warp10 database directly (without an O-MI message): Then O-MI subscriptions and caches don't update.
+v0.5.1 - v0.6.3:
+* Running
+ * Start script (`./bin/o-mi-node`) starts Warp10 in background. It's not stopped automatically, so it needs to be killed manually if needed.
+* O-MI
+ * `oldest` parameter in read requests is not supported (newest and timeframe is supported)
+ * if writing to warp10 database directly (without an O-MI message): Then O-MI subscriptions and caches don't update.
 
 
 Data model, O-MI conversion
@@ -66,8 +68,13 @@ Warp10 details
 * Tokens should be pasted to `application.conf` configuration file of O-MI Node but it is done automatically by the startup script if using warp10 release version.
 * `<value type="">`: type is saved to warp10 db as *label*
 
-Change log
-==========
+Documentation Change log
+========================
+
+2016-09-12
+----------
+
+* Added info about running
 
 2016-09-01
 ----------
