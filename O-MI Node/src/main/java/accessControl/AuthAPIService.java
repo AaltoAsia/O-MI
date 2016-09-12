@@ -89,7 +89,7 @@ public class AuthAPIService implements AuthApi {
 
             HttpCookie ck = null;
             while (iter.hasNext()) {
-                HttpCookie nextCookie = (HttpCookie) iter.next().toCookie();
+                HttpCookie nextCookie = iter.next().toCookie();
                 logger.debug(nextCookie.name() + ":" + nextCookie.value());
 
                 if (nextCookie.name().equals("JSESSIONID")) {
@@ -150,7 +150,7 @@ public class AuthAPIService implements AuthApi {
                     logger.debug("Root tree requested. forwarding to Partial API.");
 
                     //Getting paths according to the policies
-                    ArrayList<Path> res_paths = (ArrayList) getAvailablePaths(subjectInfo, success);
+                    ArrayList<Path> res_paths = getAvailablePaths(subjectInfo, success);
 
                     if (res_paths == null)
                         return Unauthorized.instance();
@@ -354,7 +354,7 @@ public class AuthAPIService implements AuthApi {
 //        return Unauthorized.instance();
 //    }
 
-    public java.lang.Iterable<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
+    public ArrayList<Path> getAvailablePaths(String subjectInfo, boolean isCertificate) {
 
         HttpURLConnection connection = null;
         try {

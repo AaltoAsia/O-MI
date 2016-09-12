@@ -1,17 +1,17 @@
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- +    Copyright (c) 2015 Aalto University.                                        +
- +                                                                                +
- +    Licensed under the 4-clause BSD (the "License");                            +
- +    you may not use this file except in compliance with the License.            +
- +    You may obtain a copy of the License at top most directory of project.      +
- +                                                                                +
- +    Unless required by applicable law or agreed to in writing, software         +
- +    distributed under the License is distributed on an "AS IS" BASIS,           +
- +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
- +    See the License for the specific language governing permissions and         +
- +    limitations under the License.                                              +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
++    Copyright (c) 2015 Aalto University.                                        +
++                                                                                +
++    Licensed under the 4-clause BSD (the "License");                            +
++    you may not use this file except in compliance with the License.            +
++    You may obtain a copy of the License at top most directory of project.      +
++                                                                                +
++    Unless required by applicable law or agreed to in writing, software         +
++    distributed under the License is distributed on an "AS IS" BASIS,           +
++    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
++    See the License for the specific language governing permissions and         +
++    limitations under the License.                                              +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package http
 
@@ -51,35 +51,35 @@ object OmiNodeCLI{
     removeHandler: RemoveHandlerT,
     agentSystem: ActorRef,
     subscriptionManager: ActorRef
-  )(
-  ) : Props = Props(
-    new OmiNodeCLI(
-      sourceAddress,
-      removeHandler,
-      agentSystem,
-      subscriptionManager
-    )
-  )
+    )(
+      ) : Props = Props(
+        new OmiNodeCLI(
+          sourceAddress,
+          removeHandler,
+          agentSystem,
+          subscriptionManager
+        )
+      )
 }
 /** Command Line Interface for internal agent management. 
-  *
-  */
+ *
+ */
 class OmiNodeCLI(
   protected val sourceAddress: InetSocketAddress,   
   protected val removeHandler: RemoveHandlerT,
   protected val agentSystem: ActorRef,
   protected val subscriptionManager: ActorRef
-  ) extends Actor with ActorLogging {
+) extends Actor with ActorLogging {
 
   val commands = """Current commands:
-start <agent classname>
-stop  <agent classname> 
-list agents 
-list subs 
-showSub <id>
-remove <subsription id>
-remove <path>
-"""
+  start <agent classname>
+  stop  <agent classname> 
+  list agents 
+  list subs 
+  showSub <id>
+  remove <subsription id>
+  remove <path>
+  """
   val ip = sourceAddress.toString.tail
   implicit val timeout : Timeout = 1.minute
 
@@ -109,52 +109,52 @@ remove <path>
           agentsStrChart( agents.sortBy{ info => info.name} )
         case _ => ""
       }
-      .recover[String]{
-        case a : Throwable =>
-          log.warning(s"Failed to get list of Agents. Sending error message. " + a.toString)
-          "Something went wrong. Could not get list of Agents.\n"
-      }
-    Await.result(result, commandTimeout)
+        .recover[String]{
+          case a : Throwable =>
+            log.warning(s"Failed to get list of Agents. Sending error message. " + a.toString)
+            "Something went wrong. Could not get list of Agents.\n"
+        }
+        Await.result(result, commandTimeout)
   }
 
-  def subsStrChart (intervals: Set[IntervalSub @unchecked],
-              events: Set[EventSub] @unchecked,
-              polls: Set[PolledSub] @unchecked) : String = {
-  
-          val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
-            ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
+  def subsStrChart (
+    intervals: Set[IntervalSub @unchecked],
+    events: Set[EventSub] @unchecked,
+    polls: Set[PolledSub] @unchecked) : String = {
 
-          val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +
-            intervals.map{ sub=>
-              f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback.address }"
-            }.mkString("\n")
+      val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
+        ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
 
-          val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
-              f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback.address}"
-            }.mkString("\n")
+      val intMsg= "Interval subscriptions:\n" + f"$idS%-10s | $intervalS%-20s | $startTimeS%-30s | $endTimeS%-30s | $callbackS\n" +
+      intervals.map{ sub=>
+        f"${sub.id}%-10s | ${sub.interval}%-20s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.callback.address }"
+      }.mkString("\n")
 
-          val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" +
-            polls.map{ sub=>
-              f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
-            }.mkString("\n")
+      val eventMsg = "Event subscriptions:\n" + f"$idS%-10s | $endTimeS%-30s | $callbackS\n" + events.map{ sub=>
+        f"${sub.id}%-10s | ${sub.endTime}%-30s | ${ sub.callback.address}"
+      }.mkString("\n")
 
-          s"$intMsg\n$eventMsg\n$pollMsg\n"
+      val pollMsg = "Poll subscriptions:\n" + f"$idS%-10s | $startTimeS%-30s | $endTimeS%-30s | $lastPolledS\n" +
+      polls.map{ sub=>
+        f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
+      }.mkString("\n")
+
+      s"$intMsg\n$eventMsg\n$pollMsg\n"
   } 
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
     val result = (subscriptionManager ? ListSubsCmd())
       .map{
         case (intervals: Set[IntervalSub @unchecked],
-              events: Set[EventSub] @unchecked,
-              polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
+          events: Set[EventSub] @unchecked,
+          polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
           log.info("Received list of Subscriptions. Sending ...")
 
           subsStrChart( intervals, events, polls)
-      }
-      .recover{
-        case a: Throwable  =>
-          log.info("Failed to get list of Subscriptions.\n Sending ...")
-          "Failed to get list of subscriptions.\n"
+      }.recover{
+          case a: Throwable  =>
+            log.info("Failed to get list of Subscriptions.\n Sending ...")
+            "Failed to get list of subscriptions.\n"
       }
     Await.result(result, commandTimeout)
   }
@@ -186,15 +186,14 @@ remove <path>
         case None => 
           log.info(s"Subscription with id $id not found.\n Sending ...")
           s"Subscription with id $id not found.\n"
-      }
-      .recover{
+      }.recover{
         case a: Throwable  =>
           log.info(s"Failed to get subscription with $id.\n Sending ...")
           s"Failed to get subscription with $id.\n"
       }
     Await.result(result, commandTimeout)
   }
-  
+
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
     val result = (agentSystem ? StartAgentCmd(agent)).mapTo[Future[String]]
@@ -202,8 +201,7 @@ remove <path>
       .map{
         case msg: String =>
           msg +"\n"
-      }
-      .recover{
+      }.recover{
         case a : Throwable =>
           "Command failure unknown.\n"
       }
@@ -217,8 +215,7 @@ remove <path>
       .map{
         case msg:String => 
           msg +"\n"
-      }
-      .recover{
+      }.recover{
         case a : Throwable =>
           "Command failure unknown.\n"
       }
@@ -238,8 +235,7 @@ remove <path>
             s"Removed subscription with $id successfully.\n"
           case false =>
             s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
-        }
-        .recover{
+        }.recover{
           case a : Throwable =>
             "Command failure unknown.\n"
         }
@@ -247,11 +243,11 @@ remove <path>
     } else {
       log.info(s"Trying to remove path $pathOrId")
       if (removeHandler.handlePathRemove(Path(pathOrId))) {
-          log.info(s"Successfully removed path")
-          s"Successfully removed path $pathOrId\n"
+        log.info(s"Successfully removed path")
+        s"Successfully removed path $pathOrId\n"
       } else {
-          log.info(s"Given path does not exist")
-          s"Given path does not exist\n"
+        log.info(s"Given path does not exist")
+        s"Given path does not exist\n"
       }
     } //requestHandler isn't actor
 
@@ -295,12 +291,13 @@ class OmiNodeCLIListener(
     
   )  extends Actor with ActorLogging{
 
+
   import Tcp._
 
   def receive : Actor.Receive={
     case Bound(localAddress) =>
-    // TODO: do something?
-    // It seems that this branch was not executed?
+      // TODO: do something?
+      // It seems that this branch was not executed?
 
     case CommandFailed(b: Bind) =>
       log.warning(s"CLI connection failed: $b")
@@ -313,8 +310,8 @@ class OmiNodeCLIListener(
 
       val cli = context.system.actorOf(
         OmiNodeCLI.props(remote,remover,agentSystem, subscriptionManager),
-        "cli-" + remote.toString.tail)
-        connection ! Register(cli)
+      "cli-" + remote.toString.tail)
+      connection ! Register(cli)
     case _ => //noop?
   }
 
