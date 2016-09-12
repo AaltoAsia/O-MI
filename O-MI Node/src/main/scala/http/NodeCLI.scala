@@ -27,7 +27,7 @@ import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub, SingleStores, DBReadWrite}
+import database._
 import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
 import types.Path
 
@@ -287,7 +287,7 @@ class OmiNodeCLIListener(
   protected val agentSystem: ActorRef,
   protected val subscriptionManager: ActorRef,
   protected val singleStores: SingleStores,
-  protected val dbConnection: DBReadWrite
+  protected val dbConnection: DB
 
 )  extends Actor with ActorLogging{
 

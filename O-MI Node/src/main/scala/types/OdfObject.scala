@@ -123,8 +123,9 @@ class  OdfObjectImpl(
           path,
           sharedInfosOut,
           sharedObjsOut,
+          //get description only if another has it too
           another.description.fold(another.description)(n => description),
-          another.typeValue.fold(another.typeValue)(n => typeValue)
+          typeValue
         )
       )
     }

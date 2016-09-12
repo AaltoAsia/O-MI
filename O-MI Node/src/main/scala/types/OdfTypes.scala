@@ -166,11 +166,13 @@ case class OdfObject(
       )
   def allMetaDatasRemoved: OdfObject = this.copy(
         objects   = objects map (_.allMetaDatasRemoved),
-        infoItems = infoItems map (_.allMetaDatasRemoved)
+        infoItems = infoItems map (_.allMetaDatasRemoved),
+        description = None
       )
   def descriptionsRemoved: OdfObject = this.copy(
         objects   = objects map (_.descriptionsRemoved),
-        infoItems = infoItems map (_.descriptionsRemoved)
+        infoItems = infoItems map (_.descriptionsRemoved),
+        description = None
       )
   def withValues(p: Path, v: Seq[OdfValue[Any]]): OdfObject = {
     val nextPath: Path = p.toSeq.tail

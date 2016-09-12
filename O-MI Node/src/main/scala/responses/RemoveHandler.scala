@@ -31,7 +31,7 @@ import http.{ActorSystemContext, Storages}
 trait RemoveHandlerT{
   def handlePathRemove(parentPath: Path): Boolean 
   }
-class RemoveHandler(val singleStores: SingleStores, dbConnection: DBReadWrite )(implicit system: ActorSystem) extends RemoveHandlerT{
+class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends RemoveHandlerT{
 
   implicit val logSource: LogSource[RemoveHandler]= new LogSource[RemoveHandler] {
       def genString( handler:  RemoveHandler) = handler.toString

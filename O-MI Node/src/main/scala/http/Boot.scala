@@ -59,7 +59,7 @@ class OmiServer extends OmiNode{
   implicit val settings : OmiConfigExtension = OmiConfig(system)
 
   implicit val singleStores = new SingleStores(settings)
-  implicit val dbConnection: DBReadWrite = new DatabaseConnection()(
+  implicit val dbConnection: DB = new DatabaseConnection()(
     system,
     singleStores,
     settings
