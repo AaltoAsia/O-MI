@@ -71,8 +71,8 @@
   <omi:write msgformat="odf">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
-        <Object>
-          <id>Object1</id>
+        <Object type="TypeOne">
+          <id idType="TypeTwo">Object1</id>
           <description>Human readable description.</description>
           <InfoItem name="Sensor1">
             <description>Human readable description.</description>
@@ -93,7 +93,7 @@
             <value unixTime="9" type="xs:integer">9</value>
           </InfoItem>
           <Object type="TypeOne">
-            <id>SubObject1</id>
+            <id idType="TypeTwo">SubObject1</id>
             <description>Human readable description.</description>
             <InfoItem name="Sensor1">
               <description>Human readable description.</description>
@@ -1422,12 +1422,10 @@
         <Objects>
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
-            <InfoItem name="Sensor1">
-            </InfoItem>
+            <InfoItem name="Sensor1"/>
             <Object type="TypeOne">
               <id idType="TypeTwo">SubObject1</id>
-              <InfoItem name="Sensor1">
-              </InfoItem>
+              <InfoItem name="Sensor1"/>
             </Object>
           </Object>
         </Objects>
@@ -1530,10 +1528,10 @@
         <Objects>
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
-            <InfoItem name="Sensor1">
-            </InfoItem>
+            <InfoItem name="Sensor1"/>
             <Object type="TypeOne">
               <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1"/>
             </Object>
           </Object>
         </Objects>

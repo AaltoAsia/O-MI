@@ -79,15 +79,20 @@ trait ReadHandler extends OmiRequestHandlerBase {
          def objectsWithMetadata = 
            nodesWithoutMetadata.map( objs => metadataTree.intersect( objs ) )
           
-         def objectsWithAttributes = metadataTree.intersect( read.odf ).allMetaDatasRemoved
-         val objectsO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
+         //Get values from database
+         val objectsWithValuesO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-         objectsO.map {
-           case Some(objects) =>
-             val metaCombined = objectsWithMetadata.fold(objects)(metas => objects.union(metas).union(objectsWithAttributes) )
+         objectsWithValuesO.map {
+           case Some(objectsWithValues) =>
+            //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             val objectsWithValuesAndAttributes = 
+              metadataTree.allMetaDatasRemoved.intersect( objectsWithValues.valuesRemoved )
+                .union( objectsWithValues )
+
+             val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
-             val foundOdfAsPaths = getLeafs(objects).flatMap { _.path.getParentsAndSelf }.toSet
+             val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
              val omiResults = Vector(found) ++ {
                if (notFound.nonEmpty)

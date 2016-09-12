@@ -53,9 +53,11 @@ trait DBPusher extends BaseAgentSystem{
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odf: OdfObjects) : Unit = {
+  private def sendEventCallback(esub: EventSub, odfWithoutTypes: OdfObjects) : Unit = {
     val id = esub.id
     val callbackAddr = esub.callback
+    val hTree = singleStores.hierarchyStore execute GetTree()
+    val odf = hTree.intersect(odfWithoutTypes)
     val responseTTL =
       Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
         .toOption.getOrElse(Duration.Inf)
