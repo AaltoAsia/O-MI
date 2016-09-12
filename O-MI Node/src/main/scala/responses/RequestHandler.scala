@@ -50,7 +50,7 @@ class RequestHandler(
   protected val agentSystem : ActorRef,
   protected val subscriptionManager : ActorRef,
   protected implicit val settings: OmiConfigExtension,
-  protected implicit val dbConnection: DBReadWrite,
+  protected implicit val dbConnection: DB,
   protected implicit val singleStores: SingleStores
 ) 
 extends  OmiRequestHandlerCore

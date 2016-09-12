@@ -6,8 +6,8 @@
 	    <textarea rows=47 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
 <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
-  <Object>
-    <id>Object1</id>
+  <Object type="TypeOne">
+    <id idType="TypeTwo">Object1</id>
     <description>Human readable description.</description>
     <InfoItem name="Sensor1">
       <description>Human readable description.</description>
@@ -27,8 +27,8 @@
       <value unixTime="8" type="xs:integer">8</value>
       <value unixTime="9" type="xs:integer">9</value>
     </InfoItem>
-    <Object>
-      <id>SubObject1</id>
+    <Object type="TypeOne">
+      <id idType="TypeTwo">SubObject1</id>
       <description>Human readable description.</description>
       <InfoItem name="Sensor1">
         <description>Human readable description.</description>
@@ -71,8 +71,8 @@
   <omi:write msgformat="odf">
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
-        <Object>
-          <id>Object1</id>
+        <Object type="TypeOne">
+          <id idType="TypeTwo">Object1</id>
           <description>Human readable description.</description>
           <InfoItem name="Sensor1">
             <description>Human readable description.</description>
@@ -92,8 +92,8 @@
             <value unixTime="8" type="xs:integer">8</value>
             <value unixTime="9" type="xs:integer">9</value>
           </InfoItem>
-          <Object>
-            <id>SubObject1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">SubObject1</id>
             <description>Human readable description.</description>
             <InfoItem name="Sensor1">
               <description>Human readable description.</description>
@@ -173,13 +173,13 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
               </InfoItem>
@@ -226,13 +226,13 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
               </InfoItem>
@@ -275,13 +275,13 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
               </InfoItem>
@@ -336,13 +336,13 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
               </InfoItem>
@@ -399,8 +399,8 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <MetaData>
                 <InfoItem name="MetaData1">
@@ -409,8 +409,8 @@
               </MetaData>
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
               </InfoItem>
@@ -465,14 +465,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <description>Human readable description.</description>
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <description>Human readable description.</description>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
@@ -529,15 +529,15 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="7" type="xs:integer">7</value>
               <value unixTime="8" type="xs:integer">8</value>
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="7" type="xs:integer">7</value>
                 <value unixTime="8" type="xs:integer">8</value>
@@ -594,15 +594,15 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="0" type="xs:integer">0</value>
               <value unixTime="1" type="xs:integer">1</value>
               <value unixTime="2" type="xs:integer">2</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="0" type="xs:integer">0</value>
                 <value unixTime="1" type="xs:integer">1</value>
@@ -660,16 +660,16 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="3" type="xs:integer">3</value>
               <value unixTime="4" type="xs:integer">4</value>
               <value unixTime="5" type="xs:integer">5</value>
               <value unixTime="6" type="xs:integer">6</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="3" type="xs:integer">3</value>
                 <value unixTime="4" type="xs:integer">4</value>
@@ -727,8 +727,8 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="3" type="xs:integer">3</value>
               <value unixTime="4" type="xs:integer">4</value>
@@ -738,8 +738,8 @@
               <value unixTime="8" type="xs:integer">8</value>
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="3" type="xs:integer">3</value>
                 <value unixTime="4" type="xs:integer">4</value>
@@ -800,8 +800,8 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="0" type="xs:integer">0</value>
               <value unixTime="1" type="xs:integer">1</value>
@@ -811,8 +811,8 @@
               <value unixTime="5" type="xs:integer">5</value>
               <value unixTime="6" type="xs:integer">6</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="0" type="xs:integer">0</value>
                 <value unixTime="1" type="xs:integer">1</value>
@@ -875,14 +875,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="5" type="xs:integer">5</value>
               <value unixTime="6" type="xs:integer">6</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="5" type="xs:integer">5</value>
                 <value unixTime="6" type="xs:integer">6</value>
@@ -940,14 +940,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="3" type="xs:integer">3</value>
               <value unixTime="4" type="xs:integer">4</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="3" type="xs:integer">3</value>
                 <value unixTime="4" type="xs:integer">4</value>
@@ -1004,14 +1004,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="3" type="xs:integer">3</value>
               <value unixTime="4" type="xs:integer">4</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="3" type="xs:integer">3</value>
                 <value unixTime="4" type="xs:integer">4</value>
@@ -1068,14 +1068,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="8" type="xs:integer">8</value>
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="8" type="xs:integer">8</value>
                 <value unixTime="9" type="xs:integer">9</value>
@@ -1132,14 +1132,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="0" type="xs:integer">0</value>
               <value unixTime="1" type="xs:integer">1</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="0" type="xs:integer">0</value>
                 <value unixTime="1" type="xs:integer">1</value>
@@ -1196,14 +1196,14 @@
       <omi:return returnCode="200"/>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="5" type="xs:integer">5</value>
               <value unixTime="6" type="xs:integer">6</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="5" type="xs:integer">5</value>
                 <value unixTime="6" type="xs:integer">6</value>
@@ -1283,10 +1283,10 @@
     <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
       <Objects>
         <Object>
-          <id>Object1</id>
+          <id idType="TypeTwo">Object1</id>
           <InfoItem name="Sensor1"/>
           <Object>
-            <id>SubObject1</id>
+            <id idType="TypeTwo">SubObject1</id>
           </Object>
         </Object>
       </Objects>
@@ -1377,14 +1377,14 @@
       <omi:requestID>1</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="9" type="xs:integer">9</value>
               <value unixTime="9" type="xs:integer">9</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="9" type="xs:integer">9</value>
                 <value unixTime="9" type="xs:integer">9</value>
@@ -1420,14 +1420,12 @@
       <omi:requestID>1</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
-            <InfoItem name="Sensor1">
-            </InfoItem>
-            <Object>
-              <id>SubObject1</id>
-              <InfoItem name="Sensor1">
-              </InfoItem>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1"/>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1"/>
             </Object>
           </Object>
         </Objects>
@@ -1528,12 +1526,12 @@
       <omi:requestID>2</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
-            <InfoItem name="Sensor1">
-            </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1"/>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1"/>
             </Object>
           </Object>
         </Objects>
@@ -1604,13 +1602,13 @@
       <omi:requestID>2</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value  type="xs:integer">10</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value  type="xs:integer">10</value>
               </InfoItem>
@@ -1703,13 +1701,13 @@
       <omi:requestID>3</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value  type="xs:integer">10</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value  type="xs:integer">10</value>
               </InfoItem>
@@ -1733,13 +1731,13 @@
       <omi:requestID>3</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value  type="xs:integer">10</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value  type="xs:integer">10</value>
               </InfoItem>
@@ -1871,13 +1869,13 @@
       <omi:requestID>4</omi:requestID>
       <omi:msg>
         <Objects>
-          <Object>
-            <id>Object1</id>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
               <value unixTime="11" type="xs:integer">11</value>
             </InfoItem>
-            <Object>
-              <id>SubObject1</id>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
               <InfoItem name="Sensor1">
                 <value unixTime="11" type="xs:integer">11</value>
               </InfoItem>

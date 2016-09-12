@@ -66,7 +66,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
 
   implicit val singleStores = new SingleStores(settings)
-  implicit val dbConnection: DBReadWrite = new TestDB("subscription-test-db")(
+  implicit val dbConnection: TestDB = new TestDB("subscription-test-db")(
     system,
     singleStores,
     settings

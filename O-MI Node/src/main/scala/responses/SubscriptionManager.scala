@@ -51,6 +51,13 @@ case class NewSubscription(subscription: SubscriptionRequest)
 case class RemoveSubscription(id: Long)
 
 /**
+ * Remove subscription event, used for removing subscrpitions when ttl is over
+ *
+ * @param id
+ */
+case class SubscriptionTimeout(id: Long)
+
+/**
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
  */
@@ -59,13 +66,11 @@ case class PollSubscription(id: Long)
 object SubscriptionManager{
   def props()(
     implicit settings: OmiConfigExtension,
-   dbConnection: DBReadWrite,
    singleStores: SingleStores,
    callbackHandler: CallbackHandler
   ): Props = Props(
     new SubscriptionManager(
       settings,
-      dbConnection,
       singleStores,
       callbackHandler
     )
@@ -79,7 +84,6 @@ object SubscriptionManager{
  */
 class SubscriptionManager(
   protected val settings: OmiConfigExtension,
-  protected val dbConnection: DBReadWrite,
   protected val singleStores: SingleStores,
   protected val callbackHandler: CallbackHandler
 ) extends Actor with ActorLogging {
@@ -112,9 +116,9 @@ class SubscriptionManager(
         val nextRun = (sub.endTime.getTime() - currentTime).millis
 
         if (nextRun.toMillis > 0L) {
-          ttlScheduler.scheduleOnce(nextRun, self, RemoveSubscription(sub.id))
+          ttlScheduler.scheduleOnce(nextRun, self, SubscriptionTimeout(sub.id))
         } else {
-          self ! RemoveSubscription(sub.id)
+          self ! SubscriptionTimeout(sub.id)
         }
       }
     }
@@ -130,6 +134,7 @@ class SubscriptionManager(
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals(id) => handleIntervals(id)
     case RemoveSubscription(id) => sender () ! removeSubscription(id)
+    case SubscriptionTimeout(id) => removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
     case SubInfoCmd(id) => sender() ! getSub(id)
@@ -137,12 +142,21 @@ class SubscriptionManager(
 
   private def handlePollEvent(pollEvent: PollEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
+    val odfTree = singleStores.hierarchyStore execute GetTree()
     val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
-      .map { case (_path, _values) =>
-        OdfInfoItem(_path, _values.sortBy(_.timestamp.getTime()).toVector)
+      .map { case (path, _values) =>
+        val attributes = path.getParentsAndSelf
+          .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
+          .foldLeft(OdfObjects()){
+            case (objs: OdfObjects, node: OdfNode) => objs.union(createAncestors(node))
+          }.valuesRemoved.allMetaDatasRemoved
+          
+        attributes.union(
+          createAncestors(
+            OdfInfoItem(path, _values.sortBy(_.timestamp.getTime()).toVector)
+          )
+        )
       }
-
-      .map(i => createAncestors(i)) //Map to OdfObjects
 
     eventData //eventData.map(eData => Some(eData))
   }
@@ -230,6 +244,7 @@ class SubscriptionManager(
       //create OdfObjects from InfoItems
       n.map { case (path, values) => createAncestors(OdfInfoItem(path, values)) }
     }
+
     pollData
   }
 
@@ -256,14 +271,11 @@ class SubscriptionManager(
         log.debug(s"Polling subcription with id: ${pollSub.id}")
         val odfTree = singleStores.hierarchyStore execute GetTree()
         val emptyTree = pollSub
-          .paths //get subscriptions paths
+          .paths.flatMap{path => path.getParentsAndSelf }  //get subscriptions paths
           .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
-          .map{
-            case i: OdfInfoItem => createAncestors(OdfInfoItem(i.path))
-            case o: OdfObject   => createAncestors(OdfObject(o.id, o.path, typeValue = o.typeValue))
-            case o: OdfObjects  => createAncestors(OdfObjects())//map OdfNodes to OdfObjects
-            //case o: OdfNode  => createAncestors(OdfObjects())//map OdfNodes to OdfObjects
-          }.reduceOption[OdfObjects]{case (l,r) => l.union(r)}.getOrElse(OdfObjects())
+          .foldLeft(OdfObjects()){
+            case (objs: OdfObjects, node: OdfNode) => objs.union(createAncestors(node))
+          }.valuesRemoved.allMetaDatasRemoved
 
         //pollSubscription method removes the data from database and returns the requested data
         val subValues: Iterable[OdfObjects] = pollSub match {
@@ -306,9 +318,10 @@ class SubscriptionManager(
           createAncestors(OdfInfoItem(iPath, Iterable(oValue)))
       }
 
-      val optionObjects: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None){
+      val optionObjectsWithoutTypes: Option[OdfObjects] = objects.foldLeft[Option[OdfObjects]](None){
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
+      val optionObjects: Option[OdfObjects] = optionObjectsWithoutTypes.map(ob => hTree.intersect(ob))
       val succResult = Vector(Results.Success(Some(iSub.id), optionObjects))
       val failedResults = if (failures.nonEmpty) Vector(Results.NotFoundPaths(failures)) else Vector.empty
       val responseTTL = iSub.interval
@@ -467,7 +480,7 @@ class SubscriptionManager(
         }
       }
       subscription.ttl match {
-        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, RemoveSubscription(newId))
+        case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, SubscriptionTimeout(newId))
         case _ =>
       }
       subId
