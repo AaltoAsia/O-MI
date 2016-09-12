@@ -53,9 +53,11 @@ trait DBPusher extends BaseAgentSystem{
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odf: OdfObjects) : Unit = {
+  private def sendEventCallback(esub: EventSub, odfWithoutTypes: OdfObjects) : Unit = {
     val id = esub.id
     val callbackAddr = esub.callback
+    val hTree = singleStores.hierarchyStore execute GetTree()
+    val odf = hTree.intersect(odfWithoutTypes)
     val responseTTL =
       Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
         .toOption.getOrElse(Duration.Inf)
@@ -217,10 +219,13 @@ trait DBPusher extends BaseAgentSystem{
         pathValues._2.reduceOption(_.combine(_)) //Combine infoitems with same paths to single infoitem
       )(collection.breakOut) // breakOut to correct collection type
 
-    val writeFuture = dbConnection.writeMany(infosToBeWrittenInDB)
+    val dbWriteFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
-    writeFuture.onSuccess{
-      case _ =>{
+    dbWriteFuture.onFailure{
+      case t: Throwable => log.error(t, s"Error when writing values for paths ${infoItems.map(_.path)}")
+    }
+
+    val writeFuture = dbWriteFuture.map{ n =>
             // Update our hierarchy data structures if needed
 
         if (updatedStaticItems.nonEmpty) {
@@ -237,9 +242,8 @@ trait DBPusher extends BaseAgentSystem{
           )
         )
       }
-    }
     writeFuture.onFailure{
-      case t: Throwable => log.error(t, s"Error when writing values for paths ${infoItems.map(_.path)}")
+      case t: Throwable => log.error(t, "Error when trying to update hierarchy.")
     }
 
     for{

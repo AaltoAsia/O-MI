@@ -27,7 +27,7 @@ import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import database.{EventSub, IntervalSub, PolledSub, PollIntervalSub, PollEventSub, SavedSub, SingleStores, DB}
+import database._
 import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
 import types.Path
 

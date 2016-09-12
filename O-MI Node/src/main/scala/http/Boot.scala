@@ -63,12 +63,6 @@ class OmiServer extends OmiNode{
     system,
     singleStores
   )
-  /*
-  DatabaseConnection()(
-    system,
-    singleStores,
-    settings
-  )*/
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
 
