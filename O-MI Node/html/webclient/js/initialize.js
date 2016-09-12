@@ -265,7 +265,7 @@
       }
     };
     $(function() {
-      var basicInput, fn, i, language, len, loc, requestTip, results, v;
+      var basicInput, fn, i, language, len, loc, proto, requestTip, results, v;
       my.responseCMSettings = $.extend({
         readOnly: true
       }, my.codeMirrorSettings);
@@ -287,7 +287,8 @@
       my.resetAllBtn = $('#resetall');
       my.progressBar = $('.response .progress-bar');
       loc = window.location;
-      my.serverUrl.val("ws://" + loc.host + loc.pathname.substr(0, loc.pathname.indexOf("html/")));
+      proto = loc.protocol === "https:" ? "wss:" : "ws:";
+      my.serverUrl.val(proto + "//" + loc.host + loc.pathname.substr(0, loc.pathname.indexOf("html/")));
       my.odfTreeDom.jstree(my.odfTreeSettings);
       my.odfTree = my.odfTreeDom.jstree();
       my.odfTree.set_type('Objects', 'objects');
