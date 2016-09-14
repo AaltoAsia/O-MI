@@ -260,8 +260,10 @@ class OmiNodeCLI(
   def receive : Actor.Receive = {
     case Received(data) =>{ 
       val dataString : String = data.decodeString("UTF-8")
-
-      val args = dataString.split("( |\n)").toVector
+      val splitRegex = """\"([^\"]*)\"|(\S+)""".r
+      //match inside quotes or non-whitespace sequences
+      //note: without mapping the groups the result would still contain the "-characters
+      val args = splitRegex.findAllMatchIn(dataString).map(m => if(null == m.group(1)) m.group(2) else m.group(1)).toVector
       args match {
         case Vector("help") => send(sender)(help())
         case Vector("showSub", id) => send(sender)(subInfo(id.toLong))
