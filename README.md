@@ -7,7 +7,7 @@ O-MI Node Server
 
 
 Internet of Things data server.
-Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to Issues or email.
+Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to Issues, email or slack.
 
 This project also includes:
 * a developer webapp for building and sending O-MI/O-DF messages.
@@ -26,7 +26,6 @@ Resources
 * [API Documentation JavaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/java/index.html)
 * [Examples of requests and responses, as handled by this server](https://otaniemi3d.cs.hut.fi/omi/node/html/ImplementationDetails.html)
 * [Technical Documentation (outdated)](https://drive.google.com/folderview?id=0B85FeC7Xf_sSfm9yNnFwTEQxclFCT2s3MUdDd1czWmFCM2FEQjIxTHRHU2xtT2NXUzJNR0U&usp=sharing)
-
 
 
 
@@ -115,3 +114,13 @@ Library Config
 - [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
 
+O-MI Extensions
+===============
+
+This server supports the following extensions to O-MI v1.0:
+
+1. Websockets
+  * Client can initiate websocket connection to O-MI Node server by connecting to the same root path as POST requests with http connection upgrade request. (url conventions: `ws://` or secure `wss://`)
+  * During a websocket connection the server accepts requests as in normal http communication. Immediate responses are sent in the same order as the corresponding requests were received.
+  * During a websocket connection callback can be set to `"0"` in an O-MI message to tell O-MI Node to use current websocket connection as the callback target.
+  * Keep in mind that depending on client and server configuration, a websocket connection will timeout if there is long period of inactivity. (Default is usually 1 minute). No callbacks can be sent after a timeout occurs (as websockets are always initiated by a client).
