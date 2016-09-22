@@ -129,19 +129,12 @@
           }
           return results1;
         })();
-        consts.addOdfTreeNode(parent, path, name, "infoitem", function() {
-          return $(jqesc(path)).data("values", values).data("description", v.nonEmpty(newInfoItem.description));
-        });
-        if (newInfoItem.metadatas.length > 0) {
-          consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata", function(node) {
-            return $(jqesc(node.id)).data("metadatas", metas);
-          });
-        }
-        if (newInfoItem.description != null) {
-          consts.addOdfTreeNode(path, path + "/description", "description", "description", function(node) {
-            return $(jqesc(node.id)).data("description", newInfoItem.description);
-          });
-        }
+        consts.addOdfTreeNode(parent, path, name, "infoitem");
+        consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata", metas.length > 0);
+        consts.addOdfTreeNode(path, path + "/description", "description", "description", (v.nonEmpty(newInfoItem.description)) != null);
+        $(jqesc(path)).data("values", values);
+        $(jqesc(path + "/description")).data("description", v.nonEmpty(newInfoItem.description));
+        $(jqesc(path + "/MetaData")).data("metadatas", metas);
         consts.infoItemDialog.modal('hide');
         resetInfoItemForm();
       }

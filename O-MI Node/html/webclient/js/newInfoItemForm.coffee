@@ -159,19 +159,27 @@
 
         
       # NOTE: This also selects the node which triggers an event which modifies the request 
-      consts.addOdfTreeNode parent, path, name, "infoitem", ->
-        # save parameters
-        $ jqesc path
-          .data "values",      values
-          .data "description", v.nonEmpty newInfoItem.description
+      consts.addOdfTreeNode parent, path, name, "infoitem" #, (node) ->
+       # $(jqesc node.id).data "values", values
+          #.data "description", v.nonEmpty newInfoItem.description
 
-      if newInfoItem.metadatas.length > 0
-        consts.addOdfTreeNode path, path+"/MetaData", "MetaData", "metadata", (node) ->
-          $(jqesc node.id).data "metadatas", metas
+      consts.addOdfTreeNode path,
+        path+"/MetaData",
+        "MetaData",
+        "metadata", 
+        metas.length > 0 #, (node) ->
+        #$(jqesc node.id).data "metadatas", metas
+       
+      consts.addOdfTreeNode path,
+        path+"/description",
+        "description",
+        "description", 
+        (v.nonEmpty newInfoItem.description)?#, (node) ->
+        #$(jqesc node.id).data "description", v.nonEmpty newInfoItem.description
 
-      if newInfoItem.description?
-        consts.addOdfTreeNode path, path+"/description", "description", "description", (node) ->
-          $(jqesc node.id).data "description", newInfoItem.description
+      $(jqesc path).data "values", values
+      $(jqesc path+"/description").data "description", v.nonEmpty newInfoItem.description
+      $(jqesc path+"/MetaData").data "metadatas", metas
 
       # close the dialog
       consts.infoItemDialog.modal 'hide'

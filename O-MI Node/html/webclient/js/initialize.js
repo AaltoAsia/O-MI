@@ -139,8 +139,11 @@
       metadata: "glyphicon glyphicon-info-sign",
       description: "glyphicon glyphicon-info-sign"
     };
-    my.addOdfTreeNode = function(parent, path, name, treeTypeName, callback) {
+    my.addOdfTreeNode = function(parent, path, name, treeTypeName, select, callback) {
       var tree;
+      if (select == null) {
+        select = true;
+      }
       if (callback == null) {
         callback = null;
       }
@@ -154,7 +157,9 @@
         if (typeof callback === "function") {
           callback(node);
         }
-        return tree.select_node(node);
+        if (select) {
+          return tree.select_node(node);
+        }
       });
     };
     openOdfContextmenu = function(target) {

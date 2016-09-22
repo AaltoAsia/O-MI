@@ -166,7 +166,7 @@
       }
     };
     my.addPathToOdf = function(odfTreeNode, odfObjects) {
-      var beforInfos, beforMetas, beforObjects, beforValues, currentOdfNode, description, i, id, info, len, maybeChild, maybeDesc, maybeValues, meta, metadata, metainfo, metas, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
+      var beforInfos, beforMetas, beforObjects, beforValues, currentOdfNode, dVal, description, i, id, info, len, maybeChild, maybeDesc, maybeValues, meta, metadata, metainfo, metas, node, nodeElems, o, object, odfDoc, odfElem, siblingObject, siblingValue;
       o = WebOmi.omi;
       odfDoc = odfObjects.ownerDocument || odfObjects;
       if ((odfTreeNode[0] == null) || odfTreeNode[0].id === "Objects") {
@@ -190,7 +190,12 @@
                 object = o.createOdfObject(odfDoc, id);
                 return currentOdfNode.appendChild(object);
               case "description":
-                description = o.createOdfDescription(odfDoc);
+                dVal = $(node).data("description");
+                if (currentParams.request === "write" && dVal !== "") {
+                  description = o.createOdfDescription(odfDoc, dVal);
+                } else if (currentParams.request !== "write") {
+                  description = o.createOdfDescription(odfDoc);
+                }
                 beforInfos = o.evaluateXPath(currentOdfNode, "odf:InfoItem[1]")[0];
                 beforObjects = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
                 beforMetas = o.evaluateXPath(currentOdfNode, "odf:MetaData[1]")[0];
@@ -204,7 +209,10 @@
                 } else {
                   siblingValue = beforValues;
                 }
-                return maybeInsertBefore(currentOdfNode, siblingValue, description);
+                if (description != null) {
+                  return maybeInsertBefore(currentOdfNode, siblingValue, description);
+                }
+                break;
               case "metadata":
                 meta = o.createOdfMetaData(odfDoc);
                 metas = $(node).data("metadatas");
@@ -223,11 +231,11 @@
                 siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingValue, meta);
               case "infoitem":
-                info = currentParams.request === "write" ? (maybeValues = $(node).data("values"), maybeDesc = $(node).data("description"), maybeValues = maybeValues != null ? maybeValues : [
+                info = currentParams.request === "write" ? (maybeValues = $(node).data("values"), maybeDesc = $(node).data("description"), !(maybeValues != null) ? (maybeValues = [
                   {
                     value: "VALUE_PLACEHOLDER"
                   }
-                ], o.createOdfInfoItem(odfDoc, id, maybeValues, maybeDesc)) : o.createOdfInfoItem(odfDoc, id);
+                ], o.createOdfInfoItem(odfDoc, id, maybeValues, maybeDesc)) : o.createOdfInfoItem(odfDoc, id, maybeValues, maybeDesc)) : o.createOdfInfoItem(odfDoc, id);
                 siblingObject = o.evaluateXPath(currentOdfNode, "odf:Object[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingObject, info);
             }
