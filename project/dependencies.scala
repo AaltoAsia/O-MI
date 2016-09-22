@@ -31,6 +31,7 @@ object Dependencies {
   //val sqliteJdbc   = "org.xerial"          % "sqlite-jdbc"    % "3.7.2" //common
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
   val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
+  val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
 
   //etc
@@ -68,6 +69,7 @@ object Dependencies {
     //sqliteJdbc,
     hikariCP,
     h2,
+    postgres,
     sprayJson,//json4s,
     //scalaXML,
     commonsLang,
