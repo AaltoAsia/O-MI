@@ -66,7 +66,6 @@ class CallbackHandler(BaseHTTPRequestHandler):
 
         # Print to terminal applying all modifications and add a seperator
         print(seperator())
-        print(form.keys())
         print(prettyXml(msgxml))
         print(seperator() + "\n")
         print(Fore.GREEN + Style.BRIGHT)
