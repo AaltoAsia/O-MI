@@ -104,16 +104,15 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
 
-  val route = post {
-    decodeRequest{
-      entity(as[NodeSeq]) { data =>
-        destination ! Option(data)
-        complete{
-          "OK"
-        }
-      }
+  val route = formFields("msg".as[String]) {msg =>
+          destination ! Option(XML.loadString(msg))
+        //entity(as[NodeSeq]) { data =>
+          //destination ! Option(data)
+          complete{
+            "OK"
+          }
     }
-  }
+  
 
 
   val bindFuture = Http().bindAndHandle(route, interface, port)
