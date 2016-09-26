@@ -2,6 +2,7 @@
 
 from http.server import *
 from xml.dom.minidom import parseString
+import cgi
 
 # Use colors if available (install module colorama)
 try:
@@ -42,18 +43,31 @@ def prettyXml(string):
 #
 class CallbackHandler(BaseHTTPRequestHandler):
     def do_POST(s):
+
+        form = cgi.FieldStorage(
+            fp=s.rfile, 
+            headers=s.headers,
+            environ={'REQUEST_METHOD':'POST'})
+
         # We should tell the O-MI node that we received the message
+
         s.send_response(200)
         s.end_headers()
 
         # Read all content
-        content_len = int(s.headers['content-length'])
-        post_body = s.rfile.read(content_len)
-        msg = post_body.decode("UTF-8")
+        
+        msgxml = form.getfirst("msg", "")
+#        msgxml = msg.decode("UTF-8")
+
+
+        #content_len = int(s.headers['content-length'])
+        #post_body = s.rfile.read(content_len)
+        #msg = post_body.decode("UTF-8")
 
         # Print to terminal applying all modifications and add a seperator
         print(seperator())
-        print(prettyXml(msg))
+        print(form.keys())
+        print(prettyXml(msgxml))
         print(seperator() + "\n")
         print(Fore.GREEN + Style.BRIGHT)
 
