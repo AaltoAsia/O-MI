@@ -171,7 +171,7 @@ constsExt = ($, parent, util) ->
     metadata : "glyphicon glyphicon-info-sign"
     description : "glyphicon glyphicon-info-sign"
 
-  my.addOdfTreeNode = (parent, path, name, treeTypeName, select=true, callback=null) ->
+  my.addOdfTreeNode = (parent, path, name, treeTypeName, callback=null) ->
     tree = WebOmi.consts.odfTree
     tree.create_node parent,
       id   : path
@@ -181,8 +181,6 @@ constsExt = ($, parent, util) ->
     , (node) ->
       tree.open_node parent, null, 500
       callback? node
-      if select
-        tree.select_node node
 
 
   # private

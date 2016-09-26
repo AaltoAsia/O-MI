@@ -130,11 +130,19 @@
           return results1;
         })();
         consts.addOdfTreeNode(parent, path, name, "infoitem");
-        consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata", metas.length > 0);
-        consts.addOdfTreeNode(path, path + "/description", "description", "description", (v.nonEmpty(newInfoItem.description)) != null);
+        consts.addOdfTreeNode(path, path + "/MetaData", "MetaData", "metadata");
+        consts.addOdfTreeNode(path, path + "/description", "description", "description");
         $(jqesc(path)).data("values", values);
         $(jqesc(path + "/description")).data("description", v.nonEmpty(newInfoItem.description));
         $(jqesc(path + "/MetaData")).data("metadatas", metas);
+        tree = WebOmi.consts.odfTree;
+        tree.select_node(path);
+        if ((v.nonEmpty(newInfoItem.description)) != null) {
+          tree.select_node(path + "/description");
+        }
+        if (metas.length > 0) {
+          tree.select_node(path(+"/MetaData"));
+        }
         consts.infoItemDialog.modal('hide');
         resetInfoItemForm();
       }

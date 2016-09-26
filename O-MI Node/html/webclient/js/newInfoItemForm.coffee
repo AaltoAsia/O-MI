@@ -167,19 +167,27 @@
         path+"/MetaData",
         "MetaData",
         "metadata", 
-        metas.length > 0 #, (node) ->
+        #, (node) ->
         #$(jqesc node.id).data "metadatas", metas
        
       consts.addOdfTreeNode path,
         path+"/description",
         "description",
         "description", 
-        (v.nonEmpty newInfoItem.description)?#, (node) ->
+        #, (node) ->
         #$(jqesc node.id).data "description", v.nonEmpty newInfoItem.description
 
       $(jqesc path).data "values", values
       $(jqesc path+"/description").data "description", v.nonEmpty newInfoItem.description
       $(jqesc path+"/MetaData").data "metadatas", metas
+      tree = WebOmi.consts.odfTree
+      tree.select_node path
+
+      if (v.nonEmpty newInfoItem.description)?
+        tree.select_node path+"/description"
+
+      if metas.length > 0 
+        tree.select_node path +"/MetaData" 
 
       # close the dialog
       consts.infoItemDialog.modal 'hide'
