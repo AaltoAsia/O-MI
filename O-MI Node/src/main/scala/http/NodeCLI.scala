@@ -93,7 +93,7 @@ class OmiNodeCLI(
   private[http] def agentsStrChart( agents: Vector[AgentInfo] ) : String ={
     val colums = Vector("NAME","CLASS","RUNNING","OWNED COUNT", "CONFIG")
     val msg =
-      f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(3)}\n" +
+      f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(4)}\n" +
     agents.map{
       case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
         f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
@@ -261,7 +261,18 @@ class OmiNodeCLI(
     case Received(data) =>{ 
       val dataString : String = data.decodeString("UTF-8")
 
-      val args = dataString.split("( |\n)").toVector
+      val splitRegex = """\"((?:\\\"|[^\"])*)\"|(\S+)""".r
+      //match inside quotes or non-whitespace sequences, escaped "-characters allowed (\")
+
+      //note: without mapping the groups the result would still contain the "-characters
+      val args = splitRegex.findAllMatchIn(dataString).map( m =>
+          if(null == m.group(1))
+            m.group(2)
+          else
+            // replace escaped "-characters (regex escapes: \\ ", string escapes: \\ \\ \")
+            m.group(1).replaceAll("\\\\\"", "\"")
+      ).toVector
+
       args match {
         case Vector("help") => send(sender)(help())
         case Vector("showSub", id) => send(sender)(subInfo(id.toLong))

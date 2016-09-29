@@ -19,7 +19,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import parsing.xmlGen.xmlTypes.QlmID
-import slick.driver.H2Driver.api._
+import slick.backend.DatabaseConfig
+//import slick.driver.H2Driver.api._
+import slick.driver.JdbcProfile
 import slick.lifted.{Index, ForeignKeyQuery, ProvenShape}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -33,7 +35,10 @@ import types._
  * Base trait for databases. Has basic protected interface.
  */
 trait DBBase{
-  protected[this] val db: Database
+  val dc = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
+  import dc.driver.api._
+  val db: Database
+  //protected[this] val db: Database
 }
 
 
@@ -73,6 +78,7 @@ case class SubValue(
 
 
 trait OmiNodeTables extends DBBase {
+  import dc.driver.api._
 
   implicit val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
@@ -128,6 +134,7 @@ trait OmiNodeTables extends DBBase {
    */
   class DBNodesTable(tag: Tag)
     extends Table[DBNode](tag, "HIERARCHYNODES") {
+    import dc.driver.api._
     /** This is the PrimaryKey */
     def id: Rep[Int] = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
     def path: Rep[Path] = column[Path]("PATH")
