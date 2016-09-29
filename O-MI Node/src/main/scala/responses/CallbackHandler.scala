@@ -85,7 +85,8 @@ class CallbackHandler(
     def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS )
 
     val address = callback.uri
-    val httpRequest = RequestBuilding.Post(address, request.asXML)
+    val httpEntity = FormData( ("msg", request.asXML.toString)).toEntity( HttpCharsets.`UTF-8` )
+    val httpRequest = RequestBuilding.Post(address, httpEntity)
 
     log.info(
       s"Trying to send POST request to $address, will keep trying until $tryUntil."

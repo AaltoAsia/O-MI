@@ -221,7 +221,11 @@ requestsExt = (WebOmi) ->
             currentOdfNode.appendChild object
 
           when "description"
-            description = o.createOdfDescription odfDoc
+            dVal = $(node).data "description"
+            if (currentParams.request == "write" && dVal != "") 
+              description = o.createOdfDescription odfDoc, dVal
+            else if currentParams.request != "write"
+              description = o.createOdfDescription odfDoc
 
             # find the first value and insert before it (schema restriction)
 
@@ -238,7 +242,8 @@ requestsExt = (WebOmi) ->
             else
               siblingValue = beforValues
 
-            maybeInsertBefore currentOdfNode, siblingValue, description
+            if description?
+              maybeInsertBefore currentOdfNode, siblingValue, description
 
           when "metadata"
             meta = o.createOdfMetaData odfDoc
@@ -260,10 +265,13 @@ requestsExt = (WebOmi) ->
             info =
               if currentParams.request == "write"
                 # when request is write
-                maybeValues = $(node).data "values"
+                maybeValues = $(node).data("values")
                 maybeDesc   = $(node).data "description"
-                maybeValues = if maybeValues? then maybeValues else [{value:"VALUE_PLACEHOLDER"}]
-                o.createOdfInfoItem odfDoc, id, maybeValues, maybeDesc
+                if !(maybeValues?) 
+                  maybeValues =[{value:"VALUE_PLACEHOLDER"}]
+                  o.createOdfInfoItem odfDoc, id, maybeValues, maybeDesc
+                else
+                  o.createOdfInfoItem odfDoc, id, maybeValues, maybeDesc
               else
                 o.createOdfInfoItem odfDoc, id
 
