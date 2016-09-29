@@ -80,6 +80,7 @@ class OmiServiceImpl(
        override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
 
+  //example auth API service code in java directory of the project
   //registerApi(new AuthAPIService())
 
 

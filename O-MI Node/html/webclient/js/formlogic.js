@@ -405,7 +405,7 @@
           maybeInterval = Maybe(verbXml.attributes.interval);
           isSubscriptionReq = maybeCallback.exists(function(c) {
             return c.value === "0";
-          }) && verb === "omi:read" && maybeInterval.isDefined;
+          }) && (verb === "omi:read" || verb === "read") && maybeInterval.isDefined;
           if (isSubscriptionReq) {
             return my.waitingForRequestID = true;
           }

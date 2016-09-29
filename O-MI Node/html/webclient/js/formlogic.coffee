@@ -460,7 +460,7 @@ formLogicExt = ($, WebOmi) ->
         maybeInterval = Maybe verbXml.attributes.interval
 
         isSubscriptionReq = maybeCallback.exists((c) -> c.value is "0") and
-          verb == "omi:read" and
+          (verb == "omi:read" or verb == "read") and
           maybeInterval.isDefined
 
         # done by the callback parameter
