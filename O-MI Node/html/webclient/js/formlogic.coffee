@@ -298,19 +298,19 @@ formLogicExt = ($, WebOmi) ->
       row.tooltip
           #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
-        .on 'click', -> # Show the response xml instead of list
-          if row.data.dataRows?
+        .on 'click', do (row) -> -> # wrap closure; Show the response xml instead of list
+          if (row.data 'dataRows')?
             tmpRow = row.nextUntil '.respRet'
             tmpRow.remove()
-            row.after row.data.dataRows
+            row.after row.data 'dataRows'
 
             row.removeData 'mirror'
-            delete row.data.dataRows
+            row.removeData 'dataRows'
             $ '.tooltip' # hotfix: tooltip hiding was broken
               .remove()
           else
             dataRows = row.nextUntil '.respRet'
-            row.data.dataRows = dataRows.clone()
+            row.data 'dataRows', dataRows.clone()
             dataRows.remove()
 
             tmpTr = $ '<tr/>'
@@ -322,6 +322,7 @@ formLogicExt = ($, WebOmi) ->
             responseCodeMirror.setValue responseString
             responseCodeMirror.autoFormatAll()
             row.data 'mirror', responseCodeMirror
+          null
           
           ## Old function was to close the history and show response in the main area and flash it
           #

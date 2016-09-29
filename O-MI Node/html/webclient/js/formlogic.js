@@ -271,29 +271,32 @@
         })()).addClass("respRet").append($("<th/>").text(count)).append($("<th>returnCode</th>")).append($("<th/>").text(returnCode));
         row.tooltip({
           title: "click to show the XML"
-        }).on('click', function() {
-          var codeMirrorContainer, dataRows, responseCodeMirror, tmpRow, tmpTr;
-          if (row.data.dataRows != null) {
-            tmpRow = row.nextUntil('.respRet');
-            tmpRow.remove();
-            row.after(row.data.dataRows);
-            row.removeData('mirror');
-            delete row.data.dataRows;
-            return $('.tooltip').remove();
-          } else {
-            dataRows = row.nextUntil('.respRet');
-            row.data.dataRows = dataRows.clone();
-            dataRows.remove();
-            tmpTr = $('<tr/>');
-            codeMirrorContainer = $('<td colspan=3/>');
-            tmpTr.append(codeMirrorContainer);
-            row.after(tmpTr);
-            responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings);
-            responseCodeMirror.setValue(responseString);
-            responseCodeMirror.autoFormatAll();
-            return row.data('mirror', responseCodeMirror);
-          }
-        });
+        }).on('click', (function(row) {
+          return function() {
+            var codeMirrorContainer, dataRows, responseCodeMirror, tmpRow, tmpTr;
+            if ((row.data('dataRows')) != null) {
+              tmpRow = row.nextUntil('.respRet');
+              tmpRow.remove();
+              row.after(row.data('dataRows'));
+              row.removeData('mirror');
+              row.removeData('dataRows');
+              $('.tooltip').remove();
+            } else {
+              dataRows = row.nextUntil('.respRet');
+              row.data('dataRows', dataRows.clone());
+              dataRows.remove();
+              tmpTr = $('<tr/>');
+              codeMirrorContainer = $('<td colspan=3/>');
+              tmpTr.append(codeMirrorContainer);
+              row.after(tmpTr);
+              responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings);
+              responseCodeMirror.setValue(responseString);
+              responseCodeMirror.autoFormatAll();
+              row.data('mirror', responseCodeMirror);
+            }
+            return null;
+          };
+        })(row));
         return row;
       };
       htmlformat = function(pathValues) {
