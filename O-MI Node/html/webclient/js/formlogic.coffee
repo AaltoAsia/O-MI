@@ -298,19 +298,19 @@ formLogicExt = ($, WebOmi) ->
       row.tooltip
           #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
-        .on 'click', -> # Show the response xml instead of list
-          if row.data.dataRows?
+        .on 'click', do (row) -> -> # wrap closure; Show the response xml instead of list
+          if (row.data 'dataRows')?
             tmpRow = row.nextUntil '.respRet'
             tmpRow.remove()
-            row.after row.data.dataRows
+            row.after row.data 'dataRows'
 
             row.removeData 'mirror'
-            delete row.data.dataRows
+            row.removeData 'dataRows'
             $ '.tooltip' # hotfix: tooltip hiding was broken
               .remove()
           else
             dataRows = row.nextUntil '.respRet'
-            row.data.dataRows = dataRows.clone()
+            row.data 'dataRows', dataRows.clone()
             dataRows.remove()
 
             tmpTr = $ '<tr/>'
@@ -322,6 +322,7 @@ formLogicExt = ($, WebOmi) ->
             responseCodeMirror.setValue responseString
             responseCodeMirror.autoFormatAll()
             row.data 'mirror', responseCodeMirror
+          null
           
           ## Old function was to close the history and show response in the main area and flash it
           #
@@ -460,7 +461,7 @@ formLogicExt = ($, WebOmi) ->
         maybeInterval = Maybe verbXml.attributes.interval
 
         isSubscriptionReq = maybeCallback.exists((c) -> c.value is "0") and
-          verb == "omi:read" and
+          (verb == "omi:read" or verb == "read") and
           maybeInterval.isDefined
 
         # done by the callback parameter
@@ -681,6 +682,12 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           if not isRequestIdReq
             ui.requestID.set null
             ui.requestID.ref.trigger "input"
+          isCallbackReq = reqName != "cancel"
+          ui.callback.ref.prop('disabled', not isCallbackReq)
+          if not isCallbackReq
+            ui.callback.set null
+            ui.callback.ref.trigger "input"
+          ui.requestID.ref.prop('disabled', not isRequestIdReq)
           ui.interval.ref.prop('disabled', reqName != 'subscription')
           ui.interval.set null
           ui.interval.ref.trigger "input"

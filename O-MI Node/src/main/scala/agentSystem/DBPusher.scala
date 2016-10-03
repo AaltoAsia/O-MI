@@ -57,7 +57,9 @@ trait DBPusher extends BaseAgentSystem{
     val id = esub.id
     val callbackAddr = esub.callback
     val hTree = singleStores.hierarchyStore execute GetTree()
-    val odf = hTree.intersect(odfWithoutTypes)
+    //union with odfWithoutTypes to make sure that we don't lose odf branches that are not in hierarchy yet
+    //and then intersect to get correct typeValues etc. from hierarchyTree
+    val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersect(odfWithoutTypes)
     val responseTTL =
       Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
         .toOption.getOrElse(Duration.Inf)

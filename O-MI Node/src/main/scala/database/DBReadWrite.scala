@@ -21,7 +21,7 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 
 import org.slf4j.LoggerFactory
-import slick.driver.H2Driver.api._
+//import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -32,6 +32,7 @@ import types._
  * Read-write interface methods for db tables.
  */
 trait DBReadWrite extends DBReadOnly with OmiNodeTables {
+  import dc.driver.api._
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
 

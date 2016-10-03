@@ -24,7 +24,9 @@ import akka.actor.ActorSystem
 import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
 import parsing.xmlGen.xmlTypes.MetaData
-import slick.driver.H2Driver.api._
+import slick.backend.DatabaseConfig
+//import slick.driver.H2Driver.api._
+import slick.driver.JdbcProfile
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.OmiReturn
@@ -45,7 +47,7 @@ package object database {
   }
   def historyLength: Int = histLength
 
-  val dbConfigName = "h2-conf"
+  val dbConfigName = "dbconf"
 
 }
 //import database.database._
@@ -207,7 +209,9 @@ class DatabaseConnection()(
   protected val settings : OmiConfigExtension
   ) extends DBReadWrite with DBBase with DB {
 
-  val db = Database.forConfig(dbConfigName)
+  //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
+  val db = dc.db
+  //val db = Database.forConfig(dbConfigName)
   initialize()
 
   val dbmaintainer = system.actorOf(DBMaintainer.props(
@@ -244,6 +248,7 @@ class TestDB(val name:String = "")(
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
 ) extends DBReadWrite with DBBase with DB {
+  import slick.driver.H2Driver.api._
 
   private val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)

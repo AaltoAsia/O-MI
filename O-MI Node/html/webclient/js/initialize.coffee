@@ -177,10 +177,10 @@ constsExt = ($, parent, util) ->
       id   : path
       text : name
       type : treeTypeName
-    , "first", (node) ->
+    , "first"
+    , (node) ->
       tree.open_node parent, null, 500
       callback? node
-      tree.select_node node
 
 
   # private
