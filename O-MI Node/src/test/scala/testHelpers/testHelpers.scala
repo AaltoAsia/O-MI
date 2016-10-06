@@ -1,15 +1,20 @@
 package testHelpers
 import scala.language.postfixOps
 
-import scala.concurrent.Await
+import scala.concurrent.{Promise, Future, Await}
 import scala.concurrent.duration._
+import scala.xml.Source
 import scala.xml._
 import scala.xml.parsing._
 
+import akka.Done
 import akka.actor._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.{WebSocketRequest, TextMessage, Message}
+import akka.stream.scaladsl.{Source, Keep, Sink}
 import akka.util.Timeout
 import akka.stream.ActorMaterializer
-import akka.http.scaladsl.Http
+import akka.http.scaladsl._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.TestFrameworkInterface
@@ -117,6 +122,62 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
 
   val bindFuture = Http().bindAndHandle(route, interface, port)
   Await.ready(bindFuture, 5 seconds)
+}
+
+class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(implicit system: ActorSystem){
+ //send messages received from ws connection to the given actor
+  implicit val materializer = ActorMaterializer()
+  import system.dispatcher
+
+  val incoming: Sink[Message, Future[Done]] = {
+   Sink.foreach[Message]{
+     case message: TextMessage.Strict => {
+     destination ! message.text
+     }
+   }
+ }
+  val outgoingSourceQueue = akka.stream.scaladsl.Source.queue[Message](5,akka.stream.OverflowStrategy.fail)//(TextMessage("ping"))
+
+  private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
+    val p = Promise[M]
+    val s = src.mapMaterializedValue { m =>
+      p.trySuccess(m)
+      m
+    }
+    (s, p.future)
+  }
+
+  val (outgoing, sourceQueue) = peekMatValue(outgoingSourceQueue)
+
+  //val queue = outgoing.mapMaterializedValue()
+
+  //create websocket connection
+  val webSocketFlow = Http().webSocketClientFlow(WebSocketRequest(interface + ":" + port))
+
+  val (upgradeResponse, closed) =
+    outgoing
+      .viaMat(webSocketFlow)(Keep.right)
+      .toMat(incoming)(Keep.both)
+      .run()
+
+  val connected = upgradeResponse.flatMap{ upgrade =>
+    if (upgrade.response.status == StatusCodes.SwitchingProtocols){
+      Future.successful(Done)
+    }
+    else{
+      throw new RuntimeException(s"Websocket connection failed ${upgrade.response.status}")
+    }
+  }
+
+  closed.foreach(c => system.log.debug("Closed WS connection"))
+
+  def offer(message: String) = {
+    sourceQueue.map(que => que.offer(TextMessage(message)))
+  }
+
+  def close = sourceQueue.map(_.complete())
+
+
 }
 
 
