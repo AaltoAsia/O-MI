@@ -103,6 +103,9 @@ object JavaHelpers{
     def isAncestor( child: Path) : Boolean ={
       child.length > this.length && child.startsWith(this.pathSeq)
     }
+    def ancestorsAndSelf: Seq[Path] = pathSeq.inits.map( Path(_)).toSeq
+    def ancestors: Seq[Path] = ancestorsAndSelf.tail
+    def length: Int = pathSeq.length
   }
 
   /** Helper object for Path, contains implicit conversion between Path and Seq[String]

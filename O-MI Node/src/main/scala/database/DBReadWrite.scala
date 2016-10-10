@@ -36,7 +36,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
 
-  private val log = LoggerFactory.getLogger("DBReadWrite")
+  protected val log = LoggerFactory.getLogger("DBReadWrite")
 
 
   /**
@@ -270,7 +270,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     ).map(_.sum)
   }
   //add root node when removed or when first started
-  private def addRoot = {
+  protected def addRoot = {
     hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
   }
   def addRootR: Future[Int] = {

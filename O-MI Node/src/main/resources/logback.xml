@@ -43,7 +43,7 @@
     <logger name="spray.can" level="INFO" />
     <logger name="akka.io.TcpListener" level="INFO" />
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC"/>
     </root>
