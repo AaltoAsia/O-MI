@@ -55,9 +55,9 @@ trait DBTest extends Bench[Double]{
                 HtmlReporter(true)
               )
   lazy val random = Random
-  lazy val pathCounts = Gen.range("paths")(10, 60, 10)// ++ Gen.range("values")(1, 10, 1)
-  lazy val valueCounts = Gen.range("values")(10, 40, 10)// ++ Gen.range("values")(1, 10, 1)
-  lazy val writeCounts = Gen.range("writes")(10, 60, 10) 
+  lazy val infoitemsCounts = Gen.range("InfoItems")(20, 120, 20)// ++ Gen.range("values")(1, 10, 1)
+  lazy val valueCounts = Gen.range("Values")(20, 120, 20)// ++ Gen.range("values")(1, 10, 1)
+  lazy val writeCounts = Gen.range("Writes")(10, 60, 10) 
   lazy val pathParts = List(
     "a",
     "b",
@@ -66,21 +66,21 @@ trait DBTest extends Bench[Double]{
     "e"
   )
 
-  lazy val infoitems: Vector[OdfInfoItem] = (for{
+  lazy val allInfoItems: Vector[OdfInfoItem] = (for{
     pathSeq <- pathParts.permutations   
     path = Path("Objects/" + pathSeq.mkString("/"))
     infoitem = OdfInfoItem( path, Vector(OdfValue(1,new Timestamp(1))))
   } yield infoitem ).toVector
-  println("Total infoItems created: " + infoitems.length)
+  println("Total infoItems created: " + allInfoItems.length)
 
   def test( db: DBReadWrite, name: String )(implicit system: ActorSystem): Unit = {
   import system.dispatcher
     performance of s"$name" in {
-      Await.result(db.writeMany(infoitems ), 100.seconds)
+      Await.result(db.writeMany(allInfoItems ), 100.seconds)
 
       measure method "writeMany" in {
-        val paths: Gen[Vector[OdfInfoItem]]= pathCounts.map{ n =>
-          infoitems.take(n).map{
+        val infoItems: Gen[Vector[OdfInfoItem]]= infoitemsCounts.map{ n =>
+          allInfoItems.take(n).map{
             infoitem => infoitem.copy(
               values = Vector(
                 OdfValue( 
@@ -91,7 +91,7 @@ trait DBTest extends Bench[Double]{
             )
           }.toVector
         } 
-        using(paths) curve("n paths with single value in each")  afterTests {
+        using(infoItems) curve("n paths with single value in each")  afterTests {
           db.trimDB()
           } in { vls =>
             Try{
@@ -102,7 +102,8 @@ trait DBTest extends Bench[Double]{
               }
           }      
           val values : Gen[Vector[OdfInfoItem]]= valueCounts.map{ n =>  
-            infoitems.map{
+            val start = Random.nextInt(allInfoItems.length - 40)
+            allInfoItems.slice(start, start + 40).map{
               infoitem => infoitem.copy(values = 
                 (0 until n).map{ i =>
                   OdfValue( 
@@ -129,8 +130,8 @@ trait DBTest extends Bench[Double]{
               case arr => 
                 arr.map{
                   case _ =>
-                    val start = Random.nextInt(infoitems.length - 40)
-                    infoitems.slice(start, start + 40).map{
+                    val start = Random.nextInt(allInfoItems.length - 40)
+                    allInfoItems.slice(start, start + 40).map{
                       case infoitem =>
                         infoitem.copy( 
                           values = Vector(
@@ -143,9 +144,7 @@ trait DBTest extends Bench[Double]{
                     }
                 }
             }
-            using(writes) curve("n concurrent writeManys") afterTests {
-              db.trimDB()
-              } in { ws =>
+            using(writes) curve("n concurrent writeManys") in { ws =>
                 Try{
                   Await.result(
                     Future.sequence( 
@@ -166,9 +165,9 @@ trait DBTest extends Bench[Double]{
               }
       }
       measure method "getNBetween" in {
-        lazy val readInfoItems= Gen.range("InfoItems")(20, 120, 20).map{ 
+        lazy val readInfoItems= infoitemsCounts.map{ 
           n => 
-            infoitems.take(n).map{
+            allInfoItems.take(n).map{
               infoitem => infoitem.copy(
                 values = Vector()
               )
@@ -188,12 +187,25 @@ trait DBTest extends Bench[Double]{
             }
         }
 
-        val readNewest= Gen.range("Newest")(10, 40, 10) 
-        val odfIter = infoitems.take(60)
+        val readNewest = valueCounts
+        val odfIter = allInfoItems.take(60)
         using(readNewest) curve("n newest values from 60 infoitems") in { newest =>
           Try{
             Await.result(
               db.getNBetween(odfIter, None, None, Some(newest), None),
+              10.seconds
+            )
+            } match {
+              case Success(res) => 
+                //      counter += 1
+                //      println("writes writen: " + res.length)
+              case Failure(exp: Throwable) => println(exp.getMessage)
+            }
+        }
+        using(readNewest) curve("n oldest values from 60 infoitems") in { oldest =>
+          Try{
+            Await.result(
+              db.getNBetween(odfIter, None, None, None,Some(oldest)),
               10.seconds
             )
             } match {
@@ -208,6 +220,21 @@ trait DBTest extends Bench[Double]{
           Try{
             Await.result(
               db.getNBetween(Vector(OdfObjects()), None, None, Some(newest), None),
+              10.seconds
+            )
+            } match {
+              case Success(res) => 
+                //      counter += 1
+                //      println("writes writen: " + res.length)
+              case Failure(exp: Throwable) => println(exp.getMessage)
+            }
+        }
+        using(readNewest) curve("n oldest values from objects")  afterTests {
+          db.trimDB()
+          } in { oldest =>
+          Try{
+            Await.result(
+              db.getNBetween(Vector(OdfObjects()), None, None, None, Some(oldest)),
               10.seconds
             )
             } match {
