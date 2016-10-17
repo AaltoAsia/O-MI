@@ -22,9 +22,11 @@ def commonSettings(moduleName: String) = Seq(
   exportJars := true,
   EclipseKeys.withSource := true,
   // coverage 1.3.x:
-  coverageExcludedPackages := "parsing.xmlGen.*;"
+  coverageExcludedPackages := "parsing.xmlGen.*;",
   // coverage 1.0.x:
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
+  testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+  logBuffered := false
 )
 
 lazy val JavaDoc = config("genjavadoc") extend Compile
