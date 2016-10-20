@@ -207,7 +207,7 @@ class DatabaseConnection()(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-  ) extends DBReadWrite with DBBase with DB {
+  ) extends DBCachedReadWrite with DBBase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
   val db = dc.db
@@ -247,10 +247,10 @@ class TestDB(val name:String = "")(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-) extends DBReadWrite with DBBase with DB {
+) extends DBCachedReadWrite with DBBase with DB {
   import slick.driver.H2Driver.api._
 
-  private val log = LoggerFactory.getLogger("TestDB")
+  override protected val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
   val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
     keepAliveConnection=true)
