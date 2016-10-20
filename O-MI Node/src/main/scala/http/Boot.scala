@@ -117,7 +117,6 @@ trait OmiNode {
   implicit def omiService : OmiService 
   implicit def settings : OmiConfigExtension 
   implicit def cliListener : ActorRef
-
   implicit def httpExt: HttpExt
 
   implicit val timeoutForBind : Timeout

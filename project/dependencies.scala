@@ -44,7 +44,10 @@ object Dependencies {
 
 
   //val schwatcher   = "com.beachape.filemanagement" %% "schwatcher"   % "0.3.1" //common
-  val commonsLang  = "commons-lang"                 % "commons-lang" % "2.6" //common
+  val commonsLang  =    "commons-lang"                 % "commons-lang"     % "2.6" //common
+  //Warp10 helpers
+  val commonsio =       "commons-io"                   % "commons-io"       % "2.5"
+  val commonscompress = "org.apache.commons"           % "commons-compress" % "1.12"
 
   //Scala XML      
   //val scalaXML     = "org.scala-lang.modules"      %% "scala-xml"    % "2.11.0-M4"
@@ -73,6 +76,8 @@ object Dependencies {
     sprayJson,//json4s,
     //scalaXML,
     commonsLang,
+    commonscompress,
+    commonsio,
     prevaylerCore,
     prevaylerFactory,
     gson)

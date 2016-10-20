@@ -1,4 +1,10 @@
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -7,9 +13,74 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import java.util.zip.GZIPInputStream;
+import java.net.URL;
 
 public class ReplacePath {
+        public static void main2(String[] args){
+            String inputPath = "";
+            //Charset charset = StandardCharsets.UTF_8;
+            if (args.length > 0){
+                inputPath = args[0];
+            } else {
+                System.err.println("give path to warp10 directory as parameter");
+                System.exit(1);
+            }
+            String tarGzFilename = "warp10.tar.gz";
+
+            Path currentPath = Paths.get(inputPath).getParent().resolve(tarGzFilename);//.resolve("bin" + File.separator + tarGzFilename);
+            Path warp10Location = Paths.get(inputPath);
+            URL url = new URL("https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%2F1.0.16%2Fwarp10-1.0.16.tar.gz");
+            File dest = currentPath.toFile();
+            org.apache.commons.io.FileUtils.copyURLToFile(url, dest);
+
+            String fileName = dest.toString();
+            String tarFilename= fileName + ".tar";
+            FileInputStream inStream = new FileInputStream(dest);
+            GZIPInputStream gzInStream = new GZIPInputStream(inStream);
+            FileOutputStream outStream = new FileOutputStream(tarFilename);
+
+            byte[] buf = new byte[1024];
+            int len;
+            while((len = gzInStream.read(buf)) > 0)
+            {
+                outStream.write(buf, 0, len);
+            }
+
+            gzInStream.close();
+            outStream.close();
+
+            TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new FileInputStream(tarFilename));
+            TarArchiveEntry entry = null;
+            int offset = 0;
+            FileOutputStream outputFile = null;
+
+            while((entry = tarInputStream.getNextTarEntry()) != null) {
+                File outputDir = warp10Location.resolve(entry.getName()).toFile();
+                if(! outputDir.getParentFile().exists()){
+                    outputDir.getParentFile().mkdirs();
+                }
+
+                if(entry.isDirectory()){
+                    outputDir.mkdirs();
+                } else {
+                    byte[] content = new  byte[(int) entry.getSize()];
+                    offset = 0;
+                    tarInputStream.read(content,offset,content.length - offset);
+                    outputFile = new FileOutputStream(outputDir);
+                    IOUtils.write(content, outputFile);
+                    outputFile.close();
+
+                }
+            }
+            tarInputStream.close();
+            File tarFile = new File(tarFilename);
+            tarFile.delete();
+
+
+        }
+
+
   public static void main(String[] args) {
     String inputPath = "";
     Charset charset = StandardCharsets.UTF_8;
