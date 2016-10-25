@@ -116,7 +116,7 @@ lazy val root = (project in file(".")).
     //start the warp10 database before starting O-MI node.//////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """
-WARP10_URL="https://dl.bintray.com/cityzendata/generic/warp10-1.0.1.tar.gz"
+WARP10_URL="https://dl.bintray.com/cityzendata/generic/io/warp10/warp10/1.0.8/warp10-1.0.8.tar.gz"
 WARP10_HOME="${app_home}/../database/warp10"
 WARP10_CONFIG="${WARP10_HOME}/etc/conf-standalone.conf"
 WARP10_JAR="${WARP10_HOME}"/bin/warp10.jar
