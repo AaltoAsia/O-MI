@@ -116,10 +116,10 @@ lazy val root = (project in file(".")).
     //start the warp10 database before starting O-MI node.//////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """
+WARP10_URL="https://dl.bintray.com/cityzendata/generic/warp10-1.0.1.tar.gz"
 WARP10_HOME="${app_home}/../database/warp10"
 WARP10_CONFIG="${WARP10_HOME}/etc/conf-standalone.conf"
-WARP10_REVISION=1.0.7
-WARP10_JAR="${WARP10_HOME}"/bin/warp10-${WARP10_REVISION}.jar
+WARP10_JAR="${WARP10_HOME}"/bin/warp10.jar
 WARP10_CLASS=io.warp10.standalone.Warp
 WARP10_CP="${WARP10_JAR}"
 WARP10_HEAP=512m
@@ -128,8 +128,11 @@ WARP10_SENSISION_EVENTS_DIR="${WARP10_HOME}/data/sensision/data/metrics"
 WARP10_LOG4J_CONF="${WARP10_HOME}/etc/log4j.properties"
 WARP10_JAVA_HEAP_DUMP="${WARP10_HOME}/logs/java.heapdump"
 WARP10_JAVA_OPTS="-Djava.awt.headless=true -Dlog4j.configuration=file:${WARP10_LOG4J_CONF} -Xms${WARP10_HEAP} -Xmx${WARP10_HEAP_MAX} -XX:+UseG1GC"
+if [ ! -d "${WARP10_HOME}" ]; then
+  java -cp "${app_home}/fixpaths.jar:${app_classpath}" DownloadBinaries "${WARP10_HOME}" "${WARP10_URL}"
+fi
 if [ ! -f "${WARP10_CONFIG}" ]; then
-  java -cp ${WARP10_HOME}/bin/warp10-1.0.7.jar io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens
+  java -cp ${WARP10_JAR} io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens
   java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"
 fi
 
