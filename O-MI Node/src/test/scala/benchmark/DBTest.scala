@@ -13,6 +13,7 @@ import types.OdfTypes._
 import org.scalameter.picklers.Pickler
 import org.scalameter.{Setup,Key}
 import org.scalameter.picklers.Implicits._
+import com.typesafe.config.{ConfigFactory, Config}
 
 trait UnCachedDBTest extends DBTest {
   val name: String = "UncachedDBTest"
@@ -23,17 +24,49 @@ trait UnCachedDBTest extends DBTest {
   test(db, "UncachedDB")
 }
 trait OldAndNewDBTest extends DBTest {
+  val psqlconfig = ConfigFactory.load(
+      ConfigFactory.parseString(
+        """
+dbconf {
+  driver = "slick.driver.PostgresDriver$"
+  db {
+    url = "jdbc:postgresql:omiNodeTest"
+    user = "omi"
+    password = "testingominode"
+    driver = org.postgresql.Driver
+    connectionPool = disabled
+    keepAliveConnection = true
+    connectionTimeout = 15s
+  }
+}
+
+        """).withFallback(ConfigFactory.load()))
+
+  val h2config = ConfigFactory.load(
+      ConfigFactory.parseString(
+        """
+dbconf {
+  driver = "slick.driver.H2Driver$"
+  db {
+    url = "jdbc:h2:mem:test1"
+    driver = org.h2.Driver
+    connectionPool = disabled
+    keepAliveConnection = true
+    connectionTimeout = 15s
+  }
+}
+        """).withFallback(ConfigFactory.load()))
   val name: String = "OldAndNewDBTest"
    val oldsystem = ActorSystem(name + "OldSystem")
   val oldsettings = OmiConfig(oldsystem)
   val oldsingleStores = new SingleStores(oldsettings)
-  val olddb: DBReadWrite = new UncachedTestDB("OldDB",false)(oldsystem, oldsingleStores, oldsettings)
-  test(olddb, "OldDB")(oldsystem)
+  val olddb: DBReadWrite = new UncachedTestDB("OldDB", false,psqlconfig)(oldsystem, oldsingleStores, h2settings)
+  test(olddb, "OldDBFILE")(oldsystem)
   val newsystem = ActorSystem(name + "NewSystem")
   val newsettings = OmiConfig(newsystem)
   val newsingleStores = new SingleStores(newsettings)
-  val newdb: DBReadWrite = new TestDB("NewDB",false)(newsystem, newsingleStores, newsettings)
-  test(newdb, "NewDB")(newsystem)
+  val newdb: DBReadWrite = new TestDB("NewDB", false,psqlconfig)(newsystem, newsingleStores, h2settings)
+  test(newdb, "NewDBFILE")(newsystem)
 }
 
 trait DBTest extends Bench[Double]{
@@ -216,6 +249,7 @@ trait DBTest extends Bench[Double]{
             }
         }
 
+        /*
         using(readNewest) curve("n newest values from objects") in { newest =>
           Try{
             Await.result(
@@ -243,7 +277,7 @@ trait DBTest extends Bench[Double]{
                 //      println("writes writen: " + res.length)
               case Failure(exp: Throwable) => println(exp.getMessage)
             }
-        }
+        }*/
       }
     }
   }

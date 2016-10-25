@@ -53,13 +53,13 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       allSchemas.create,
       addRoot)
 
-    val existingTables = MTable.getTables
-    val existed = Await.result(db.run(existingTables), 5 minutes)
-    if (existed.nonEmpty) {
+    val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
+    val existed : Seq[String] = (Await.result(db.run(existingTables), 5 minutes)).filter( !_.startsWith("pq"))
+    if ( existed.contains("hierarchynodes") && existed.contains("sensorvalues")) {
       //noop
       log.info(
         "Found tables: " +
-          existed.map { _.name.name }.mkString(", ") +
+          existed.mkString(", ") +
           "\n Not creating new tables.")
     } else {
       //run transactionally so there are all or no tables

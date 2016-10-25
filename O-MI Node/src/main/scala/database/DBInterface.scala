@@ -20,6 +20,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 
 import http.OmiConfigExtension
+import com.typesafe.config.{ConfigFactory,Config}
 import akka.actor.{ActorRef,ActorSystem}
 import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
@@ -210,6 +211,7 @@ class DatabaseConnection()(
   ) extends DBCachedReadWrite with DBBase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
+  val dc : DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
   val db = dc.db
   //val db = Database.forConfig(dbConfigName)
   initialize()
@@ -242,17 +244,36 @@ class DatabaseConnection()(
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class UncachedTestDB(val name:String = "", useMaintainer: Boolean = true)(
+class UncachedTestDB(
+  val name:String = "", 
+  useMaintainer: Boolean = true, 
+  val config: Config = ConfigFactory.load(
+    ConfigFactory.parseString("""
+dbconf {
+  driver = "slick.driver.H2Driver$"
+  db {
+    url = "jdbc:h2:mem:test1"
+    driver = org.h2.Driver
+    connectionPool = disabled
+    keepAliveConnection = true
+    connectionTimeout = 15s
+  }
+}
+"""
+)).withFallback(ConfigFactory.load()),
+  val configName: String = "dbconf")(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-) extends DBReadWrite with DBBase with DB {
-  import slick.driver.H2Driver.api._
+) extends DBReadWrite with DB {
 
   override protected val log = LoggerFactory.getLogger("UncachedTestDB")
   log.debug("Creating UncachedTestDB: " + name)
-  val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
-    keepAliveConnection=true)
+  override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
+  import dc.driver.api._
+  val db = dc.db
+   // Database.forURL(url, driver = driver,
+   // keepAliveConnection=true)
   initialize()
 
   val dbmaintainer = if( useMaintainer) {
@@ -279,17 +300,36 @@ class UncachedTestDB(val name:String = "", useMaintainer: Boolean = true)(
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(val name:String = "", useMaintainer: Boolean = true)(
+class TestDB(
+  val name:String = "", 
+  useMaintainer: Boolean = true, 
+  val config: Config = ConfigFactory.load(
+    ConfigFactory.parseString("""
+dbconf {
+  driver = "slick.driver.H2Driver$"
+  db {
+    url = "jdbc:h2:mem:test1"
+    driver = org.h2.Driver
+    connectionPool = disabled
+    keepAliveConnection = true
+    connectionTimeout = 15s
+  }
+}
+"""
+)).withFallback(ConfigFactory.load()),
+  val configName: String = "dbconf")(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-) extends DBCachedReadWrite with DBBase with DB {
-  import slick.driver.H2Driver.api._
+) extends DBCachedReadWrite with DB {
 
   override protected val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
-  val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
-    keepAliveConnection=true)
+  override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
+  import dc.driver.api._
+  val db = dc.db
+   // Database.forURL(url, driver = driver,
+   // keepAliveConnection=true)
   initialize()
 
   val dbmaintainer = if( useMaintainer) { system.actorOf(DBMaintainer.props(
