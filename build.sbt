@@ -156,7 +156,7 @@ fi
       batScriptExtraDefines += """set "WARP10_JAVA_HEAP_DUMP=%WARP10_HOME%\logs\java.heapdump"""",
       batScriptExtraDefines += """set "WARP10_JAVA_OPTS=-Djava.awt.headless=true -Dlog4j.configuration=file:%WARP10_LOG4J_CONF% -Xms%WARP10_HEAP% -Xmx%WARP10_HEAP_MAX% -XX:+UseG1GC"""",
       batScriptExtraDefines += """if not exist %WARP10_JAR% (""",
-      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" DownloadBinaries "%WARP10_HOME%" "WARP10_URL"""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" DownloadBinaries "%WARP10_HOME%" "%WARP10_URL%"""",
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """""",
       batScriptExtraDefines += """if not exist %WARP10_CONFIG% (""",
