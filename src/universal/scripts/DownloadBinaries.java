@@ -30,7 +30,7 @@ public class DownloadBinaries {
         //Charset charset = StandardCharsets.UTF_8;
         if (args.length > 1){
             inputPath = args[0];
-            jarLocation = args[2];
+            jarLocation = args[1];
         } else {
             System.err.println("give path to warp10 directory  AND jar location url as parameter");
             System.exit(1);
@@ -43,7 +43,7 @@ public class DownloadBinaries {
         String fileName = dest.toString();
         String tarFilename= fileName + ".tar";
         try {
-            URL url = new URL(jarLocaton);
+            URL url = new URL(jarLocation);
             System.out.println("Downloading database files...");
             org.apache.commons.io.FileUtils.copyURLToFile(url, dest);
 
