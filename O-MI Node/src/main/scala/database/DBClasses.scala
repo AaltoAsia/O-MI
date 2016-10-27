@@ -64,7 +64,6 @@ case class SubValue(
 }
 
 trait OmiNodeTables extends DBBase {
-  println(dc)
   import dc.driver.api._
 
   implicit lazy val pathColumnType = MappedColumnType.base[Path, String](
