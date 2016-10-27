@@ -32,7 +32,7 @@ dbconf {
   db {
     url = "jdbc:postgresql:omiNodeTest"
     user = "omi"
-    password = "testingominode"
+    password = "testing"
     driver = org.postgresql.Driver
     connectionPool = disabled
     keepAliveConnection = true
@@ -42,13 +42,14 @@ dbconf {
 
         """).withFallback(ConfigFactory.load()))
 
-  val h2config = ConfigFactory.load(
+  def h2config(name: String)  = ConfigFactory.load(
       ConfigFactory.parseString(
-        """
+      """
 dbconf {
   driver = "slick.driver.H2Driver$"
   db {
-    url = "jdbc:h2:mem:test1"
+    url = """"
+     + s"jdbc:h2:file:./logs/$name.h2"+ """"
     driver = org.h2.Driver
     connectionPool = disabled
     keepAliveConnection = true
@@ -56,17 +57,27 @@ dbconf {
   }
 }
         """).withFallback(ConfigFactory.load()))
-  val name: String = "OldAndNewDBTest"
-   val oldsystem = ActorSystem(name + "OldSystem")
-  val oldsettings = OmiConfig(oldsystem)
-  val oldsingleStores = new SingleStores(oldsettings)
-  val olddb: DBReadWrite = new UncachedTestDB("OldDB", false,psqlconfig)(oldsystem, oldsingleStores, h2settings)
-  test(olddb, "OldDBFILE")(oldsystem)
-  val newsystem = ActorSystem(name + "NewSystem")
-  val newsettings = OmiConfig(newsystem)
-  val newsingleStores = new SingleStores(newsettings)
-  val newdb: DBReadWrite = new TestDB("NewDB", false,psqlconfig)(newsystem, newsingleStores, h2settings)
-  test(newdb, "NewDBFILE")(newsystem)
+  database.changeHistoryLength(120)
+  val oldH2name: String = "OldH2DB"
+  val oldH2system = ActorSystem(oldH2name + "System")
+  val oldH2settings = OmiConfig(oldH2system)
+  val oldH2singleStores = new SingleStores(oldH2settings)
+  val oldH2db: DBReadWrite = new UncachedTestDB(oldH2name, false,h2config(oldH2name))(oldH2system, oldH2singleStores, oldH2settings)
+  test(oldH2db, oldH2name)(oldH2system)
+
+  val newH2name: String = "NewH2DB"
+  val newH2system = ActorSystem(newH2name + "System")
+  val newH2settings = OmiConfig(newH2system)
+  val newH2singleStores = new SingleStores(newH2settings)
+  val newH2db: DBReadWrite = new TestDB(newH2name, false,h2config(newH2name))(newH2system, newH2singleStores, newH2settings)
+  test(newH2db, newH2name)(newH2system)
+
+  val newPSQLname: String = "NewPSQLDB"
+  val newPSQLsystem = ActorSystem(newPSQLname + "System")
+  val newPSQLsettings = OmiConfig(newPSQLsystem)
+  val newPSQLsingleStores = new SingleStores(newPSQLsettings)
+  val newPSQLdb: DBReadWrite = new TestDB(newPSQLname, false,psqlconfig)(newPSQLsystem, newPSQLsingleStores, newPSQLsettings)
+  test(newPSQLdb, newPSQLname)(newPSQLsystem)
 }
 
 trait DBTest extends Bench[Double]{

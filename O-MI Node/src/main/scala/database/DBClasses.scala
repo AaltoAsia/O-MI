@@ -120,17 +120,17 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table to store object hierarchy.
    */
   class DBNodesTable(tag: Tag)
-    extends Table[DBNode](tag, "hierarchynodes") {
+    extends Table[DBNode](tag, "HIERARCHYNODES") {
     import dc.driver.api._
     /** This is the PrimaryKey */
-    def id: Rep[Int] = column[Int]("hierarchyid", O.PrimaryKey, O.AutoInc)
-    def path: Rep[Path] = column[Path]("path")
-    def leftBoundary: Rep[Int] = column[Int]("leftboundary")
-    def rightBoundary: Rep[Int] = column[Int]("rightboundary")
-    def depth: Rep[Int] = column[Int]("depth")
-    def description: Rep[String] = column[String]("description")
-    def pollRefCount: Rep[Int] = column[Int]("pollrefcount")
-    def isInfoItem: Rep[Boolean] = column[Boolean]("isinfoitem")
+    def id: Rep[Int] = column[Int]("HIERARCHYID", O.PrimaryKey, O.AutoInc)
+    def path: Rep[Path] = column[Path]("PATH")
+    def leftBoundary: Rep[Int] = column[Int]("LEFTBOUNDARY")
+    def rightBoundary: Rep[Int] = column[Int]("RIGHTBOUNDARY")
+    def depth: Rep[Int] = column[Int]("DEPTH")
+    def description: Rep[String] = column[String]("DESCRIPTION")
+    def pollRefCount: Rep[Int] = column[Int]("POLLREFCOUNT")
+    def isInfoItem: Rep[Boolean] = column[Boolean]("ISINFOITEM")
 
     // Every table needs a * projection with the same type as the table's type parameter
     def * : ProvenShape[DBNode] = (id.?, path, leftBoundary, rightBoundary, depth, description, pollRefCount, isInfoItem) <> (
@@ -143,7 +143,7 @@ trait OmiNodeTables extends DBBase {
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
-    def hierarchyId: Rep[Int] = column[Int]("hierarchyid")
+    def hierarchyId: Rep[Int] = column[Int]("HIERARCHYID")
     def hierarchy: ForeignKeyQuery[DBNodesTable, DBNode] = foreignKey(hierarchyfkName, hierarchyId, hierarchyNodes)(
       _.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
   }
@@ -157,15 +157,15 @@ trait OmiNodeTables extends DBBase {
    * (Boilerplate) Table for storing latest sensor data to database
    */
   class DBValuesTable(tag: Tag)
-    extends Table[DBValue](tag, "sensorvalues") with HierarchyFKey[DBValue] {
-    val hierarchyfkName = "valueshierarchy_fk"
+    extends Table[DBValue](tag, "SENSORVALUES") with HierarchyFKey[DBValue] {
+    val hierarchyfkName = "VALUESHIERARCHY_FK"
     // from extension:
-    def id: Rep[Long] = column[Long]("valueid", O.PrimaryKey, O.AutoInc)
-    def timestamp: Rep[Timestamp] = column[Timestamp]("time",O.SqlType("TIMESTAMP(3)"))
-    def value: Rep[String] = column[String]("value")
-    def valueType: Rep[String] = column[String]("valuetype")
-    def idx1: Index = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
-    def idx2: Index = index("timestamp", timestamp, unique = false)  //index on timestmaps
+    def id: Rep[Long] = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
+    def timestamp: Rep[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
+    def value: Rep[String] = column[String]("VALUE")
+    def valueType: Rep[String] = column[String]("VALUETYPE")
+    def idx1: Index = index("VALUEiDX", hierarchyId, unique = false) //index on hierarchyIDs
+    def idx2: Index = index("TIMESTAMP", timestamp, unique = false)  //index on timestmaps
     /** Primary Key: (hierarchyId, timestamp) */
 
     def * : ProvenShape[DBValue] = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)

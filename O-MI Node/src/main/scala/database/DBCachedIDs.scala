@@ -55,7 +55,7 @@ trait DBCachedReadWrite extends DBReadWrite{
 
     val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
     val existed : Seq[String] = (Await.result(db.run(existingTables), 5 minutes)).filter( !_.startsWith("pq"))
-    if ( existed.contains("hierarchynodes") && existed.contains("sensorvalues")) {
+    if ( existed.contains("HIERARCHYNODES") && existed.contains("SENSORVALUES")) {
       //noop
       log.info(
         "Found tables: " +
