@@ -10,5 +10,5 @@ import http._
 
 class BenchmarkSuite extends Bench.Group{
 //  override def persistor = new JSONSerializationPersistor( "benchResults")
-  include(new OldAndNewDBTest(){})
+//  include(new OldAndNewDBTest(){})
 }
