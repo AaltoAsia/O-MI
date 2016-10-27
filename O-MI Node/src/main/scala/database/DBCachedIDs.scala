@@ -36,7 +36,8 @@ trait DBCachedReadWrite extends DBReadWrite{
 
   import dc.driver.api._
 
-  val pathToHierarchyID: MutableMap[Path,Int] = MutableHashMap()
+  val pathToHierarchyID: MutableMap[Path,Set[Int]] = MutableHashMap()
+  val hierarchyIDToPath: MutableMap[Int,Path] = MutableHashMap()
 
   override protected val log = LoggerFactory.getLogger("DBCachedReadWrite")
 
@@ -45,7 +46,24 @@ trait DBCachedReadWrite extends DBReadWrite{
     val getHierachyIds = hierarchyNodes.filter(_.isInfoItem).map{ 
       hNode => (hNode.path, hNode.id) // NOTE: Heavy operation
     }.result.map{ 
-      case pathToIds => pathToHierarchyID ++= pathToIds
+      case pathToIds => 
+        val p2IDset: Map[Path,Set[Int]] = pathToIds.flatMap{
+          case (p,hid) => 
+            p.getParentsAndSelf.map{ path => 
+              (path,hid)
+            }
+        }.groupBy{ 
+          case (p, hid) => p
+          }.mapValues{ 
+            case p2ids => 
+              p2ids.map{
+                case (p, hid) => hid
+              }.toSet
+          }
+      pathToHierarchyID ++= p2IDset
+      hierarchyIDToPath ++= pathToIds.map{
+        case (p,id) => (id,p)
+      }
     }
     val setup = DBIO.seq(
       allSchemas.create,
@@ -53,13 +71,13 @@ trait DBCachedReadWrite extends DBReadWrite{
       getHierachyIds
     )
 
-    val existingTables = MTable.getTables
-    val existed = Await.result(db.run(existingTables), 5 minutes)
-    if (existed.nonEmpty) {
+    val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
+    val existed : Seq[String] = (Await.result(db.run(existingTables), 5 minutes)).filter( !_.startsWith("pq"))
+    if ( existed.contains("HIERARCHYNODES") && existed.contains("SENSORVALUES")) {
       //noop
       log.info(
         "Found tables: " +
-          existed.map { _.name.name }.mkString(", ") +
+          existed.mkString(", ") +
           "\n Not creating new tables.")
       Await.result(db.run(getHierachyIds), 5 minutes)
     } else {
@@ -78,19 +96,22 @@ trait DBCachedReadWrite extends DBReadWrite{
     val pathToWrite = infos.map{
       case info =>
         pathToHierarchyID.get(info.path).map{
-          case hID =>
-            info.values.map{ 
-              case odfVal => 
-                DBValue(
-                  hID,
-                  //create new timestamp if option is None
-                  odfVal.timestamp,
-                  odfVal.value.toString,
-                  odfVal.typeValue
-                )
+          case hIDset =>
+            hIDset.headOption.map{ 
+              hID =>
+                info.values.map{ 
+                  case odfVal => 
+                    DBValue(
+                      hID,
+                      //create new timestamp if option is None
+                      odfVal.timestamp,
+                      odfVal.value.toString,
+                      odfVal.typeValue
+                    )
+                }
             }
-        }
-    }.flatten.flatten.toIterable
+          }.flatten
+        }.flatten.flatten
 
     val writeExisting = (latestValues ++= pathToWrite)
 
@@ -128,8 +149,24 @@ trait DBCachedReadWrite extends DBReadWrite{
       writeExisting.flatMap{
         case writen => 
           writeNewAction.map{
-            case seq : Seq[(types.Path, Int)] if seq.nonEmpty => 
-              pathToHierarchyID ++= seq
+            case p2IDs : Seq[(types.Path, Int)] if p2IDs.nonEmpty => 
+              val p2set: Map[Path,Set[Int]] = p2IDs.flatMap{
+                case (p,hid) => 
+                  p.getParentsAndSelf.map{ path => 
+                    (path,hid)
+                  }
+              }.groupBy{ 
+                case (p, hid) => p
+              }.mapValues{ 
+                case p2ids => p2ids.map{ case (_,id) => id}.toSet
+              }.map{
+                case (p,hidSet) => 
+                  val preSet = pathToHierarchyID.get(p)
+                  val newSet = preSet.map{ set=> set ++ hidSet}.getOrElse(hidSet)
+                  pathToHierarchyID.update(p,newSet)
+                  (p,newSet)
+              }
+              hierarchyIDToPath ++= p2IDs.map{ case (p,id) => (id,p) }
               OmiReturn("200")
             case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
               OmiReturn("500",Some("Using old database. Should use Warp 10."))
@@ -161,14 +198,16 @@ trait DBCachedReadWrite extends DBReadWrite{
   ): Future[Option[OdfObjects]] = {
     //log.debug("Current path to id map:\n" + pathToHierarchyID.mkString("\n"))
       //log.debug("Request:\n"+requests.mkString("\n"))
-      val infoitemIDs = pathToHierarchyID.filter{
-        case (path, id) =>
-          val ok = requests.exists{
-            case node => node.path.isAncestor(path) || node.path == path
+      val infoitemIDs = requests.map{ 
+        node =>
+          pathToHierarchyID.get(node.path).map{
+            hIDset => 
+              hIDset.map{ 
+                hID => 
+                  hierarchyIDToPath.get(hID).map{ path => (path, hID)}
+              }.flatten
           } 
-
-          ok
-      }
+      }.flatten.flatten.toMap 
       //log.debug("Paths to be read:\n" + infoitemIDs.mkString("\n"))
 
       val ids = infoitemIDs.values.toVector
@@ -245,8 +284,8 @@ trait DBCachedReadWrite extends DBReadWrite{
           Some(
           dbvals.groupBy(_.hierarchyId).flatMap{
             case (id, dbvalues) => 
-              pathToHierarchyID.collect{
-                case (path, hid) if id == hid => 
+              hierarchyIDToPath.get(id).map{
+                path =>
                   OdfInfoItem( path, dbvalues.map(_.toOdf) )
               }
             }.foldLeft(OdfObjects()){ case (l, r) => l.union(r.createAncestors) }
