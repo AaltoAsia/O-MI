@@ -129,11 +129,11 @@ WARP10_LOG4J_CONF="${WARP10_HOME}/etc/log4j.properties"
 WARP10_JAVA_HEAP_DUMP="${WARP10_HOME}/logs/java.heapdump"
 WARP10_JAVA_OPTS="-Djava.awt.headless=true -Dlog4j.configuration=file:${WARP10_LOG4J_CONF} -Xms${WARP10_HEAP} -Xmx${WARP10_HEAP_MAX} -XX:+UseG1GC"
 if [ ! -d "${WARP10_HOME}" ]; then
-  java -cp "${app_home}/fixpaths.jar:${app_classpath}" DownloadBinaries "${WARP10_HOME}" "${WARP10_URL}"
+  java -cp "${app_classpath}" DownloadBinaries "${WARP10_HOME}" "${WARP10_URL}"
 fi
 if [ ! -f "${WARP10_CONFIG}" ]; then
   java -cp ${WARP10_JAR} io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 ${WARP10_HOME}/templates/conf-standalone.template -o ${WARP10_HOME}/etc/conf-standalone.conf >> ${WARP10_HOME}/etc/initial.tokens
-  java -cp "${app_home}/fixpaths.jar" ReplacePath "${WARP10_HOME}"
+  java -cp "${app_classpath}" ReplacePath "${WARP10_HOME}"
 fi
 
 if [ "`jps -lm|grep ${WARP10_CLASS}|cut -f 1 -d' '`" == "" ]
@@ -143,10 +143,10 @@ else
   echo "A Warp 10 instance is already running"
 fi
 """,
+      batScriptExtraDefines += """set "WARP10_URL=https://dl.bintray.com/cityzendata/generic/io/warp10/warp10/1.0.7/warp10-1.0.7.gz"""",
       batScriptExtraDefines += """set "WARP10_HOME=%O_MI_NODE_HOME%\database\warp10"""",
       batScriptExtraDefines += """set "WARP10_CONFIG=%WARP10_HOME%\etc\conf-standalone.conf"""",
-      batScriptExtraDefines += """set "WARP10_REVISION=1.0.7""",
-      batScriptExtraDefines += """set "WARP10_JAR=%WARP10_HOME%\bin\warp10-%WARP10_REVISION%.jar"""",
+      batScriptExtraDefines += """set "WARP10_JAR=%WARP10_HOME%\bin\warp10.jar"""",
       batScriptExtraDefines += """set "WARP10_CLASS=io.warp10.standalone.Warp"""",
       batScriptExtraDefines += """set "WARP10_CP=%WARP10_JAR%"""",
       batScriptExtraDefines += """set "WARP10_HEAP=512m"""",
@@ -155,9 +155,13 @@ fi
       batScriptExtraDefines += """set "WARP10_LOG4J_CONF=%WARP10_HOME%\etc\log4j.properties"""",
       batScriptExtraDefines += """set "WARP10_JAVA_HEAP_DUMP=%WARP10_HOME%\logs\java.heapdump"""",
       batScriptExtraDefines += """set "WARP10_JAVA_OPTS=-Djava.awt.headless=true -Dlog4j.configuration=file:%WARP10_LOG4J_CONF% -Xms%WARP10_HEAP% -Xmx%WARP10_HEAP_MAX% -XX:+UseG1GC"""",
+      batScriptExtraDefines += """if not exist %WARP10_JAR% (""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" DownloadBinaries "%WARP10_HOME%" "WARP10_URL"""",
+      batScriptExtraDefines += """)""",
+      batScriptExtraDefines += """""",
       batScriptExtraDefines += """if not exist %WARP10_CONFIG% (""",
       batScriptExtraDefines += """  "%_JAVACMD%" -cp %WARP10_JAR% io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 %WARP10_HOME%/templates/conf-standalone.template -o %WARP10_HOME%/etc/conf-standalone.conf >> %WARP10_HOME%\\etc\\initial.tokens""",
-      batScriptExtraDefines += """  "%_JAVACMD%" -cp %O_MI_NODE_HOME%\\bin\\fixpaths.jar ReplacePath %WARP10_HOME%""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" ReplacePath %WARP10_HOME%""",
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """""",
       batScriptExtraDefines += """jps -l | findstr %WARP10_CLASS%""",
