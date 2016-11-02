@@ -162,14 +162,14 @@ fi
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """""",
       batScriptExtraDefines += """if not exist %WARP10_CONFIG% (""",
-      batScriptExtraDefines += """  "%_JAVACMD%" -cp %WARP10_JAR% io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 %WARP10_HOME%/templates/conf-standalone.template -o %WARP10_HOME%/etc/conf-standalone.conf >> %WARP10_HOME%\\etc\\initial.tokens""",
-      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" ReplacePath %WARP10_HOME%""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp %WARP10_JAR% io.warp10.worf.Worf -a io.warp10.bootstrap -puidg -t -ttl 3153600000000 "%WARP10_HOME%/templates/conf-standalone.template" -o "%WARP10_HOME%/etc/conf-standalone.conf" >> "%WARP10_HOME%\\etc\\initial.tokens"""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" ReplacePath "%WARP10_HOME%"""",
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """""",
       batScriptExtraDefines += """jps -l | findstr %WARP10_CLASS%""",
       batScriptExtraDefines += """""",
       batScriptExtraDefines += """if %ERRORLEVEL% gtr 0 (""",
-      batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp !WARP10_CP! !WARP10_CLASS! !WARP10_CONFIG! ^>^> !WARP10_HOME!\\logs\\nohup.out ^2^>^&^1""",
+      batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp "!WARP10_CP!" !WARP10_CLASS! "!WARP10_CONFIG!" ^>^> "!WARP10_HOME!\\logs\\nohup.out" ^2^>^&^1""",
       batScriptExtraDefines += """) else (""",
       batScriptExtraDefines += """  echo Warp10 is already running!""",
       batScriptExtraDefines += """)""",
@@ -179,7 +179,7 @@ fi
 
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
-      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file="%O_MI_NODE_HOME%\\configs\\application.conf"""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
 
     ////////////////////////////
