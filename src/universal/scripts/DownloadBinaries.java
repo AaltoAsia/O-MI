@@ -24,6 +24,29 @@ import java.nio.file.Paths;
 import java.util.zip.GZIPInputStream;
 
 public class DownloadBinaries {
+    public static boolean isLoading = true;
+    public static void loadingAnimation(String msg){
+        isLoading = true;
+        Thread t = new Thread(){
+            String message = msg;
+            String icon = "-\\|/";
+            @Override
+            public void run() {
+                try{
+                    for(int i = 0;isLoading;i = (i+1) % 4){
+                       System.out.write(("\r" + (msg + icon.charAt(i))).getBytes());
+                       Thread.sleep(100);
+                    }
+                } catch(IOException e) {
+                  //do nothing
+                } catch(InterruptedException e){
+                  //do nothing
+                }
+            }
+        };
+        t.start();        
+    }
+
     public static void main(String[] args){
         String inputPath = "";
         String jarLocation = "";
@@ -44,19 +67,23 @@ public class DownloadBinaries {
         String tarFilename= fileName + ".tar";
         try {
             URL url = new URL(jarLocation);
-            System.out.println("Downloading database files...");
+            
+            loadingAnimation("Downloading database files.");
             org.apache.commons.io.FileUtils.copyURLToFile(url, dest);
-
+            isLoading = false;
+            System.out.println("\rDownloading database files. ");
+            
             FileInputStream inStream = new FileInputStream(dest);
             GZIPInputStream gzInStream = new GZIPInputStream(inStream);
             FileOutputStream outStream = new FileOutputStream(tarFilename);
 
             byte[] buf = new byte[1024];
             int len;
-            System.out.println("Uncompressing GZIP file...");
+            
             while ((len = gzInStream.read(buf)) > 0) {
                 outStream.write(buf, 0, len);
             }
+            System.out.println("\rUncompressing GZIP file. ");
 
             gzInStream.close();
             outStream.close();
@@ -66,7 +93,6 @@ public class DownloadBinaries {
             int offset = 0;
             FileOutputStream outputFile = null;
 
-            System.out.println("Unpacking Tar file...");
             while ((entry = tarInputStream.getNextTarEntry()) != null) {
                 Path outputPath = warp10Location.resolve(entry.getName().substring(entry.getName().indexOf('/') + 1));
                 if (outputPath.toString().endsWith(".jar")){
@@ -89,21 +115,28 @@ public class DownloadBinaries {
 
                 }
             }
+            System.out.println("\rUnpacking Tar file. ");
+           
             tarInputStream.close();
             File tarFile = new File(tarFilename);
             tarFile.delete();
         } catch (MalformedURLException ex) {
             System.err.println("Invalid URL for database binaries");
             ex.printStackTrace();
+            isLoading = false;
             System.exit(1);
         } catch (FileNotFoundException ex) {
             System.err.println("File not Found: ");
             ex.printStackTrace();
+            isLoading = false;
             System.exit(1);
         } catch (IOException ex) {
             System.err.println("Error while writing files: ");
             ex.printStackTrace();
+            isLoading = false;
             System.exit(1);
+        } finally {
+            isLoading = false;
         }
 
     }
