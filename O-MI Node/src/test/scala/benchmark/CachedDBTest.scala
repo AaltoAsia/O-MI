@@ -18,5 +18,4 @@ trait CachedDBTest extends DBTest {
   implicit val settings = OmiConfig(system)
   implicit val singleStores = new SingleStores(settings)
   val db: DBReadWrite = new TestDB(name,false)(system, singleStores, settings)
-  test(db, "CachedDB")
 }

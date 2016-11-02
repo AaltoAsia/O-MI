@@ -21,7 +21,6 @@ trait UnCachedDBTest extends DBTest {
   implicit val settings = OmiConfig(system)
   implicit val singleStores = new SingleStores(settings)
   val db: DBReadWrite = new UncachedTestDB(name,false)(system, singleStores, settings)
-  test(db, "UncachedDB")
 }
 trait OldAndNewDBTest extends DBTest {
   val psqlconfig = ConfigFactory.load(
@@ -57,7 +56,9 @@ dbconf {
   }
 }
         """).withFallback(ConfigFactory.load()))
+
   database.changeHistoryLength(120)
+  /*
   val oldH2name: String = "OldH2DB"
   val oldH2system = ActorSystem(oldH2name + "System")
   val oldH2settings = OmiConfig(oldH2system)
@@ -78,6 +79,16 @@ dbconf {
   val newPSQLsingleStores = new SingleStores(newPSQLsettings)
   val newPSQLdb: DBReadWrite = new TestDB(newPSQLname, false,psqlconfig)(newPSQLsystem, newPSQLsingleStores, newPSQLsettings)
   test(newPSQLdb, newPSQLname)(newPSQLsystem)
+ */ 
+  val newW10name: String = "Warp10"
+  val newW10system = ActorSystem(newW10name + "System")
+  val newW10settings = OmiConfig(newW10system)
+  val newW10singleStores = new SingleStores(newW10settings)
+  implicit val newW10db: DB = new Warp10Wrapper(newW10settings)(
+    newW10system,
+    newW10singleStores
+  )
+  test(newW10db, newW10name)(newW10system)
 }
 
 trait DBTest extends Bench[Double]{
@@ -117,7 +128,7 @@ trait DBTest extends Bench[Double]{
   } yield infoitem ).toVector
   println("Total infoItems created: " + allInfoItems.length)
 
-  def test( db: DBReadWrite, name: String )(implicit system: ActorSystem): Unit = {
+  def test( db: DB, name: String )(implicit system: ActorSystem): Unit = {
   import system.dispatcher
     performance of s"$name" in {
       Await.result(db.writeMany(allInfoItems ), 100.seconds)
@@ -136,7 +147,7 @@ trait DBTest extends Bench[Double]{
           }.toVector
         } 
         using(infoItems) curve("n paths with single value in each")  afterTests {
-          db.trimDB()
+          //db.trimDB()
           } in { vls =>
             Try{
               Await.result(db.writeMany( vls ), 10.seconds)
@@ -159,7 +170,7 @@ trait DBTest extends Bench[Double]{
             } 
           }
           using(values) curve("120 paths with n values in each")  afterTests {
-            db.trimDB()
+            //db.trimDB()
             } in { vls =>
               Try{
                 Await.result(db.writeMany( vls ), 10.seconds)
@@ -188,6 +199,7 @@ trait DBTest extends Bench[Double]{
                     }
                 }
             }
+            /*
             using(writes) curve("n concurrent writeManys") in { ws =>
                 Try{
                   Await.result(
@@ -206,7 +218,7 @@ trait DBTest extends Bench[Double]{
                       //      println("writes writen: " + res.length)
                     case Failure(exp: Throwable) => println(exp.getMessage)
                   }
-              }
+              }*/
       }
       measure method "getNBetween" in {
         lazy val readInfoItems= infoitemsCounts.map{ 
