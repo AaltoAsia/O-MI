@@ -39,6 +39,7 @@ object Dependencies {
   val prevaylerV = "2.6"
   val prevaylerCore    = "org.prevayler"  % "prevayler-core"   % prevaylerV
   val prevaylerFactory = "org.prevayler"  % "prevayler-factory"% prevaylerV
+  val scalameter = "com.storm-enroute" %% "scalameter" % "0.7"
 
 
 
@@ -92,6 +93,8 @@ object Dependencies {
     mockito,
     nuValidator,
     akkaTestkit,
-    httpTestkit)
+    httpTestkit,
+    scalameter
+  )
 
 }

@@ -20,7 +20,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 
 import http.OmiConfigExtension
-import akka.actor.ActorSystem
+import com.typesafe.config.{ConfigFactory,Config}
+import akka.actor.{ActorRef,ActorSystem}
 import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
 import parsing.xmlGen.xmlTypes.MetaData
@@ -210,6 +211,7 @@ class DatabaseConnection()(
   ) extends DBCachedReadWrite with DBBase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
+  val dc : DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
   val db = dc.db
   //val db = Database.forConfig(dbConfigName)
   initialize()
@@ -236,6 +238,61 @@ class DatabaseConnection()(
 }
 
 
+/**
+ * Database class to be used during tests instead of production db to prevent
+ * problems caused by overlapping test data.
+ * Uses h2 named in-memory db
+ * @param name name of the test database, optional. Data will be stored in memory
+ */
+class UncachedTestDB(
+  val name:String = "", 
+  useMaintainer: Boolean = true, 
+  val config: Config = ConfigFactory.load(
+    ConfigFactory.parseString("""
+dbconf {
+  driver = "slick.driver.H2Driver$"
+  db {
+    url = "jdbc:h2:mem:test1"
+    driver = org.h2.Driver
+    connectionPool = disabled
+    keepAliveConnection = true
+    connectionTimeout = 15s
+  }
+}
+"""
+)).withFallback(ConfigFactory.load()),
+  val configName: String = "dbconf")(
+  protected val system : ActorSystem,
+  protected val singleStores : SingleStores,
+  protected val settings : OmiConfigExtension
+) extends DBReadWrite with DB {
+
+  override protected val log = LoggerFactory.getLogger("UncachedTestDB")
+  log.debug("Creating UncachedTestDB: " + name)
+  override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
+  import dc.driver.api._
+  val db = dc.db
+   // Database.forURL(url, driver = driver,
+   // keepAliveConnection=true)
+  initialize()
+
+  val dbmaintainer = if( useMaintainer) {
+    system.actorOf(DBMaintainer.props(
+    this,
+    singleStores,
+    settings
+    ), "uncached-db-maintainer")
+  } else ActorRef.noSender
+  /**
+  * Should be called after tests.
+  */
+  def destroy(): Unit = {
+    if(useMaintainer )system.stop(dbmaintainer)
+    log.debug("Removing UncachedTestDB: " + name)
+    db.close()
+  }
+}
+
 
 /**
  * Database class to be used during tests instead of production db to prevent
@@ -243,29 +300,49 @@ class DatabaseConnection()(
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
  */
-class TestDB(val name:String = "")(
+class TestDB(
+  val name:String = "", 
+  useMaintainer: Boolean = true, 
+  val config: Config = ConfigFactory.load(
+    ConfigFactory.parseString("""
+dbconf {
+  driver = "slick.driver.H2Driver$"
+  db {
+    url = "jdbc:h2:mem:test1"
+    driver = org.h2.Driver
+    connectionPool = disabled
+    keepAliveConnection = true
+    connectionTimeout = 15s
+  }
+}
+"""
+)).withFallback(ConfigFactory.load()),
+  val configName: String = "dbconf")(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-) extends DBCachedReadWrite with DBBase with DB {
-  import slick.driver.H2Driver.api._
+) extends DBCachedReadWrite with DB {
 
   override protected val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
-  val db = Database.forURL(s"jdbc:h2:mem:$name", driver = "org.h2.Driver",
-    keepAliveConnection=true)
+  override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
+  import dc.driver.api._
+  val db = dc.db
+   // Database.forURL(url, driver = driver,
+   // keepAliveConnection=true)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props(
+  val dbmaintainer = if( useMaintainer) { system.actorOf(DBMaintainer.props(
     this,
     singleStores,
     settings
     ), "db-maintainer")
+  } else ActorRef.noSender
   /**
   * Should be called after tests.
   */
   def destroy(): Unit = {
-    system.stop(dbmaintainer)
+    if(useMaintainer )system.stop(dbmaintainer)
     log.debug("Removing TestDB: " + name)
     db.close()
   }
