@@ -158,6 +158,7 @@ fi
       batScriptExtraDefines += """set "WARP10_HOME=%O_MI_NODE_HOME%\database\warp10"""",
       batScriptExtraDefines += """set "WARP10_CONFIG=%WARP10_HOME%\etc\conf-standalone.conf"""",
       batScriptExtraDefines += """set "WARP10_JAR=%WARP10_HOME%\bin\warp10.jar"""",
+      batScriptExtraDefines += """set "WARP10_INIT=io.warp10.standalone.WarpInit"""",
       batScriptExtraDefines += """set "WARP10_CLASS=io.warp10.standalone.Warp"""",
       batScriptExtraDefines += """set "WARP10_CP=%WARP10_JAR%"""",
       batScriptExtraDefines += """set "WARP10_HEAP=512m"""",
@@ -175,6 +176,12 @@ fi
       batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" ReplacePath "%WARP10_HOME%"""",
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """""",
+      batScriptExtraDefines += """>nul 2>nul dir "%WARP10_HOME"\data\*" """,
+      batScriptExtraDefines += """if %ERRORLEVEL% NEQ 0 (""",
+      batScriptExtraDefines += """echo Initializing leveldb""",
+      batScriptExtraDefines += """echo "Init leveldb database..." >> "${WARP10_HOME}\logs\nohup.out"""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%WARP10_JAR%" "%WARP10_INITi%" "%WARP10_HOME%/data" >> "%WARP10_HOME%/logs/nohup.out" 2>&1""",
+      batScriptExtraDefines += """)""",
       batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp "!WARP10_CP!" !WARP10_CLASS! "!WARP10_CONFIG!" ^>^> "!WARP10_HOME!\\logs\\nohup.out" ^2^>^&^1""",
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
