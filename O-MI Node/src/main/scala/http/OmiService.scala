@@ -49,6 +49,7 @@ import responses.{
   RESTRequest,
   OmiRequestHandlerBase
 }
+import responses.CallbackHandler._
 import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
@@ -298,7 +299,10 @@ trait OmiService
     }
   }
 
-  def defineCallbackForRequest(request: OmiRequest,currentConnectionCallback: Option[Callback] ): Future[OmiRequest] = request.callback match {
+  def defineCallbackForRequest(
+    request: OmiRequest,
+    currentConnectionCallback: Option[Callback] 
+  ): Future[OmiRequest] = request.callback match {
     case None  => Future.successful( request )
     case Some(definedCallback : DefinedCallback ) => Future.successful( request )
     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
@@ -306,15 +310,15 @@ trait OmiService
     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
       Future.failed( InvalidCallback("0", "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
     case Some( RawCallback(address))  =>
-      val cbTry = Callback.tryHTTPUri(address)
+      val cbTry = callbackHandler.createCallbackAddress(address)
       val result = cbTry.map{ 
-        case httpCallback =>
-          request.withCallback( Some( HTTPCallback( httpCallback ) ) )
-          }.recoverWith{ 
-            case throwable : Throwable =>
-              Try{ throw InvalidCallback(address, throwable.getMessage(), throwable  ) }
-          }
-          Future.fromTry(result ) 
+        case callback =>
+          request.withCallback( Some( callback ) )
+      }.recoverWith{ 
+        case throwable : Throwable =>
+          Try{ throw InvalidCallback(address, throwable.getMessage(), throwable  ) }
+      }
+      Future.fromTry(result ) 
   }
 
   /** 
@@ -442,8 +446,8 @@ trait WebSocketOMISupport { self: OmiService =>
     }
     val connectionIdentifier = futureQueue.hashCode
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
-    callbackHandler.addCurrentConnection( connectionIdentifier, sendHandler)
-    def createZeroCallback = Some(CurrentConnectionCallback(connectionIdentifier)) 
+    val wsConnection = WSConnection(connectionIdentifier, sendHandler)
+    def createZeroCallback = callbackHandler.createCallbackAddress("0",Some(wsConnection)).toOption
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{
       case textMessage: ws.TextMessage =>

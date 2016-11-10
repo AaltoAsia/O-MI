@@ -27,8 +27,14 @@ sealed trait DefinedCallback extends Callback{
   final override val defined: Boolean = true
 }
 
-final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier) extends DefinedCallback{
+trait WebSocketCallback extends DefinedCallback{
+  val identifier: ConnectionIdentifier
+}
+final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier) extends WebSocketCallback{
   val address: String = "0"
+}
+final case class WSCallback(val identifier: ConnectionIdentifier, val uri: Uri) extends WebSocketCallback{
+  val address: String = uri.toString
 }
 
 final case class HTTPCallback(val uri: Uri) extends DefinedCallback{

@@ -129,9 +129,12 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
+  val prettyPrint = new PrettyPrinter(80,2)
   val incoming: Sink[Message, Future[Done]] = {
    Sink.foreach[Message]{
      case message: TextMessage.Strict => {
+     val pretty = prettyPrint.format( XML.loadString(message.text) )
+     println(s"$interface:$port received: $pretty")
      destination ! message.text
      }
    }

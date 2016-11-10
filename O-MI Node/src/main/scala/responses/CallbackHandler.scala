@@ -21,6 +21,7 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Try,Success,Failure}
+import scala.xml.{XML,NodeSeq}
 
 import akka.actor.ActorSystem
 import akka.event.{LogSource, Logging, LoggingAdapter}
@@ -28,12 +29,15 @@ import akka.http.scaladsl.{ Http, HttpExt}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.http.scaladsl.model.ws._
+import akka.stream.scaladsl._
+import akka.stream._
 import types.OmiTypes._
 
 import http.{OmiConfigExtension, Storages, OmiNodeContext, Settings, ActorSystemContext, Actors}
 import CallbackHandler._
 object CallbackHandler{
+  case class WSConnection(identifier: Int, handler: SendHandler )
   val supportedProtocols = Vector("http", "https")
   type SendHandler = ResponseRequest => Future[Unit]
 
@@ -49,7 +53,7 @@ object CallbackHandler{
 
   case class  ForbiddenLocalhostPort( callback: Callback)  extends
     CallbackFailure(s"Callback address is forbidden.", callback)
-  case class MissingConnection( callback: CurrentConnectionCallback ) extends
+  case class MissingConnection( callback: WebSocketCallback ) extends
     CallbackFailure(s"CurrentConnection not found for ${callback.identifier}",callback)
 }
 /**
@@ -72,8 +76,7 @@ class CallbackHandler(
     }
 
   protected val log: LoggingAdapter = Logging( system, this)
-  val currentConnections: MutableMap[Int, SendHandler ] = MutableMap.empty
-  def addCurrentConnection( identifier: Int, handler: SendHandler) = currentConnections += identifier -> handler 
+  val webSocketConnections: MutableMap[Int, WSConnection] = MutableMap.empty
   private[this] def sendHttp( callback: HTTPCallback,
                               request: OmiRequest,
                               ttl: Duration): Future[Unit] = {
@@ -113,7 +116,7 @@ class CallbackHandler(
             settings.callbackDelay,
             tryUntil
           )(check)(trySend)
-
+    
     retry.onFailure{
       case e : Throwable=>
         system.log.warning(
@@ -147,15 +150,41 @@ class CallbackHandler(
         sendHttp(cb, omiResponse, omiResponse.ttl)
       case cb : CurrentConnectionCallback =>
         sendCurrentConnection(cb, omiResponse, omiResponse.ttl)
+      case cb : WSCallback =>
+        sendWS(cb, omiResponse, omiResponse.ttl)
+  }
+  private[this] def sendWS( callback: WSCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
+    webSocketConnections.get(callback.identifier).map{
+      case wsConnection: WSConnection => 
+
+            log.debug(
+              s"Trying to send response to WebSocket connection ${callback.identifier}"
+            )
+        val f = wsConnection.handler(request)
+        f.onComplete{
+          case Success(_) => 
+            log.debug(
+              s"Response  send successfully to WebSocket connection ${callback.identifier}"
+            )
+          case Failure(t: Throwable) =>
+            log.debug(
+              s"Response send  to WebSocket connection ${callback.identifier} failed, ${t.getMessage()}. Connection removed."
+            )
+            webSocketConnections -= callback.identifier
+        }
+        f
+    }.getOrElse(
+      Future failed MissingConnection(callback)
+    )
   }
   private[this] def sendCurrentConnection( callback: CurrentConnectionCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
-    currentConnections.get(callback.identifier).map{
-      case handler: (ResponseRequest => Future[Unit]) => 
+    webSocketConnections.get(callback.identifier).map{
+      case wsConnection: WSConnection => 
 
             log.debug(
               s"Trying to send response to current connection ${callback.identifier}"
             )
-        val f = handler(request)
+        val f = wsConnection.handler(request)
         f.onComplete{
           case Success(_) => 
             log.debug(
@@ -165,7 +194,7 @@ class CallbackHandler(
             log.debug(
               s"Response send  to current connection ${callback.identifier} failed, ${t.getMessage()}. Connection removed."
             )
-            currentConnections -= callback.identifier
+            webSocketConnections -= callback.identifier
         }
         f
     }.getOrElse(
@@ -185,4 +214,111 @@ class CallbackHandler(
       sendHttp(callback, omiMessage, ttl)
     }
    */
+
+  def createCallbackAddress(
+    address: String,
+    currentConnection: Option[WSConnection] = None
+  ) : Try[Callback] ={
+    address match {
+      case "0" if currentConnection.nonEmpty => 
+        Try{
+          val cc = currentConnection.getOrElse( 
+            throw new Exception( "Impossible empty CurrentConnection Option" ) 
+          )
+          webSocketConnections += cc.identifier -> cc
+          CurrentConnectionCallback(cc.identifier)
+        }
+      case "0" if currentConnection.isEmpty => 
+        Try{
+          throw new Exception( "Callback 0 not supported with http/https try using ws(websocket) instead" ) 
+        }
+      case other => 
+        Try{
+          val uri = Uri(address)
+          val hostAddress = uri.authority.host.address
+          // Test address validity (throws exceptions when invalid)
+          val ipAddress = InetAddress.getByName(hostAddress)
+          val scheme = uri.scheme
+          scheme match{
+            case "http" => HTTPCallback(uri)
+            case "https" => HTTPCallback(uri)
+            case "ws" => 
+              val wsConnection = createWebsocketConnection(uri)
+              webSocketConnections += wsConnection.identifier -> wsConnection
+              WSCallback( wsConnection.identifier, uri)
+            case "wss" =>
+              val wsConnection = createWebsocketConnection(uri)
+              webSocketConnections += wsConnection.identifier -> wsConnection
+              WSCallback( wsConnection.identifier, uri)
+          }
+
+        }
+    }
+  }
+
+  private def createWebsocketConnection(uri: Uri) ={
+    val queueSize = 10
+    val (outSource, futureQueue) =
+      peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
+
+    // keepalive? http://doc.akka.io/docs/akka/2.4.8/scala/stream/stream-cookbook.html#Injecting_keep-alive_messages_into_a_stream_of_ByteStrings
+
+    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
+      val result = for {
+        response <- futureResponse
+        if (response.nonEmpty)
+
+          queue <- futureQueue
+
+        // TODO: check what happens when sending empty String
+        resultMessage = ws.TextMessage(response.toString)
+        queueResult <- queue offer resultMessage
+      } yield {queueResult}
+
+      result onComplete {
+        case Success(QueueOfferResult.Enqueued) => // Ok
+        case Success(e: QueueOfferResult) => // Others mean failure
+          log.warning(s"WebSocket response queue failed, reason: $e")
+        case Failure(e) => // exceptions
+          log.warning("WebSocket response queue failed, reason: ", e)
+      }
+      result
+    }
+
+    val wsSink: Sink[Message, Future[akka.Done]] =
+      Sink.foreach[Message] {
+        case message: TextMessage.Strict =>
+          log.warning(s"Received WS message from $uri. Message is ignored. ${message.text}")
+      }
+    val connectionIdentifier = futureQueue.hashCode
+    def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
+    val wsFlow = httpExtension.webSocketClientFlow(WebSocketRequest(uri))
+    val (upgradeResponse, closed) = outSource.viaMat(wsFlow)(Keep.right)
+      .toMat(wsSink)(Keep.both)
+      .run()
+
+    val connected = upgradeResponse.flatMap { upgrade =>
+        if (upgrade.response.status == StatusCodes.OK) {
+          log.info(s"Successfully connected WebSocket callback to $uri")
+          Future.successful(akka.Done)
+        } else {
+          val msg = s"connection to  WebSocket callback: $uri failed: ${upgrade.response.status}"
+          log.warning(msg)
+            throw new Exception(msg)
+        }
+    }
+
+    WSConnection( connectionIdentifier, sendHandler)
+  }
+  // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
+  // T is the source type
+  // M is the materialization type, here a SourceQueue[String]
+  private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
+    val p = Promise[M]
+    val s = src.mapMaterializedValue { m =>
+      p.trySuccess(m)
+      m
+    }
+    (s, p.future)
+  }
 }
