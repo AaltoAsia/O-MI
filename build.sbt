@@ -167,6 +167,7 @@ fi
       batScriptExtraDefines += """set "WARP10_LOG4J_CONF=%WARP10_HOME%\etc\log4j.properties"""",
       batScriptExtraDefines += """set "WARP10_JAVA_HEAP_DUMP=%WARP10_HOME%\logs\java.heapdump"""",
       batScriptExtraDefines += """set "WARP10_JAVA_OPTS=-Djava.awt.headless=true -Dlog4j.configuration=file:%WARP10_LOG4J_CONF% -Xms%WARP10_HEAP% -Xmx%WARP10_HEAP_MAX% -XX:+UseG1GC"""",
+      batScriptExtraDefines += """set "FINDSTR_COMMAND=%SystemRoot%\System32\findstr.exe"""",
       batScriptExtraDefines += """if not exist %WARP10_JAR% (""",
       batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" DownloadBinaries "%WARP10_HOME%" "%WARP10_URL%"""",
       batScriptExtraDefines += """)""",
@@ -182,7 +183,16 @@ fi
       batScriptExtraDefines += """echo "Init leveldb database..." >> "${WARP10_HOME}\logs\nohup.out"""",
       batScriptExtraDefines += """  "%_JAVACMD%" -cp "%WARP10_JAR%" "%WARP10_INITi%" "%WARP10_HOME%/data" >> "%WARP10_HOME%/logs/nohup.out" 2>&1""",
       batScriptExtraDefines += """)""",
+      batScriptExtraDefines += """if not "%JAVA_HOME%"=="" (""",
+      batScriptExtraDefines += """"%JAVA_HOME%\bin\jps.exe" -l | "FINDSTR_COMMAND" %WARP10_CLASS%""",
+      batScriptExtraDefines += """if %ERRORLEVEL% gtr 0 (""",
       batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp "!WARP10_CP!" !WARP10_CLASS! "!WARP10_CONFIG!" ^>^> "!WARP10_HOME!\\logs\\nohup.out" ^2^>^&^1""",
+      batScriptExtraDefines += """) else (""",
+      batScriptExtraDefines += """  echo Warp10 is already running!""",
+      batScriptExtraDefines += """  )""",
+      batScriptExtraDefines += """) else (""",
+      batScriptExtraDefines += """  echo A Java JDK is not installed or can't be found. JAVA_HOME was empty""",
+      batScriptExtraDefines += """)""",
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
     ///////////////////////////////////////////////////////////////////////
