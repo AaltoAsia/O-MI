@@ -37,7 +37,7 @@ import types.OmiTypes._
 import http.{OmiConfigExtension, Storages, OmiNodeContext, Settings, ActorSystemContext, Actors}
 import CallbackHandler._
 object CallbackHandler{
-  case class WSConnection(identifier: Int, handler: SendHandler )
+  case class CurrentConnection(identifier: Int, handler: SendHandler )
   val supportedProtocols = Vector("http", "https")
   type SendHandler = ResponseRequest => Future[Unit]
 
@@ -54,7 +54,12 @@ object CallbackHandler{
   case class  ForbiddenLocalhostPort( callback: Callback)  extends
     CallbackFailure(s"Callback address is forbidden.", callback)
   case class MissingConnection( callback: WebSocketCallback ) extends
-    CallbackFailure(s"CurrentConnection not found for ${callback.identifier}",callback)
+    CallbackFailure(s"CurrentConnection not found for ${
+      callback match {
+        case CurrentConnectionCallback( identifier ) => identifier
+        case WSCallback(uri) => uri
+      }
+    }",callback)
 }
 /**
  * Handles sending data to callback addresses 
@@ -76,7 +81,8 @@ class CallbackHandler(
     }
 
   protected val log: LoggingAdapter = Logging( system, this)
-  val webSocketConnections: MutableMap[Int, WSConnection] = MutableMap.empty
+  val webSocketConnections: MutableMap[String, SendHandler] = MutableMap.empty
+  val currentConnections: MutableMap[Int, CurrentConnection] = MutableMap.empty
   private[this] def sendHttp( callback: HTTPCallback,
                               request: OmiRequest,
                               ttl: Duration): Future[Unit] = {
@@ -154,23 +160,23 @@ class CallbackHandler(
         sendWS(cb, omiResponse, omiResponse.ttl)
   }
   private[this] def sendWS( callback: WSCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
-    webSocketConnections.get(callback.identifier).map{
-      case wsConnection: WSConnection => 
+    webSocketConnections.get(callback.address).map{
+      case handler: SendHandler=> 
 
             log.debug(
-              s"Trying to send response to WebSocket connection ${callback.identifier}"
+              s"Trying to send response to WebSocket connection ${callback.address}"
             )
-        val f = wsConnection.handler(request)
+        val f = handler(request)
         f.onComplete{
           case Success(_) => 
             log.debug(
-              s"Response  send successfully to WebSocket connection ${callback.identifier}"
+              s"Response  send successfully to WebSocket connection ${callback.address}"
             )
           case Failure(t: Throwable) =>
             log.debug(
-              s"Response send  to WebSocket connection ${callback.identifier} failed, ${t.getMessage()}. Connection removed."
+              s"Response send  to WebSocket connection ${callback.address} failed, ${t.getMessage()}. Connection removed."
             )
-            webSocketConnections -= callback.identifier
+            webSocketConnections -= callback.address
         }
         f
     }.getOrElse(
@@ -178,8 +184,8 @@ class CallbackHandler(
     )
   }
   private[this] def sendCurrentConnection( callback: CurrentConnectionCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
-    webSocketConnections.get(callback.identifier).map{
-      case wsConnection: WSConnection => 
+    currentConnections.get(callback.identifier).map{
+      case wsConnection: CurrentConnection => 
 
             log.debug(
               s"Trying to send response to current connection ${callback.identifier}"
@@ -194,7 +200,7 @@ class CallbackHandler(
             log.debug(
               s"Response send  to current connection ${callback.identifier} failed, ${t.getMessage()}. Connection removed."
             )
-            webSocketConnections -= callback.identifier
+            currentConnections -= callback.identifier
         }
         f
     }.getOrElse(
@@ -217,7 +223,7 @@ class CallbackHandler(
 
   def createCallbackAddress(
     address: String,
-    currentConnection: Option[WSConnection] = None
+    currentConnection: Option[CurrentConnection] = None
   ) : Try[Callback] ={
     address match {
       case "0" if currentConnection.nonEmpty => 
@@ -225,7 +231,8 @@ class CallbackHandler(
           val cc = currentConnection.getOrElse( 
             throw new Exception( "Impossible empty CurrentConnection Option" ) 
           )
-          webSocketConnections += cc.identifier -> cc
+          if( currentConnections.get(cc.identifier).isEmpty )
+            currentConnections += cc.identifier -> cc
           CurrentConnectionCallback(cc.identifier)
         }
       case "0" if currentConnection.isEmpty => 
@@ -239,25 +246,29 @@ class CallbackHandler(
           // Test address validity (throws exceptions when invalid)
           val ipAddress = InetAddress.getByName(hostAddress)
           val scheme = uri.scheme
-          scheme match{
-            case "http" => HTTPCallback(uri)
-            case "https" => HTTPCallback(uri)
-            case "ws" => 
-              val wsConnection = createWebsocketConnection(uri)
-              webSocketConnections += wsConnection.identifier -> wsConnection
-              WSCallback( wsConnection.identifier, uri)
-            case "wss" =>
-              val wsConnection = createWebsocketConnection(uri)
-              webSocketConnections += wsConnection.identifier -> wsConnection
-              WSCallback( wsConnection.identifier, uri)
-          }
+          webSocketConnections.get(uri.toString).map{
+            wsConnection => WSCallback(uri)
+            }.getOrElse{
+              scheme match{
+                case "http" => HTTPCallback(uri)
+                case "https" => HTTPCallback(uri)
+                case "ws" => 
+                  val handler= createWebsocketConnectionHandler(uri)
+                  webSocketConnections +=  uri.toString -> handler
+                  WSCallback(uri)
+                case "wss" =>
+                  val handler= createWebsocketConnectionHandler(uri)
+                  webSocketConnections += uri.toString -> handler
+                  WSCallback(uri)
+              }
+            }
 
         }
     }
   }
 
-  private def createWebsocketConnection(uri: Uri) ={
-    val queueSize = 10
+  private def createWebsocketConnectionHandler(uri: Uri) ={
+    val queueSize = settings.websocketQueueSize
     val (outSource, futureQueue) =
       peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
@@ -290,7 +301,6 @@ class CallbackHandler(
         case message: TextMessage.Strict =>
           log.warning(s"Received WS message from $uri. Message is ignored. ${message.text}")
       }
-    val connectionIdentifier = futureQueue.hashCode
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
     val wsFlow = httpExtension.webSocketClientFlow(WebSocketRequest(uri))
     val (upgradeResponse, closed) = outSource.viaMat(wsFlow)(Keep.right)
@@ -308,7 +318,7 @@ class CallbackHandler(
         }
     }
 
-    WSConnection( connectionIdentifier, sendHandler)
+    sendHandler
   }
   // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
   // T is the source type

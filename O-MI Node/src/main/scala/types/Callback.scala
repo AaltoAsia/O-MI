@@ -28,12 +28,11 @@ sealed trait DefinedCallback extends Callback{
 }
 
 trait WebSocketCallback extends DefinedCallback{
-  val identifier: ConnectionIdentifier
 }
 final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier) extends WebSocketCallback{
   val address: String = "0"
 }
-final case class WSCallback(val identifier: ConnectionIdentifier, val uri: Uri) extends WebSocketCallback{
+final case class WSCallback( val uri: Uri) extends WebSocketCallback{
   val address: String = uri.toString
 }
 

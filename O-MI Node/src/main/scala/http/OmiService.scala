@@ -402,7 +402,7 @@ trait WebSocketOMISupport { self: OmiService =>
 
   // akka.stream
   protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest): (InSink, OutSource) = {
-    val queueSize = 10
+    val queueSize = settings.websocketQueueSize
     val (outSource, futureQueue) =
       peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
@@ -446,7 +446,7 @@ trait WebSocketOMISupport { self: OmiService =>
     }
     val connectionIdentifier = futureQueue.hashCode
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
-    val wsConnection = WSConnection(connectionIdentifier, sendHandler)
+    val wsConnection = CurrentConnection(connectionIdentifier, sendHandler)
     def createZeroCallback = callbackHandler.createCallbackAddress("0",Some(wsConnection)).toOption
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{
