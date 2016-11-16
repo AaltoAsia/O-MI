@@ -49,6 +49,7 @@ object JavaHelpers{
    * two paths or creating new Paths from user input.
    * Path can be used as a sequence via an implicit conversion or _.toSeq
    */
+  @SerialVersionUID(-6357227883745065036L)  
   class Path(pathSeq: Vector[String]) extends Serializable { // TODO: test the Serializable
     import Path._
     /**
