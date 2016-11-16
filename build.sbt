@@ -187,7 +187,7 @@ fi
       batScriptExtraDefines += """echo "Init leveldb database..." >> "%WARP10_HOME%\\logs\\nohup.out"""",
       batScriptExtraDefines += """  "%_JAVACMD%" -cp "%WARP10_JAR%" "%WARP10_INITi%" "%WARP10_HOME%/data" >> "%WARP10_HOME%\\logs\\nohup.out" 2>&1""",
       batScriptExtraDefines += """)""",
-      batScriptExtraDefines += """if not "%JAVA_HOME%"=="" (""",
+      batScriptExtraDefines += """if exist "%JPS_CMD%" (""",
       batScriptExtraDefines += """"%JPS_CMD%" -l | "%FINDSTR_COMMAND%" %WARP10_CLASS%""",
       batScriptExtraDefines += """if %ERRORLEVEL% gtr 0 (""",
       batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp "!WARP10_CP!" !WARP10_CLASS! "!WARP10_CONFIG!" ^>^> "!WARP10_HOME!\\logs\\nohup.out" ^2^>^&^1""",
@@ -195,7 +195,7 @@ fi
       batScriptExtraDefines += """  echo Warp10 is already running!""",
       batScriptExtraDefines += """  )""",
       batScriptExtraDefines += """) else (""",
-      batScriptExtraDefines += """  echo A Java JDK is not installed or can't be found. JAVA_HOME was empty""",
+      batScriptExtraDefines += """  echo A Java JDK is not installed or can't be found. jps.exe was not found""",
       batScriptExtraDefines += """)""",
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
