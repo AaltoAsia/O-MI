@@ -15,9 +15,13 @@
 
 package responses
 
+import java.sql.Timestamp
+import java.util.Date
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import analytics.AnalyticsStore
 import database.{DB, GetTree, DBReadWrite, SingleStores}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
@@ -83,15 +87,22 @@ trait ReadHandler extends OmiRequestHandlerBase {
 
          objectsWithValuesO.map {
            case Some(objectsWithValues) =>
-            //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
              val objectsWithValuesAndAttributes = 
               metadataTree.allMetaDatasRemoved.intersect( objectsWithValues.valuesRemoved )
                 .union( objectsWithValues )
+
 
              val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
              val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
+             //handle analytics
+             if(false){
+               val reqTime: Long = new Date().getTime()
+               foundOdfAsPaths.foreach(AnalyticsStore.addRead(_, reqTime))
+             }
+
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
              val omiResults = Vector(found) ++ {
                if (notFound.nonEmpty)

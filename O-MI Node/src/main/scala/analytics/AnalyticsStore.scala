@@ -17,16 +17,34 @@ package analytics
 
 import scala.concurrent.stm._
 
+import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
 import types.Path
 
 
-class AnalyticsStore {
+object AnalyticsStore {
 
-  //data window in seconds
-  private val dataWindow = ???
+  //config parameters for window sizes and average window sizes
+  //windows either in milliseconds or seconds
+  val enableWriteAnalytics: Boolean = ???
+  val enableReadAnalytics: Boolean = ???
+  val enableUserAnalytics: Boolean = ???
+
+
+  private val newDataIntervalWindow: Long = ???
+  private val readCountIntervalWindow: Long = ???
+  private val userAccessIntervalWindow: Long = ???
+
+  if(enableWriteAnalytics || enableReadAnalytics || enableUserAnalytics) {
+
+  }
+
+  //integer, used for average of latest *count* values.
+  private val readAverageCount: Int = ???
+  private val newDataAverageCount: Int = ???
 
   private val readSTM = TMap.empty[Path, Vector[Long]]
   private val writeSTM = TMap.empty[Path,Vector[Long]]
+  private val userSTM = TMap.empty[Long, Long]
 
   //private methods
   private def getReadFrequency(path: Path): Vector[Long] = {
@@ -44,11 +62,75 @@ class AnalyticsStore {
       readSTM.put(path, updated)
     }
   }
-  def addWrite(path: Path, timestamp: Long) = {
+  def addWrite(path: Path, timestamps: Vector[Long]) = {
     atomic{ implicit txn =>
-      val updated = readSTM.get(path).toVector.flatten :+ timestamp
+      val updated = readSTM.get(path).toVector.flatten ++ timestamps
       readSTM.put(path, updated)
     }
+  }
+  def addUserAccess
+
+  def avgIntervalAccess: Map[Path, Double] = {
+    readSTM.snapshot.mapValues { values =>
+      val temp = values.takeRight(readAverageCount)
+      if (temp.length > 1) {
+        temp.tail.zip(temp.init) // calculate difference between adjacent values
+         .map(a => a._1 - a._2)
+         .reduceLeft(_ + _) //sum the intervals
+         ./(temp.length.toDouble)
+      } else 0
+    }
+  }
+
+  def avgIntervalWrite: Map[Path, Double] = {
+    writeSTM.snapshot.mapValues{ values =>
+      val temp = values.takeRight(newDataAverageCount)
+      if(temp.length > 1) {
+        temp.tail.zip(temp.init)
+          .map(a=> a._1 - a._2)
+          .reduceLeft(_+_)
+          ./(temp.length.toDouble)
+      }else 0
+    }
+  }
+
+  def numAccessInTimeWindow(currentTime: Long): Map[Path,Int] = {
+    readSTM.snapshot.mapValues{ values =>
+      values
+        .filter( time => (currentTime - time) < readCountIntervalWindow)
+        .length
+
+    }
+  }
+
+  def numWritesInTimeWindow(currentTime: Long): Map[Path, Int] = {
+    writeSTM.snapshot.mapValues{ values =>
+      values
+        .filter( time => (currentTime - time) < newDataIntervalWindow)
+        .length
+    }
+  }
+
+  def newRequest(req: OmiRequest, User: Long): Unit = {
+    val time = System.currentTimeMillis()
+    req match {
+      case r: ReadRequest =>{
+        r.odf.paths
+      }
+      case r: WriteRequest =>
+      case _ =>
+    }
+
+  }
+
+  def updateReadAnalyticsData() = {
+    ???
+  }
+  def updateWriteAnalyticsData() = {
+    ???
+  }
+  def updateUserAnalyticsData() = {
+    ???
   }
 
 

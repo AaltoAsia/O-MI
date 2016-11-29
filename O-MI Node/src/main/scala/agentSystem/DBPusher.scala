@@ -23,6 +23,7 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 import akka.actor.{ActorRef, ActorSystem}
+import analytics.AnalyticsStore
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
@@ -93,7 +94,12 @@ trait DBPusher extends BaseAgentSystem{
   }
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
-
+    //Add write data to analytics if wanted
+    if(false) {
+      events
+        .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
+        .foreach(pv => AnalyticsStore.addWrite(pv._1, pv._2))
+    }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
 
