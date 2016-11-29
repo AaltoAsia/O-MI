@@ -68,7 +68,6 @@ object AnalyticsStore {
       readSTM.put(path, updated)
     }
   }
-  def addUserAccess
 
   def avgIntervalAccess: Map[Path, Double] = {
     readSTM.snapshot.mapValues { values =>
