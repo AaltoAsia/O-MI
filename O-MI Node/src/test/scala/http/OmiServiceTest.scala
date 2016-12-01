@@ -54,7 +54,7 @@ class OmiServiceTest
   val subscriptionManager = TestActorRef(SubscriptionManager.props())
 
    val agentSystem = system.actorOf(
-    AgentSystem.props(),
+    AgentSystem.props(None),
     "agent-system"
   )
 
@@ -64,7 +64,8 @@ class OmiServiceTest
     subscriptionManager,
     settings,
     dbConnection,
-    singleStores
+    singleStores,
+    None
     )
   val printer = new scala.xml.PrettyPrinter(80, 2)
 

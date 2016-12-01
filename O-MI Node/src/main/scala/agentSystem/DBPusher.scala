@@ -47,6 +47,7 @@ trait DBPusher extends BaseAgentSystem{
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
+  protected implicit def analyticsStore: Option[AnalyticsStore]
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
@@ -95,10 +96,10 @@ trait DBPusher extends BaseAgentSystem{
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
     //Add write data to analytics if wanted
-    if(false) {
+    analyticsStore.map{store =>
       events
         .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
-        .foreach(pv => AnalyticsStore.addWrite(pv._1, pv._2))
+        .foreach(pv => store.addWrite(pv._1, pv._2))
     }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent

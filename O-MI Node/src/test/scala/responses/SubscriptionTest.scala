@@ -74,7 +74,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   val agentSystem = system.actorOf(
-    AgentSystem.props(),
+    AgentSystem.props(None),
     "agent-system-test"
   )
 
@@ -84,7 +84,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     subscriptionManager,
     settings,
     dbConnection,
-    singleStores
+    singleStores,
+    None
     )
 
   val calendar = Calendar.getInstance()

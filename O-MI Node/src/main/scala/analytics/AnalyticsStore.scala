@@ -15,32 +15,25 @@
 package analytics
 
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.stm._
 
 import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
 import types.Path
 
 
-object AnalyticsStore {
+class AnalyticsStore(
+                      val enableWriteAnalytics: Boolean,
+                      val enableReadAnalytics: Boolean,
+                      val enableUserAnalytics: Boolean,
+                    //config parameters for window sizes and average window sizes
+                      private val newDataIntervalWindow: FiniteDuration,
+                      private val readCountIntervalWindow: FiniteDuration,
+                      private val userAccessIntervalWindow: FiniteDuration,
+                    //number for how long window of values we use for averaging the data
+                      private val readAverageCount: Int,
+                      private val newDataAverageCount: Int) {
 
-  //config parameters for window sizes and average window sizes
-  //windows either in milliseconds or seconds
-  val enableWriteAnalytics: Boolean = ???
-  val enableReadAnalytics: Boolean = ???
-  val enableUserAnalytics: Boolean = ???
-
-
-  private val newDataIntervalWindow: Long = ???
-  private val readCountIntervalWindow: Long = ???
-  private val userAccessIntervalWindow: Long = ???
-
-  if(enableWriteAnalytics || enableReadAnalytics || enableUserAnalytics) {
-
-  }
-
-  //integer, used for average of latest *count* values.
-  private val readAverageCount: Int = ???
-  private val newDataAverageCount: Int = ???
 
   private val readSTM = TMap.empty[Path, Vector[Long]]
   private val writeSTM = TMap.empty[Path,Vector[Long]]
@@ -95,18 +88,19 @@ object AnalyticsStore {
 
   def numAccessInTimeWindow(currentTime: Long): Map[Path,Int] = {
     readSTM.snapshot.mapValues{ values =>
-      values
-        .filter( time => (currentTime - time) < readCountIntervalWindow)
-        .length
-
+      ///values
+      ///  .filter( time => (currentTime - time) < readCountIntervalWindow)
+      ///  .length
+      ???
     }
   }
 
   def numWritesInTimeWindow(currentTime: Long): Map[Path, Int] = {
     writeSTM.snapshot.mapValues{ values =>
-      values
-        .filter( time => (currentTime - time) < newDataIntervalWindow)
-        .length
+      //values
+       // .filter( time => (currentTime - time) < newDataIntervalWindow)
+       // .length
+    ???
     }
   }
 
@@ -119,7 +113,6 @@ object AnalyticsStore {
       case r: WriteRequest =>
       case _ =>
     }
-
   }
 
   def updateReadAnalyticsData() = {

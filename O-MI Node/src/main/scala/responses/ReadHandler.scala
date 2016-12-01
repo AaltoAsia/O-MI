@@ -36,6 +36,7 @@ import http.{ActorSystemContext, Storages}
 trait ReadHandler extends OmiRequestHandlerBase {
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
+  protected implicit def analyticsStore: Option[AnalyticsStore]
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
@@ -98,9 +99,9 @@ trait ReadHandler extends OmiRequestHandlerBase {
              val requestsPaths = leafs.map { _.path }
              val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
              //handle analytics
-             if(false){
+             analyticsStore.foreach{ store =>
                val reqTime: Long = new Date().getTime()
-               foundOdfAsPaths.foreach(AnalyticsStore.addRead(_, reqTime))
+               foundOdfAsPaths.foreach(store.addRead(_, reqTime))
              }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
