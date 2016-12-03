@@ -67,11 +67,26 @@ class OmiServer extends OmiNode{
   )
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+  val analytics: Option[AnalyticsStore] =
+    if(settings.enableAnalytics)
+      Some(
+        new AnalyticsStore(
+          settings.enableWriteAnalytics,
+          settings.enableReadAnalytics,
+          settings.enableUserAnalytics,
+          settings.numWriteSampleWindowLength,
+          settings.numReadSampleWindowLength,
+          settings.numUniqueUserSampleWindowLength,
+          settings.readAvgIntervalSampleSize,
+          settings.writeAvgIntervalSampleSize
+        )
+      )
+    else None
 
-   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-   val agentSystem = system.actorOf(
-    AgentSystem.props(analytics.filter(_.enableWriteAnalytics)),
-    "agent-system"
+  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+  val agentSystem = system.actorOf(
+   AgentSystem.props(analytics.filter(_.enableWriteAnalytics)),
+   "agent-system"
   )
 
   implicit val requestHandler : RequestHandler = new RequestHandler(
@@ -95,21 +110,6 @@ class OmiServer extends OmiNode{
       )),
     "omi-node-cli-listener"
   )
-  val analytics: Option[AnalyticsStore] =
-    if(settings.enableAnalytics)
-      Some(
-        new AnalyticsStore(
-          settings.enableWriteAnalytics,
-          settings.enableReadAnalytics,
-          settings.enableUserAnalytics,
-          settings.numWriteSampleWindowLength,
-          settings.numReadSampleWindowLength,
-          settings.numUniqueUserSampleWindowLength,
-          settings.readAvgIntervalSampleSize,
-          settings.writeAvgIntervalSampleSize
-        )
-      )
-    else None
 
   saveSettingsOdf(system,agentSystem,settings)
 
