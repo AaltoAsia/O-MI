@@ -96,7 +96,7 @@ trait DBPusher extends BaseAgentSystem{
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
     //Add write data to analytics if wanted
-    analyticsStore.map{store =>
+    analyticsStore.foreach{store =>
       events
         .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
         .foreach(pv => store.addWrite(pv._1, pv._2))
