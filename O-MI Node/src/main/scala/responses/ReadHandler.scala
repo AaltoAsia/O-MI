@@ -97,11 +97,12 @@ trait ReadHandler extends OmiRequestHandlerBase {
              val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
-             val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
+             val foundOdf = getLeafs(objectsWithValuesAndAttributes)
+             val foundOdfAsPaths = foundOdf.flatMap { _.path.getParentsAndSelf }.toSet
              //handle analytics
              analyticsStore.foreach{ store =>
                val reqTime: Long = new Date().getTime()
-               foundOdfAsPaths.foreach(store ! AddRead(_, reqTime))
+               foundOdf.foreach(n => store ! AddRead(n.path, reqTime))
              }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
