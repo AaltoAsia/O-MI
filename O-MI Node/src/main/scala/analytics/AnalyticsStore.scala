@@ -164,22 +164,14 @@ class AnalyticsStore(
 
   def numAccessInTimeWindow(currentTime: Long): Map[Path,Int] = {
     readSTM.mapValues{ values =>
-      ///values
-      ///  .filter( time => (currentTime - time) < readCountIntervalWindow)
-      ///  .length
-      ???
-    }
-    ???
+      values.count(time => (currentTime - time) < readCountIntervalWindow.toMillis)
+    }.toMap
   }
 
   def numWritesInTimeWindow(currentTime: Long): Map[Path, Int] = {
     writeSTM.mapValues{ values =>
-      //values
-       // .filter( time => (currentTime - time) < newDataIntervalWindow)
-       // .length
-    ???
+      values.count(time => (currentTime - time) < newDataIntervalWindow.toMillis)
     }
-    ???
-  }
+  }.toMap
 
 }
