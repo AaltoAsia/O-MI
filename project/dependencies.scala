@@ -51,7 +51,7 @@ object Dependencies {
   //val scalaXML     = "org.scala-lang.modules"      %% "scala-xml"    % "2.11.0-M4"
 
   //STM            
-//  val stm          = "org.scala-stm"               %% "scala-stm"    % "0.7"
+  val stm          = "org.scala-stm"               %% "scala-stm"    % "0.8"
 
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.6.2"
@@ -71,6 +71,7 @@ object Dependencies {
     hikariCP,
     h2,
     postgres,
+    stm,
     sprayJson,//json4s,
     //scalaXML,
     commonsLang,

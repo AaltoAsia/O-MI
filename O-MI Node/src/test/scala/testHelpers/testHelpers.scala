@@ -64,7 +64,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
     settings,
     dbConnection,
     singleStores,
-    None
+    None //analytics
     )
 
     implicit val cliListener =system.actorOf(

@@ -88,10 +88,11 @@ trait ReadHandler extends OmiRequestHandlerBase {
 
          objectsWithValuesO.map {
            case Some(objectsWithValues) =>
-            //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
              val objectsWithValuesAndAttributes = 
               metadataTree.allMetaDatasRemoved.intersect( objectsWithValues.valuesRemoved )
                 .union( objectsWithValues )
+
 
              val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
              val found = Results.Read(metaCombined)

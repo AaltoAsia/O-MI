@@ -111,6 +111,7 @@ class OmiServer extends OmiNode{
       )),
     "omi-node-cli-listener"
   )
+
   saveSettingsOdf(system,agentSystem,settings)
 
   implicit val httpExt = Http()

@@ -33,11 +33,13 @@ import types.Path
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
 
-  implicit def toScalaFiniteDuration(d: java.time.Duration): FiniteDuration = {
-    scala.concurrent.duration.Duration.fromNanos(d.toNanos)
-  }
+  /**
+   * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
+   * @param dur duration as java.time.Duration
+   * @return given duration converted to FiniteDuration
+   */
+  implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
   // Node special settings
-
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
     case port : java.lang.Integer => port.toInt
     case port : java.lang.Object => 
@@ -55,9 +57,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
 
-  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
+  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval")
 
-  val snapshotInterval: FiniteDuration  = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS).seconds
+  val snapshotInterval: FiniteDuration  = config.getDuration("omi-service.snapshot-interval")
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")

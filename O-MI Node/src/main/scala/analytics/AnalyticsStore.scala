@@ -14,7 +14,6 @@
 
 package analytics
 
-import java.util.Date
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -183,6 +182,4 @@ class AnalyticsStore(
     ???
   }
 
-
 }
-

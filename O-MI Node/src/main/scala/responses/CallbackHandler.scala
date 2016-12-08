@@ -210,7 +210,7 @@ class CallbackHandler(
   /** TODO: Test needs NodeSeq messaging
    * Send callback xml message containing `data` to `address`
    * @param address Uri that tells the protocol and address for the callback
-   * @param data xml data to send as a callback
+   * @param currentConnection Optional value that maybe contains a active connection
    * @return future for the result of the callback is returned without blocking the calling thread
   def sendCallback( callback: DefinedCallback,
                     omiMessage: OmiRequest,

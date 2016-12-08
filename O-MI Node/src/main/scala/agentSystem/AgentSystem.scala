@@ -23,6 +23,7 @@ import akka.util.Timeout
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
 import akka.actor.SupervisorStrategy._
+import analytics.AnalyticsStore
 import com.typesafe.config.Config
 
 import responses.CallbackHandler
