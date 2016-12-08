@@ -105,7 +105,7 @@ case class OdfMetaData(
             } yield infoI.withNewest
           }
       }.map{
-        info: OdfInfoItem =>//Is this what is really wanted? May need all history values, not only neewst 
+        info: OdfInfoItem => //Is this what is really wanted? May need all history values, not only neewst
           info.copy( values = info.values.sortBy{ v: OdfValue[Any] => v.timestamp.getTime }.lastOption.toVector )
       }
     )

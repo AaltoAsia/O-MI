@@ -51,8 +51,9 @@ class RequestHandler(
   protected val subscriptionManager : ActorRef,
   protected implicit val settings: OmiConfigExtension,
   protected implicit val dbConnection: DB,
-  protected implicit val singleStores: SingleStores
-) 
+  protected implicit val singleStores: SingleStores,
+  protected val analyticsStore: Option[ActorRef]
+)
 extends  OmiRequestHandlerCore
 with ReadHandler 
 with WriteHandler

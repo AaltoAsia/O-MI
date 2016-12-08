@@ -34,7 +34,7 @@ import types.Path
 import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
 
 object AgentSystem {
-  def props()(
+  def props(analyticsStore: Option[ActorRef])(
     implicit settings: AgentSystemConfigExtension,
     dbConnection: DB,
     singleStores: SingleStores,
@@ -44,7 +44,8 @@ object AgentSystem {
     settings, 
     dbConnection,
     singleStores,
-    callbackHandler
+    callbackHandler,
+    analyticsStore
   )
   as.start()
   as})
@@ -54,8 +55,9 @@ class AgentSystem()(
     protected implicit val settings: AgentSystemConfigExtension,
     protected implicit val dbConnection: DB,
     protected implicit val singleStores: SingleStores,
-    protected implicit val callbackHandler: CallbackHandler
-  ) 
+    protected implicit val callbackHandler: CallbackHandler,
+    protected implicit val analyticsStore: Option[ActorRef]
+  )
   extends InternalAgentLoader
   with InternalAgentManager
   with ResponsibleAgentManager

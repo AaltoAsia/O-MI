@@ -32,6 +32,10 @@ import types.Path
  
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
+
+  implicit def toScalaFiniteDuration(d: java.time.Duration): FiniteDuration = {
+    scala.concurrent.duration.Duration.fromNanos(d.toNanos)
+  }
   // Node special settings
 
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
@@ -66,6 +70,21 @@ class OmiConfigExtension( val config: Config) extends Extension
   //val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
   //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
+  /** analytics settings */
+  val enableAnalytics: Boolean = config.getBoolean("analytics.enableAnalytics")
+  val enableReadAnalytics: Boolean = config.getBoolean("analytics.read.enableAnalytics")
+  val enableWriteAnalytics: Boolean =config.getBoolean("analytics.write.enableAnalytics")
+  val enableUserAnalytics: Boolean = config.getBoolean("analytics.user.enableAnalytics")
+
+  val numReadSampleWindowLength: FiniteDuration = config.getDuration("analytics.read.windowLength")
+  val numWriteSampleWindowLength: FiniteDuration = config.getDuration("analytics.write.windowLength")
+  val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
+
+  val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
+  val readIntervalTime: FiniteDuration = config.getDuration("analytics.read.intervalFrequency")
+
+  val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
+  val writeIntervalTime: FiniteDuration = config.getDuration("analytics.write.intervalFrequency")
 
 
   // Authorization
