@@ -15,25 +15,34 @@
 package analytics
 
 
+import java.sql.Timestamp
+import java.util.Date
+
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.{Props, Actor}
+import database.{Union, SingleStores}
+import types.OdfTypes.{OdfValue, OdfTreeCollection, OdfMetaData, OdfInfoItem}
 import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
 import types.Path
 
 case class AddRead(path: Path, timestamp: Long)
 case class AddWrite(path: Path, timestamps: Vector[Long])
 object AnalyticsStore {
-  def props(enableWriteAnalytics: Boolean, 
+  def props(
+            singleStores: SingleStores,
+             enableWriteAnalytics: Boolean,
             enableReadAnalytics: Boolean, 
             enableUserAnalytics: Boolean,
             newDataIntervalWindow: FiniteDuration, 
             readCountIntervalWindow: FiniteDuration, 
             userAccessIntervalWindow: FiniteDuration, 
             readAverageCount: Int, 
-            newDataAverageCount: Int): Props = {
+            newDataAverageCount: Int,
+            updateFrequency: FiniteDuration): Props = {
     Props(
       new AnalyticsStore(
+        singleStores,
         enableWriteAnalytics,
         enableReadAnalytics,
         enableUserAnalytics,
@@ -41,12 +50,14 @@ object AnalyticsStore {
         readCountIntervalWindow,
         userAccessIntervalWindow,
         readAverageCount,
-        newDataAverageCount
+        newDataAverageCount,
+        updateFrequency
       )
     )
   }
 }
 class AnalyticsStore(
+                      val singleStores: SingleStores,
                       val enableWriteAnalytics: Boolean,
                       val enableReadAnalytics: Boolean,
                       val enableUserAnalytics: Boolean,
@@ -56,18 +67,50 @@ class AnalyticsStore(
                       private val userAccessIntervalWindow: FiniteDuration,
                     //number for how long window of values we use for averaging the data
                       private val readAverageCount: Int,
-                      private val newDataAverageCount: Int) extends Actor {
+                      private val newDataAverageCount: Int,
+                      private val updateFrequency: FiniteDuration) extends Actor {
 
   private val MAX_ARRAY_LENGTH = 30
   //start schedules
   implicit val ec = context.system.dispatcher
-  if(enableWriteAnalytics) context.system.scheduler.schedule(newDataIntervalWindow,newDataIntervalWindow)(updateWriteAnalyticsData())
-  if(enableReadAnalytics) context.system.scheduler.schedule(readCountIntervalWindow,readCountIntervalWindow)(updateReadAnalyticsData())
-  if(enableUserAnalytics) context.system.scheduler.schedule(userAccessIntervalWindow,userAccessIntervalWindow)(updateUserAnalyticsData())
+  if(enableWriteAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateWriteAnalyticsData())
+  if(enableReadAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateReadAnalyticsData())
+  if(enableUserAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateUserAnalyticsData())
   //context.system.scheduler.schedule()
 
-  def updateWriteAnalyticsData() = ???
-  def updateReadAnalyticsData() = ???
+  def createInfoWithMeta(path: Path, value: Int, timestamp: Long): OdfInfoItem = {
+    OdfInfoItem(
+      path.init, //parent path
+      Vector.empty,
+      None,
+      Some(
+        OdfMetaData(
+          OdfTreeCollection(
+            OdfInfoItem(
+              path,
+              OdfTreeCollection(
+                OdfValue(value, new Timestamp(timestamp))
+              )
+            )
+          )
+        )
+      )
+    )
+  }
+
+  def updateWriteAnalyticsData() = {
+    context.system.log.info("updating write analytics")
+    val tt = new Date().getTime()
+    val ii = numWritesInTimeWindow(tt).map{ case (p, i) => createInfoWithMeta(p./("NumWrites"),i, tt)}
+    singleStores.hierarchyStore.execute(Union(ii.map(_.createAncestors).reduce(_.union(_))))
+
+  }
+  def updateReadAnalyticsData() = {
+    context.system.log.info("updating read analytics")
+    val tt = new Date().getTime()
+    val ii = numAccessInTimeWindow(tt).map{ case (p, i) => createInfoWithMeta(p./("NumAccess"),i,tt)}
+    singleStores.hierarchyStore.execute(Union(ii.map(_.createAncestors).reduce(_.union(_))))
+  }
   def updateUserAnalyticsData() = ???
 
   def receive = {

@@ -83,10 +83,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
 
   val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
-  val readIntervalTime: FiniteDuration = config.getDuration("analytics.read.intervalFrequency")
 
   val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
-  val writeIntervalTime: FiniteDuration = config.getDuration("analytics.write.intervalFrequency")
+  val updateInterval: FiniteDuration = config.getDuration("analytics.updateInterval")
 
 
   // Authorization
