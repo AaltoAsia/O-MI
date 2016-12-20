@@ -78,7 +78,7 @@ class AnalyticsStore(
   if(enableUserAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateUserAnalyticsData())
   //context.system.scheduler.schedule()
 
-  def createInfoWithMeta(path: Path, value: Int, timestamp: Long): OdfInfoItem = {
+  def createInfoWithMeta(path: Path, value: String, timestamp: Long): OdfInfoItem = {
     OdfInfoItem(
       path.init, //parent path
       Vector.empty,
@@ -101,15 +101,25 @@ class AnalyticsStore(
   def updateWriteAnalyticsData() = {
     context.system.log.info("updating write analytics")
     val tt = new Date().getTime()
-    val ii = numWritesInTimeWindow(tt).map{ case (p, i) => createInfoWithMeta(p./("NumWrites"),i, tt)}
-    singleStores.hierarchyStore.execute(Union(ii.map(_.createAncestors).reduce(_.union(_))))
+    val nw = numWritesInTimeWindow(tt).map{
+      case (p, i) => createInfoWithMeta(p./("NumWrites"),i.toString, tt)}.map(_.createAncestors).reduceOption(_.union(_))
+    val aw = avgIntervalWrite.map{
+      case (p,i) => createInfoWithMeta(p./("averageWrite"), i.toString, tt)}.map(_.createAncestors).reduceOption(_.union(_))
+
+    (nw ++ aw).reduceOption(_.union(_)) //combine two Options and return Optional value
+      .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
 
   }
   def updateReadAnalyticsData() = {
     context.system.log.info("updating read analytics")
     val tt = new Date().getTime()
-    val ii = numAccessInTimeWindow(tt).map{ case (p, i) => createInfoWithMeta(p./("NumAccess"),i,tt)}
-    singleStores.hierarchyStore.execute(Union(ii.map(_.createAncestors).reduce(_.union(_))))
+    val nr = numAccessInTimeWindow(tt).map{
+      case (p, i) => createInfoWithMeta(p./("NumAccess"),i.toString,tt)}.map(_.createAncestors).reduceOption(_.union(_))
+
+    val ar = avgIntervalAccess.map{
+      case (p,i) => createInfoWithMeta(p./("averageAccess"), i.toString, tt)}.map(_.createAncestors).reduceOption(_.union(_))
+    (nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
+      .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
   }
   def updateUserAnalyticsData() = ???
 
@@ -143,14 +153,14 @@ class AnalyticsStore(
  //public
   def addRead(path: Path, timestamp: Long) = {
    val temp = readSTM.get(path).toVector.flatten
-   val len = temp.length + 1
-   if(len > MAX_ARRAY_LENGTH){
-     readSTM.put(path, (temp:+timestamp).tail)
+   if((temp.length+1) > MAX_ARRAY_LENGTH){
+     readSTM.put(path, (temp :+ timestamp).tail)
    } else {
      readSTM.put(path, temp :+ timestamp)
    }
-   addReadInterval(path,timestamp)
+   //addReadInterval(path,timestamp)
   }
+
   def addWrite(path: Path, timestamps: Vector[Long]) = { //requires timestamps to be in order
     val temp = writeSTM.get(path).toVector.flatten
     val len = temp.length + timestamps.length
@@ -159,8 +169,9 @@ class AnalyticsStore(
     } else{
       writeSTM.put(path, temp ++ timestamps)
     }
-
   }
+
+  /*
   // Last value is timestamp of the previous value if found
   def addReadInterval(path: Path, timestamp: Long) = {
     val temp = readIntervals.get(path).toVector.flatten
@@ -180,27 +191,27 @@ class AnalyticsStore(
     val temp = writeIntervals.get(path).toVector.flatten
     
   }
-
+*/
   def avgIntervalAccess: Map[Path, Double] = {
     readSTM.mapValues { values =>
-      val temp = values.takeRight(readAverageCount)
+      val temp = values.takeRight(readAverageCount).sorted
       if (temp.length > 1) {
         temp.tail.zip(temp.init) // calculate difference between adjacent values
          .map(a => a._1 - a._2)
          .reduceLeft(_ + _) //sum the intervals
-         ./(temp.length.toDouble)
+         ./((temp.length - 1) * 1000.0) //convert to seconds
       } else 0
     }.toMap
   }
 
   def avgIntervalWrite: Map[Path, Double] = {
     writeSTM.mapValues{ values =>
-      val temp = values.takeRight(newDataAverageCount)
+      val temp = values.takeRight(newDataAverageCount).sorted
       if(temp.length > 1) {
         temp.tail.zip(temp.init)
           .map(a=> a._1 - a._2)
           .reduceLeft(_+_)
-          ./(temp.length.toDouble)
+          ./((temp.length - 1) * 1000.0) //convert to seconds
       } else 0
     }.toMap
   }
@@ -214,7 +225,7 @@ class AnalyticsStore(
   def numWritesInTimeWindow(currentTime: Long): Map[Path, Int] = {
     writeSTM.mapValues{ values =>
       values.count(time => (currentTime - time) < newDataIntervalWindow.toMillis)
-    }
-  }.toMap
+    }.toMap
+  }
 
 }
