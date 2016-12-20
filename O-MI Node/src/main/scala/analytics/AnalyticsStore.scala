@@ -78,7 +78,13 @@ class AnalyticsStore(
   if(enableUserAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateUserAnalyticsData())
   //context.system.scheduler.schedule()
 
-  def createInfoWithMeta(path: Path, value: String, timestamp: Long): OdfInfoItem = {
+  lazy val readAverageDescription = s"Average interval of last $readAverageCount data accesses"
+  lazy val writeAverageDescription = s"Average interval of last $newDataAverageCount writes"
+  lazy val readNumValueDescription = s"Amount of reads in the last ${readCountIntervalWindow.toCoarsest.toString}"
+  lazy val writeNumValueDescription = s"Amount of write messages in the last ${newDataIntervalWindow.toCoarsest.toString}"
+
+  def createInfoWithMeta(path: Path, value: String, timestamp: Long, desc: String): OdfInfoItem = {
+    val tt = new Timestamp(timestamp)
     OdfInfoItem(
       path.init, //parent path
       Vector.empty,
@@ -89,8 +95,10 @@ class AnalyticsStore(
             OdfInfoItem(
               path,
               OdfTreeCollection(
-                OdfValue(value, new Timestamp(timestamp))
-              )
+                OdfValue(value, tt)
+              ),
+              None,
+            Some(OdfMetaData(OdfTreeCollection(OdfInfoItem(path./("syntax"),OdfTreeCollection(OdfValue(desc, tt))))))
             )
           )
         )
@@ -102,9 +110,9 @@ class AnalyticsStore(
     context.system.log.info("updating write analytics")
     val tt = new Date().getTime()
     val nw = numWritesInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./("NumWrites"),i.toString, tt)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p, i) => createInfoWithMeta(p./("NumWrites"),i.toString, tt, writeNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
     val aw = avgIntervalWrite.map{
-      case (p,i) => createInfoWithMeta(p./("averageWrite"), i.toString, tt)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p,i) => createInfoWithMeta(p./("averageWrite"), i.toString, tt, writeAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
 
     (nw ++ aw).reduceOption(_.union(_)) //combine two Options and return Optional value
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
@@ -114,10 +122,10 @@ class AnalyticsStore(
     context.system.log.info("updating read analytics")
     val tt = new Date().getTime()
     val nr = numAccessInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./("NumAccess"),i.toString,tt)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p, i) => createInfoWithMeta(p./("NumAccess"),i.toString,tt, readNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
 
     val ar = avgIntervalAccess.map{
-      case (p,i) => createInfoWithMeta(p./("averageAccess"), i.toString, tt)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p,i) => createInfoWithMeta(p./("averageAccess"), i.toString, tt, readAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
     (nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
   }
