@@ -56,7 +56,7 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(xml_msg: String, user: Option[RemoteAddress]): OmiParseResult = {
+  def parse(xml_msg: String, user: Option[RemoteAddress] = None): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
    val parsed = Try(
      XMLParser.loadString(xml_msg)

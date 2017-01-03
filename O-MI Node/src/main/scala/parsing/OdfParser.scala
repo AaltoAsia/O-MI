@@ -54,7 +54,7 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
    *  @return OdfParseResults
    */
-  def parse(xml_msg: String, user: Option[RemoteAddress]): OdfParseResult = {
+  def parse(xml_msg: String, user: Option[RemoteAddress] = None): OdfParseResult = {
     val parsed = Try(
       XMLParser.loadString(xml_msg)
     )
@@ -62,7 +62,7 @@ object OdfParser extends Parser[OdfParseResult] {
     parseTry(parsed, None)
   }
 
-  private def parseTry(parsed: Try[Elem], user: Option[RemoteAddress]): OdfParseResult = {
+  private def parseTry(parsed: Try[Elem], user: Option[RemoteAddress] = None): OdfParseResult = {
     parsed match {
       case Success(root) => parse(root)
       case Failure(f) => Left(Iterable(ParseError(s"Invalid XML: ${f.getMessage}")))
