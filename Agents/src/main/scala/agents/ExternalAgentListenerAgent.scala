@@ -178,7 +178,7 @@ class ExternalAgentHandler(
       //check if the last part of the message contains closing xml tag
       if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
 
-        val parsedEntries = OdfParser.parse(storage)
+        val parsedEntries = OdfParser.parse(storage, None)
         storage = ""
         parsedEntries match {
           case Left(errors) =>

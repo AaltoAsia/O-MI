@@ -22,6 +22,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, Node,UnprefixedAttribute }
 
+import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.xmlTypes
 import types.OdfTypes._
 import types.OmiTypes._
@@ -40,12 +41,12 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param file XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(file: File): OmiParseResult = {
+  def parse(file: File, user: Option[RemoteAddress]): OmiParseResult = {
     val parsed = Try(
       XMLParser.loadFile(file)
     )
 
-    parseTry(parsed)
+    parseTry(parsed, user)
   }
 
 
@@ -55,18 +56,18 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(xml_msg: String): OmiParseResult = {
+  def parse(xml_msg: String, user: Option[RemoteAddress]): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
    val parsed = Try(
      XMLParser.loadString(xml_msg)
    )
-   parseTry(parsed)
+   parseTry(parsed, user)
 
   }
 
-  private def parseTry(parsed: Try[Elem]): OmiParseResult = {
+  private def parseTry(parsed: Try[Elem], user: Option[RemoteAddress]): OmiParseResult = {
     parsed match {
-      case Success(root) => parseOmi(root)
+      case Success(root) => parseOmi(root, user)
       case Failure(f) => Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
     }
   }
@@ -78,9 +79,9 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @return OmiParseResults
    */
   @deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
-  def parse(root: xml.Node): OmiParseResult = parseOmi(root)
+  def parse(root: xml.Node, user: Option[RemoteAddress]): OmiParseResult = parseOmi(root, user)
 
-  private def parseOmi(root: xml.Node ): OmiParseResult = schemaValidation(root) match {
+  private def parseOmi(root: xml.Node, user: Option[RemoteAddress]): OmiParseResult = schemaValidation(root) match {
     case errors : Seq[ParseError] if errors.nonEmpty=>
       Left(errors.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
     case empty : Seq[ParseError] if empty.isEmpty =>
@@ -95,8 +96,8 @@ object OmiParser extends Parser[OmiParseResult] {
         }
 
         envelope.omienvelopeoption.value match {
-          case read: xmlTypes.ReadRequest => parseRead(read, parseTTL(envelope.ttl))
-          case write: xmlTypes.WriteRequest => parseWrite(write, parseTTL(envelope.ttl))
+          case read: xmlTypes.ReadRequest => parseRead(read, parseTTL(envelope.ttl), user)
+          case write: xmlTypes.WriteRequest => parseWrite(write, parseTTL(envelope.ttl), user)
           case cancel: xmlTypes.CancelRequest => parseCancel(cancel, parseTTL(envelope.ttl))
           case response: xmlTypes.ResponseListType => parseResponse(response, parseTTL(envelope.ttl))
           case _ => throw new Exception("Unknown request type returned by scalaxb")
@@ -125,14 +126,15 @@ object OmiParser extends Parser[OmiParseResult] {
 
   def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
 
-  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration): OmiParseResult = { 
+  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration, user: Option[RemoteAddress]): OmiParseResult = {
     val callback = read.callback.map{ addr => RawCallback( addr.toString ) }
     if(read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
           callback,
           OdfTreeCollection(read.requestID.map(parseRequestID):_*),
-          ttl
+          ttl,
+          user
         )))
     } else{
       read.msg match {
@@ -151,8 +153,8 @@ object OmiParser extends Parser[OmiParseResult] {
                       read.newest,
                       read.oldest,
                       callback,
-                      ttl
-
+                      ttl,
+                      user
                     )
                   ))
                 case Some(interval) =>
@@ -163,7 +165,8 @@ object OmiParser extends Parser[OmiParseResult] {
                       read.newest,
                       read.oldest,
                       callback,
-                      ttl
+                      ttl,
+                      user
                     )
                   ))
               }
@@ -180,7 +183,7 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
-  private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration): OmiParseResult = {
+  private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration, user: Option[RemoteAddress]): OmiParseResult = {
     val odfParseResult = parseMsg(write.msg, write.msgformat)
     val callback = write.callback.map{ addr => RawCallback( addr.toString ) }
     odfParseResult match {
@@ -190,7 +193,8 @@ object OmiParser extends Parser[OmiParseResult] {
           WriteRequest(
             odf,
             callback,
-            ttl
+            ttl,
+            user
           )
         ))
     }

@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 import akka.actor.ActorRef
-import analytics.{AddRead, AnalyticsStore}
+import analytics.{AddUser, AddRead, AnalyticsStore}
 import database.{DB, GetTree, DBReadWrite, SingleStores}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
@@ -44,7 +44,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
      log.debug("Handling read.")
      read match{
-       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_) =>
+       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_) =>
          Future.successful(
            ResponseRequest( Vector(
              Results.InvalidRequest(
@@ -102,7 +102,10 @@ trait ReadHandler extends OmiRequestHandlerBase {
              //handle analytics
              analyticsStore.foreach{ store =>
                val reqTime: Long = new Date().getTime()
-               foundOdf.foreach(n => store ! AddRead(n.path, reqTime))
+               foundOdf.foreach(n => {
+                 store ! AddRead(n.path, reqTime)
+                 store ! AddUser(n.path, read.user.map(_.hashCode()), reqTime)
+               })
              }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq

@@ -28,6 +28,8 @@ import types.Path
 
 case class AddRead(path: Path, timestamp: Long)
 case class AddWrite(path: Path, timestamps: Vector[Long])
+case class AddUser(path: Path, user:Option[Int], timestamp: Long)
+
 object AnalyticsStore {
   def props(
             singleStores: SingleStores,
@@ -82,6 +84,7 @@ class AnalyticsStore(
   lazy val writeAverageDescription = s"Average interval of last $newDataAverageCount writes in seconds"
   lazy val readNumValueDescription = s"Amount of reads in the last ${readCountIntervalWindow.toCoarsest.toString}"
   lazy val writeNumValueDescription = s"Amount of write messages in the last ${newDataIntervalWindow.toCoarsest.toString}"
+  lazy val uniqueUserDescription = s"Number of unique users in the last $userAccessIntervalWindow"
 
   def createInfoWithMeta(path: Path, value: String, timestamp: Long, desc: String): OdfInfoItem = {
     val tt = new Timestamp(timestamp)
@@ -108,7 +111,7 @@ class AnalyticsStore(
 
   def updateWriteAnalyticsData() = {
     context.system.log.info("updating write analytics")
-    val tt = new Date().getTime()
+    val tt = getCurrentTime
     val nw = numWritesInTimeWindow(tt).map{
       case (p, i) => createInfoWithMeta(p./("NumWrites"),i.toString, tt, writeNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
     val aw = avgIntervalWrite.map{
@@ -120,7 +123,7 @@ class AnalyticsStore(
   }
   def updateReadAnalyticsData() = {
     context.system.log.info("updating read analytics")
-    val tt = new Date().getTime()
+    val tt = getCurrentTime
     val nr = numAccessInTimeWindow(tt).map{
       case (p, i) => createInfoWithMeta(p./("NumAccess"),i.toString,tt, readNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
 
@@ -129,25 +132,44 @@ class AnalyticsStore(
     (nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
   }
-  def updateUserAnalyticsData() = ???
+  def updateUserAnalyticsData() = {
+    context.system.log.info("updating user analytics")
+    val tt = getCurrentTime
+    val data = uniqueUsers(tt).map{
+      case (p, i) => createInfoWithMeta(p./("uniqueUsers"), i.toString, tt, uniqueUserDescription)
+    }.map(_.createAncestors).reduceOption(_.union(_))
+    context.system.log.info(data.toString)
+    data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
+  }
 
   def receive = {
     case AddRead(p, t) => {
-      context.system.log.info(s"r|$p || $t")
-      addRead(p, t)
+      if(enableReadAnalytics) {
+        context.system.log.debug(s"r|$p || $t")
+        addRead(p, t)
+      }
     }
     case AddWrite(p, t) => {
-      context.system.log.info(s"w|$p || $t")
-      addWrite(p, t)
+      if(enableWriteAnalytics) {
+        context.system.log.debug(s"w|$p || $t")
+        addWrite(p, t)
+      }
+    }
+    case AddUser(p, u, t) => {
+      if(enableUserAnalytics) {
+        context.system.log.info(s"u|user$u|$p||$t")
+        u.foreach(addUser(p, _, t))
+      }
     }
     case _ =>
   }
 
   private val readSTM = collection.mutable.Map.empty[Path, Vector[Long]]
   private val writeSTM = collection.mutable.Map.empty[Path,Vector[Long]]
-  private val userSTM = collection.mutable.Map.empty[Long, Long]
-  private val readIntervals = collection.mutable.Map.empty[Path,Vector[Long]]
-  private val writeIntervals = collection.mutable.Map.empty[Path, Vector[Long]]
+  private val userSTM = collection.mutable.Map.empty[Path, Vector[(Int, Long)]]
+
+  //private val readIntervals = collection.mutable.Map.empty[Path,Vector[Long]]
+  //private val writeIntervals = collection.mutable.Map.empty[Path, Vector[Long]]
 
   //private methods
   private def getReadFrequency(path: Path): Vector[Long] = {
@@ -157,6 +179,7 @@ class AnalyticsStore(
   private def getWriteFrequency(path: Path): Vector[Long] = {
     writeSTM.get(path).toVector.flatten
   }
+  private def getCurrentTime = new Date().getTime()
 
  //public
   def addRead(path: Path, timestamp: Long) = {
@@ -177,6 +200,14 @@ class AnalyticsStore(
     } else{
       writeSTM.put(path, temp ++ timestamps)
     }
+  }
+
+  def addUser(path: Path, user: Int, timestamp: Long) = {
+    val tt = getCurrentTime - userAccessIntervalWindow.toMillis
+    val temp1 = userSTM.get(path).toVector.flatten
+    context.system.log.info(s"functio: adduser val: temp1: $temp1")
+    val temp2= temp1.filterNot(value => (value._2 < tt )||( value._1 == user))
+    userSTM.put(path, temp2 :+ (user, timestamp))
   }
 
   /*
@@ -233,6 +264,20 @@ class AnalyticsStore(
   def numWritesInTimeWindow(currentTime: Long): Map[Path, Int] = {
     writeSTM.mapValues{ values =>
       values.count(time => (currentTime - time) < newDataIntervalWindow.toMillis)
+    }.toMap
+  }
+
+  def uniqueUsers(currentTime:Long): Map[Path, Int] = {
+    context.system.log.info(s"functio: uniqueusers val: userSTM: ${userSTM.toString}")
+    context.system.log.info(s"functio: uniqueUsers val: currentTime: $currentTime")
+    context.system.log.info(s"functio: uniqueUsers val: useraccesintervalwindowtomillist: ${userAccessIntervalWindow.toMillis}")
+
+    userSTM.mapValues{values =>
+      values.count(value => {
+
+        context.system.log.info(s"functio: uniqueUsers value: $value")
+        value._2 > (currentTime - userAccessIntervalWindow.toMillis)
+      })
     }.toMap
   }
 
