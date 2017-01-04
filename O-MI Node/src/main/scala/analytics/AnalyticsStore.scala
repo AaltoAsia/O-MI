@@ -72,7 +72,7 @@ class AnalyticsStore(
                       private val newDataAverageCount: Int,
                       private val updateFrequency: FiniteDuration) extends Actor {
 
-  private val MAX_ARRAY_LENGTH = 30
+  private val MAX_ARRAY_LENGTH = 1024
   //start schedules
   implicit val ec = context.system.dispatcher
   if(enableWriteAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateWriteAnalyticsData())
