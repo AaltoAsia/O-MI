@@ -22,7 +22,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.{Props, Actor}
 import database.{Union, SingleStores}
-import types.OdfTypes.{OdfValue, OdfTreeCollection, OdfMetaData, OdfInfoItem}
+import types.OdfTypes._
 import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
 import types.Path
 
@@ -100,8 +100,8 @@ class AnalyticsStore(
               OdfTreeCollection(
                 OdfValue(value, tt)
               ),
-              None,
-            Some(OdfMetaData(OdfTreeCollection(OdfInfoItem(path./("syntax"),OdfTreeCollection(OdfValue(desc, tt))))))
+              Some(OdfDescription(desc)),
+            None//Some(OdfMetaData(OdfTreeCollection(OdfInfoItem(path./("syntax"),OdfTreeCollection(OdfValue(desc, tt))))))
             )
           )
         )
@@ -138,26 +138,25 @@ class AnalyticsStore(
     val data = uniqueUsers(tt).map{
       case (p, i) => createInfoWithMeta(p./("uniqueUsers"), i.toString, tt, uniqueUserDescription)
     }.map(_.createAncestors).reduceOption(_.union(_))
-    context.system.log.info(data.toString)
     data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
   }
 
   def receive = {
     case AddRead(p, t) => {
       if(enableReadAnalytics) {
-        context.system.log.debug(s"r|$p || $t")
+        //context.system.log.debug(s"r|$p || $t")
         addRead(p, t)
       }
     }
     case AddWrite(p, t) => {
       if(enableWriteAnalytics) {
-        context.system.log.debug(s"w|$p || $t")
+        //context.system.log.debug(s"w|$p || $t")
         addWrite(p, t)
       }
     }
     case AddUser(p, u, t) => {
       if(enableUserAnalytics) {
-        context.system.log.info(s"u|user$u|$p||$t")
+        //context.system.log.debug(s"u|user$u|$p||$t")
         u.foreach(addUser(p, _, t))
       }
     }
@@ -205,7 +204,6 @@ class AnalyticsStore(
   def addUser(path: Path, user: Int, timestamp: Long) = {
     val tt = getCurrentTime - userAccessIntervalWindow.toMillis
     val temp1 = userSTM.get(path).toVector.flatten
-    context.system.log.info(s"functio: adduser val: temp1: $temp1")
     val temp2= temp1.filterNot(value => (value._2 < tt )||( value._1 == user))
     userSTM.put(path, temp2 :+ (user, timestamp))
   }
@@ -268,16 +266,9 @@ class AnalyticsStore(
   }
 
   def uniqueUsers(currentTime:Long): Map[Path, Int] = {
-    context.system.log.info(s"functio: uniqueusers val: userSTM: ${userSTM.toString}")
-    context.system.log.info(s"functio: uniqueUsers val: currentTime: $currentTime")
-    context.system.log.info(s"functio: uniqueUsers val: useraccesintervalwindowtomillist: ${userAccessIntervalWindow.toMillis}")
 
-    userSTM.mapValues{values =>
-      values.count(value => {
-
-        context.system.log.info(s"functio: uniqueUsers value: $value")
-        value._2 > (currentTime - userAccessIntervalWindow.toMillis)
-      })
+    userSTM.mapValues{ values =>
+      values.count(value => value._2 > (currentTime - userAccessIntervalWindow.toMillis))
     }.toMap
   }
 
