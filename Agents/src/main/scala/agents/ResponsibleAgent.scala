@@ -40,7 +40,7 @@ class ResponsibleScalaAgent(config: Config )
     log.debug(s"$name pushing data received through AgentSystem.")
 
     // Asynchronous execution of request 
-    val result : Future[ResponsibleAgentResponse] = writeToNode(write)
+    val result : Future[ResponseRequest] = writeToNode(write)
 
     // Store sender for asynchronous handling of request's execution's completion
     val senderRef : ActorRef = sender()

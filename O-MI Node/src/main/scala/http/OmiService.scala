@@ -217,9 +217,9 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap{
                     case request: OmiRequest => handleRequest( request )
                   }.recover{
-                    case e: TimeoutException => Responses.TimeOutError(e.getMessage)
-                    case e: IllegalArgumentException => Responses.InvalidRequest(e.getMessage)
-                    case icb : InvalidCallback => Responses.InvalidCallback(icb.address,Some(icb.message))
+                    case e: TimeoutException => Responses.TimeOutError(Some(e.getMessage()))
+                    case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
+                    case icb : InvalidCallback => Responses.InvalidCallback(icb.callback,Some(icb.message))
                     case t : Throwable =>
                       log.error("Internal Server Error: ",t)
                       Responses.InternalError(t)
@@ -288,7 +288,7 @@ trait OmiService
           case Some(callback: RawCallback) => 
             Future.successful(
               Responses.InvalidCallback(
-                callback.address,
+                callback,
                 Some("Callback 0 not supported with http/https try using ws(websocket) instead")
               )
             )
@@ -313,7 +313,7 @@ trait OmiService
     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
       Future.successful( request.withCallback(  currentConnectionCallback ) )
     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
-      Future.failed( InvalidCallback("0", "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
+      Future.failed( InvalidCallback(RawCallback("0"), "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
     case Some( RawCallback(address))  =>
       val cbTry = callbackHandler.createCallbackAddress(address)
       val result = cbTry.map{ 
@@ -321,7 +321,7 @@ trait OmiService
           request.withCallback( Some( callback ) )
       }.recoverWith{ 
         case throwable : Throwable =>
-          Try{ throw InvalidCallback(address, throwable.getMessage(), throwable  ) }
+          Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
       }
       Future.fromTry(result ) 
   }

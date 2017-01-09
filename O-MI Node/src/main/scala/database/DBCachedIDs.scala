@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.OmiReturn
+import types.OmiTypes.{OmiReturn, Returns}
 import types._
 
 /**
@@ -167,16 +167,17 @@ trait DBCachedReadWrite extends DBReadWrite{
                   (p,newSet)
               }
               hierarchyIDToPath ++= p2IDs.map{ case (p,id) => (id,p) }
-              OmiReturn("200")
+              Returns.Success()
             case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
-              OmiReturn("500",Some("Using old database. Should use Warp 10."))
+              Returns.InternalError(Some("Using old database. Should use Warp 10."))
           }
       }
     } else writeExisting.map{
             case Some(count: Int) => 
-              OmiReturn("200")
+              Returns.Success()
             case None =>
-              OmiReturn("500",Some("Using old database. Should use Warp 10."))
+              Returns.InternalError(Some("Using old database. Should use Warp 10."))
+
           }
     val pathIdRelations : Future[OmiReturn] = db.run(writeAction.transactionally)
 

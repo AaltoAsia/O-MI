@@ -59,8 +59,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
           val response : Future[OmiResult]= result.map{
             case SuccessfulWrite(_) => Results.Success() 
           case FailedWrite(paths, reasons) =>  
-            val returnV : OmiReturn = OmiReturn(
-              "400",
+            val returnV : OmiReturn = Returns.InvalidRequest(
               Some(
                 "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
               )
@@ -68,8 +67,7 @@ trait ResponseHandler extends OmiRequestHandlerBase{
             OmiResult(returnV)
             
         case MixedWrite(successfulPaths, failed)=> 
-          val returnV : OmiReturn = OmiReturn(
-            "400",
+          val returnV : OmiReturn = Returns.InvalidRequest(
             Some(
               "Following paths failed:\n" +
               failed.paths.mkString("\n") + 

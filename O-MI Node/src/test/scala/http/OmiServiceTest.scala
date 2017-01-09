@@ -229,10 +229,14 @@ class OmiServiceTest
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-        response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
-        val description = resp.\("response").\("result").\("return").\@("description")
-        description === "Following O-DF paths not found: Objects/non-existing/PowerConsumption"
+        val nf = response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+        val description = resp.\("response").\("result").\("return").\@("description") === 
+          "Some parts of O-DF not found. msg element contains missing O-DF structure."
+        val id =  resp must \("response").\("result").\("msg").\("Objects").\("Object").\("id").\>("non-existing")
+        val name = resp must \("response").\("result").\("msg").\("Objects").\("Object").\("InfoItem","name"->"PowerConsumption")
+        nf and description and id and name
       }
+    
     }
 
     "respond correctly to subscription poll with non existing requestId" >> {
@@ -251,9 +255,9 @@ class OmiServiceTest
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-        response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
-        val description = resp.\("response").\("result").\("return").\@("description")
-        description === "Following requestIDs not found: 9999."
+        val returnC = response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "Some requestIDs were not found.")
+        val rID = response must \("response") \("result") \("requestID") \>("9999")
+        returnC and rID 
       }
     }
 

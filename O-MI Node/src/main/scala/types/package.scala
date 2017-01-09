@@ -34,6 +34,7 @@ import types.OdfTypes._
  */
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
+  type RequestID = Long
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
   def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long): xmlTypes.OmiEnvelope ={
     val namespace = Some("omi.xsd")

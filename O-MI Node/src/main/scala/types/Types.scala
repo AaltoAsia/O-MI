@@ -19,6 +19,7 @@ package types
 
 import scala.collection.JavaConversions
 import scala.concurrent.{Future, ExecutionContext}
+import scala.util.{Failure, Success, Try}
 import agentSystem.ResponsibleAgentResponse
 
 object JavaHelpers{

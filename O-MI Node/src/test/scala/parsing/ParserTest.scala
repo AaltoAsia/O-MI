@@ -357,10 +357,9 @@ class ParserTest extends Specification {
   </omi:response>
 </omi:omiEnvelope>
 """)
-    temp.isRight === true
-
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
-
+    (temp.isRight) and {
+      temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+    }
   }
 
   def e207 = {
@@ -632,7 +631,7 @@ class ParserTest extends Specification {
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(
-      OmiReturn("200"),
+      OmiTypes.Returns.Success(),
       odf = Some(writeOdf)
       ))
   )

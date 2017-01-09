@@ -56,7 +56,7 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
           Results.Subscription(id)
         case Failure(ex) => throw ex
       }.recoverWith{
-      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(e.getMessage()))
+      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage())))
       case e : Throwable => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }
     subFuture.map{ results =>

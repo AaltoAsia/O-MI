@@ -359,8 +359,15 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
         result.asRequestResultType
       }.toVector.toSeq: _*)
    
+  def union(another: ResponseRequest): ResponseRequest ={
+    ResponseRequestBase( 
+      Results.unionReduce( (results ++ another.results).toVector ).toVector,
+      if( ttl >= another.ttl) ttl else another.ttl
+    )
+  }
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope = requestToEnvelope(asResponseListType, ttlAsSeconds)
 } 
+
 object ResponseRequest{
   def apply(
     results: OdfTreeCollection[OmiResult],

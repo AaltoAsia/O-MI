@@ -322,8 +322,8 @@ class SubscriptionManager(
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
       val optionObjects: Option[OdfObjects] = optionObjectsWithoutTypes.map(ob => hTree.intersect(ob))
-      val succResult = Vector(Results.Success(Some(iSub.id), optionObjects))
-      val failedResults = if (failures.nonEmpty) Vector(Results.NotFoundPaths(failures)) else Vector.empty
+      val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), optionObjects))
+      val failedResults = if (failures.nonEmpty) Vector(Results.SubscribedPathsNotFound(failures)) else Vector.empty
       val responseTTL = iSub.interval
       val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
 
