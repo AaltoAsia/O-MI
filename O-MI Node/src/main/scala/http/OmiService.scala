@@ -267,7 +267,7 @@ trait OmiService
 
       case ex: IllegalArgumentException => {
         log.debug(ex.getMessage)
-        Future.successful(Responses.InvalidRequest(ex.getMessage).asXML)
+        Future.successful(Responses.InvalidRequest(Some(ex.getMessage)).asXML)
       }
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)
