@@ -43,7 +43,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
          Future.successful(
            ResponseRequest( Vector(
              Results.InvalidRequest(
-               "Both newest and oldest at the same time not supported!"
+               Some("Both newest and oldest at the same time not supported!")
              )
            ))
        )
@@ -93,15 +93,21 @@ trait ReadHandler extends OmiRequestHandlerBase {
              val requestsPaths = leafs.map { _.path }
              val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
+             val notFoundOdf = notFound.flatMap{ 
+               path => read.odf.get(path).map{ node => createAncestors(node)}
+            }.foldLeft(OdfObjects()){ 
+              case (result, nf) => 
+                result.union(nf)
+            }
              val omiResults = Vector(found) ++ {
                if (notFound.nonEmpty)
-                 Vector(Results.NotFoundPaths(notFound.toVector))
+                 Vector(Results.NotFoundPaths(notFoundOdf))
                else Vector.empty
              }
 
              ResponseRequest( omiResults )
            case None =>
-             ResponseRequest( Vector(Results.NotFoundPaths(leafs.map{ p => p.path}.toVector)))
+             ResponseRequest( Vector(Results.NotFoundPaths(read.odf) ) )
          }
      }
    }

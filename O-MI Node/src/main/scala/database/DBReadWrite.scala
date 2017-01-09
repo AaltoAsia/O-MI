@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.OmiReturn
+import types.OmiTypes.{Returns,OmiReturn}
 import types._
 
 /**
@@ -208,9 +208,9 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     //Call hooks
     pathIdRelations.map{ 
-      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => OmiReturn("200")
+      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => Returns.Success()
       case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
-        OmiReturn("500",Some("Using old database. Should use Warp 10."))
+      Returns.InternalError(Some("Using old database. Should use Warp 10."))
     }
   }
 

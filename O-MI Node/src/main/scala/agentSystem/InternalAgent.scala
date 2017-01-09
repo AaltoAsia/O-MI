@@ -85,54 +85,28 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   def config : Config
   def agentSystem = context.parent
   final def name = self.path.name
+  @deprecated("Use Actor's preRestart and postRestart methods instead.","o-mi-node-0.8.0") 
   def restart : InternalAgentResponse = {
     stop 
     start
   }
   //These need to be implemented 
+  @deprecated("Use Actor's preStart method instead.","o-mi-node-0.8.0") 
   def start   : InternalAgentResponse 
+  @deprecated("Use Actor's postStop method instead.","o-mi-node-0.8.0") 
   def stop    : InternalAgentResponse 
   def receive  = {
     case Start() => sender() ! start 
     case Restart() => sender() ! restart
     case Stop() => sender() ! stop
    }
-  final def writeToNode(write: WriteRequest) : Future[ResponsibleAgentResponse] = {
+  final def writeToNode(write: WriteRequest) : Future[ResponseRequest] = {
     // timeout for the write request, which means how long this agent waits for write results
     implicit val timeout : Timeout = Timeout(write.handleTTL)
 
     // Execute the request, execution is asynchronous (will not block)
-    (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]
+    (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponseRequest]
   }
+  override def preStart = start
+  override def postStop = stop
 }
-
-case class ResponsibilityRequest( senderName: String, request: OmiRequest)
-trait ResponsibleScalaInternalAgent extends ScalaInternalAgent with ResponsibleInternalAgent{
-  import context.dispatcher
-  protected def handleWrite( write: WriteRequest ) :Unit
-
-  override def receive  = {
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart
-    case Stop() => sender() ! stop
-    case write: WriteRequest => handleWrite(write)
-   }
-  final protected def passWrite(write: WriteRequest) : Unit = {
-    implicit val timeout = Timeout( write.handleTTL)
-
-    val senderRef = sender()
-    val future = (agentSystem ? write).mapTo[ResponsibleAgentResponse]
-    future.onComplete{
-      case Success( result ) => senderRef ! result 
-      case Failure( t ) => senderRef ! FailedWrite(write.odf.paths, Vector(t))
-    }
-
-  }
-  final protected def incorrectWrite(write: WriteRequest) : Unit = {
-    sender() ! FailedWrite(write.odf.paths, Vector(new Exception(s"Write incorrect. Tryed to write incorrect value.")))
-  }
-  final protected def forbiddenWrite(write: WriteRequest) : Unit = {
-    sender() ! FailedWrite(write.odf.paths, Vector(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen.")))
-  }
-}
-

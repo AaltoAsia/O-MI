@@ -230,7 +230,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       returnMsg must \("response") \ ("result") \ ("return",
         "returnCode" -> "404",
-        "description" -> s"Following requestIDs not found: $id.")
+        "description" -> s"Some requestIDs were not found.")
+      returnMsg must \("response") \ ("result") \ ("requestID") \> s"$id"
 
     }
 

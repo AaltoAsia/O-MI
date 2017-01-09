@@ -62,7 +62,7 @@ class TypesTest extends Specification {
   def e4 = SubscriptionRequest(1.seconds, OdfObjects(), None, None, None,  0.seconds).isInstanceOf[OmiRequest]
 
   def e5 = {
-    ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
+    ResponseRequest(Seq(OmiResult(Returns.Success()))).isInstanceOf[OmiRequest]
   }
 
   def e6 = CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
