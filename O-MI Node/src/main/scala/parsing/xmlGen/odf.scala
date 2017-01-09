@@ -53,6 +53,10 @@ case class QlmID(
   endDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   attributes: ListMap[String, scalaxb.DataRecord[Any]] = ListMap.empty)
 
+object QlmID{
+  def createFromString(value: String) : QlmID = QlmID(value)  
+}
+
 
 case class ValueType(
   value: String,
