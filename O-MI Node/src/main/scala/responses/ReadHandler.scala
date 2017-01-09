@@ -15,9 +15,13 @@
 
 package responses
 
+import java.sql.Timestamp
+import java.util.Date
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import analytics.AnalyticsStore
 import database.{DB, GetTree, DBReadWrite, SingleStores}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
@@ -32,6 +36,7 @@ import http.{ActorSystemContext, Storages}
 trait ReadHandler extends OmiRequestHandlerBase {
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
+  protected implicit def analyticsStore: Option[AnalyticsStore]
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
@@ -83,15 +88,22 @@ trait ReadHandler extends OmiRequestHandlerBase {
 
          objectsWithValuesO.map {
            case Some(objectsWithValues) =>
-            //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
              val objectsWithValuesAndAttributes = 
               metadataTree.allMetaDatasRemoved.intersect( objectsWithValues.valuesRemoved )
                 .union( objectsWithValues )
+
 
              val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
              val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
+             //handle analytics
+             analyticsStore.foreach{ store =>
+               val reqTime: Long = new Date().getTime()
+               foundOdfAsPaths.foreach(store.addRead(_, reqTime))
+             }
+
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
              val notFoundOdf = notFound.flatMap{ 
                path => read.odf.get(path).map{ node => createAncestors(node)}

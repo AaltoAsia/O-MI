@@ -135,14 +135,17 @@ tr.respRet{
 }
 .navbar-logo {
     padding: 2px !important;
-    margin-left:0 !important;
-}
-.navbar-brand {
-    margin-left:-4px !important;
 }
 .navbar-brand > img {
-   max-width:95%;
-   max-height:95%;
+   max-width: 95%;
+   max-height: 95%;
    border-radius: 10%;
    margin-top: 2.5%;
+   margin-bottom: 2.5%;
+   filter: invert(86.7%) hue-rotate(180deg);
 }
+
+.opengroup-color {
+    color: #0f85a3;
+}
+

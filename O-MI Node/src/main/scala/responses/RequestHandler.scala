@@ -21,6 +21,7 @@ import scala.xml.NodeSeq
 
 import akka.actor.{ActorSystem, ActorRef}
 import akka.event.{LogSource, Logging, LoggingAdapter}
+import analytics.AnalyticsStore
 import database._
 import types.OmiTypes._
 import http.{ActorSystemContext, Actors, OmiConfigExtension }
@@ -51,7 +52,8 @@ class RequestHandler(
   protected val subscriptionManager : ActorRef,
   protected implicit val settings: OmiConfigExtension,
   protected implicit val dbConnection: DB,
-  protected implicit val singleStores: SingleStores
+  protected implicit val singleStores: SingleStores,
+  protected val analyticsStore: Option[AnalyticsStore]
 ) 
 extends  OmiRequestHandlerCore
 with ReadHandler 

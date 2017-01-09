@@ -53,7 +53,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
 
   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   val agentSystem = system.actorOf(
-    AgentSystem.props(),
+    AgentSystem.props(None),
     "agent-system"
   )
 
@@ -63,7 +63,8 @@ class TestOmiServer( config: Config )  extends OmiNode {
     subscriptionManager,
     settings,
     dbConnection,
-    singleStores
+    singleStores,
+    None //analytics
     )
 
     implicit val cliListener =system.actorOf(

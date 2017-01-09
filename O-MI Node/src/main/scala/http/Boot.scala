@@ -22,6 +22,7 @@ import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
+import analytics.AnalyticsStore
 import org.slf4j.LoggerFactory
 
 import akka.actor.{ActorRef, ActorSystem, Props}
@@ -66,11 +67,26 @@ class OmiServer extends OmiNode{
   )
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+  val analytics: Option[AnalyticsStore] =
+    if(settings.enableAnalytics)
+      Some(
+        new AnalyticsStore(
+          settings.enableWriteAnalytics,
+          settings.enableReadAnalytics,
+          settings.enableUserAnalytics,
+          settings.numWriteSampleWindowLength,
+          settings.numReadSampleWindowLength,
+          settings.numUniqueUserSampleWindowLength,
+          settings.readAvgIntervalSampleSize,
+          settings.writeAvgIntervalSampleSize
+        )
+      )
+    else None
 
-   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-   val agentSystem = system.actorOf(
-    AgentSystem.props(),
-    "agent-system"
+  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+  val agentSystem = system.actorOf(
+   AgentSystem.props(analytics.filter(_.enableWriteAnalytics)),
+   "agent-system"
   )
 
   implicit val requestHandler : RequestHandler = new RequestHandler(
@@ -79,7 +95,8 @@ class OmiServer extends OmiNode{
     subscriptionManager,
     settings,
     dbConnection,
-    singleStores
+    singleStores,
+    analytics.filter(_.enableReadAnalytics)
     )
 
   implicit val cliListener =system.actorOf(
@@ -93,6 +110,7 @@ class OmiServer extends OmiNode{
       )),
     "omi-node-cli-listener"
   )
+
   saveSettingsOdf(system,agentSystem,settings)
 
   implicit val httpExt = Http()
