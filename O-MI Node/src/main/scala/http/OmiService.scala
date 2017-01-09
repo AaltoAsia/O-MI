@@ -214,8 +214,8 @@ trait OmiService
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request : OmiRequest) =>
-                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{ 
-                    case request: OmiRequest => handleRequest( request ) 
+                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{
+                    case request: OmiRequest => handleRequest( request )
                   }.recover{
                     case e: TimeoutException => Responses.TimeOutError(e.getMessage)
                     case e: IllegalArgumentException => Responses.InvalidRequest(e.getMessage)
@@ -248,7 +248,7 @@ trait OmiService
           Future.successful(Responses.InternalError(ex))
       }
 
-      
+
 
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
@@ -264,6 +264,11 @@ trait OmiService
       }
 
     } catch {
+
+      case ex: IllegalArgumentException => {
+        log.debug(ex.getMessage)
+        Future.successful(Responses.InvalidRequest(ex.getMessage).asXML)
+      }
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)
         throw ex
