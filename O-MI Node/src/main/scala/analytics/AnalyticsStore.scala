@@ -20,7 +20,7 @@ import java.util.Date
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.{Props, Actor}
+import akka.actor.{Cancellable, Props, Actor}
 import database.{Union, SingleStores}
 import types.OdfTypes._
 import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
@@ -64,20 +64,35 @@ class AnalyticsStore(
                       val enableReadAnalytics: Boolean,
                       val enableUserAnalytics: Boolean,
                     //config parameters for window sizes and average window sizes
-                      private val newDataIntervalWindow: FiniteDuration,
-                      private val readCountIntervalWindow: FiniteDuration,
-                      private val userAccessIntervalWindow: FiniteDuration,
+                      val newDataIntervalWindow: FiniteDuration,
+                      val readCountIntervalWindow: FiniteDuration,
+                      val userAccessIntervalWindow: FiniteDuration,
                     //number for how long window of values we use for averaging the data
-                      private val readAverageCount: Int,
-                      private val newDataAverageCount: Int,
-                      private val updateFrequency: FiniteDuration) extends Actor {
+                      val readAverageCount: Int,
+                      val newDataAverageCount: Int,
+                      val updateFrequency: FiniteDuration) extends Actor {
 
-  private val MAX_ARRAY_LENGTH = 1024
+  val MAX_ARRAY_LENGTH = 1024
   //start schedules
   implicit val ec = context.system.dispatcher
-  if(enableWriteAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateWriteAnalyticsData())
-  if(enableReadAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateReadAnalyticsData())
-  if(enableUserAnalytics) context.system.scheduler.schedule(updateFrequency,updateFrequency)(updateUserAnalyticsData())
+
+  var writeC: Option[Cancellable] = None
+  var readC: Option[Cancellable] = None
+  var userC: Option[Cancellable] = None
+  override def postStop() = {
+    writeC.foreach(_.cancel())
+    readC.foreach(_.cancel())
+    userC.foreach(_.cancel())
+  }
+  if(enableWriteAnalytics) {
+    writeC = Some(context.system.scheduler.schedule(updateFrequency, updateFrequency)(updateWriteAnalyticsData()))
+  }
+  if(enableReadAnalytics) {
+    readC = Some(context.system.scheduler.schedule(updateFrequency, updateFrequency)(updateReadAnalyticsData()))
+  }
+  if(enableUserAnalytics) {
+    userC = Some(context.system.scheduler.schedule(updateFrequency, updateFrequency)(updateUserAnalyticsData()))
+  }
   //context.system.scheduler.schedule()
 
   lazy val readAverageDescription = s"Average interval of last $readAverageCount data accesses in seconds"
@@ -122,6 +137,7 @@ class AnalyticsStore(
 
   }
   def updateReadAnalyticsData() = {
+
     context.system.log.info("updating read analytics")
     val tt = getCurrentTime
     val nr = numAccessInTimeWindow(tt).map{
@@ -163,22 +179,22 @@ class AnalyticsStore(
     case _ =>
   }
 
-  private val readSTM = collection.mutable.Map.empty[Path, Vector[Long]]
-  private val writeSTM = collection.mutable.Map.empty[Path,Vector[Long]]
-  private val userSTM = collection.mutable.Map.empty[Path, Vector[(Int, Long)]]
+  val readSTM = collection.mutable.Map.empty[Path, Vector[Long]]
+  val writeSTM = collection.mutable.Map.empty[Path,Vector[Long]]
+  val userSTM = collection.mutable.Map.empty[Path, Vector[(Int, Long)]]
 
   //private val readIntervals = collection.mutable.Map.empty[Path,Vector[Long]]
   //private val writeIntervals = collection.mutable.Map.empty[Path, Vector[Long]]
 
   //private methods
-  private def getReadFrequency(path: Path): Vector[Long] = {
+  def getReadFrequency(path: Path): Vector[Long] = {
     readSTM.get(path).toVector.flatten
   }
 
-  private def getWriteFrequency(path: Path): Vector[Long] = {
+  def getWriteFrequency(path: Path): Vector[Long] = {
     writeSTM.get(path).toVector.flatten
   }
-  private def getCurrentTime = new Date().getTime()
+  def getCurrentTime = new Date().getTime()
 
  //public
   def addRead(path: Path, timestamp: Long) = {
