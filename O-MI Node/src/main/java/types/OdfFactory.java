@@ -1,7 +1,11 @@
 package types;
 
 import java.lang.Object;
+import java.util.Vector;
 import types.OdfTypes.*;
+import types.OdfTypes.OdfTreeCollection;
+import parsing.xmlGen.xmlTypes.QlmID;
+import parsing.xmlGen.xmlTypes.QlmID$;
 import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
 
@@ -138,8 +142,11 @@ public class OdfFactory{
     OdfDescription description,
     String typeValue
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
@@ -161,8 +168,11 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String typeValue
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
@@ -184,8 +194,11 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     OdfDescription description
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
@@ -205,8 +218,11 @@ public class OdfFactory{
     Iterable<OdfInfoItem> infoitems,
     Iterable<OdfObject> objects
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
