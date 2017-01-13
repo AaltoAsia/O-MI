@@ -2,7 +2,7 @@ import com.github.retronym.SbtOneJar
 import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
-import com.typesafe.sbt.packager.archetypes.ServerLoader.{SystemV,Upstart}
+import com.typesafe.sbt.packager.archetypes.ServerLoader.{Systemd,SystemV,Upstart}
 
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
@@ -71,6 +71,7 @@ lazy val agents = (project in file("Agents")).
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging).
   enablePlugins(DockerPlugin).
+  //enablePlugins(SystemdPlugin).
   //enablePlugins(CodacyCoveragePlugin).
   settings(commonSettings("Node")).
   settings(
@@ -121,7 +122,7 @@ lazy val root = (project in file(".")).
     ////////////////////////////
     //Native packager settings//
     ////////////////////////////
-      serverLoading in Debian := SystemV,
+      serverLoading in Debian := Systemd,
     //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "html")),
       mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
