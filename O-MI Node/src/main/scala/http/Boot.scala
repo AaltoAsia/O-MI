@@ -67,10 +67,11 @@ class OmiServer extends OmiNode{
   )
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
-  val analytics: Option[AnalyticsStore] =
+  val analytics: Option[ActorRef] =
     if(settings.enableAnalytics)
       Some(
-        new AnalyticsStore(
+        system.actorOf(AnalyticsStore.props(
+          singleStores,
           settings.enableWriteAnalytics,
           settings.enableReadAnalytics,
           settings.enableUserAnalytics,
@@ -78,14 +79,16 @@ class OmiServer extends OmiNode{
           settings.numReadSampleWindowLength,
           settings.numUniqueUserSampleWindowLength,
           settings.readAvgIntervalSampleSize,
-          settings.writeAvgIntervalSampleSize
+          settings.writeAvgIntervalSampleSize,
+          settings.updateInterval
         )
+      )
       )
     else None
 
   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   val agentSystem = system.actorOf(
-   AgentSystem.props(analytics.filter(_.enableWriteAnalytics)),
+   AgentSystem.props(analytics.filter(n => settings.enableWriteAnalytics)),
    "agent-system"
   )
 
@@ -96,7 +99,7 @@ class OmiServer extends OmiNode{
     settings,
     dbConnection,
     singleStores,
-    analytics.filter(_.enableReadAnalytics)
+    analytics.filter(r => settings.enableReadAnalytics)
     )
 
   implicit val cliListener =system.actorOf(

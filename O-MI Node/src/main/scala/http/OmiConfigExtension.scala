@@ -32,6 +32,7 @@ import types.Path
  
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
+
   /**
    * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
    * @param dur duration as java.time.Duration
@@ -82,7 +83,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
 
   val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
+
   val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
+  val updateInterval: FiniteDuration = config.getDuration("analytics.updateInterval")
 
 
   // Authorization

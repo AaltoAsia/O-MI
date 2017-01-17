@@ -19,6 +19,7 @@ import java.net.InetAddress
 import scala.collection.JavaConverters._
 import scala.util.{Success, Failure}
 
+import akka.http.scaladsl.model.RemoteAddress
 import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.extractClientIP
@@ -31,7 +32,7 @@ import types.OmiTypes._
   */
 trait IpAuthorization extends AuthorizationExtension {
   val settings : OmiConfigExtension
-  private type UserData = Option[InetAddress]
+  private type UserData = RemoteAddress
 
   /** Contains white listed IPs
     *
@@ -47,13 +48,13 @@ trait IpAuthorization extends AuthorizationExtension {
 
 
   // FIXME: NOTE: This will fail if there isn't setting "remote-address-header = on"
-  private def extractIp: Directive1[Option[InetAddress]] = extractClientIP map (_.toOption)
+  private def extractIp: Directive1[RemoteAddress] = extractClientIP
 
   def ipHasPermission: UserData => PermissionTest = user => (wrap: RequestWrapper) =>
     wrap.unwrapped flatMap {
       // Write and Response are currently PermissiveRequests
       case r : PermissiveRequest =>
-        val result = if (user.exists( addr =>
+        val result = if (user.toOption.exists( addr =>
           whiteIPs.contains( inetAddrToBytes( addr ) ) ||
           whiteMasks.exists{
             case (subnet : InetAddress, bits : Int) =>

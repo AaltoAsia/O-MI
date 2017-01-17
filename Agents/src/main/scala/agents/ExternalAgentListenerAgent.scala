@@ -21,6 +21,7 @@ import scala.concurrent.Await
 import scala.util.Try
 
 import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.http.scaladsl.model.RemoteAddress
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.{Cancellable, Props}
@@ -107,7 +108,7 @@ class ExternalAgentListener(override val config: Config)
       val connection = sender()
 
       // Code for ip address authorization check
-      val user = Some(remote.getAddress())
+      val user = RemoteAddress(remote)//remote.getAddress())
       val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
@@ -177,7 +178,7 @@ class ExternalAgentHandler(
       //check if the last part of the message contains closing xml tag
       if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
 
-        val parsedEntries = OdfParser.parse(storage)
+        val parsedEntries = OdfParser.parse(storage, None)
         storage = ""
         parsedEntries match {
           case Left(errors) =>

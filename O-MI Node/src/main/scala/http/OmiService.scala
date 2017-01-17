@@ -188,14 +188,15 @@ trait OmiService
   def handleRequest(
     hasPermissionTest: PermissionTest,
     requestString: String,
-    currentConnectionCallback: Option[Callback] = None
+    currentConnectionCallback: Option[Callback] = None,
+    remote: RemoteAddress
   ): Future[NodeSeq] = {
     try {
 
       //val eitherOmi = OmiParser.parse(requestString)
 
 
-      val originalReq = RawRequestWrapper(requestString)
+      val originalReq = RawRequestWrapper(requestString, Some(remote))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
@@ -332,10 +333,12 @@ trait OmiService
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
-        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
-        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
-        //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
-        complete(response)
+        extractClientIP { user =>
+          //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+          complete(response)
+        }
       }
     }
   }
@@ -346,10 +349,12 @@ trait OmiService
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
-        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
-        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
-        val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
-        complete(response)
+        extractClientIP { user =>
+          //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+          complete(response)
+        }
       }
     }
   }
@@ -385,11 +390,13 @@ trait WebSocketOMISupport { self: OmiService =>
   def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
     makePermissionTestFunction() { hasPermissionTest =>
       extractUpgradeToWebSocket {wsRequest =>
+        extractClientIP { ip =>
 
-        val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest)
-        complete(
-          wsRequest.handleMessagesWithSinkSource(inSink, outSource)
-        )
+          val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest, ip)
+          complete(
+            wsRequest.handleMessagesWithSinkSource(inSink, outSource)
+          )
+        }
       }
     }
 
@@ -406,7 +413,7 @@ trait WebSocketOMISupport { self: OmiService =>
   }
 
   // akka.stream
-  protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest): (InSink, OutSource) = {
+  protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest, user: RemoteAddress): (InSink, OutSource) = {
     val queueSize = settings.websocketQueueSize
     val (outSource, futureQueue) =
       peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
@@ -462,7 +469,7 @@ trait WebSocketOMISupport { self: OmiService =>
     val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
       future.flatMap{ 
         case requestString: String =>
-        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback, user)
         queueSend(futureResponse)
       }
     }
