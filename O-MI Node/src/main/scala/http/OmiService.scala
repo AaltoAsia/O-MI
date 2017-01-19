@@ -64,6 +64,7 @@ trait OmiServiceAuthorization
      with AuthApiProvider         // Easier java api for authorization
      with LogUnauthorized         // Log everything else
 
+
 /**
  * Actor that handles incoming http messages
  */
@@ -82,7 +83,7 @@ class OmiServiceImpl(
   } with OmiService {
 
   //example auth API service code in java directory of the project
-  //registerApi(new AuthAPIService())
+  registerApi(new AuthAPIService())
 
 
 }

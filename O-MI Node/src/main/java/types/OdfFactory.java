@@ -18,7 +18,7 @@ public class OdfFactory{
    *
    * @param value Value inside of O-DF value element. 
    * @param typeValue Type of value, one of built in XML Schema data types specifed in 
-   *  <a href="https://www.w3.org/TR/xmlschema-2/#built-in-datatypes">Akka recommends to</a>
+   *  <a href="https://www.w3.org/TR/xmlschema-2/#built-in-datatypes">XML Schema types</a>
    *  Parameter value is cast to type specifed by typeValue parameter. If cast fails, value's
    *  type will be String.
    * @param timestamp Timestamp when value was measured or received.
@@ -36,6 +36,7 @@ public class OdfFactory{
         attr
         );
   }
+
 
   /**
    *
@@ -143,7 +144,7 @@ public class OdfFactory{
     String typeValue
   ){
     Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -169,7 +170,7 @@ public class OdfFactory{
     String typeValue
   ){
     Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -195,7 +196,7 @@ public class OdfFactory{
     OdfDescription description
   ){
     Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -219,7 +220,7 @@ public class OdfFactory{
     Iterable<OdfObject> objects
   ){
     Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[0]);
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),

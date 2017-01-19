@@ -45,6 +45,9 @@ case class Description(
   attributes: Map[String, scalaxb.DataRecord[Any]])
 
 
+//local serialVersionUID = 7337332908618699736
+//vs stream 364191708205046814
+@SerialVersionUID(364191708205046814L)
 case class QlmID(
   value: String,
   idType: Option[String] = None,
