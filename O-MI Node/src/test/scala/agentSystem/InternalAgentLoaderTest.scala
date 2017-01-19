@@ -226,12 +226,12 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val classname3 = "agentSystem.SFAgent"
    val matchAll = ActorRef.noSender
    val correctAgents = Vector(
-     AgentInfo("A1", classname, emptyConfig, matchAll , true, Seq.empty),
-     AgentInfo("A2", classname, emptyConfig, matchAll , true, Seq.empty),
-     AgentInfo("A3", classname, emptyConfig, matchAll , true, Seq.empty),
+     AgentInfo("A1", classname, emptyConfig, matchAll , running = true, Seq.empty),
+     AgentInfo("A2", classname, emptyConfig, matchAll , running = true, Seq.empty),
+     AgentInfo("A3", classname, emptyConfig, matchAll , running = true, Seq.empty),
      //4 and 6, should fail without causing problem
-     AgentInfo("A5", classname3, emptyConfig, matchAll , true, Seq.empty),
-     AgentInfo("A7", classname3, emptyConfig, matchAll , true, Seq.empty)
+     AgentInfo("A5", classname3, emptyConfig, matchAll , running = true, Seq.empty),
+     AgentInfo("A7", classname3, emptyConfig, matchAll , running = true, Seq.empty)
    )
    val configStr =
    s"""

@@ -27,7 +27,7 @@ sealed trait OmiReturn {
 }
 
 class BaseReturn( val returnCode: String, val description: Option[String]) extends OmiReturn{
-  def union(other: OmiReturn): OmiReturn = {this} 
+  def union(other: OmiReturn): OmiReturn = this
 }
 
 object OmiReturn{
@@ -73,39 +73,39 @@ case class SubscribedPathsNotFound( paths: OdfTreeCollection[Path] ) extends Not
     val description : Option[String] = Some(s"Some requestIDs were not found.")
   }
   
-  case class Success( val description: Option[String] = None ) extends OmiReturn with Successful{}
+  case class Success(description: Option[String] = None ) extends OmiReturn with Successful{}
   
-  case class NotImplemented(val feature: Option[String] = None) extends OmiReturn { 
+  case class NotImplemented(feature: Option[String] = None) extends OmiReturn {
     def returnCode: ReturnCode  = ReturnCode.NotImplemented       
     def description: Option[String] = feature.map{ 
       str => s"$str is not implemented."
     }.orElse(Some("Not implemented.")) 
   }
   
-  case class Unauthorized(val feature: Option[String] = None) extends OmiReturn {
+  case class Unauthorized(feature: Option[String] = None) extends OmiReturn {
     def returnCode: ReturnCode  = ReturnCode.Unauthorized
     def description: Option[String] = feature.map{ 
       str => s"Unauthorized use of $str"
     }.orElse(Some("Unauthorized.")) 
   }
 
-  case class InvalidRequest( val message: Option[String] = None)  extends OmiReturn with Invalid {
+  case class InvalidRequest(message: Option[String] = None)  extends OmiReturn with Invalid {
     def description: Option[String] = message.map{ 
       str => s"Bad request: $str"
     }.orElse(Some("Bad request.")) 
   }
 
-  case class InvalidCallback(val callback: Callback, val reason: Option[String] = None ) extends OmiReturn  with Invalid { 
+  case class InvalidCallback(callback: Callback, reason: Option[String] = None ) extends OmiReturn  with Invalid {
     def description: Option[String] = Some(
       "Invalid callback address: " + callback + reason.map{ str => ", reason: " + str}.getOrElse("")
     )
   }
 
-  case class ParseErrors( val errors: Vector[ParseError] ) extends OmiReturn with Invalid {
+  case class ParseErrors(errors: Vector[ParseError] ) extends OmiReturn with Invalid {
     def description: Option[String] = Some(errors.mkString(",\n"))
   }
 
-  case class InternalError( val message: Option[String] = None) extends OmiReturn {
+  case class InternalError(message: Option[String] = None) extends OmiReturn {
     def returnCode: ReturnCode  = ReturnCode.InternalError
     def description: Option[String] = message.map{ 
       msg => s"Internal server error: $msg"
@@ -113,7 +113,7 @@ case class SubscribedPathsNotFound( paths: OdfTreeCollection[Path] ) extends Not
   }
 
 
-  case class TimeOutError(val message: Option[String] = None) extends OmiReturn {
+  case class TimeOutError(message: Option[String] = None) extends OmiReturn {
     def returnCode: ReturnCode  = Timeout
     def description: Option[String] = message.map{ msg =>
       s"TTL timeout, consider increasing TTL or is the server overloaded? $msg"

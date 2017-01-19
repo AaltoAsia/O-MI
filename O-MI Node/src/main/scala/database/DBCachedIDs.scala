@@ -72,7 +72,7 @@ trait DBCachedReadWrite extends DBReadWrite{
     )
 
     val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
-    val existed : Seq[String] = (Await.result(db.run(existingTables), 5 minutes)).filter( !_.startsWith("pq"))
+    val existed : Seq[String] = Await.result(db.run(existingTables), 5 minutes).filter( !_.startsWith("pq"))
     if ( existed.contains("HIERARCHYNODES") && existed.contains("SENSORVALUES")) {
       //noop
       log.info(
@@ -93,14 +93,14 @@ trait DBCachedReadWrite extends DBReadWrite{
    * Used to set many values efficiently to the database.
    */
   override def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
-    val pathToWrite = infos.map{
+    val pathToWrite: Seq[DBValue] = infos.flatMap {
       case info =>
-        pathToHierarchyID.get(info.path).map{
+        pathToHierarchyID.get(info.path).flatMap {
           case hIDset =>
-            hIDset.headOption.map{ 
+            hIDset.headOption.map {
               hID =>
-                info.values.map{ 
-                  case odfVal => 
+                info.values.map {
+                  case odfVal =>
                     DBValue(
                       hID,
                       //create new timestamp if option is None
@@ -110,8 +110,8 @@ trait DBCachedReadWrite extends DBReadWrite{
                     )
                 }
             }
-          }.flatten
-        }.flatten.flatten
+        }
+    }.flatten
 
     val writeExisting = (latestValues ++= pathToWrite)
 
@@ -199,16 +199,16 @@ trait DBCachedReadWrite extends DBReadWrite{
   ): Future[Option[OdfObjects]] = {
     //log.debug("Current path to id map:\n" + pathToHierarchyID.mkString("\n"))
       //log.debug("Request:\n"+requests.mkString("\n"))
-      val infoitemIDs = requests.map{ 
-        node =>
-          pathToHierarchyID.get(node.path).map{
-            hIDset => 
-              hIDset.map{ 
-                hID => 
-                  hierarchyIDToPath.get(hID).map{ path => (path, hID)}
-              }.flatten
-          } 
-      }.flatten.flatten.toMap 
+      val infoitemIDs = requests.flatMap {
+      node =>
+        pathToHierarchyID.get(node.path).map {
+          hIDset =>
+            hIDset.map {
+              hID =>
+                hierarchyIDToPath.get(hID).map { path => (path, hID) }
+            }.flatten
+        }
+    }.flatten.toMap
       //log.debug("Paths to be read:\n" + infoitemIDs.mkString("\n"))
 
       val ids = infoitemIDs.values.toVector

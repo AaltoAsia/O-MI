@@ -6,8 +6,8 @@ import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
 import OmiTypes._
 
 case class ResponseRequestBase(
-  val results: OdfTreeCollection[OmiResult],
-  val ttl: Duration = 10.seconds
+                                results: OdfTreeCollection[OmiResult],
+                                ttl: Duration = 10.seconds
 ) extends ResponseRequest
 
 object Responses{

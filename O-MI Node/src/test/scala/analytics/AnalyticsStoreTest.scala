@@ -69,7 +69,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
 
   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
 
-  val analyticsStore = system.actorOf(AnalyticsStore.props(singleStores, true, true, true, 10 minutes, 10 minutes, 10 minutes, 5, 5, 2 seconds))
+  val analyticsStore = system.actorOf(AnalyticsStore.props(singleStores, enableWriteAnalytics = true, enableReadAnalytics = true, enableUserAnalytics = true, 10 minutes, 10 minutes, 10 minutes, 5, 5, 2 seconds))
 
   val agentSystem = system.actorOf(
     AgentSystem.props(Some(analyticsStore)),
@@ -111,15 +111,15 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   addValue("first", Vector(OdfValue("3", new Timestamp(testtime.getTime-2000))))
   addValue("first", Vector(OdfValue("4", new Timestamp(testtime.getTime-1000))))
   addValue("first", Vector(OdfValue("5", new Timestamp(testtime.getTime))))
-  Await.ready(sendRR(1, false), 2 seconds)
+  Await.ready(sendRR(1, metadata = false), 2 seconds)
   Thread.sleep(100)
-  Await.ready(sendRR(1, false), 2 seconds)
+  Await.ready(sendRR(1, metadata = false), 2 seconds)
   Thread.sleep(200)
-  Await.ready(sendRR(2, false), 2 seconds)
+  Await.ready(sendRR(2, metadata = false), 2 seconds)
   Thread.sleep(300)
-  Await.ready(sendRR(2, false), 2 seconds)
+  Await.ready(sendRR(2, metadata = false), 2 seconds)
   Thread.sleep(400)
-  Await.ready(sendRR(3, false), 2 seconds)
+  Await.ready(sendRR(3, metadata = false), 2 seconds)
   def addValue(path: String, nv: Vector[OdfValue[Any]]): Unit = {
     val pp = Path("Objects/AnalyticsStoreTest/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
@@ -132,7 +132,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   "Analytics Store" should {
     "return correct analytical values after defined time" in {
       Thread.sleep(3000)
-      val res = Await.result(sendRR(0, true).map(_.asXML), 2 seconds)
+      val res = Await.result(sendRR(0, metadata = true).map(_.asXML), 2 seconds)
       println(res)
       val infoItems = res \\("InfoItem") \("MetaData") \("InfoItem")
       infoItems.foreach(ii => println(ii.attributes.asAttrMap))

@@ -97,7 +97,7 @@ class AgentSystem()(
 
 
   sealed trait Language{}
-  final case class Unknown(val lang : String ) extends Language
+  final case class Unknown(lang : String ) extends Language
   final case class Scala() extends Language
   final case class Java() extends Language
 

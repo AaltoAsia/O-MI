@@ -137,9 +137,8 @@ trait IpAuthorization extends AuthorizationExtension {
       //( subnet(7) & mask(1) ) == ( ip(7) & mask(1)  )
         checked
       }
-      case ( a, b) if (( a == ipv4 ) && ( b == ipv6 ) )|| (( a == ipv6 ) && ( b == ipv4 )) => {
-      false
-      }
+      case ( a, b) if (( a == ipv4 ) && ( b == ipv6 ) )|| (( a == ipv6 ) && ( b == ipv4 )) =>
+        false
       case (_,_) => false
     }
   }

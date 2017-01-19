@@ -22,21 +22,21 @@ sealed trait Callback{
   override def toString: String = address
 }
 
-final case class RawCallback( val address: String ) extends Callback
+final case class RawCallback(address: String ) extends Callback
 sealed trait DefinedCallback extends Callback{
   final override val defined: Boolean = true
 }
 
 trait WebSocketCallback extends DefinedCallback{
 }
-final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier) extends WebSocketCallback{
+final case class CurrentConnectionCallback(identifier: ConnectionIdentifier) extends WebSocketCallback{
   val address: String = "0"
 }
-final case class WSCallback( val uri: Uri) extends WebSocketCallback{
+final case class WSCallback(uri: Uri) extends WebSocketCallback{
   val address: String = uri.toString
 }
 
-final case class HTTPCallback(val uri: Uri) extends DefinedCallback{
+final case class HTTPCallback(uri: Uri) extends DefinedCallback{
   val address: String = uri.toString
 }
 

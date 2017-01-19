@@ -126,7 +126,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       val last = missingPaths.takeRight(1)
 
       DBIO.sequence(
-        (init map addNode(false)) ++
+        (init map addNode(isInfoItem = false)) ++
           (last map addNode(lastIsInfoItem)))
     }
 
@@ -144,7 +144,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
 
-      _ <- addObjectsI(path, true)
+      _ <- addObjectsI(path, lastIsInfoItem = true)
 
       nodeIdSeq <- getHierarchyNodeQ(path).map(
         node => node.id).result
@@ -271,7 +271,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
   //add root node when removed or when first started
   protected def addRoot = {
-    hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
+    hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, isInfoItem = false)
   }
   def addRootR: Future[Int] = {
     db.run(addRoot)
