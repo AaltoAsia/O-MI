@@ -133,9 +133,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
     "return correct analytical values after defined time" in {
       Thread.sleep(3000)
       val res = Await.result(sendRR(0, metadata = true).map(_.asXML), 2 seconds)
-      println(res)
       val infoItems = res \\("InfoItem") \("MetaData") \("InfoItem")
-      infoItems.foreach(ii => println(ii.attributes.asAttrMap))
       val uniqueUsers = infoItems.find(_.\@("name") =="uniqueUsers").flatMap(_.\("value").headOption).map(_.text)//.map(_.toString.toInt)
       val numAccess = infoItems.find(_.\@("name") == "NumAccess").flatMap(_.\("value").headOption).map(_.text)
       val popularity = infoItems.find(_.\@("name") == "popularity").flatMap(_.\("value").headOption).flatMap(n => Try(n.text.toDouble).toOption)//.toDouble)
