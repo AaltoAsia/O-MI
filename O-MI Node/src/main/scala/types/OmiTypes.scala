@@ -201,7 +201,6 @@ trait SubLike {
 /** 
  * One-time-read request
  **/
-
 case class ReadRequest(
   odf: OdfObjects ,
   begin: Option[Timestamp ] = None,

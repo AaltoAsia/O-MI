@@ -72,15 +72,8 @@ class OmiServer extends OmiNode{
       Some(
         system.actorOf(AnalyticsStore.props(
           singleStores,
-          settings.enableWriteAnalytics,
-          settings.enableReadAnalytics,
-          settings.enableUserAnalytics,
-          settings.numWriteSampleWindowLength,
-          settings.numReadSampleWindowLength,
-          settings.numUniqueUserSampleWindowLength,
-          settings.readAvgIntervalSampleSize,
-          settings.writeAvgIntervalSampleSize,
-          settings.updateInterval
+        settings
+
         )
       )
       )

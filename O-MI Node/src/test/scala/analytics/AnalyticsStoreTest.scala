@@ -54,7 +54,37 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   def afterAll = Await.ready(system.terminate(), 2 seconds)
   import system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  val conf = ConfigFactory.load("testconfig")
+  val analyticsConf = ConfigFactory.parseString(
+    """
+      |analytics {
+      |  enableAnalytics = true
+      |  updateInterval = 2 seconds
+      |  maxHistoryLength = 1024
+      |  read {
+      |    enableAnalytics = true
+      |    windowLength = 10 minutes
+      |    intervalSampleSize = 5
+      |    averageReadIntervalInfoItemName = "pop123"
+      |    numberOfReadsInfoItemName = "numr123"
+      |  }
+      |  write{
+      |    enableAnalytics = true
+      |    windowLength = 10 minutes
+      |    intervalSampleSize = 5
+      |    averageWriteIntervalInfoItemName = "fres123"
+      |    numberOfWritesInfoItemName = "numw123"
+      |
+      |  }
+      |  user{
+      |    enableAnalytics = true
+      |    windowLength = 10 minutes
+      |    averageNumberOfUsersInfoItemName = "numu123"
+      |  }
+      |}
+    """.stripMargin)
+
+  val testConf = ConfigFactory.load("testconfig")
+  val conf = analyticsConf.withFallback(testConf)
   implicit val settings = new OmiConfigExtension(
     conf
   )
@@ -69,7 +99,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
 
   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
 
-  val analyticsStore = system.actorOf(AnalyticsStore.props(singleStores, enableWriteAnalytics = true, enableReadAnalytics = true, enableUserAnalytics = true, 10 minutes, 10 minutes, 10 minutes, 5, 5, 2 seconds))
+  val analyticsStore = system.actorOf(AnalyticsStore.props(singleStores, settings))
 
   val agentSystem = system.actorOf(
     AgentSystem.props(Some(analyticsStore)),
@@ -130,15 +160,15 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   }
   sequential
   "Analytics Store" should {
-    "return correct analytical values after defined time" in {
+    "return correct analytical values with names defined in config after defined time" in {
       Thread.sleep(3000)
       val res = Await.result(sendRR(0, metadata = true).map(_.asXML), 2 seconds)
       val infoItems = res \\("InfoItem") \("MetaData") \("InfoItem")
-      val uniqueUsers = infoItems.find(_.\@("name") =="uniqueUsers").flatMap(_.\("value").headOption).map(_.text)//.map(_.toString.toInt)
-      val numAccess = infoItems.find(_.\@("name") == "NumAccess").flatMap(_.\("value").headOption).map(_.text)
-      val popularity = infoItems.find(_.\@("name") == "popularity").flatMap(_.\("value").headOption).flatMap(n => Try(n.text.toDouble).toOption)//.toDouble)
-      val freshness = infoItems.find(_.\@("name") == "freshness").flatMap(_.\("value").headOption).flatMap(n=> Try(n.text.toDouble).toOption)//.toDouble)
-      val numWrites = infoItems.find(_.\@("name") == "NumWrites").flatMap(_.\("value").headOption).map(_.text)
+      val uniqueUsers = infoItems.find(_.\@("name") =="numu123").flatMap(_.\("value").headOption).map(_.text)//.map(_.toString.toInt)
+      val numAccess = infoItems.find(_.\@("name") == "numr123").flatMap(_.\("value").headOption).map(_.text)
+      val popularity = infoItems.find(_.\@("name") == "pop123").flatMap(_.\("value").headOption).flatMap(n => Try(n.text.toDouble).toOption)//.toDouble)
+      val freshness = infoItems.find(_.\@("name") == "fres123").flatMap(_.\("value").headOption).flatMap(n=> Try(n.text.toDouble).toOption)//.toDouble)
+      val numWrites = infoItems.find(_.\@("name") == "numw123").flatMap(_.\("value").headOption).map(_.text)
       "for unique users" in{
         uniqueUsers must beSome(beEqualTo("3"))
       }

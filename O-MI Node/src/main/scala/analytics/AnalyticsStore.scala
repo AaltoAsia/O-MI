@@ -22,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.{Cancellable, Props, Actor}
 import database.{Union, SingleStores}
+import http.OmiConfigExtension
 import types.OdfTypes._
 import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
 import types.Path
@@ -33,46 +34,36 @@ case class AddUser(path: Path, user:Option[Int], timestamp: Long)
 object AnalyticsStore {
   def props(
             singleStores: SingleStores,
-             enableWriteAnalytics: Boolean,
-            enableReadAnalytics: Boolean, 
-            enableUserAnalytics: Boolean,
-            newDataIntervalWindow: FiniteDuration, 
-            readCountIntervalWindow: FiniteDuration, 
-            userAccessIntervalWindow: FiniteDuration, 
-            readAverageCount: Int, 
-            newDataAverageCount: Int,
-            updateFrequency: FiniteDuration): Props = {
+            settings: OmiConfigExtension): Props = {
     Props(
       new AnalyticsStore(
         singleStores,
-        enableWriteAnalytics,
-        enableReadAnalytics,
-        enableUserAnalytics,
-        newDataIntervalWindow,
-        readCountIntervalWindow,
-        userAccessIntervalWindow,
-        readAverageCount,
-        newDataAverageCount,
-        updateFrequency
-      )
+      settings)
     )
   }
 }
 class AnalyticsStore(
                       val singleStores: SingleStores,
-                      val enableWriteAnalytics: Boolean,
-                      val enableReadAnalytics: Boolean,
-                      val enableUserAnalytics: Boolean,
+                    settings: OmiConfigExtension
                     //config parameters for window sizes and average window sizes
-                      val newDataIntervalWindow: FiniteDuration,
-                      val readCountIntervalWindow: FiniteDuration,
-                      val userAccessIntervalWindow: FiniteDuration,
                     //number for how long window of values we use for averaging the data
-                      val readAverageCount: Int,
-                      val newDataAverageCount: Int,
-                      val updateFrequency: FiniteDuration) extends Actor {
+                      ) extends Actor {
 
-  val MAX_ARRAY_LENGTH = 1024
+  val enableWriteAnalytics: Boolean = settings.enableWriteAnalytics
+  val enableReadAnalytics: Boolean = settings.enableReadAnalytics
+  val enableUserAnalytics: Boolean = settings.enableUserAnalytics
+  val newDataIntervalWindow: FiniteDuration = settings.numWriteSampleWindowLength
+  val readCountIntervalWindow: FiniteDuration = settings.numReadSampleWindowLength
+  val userAccessIntervalWindow: FiniteDuration = settings.numUniqueUserSampleWindowLength
+  val readAverageCount: Int = settings.readAvgIntervalSampleSize
+  val newDataAverageCount: Int = settings.writeAvgIntervalSampleSize
+  val updateFrequency: FiniteDuration = settings.updateInterval
+  val averageWriteInfoName = settings.averageWriteInfoName
+  val averageReadInfoName = settings.averageReadIAnfoName
+  val numWriteInfoName = settings.numberWritesInfoName
+  val numReadInfoName = settings.numberReadsInfoName
+  val numUserInfoName = settings.numberUsersInfoName
+  val MAX_ARRAY_LENGTH = settings.analyticsMaxHistoryLength
   //start schedules
   implicit val ec = context.system.dispatcher
 
@@ -128,9 +119,9 @@ class AnalyticsStore(
     context.system.log.info("updating write analytics")
     val tt = getCurrentTime
     val nw = numWritesInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./("NumWrites"),i.toString, tt, writeNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p, i) => createInfoWithMeta(p./(numWriteInfoName),i.toString, tt, writeNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
     val aw = avgIntervalWrite.map{
-      case (p,i) => createInfoWithMeta(p./("freshness"), i.toString, tt, writeAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p,i) => createInfoWithMeta(p./(averageWriteInfoName), i.toString, tt, writeAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
 
     (nw ++ aw).reduceOption(_.union(_)) //combine two Options and return Optional value
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
@@ -141,10 +132,10 @@ class AnalyticsStore(
     context.system.log.info("updating read analytics")
     val tt = getCurrentTime
     val nr = numAccessInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./("NumAccess"),i.toString,tt, readNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p, i) => createInfoWithMeta(p./(numReadInfoName),i.toString,tt, readNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
 
     val ar = avgIntervalAccess.map{
-      case (p,i) => createInfoWithMeta(p./("popularity"), i.toString, tt, readAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p,i) => createInfoWithMeta(p./(averageReadInfoName), i.toString, tt, readAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
     (nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
   }
@@ -152,7 +143,7 @@ class AnalyticsStore(
     context.system.log.info("updating user analytics")
     val tt = getCurrentTime
     val data = uniqueUsers(tt).map{
-      case (p, i) => createInfoWithMeta(p./("uniqueUsers"), i.toString, tt, uniqueUserDescription)
+      case (p, i) => createInfoWithMeta(p./(numUserInfoName), i.toString, tt, uniqueUserDescription)
     }.map(_.createAncestors).reduceOption(_.union(_))
     data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
   }
