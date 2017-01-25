@@ -53,7 +53,7 @@ import responses.CallbackHandler._
 import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
-import database.SingleStores
+import database.{GetTree, SingleStores}
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -161,30 +161,94 @@ trait OmiService
   val getDataDiscovery =
     path(Remaining) { uriPath =>
       get {
+        makePermissionTestFunction() { hasPermissionTest =>
+          extractClientIP{ user =>
+
         // convert to our path type (we don't need very complicated functionality)
-        val pathStr = uriPath // pathToString(uriPath)
-        val path = Path(pathStr)
+            val pathStr = uriPath // pathToString(uriPath)
+            val origPath = Path(pathStr)
+            val path = origPath match {
+              case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
+                Path(path.init) // check permission for parent infoitem/object
+              case path => path
+            }
 
-        RESTHandler.handle(path)(singleStores) match {
-          case Some(Left(value)) =>
-            complete(value)
-          case Some(Right(xmlData)) =>
-            complete(xmlData)
-          case None =>            {
-            log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
+            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user = Some(user)))
+              asReadRequest match {
+                case Some(readReq) =>
+                  hasPermissionTest(readReq) match {
+                  case Success(_) => {
+                    RESTHandler.handle(origPath)(singleStores) match {
+                      case Some(Left(value)) =>
+                        complete(value)
+                      case Some(Right(xmlData)) =>
+                        complete(xmlData)
+                      case None =>            {
+                        log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
 
-            // TODO: Clean this code
-            complete(
-              ToResponseMarshallable(
-              <error>No object found</error>
-              )(
-                fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
-              )
-            )
+                        // TODO: Clean this code
+                        complete(
+                          ToResponseMarshallable(
+                            <error>No object found</error>
+                          )(
+                            fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
+                          )
+                        )
+                      }
+                    }
+                  }
+                  case Failure(e: UnauthorizedEx) => // Unauthorized
+                    complete(
+                      ToResponseMarshallable(
+                        <error>No object found</error>
+                      )(
+                      fromToEntityMarshaller(StatusCodes.Unauthorized)(xmlCT)
+                      )
+                    )
+
+                  case Failure(pe: ParseError) =>
+                    val errorResponse = Responses.ParseErrors(Vector(pe))
+                    Future.successful(errorResponse)
+                    log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
+
+                        // TODO: Clean this code
+                        complete(
+                          ToResponseMarshallable(
+                            <error>No object found</error>
+                          )(
+                            fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
+                          )
+                        )
+                  case Failure(ex) =>
+                    complete(
+                      ToResponseMarshallable(
+                        <error>Internal Server Error</error>
+                      )(
+                      fromToEntityMarshaller(StatusCodes.InternalServerError)(xmlCT)
+                      )
+                    )
+                }
+                case None =>
+                  log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
+
+                        // TODO: Clean this code
+                        complete(
+                          ToResponseMarshallable(
+                            <error>No object found</error>
+                          )(
+                            fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
+                          )
+                        )
+              }
           }
+
         }
+
       }
+
     }
+
+
 
   def handleRequest(
     hasPermissionTest: PermissionTest,
