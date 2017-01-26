@@ -15,12 +15,14 @@
 package http
 
 import java.nio.file.{Files, Paths}
+import java.util.Date
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
 import scala.util.{Failure, Success, Try}
 import scala.xml.{XML,NodeSeq}
 
+import analytics.{AddUser, AddRead, AnalyticsStore}
 import org.slf4j.LoggerFactory
 
 import akka.util.ByteString
@@ -75,7 +77,8 @@ class OmiServiceImpl(
   val settings : OmiConfigExtension,
   val singleStores : SingleStores,
   protected val requestHandler : OmiRequestHandlerBase,
-  protected val callbackHandler : CallbackHandler
+  protected val callbackHandler : CallbackHandler,
+  protected val analytics: Option[ActorRef]
   )
      extends {
        // Early initializer needed (-- still doesn't seem to work)
@@ -103,6 +106,7 @@ trait OmiService
   protected def requestHandler : OmiRequestHandlerBase
   protected def callbackHandler : CallbackHandler
   protected val system : ActorSystem
+  protected val analytics: Option[ActorRef]
   import system.dispatcher
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
@@ -178,6 +182,12 @@ trait OmiService
                 case Some(readReq) =>
                   hasPermissionTest(readReq) match {
                   case Success(_) => {
+
+                    analytics.foreach{ ref =>
+                      val tt= new Date().getTime()
+                      ref ! AddRead(path, tt)
+                      ref ! AddUser(path, readReq.user.map(_.hashCode()), tt)
+                    }
                     RESTHandler.handle(origPath)(singleStores) match {
                       case Some(Left(value)) =>
                         complete(value)

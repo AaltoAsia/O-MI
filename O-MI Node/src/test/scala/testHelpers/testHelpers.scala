@@ -88,7 +88,8 @@ class TestOmiServer( config: Config )  extends OmiNode {
       settings,
       singleStores,
       requestHandler,
-      callbackHandler
+      callbackHandler,
+      None //analytics
     )
 
 

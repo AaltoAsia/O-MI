@@ -50,6 +50,7 @@ class OmiServiceTest
     singleStores,
     settings
   )
+  val analytics = None
 
   val subscriptionManager = TestActorRef(SubscriptionManager.props())
 

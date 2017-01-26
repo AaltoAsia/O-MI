@@ -118,7 +118,8 @@ class OmiServer extends OmiNode{
     settings,
     singleStores,
     requestHandler,
-    callbackHandler
+    callbackHandler,
+    analytics
   )
 
 
