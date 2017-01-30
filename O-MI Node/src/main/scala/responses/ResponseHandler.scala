@@ -31,6 +31,7 @@ import parsing.xmlGen.xmlTypes.RequestResultType
 
 import agentSystem._
 import types.OmiTypes._
+import types.OdfTypes.OdfTreeCollection
 import types._
 import http.{ActorSystemContext, Actors}
 
@@ -43,47 +44,30 @@ trait ResponseHandler extends OmiRequestHandlerBase{
   def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
     val ttl = response.handleTTL
     implicit val timeout = Timeout(ttl)
-    val resultFuture = Future.sequence(response.results.collect{ 
+    val resultFuture : Future[OdfTreeCollection[OmiResult]]= Future.sequence(
+      response.results.collect{ 
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
         val odf = omiResult.odf.get
         val write = WriteRequest( odf, None,ttl)
-        val result = (agentSystem ? ResponsibilityRequest("ResponseHandler", write)).mapTo[ResponsibleAgentResponse]
-        result.recoverWith{
+        val responseF = (agentSystem ? ResponsibilityRequest("ResponseHandler", write)).mapTo[ResponseRequest]
+        val resultsF = responseF.map{
+          case response: ResponseRequest => response.results
+        }
+
+        resultsF.recover{
           case e : Throwable =>
             log.error(e, "Failure when writing")
-            Future.failed(e)
+            Vector(Results.InternalError(e))
+        }.map{
+          case results: OdfTreeCollection[OmiResult] => Results.unionReduce(results)
         }
-
-
-        result.onSuccess{ case succ => log.info( succ.toString) }
-          val response : Future[OmiResult]= result.map{
-            case SuccessfulWrite(_) => Results.Success() 
-          case FailedWrite(paths, reasons) =>  
-            val returnV : OmiReturn = Returns.InvalidRequest(
-              Some(
-                "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
-              )
-            )
-            OmiResult(returnV)
-            
-        case MixedWrite(successfulPaths, failed)=> 
-          val returnV : OmiReturn = Returns.InvalidRequest(
-            Some(
-              "Following paths failed:\n" +
-              failed.paths.mkString("\n") + 
-              " reason:\n" + failed.reasons.mkString("\n")
-            )
-          )
-          OmiResult(returnV) 
-        }
-        response
           //We do not want response request loops between O-MI Nodes
           /*
         case omiResult : OmiResult if omiResult.odf.isEmpty =>
           Future.successful(Results.Success())
           */
-      }.toSeq
-    )
+      }.toVector
+    ).map( _.flatten )
 
   resultFuture.map{
     results => ResponseRequest(results.toVector)

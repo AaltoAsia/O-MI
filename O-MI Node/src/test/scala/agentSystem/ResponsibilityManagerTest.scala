@@ -19,6 +19,7 @@ import com.typesafe.config.{ConfigFactory, Config}
 import types.OdfTypes._
 import types.Path
 import types.OmiTypes.WriteRequest
+import types.OmiTypes._
 import database.DB
 import agentSystem._
 import http.CLICmds._
@@ -49,12 +50,12 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     override protected def writeValues(
       infoItems: Iterable[OdfInfoItem],
       objectMetadatas: Vector[OdfObject] = Vector()
-    )(implicit system: ActorSystem): Future[SuccessfulWrite] = {
+    )(implicit system: ActorSystem): Future[ResponseRequest] = {
       val ps = infoItems.map(_.path).toVector ++ objectMetadatas.map(_.path).toVector
       if( ps == paths )
-        Future.successful( SuccessfulWrite( paths) )
+        Future.successful( Responses.Success() )
       else 
-        Future.successful( SuccessfulWrite( Vector()) )
+        Future.successful( Responses.Success() )
     }
   }
   class TestFailureManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo], val settings:  AgentSystemConfigExtension )  extends TestManager{
@@ -63,19 +64,21 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     override protected def writeValues(
       infoItems: Iterable[OdfInfoItem],
       objectMetadatas: Vector[OdfObject] = Vector()
-    )(implicit system: ActorSystem): Future[SuccessfulWrite] = Future.failed( new Exception( "Test failure" ))
+    )(implicit system: ActorSystem): Future[ResponseRequest] = Future.successful( Responses.InternalError(new Exception( "Test failure" )))
   }
 
+  sequential
   "ResponsibilityManager should " >> {
+    sequential
     "write not owned values " >> notOwnedWriteTest
     "send owned path to agents to handle " >> ownedWriteTest
     //"write owned values when received from owner " >> test
-    "return error when a write fails " >> notOwnedWriteFailTest.pendingUntilFixed
+    "return error when a write fails " >> notOwnedWriteFailTest
     //"return error when agent denies write " >> test
-    "return error when agent's write fails" >> ownedWriteFailTest.pendingUntilFixed
+    "return error when agent's write fails" >> ownedWriteFailTest
   }
 
-  val timeoutDuration = 10.seconds
+  val timeoutDuration = 3.seconds
   implicit val timeout = Timeout( timeoutDuration )
   def timestamp = new Timestamp( new Date().getTime())
 
@@ -125,9 +128,10 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       ttl
     )
     
-    val successF : Future[ResponsibleAgentResponse]= (managerRef ? ResponsibilityRequest(name, write)
-      ).mapTo[ResponsibleAgentResponse]
-    successF must beEqualTo(SuccessfulWrite(_paths)).await(0, timeoutDuration) 
+    println("===============================\n Owned Write Test\n===============================")
+    val successF : Future[ResponseRequest]= (managerRef ? ResponsibilityRequest(name, write)
+      ).mapTo[ResponseRequest]
+    successF must beEqualTo(Responses.Success()).await(0, timeoutDuration) 
   }
 
   def ownedWriteFailTest = new Actorstest(AS){
@@ -170,9 +174,12 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       ttl = ttl
     )
     
-    val successF : Future[ResponsibleAgentResponse] =( managerRef ? ResponsibilityRequest(name, write)
-    ).mapTo[ResponsibleAgentResponse]
-    val equal =MixedWrite(Vector(),FailedWrite(Vector(Path("Objects/object1/sensor1"), Path("Objects/object1/sensor1")),Vector( new Exception("Test failure"),  new Exception("Test failure"))))
+    println("===============================\n Owned Write Fail Test\n===============================")
+    val successF : Future[ResponseRequest] =( managerRef ? ResponsibilityRequest(name, write)
+    ).mapTo[ResponseRequest]
+    val equal = ResponseRequest( Vector (
+      Results.InternalError( new Exception("Test failure"))
+      ))
     successF must beEqualTo(equal).await(0, timeoutDuration) 
 
   }
@@ -211,9 +218,10 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       ttl
     )
     
-    val successF : Future[ResponsibleAgentResponse]= (managerRef ? ResponsibilityRequest(name, write)
-      ).mapTo[ResponsibleAgentResponse]
-    successF must beEqualTo(SuccessfulWrite(paths)).await(0, timeoutDuration)
+    println("===============================\n Not Owned Write Test\n===============================")
+    val successF : Future[ResponseRequest]= (managerRef ? ResponsibilityRequest(name, write)
+      ).mapTo[ResponseRequest]
+    successF must beEqualTo(Responses.Success()).await(0, timeoutDuration)
   }
 
   def notOwnedWriteFailTest = new Actorstest(AS){
@@ -221,21 +229,22 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val name = "WriteSuccess"
     val paths = Vector(Path( "Objects/object1/sensor1" ))
     val testAgents : Map[AgentName, AgentInfo ]= Map.empty
-   val configStr =
-   s"""
-   agent-system{
-     starting-timeout = 2 seconds
-     internal-agents {
+    val configStr =
+      s"""
+    agent-system{
+      starting-timeout = 2 seconds
+      internal-agents {
+      }
     }
-   }
-   """
-   val config = ConfigFactory.parseString(configStr)
-   val asce =new AgentSystemSettings(config)
+    """
+    val config = ConfigFactory.parseString(configStr)
+    val asce =new AgentSystemSettings(config)
     val managerRef = TestActorRef( new TestFailureManager(testAgents,asce)) 
     val managerActor = managerRef.underlyingActor
     val ttl = timeoutDuration
     val write = WriteRequest(
-      createAncestors( OdfInfoItem(
+      createAncestors( 
+        OdfInfoItem(
           Path("Objects/object1/sensor1"),
           OdfTreeCollection(
             OdfValue(
@@ -243,16 +252,26 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
               "xs:int",
               timestamp
             )
+          )
         )
-      )),
+      ),
       None,
       ttl
     )
-    
-    val equal =MixedWrite(Vector(),FailedWrite(Vector(Path("Objects/object1/sensor1")),Vector( new Exception("Test failure"))))
-    val successF : Future[ResponsibleAgentResponse] = (managerRef ? ResponsibilityRequest(name, write)
-      ).mapTo[ResponsibleAgentResponse]
-    successF must beEqualTo(equal).await(0, timeoutDuration) 
+
+    println("===============================\n Not Owned Write Fail Test\n===============================")
+    val actualResponse : Future[ResponseRequest] = (managerRef ? ResponsibilityRequest(name, write)
+      ).mapTo[ResponseRequest]
+    val expectedResults : OdfTreeCollection[OmiResult] = Vector(
+        Results.Success(),
+        Results.InternalError( new Exception("Test failure"))
+      )
+    val expectedResponse = ResponseRequest( expectedResults)
+
+    val actualResults = actualResponse.map( _.results.toSet )
+    ( actualResults must beEqualTo(expectedResults.toSet).await(0, timeoutDuration) ) and  (
+    actualResponse must beEqualTo(expectedResponse).await(0, timeoutDuration) )
+    //successF must beEqualTo(equal).await(0, timeoutDuration) 
   }
 }
 

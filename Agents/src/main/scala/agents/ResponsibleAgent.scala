@@ -47,32 +47,22 @@ class ResponsibleScalaAgent(config: Config )
 
     // Asynchronously handle request's execution's completion
     result.onComplete{
-      case Success( sw: SuccessfulWrite )=>
+      case Success( response: ResponseRequest )=>
+        response.results.foreach{ 
+          case wr: Results.Success =>
+            // This sends debug log message to O-MI Node logs if
+            // debug level is enabled (in logback.xml and application.conf)
+            log.debug(s"$name wrote paths successfully.")
+          case ie: OmiResult => 
+            log.warning(s"Something went wrong when $name writed, $ie")
+        }
+        senderRef ! response 
+      case Failure( t: Throwable) => 
         // This sends debug log message to O-MI Node logs if
         // debug level is enabled (in logback.xml and application.conf)
-        log.debug(s"$name wrote all paths successfully.")
-        senderRef ! result 
-      case Success( fw : FailedWrite ) =>
-        log.warning(
-          s"$name failed to write to paths:\n" + fw.paths.mkString("\n") +
-          " because of following reason:\n" + fw.reasons.mkString("\n")
-        )
-        senderRef ! result 
-      case Success( mw : MixedWrite ) =>
-        log.warning(
-          s"$name successfully wrote to paths:\n" + mw.successed.mkString("\n") +
-          " and failed to write to paths:\n" + mw.failed.paths.mkString("\n") +
-          " because of following reason:\n" + mw.failed.reasons.mkString("\n")
-        )
-        senderRef ! result 
-      case Failure( t : Throwable ) => 
-        // This sends debug log message to O-MI Node logs if
-        // debug level is enabled (in logback.xml and application.conf)
-        log.warning(s"$name failed to write all data received through AgentSystem, error: $t")
-        // Send results back to actual sender
-        senderRef ! FailedWrite(write.odf.paths, Vector(t))
+        log.warning(s"$name's write future failed, error: $t")
+        senderRef ! Responses.InternalError(t)
     }
-
   }
 
   /**
