@@ -230,7 +230,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
 
-            db.run(processObjectI(obj.path, false))
+            db.run(processObjectI(obj.path, attachObjectDescription = false))
 
           case obj @ OdfObject(id, path, items, objects, description, typeVal) =>
             require(items.isEmpty && objects.isEmpty,
@@ -245,7 +245,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
               nodeO match {
                 case Some(node @ DBNode(Some(nodeId), _, _, _, _, _, _, true)) => for {
 
-                  odfInfoItem <- processObjectI(path, false)
+                  odfInfoItem <- processObjectI(path, attachObjectDescription = false)
 
 
                   result = odfInfoItem.map {

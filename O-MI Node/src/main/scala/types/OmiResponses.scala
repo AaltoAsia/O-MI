@@ -5,58 +5,77 @@ import scala.concurrent.duration._
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
 import OmiTypes._
 
-case class ResponseRequestBase(
-  val results: OdfTreeCollection[OmiResult],
-  val ttl: Duration = 10.seconds
-) extends ResponseRequest
-
 object Responses{
-  case class Success( requestID: Option[Long] = None, objects : Option[OdfObjects] = None, description: Option[String] = None, ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.Success(requestID,objects,description))
-  }
-  case class NotImplemented( ttl: Duration = 10.seconds) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.NotImplemented())
-  }
-  case class Unauthorized( ttl: Duration = 10.seconds) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.Unauthorized())
-  }
-  case class InvalidRequest(msg: String = "", ttl: Duration = 10.seconds) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.InvalidRequest(msg))
-  }
-  case class InvalidCallback(callbackAddr: String, reason: Option[String] =None, ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.InvalidCallback(callbackAddr,reason))
-  }
-  case class NotFoundPaths( paths: Vector[Path], ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.NotFoundPaths(paths))
-  }
+  def Success(
+    requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty[RequestID], 
+    objects : Option[OdfObjects] = None, 
+    description: Option[String] = None,
+    ttl: Duration = 10.seconds
+    ) : ResponseRequest =ResponseRequest(
+      OdfTreeCollection(
+        Results.Success(
+          requestIDs,
+          objects,
+          description
+        )
+      ),
+      ttl
+    )
 
-  case class NoResponse() extends ResponseRequest{
-    val ttl = 0.seconds
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection()
+  def NotImplemented( ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.NotImplemented()),
+    ttl
+  )
+  def Unauthorized( ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.Unauthorized()),
+    ttl
+  )
+  def InvalidRequest(msg: Option[String] = None, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.InvalidRequest(msg)),
+    ttl
+  )
+  def InvalidCallback(callbackAddr: Callback, reason: Option[String] =None, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.InvalidCallback(callbackAddr,reason)),
+    ttl
+  )
+  def NotFoundPaths( objects: OdfObjects, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.NotFoundPaths(objects)),
+    ttl
+  )
+
+  def NoResponse() : ResponseRequest = new ResponseRequest(OdfTreeCollection.empty, 0.seconds){
     override val asXML = xml.NodeSeq.Empty
     override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelope =
       throw new AssertionError("This request is not an omiEnvelope")
   }
 
-  case class NotFoundRequestIDs( requestIDs: Vector[Long], ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.NotFoundRequestIDs(requestIDs))
-  }
-  case class ParseErrors( errors: Vector[ParseError], ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.ParseErrors(errors))
-  }
+  def NotFoundRequestIDs( requestIDs: Vector[RequestID], ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.NotFoundRequestIDs(requestIDs)),
+    ttl
+  )
+  def ParseErrors( errors: Vector[ParseError], ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.ParseErrors(errors)),
+    ttl
+  )
 
-  case class InternalError( message: String, ttl: Duration = 10.seconds ) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.InternalError(message))
-  }
-  object InternalError{
-    def apply(e: Throwable, ttl: Duration ): InternalError = InternalError(e.getMessage(),ttl)
-    def apply(e: Throwable ): InternalError = InternalError(e.getMessage(),10.seconds)
-  }
+  def InternalError( message: Option[String] = None, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.InternalError(message)),
+    ttl
+  )
+  def InternalError(e: Throwable, ttl: Duration): ResponseRequest = this.InternalError(Some(e.getMessage()),ttl)
+  def InternalError(e: Throwable): ResponseRequest= this.InternalError(Some(e.getMessage()),10.seconds)
 
-  case class TimeOutError(message: String = "", ttl: Duration = 10.seconds) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.TimeOutError(message))
-  } 
-  case class Poll( requestID: Long, objects: OdfObjects, ttl: Duration = 10.seconds) extends ResponseRequest{
-    override val results: OdfTreeCollection[OmiResult] = OdfTreeCollection(Results.Poll(requestID,objects))
-  }
+  def TimeOutError(message: Option[String] = None, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.TimeOutError(message)),
+    ttl
+  )
+  def Poll( requestID: RequestID, objects: OdfObjects, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(
+      Results.Poll(
+        requestID,
+        objects
+      )
+    ),
+    ttl
+  )
 }

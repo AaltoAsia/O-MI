@@ -21,9 +21,6 @@ import scala.concurrent.duration.Duration
 
 import akka.actor.ActorRef
 
-/**
- * Created by satsuma on 8.1.2016.
- */
 class SubscriptionScheduler {
   val timeunit = SECONDS
   private val scheduler = Executors.newSingleThreadScheduledExecutor()

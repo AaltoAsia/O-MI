@@ -22,6 +22,7 @@ import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
+import analytics.AnalyticsStore
 import org.slf4j.LoggerFactory
 
 import akka.actor.{ActorRef, ActorSystem, Props}
@@ -40,7 +41,8 @@ import agentSystem._
 import responses.{RequestHandler, SubscriptionManager, CallbackHandler, OmiRequestHandlerBase}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
+import types.OmiTypes.Returns.ReturnTypes._
 import types.Path
 import OmiServer._
 import akka.stream.{ActorMaterializer, Materializer}
@@ -65,11 +67,22 @@ class OmiServer extends OmiNode{
   )
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+  val analytics: Option[ActorRef] =
+    if(settings.enableAnalytics)
+      Some(
+        system.actorOf(AnalyticsStore.props(
+          singleStores,
+        settings
 
-   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-   val agentSystem = system.actorOf(
-    AgentSystem.props(),
-    "agent-system"
+        )
+      )
+      )
+    else None
+
+  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+  val agentSystem = system.actorOf(
+   AgentSystem.props(analytics.filter(n => settings.enableWriteAnalytics)),
+   "agent-system"
   )
 
   implicit val requestHandler : RequestHandler = new RequestHandler(
@@ -78,7 +91,8 @@ class OmiServer extends OmiNode{
     subscriptionManager,
     settings,
     dbConnection,
-    singleStores
+    singleStores,
+    analytics.filter(r => settings.enableReadAnalytics)
     )
 
   implicit val cliListener =system.actorOf(
@@ -92,6 +106,7 @@ class OmiServer extends OmiNode{
       )),
     "omi-node-cli-listener"
   )
+
   saveSettingsOdf(system,agentSystem,settings)
 
   implicit val httpExt = Http()
@@ -103,7 +118,8 @@ class OmiServer extends OmiNode{
     settings,
     singleStores,
     requestHandler,
-    callbackHandler
+    callbackHandler,
+    analytics
   )
 
 
@@ -177,14 +193,24 @@ object OmiServer {
       
       val write = WriteRequest( objects, None,  60  seconds)
       implicit val timeout = Timeout( 60 seconds)
-      val future : Future[ResponsibleAgentResponse]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponsibleAgentResponse]
+      val future : Future[ResponseRequest]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponseRequest]
       future.onSuccess{
-        case _=>
-        system.log.info("O-MI InputPusher system working.")
+        case response: ResponseRequest=>
+        Results.unionReduce(response.results).forall{
+          case result : OmiResult => result.returnValue match {
+            case s: Successful => 
+              system.log.info("O-MI InputPusher system working.")
+              true
+            case f: OmiReturn => 
+              system.log.error( s"O-MI InputPusher system not working; $response")
+              false
+          }
+        }
       }
 
       future.onFailure{
-        case e: Throwable => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        case e: Throwable => 
+          system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, 60 seconds)
     }

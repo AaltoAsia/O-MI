@@ -2,10 +2,16 @@ package agents;
 
 import akka.japi.Creator;
 import akka.actor.Props;
+import akka.dispatch.Mapper;
+import akka.dispatch.OnSuccess;
+import akka.dispatch.OnFailure;
 
 import com.typesafe.config.Config;
 
 import agentSystem.*;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.OmiResult;
+import types.OmiTypes.Results;
 
 /**
  * Template class for Java agents.
@@ -34,6 +40,32 @@ public class JavaTemplateAgent extends JavaInternalAgent {
 
   // Constructor
   public JavaTemplateAgent(Config config){
+  }
+
+  // Contains function for the asynchronous handling of write result
+  public final class LogResult extends OnSuccess<ResponseRequest> {
+      @Override public final void onSuccess(ResponseRequest response) {
+        Iterable<OmiResult> results = response.resultsAsJava() ;
+        for( OmiResult result : results ){
+          if( result instanceof Results.Success ){
+            // This sends debug log message to O-MI Node logs if
+            // debug level is enabled (in logback.xml and application.conf)
+            log.debug(name + " wrote paths successfully.");
+          } else {
+            log.warning(
+                "Something went wrong when " + name + " writed, " + result.toString()
+                );
+          }
+        }
+      }
+  }
+  // Contains function for the asynchronous handling of write failure
+  public final class LogFailure extends OnFailure{
+      @Override public final void onFailure(Throwable t) {
+          log.warning(
+            name + "'s write future failed, error: " + t.getMessage()
+          );
+      }
   }
 
   /**

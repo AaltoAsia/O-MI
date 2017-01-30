@@ -15,9 +15,13 @@
 
 package responses
 
+import java.util.Date
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import akka.actor.ActorRef
+import analytics.{AddUser, AddRead, AnalyticsStore}
 import database.{DB, GetTree, DBReadWrite, SingleStores}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
@@ -33,6 +37,7 @@ import database.{ DB, SingleStores }
 trait ReadHandler extends OmiRequestHandlerBase {
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
+  protected implicit def analyticsStore: Option[ActorRef]
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
@@ -40,20 +45,20 @@ trait ReadHandler extends OmiRequestHandlerBase {
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
      log.debug("Handling read.")
      read match{
-       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_) =>
+       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_) =>
          Future.successful(
            ResponseRequest( Vector(
              Results.InvalidRequest(
-               "Both newest and oldest at the same time not supported!"
+               Some("Both newest and oldest at the same time not supported!")
              )
            ))
        )
          
-       case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
+       case ReadRequest(_,_,begin,end,newest,Some(oldest),_,_) =>
          Future.successful(
            ResponseRequest( Vector(
              Results.InvalidRequest(
-               "Oldest not supported with Warp10 integration!"
+               Some("Oldest not supported with Warp10 integration!")
              )
            )
          )
@@ -82,25 +87,42 @@ trait ReadHandler extends OmiRequestHandlerBase {
 
          objectsWithValuesO.map {
            case Some(objectsWithValues) =>
-            //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
              val objectsWithValuesAndAttributes = 
               metadataTree.allMetaDatasRemoved.intersect( objectsWithValues.valuesRemoved )
                 .union( objectsWithValues )
 
+
              val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
-             val foundOdfAsPaths = getLeafs(objectsWithValuesAndAttributes).flatMap { _.path.getParentsAndSelf }.toSet
+             val foundOdf = getLeafs(objectsWithValuesAndAttributes)
+             val foundOdfAsPaths = foundOdf.flatMap { _.path.getParentsAndSelf }.toSet
+             //handle analytics
+             analyticsStore.foreach{ store =>
+               val reqTime: Long = new Date().getTime()
+               foundOdf.foreach(n => {
+                 store ! AddRead(n.path, reqTime)
+                 store ! AddUser(n.path, read.user.map(_.hashCode()), reqTime)
+               })
+             }
+
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
+             val notFoundOdf = notFound.flatMap{ 
+               path => read.odf.get(path).map{ node => createAncestors(node)}
+            }.foldLeft(OdfObjects()){ 
+              case (result, nf) => 
+                result.union(nf)
+            }
              val omiResults = Vector(found) ++ {
                if (notFound.nonEmpty)
-                 Vector(Results.NotFoundPaths(notFound.toVector))
+                 Vector(Results.NotFoundPaths(notFoundOdf))
                else Vector.empty
              }
 
              ResponseRequest( omiResults )
            case None =>
-             ResponseRequest( Vector(Results.NotFoundPaths(leafs.map{ p => p.path}.toVector)))
+             ResponseRequest( Vector(Results.NotFoundPaths(read.odf) ) )
          }
      }
    }

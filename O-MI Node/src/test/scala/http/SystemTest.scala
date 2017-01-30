@@ -124,6 +124,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
     dbConnection.destroy()
     singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
   }
+  def getPostRequest(in: String): HttpRequest = {
+    val tmp = RequestBuilding.Post("http://localhost:8080/", in)
+    //println(tmp)
+    tmp
+  }
 
   def getPostRequest(in: NodeSeq): HttpRequest = {
     val tmp = RequestBuilding.Post("http://localhost:8080/", in)
@@ -335,6 +340,13 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       })
     }
     "Web Socket test" >> {
+      system.log.info(
+        """
+============================================
+           Start Web Socket test
+============================================        
+        """
+      )
       def writeMessage(value: String) = {
         s"""<?xml version="1.0" encoding="UTF-8"?>
             <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
@@ -355,111 +367,303 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               </omi:write>
             </omi:omiEnvelope>"""
       }
-      "WS Subscription should return correct number of responses for event subscription" >> {
+      "Current Connection Subscription should " >>{
+        "return correct number of responses for event subscription" >> {
 
+          val wsProbe = TestProbe()
+          val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
+            val m1 = wsServer.offer(writeMessage("1"))
+            val res1 = wsProbe.receiveN(1, 5 seconds) //write confirmation
+            val m2 = wsServer.offer("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="20">
+              <omi:read msgformat="odf" interval="-1" callback="0">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>
+            """)
+            val res2 = wsProbe.receiveN(1, 5 seconds) //write confirmation
+            for {
+              _ <- wsServer.offer(writeMessage("2"))
+              _ <- wsServer.offer(writeMessage("3"))
+              _ <- wsServer.offer(writeMessage("4"))
+              f <- wsServer.offer(writeMessage("5"))
+            } yield f
+            val res3 = wsProbe.receiveN(8, 15 seconds)
+            res1.length === 1
+            res2.length === 1
+            res3.length === 8 // 4 write confirmations and 4 subscription updates
+        }
+
+        "return correct number of responses for interval subscription: ttl=7 interval=2" >> {
+          val wsProbe = TestProbe()
+          val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
+            wsServer.offer(
+              """<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
+              <omi:read msgformat="odf" interval="2" callback="0">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>""")
+            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+            // 3 responses + 1 confirmation
+            val result = wsProbe.receiveN(4, 10 seconds)
+            wsServer.close
+            result.length === 4
+        }
+        "be sent to correct connections when multiple connections exists" >> {
+          val wsProbe1 = TestProbe()
+          val wsProbe2 = TestProbe()
+          val wsServer1 = new WsTestCallbackClient(wsProbe1.ref, "ws://localhost", 8080)
+            val wsServer2 = new WsTestCallbackClient(wsProbe2.ref, "ws://localhost", 8080)
+              wsServer1.offer(
+                """<?xml version="1.0" encoding="UTF-8"?>
+                <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="10">
+                <omi:read msgformat="odf" interval="-1" callback="0">
+                  <omi:msg>
+                    <Objects xmlns="odf.xsd">
+                      <Object>
+                        <id>WebSocketTest</id>
+                        <InfoItem name="WSInfoItem1"/>
+                      </Object>
+                    </Objects>
+                  </omi:msg>
+                </omi:read>
+              </omi:omiEnvelope>""")
+              wsServer2.offer(
+                """<?xml version="1.0" encoding="UTF-8"?>
+                <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="10">
+                <omi:read msgformat="odf" interval="-1" callback="0">
+                  <omi:msg>
+                    <Objects xmlns="odf.xsd">
+                      <Object>
+                        <id>WebSocketTest</id>
+                        <InfoItem name="WSInfoItem2"/>
+                      </Object>
+                    </Objects>
+                  </omi:msg>
+                </omi:read>
+              </omi:omiEnvelope>""")
+              wsProbe1.receiveN(1, 5 seconds) //responses for subscriptions
+              wsProbe2.receiveN(1, 5 seconds)
+              for{
+                _ <- wsServer2.offer(writeMessage("6")) //WS2
+                _ <- wsServer2.offer(writeMessage("7")) //WS2
+                _ <- wsServer1.offer(writeMessage("8")) //WS1
+                r <- wsServer1.offer(writeMessage("9")) //WS1
+              } yield r
+
+              val res1 = wsProbe1.receiveN(6, 10 seconds) //4 subscription updates and 2 write confirmations
+              val res2 = wsProbe2.receiveN(2, 10 seconds) //2 write confirmations(subscribed to unchanging ii)
+              res1.length === 6
+              res2.length === 2
+        }
+      }
+
+      "Websocket Socket Subscription " >> {
         val wsProbe = TestProbe()
-        val wsServer = new WsTestCallbackServer(wsProbe.ref, "ws://localhost", 8080)
-        val m1 = wsServer.offer(writeMessage("1"))
-        val res1 = wsProbe.receiveN(1, 2 seconds) //write confirmation
-        val m2 = wsServer.offer("""<?xml version="1.0" encoding="UTF-8"?>
-                         <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="10">
-                           <omi:read msgformat="odf" interval="-1" callback="0">
-                             <omi:msg>
-                               <Objects xmlns="odf.xsd">
-                                 <Object>
-                                   <id>WebSocketTest</id>
-                                   <InfoItem name="WSInfoItem1"/>
-                                 </Object>
-                               </Objects>
-                             </omi:msg>
-                           </omi:read>
-                         </omi:omiEnvelope>
-                         """)
-        val res2 = wsProbe.receiveN(1, 2 seconds) //write confirmation
-        for {
-          _ <- wsServer.offer(writeMessage("2"))
-          _ <- wsServer.offer(writeMessage("3"))
-          _ <- wsServer.offer(writeMessage("4"))
-          f <- wsServer.offer(writeMessage("5"))
-        } yield f
-       val res3 = wsProbe.receiveN(8, 5 seconds)
-        res1.length === 1
-        res2.length === 1
-        res3.length === 8 // 4 write confirmations and 4 subscription updates
+        val wsServer1 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8787)
+        val wsServer2 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8788)
+        val bind1 = wsServer1.bind()
+        Await.ready(bind1,5 seconds)
+          "return correct number of responses for event subscription" >> {
+            val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
+              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8787">
+              <omi:msg>
+                <Objects xmlns="odf.xsd">
+                  <Object>
+                    <id>WebSocketTest</id>
+                    <InfoItem name="WSInfoItem1"/>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:read>
+          </omi:omiEnvelope>
+          """)
+            val res1 = http.singleRequest(m1)
+            Await.result(res1, 5 seconds)
+            for {
+              _ <- http.singleRequest(getPostRequest(writeMessage("2")))
+              _ <- http.singleRequest(getPostRequest(writeMessage("3")))
+              _ <- http.singleRequest(getPostRequest(writeMessage("4")))
+              f <- http.singleRequest(getPostRequest(writeMessage("5")))
+            } yield f
+            val res3 = wsProbe.receiveN(4, 10 seconds)
+            res3.length === 4 // 4 write confirmations and 4 subscription updates
+        }
+          "return correct number of responses for two event subscriptions with same callback address" >> {
+            val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
+              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8787">
+              <omi:msg>
+                <Objects xmlns="odf.xsd">
+                  <Object>
+                    <id>WebSocketTest</id>
+                    <InfoItem name="WSInfoItem1"/>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:read>
+          </omi:omiEnvelope>
+          """)
+            val res1 = http.singleRequest(m1)
+            val res2 = http.singleRequest(m1)
+            Await.result(res1, 5 seconds)
+            for {
+              _ <- http.singleRequest(getPostRequest(writeMessage("2")))
+              _ <- http.singleRequest(getPostRequest(writeMessage("3")))
+              _ <- http.singleRequest(getPostRequest(writeMessage("4")))
+              f <- http.singleRequest(getPostRequest(writeMessage("5")))
+            } yield f
+            val res3 = wsProbe.receiveN(8, 12 seconds)
+            res3.length === 8 // 4 write confirmations and 4 subscription updates
+        }
+        "return correct number of responses for interval subscription: ttl=7 interval=2" >> {
+              val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
+              <omi:read msgformat="odf" interval="2" callback="ws://localhost:8787">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>""")
+            val res1 = http.singleRequest(m1)
+            val result = wsProbe.receiveN(3, 15 seconds)
+            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+            // 3 responses
+            result.length === 3
+        }
+        "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with same callback address" >> {
+              val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
+              <omi:read msgformat="odf" interval="2" callback="ws://localhost:8787">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>""")
+              val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="8">
+              <omi:read msgformat="odf" interval="3" callback="ws://localhost:8787">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>""")
+            val res1 = http.singleRequest(m1)
+            val res2 = http.singleRequest(m2)
+            val result = wsProbe.receiveN(5, 20 seconds)
+            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+            // 3 responses
+            result.length === 5
+        }
+        val bind2 = wsServer2.bind()
+        Await.ready(bind2,5 seconds)
+        "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with different callback address" >> {
+              val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
+              <omi:read msgformat="odf" interval="2" callback="ws://localhost:8787">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>""")
+              val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="8">
+              <omi:read msgformat="odf" interval="3" callback="ws://localhost:8788">
+                <omi:msg>
+                  <Objects xmlns="odf.xsd">
+                    <Object>
+                      <id>WebSocketTest</id>
+                      <InfoItem name="WSInfoItem1"/>
+                    </Object>
+                  </Objects>
+                </omi:msg>
+              </omi:read>
+            </omi:omiEnvelope>""")
+            val res1 = http.singleRequest(m1)
+            val res2 = http.singleRequest(m2)
+            val result = wsProbe.receiveN(5, 20 seconds)
+            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+            // 3 responses
+            result.length === 5
+        }
+        "return correct number of responses for two event subscriptions with different callback address" >> {
+            val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
+              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8787">
+              <omi:msg>
+                <Objects xmlns="odf.xsd">
+                  <Object>
+                    <id>WebSocketTest</id>
+                    <InfoItem name="WSInfoItem1"/>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:read>
+          </omi:omiEnvelope>
+          """)
+            val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
+              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8788">
+              <omi:msg>
+                <Objects xmlns="odf.xsd">
+                  <Object>
+                    <id>WebSocketTest</id>
+                    <InfoItem name="WSInfoItem1"/>
+                  </Object>
+                </Objects>
+              </omi:msg>
+            </omi:read>
+          </omi:omiEnvelope>
+          """)
+            val res1 = http.singleRequest(m1)
+            val res2 = http.singleRequest(m2)
+            Await.result(res1, 5 seconds)
+            for {
+              _ <- http.singleRequest(getPostRequest(writeMessage("2")))
+              _ <- http.singleRequest(getPostRequest(writeMessage("3")))
+              _ <- http.singleRequest(getPostRequest(writeMessage("4")))
+              f <- http.singleRequest(getPostRequest(writeMessage("5")))
+            } yield f
+            val res3 = wsProbe.receiveN(8, 12 seconds)
+            res3.length === 8 // 4 write confirmations and 4 subscription updates
+        }
       }
-
-      "WS Subscription should return correct number of responses for interval subscription: ttl=7 interval=2" >> {
-
-        val wsProbe = TestProbe()
-        val wsServer = new WsTestCallbackServer(wsProbe.ref, "ws://localhost", 8080)
-        wsServer.offer(
-          """<?xml version="1.0" encoding="UTF-8"?>
-                       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
-                         <omi:read msgformat="odf" interval="2" callback="0">
-                           <omi:msg>
-                             <Objects xmlns="odf.xsd">
-                               <Object>
-                                 <id>WebSocketTest</id>
-                                 <InfoItem name="WSInfoItem1"/>
-                               </Object>
-                             </Objects>
-                           </omi:msg>
-                         </omi:read>
-                       </omi:omiEnvelope>""")
-        //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
-        // 3 responses + 1 confirmation
-        val result = wsProbe.receiveN(4, Duration.apply(7,"seconds"))
-        wsServer.close
-        result.length === 4
-      }
-      "WS callbacks should be sent to correct connections when multiple connections exists" >> {
-        val wsProbe1 = TestProbe()
-        val wsProbe2 = TestProbe()
-        val wsServer1 = new WsTestCallbackServer(wsProbe1.ref, "ws://localhost", 8080)
-        val wsServer2 = new WsTestCallbackServer(wsProbe2.ref, "ws://localhost", 8080)
-        wsServer1.offer(
-          """<?xml version="1.0" encoding="UTF-8"?>
-                       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="5">
-                         <omi:read msgformat="odf" interval="-1" callback="0">
-                           <omi:msg>
-                             <Objects xmlns="odf.xsd">
-                               <Object>
-                                 <id>WebSocketTest</id>
-                                 <InfoItem name="WSInfoItem1"/>
-                               </Object>
-                             </Objects>
-                           </omi:msg>
-                         </omi:read>
-                       </omi:omiEnvelope>""")
-        wsServer2.offer(
-          """<?xml version="1.0" encoding="UTF-8"?>
-                       <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="5">
-                         <omi:read msgformat="odf" interval="-1" callback="0">
-                           <omi:msg>
-                             <Objects xmlns="odf.xsd">
-                               <Object>
-                                 <id>WebSocketTest</id>
-                                 <InfoItem name="WSInfoItem2"/>
-                               </Object>
-                             </Objects>
-                           </omi:msg>
-                         </omi:read>
-                       </omi:omiEnvelope>""")
-        wsProbe1.receiveN(1, 2 seconds) //responses for subscriptions
-        wsProbe2.receiveN(1, 2 seconds)
-        for{
-          _ <- wsServer2.offer(writeMessage("6")) //WS2
-          _ <- wsServer2.offer(writeMessage("7")) //WS2
-          _ <- wsServer1.offer(writeMessage("8")) //WS1
-          r <- wsServer1.offer(writeMessage("9")) //WS1
-        } yield r
-
-        val res1 = wsProbe1.receiveN(6, 5 seconds) //4 subscription updates and 2 write confirmations
-        val res2 = wsProbe2.receiveN(2, 5 seconds) //2 write confirmations(subscribed to unchanging ii)
-        res1.length === 6
-        res2.length === 2
-      }
-
     }
   }
 }

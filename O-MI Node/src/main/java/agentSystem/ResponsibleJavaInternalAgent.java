@@ -18,6 +18,8 @@ import scala.concurrent.ExecutionContext;
 
 import agentSystem.ResponsibilityRequest;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.Responses;
 import types.OdfTypes.OdfTreeCollection;
 
 public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent implements ResponsibleInternalAgent {
@@ -27,7 +29,7 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
   final protected void passWrite(WriteRequest write){
     Timeout timeout = new Timeout( write.handleTTL() );
     ActorRef senderRef = getSender();
-    Future<ResponsibleAgentResponse> future = writeToNode(write, timeout);
+    Future<ResponseRequest> future = writeToNode(write, timeout);
 
     ExecutionContext ec = context().system().dispatcher();
     future.onSuccess(new ForwardResult(getSelf(),senderRef), ec);
@@ -35,7 +37,7 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
   }
 
   // Contains function for the asynchronous handling of write result
-  protected final class ForwardResult extends OnSuccess<ResponsibleAgentResponse> {
+  protected final class ForwardResult extends OnSuccess<ResponseRequest> {
     private ActorRef orginalSender;
     private ActorRef self;
     public ForwardResult(ActorRef _self, ActorRef _orginalSender){
@@ -43,8 +45,8 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
       self = _self;
     } 
     @Override 
-    public final void onSuccess(ResponsibleAgentResponse result) {
-      orginalSender.tell(result, self);
+    public final void onSuccess(ResponseRequest response) {
+      orginalSender.tell(response, self);
     }
   }
 
@@ -59,9 +61,7 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
     } 
     @Override 
     public final void onFailure(Throwable t) {
-      ArrayList<Throwable > ts = new ArrayList<Throwable>();
-      ts.add(t);
-      FailedWrite fw = new FailedWrite( write.odf().paths(), OdfTreeCollection.fromJava( ts ));
+      ResponseRequest fw = Responses.InternalError(t);
       orginalSender.tell(fw, self);
     }
   }

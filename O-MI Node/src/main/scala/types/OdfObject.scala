@@ -32,7 +32,7 @@ class  OdfObjectImpl(
   typeValue:            Option[String] = None
 ) extends Serializable {
   require(path.length > 1,
-    s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path(${path})")
+    s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path($path)")
 
   def hasDescription: Boolean = description.nonEmpty
 
@@ -226,7 +226,7 @@ class  OdfObjectImpl(
     constructor(uniqueInfos, anotherUniqueInfos, sharedInfos, uniqueObjs, anotherUniqueObjs, sharedObjs)
   }
   implicit def asObjectType : ObjectType = {
-    require(path.length > 1, s"OdfObject should have longer than one segment path: ${path}")
+    require(path.length > 1, s"OdfObject should have longer than one segment path: $path")
     ObjectType(
       /*Seq( QlmID(
         path.last, // require checks (also in OdfObject)

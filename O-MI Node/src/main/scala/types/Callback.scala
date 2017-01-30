@@ -22,23 +22,28 @@ sealed trait Callback{
   override def toString: String = address
 }
 
-final case class RawCallback( val address: String ) extends Callback
+final case class RawCallback(address: String ) extends Callback
 sealed trait DefinedCallback extends Callback{
   final override val defined: Boolean = true
 }
 
-final case class CurrentConnectionCallback(val identifier: ConnectionIdentifier) extends DefinedCallback{
+trait WebSocketCallback extends DefinedCallback{
+}
+final case class CurrentConnectionCallback(identifier: ConnectionIdentifier) extends WebSocketCallback{
   val address: String = "0"
 }
+final case class WSCallback(uri: Uri) extends WebSocketCallback{
+  val address: String = uri.toString
+}
 
-final case class HTTPCallback(val uri: Uri) extends DefinedCallback{
+final case class HTTPCallback(uri: Uri) extends DefinedCallback{
   val address: String = uri.toString
 }
 
 final case class RawCallbackFound(msg: String) extends Exception(msg)
 object Callback {
 
-  case class InvalidCallback( address: String, message: String, cause: Throwable = null ) extends Exception(message,cause) 
+  case class InvalidCallback( callback: Callback, message: String, cause: Throwable = null ) extends Exception(message,cause) 
   type ConnectionIdentifier = Int
   def tryHTTPUri(address: String): Try[Uri] = {
     Try{

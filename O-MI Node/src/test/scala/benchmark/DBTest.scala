@@ -107,7 +107,7 @@ trait DBTest extends Bench[Double]{
       new RegressionReporter(
             RegressionReporter.Tester.OverlapIntervals(),
                 RegressionReporter.Historian.ExponentialBackoff() ),
-                HtmlReporter(true)
+                HtmlReporter(embedDsv = true)
               )
   lazy val random = Random
   lazy val infoitemsCounts = Gen.range("InfoItems")(20, 120, 20)// ++ Gen.range("values")(1, 10, 1)

@@ -8,14 +8,14 @@ import parsing.OdfParser
 import types.Path
 import types.Path._
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes.{WriteRequest, ResponseRequest, OmiResult, Results}
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable}
 import scala.collection.mutable.{Queue => MutableQueue}
 import scala.xml._
-import scala.util.{Random, Try}
+import scala.util.{Random, Try, Success, Failure}
 import java.util.concurrent.TimeUnit
 import java.util.Date
 import java.sql.Timestamp;
@@ -98,16 +98,21 @@ class ODFAgent( override val config: Config) extends ScalaInternalAgent {
       
       implicit val timeout = Timeout(interval)
       val write = WriteRequest( newObjects, None, interval)
-      val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponsibleAgentResponse]
-      result.onSuccess{
-        //Check if failed promises
-        case _ =>
-        log.debug(s"$name pushed data successfully.")
-      }
-      result.onFailure{
-        //Check if failed promises
-        case _ =>
-        log.debug(s"$name failed pushing data.")
+      val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponseRequest]
+      result.onComplete{
+        case Success( response: ResponseRequest )=>
+          response.results.foreach{ 
+            case wr: Results.Success =>
+              // This sends debug log message to O-MI Node logs if
+              // debug level is enabled (in logback.xml and application.conf)
+              log.debug(s"$name wrote paths successfully.")
+            case ie: OmiResult => 
+              log.warning(s"Something went wrong when $name writed, $ie")
+          }
+            case Failure( t: Throwable) => 
+              // This sends debug log message to O-MI Node logs if
+              // debug level is enabled (in logback.xml and application.conf)
+              log.warning(s"$name's write future failed, error: $t")
       }
       odfQueue.enqueue(newObjects)
     } 

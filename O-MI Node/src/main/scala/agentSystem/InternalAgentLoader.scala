@@ -87,7 +87,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
         startF.onSuccess{ 
           case agentRef: ActorRef =>
           log.info( s"Started agent $name successfully.")
-          agents += name -> AgentInfo(name,classname, config, agentRef, true, ownedPaths)
+          agents += name -> AgentInfo(name,classname, config, agentRef, running = true, ownedPaths)
         }
         startF.onFailure{ 
           case e : Throwable =>

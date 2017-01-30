@@ -59,10 +59,10 @@ trait AuthApi {
 
         odfRequest match {
           case r: PermissiveRequest =>  // Write or Response
-            isAuthorizedForType(httpRequest, true, paths)
+            isAuthorizedForType(httpRequest, isWrite = true, paths)
 
           case r : OdfRequest => // All else odf containing requests (reads)
-            isAuthorizedForType(httpRequest, false, paths)
+            isAuthorizedForType(httpRequest, isWrite = false, paths)
 
       }
       case _ => Unauthorized

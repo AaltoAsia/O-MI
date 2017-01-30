@@ -32,7 +32,7 @@ import parsing.xmlGen.xmlTypes.MetaData
 import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes._
+import types.OmiTypes.{OmiResult,Results,WriteRequest, Responses, ResponseRequest}
 import types.Path
 
 trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
@@ -70,7 +70,10 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
     collection.mutable.Map(pathsToOwner: _*)
   }
 
-  private def callAgentsForResponsibility( ttl: Duration, ownerToObjects: Map[AgentName,OdfObjects]): Vector[Future[ResponsibleAgentResponse]]={
+  private def callAgentsForResponsibility(
+    ttl: Duration,
+    ownerToObjects: Map[AgentName,OdfObjects]
+  ): Vector[Future[ResponseRequest]]={
     val allExists = ownerToObjects.map{
       case (name: AgentName, objects: OdfObjects) =>
         (name,
@@ -106,9 +109,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
           val name = agentInfo.name
           log.debug( s"Asking $name to handle WriteRequest with ${write.odf.paths.length} paths." )
           val future =agentInfo.agent ? write
-          future.mapTo[ResponsibleAgentResponse].recover{
+          future.mapTo[ResponseRequest].recover{
             case t: Throwable =>
-              FailedWrite( write.odf.paths, Vector(t))
+              Responses.InternalError(t)
           }
       }      
     }
@@ -128,9 +131,9 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
     val ownerToPath = getOwners(allPaths:_*)
     
     //Get part that is owned by sender()
-    val writesBySender:Future[ResponsibleAgentResponse] ={
+    val writesBySender:Future[ResponseRequest] ={
       val pathsO = ownerToPath.get(senderName)
-      val future = pathsO.map{
+      val future : Future[ResponseRequest] = pathsO.map{
         paths: Seq[Path] =>
         val infoItems= allInfoItems.filter{
           infoItem  : OdfInfoItem => paths.contains(infoItem.path) 
@@ -138,18 +141,18 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
         log.debug( s"$senderName writing to paths owned by it"/*: $pathsO"*/)
         writeValues(infoItems)
       }.getOrElse{
-        Future.successful{SuccessfulWrite( Vector.empty )}  
+        Future.successful(Responses.Success())  
       }
       future.recover{
         case t: Throwable =>
-          FailedWrite( write.odf.paths, Vector(t))
+          Responses.InternalError(t)
       }
     }
 
     val allOwnedPaths : Seq[Path] = ownerToPath.values.flatten.toSeq
     
     //Get part that isn't owned by anyone
-    val writesToOwnerless:Future[ResponsibleAgentResponse] = {
+    val writesToOwnerless:Future[ResponseRequest] = {
       val paths : Seq[Path] = allPaths.filter{ path => !allOwnedPaths.contains(path) }
       val infoItems = allInfoItems.filter{
         infoItem : OdfInfoItem => paths.contains(infoItem.path) 
@@ -157,12 +160,12 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
       log.debug( s"$senderName writing to paths not owned by anyone"/*: $paths"*/)
       writeValues(infoItems, objectsWithMetadata).recover{
         case t: Throwable =>
-          FailedWrite( write.odf.paths, Vector(t))
+          Responses.InternalError(t)
       }
     }
 
     //Get part that is owned by other agents than sender()
-    val writesToOthers: Vector[Future[ResponsibleAgentResponse]]={ 
+    val writesToOthers: Vector[Future[ResponseRequest]]={ 
       val ownerToPaths= ownerToPath - senderName
       val ownerToObjects = ownerToPaths.mapValues{ 
         paths => 
@@ -174,26 +177,28 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
       callAgentsForResponsibility( write.ttl, ownerToObjects)
       }
     //Collect all futures and return
-    val resultFs : Vector[Future[ResponsibleAgentResponse]] = Vector(writesToOwnerless, writesBySender) ++ writesToOthers
-    resultFs.foldLeft(Future.successful(Vector.empty[ResponsibleAgentResponse])){ 
-      case (resultF: Future[Vector[ResponsibleAgentResponse]], future: Future[ResponsibleAgentResponse] ) => 
-        resultF.flatMap{ 
-          case results : Vector[ResponsibleAgentResponse]=>
-            future.map{ 
-              case result : ResponsibleAgentResponse => 
-              results ++ Vector(result)
+    val responsesFs : Seq[Future[ResponseRequest]] = Vector(writesToOwnerless, writesBySender) ++ writesToOthers
+    val resultsF : Future[Vector[OmiResult]] = responsesFs.
+      foldLeft(Future.successful(Vector.empty[OmiResult])){ 
+      case ( resultsF: Future[Vector[OmiResult]], responseF: Future[ResponseRequest] ) => 
+        val newF: Future[Vector[OmiResult]] = resultsF.flatMap{ 
+          case results : Vector[OmiResult] =>
+            val resF: Future[Vector[OmiResult]] = responseF.map{ 
+              case response : ResponseRequest => results ++ response.results
             }
+            resF
         }
-    }.onComplete{
-      case Success(results: Vector[ResponsibleAgentResponse]) => 
-        val result : ResponsibleAgentResponse = results.foldLeft[ResponsibleAgentResponse]( SuccessfulWrite(Vector.empty)){
-          case (l: ResponsibleAgentResponse,r: ResponsibleAgentResponse) => 
-            l.combine(r)
-        }
-        senderRef ! result
+        newF
+    }
+    val responseF: Future[ResponseRequest] = resultsF.map{
+      case results: Vector[OmiResult] => 
+        ResponseRequest(Results.unionReduce(results))
+    }
+    responseF.onComplete{
+      case Success(response: ResponseRequest) => 
+        senderRef ! response
       case Failure( t ) => 
-        senderRef ! FailedWrite(write.odf.paths, Vector(t))
-    
+        senderRef ! Responses.InternalError(t)
     }
 
   }

@@ -96,10 +96,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   def listAgentsTest= new Actorstest(AS){
     import system.dispatcher
     val agents = Vector(
-      AgentInfo( "test1", "testClass", emptyConfig, ActorRef.noSender, true, Nil ), 
-      AgentInfo( "test2", "testClass", emptyConfig, ActorRef.noSender, true, Nil ),
-      AgentInfo( "test3", "testClass2", emptyConfig, ActorRef.noSender, true, Nil ), 
-      AgentInfo( "test4", "testClass2", emptyConfig, ActorRef.noSender, false, Nil ) 
+      AgentInfo( "test1", "testClass", emptyConfig, ActorRef.noSender, running = true, Nil ),
+      AgentInfo( "test2", "testClass", emptyConfig, ActorRef.noSender, running = true, Nil ),
+      AgentInfo( "test3", "testClass2", emptyConfig, ActorRef.noSender, running = true, Nil ),
+      AgentInfo( "test4", "testClass2", emptyConfig, ActorRef.noSender, running = false, Nil )
     ).sortBy{info => info.name }
     val agentsMap : MutableMap[AgentName,AgentInfo] = MutableMap(agents.map{ info => info.name -> info }:_*)
     val agentSystemRef = TestActorRef(new TestManager( agentsMap ))
@@ -124,7 +124,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val name = "StartSuccess"
     val ref = system.actorOf( Props( new SSAgent), name)
     val clazz = "agentSystem.SSAgent"
-    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)
+    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
     val testAgents = MutableMap( name -> agentInfo)
     val managerRef = TestActorRef( new TestManager(testAgents)) 
     val managerActor = managerRef.underlyingActor
@@ -147,7 +147,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val name = "StartSuccess"
     val ref = system.actorOf( Props( new SSAgent), name)
     val clazz = "agentSystem.SSAgent"
-    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)
+    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
     val testAgents = MutableMap( name -> agentInfo)
     val managerRef = TestActorRef( new TestManager(testAgents)) 
     val managerActor = managerRef.underlyingActor

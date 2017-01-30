@@ -66,7 +66,7 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.classname,
               agentInfo.config,
               agentInfo.agent,
-              true,
+              running = true,
               agentInfo.ownedPaths
             )
             msg
@@ -94,7 +94,7 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.classname,
               agentInfo.config,
               agentInfo.agent,
-              false,
+              running = false,
               agentInfo.ownedPaths
             )
             val msg = successfulStopMsg(agentName)

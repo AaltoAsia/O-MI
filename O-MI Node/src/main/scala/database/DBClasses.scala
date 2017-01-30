@@ -190,7 +190,7 @@ trait OmiNodeTables extends DBBase {
     db.run(
       DBIO.seq(
         (allTables map (_.delete)): _*
-      ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, false))
+      ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, isInfoItem = false))
     )
   }
 

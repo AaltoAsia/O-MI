@@ -15,12 +15,14 @@
 package http
 
 import java.nio.file.{Files, Paths}
+import java.util.Date
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
 import scala.util.{Failure, Success, Try}
 import scala.xml.{XML,NodeSeq}
 
+import analytics.{AddUser, AddRead, AnalyticsStore}
 import org.slf4j.LoggerFactory
 
 import akka.util.ByteString
@@ -49,10 +51,11 @@ import responses.{
   RESTRequest,
   OmiRequestHandlerBase
 }
+import responses.CallbackHandler._
 import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
-import database.SingleStores
+import database.{GetTree, SingleStores}
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -62,6 +65,7 @@ trait OmiServiceAuthorization
      with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
      with AuthApiProvider         // Easier java api for authorization
      with LogUnauthorized         // Log everything else
+
 
 /**
  * Actor that handles incoming http messages
@@ -73,7 +77,8 @@ class OmiServiceImpl(
   val settings : OmiConfigExtension,
   val singleStores : SingleStores,
   protected val requestHandler : OmiRequestHandlerBase,
-  protected val callbackHandler : CallbackHandler
+  protected val callbackHandler : CallbackHandler,
+  protected val analytics: Option[ActorRef]
   )
      extends {
        // Early initializer needed (-- still doesn't seem to work)
@@ -101,6 +106,7 @@ trait OmiService
   protected def requestHandler : OmiRequestHandlerBase
   protected def callbackHandler : CallbackHandler
   protected val system : ActorSystem
+  protected val analytics: Option[ActorRef]
   import system.dispatcher
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
@@ -159,42 +165,113 @@ trait OmiService
   val getDataDiscovery =
     path(Remaining) { uriPath =>
       get {
+        makePermissionTestFunction() { hasPermissionTest =>
+          extractClientIP{ user =>
+
         // convert to our path type (we don't need very complicated functionality)
-        val pathStr = uriPath // pathToString(uriPath)
-        val path = Path(pathStr)
+            val pathStr = uriPath // pathToString(uriPath)
+            val origPath = Path(pathStr)
+            val path = origPath match {
+              case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
+                Path(path.init) // check permission for parent infoitem/object
+              case path => path
+            }
 
-        RESTHandler.handle(path)(singleStores) match {
-          case Some(Left(value)) =>
-            complete(value)
-          case Some(Right(xmlData)) =>
-            complete(xmlData)
-          case None =>            {
-            log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$path]")
+            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user = Some(user)))
+              asReadRequest match {
+                case Some(readReq) =>
+                  hasPermissionTest(readReq) match {
+                  case Success(_) => {
 
-            // TODO: Clean this code
-            complete(
-              ToResponseMarshallable(
-              <error>No object found</error>
-              )(
-                fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
-              )
-            )
+                    analytics.foreach{ ref =>
+                      val tt= new Date().getTime()
+                      ref ! AddRead(path, tt)
+                      ref ! AddUser(path, readReq.user.map(_.hashCode()), tt)
+                    }
+                    RESTHandler.handle(origPath)(singleStores) match {
+                      case Some(Left(value)) =>
+                        complete(value)
+                      case Some(Right(xmlData)) =>
+                        complete(xmlData)
+                      case None =>            {
+                        log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
+
+                        // TODO: Clean this code
+                        complete(
+                          ToResponseMarshallable(
+                            <error>No object found</error>
+                          )(
+                            fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
+                          )
+                        )
+                      }
+                    }
+                  }
+                  case Failure(e: UnauthorizedEx) => // Unauthorized
+                    complete(
+                      ToResponseMarshallable(
+                        <error>No object found</error>
+                      )(
+                      fromToEntityMarshaller(StatusCodes.Unauthorized)(xmlCT)
+                      )
+                    )
+
+                  case Failure(pe: ParseError) =>
+                    val errorResponse = Responses.ParseErrors(Vector(pe))
+                    Future.successful(errorResponse)
+                    log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
+
+                        // TODO: Clean this code
+                        complete(
+                          ToResponseMarshallable(
+                            <error>No object found</error>
+                          )(
+                            fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
+                          )
+                        )
+                  case Failure(ex) =>
+                    complete(
+                      ToResponseMarshallable(
+                        <error>Internal Server Error</error>
+                      )(
+                      fromToEntityMarshaller(StatusCodes.InternalServerError)(xmlCT)
+                      )
+                    )
+                }
+                case None =>
+                  log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
+
+                        // TODO: Clean this code
+                        complete(
+                          ToResponseMarshallable(
+                            <error>No object found</error>
+                          )(
+                            fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
+                          )
+                        )
+              }
           }
+
         }
+
       }
+
     }
+
+
 
   def handleRequest(
     hasPermissionTest: PermissionTest,
     requestString: String,
-    currentConnectionCallback: Option[Callback] = None
+    currentConnectionCallback: Option[Callback] = None,
+    remote: RemoteAddress
   ): Future[NodeSeq] = {
     try {
 
       //val eitherOmi = OmiParser.parse(requestString)
 
 
-      val originalReq = RawRequestWrapper(requestString)
+      val originalReq = RawRequestWrapper(requestString, Some(remote))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
@@ -213,12 +290,12 @@ trait OmiService
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request : OmiRequest) =>
-                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{ 
-                    case request: OmiRequest => handleRequest( request ) 
+                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{
+                    case request: OmiRequest => handleRequest( request )
                   }.recover{
-                    case e: TimeoutException => Responses.TimeOutError(e.getMessage)
-                    case e: IllegalArgumentException => Responses.InvalidRequest(e.getMessage)
-                    case icb : InvalidCallback => Responses.InvalidCallback(icb.address,Some(icb.message))
+                    case e: TimeoutException => Responses.TimeOutError(Some(e.getMessage()))
+                    case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
+                    case icb : InvalidCallback => Responses.InvalidCallback(icb.callback,Some(icb.message))
                     case t : Throwable =>
                       log.error("Internal Server Error: ",t)
                       Responses.InternalError(t)
@@ -247,7 +324,7 @@ trait OmiService
           Future.successful(Responses.InternalError(ex))
       }
 
-      
+
 
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
@@ -263,6 +340,11 @@ trait OmiService
       }
 
     } catch {
+
+      case ex: IllegalArgumentException => {
+        log.debug(ex.getMessage)
+        Future.successful(Responses.InvalidRequest(Some(ex.getMessage)).asXML)
+      }
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)
         throw ex
@@ -282,7 +364,7 @@ trait OmiService
           case Some(callback: RawCallback) => 
             Future.successful(
               Responses.InvalidCallback(
-                callback.address,
+                callback,
                 Some("Callback 0 not supported with http/https try using ws(websocket) instead")
               )
             )
@@ -298,23 +380,26 @@ trait OmiService
     }
   }
 
-  def defineCallbackForRequest(request: OmiRequest,currentConnectionCallback: Option[Callback] ): Future[OmiRequest] = request.callback match {
+  def defineCallbackForRequest(
+    request: OmiRequest,
+    currentConnectionCallback: Option[Callback] 
+  ): Future[OmiRequest] = request.callback match {
     case None  => Future.successful( request )
     case Some(definedCallback : DefinedCallback ) => Future.successful( request )
     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
       Future.successful( request.withCallback(  currentConnectionCallback ) )
     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
-      Future.failed( InvalidCallback("0", "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
+      Future.failed( InvalidCallback(RawCallback("0"), "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
     case Some( RawCallback(address))  =>
-      val cbTry = Callback.tryHTTPUri(address)
+      val cbTry = callbackHandler.createCallbackAddress(address)
       val result = cbTry.map{ 
-        case httpCallback =>
-          request.withCallback( Some( HTTPCallback( httpCallback ) ) )
-          }.recoverWith{ 
-            case throwable : Throwable =>
-              Try{ throw InvalidCallback(address, throwable.getMessage(), throwable  ) }
-          }
-          Future.fromTry(result ) 
+        case callback =>
+          request.withCallback( Some( callback ) )
+      }.recoverWith{ 
+        case throwable : Throwable =>
+          Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
+      }
+      Future.fromTry(result ) 
   }
 
   /** 
@@ -323,10 +408,12 @@ trait OmiService
   val postXMLRequest = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
-        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
-        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
-        //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
-        complete(response)
+        extractClientIP { user =>
+          //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+          complete(response)
+        }
       }
     }
   }
@@ -337,10 +424,12 @@ trait OmiService
   val postFormXMLRequest = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
-        //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
-        val response = handleRequest(hasPermissionTest, requestString)//.map{ ns => xmlH ++ ns }
-        val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
-        complete(response)
+        extractClientIP { user =>
+          //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
+          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+          complete(response)
+        }
       }
     }
   }
@@ -376,11 +465,13 @@ trait WebSocketOMISupport { self: OmiService =>
   def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
     makePermissionTestFunction() { hasPermissionTest =>
       extractUpgradeToWebSocket {wsRequest =>
+        extractClientIP { ip =>
 
-        val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest)
-        complete(
-          wsRequest.handleMessagesWithSinkSource(inSink, outSource)
-        )
+          val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest, ip)
+          complete(
+            wsRequest.handleMessagesWithSinkSource(inSink, outSource)
+          )
+        }
       }
     }
 
@@ -397,8 +488,8 @@ trait WebSocketOMISupport { self: OmiService =>
   }
 
   // akka.stream
-  protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest): (InSink, OutSource) = {
-    val queueSize = 10
+  protected def createInSinkAndOutSource( hasPermissionTest: PermissionTest, user: RemoteAddress): (InSink, OutSource) = {
+    val queueSize = settings.websocketQueueSize
     val (outSource, futureQueue) =
       peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
@@ -442,8 +533,8 @@ trait WebSocketOMISupport { self: OmiService =>
     }
     val connectionIdentifier = futureQueue.hashCode
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
-    callbackHandler.addCurrentConnection( connectionIdentifier, sendHandler)
-    def createZeroCallback = Some(CurrentConnectionCallback(connectionIdentifier)) 
+    val wsConnection = CurrentConnection(connectionIdentifier, sendHandler)
+    def createZeroCallback = callbackHandler.createCallbackAddress("0",Some(wsConnection)).toOption
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{
       case textMessage: ws.TextMessage =>
@@ -453,7 +544,7 @@ trait WebSocketOMISupport { self: OmiService =>
     val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
       future.flatMap{ 
         case requestString: String =>
-        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback)
+        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback, user)
         queueSend(futureResponse)
       }
     }

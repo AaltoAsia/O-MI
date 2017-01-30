@@ -351,8 +351,19 @@
         </Objects>
       </omi:msg>
     </omi:result>
-    <omi:result>
-      <omi:return description="Following O-DF paths not found: Objects/Object1/NotExistsSensor Objects/Object1/NotExistsObject" returnCode="404"></omi:return>
+    <omi:result msgformat="odf">
+      <omi:return description="Some parts of O-DF not found. msg element contains missing O-DF structure." returnCode="404"/>
+      <omi:msg>
+        <Objects>
+          <Object>
+            <id>Object1</id>
+            <InfoItem name="NotExistsSensor"/>
+            <Object>
+              <id>NotExistsObject</id>
+            </Object>
+          </Object>
+        </Objects>
+      </omi:msg>
     </omi:result>
   </omi:response>
 </omi:omiEnvelope>

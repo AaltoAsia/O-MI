@@ -57,7 +57,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val name = "Running"
    val ref = ActorRef.noSender
    val clazz = "agentSystem.SSAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)
+   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor
@@ -71,7 +71,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val name = "Stopped"
    val ref = ActorRef.noSender
    val clazz = "agentSystem.SSAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)
+   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor
@@ -87,7 +87,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val name = "StartSuccess"
    val ref = system.actorOf( Props( new SSAgent), name)
    val clazz = "agentSystem.FFAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)
+   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor
@@ -102,7 +102,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val name = "StopSuccess"
    val ref = system.actorOf( Props( new SSAgent), name)
    val clazz = "agentSystem.FFAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)
+   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor
@@ -117,7 +117,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val name = "Stopfail"
    val ref = system.actorOf( Props( new FFAgent), name)
    val clazz = "agentSystem.FFAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, Nil)
+   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor
@@ -132,7 +132,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val name = "Startfail"
    val ref = system.actorOf( Props( new FFAgent), name)
    val clazz = "agentSystem.FFAgent"
-   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, false, Nil)
+   val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
    val managerRef = TestActorRef( new TestManager(testAgents)) 
    val managerActor = managerRef.underlyingActor

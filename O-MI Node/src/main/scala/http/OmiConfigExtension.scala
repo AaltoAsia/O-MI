@@ -34,8 +34,14 @@ import types.Path
 class OmiConfigExtension( val config: Config) extends Extension
   with Warp10ConfigExtension
   with AgentSystemConfigExtension {
-  // Node special settings
 
+  /**
+   * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
+   * @param dur duration as java.time.Duration
+   * @return given duration converted to FiniteDuration
+   */
+  implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
+  // Node special settings
   val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
     case port : java.lang.Integer => port.toInt
     case port : java.lang.Object => 
@@ -53,9 +59,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   /** Save some interesting setting values to this path */
   val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
 
-  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval", TimeUnit.SECONDS).seconds
+  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval")
 
-  val snapshotInterval: FiniteDuration  = config.getDuration("omi-service.snapshot-interval", TimeUnit.SECONDS).seconds
+  val snapshotInterval: FiniteDuration  = config.getDuration("omi-service.snapshot-interval")
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
@@ -68,8 +74,27 @@ class OmiConfigExtension( val config: Config) extends Extension
   //val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
   //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
+  /** analytics settings */
+  val enableAnalytics: Boolean = config.getBoolean("analytics.enableAnalytics")
+  val analyticsMaxHistoryLength: Int = config.getInt("analytics.maxHistoryLength")
+  val updateInterval: FiniteDuration = config.getDuration("analytics.updateInterval")
 
+  val enableReadAnalytics: Boolean = config.getBoolean("analytics.read.enableAnalytics")
+  val enableWriteAnalytics: Boolean =config.getBoolean("analytics.write.enableAnalytics")
+  val enableUserAnalytics: Boolean = config.getBoolean("analytics.user.enableAnalytics")
 
+  val numReadSampleWindowLength: FiniteDuration = config.getDuration("analytics.read.windowLength")
+  val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
+  val numberReadsInfoName: String = config.getString("analytics.read.numberOfReadsInfoItemName")
+  val averageReadIAnfoName: String = config.getString("analytics.read.averageReadIntervalInfoItemName")
+
+  val numWriteSampleWindowLength: FiniteDuration = config.getDuration("analytics.write.windowLength")
+  val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
+  val numberWritesInfoName: String = config.getString("analytics.write.numberOfWritesInfoItemName")
+  val averageWriteInfoName: String = config.getString("analytics.write.averageWriteIntervalInfoItemName")
+
+  val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
+  val numberUsersInfoName: String = config.getString("analytics.user.averageNumberOfUsersInfoItemName")
   // Authorization
   
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
@@ -99,6 +124,11 @@ class OmiConfigExtension( val config: Config) extends Extension
 
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
   val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
+
+  //Haw many messages queued to be send via WS connection, if overflown
+  //connection fails
+  val websocketQueueSize : Int = config.getInt("omi-service.websocket-queue-size")
+
 }
 
 
