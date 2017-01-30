@@ -34,6 +34,7 @@ import types.OdfTypes.OdfValue;
 import types.OdfTypes.*;
 import types.OdfFactory;
 import types.OmiFactory;
+import types.OmiTypes.OmiResult;
 import types.OdfTypes.OdfInfoItem;
 
 /**
@@ -69,7 +70,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
   public void handleWrite(WriteRequest write) {
     Timeout timeout = new Timeout( write.handleTTL() );
     ActorRef senderRef = getSender();
-    Future<ResponsibleAgentResponse> future = writeToNode(write, timeout);
+    Future<ResponseRequest> future = writeToNode(write, timeout);
 
     ExecutionContext ec = context().system().dispatcher();
     future.onSuccess(new ForwardResult(getSelf(),senderRef), ec);
@@ -77,7 +78,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
   }
 
   // Contains function for the asynchronous handling of write result
-  protected final class ForwardResult extends OnSuccess<ResponsibleAgentResponse> {
+  protected final class ForwardResult extends OnSuccess<ResponseRequest> {
     private ActorRef orginalSender;
     private ActorRef self;
     public ForwardResult(ActorRef _self, ActorRef _orginalSender){
@@ -85,8 +86,8 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
       self = _self;
     } 
     @Override 
-    public final void onSuccess(ResponsibleAgentResponse result) {
-      orginalSender.tell(result, self);
+    public final void onSuccess(ResponseRequest response) {
+      orginalSender.tell(response, self);
     }
   }
 
@@ -101,9 +102,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
     } 
     @Override 
     public final void onFailure(Throwable t) {
-      ArrayList<Throwable > ts = new ArrayList<Throwable>();
-      ts.add(t);
-      FailedWrite fw = new FailedWrite( write.odf().paths(), OdfTreeCollection.fromJava( ts ));
+      ResponseRequest fw = Responses.InternalError(t);
       orginalSender.tell(fw, self);
     }
   }

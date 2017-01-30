@@ -93,7 +93,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
     )
 
 
-    implicit val timeoutForBind = Timeout(5.seconds)
+    implicit val timeoutForBind : Timeout = Timeout(5.seconds)
 
 }
 

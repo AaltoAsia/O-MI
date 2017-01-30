@@ -47,38 +47,7 @@ case class StopFailed(msg : String, exp : Option[Throwable] ) extends CommandFai
 case class StartFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
 
 sealed trait ResponsibleAgentMsg
-case class ResponsibleWrite( promise: Promise[ResponsibleAgentResponse], write: WriteRequest)
-
-sealed trait ResponsibleAgentResponse{
-  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse 
-}
-case class SuccessfulWrite( paths: Vector[Path] ) extends ResponsibleAgentResponse{
-  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse = {
-    other match{
-      case SuccessfulWrite( opaths ) => SuccessfulWrite( paths ++ opaths)
-      case fw @ FailedWrite( opaths, reason ) => MixedWrite( paths, fw )
-      case MixedWrite( successed, failed ) => MixedWrite( paths ++ successed, failed )
-    }
-  }
-} 
-case class FailedWrite( paths: Vector[Path], reasons: Vector[Throwable] ) extends ResponsibleAgentResponse {
-  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse = {
-    other match{
-      case SuccessfulWrite( opaths ) => MixedWrite(opaths, this)
-      case fw @ FailedWrite( opaths, oreasons ) => FailedWrite( paths ++ opaths, reasons ++ oreasons )
-      case MixedWrite( successed, failed ) => MixedWrite( successed, FailedWrite( paths ++ failed.paths, reasons ++ failed.reasons) )
-    }
-  }
-} 
-case class MixedWrite( successed: Vector[Path], failed: FailedWrite ) extends ResponsibleAgentResponse{
-  def combine( other: ResponsibleAgentResponse ) : ResponsibleAgentResponse = {
-    other match{
-      case SuccessfulWrite( opaths ) => MixedWrite( successed ++ opaths, failed)
-      case fw @ FailedWrite( opaths, reason ) => MixedWrite( successed , FailedWrite( failed.paths ++ fw.paths, failed.reasons ++ fw.reasons))
-      case MixedWrite( osuccessed, ofailed ) => MixedWrite( successed ++ osuccessed, FailedWrite( failed.paths ++ ofailed.paths, failed.reasons ++ ofailed.reasons) )
-    }
-  }
-}  
+case class ResponsibleWrite( promise: Promise[ResponseRequest], write: WriteRequest)
 
 
 trait ScalaInternalAgent extends InternalAgent with ActorLogging{
