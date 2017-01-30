@@ -41,7 +41,7 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
   def handleSubscription(_subscription: SubscriptionRequest): Future[ResponseRequest] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest(  interval, _, _, _, _,  _) if interval < settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
+      case SubscriptionRequest(  interval, _, _, _, _,  _, _) if interval < settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
         _subscription.copy(interval= settings.minSubscriptionInterval)
       case s : SubscriptionRequest=> s
     }
@@ -56,7 +56,7 @@ trait SubscriptionHandler extends OmiRequestHandlerBase{
           Results.Subscription(id)
         case Failure(ex) => throw ex
       }.recoverWith{
-      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(e.getMessage()))
+      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage())))
       case e : Throwable => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }
     subFuture.map{ results =>

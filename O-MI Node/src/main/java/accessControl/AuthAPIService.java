@@ -41,16 +41,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 
-/**
- * Created by romanfilippov on 14/01/16.
- */
 public class AuthAPIService implements AuthApi {
 
+    //TODO Settable
     private final boolean useHTTPS = false;
     private final int authServicePort = 8088;
     private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
     private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
-    private final String authServiceURI = authServiceURIScheme + mainURI + "/security/PermissionService";
+    private final String authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
 
     private final Logger logger = LoggerFactory.getLogger(AuthAPIService.class);
 
@@ -60,8 +58,7 @@ public class AuthAPIService implements AuthApi {
         javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
                 new javax.net.ssl.HostnameVerifier(){
 
-                    public boolean verify(String hostname,
-                                          javax.net.ssl.SSLSession sslSession) {
+                    public boolean verify(String hostname,  javax.net.ssl.SSLSession sslSession) {
                         return hostname.equals("localhost");
                     }
                 });

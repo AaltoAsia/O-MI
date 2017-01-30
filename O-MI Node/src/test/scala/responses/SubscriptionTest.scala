@@ -74,7 +74,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
   val agentSystem = system.actorOf(
-    AgentSystem.props(),
+    AgentSystem.props(None),
     "agent-system-test"
   )
 
@@ -84,7 +84,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     subscriptionManager,
     settings,
     dbConnection,
-    singleStores
+    singleStores,
+    None
     )
 
   val calendar = Calendar.getInstance()
@@ -230,7 +231,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
       returnMsg must \("response") \ ("result") \ ("return",
         "returnCode" -> "404",
-        "description" -> s"Following requestIDs not found: $id.")
+        "description" -> s"Some requestIDs were not found.")
+      returnMsg must \("response") \ ("result") \ ("requestID") \> s"$id"
 
     }
 

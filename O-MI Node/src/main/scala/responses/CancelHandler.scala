@@ -57,7 +57,7 @@ trait CancelHandler extends OmiRequestHandlerBase{
         case e : Throwable => {
           val error = "Error when trying to cancel subcription: "
           log.error(e, error)
-          Future.successful(Results.InternalError(error + e.toString))
+          Future.successful(Results.InternalError(Some(error + e.toString)))
         }
       }
     })

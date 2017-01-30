@@ -29,6 +29,7 @@ import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
+import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
 import responses.CallbackHandler
@@ -44,6 +45,7 @@ sealed trait OmiRequest extends RequestWrapper{
   def callbackAsUri: Option[URI] = callback map {cb => new URI(cb.address)}
   def withCallback: Option[Callback] => OmiRequest
   def hasCallback: Boolean = callback.nonEmpty
+  def user: Option[RemoteAddress]
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope 
 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
@@ -83,6 +85,7 @@ sealed trait RequestIDRequest {
 
 
 sealed trait RequestWrapper {
+  def user: Option[RemoteAddress]
   def rawRequest: String
   def ttl: Duration
   def parsed: OmiParseResult
@@ -97,7 +100,7 @@ sealed trait RequestWrapper {
  * Defines values from the beginning of O-MI message like ttl and message type
  * without parsing the whole request.
  */
-class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
+class RawRequestWrapper(val rawRequest: String, val user: Option[RemoteAddress]) extends RequestWrapper {
   import RawRequestWrapper._
   import scala.xml.pull._
 
@@ -144,7 +147,7 @@ class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
   /**
    * Get the parsed request. Message is parsed only once because of laziness.
    */
-  lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest)
+  lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest, user)
 
   /**
    * Access the request easily and leave responsibility of error handling to someone else.
@@ -157,7 +160,7 @@ class RawRequestWrapper(val rawRequest: String) extends RequestWrapper {
 }
 
 object RawRequestWrapper {
-  def apply(rawRequest: String): RawRequestWrapper = new RawRequestWrapper(rawRequest)
+  def apply(rawRequest: String, user: Option[RemoteAddress]): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
 
@@ -205,11 +208,19 @@ case class ReadRequest(
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
   callback: Option[Callback] = None,
-  ttl: Duration = 10.seconds
+  ttl: Duration = 10.seconds,
+  user: Option[RemoteAddress] = None
 ) extends OmiRequest with OdfRequest{
-
+ // def this(
+ // odf: OdfObjects ,
+ // begin: Option[Timestamp ] = None,
+ // end: Option[Timestamp ] = None,
+ // newest: Option[Int ] = None,
+ // oldest: Option[Int ] = None,
+ // callback: Option[Callback] = None,
+ // ttl: Duration = 10.seconds) = this(odf,begin,end,newest,oldest,callback,ttl,None)
   def withCallback = cb => this.copy(callback = cb)
-  
+
   implicit def asReadRequest : xmlTypes.ReadRequest = {
     xmlTypes.ReadRequest(
       None,
@@ -246,7 +257,8 @@ case class ReadRequest(
 case class PollRequest(
   callback: Option[Callback] = None,
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
-  ttl: Duration = 10.seconds
+  ttl: Duration = 10.seconds,
+  user: Option[RemoteAddress] = None
 ) extends OmiRequest{
 
   def withCallback = cb => this.copy(callback = cb)
@@ -275,7 +287,8 @@ case class SubscriptionRequest(
   newest: Option[Int ] = None,
   oldest: Option[Int ] = None,
   callback: Option[Callback] = None,
-  ttl: Duration = 10.seconds
+  ttl: Duration = 10.seconds,
+  user: Option[RemoteAddress] = None
 ) extends OmiRequest with SubLike with OdfRequest{
   
   def withCallback = cb => this.copy(callback = cb)
@@ -299,7 +312,8 @@ case class SubscriptionRequest(
 case class WriteRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
-  ttl: Duration = 10.seconds
+  ttl: Duration = 10.seconds,
+  user: Option[RemoteAddress] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
 
   def withCallback = cb => this.copy(callback = cb)
@@ -318,7 +332,8 @@ case class WriteRequest(
  **/
 case class CancelRequest(
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
-  ttl: Duration = 10.seconds
+  ttl: Duration = 10.seconds,
+  user: Option[RemoteAddress] = None
 ) extends OmiRequest {
   implicit def asCancelRequest : xmlTypes.CancelRequest = xmlTypes.CancelRequest(
     None,
@@ -340,6 +355,7 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
   val results: OdfTreeCollection[OmiResult]
   val ttl: Duration 
   val callback : Option[Callback] = None
+  val user: Option[RemoteAddress] = None
 
   def copy(
     results: OdfTreeCollection[OmiResult] = this.results,
@@ -359,8 +375,15 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
         result.asRequestResultType
       }.toVector.toSeq: _*)
    
+  def union(another: ResponseRequest): ResponseRequest ={
+    ResponseRequestBase( 
+      Results.unionReduce( (results ++ another.results).toVector ).toVector,
+      if( ttl >= another.ttl) ttl else another.ttl
+    )
+  }
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope = requestToEnvelope(asResponseListType, ttlAsSeconds)
 } 
+
 object ResponseRequest{
   def apply(
     results: OdfTreeCollection[OmiResult],

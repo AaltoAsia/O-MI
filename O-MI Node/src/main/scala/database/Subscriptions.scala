@@ -90,7 +90,7 @@ object Subs {
 }
 
 case class PollSubData(
-  val idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue[Any]]]])
+                        idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue[Any]]]])
 
 object PollSubData {
   def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)

@@ -18,7 +18,7 @@ import com.typesafe.config.Config
 
 import types.Path
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes.{WriteRequest, ResponseRequest}
 import agentSystem._ 
 
 /**
@@ -159,7 +159,7 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
     val write : WriteRequest = WriteRequest( objects, None, interval )
 
     // Execute the request, execution is asynchronous (will not block)
-    val result : Future[ResponsibleAgentResponse] = writeToNode(write) 
+    val result : Future[ResponseRequest] = writeToNode(write) 
 
     // Asynchronously handle request's execution's completion
     result.onComplete{

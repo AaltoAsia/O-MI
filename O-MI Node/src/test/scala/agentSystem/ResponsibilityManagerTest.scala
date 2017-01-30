@@ -105,7 +105,7 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val managerRef = TestActorRef( new TestSuccessManager(_paths,testAgents,asce){
       
       val ref = context.actorOf( Props( new WSAgent), name)
-      val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, _paths)
+      val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, _paths)
       agents +=  name -> agentInfo
     }) 
     val managerActor = managerRef.underlyingActor
@@ -136,7 +136,7 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
     val paths = Vector(Path( "Objects/object1/sensor1" ))
     val ref = system.actorOf( Props( new WSAgent), name)
     val clazz = "agentSystem.WSAgent"
-    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, true, paths)
+    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, paths)
     val testAgents = Map( name -> agentInfo)
    val configStr =
    s"""

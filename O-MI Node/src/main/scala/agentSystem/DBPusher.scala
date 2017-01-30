@@ -23,6 +23,7 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 import akka.actor.{ActorRef, ActorSystem}
+import analytics.{AddWrite, AnalyticsStore}
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
@@ -46,6 +47,7 @@ trait DBPusher extends BaseAgentSystem{
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
+  protected implicit def analyticsStore: Option[ActorRef]
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
@@ -93,7 +95,12 @@ trait DBPusher extends BaseAgentSystem{
   }
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
-
+    //Add write data to analytics if wanted
+    analyticsStore.foreach{store =>
+      events
+        .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
+        .foreach(pv => store ! AddWrite(pv._1, pv._2))
+    }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
 

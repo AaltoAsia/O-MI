@@ -21,7 +21,7 @@ Resources
 ---------
 
 * [O-MI Specification (html)](http://www.opengroup.org/iot/omi/index.htm)
-* [O-DF Specification (html)](http://www.opengroup.org/iot/omi/index.htm)
+* [O-DF Specification (html)](http://www.opengroup.org/iot/odf/index.htm)
 * [API Documentation ScalaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/index.html)
 * [API Documentation JavaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/java/index.html)
 * [Examples of requests and responses, as handled by this server](https://otaniemi3d.cs.hut.fi/omi/node/html/ImplementationDetails.html)

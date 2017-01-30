@@ -30,27 +30,15 @@ import types.OmiTypes.SubLike
 import types._
 //import types.Path._
 
-
 /**
  * Base trait for databases. Has basic protected interface.
  */
 trait DBBase{
-  val dc = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
+  val dc : DatabaseConfig[JdbcProfile] //= DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
   import dc.driver.api._
   val db: Database
   //protected[this] val db: Database
 }
-
-
-
-
-/**
- * Public datatypes
- */
-
-
-
-
 
 /**
  * Represents one sensor value
@@ -75,12 +63,10 @@ case class SubValue(
   def toOdf: OdfValue[Any] = OdfValue(value, valueType, timestamp)
 }
 
-
-
 trait OmiNodeTables extends DBBase {
   import dc.driver.api._
 
-  implicit val pathColumnType = MappedColumnType.base[Path, String](
+  implicit lazy val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) }     // String to Path
     )
@@ -127,7 +113,7 @@ trait OmiNodeTables extends DBBase {
       OdfInfoItem(path, values, descriptionOdfOption, None)
   }
 
-  implicit val DBNodeOrdering = Ordering.by[DBNode, Int](_.leftBoundary)
+  implicit lazy val DBNodeOrdering = Ordering.by[DBNode, Int](_.leftBoundary)
 
   /**
    * (Boilerplate) Table to store object hierarchy.
@@ -151,8 +137,8 @@ trait OmiNodeTables extends DBBase {
       DBNode.unapply
     )
   }
-  protected[this] val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
-  protected[this] val hierarchyWithInsertId = hierarchyNodes returning hierarchyNodes.map(_.id)
+  protected[this] lazy val hierarchyNodes = TableQuery[DBNodesTable] //table for storing hierarchy
+  protected[this] lazy val hierarchyWithInsertId = hierarchyNodes returning hierarchyNodes.map(_.id)
 
   trait HierarchyFKey[A] extends Table[A] {
     val hierarchyfkName: String
@@ -177,23 +163,23 @@ trait OmiNodeTables extends DBBase {
     def timestamp: Rep[Timestamp] = column[Timestamp]("TIME",O.SqlType("TIMESTAMP(3)"))
     def value: Rep[String] = column[String]("VALUE")
     def valueType: Rep[String] = column[String]("VALUETYPE")
-    def idx1: Index = index("valueIdx", hierarchyId, unique = false) //index on hierarchyIDs
-    def idx2: Index = index("timestamp", timestamp, unique = false)  //index on timestmaps
+    def idx1: Index = index("VALUEiDX", hierarchyId, unique = false) //index on hierarchyIDs
+    def idx2: Index = index("TIMESTAMP", timestamp, unique = false)  //index on timestmaps
     /** Primary Key: (hierarchyId, timestamp) */
 
     def * : ProvenShape[DBValue] = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)
   }
 
-  protected[this] val latestValues = TableQuery[DBValuesTable] //table for sensor data
+  protected[this] lazy val latestValues = TableQuery[DBValuesTable] //table for sensor data
 
 
 
-  protected[this] val allTables =
+  protected[this] lazy val allTables =
     Seq( hierarchyNodes
        , latestValues
        )
 
-  protected[this] val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)
+  protected[this] lazy val allSchemas = allTables map (_.schema) reduceLeft (_ ++ _)
 
   /**
    * Empties all the data from the database
@@ -204,7 +190,7 @@ trait OmiNodeTables extends DBBase {
     db.run(
       DBIO.seq(
         (allTables map (_.delete)): _*
-      ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, false))
+      ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, isInfoItem = false))
     )
   }
 
