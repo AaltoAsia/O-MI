@@ -18,10 +18,10 @@ import java.lang.Iterable
 import java.sql.Timestamp
 import java.net.URI
 import java.util.GregorianCalendar
+import java.lang.{Iterable => JIterable}
 import javax.xml.datatype.DatatypeFactory
 
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
-import scala.collection.JavaConversions
+import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Try, Success, Failure}
@@ -34,13 +34,16 @@ import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
 import responses.CallbackHandler
 import types.OdfTypes._
-import agentSystem.ResponsibleAgentResponse
 
+trait JavaOmiRequest{
+  def callbackAsJava(): JIterable[Callback]
+}
 /**
   * Trait that represents any Omi request. Provides some data that are common
   * for all omi requests.
   */
-sealed trait OmiRequest extends RequestWrapper{
+sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
+  def callbackAsJava(): JIterable[Callback] = asJavaIterable(callback)
   def callback: Option[Callback]
   def callbackAsUri: Option[URI] = callback map {cb => new URI(cb.address)}
   def withCallback: Option[Callback] => OmiRequest
@@ -75,11 +78,15 @@ sealed trait OdfRequest {
   def odf : OdfObjects
 }
 
+sealed trait JavaRequestIDRequest{
+  def requestIDsAsJava(): JIterable[RequestID]
+}
 /**
  * Request that contains requestID(s) (read, cancel) 
  */
-sealed trait RequestIDRequest {
-  def requestIDs : OdfTreeCollection[Long ]
+sealed trait RequestIDRequest extends JavaRequestIDRequest{
+  def requestIDs : OdfTreeCollection[RequestID]
+  def requestIDsAsJava : JIterable[RequestID] = asJavaIterable(requestIDs)
 }
 
 
@@ -348,15 +355,20 @@ case class CancelRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope= requestToEnvelope(asCancelRequest, ttlAsSeconds)
 }
 
+trait JavaResponseRequest{
+  def resultsAsJava(): JIterable[OmiResult]
+}
+
 /**
  * Response request, contains result for other requests
  **/
-trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
-  val results: OdfTreeCollection[OmiResult]
-  val ttl: Duration 
-  val callback : Option[Callback] = None
+class ResponseRequest(
+  val results: OdfTreeCollection[OmiResult],
+  val ttl: Duration,
+  val callback : Option[Callback] = None,
   val user: Option[RemoteAddress] = None
-
+) extends OmiRequest with OdfRequest with PermissiveRequest with JavaResponseRequest{
+  def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
   def copy(
     results: OdfTreeCollection[OmiResult] = this.results,
     ttl: Duration = this.ttl,
@@ -376,10 +388,20 @@ trait ResponseRequest extends OmiRequest with OdfRequest with PermissiveRequest{
       }.toVector.toSeq: _*)
    
   def union(another: ResponseRequest): ResponseRequest ={
-    ResponseRequestBase( 
+    ResponseRequest( 
       Results.unionReduce( (results ++ another.results).toVector ).toVector,
       if( ttl >= another.ttl) ttl else another.ttl
     )
+  }
+  override def equals( other: Any) : Boolean = {
+    other match {
+      case response: ResponseRequest => 
+        response.ttl == ttl && 
+        response.callback == callback &&
+        response.user == user &&
+        response.results.toSet == results.toSet
+      case any: Any => any == this
+    }
   }
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelope = requestToEnvelope(asResponseListType, ttlAsSeconds)
 } 
@@ -388,5 +410,5 @@ object ResponseRequest{
   def apply(
     results: OdfTreeCollection[OmiResult],
     ttl: Duration = 10.seconds
-  ) : ResponseRequest = ResponseRequestBase( results, ttl)
+  ) : ResponseRequest = new ResponseRequest( results, ttl)
 }

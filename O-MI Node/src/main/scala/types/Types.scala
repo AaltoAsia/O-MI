@@ -20,7 +20,7 @@ package types
 import scala.collection.JavaConversions
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success, Try}
-import agentSystem.ResponsibleAgentResponse
+import OmiTypes.ResponseRequest
 
 object JavaHelpers{
 
@@ -29,8 +29,8 @@ object JavaHelpers{
    JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
  }
  
- def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponsibleAgentResponse] ={
-   writeFuture.mapTo[ResponsibleAgentResponse]
+ def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponseRequest] ={
+   writeFuture.mapTo[ResponseRequest]
  }
 }
 

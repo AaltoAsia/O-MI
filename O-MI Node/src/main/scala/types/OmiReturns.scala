@@ -1,6 +1,7 @@
 package types
 package OmiTypes
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
+import parsing.xmlGen.xmlTypes
 
 object ReturnCode extends Enumeration{
   type ReturnCode = String
@@ -14,36 +15,35 @@ object ReturnCode extends Enumeration{
 }
 import ReturnCode._
 
-sealed trait OmiReturn {
-  def returnCode: ReturnCode
-  def description: Option[String] 
-  
-  /*
-  def overrides(other: OmiReturn) : Boolean
-  def isOverridedBy(other: OmiReturn) : Boolean
-  */
-
-  def unionableWith(other: OmiReturn) : Boolean = {this.getClass == other.getClass}
+trait JavaOmiReturn{
+  def descriptionAsJava : String 
 }
 
-class BaseReturn( val returnCode: String, val description: Option[String]) extends OmiReturn{
-  def union(other: OmiReturn): OmiReturn = this
+class OmiReturn(
+  val returnCode: ReturnCode,
+  val description: Option[String] = None
+) extends JavaOmiReturn{
+  override def equals(other: Any): Boolean ={
+    other match{
+      case ret: OmiReturn => ret.returnCode == returnCode && ret.description == description
+      case any: Any => any == this
+    }
+  }
+  def descriptionAsJava: String = description.getOrElse("")
+  def unionableWith(other: OmiReturn) : Boolean = {this.getClass == other.getClass}
+  def toReturnType: xmlTypes.ReturnType ={
+    xmlTypes.ReturnType(
+      "",
+      returnCode,
+      description,
+      Map.empty
+    )
+  }
 }
 
 object OmiReturn{
-  def apply(returnCode: ReturnCode, description: Option[String]) : OmiReturn ={
-    returnCode match {
-      case Success => Returns.Success(description)
-      /*
-      case Invalid =>
-      case NotFound =>
-      case NotImplemented =>
-      case Unauthorized =>
-      case Timeout =>
-      case InternalError => 
-        */
-      case base => new BaseReturn( returnCode,description)
-    }
+  def apply(returnCode: ReturnCode, description: Option[String] = None) : OmiReturn ={
+    new OmiReturn(returnCode,description)
   }
 }
 
@@ -51,71 +51,104 @@ object OmiReturn{
 
 object Returns{
 
-sealed trait Invalid extends OmiReturn {
-  override def returnCode = ReturnCode.Invalid
-}
+  object ReturnTypes{
+    trait Invalid { parent: OmiReturn =>
+      override final val  returnCode = ReturnCode.Invalid
+    }
 
-sealed trait Successful extends OmiReturn {
-  override def  returnCode = ReturnCode.Success
-}
-sealed trait NotFound extends OmiReturn{
-  override val returnCode = ReturnCode.NotFound
-}
+    trait Successful { parent: OmiReturn =>
+      override final val returnCode = ReturnCode.Success
+    }
+    trait NotFound { parent: OmiReturn =>
+      override final val returnCode = ReturnCode.NotFound
+    }
+    trait NotImplemented { parent: OmiReturn =>
+      override final val returnCode = ReturnCode.NotImplemented 
+    }
+    trait Unauthorized { parent: OmiReturn =>
+      override final val returnCode = ReturnCode.Unauthorized
+    }
+    trait Timeout { parent: OmiReturn =>
+      override final val returnCode = ReturnCode.Timeout
+    }
+    trait InternalError { parent: OmiReturn =>
+      override final val returnCode = ReturnCode.InternalError
+    }
+  }
 
-case class SubscribedPathsNotFound( paths: OdfTreeCollection[Path] ) extends NotFound{
-  val description : Option[String] = Some(s"Following paths not found but are subscribed:"+paths.mkString("\n"))
-}
-  case class NotFoundPaths() extends NotFound{
-    val description : Option[String] = Some(s"Some parts of O-DF not found. msg element contains missing O-DF structure.")
+  case class SubscribedPathsNotFound( 
+    paths: OdfTreeCollection[Path] 
+  ) extends  OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
+    override val description : Option[String] = Some(s"Following paths not found but are subscribed:"+paths.mkString("\n"))
+  }
+  case class NotFoundPaths() extends  OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
+    override val description : Option[String] = Some(s"Some parts of O-DF not found. msg element contains missing O-DF structure.")
   }
   
-  case class NotFoundRequestIDs() extends NotFound{
-    val description : Option[String] = Some(s"Some requestIDs were not found.")
+  case class NotFoundRequestIDs() extends  OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
+    override val description : Option[String] = Some(s"Some requestIDs were not found.")
   }
   
-  case class Success(description: Option[String] = None ) extends OmiReturn with Successful{}
+  case class Success( 
+    override val description: Option[String] = None
+  ) extends OmiReturn(ReturnCode.Success) with ReturnTypes.Successful{}
   
-  case class NotImplemented(feature: Option[String] = None) extends OmiReturn {
-    def returnCode: ReturnCode  = ReturnCode.NotImplemented       
-    def description: Option[String] = feature.map{ 
+  case class NotImplemented(
+    val feature: Option[String] = None
+  ) extends OmiReturn(ReturnCode.NotImplemented) with ReturnTypes.NotImplemented {
+    override val description: Option[String] = feature.map{ 
       str => s"$str is not implemented."
     }.orElse(Some("Not implemented.")) 
   }
   
-  case class Unauthorized(feature: Option[String] = None) extends OmiReturn {
-    def returnCode: ReturnCode  = ReturnCode.Unauthorized
-    def description: Option[String] = feature.map{ 
+  case class Unauthorized(
+    val feature: Option[String] = None
+  ) extends OmiReturn(ReturnCode.Unauthorized) with ReturnTypes.Unauthorized {
+    override val description: Option[String] = feature.map{ 
       str => s"Unauthorized use of $str"
     }.orElse(Some("Unauthorized.")) 
   }
 
-  case class InvalidRequest(message: Option[String] = None)  extends OmiReturn with Invalid {
-    def description: Option[String] = message.map{ 
+  case class InvalidRequest(
+    val message: Option[String] = None
+  ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
+    override val description: Option[String] = message.map{ 
       str => s"Bad request: $str"
     }.orElse(Some("Bad request.")) 
   }
 
-  case class InvalidCallback(callback: Callback, reason: Option[String] = None ) extends OmiReturn  with Invalid {
-    def description: Option[String] = Some(
+  case class InvalidCallback(
+    val callback: Callback, 
+    val reason: Option[String] = None 
+  ) extends OmiReturn(ReturnCode.Invalid)  with ReturnTypes.Invalid { 
+    override val description: Option[String] = Some(
       "Invalid callback address: " + callback + reason.map{ str => ", reason: " + str}.getOrElse("")
     )
   }
 
-  case class ParseErrors(errors: Vector[ParseError] ) extends OmiReturn with Invalid {
-    def description: Option[String] = Some(errors.mkString(",\n"))
+  case class ParseErrors(
+    val errors: Vector[ParseError]
+  ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
+    override val description: Option[String] = Some(errors.mkString(",\n"))
   }
 
-  case class InternalError(message: Option[String] = None) extends OmiReturn {
-    def returnCode: ReturnCode  = ReturnCode.InternalError
-    def description: Option[String] = message.map{ 
+  case class InternalError(
+    val message: Option[String] = None
+  ) extends OmiReturn(ReturnCode.InternalError) with ReturnTypes.InternalError {
+    override val description: Option[String] = message.map{ 
       msg => s"Internal server error: $msg"
     }.orElse(Some("Internal server error."))
   }
+  object InternalError {
+    def apply( t: Throwable ) : InternalError = new InternalError( Some(t.getMessage) )
+    def apply( msg: String ) : InternalError = new InternalError( Some(msg) )
+  }
 
 
-  case class TimeOutError(message: Option[String] = None) extends OmiReturn {
-    def returnCode: ReturnCode  = Timeout
-    def description: Option[String] = message.map{ msg =>
+  case class TimeOutError(
+    val message: Option[String] = None
+  ) extends OmiReturn(ReturnCode.Timeout) with ReturnTypes.Timeout {
+    override val description: Option[String] = message.map{ msg =>
       s"TTL timeout, consider increasing TTL or is the server overloaded? $msg"
     }.orElse( Some(s"TTL timeout, consider increasing TTL or is the server overloaded?") )
   }

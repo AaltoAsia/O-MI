@@ -27,6 +27,7 @@ import akka.pattern.ask
 
 import agentSystem._
 import types.OmiTypes._
+import types.OdfTypes.OdfTreeCollection
 import http.{ActorSystemContext, Actors}
 
 trait WriteHandler extends OmiRequestHandlerBase{
@@ -39,39 +40,12 @@ trait WriteHandler extends OmiRequestHandlerBase{
     val ttl = write.handleTTL
     implicit val timeout = Timeout(ttl)
 
-      val result = (agentSystem ? ResponsibilityRequest("WriteHandler", write)).mapTo[ResponsibleAgentResponse]
+      val resultsF = (agentSystem ? ResponsibilityRequest("WriteHandler", write)).mapTo[ResponseRequest]
 
-      result.recoverWith{
+      resultsF.recover{
         case e : Throwable =>
         log.error(e, "Failure when writing")
-        Future.failed(e)
+        Responses.InternalError(e)
       }
-
-
-      result.onSuccess{ case succ => log.debug( succ.toString) }
-      val response = result.map{
-        case SuccessfulWrite(_) => Responses.Success()
-        case FailedWrite(paths, reasons) =>  
-          val returnV : OmiReturn = Returns.InvalidRequest(
-            Some(
-              "Paths: " +  paths.mkString("\n") + " reason:\n" + reasons.mkString("\n") 
-            )
-          )
-          val result : OmiResult = OmiResult(returnV)
-          ResponseRequest( Vector( result ))
-          
-        case MixedWrite(successfulPaths, failed)=> 
-          val returnV : OmiReturn = Returns.InvalidRequest(
-            Some(
-              "Following paths failed:\n" +
-              failed.paths.mkString("\n") + 
-              " reason:\n" + failed.reasons.mkString("\n")
-            )
-          )
-          val result : OmiResult = OmiResult(returnV)
-          ResponseRequest( Vector( result))
-          
-      }
-      response
   }
 }

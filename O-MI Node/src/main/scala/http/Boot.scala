@@ -41,7 +41,8 @@ import agentSystem._
 import responses.{RequestHandler, SubscriptionManager, CallbackHandler, OmiRequestHandlerBase}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
+import types.OmiTypes.Returns.ReturnTypes._
 import types.Path
 import OmiServer._
 import akka.stream.{ActorMaterializer, Materializer}
@@ -194,14 +195,24 @@ object OmiServer {
       
       val write = WriteRequest( objects, None,  60  seconds)
       implicit val timeout = Timeout( 60 seconds)
-      val future : Future[ResponsibleAgentResponse]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponsibleAgentResponse]
+      val future : Future[ResponseRequest]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponseRequest]
       future.onSuccess{
-        case _=>
-        system.log.info("O-MI InputPusher system working.")
+        case response: ResponseRequest=>
+        Results.unionReduce(response.results).forall{
+          case result : OmiResult => result.returnValue match {
+            case s: Successful => 
+              system.log.info("O-MI InputPusher system working.")
+              true
+            case f: OmiReturn => 
+              system.log.error( s"O-MI InputPusher system not working; $response")
+              false
+          }
+        }
       }
 
       future.onFailure{
-        case e: Throwable => system.log.error(e, "O-MI InputPusher system not working; exception:")
+        case e: Throwable => 
+          system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, 60 seconds)
     }
