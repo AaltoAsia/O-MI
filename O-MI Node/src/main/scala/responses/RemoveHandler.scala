@@ -53,7 +53,7 @@ class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit 
           singleStores.latestStore execute EraseSensorData(path)
         }
 
-        val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath)
+        val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map( _.length )
 
         dbRemoveFuture.onComplete{
           case Success(res) => log.info(s"Database successfully deleted $res nodes")
