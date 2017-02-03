@@ -216,7 +216,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
 
   //@deprecated("For testing only.", "Since implemented.")
-  private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Any]]] ?
+  private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Int]]] ?
     val resultAction = for{
       hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
       resOpt =  hNode.map{ node =>
@@ -237,7 +237,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
               WHERE LEFTBOUNDARY > ${removedLeft}""").map(_ => 0)
           numDel <- DBIO.fold(Seq(removeOp, updateActions), 0)((start, next) => start + next)
 
-        } yield numDel//FIX
+        } yield removedIds//FIX
 
       }
       res <- resOpt.getOrElse(DBIO.failed(new Exception))
@@ -252,7 +252,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
    */
-  def remove(path: Path): Future[Int] = {
+  def remove(path: Path): Future[Seq[Int]] = {
     if(path.length == 1){
       removeRoot(path)
     }else{
@@ -264,10 +264,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * remove the root Objects from the database and add empty root  back to database
    * this is to help executing the removing and adding operation transactionally
    */
-  def removeRoot(path: Path): Future[Int] = {
+  def removeRoot(path: Path): Future[Seq[Int]] = {
     db.run(
       DBIO.sequence(Seq(removeQ(path),addRoot.map(res => 0))).transactionally
-    ).map(_.sum)
+    ).map{ case idSeqs: Seq[Seq[Int]] => idSeqs.flatten }
   }
   //add root node when removed or when first started
   protected def addRoot = {

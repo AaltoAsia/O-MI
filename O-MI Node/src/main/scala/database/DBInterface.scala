@@ -390,5 +390,5 @@ trait DB {
    * Used to remove given path and all its descendants from the databas.
    * @param path Parent path to be removed.
    */
-  def remove(path: Path): Future[Int]
+  def remove(path: Path): Future[Seq[Int]]
 }
