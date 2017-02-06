@@ -300,9 +300,8 @@ trait DBCachedReadWrite extends DBReadWrite{
   /** Removes path from DB and cache. Also removes childs and parents that would
    *  be empty
    *
-   * @path Path to be removed.
-  */
-
+   * @param path path to to-be-deleted sub tree.
+   */
   override def remove( path: Path ) : Future[Seq[Int]] = {
     super.remove(path).map{
       case ids: Seq[Int] => 
