@@ -36,6 +36,8 @@ import types.ParseError
  */
 abstract trait Parser[Result] {
 
+  //O-MI version this parser supports
+  def supportedVersion = "1.0"
   // Secure parser that has a fix for xml external entity attack (and xml bomb)
   def XMLParser : XMLLoader[Elem] = {
     val spf = SAXParserFactory.newInstance()
