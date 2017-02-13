@@ -65,8 +65,8 @@ object Responses{
   def InternalError(e: Throwable, ttl: Duration): ResponseRequest = this.InternalError(Some(e.getMessage()),ttl)
   def InternalError(e: Throwable): ResponseRequest= this.InternalError(Some(e.getMessage()),10.seconds)
 
-  def TimeOutError(message: Option[String] = None, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.TimeOutError(message)),
+  def TTLTimeout(message: Option[String] = None, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+    OdfTreeCollection(Results.TTLTimeout(message)),
     ttl
   )
   def Poll( requestID: RequestID, objects: OdfObjects, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(

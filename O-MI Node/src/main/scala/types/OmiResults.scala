@@ -61,7 +61,10 @@ class OmiResult(
 
 trait UnionableResult{ this: OmiResult =>
   def union(t: UnionableResult): UnionableResult
-  def unionableWith(a: UnionableResult) : Boolean = a.getClass == this.getClass
+  def unionableWith(a: UnionableResult) : Boolean = {
+    println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
+    a.getClass == this.getClass
+  }
   def tryUnion(o: UnionableResult) = Try{
     require(unionableWith(o))
     o match {
@@ -79,14 +82,15 @@ object OmiResult{
 
 object Results{
   def unionReduce(results: OdfTreeCollection[OmiResult]): OdfTreeCollection[OmiResult] ={
-    results.groupBy( _.getClass ).mapValues{ 
-      case rs : Seq[OmiResult] => 
+    results.groupBy( _.getClass ).map{ 
+      case (a: Any, rs : Seq[OmiResult]) => 
+        println( s"found ${rs.length} ${a}s") 
         rs.collect{
           case res : UnionableResult => res
           }.reduce{
             (l: UnionableResult, r: UnionableResult) => l.union(r)
           }
-    }.values.map{ case r: OmiResult => r }.toVector
+    }.map{ case r: OmiResult => r }.toVector
   }
 
 
@@ -116,7 +120,7 @@ object Results{
                     description.map{
                       case str2: String =>
                         if( str1 == str2 ) str1
-                        else s"$str1 and $str2"
+                        else s"$str1.\n$str2"
                     }
                 }.orElse(description)
                 )
@@ -139,44 +143,65 @@ object Results{
       }
     }
 
-  case class NotImplemented(feature: Option[String] = None) 
+  case class NotImplemented(description: Option[String] = None) 
   extends OmiResult(
-    Returns.NotImplemented(feature)
+    Returns.NotImplemented(description)
   ) with UnionableResult{
     def union(o: UnionableResult): UnionableResult={
       o match {
         case other : NotImplemented => 
           Results.NotImplemented( 
-            feature.flatMap{ 
+            description.flatMap{ 
               f1 => 
-                other.feature.map{
+                other.description.map{
                   f2 =>
-                    if( f1 != f2 ) s"$f1 and $f2"
+                    if( f1 != f2 ) s"$f1\nNot implemented: $f2"
                     else f1
                 }
-            }.orElse( other.feature )
+            }.orElse( other.description )
+            )
+      }
+    }
+  }
+
+  case class NotFound(description: Option[String] = None) 
+  extends OmiResult(
+    Returns.NotFound(description)
+  ) with UnionableResult{
+    def union(o: UnionableResult): UnionableResult={
+      o match {
+        case other : NotFound=> 
+          Results.NotFound( 
+            description.flatMap{ 
+              f1 => 
+                other.description.map{
+                  f2 =>
+                    if( f1 != f2 ) s"$f1\nNot found: $f2"
+                    else f1
+                }
+            }.orElse( other.description)
             )
       }
     }
   }
 
   case class Unauthorized(
-    what: Option[String]= None
+    description: Option[String]= None
     ) extends OmiResult(
-      Returns.Unauthorized(what) 
+      Returns.Unauthorized(description) 
     ) with UnionableResult{
       def union(o: UnionableResult): UnionableResult={
         o match {
           case other : Unauthorized => 
             Results.Unauthorized( 
-              what.flatMap{ 
+              description.flatMap{ 
                 f1 => 
-                  other.what.map{
+                  other.description.map{
                     f2 =>
-                      if( f1 != f2 ) s"$f1 and $f2"
+                      if( f1 != f2 ) s"$f1\nUnauthorized: \n$f2"
                       else f1
                   }
-              }.orElse(other.what)
+              }.orElse(other.description)
               )
         }
       }
@@ -194,7 +219,7 @@ object Results{
               f1 => 
                 other.msg.map{
                   f2 =>
-                    if( f1 != f2 ) s"$f1 and $f2"
+                    if( f1 != f2 ) s"$f1\n Invalid request: $f2"
                     else f1
                 }
             }.orElse(other.msg)
@@ -202,6 +227,7 @@ object Results{
       }
     }
   }
+
   case class InvalidCallback(
     callback: Callback, 
     reason: Option[String] = None 
@@ -260,42 +286,42 @@ object Results{
   }
 
   case class InternalError( 
-    message: Option[String] = None 
+    description: Option[String] = None 
     ) extends OmiResult(
-      Returns.InternalError(message)
+      Returns.InternalError(description)
     ) with UnionableResult{
       def union(o: UnionableResult): UnionableResult ={
         o match {
           case other : InternalError=> 
             Results.InternalError( 
-              message.flatMap{ 
+              description.flatMap{ 
                 f1 => 
-                  other.message.map{
+                  other.description.map{
                     f2 =>
-                      if( f1 != f2 ) s"$f1 and $f2"
+                      if( f1 != f2 ) s"$f1\nInternal error: $f2"
                       else f1
                   }
-              }.orElse(other.message)
+              }.orElse(other.description)
               )
         }
       }
     }
 
-  case class TimeOutError(message: Option[String] = None) extends OmiResult(
-    Returns.TimeOutError(message)
+  case class TTLTimeout(description: Option[String] = None) extends OmiResult(
+    Returns.TTLTimeout(description)
   ) with UnionableResult{
     def union(o: UnionableResult): UnionableResult ={
       o match {
-        case other : TimeOutError => 
-          Results.TimeOutError( 
-            message.map{ 
+        case other : TTLTimeout => 
+          Results.TTLTimeout( 
+            description.map{ 
               f1 => 
-                other.message.map{
+                other.description.map{
                   f2 =>
-                    if( f1 != f2 ) s"$f1 and $f2"
+                    if( f1 != f2 ) s"$f1\n$f2"
                     else f1
                 }.getOrElse(f1)
-            }.orElse(other.message)
+            }.orElse(other.description)
             )
       }
     }
@@ -348,5 +374,25 @@ object Results{
       ),
     OdfTreeCollection(requestID)
   ){
+  }
+
+  case class Timeout(
+    val description: Option[String] = None
+  ) extends OmiResult(Returns.Timeout(description)) with UnionableResult{
+    def union(o: UnionableResult): UnionableResult ={
+      o match {
+        case other : Timeout => 
+          Results.Timeout( 
+            description.map{ 
+              f1 => 
+                other.description.map{
+                  f2 =>
+                    if( f1 != f2 ) s"$f1\nTimeout: $f2"
+                    else f1
+                }.getOrElse(f1)
+            }.orElse(other.description)
+            )
+      }
+    }
   }
 }

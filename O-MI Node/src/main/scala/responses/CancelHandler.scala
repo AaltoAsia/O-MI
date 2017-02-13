@@ -63,7 +63,7 @@ trait CancelHandler extends OmiRequestHandlerBase{
     })
 
     jobs.map{
-      results => ResponseRequest(results.toVector)
+      results => ResponseRequest(Results.unionReduce(results.toVector))
     }
   }
 }

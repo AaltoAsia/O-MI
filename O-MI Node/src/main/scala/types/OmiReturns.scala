@@ -5,13 +5,15 @@ import parsing.xmlGen.xmlTypes
 
 object ReturnCode extends Enumeration{
   type ReturnCode = String
-  val NotFound = "404"
-  val Invalid = "400"
   val Success = "200"
-  val NotImplemented = "501"
+  
+  val Invalid = "400"
   val Unauthorized = "401"
-  val Timeout = "503"
+  val NotFound = "404"
+  
   val InternalError = "500"
+  val NotImplemented = "501"
+  val Timeout = "503"
 }
 import ReturnCode._
 
@@ -29,8 +31,11 @@ class OmiReturn(
       case any: Any => any == this
     }
   }
-  def descriptionAsJava: String = description.getOrElse("")
-  def unionableWith(other: OmiReturn) : Boolean = {this.getClass == other.getClass}
+  def descriptionAsJava: String = description.map{ str => s"Success: $str"}.getOrElse("Success.")
+  def unionableWith(other: OmiReturn) : Boolean = {
+    println( s"Checking equality for ${this.getClass} and ${other.getClass}" )
+    this.getClass == other.getClass
+  }
   def toReturnType: xmlTypes.ReturnType ={
     xmlTypes.ReturnType(
       "",
@@ -81,6 +86,7 @@ object Returns{
   ) extends  OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
     override val description : Option[String] = Some(s"Following paths not found but are subscribed:"+paths.mkString("\n"))
   }
+
   case class NotFoundPaths() extends  OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
     override val description : Option[String] = Some(s"Some parts of O-DF not found. msg element contains missing O-DF structure.")
   }
@@ -88,6 +94,8 @@ object Returns{
   case class NotFoundRequestIDs() extends  OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
     override val description : Option[String] = Some(s"Some requestIDs were not found.")
   }
+
+  case class NotFound(override val description: Option[String]) extends OmiReturn(ReturnCode.NotFound, description) with ReturnTypes.NotFound
   
   case class Success( 
     override val description: Option[String] = None
@@ -97,7 +105,7 @@ object Returns{
     val feature: Option[String] = None
   ) extends OmiReturn(ReturnCode.NotImplemented) with ReturnTypes.NotImplemented {
     override val description: Option[String] = feature.map{ 
-      str => s"$str is not implemented."
+      str => s"Not implemented: $str "
     }.orElse(Some("Not implemented.")) 
   }
   
@@ -105,7 +113,7 @@ object Returns{
     val feature: Option[String] = None
   ) extends OmiReturn(ReturnCode.Unauthorized) with ReturnTypes.Unauthorized {
     override val description: Option[String] = feature.map{ 
-      str => s"Unauthorized use of $str"
+      str => s"Unauthorized: $str"
     }.orElse(Some("Unauthorized.")) 
   }
 
@@ -113,8 +121,8 @@ object Returns{
     val message: Option[String] = None
   ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
     override val description: Option[String] = message.map{ 
-      str => s"Bad request: $str"
-    }.orElse(Some("Bad request.")) 
+      str => s"Invalid request: $str"
+    }.orElse(Some("Invalid request.")) 
   }
 
   case class InvalidCallback(
@@ -136,8 +144,8 @@ object Returns{
     val message: Option[String] = None
   ) extends OmiReturn(ReturnCode.InternalError) with ReturnTypes.InternalError {
     override val description: Option[String] = message.map{ 
-      msg => s"Internal server error: $msg"
-    }.orElse(Some("Internal server error."))
+      msg => s"Internal error: $msg"
+    }.orElse(Some("Internal error."))
   }
   object InternalError {
     def apply( t: Throwable ) : InternalError = new InternalError( Some(t.getMessage) )
@@ -145,11 +153,19 @@ object Returns{
   }
 
 
-  case class TimeOutError(
+  case class TTLTimeout(
     val message: Option[String] = None
   ) extends OmiReturn(ReturnCode.Timeout) with ReturnTypes.Timeout {
     override val description: Option[String] = message.map{ msg =>
       s"TTL timeout, consider increasing TTL or is the server overloaded? $msg"
     }.orElse( Some(s"TTL timeout, consider increasing TTL or is the server overloaded?") )
+  }
+
+  case class Timeout(
+    val message: Option[String] = None
+  ) extends OmiReturn(ReturnCode.Timeout) with ReturnTypes.Timeout {
+    override val description: Option[String] = message.map{ msg =>
+      s"Timeout: $msg"
+    }.orElse(Some("Timeout."))
   }
 }

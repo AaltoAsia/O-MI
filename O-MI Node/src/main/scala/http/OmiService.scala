@@ -277,7 +277,7 @@ trait OmiService
         case ttl: FiniteDuration => ttlPromise.completeWith(
           akka.pattern.after(ttl, using = system.scheduler) {
             log.info(s"TTL timed out after $ttl");
-            Future.successful(Responses.TimeOutError())
+            Future.successful(Responses.TTLTimeout())
           }
         )
         case _ => //noop
@@ -293,7 +293,7 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap{
                     case request: OmiRequest => handleRequest( request )
                   }.recover{
-                    case e: TimeoutException => Responses.TimeOutError(Some(e.getMessage()))
+                    case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage()))
                     case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
                     case icb : InvalidCallback => Responses.InvalidCallback(icb.callback,Some(icb.message))
                     case t : Throwable =>
