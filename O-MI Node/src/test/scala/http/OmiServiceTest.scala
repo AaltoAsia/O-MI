@@ -50,6 +50,7 @@ class OmiServiceTest
     singleStores,
     settings
   )
+  val analytics = None
 
   val subscriptionManager = TestActorRef(SubscriptionManager.props())
 
@@ -94,21 +95,21 @@ class OmiServiceTest
     }
 
     "respond succesfully to GET to /Objects" >> {
-      Get("/Objects") ~> myRoute ~> check {
+      Get("/Objects").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
       }
     }
     "respond succesfully to GET to /Objects/" >> {
-      Get("/Objects/") ~> myRoute ~> check {
+      Get("/Objects/").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects")
       }
     }
     "respond with error to non existing path" >> {
-      Get("/Objects/nonexsistent7864057") ~> myRoute ~> check {
+      Get("/Objects/nonexsistent7864057").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === NotFound
         responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
@@ -116,7 +117,7 @@ class OmiServiceTest
     }
     val settingsPath = "/" + Path(settings.settingsOdfPath).toString
     "respond successfully to GET to some value" >> {
-      Get(settingsPath + "/num-latest-values-stored/value") ~> myRoute ~> check {
+      Get(settingsPath + "/num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/plain`
         status === OK
         responseAs[String] === "10"
@@ -127,7 +128,7 @@ class OmiServiceTest
 
     // Somewhat overcomplicated test; Serves as an example for other tests
     "reply its settings as odf frorm path `settingsOdfPath` (with \"Settings\" id)" >> {
-      Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
+      Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check { // this didn't work without / at start
         status === OK
         mediaType === `text/xml`
         responseAs[NodeSeq] must \("id") \> "Settings"
@@ -135,7 +136,7 @@ class OmiServiceTest
     }
 
     "reply its settings having num-latest-values-stored)" >> {
-      Get(settingsPath) ~> myRoute ~> check { // this didn't work without / at start
+      Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check { // this didn't work without / at start
         status === OK
         mediaType === `text/xml`
         responseAs[NodeSeq] must \("InfoItem", "name" -> "num-latest-values-stored")
@@ -229,10 +230,14 @@ class OmiServiceTest
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-        response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
-        val description = resp.\("response").\("result").\("return").\@("description")
-        description === "Following O-DF paths not found: Objects/non-existing/PowerConsumption"
+        val nf = response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+        val description = resp.\("response").\("result").\("return").\@("description") === 
+          "Some parts of O-DF not found. msg element contains missing O-DF structure."
+        val id =  resp must \("response").\("result").\("msg").\("Objects").\("Object").\("id").\>("non-existing")
+        val name = resp must \("response").\("result").\("msg").\("Objects").\("Object").\("InfoItem","name"->"PowerConsumption")
+        nf and description and id and name
       }
+    
     }
 
     "respond correctly to subscription poll with non existing requestId" >> {
@@ -251,9 +256,9 @@ class OmiServiceTest
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-        response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
-        val description = resp.\("response").\("result").\("return").\@("description")
-        description === "Following requestIDs not found: 9999."
+        val returnC = response must \("response") \ ("result") \ ("return", "returnCode" -> "404", "description" -> "Some requestIDs were not found.")
+        val rID = response must \("response") \("result") \("requestID") \>("9999")
+        returnC and rID 
       }
     }
 

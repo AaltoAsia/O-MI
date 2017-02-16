@@ -32,6 +32,7 @@ import types.Path
  
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
+
   /**
    * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
    * @param dur duration as java.time.Duration
@@ -73,18 +74,25 @@ class OmiConfigExtension( val config: Config) extends Extension
 
   /** analytics settings */
   val enableAnalytics: Boolean = config.getBoolean("analytics.enableAnalytics")
+  val analyticsMaxHistoryLength: Int = config.getInt("analytics.maxHistoryLength")
+  val updateInterval: FiniteDuration = config.getDuration("analytics.updateInterval")
+
   val enableReadAnalytics: Boolean = config.getBoolean("analytics.read.enableAnalytics")
   val enableWriteAnalytics: Boolean =config.getBoolean("analytics.write.enableAnalytics")
   val enableUserAnalytics: Boolean = config.getBoolean("analytics.user.enableAnalytics")
 
   val numReadSampleWindowLength: FiniteDuration = config.getDuration("analytics.read.windowLength")
-  val numWriteSampleWindowLength: FiniteDuration = config.getDuration("analytics.write.windowLength")
-  val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
-
   val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
+  val numberReadsInfoName: String = config.getString("analytics.read.numberOfReadsInfoItemName")
+  val averageReadIAnfoName: String = config.getString("analytics.read.averageReadIntervalInfoItemName")
+
+  val numWriteSampleWindowLength: FiniteDuration = config.getDuration("analytics.write.windowLength")
   val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
+  val numberWritesInfoName: String = config.getString("analytics.write.numberOfWritesInfoItemName")
+  val averageWriteInfoName: String = config.getString("analytics.write.averageWriteIntervalInfoItemName")
 
-
+  val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
+  val numberUsersInfoName: String = config.getString("analytics.user.averageNumberOfUsersInfoItemName")
   // Authorization
   
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector

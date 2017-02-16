@@ -45,6 +45,9 @@ case class Description(
   attributes: Map[String, scalaxb.DataRecord[Any]])
 
 
+//local serialVersionUID = 7337332908618699736
+//vs stream 364191708205046814
+@SerialVersionUID(364191708205046814L)
 case class QlmID(
   value: String,
   idType: Option[String] = None,
@@ -52,6 +55,10 @@ case class QlmID(
   startDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   endDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   attributes: ListMap[String, scalaxb.DataRecord[Any]] = ListMap.empty)
+
+object QlmID{
+  def createFromString(value: String) : QlmID = QlmID(value)  
+}
 
 
 case class ValueType(

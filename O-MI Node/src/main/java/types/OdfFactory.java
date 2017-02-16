@@ -1,7 +1,11 @@
 package types;
 
 import java.lang.Object;
+import java.util.Vector;
 import types.OdfTypes.*;
+import types.OdfTypes.OdfTreeCollection;
+import parsing.xmlGen.xmlTypes.QlmID;
+import parsing.xmlGen.xmlTypes.QlmID$;
 import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
 
@@ -14,7 +18,7 @@ public class OdfFactory{
    *
    * @param value Value inside of O-DF value element. 
    * @param typeValue Type of value, one of built in XML Schema data types specifed in 
-   *  <a href="https://www.w3.org/TR/xmlschema-2/#built-in-datatypes">Akka recommends to</a>
+   *  <a href="https://www.w3.org/TR/xmlschema-2/#built-in-datatypes">XML Schema types</a>
    *  Parameter value is cast to type specifed by typeValue parameter. If cast fails, value's
    *  type will be String.
    * @param timestamp Timestamp when value was measured or received.
@@ -32,6 +36,7 @@ public class OdfFactory{
         attr
         );
   }
+
 
   /**
    *
@@ -138,8 +143,11 @@ public class OdfFactory{
     OdfDescription description,
     String typeValue
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
@@ -161,8 +169,11 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String typeValue
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
@@ -184,8 +195,11 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     OdfDescription description
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
@@ -205,8 +219,11 @@ public class OdfFactory{
     Iterable<OdfInfoItem> infoitems,
     Iterable<OdfObject> objects
   ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    ids.add(id);
     return new OdfObject(
-        OdfTreeCollection.empty(),
+        OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),

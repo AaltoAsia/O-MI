@@ -142,21 +142,10 @@ class SubscriptionManager(
 
   private def handlePollEvent(pollEvent: PollEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
-    val odfTree = singleStores.hierarchyStore execute GetTree()
     val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
-      .map { case (path, _values) =>
-        val attributes = path.getParentsAndSelf
-          .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
-          .foldLeft(OdfObjects()){
-            case (objs: OdfObjects, node: OdfNode) => objs.union(createAncestors(node))
-          }.valuesRemoved.allMetaDatasRemoved
-          
-        attributes.union(
-          createAncestors(
-            OdfInfoItem(path, _values.sortBy(_.timestamp.getTime()).toVector)
-          )
-        )
-      }
+      .map { case (_path, _values) =>
+        OdfInfoItem(_path, _values.sortBy(_.timestamp.getTime()).toVector)
+      }.map(createAncestors)
 
     eventData //eventData.map(eData => Some(eData))
   }
@@ -270,12 +259,12 @@ class SubscriptionManager(
       case Some(pollSub) => {
         log.debug(s"Polling subcription with id: ${pollSub.id}")
         val odfTree = singleStores.hierarchyStore execute GetTree()
-        val emptyTree = pollSub
-          .paths.flatMap{path => path.getParentsAndSelf }  //get subscriptions paths
+        val emptyTree = odfTree.intersect(pollSub
+          .paths  //get subscriptions paths
           .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
           .foldLeft(OdfObjects()){
             case (objs: OdfObjects, node: OdfNode) => objs.union(createAncestors(node))
-          }.valuesRemoved.allMetaDatasRemoved
+          }.valuesRemoved.allMetaDatasRemoved)
 
         //pollSubscription method removes the data from database and returns the requested data
         val subValues: Iterable[OdfObjects] = pollSub match {
@@ -322,8 +311,8 @@ class SubscriptionManager(
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
       val optionObjects: Option[OdfObjects] = optionObjectsWithoutTypes.map(ob => hTree.intersect(ob))
-      val succResult = Vector(Results.Success(Some(iSub.id), optionObjects))
-      val failedResults = if (failures.nonEmpty) Vector(Results.NotFoundPaths(failures)) else Vector.empty
+      val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), optionObjects))
+      val failedResults = if (failures.nonEmpty) Vector(Results.SubscribedPathsNotFound(failures)) else Vector.empty
       val responseTTL = iSub.interval
       val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
 

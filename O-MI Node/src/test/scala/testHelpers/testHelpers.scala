@@ -88,11 +88,12 @@ class TestOmiServer( config: Config )  extends OmiNode {
       settings,
       singleStores,
       requestHandler,
-      callbackHandler
+      callbackHandler,
+      None //analytics
     )
 
 
-    implicit val timeoutForBind = Timeout(5.seconds)
+    implicit val timeoutForBind : Timeout = Timeout(5.seconds)
 
 }
 

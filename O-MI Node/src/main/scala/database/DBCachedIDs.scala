@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.OmiReturn
+import types.OmiTypes.{OmiReturn, Returns}
 import types._
 
 /**
@@ -72,7 +72,7 @@ trait DBCachedReadWrite extends DBReadWrite{
     )
 
     val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
-    val existed : Seq[String] = (Await.result(db.run(existingTables), 5 minutes)).filter( !_.startsWith("pq"))
+    val existed : Seq[String] = Await.result(db.run(existingTables), 5 minutes).filter( !_.startsWith("pq"))
     if ( existed.contains("HIERARCHYNODES") && existed.contains("SENSORVALUES")) {
       //noop
       log.info(
@@ -93,14 +93,14 @@ trait DBCachedReadWrite extends DBReadWrite{
    * Used to set many values efficiently to the database.
    */
   override def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
-    val pathToWrite = infos.map{
+    val pathToWrite: Seq[DBValue] = infos.flatMap {
       case info =>
-        pathToHierarchyID.get(info.path).map{
+        pathToHierarchyID.get(info.path).flatMap {
           case hIDset =>
-            hIDset.headOption.map{ 
+            hIDset.headOption.map {
               hID =>
-                info.values.map{ 
-                  case odfVal => 
+                info.values.map {
+                  case odfVal =>
                     DBValue(
                       hID,
                       //create new timestamp if option is None
@@ -110,8 +110,8 @@ trait DBCachedReadWrite extends DBReadWrite{
                     )
                 }
             }
-          }.flatten
-        }.flatten.flatten
+        }
+    }.flatten
 
     val writeExisting = (latestValues ++= pathToWrite)
 
@@ -167,16 +167,17 @@ trait DBCachedReadWrite extends DBReadWrite{
                   (p,newSet)
               }
               hierarchyIDToPath ++= p2IDs.map{ case (p,id) => (id,p) }
-              OmiReturn("200")
+              Returns.Success()
             case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
-              OmiReturn("500",Some("Using old database. Should use Warp 10."))
+              Returns.InternalError(Some("Using old database. Should use Warp 10."))
           }
       }
     } else writeExisting.map{
             case Some(count: Int) => 
-              OmiReturn("200")
+              Returns.Success()
             case None =>
-              OmiReturn("500",Some("Using old database. Should use Warp 10."))
+              Returns.InternalError(Some("Using old database. Should use Warp 10."))
+
           }
     val pathIdRelations : Future[OmiReturn] = db.run(writeAction.transactionally)
 
@@ -198,16 +199,16 @@ trait DBCachedReadWrite extends DBReadWrite{
   ): Future[Option[OdfObjects]] = {
     //log.debug("Current path to id map:\n" + pathToHierarchyID.mkString("\n"))
       //log.debug("Request:\n"+requests.mkString("\n"))
-      val infoitemIDs = requests.map{ 
-        node =>
-          pathToHierarchyID.get(node.path).map{
-            hIDset => 
-              hIDset.map{ 
-                hID => 
-                  hierarchyIDToPath.get(hID).map{ path => (path, hID)}
-              }.flatten
-          } 
-      }.flatten.flatten.toMap 
+      val infoitemIDs = requests.flatMap {
+      node =>
+        pathToHierarchyID.get(node.path).map {
+          hIDset =>
+            hIDset.map {
+              hID =>
+                hierarchyIDToPath.get(hID).map { path => (path, hID) }
+            }.flatten
+        }
+    }.flatten.toMap
       //log.debug("Paths to be read:\n" + infoitemIDs.mkString("\n"))
 
       val ids = infoitemIDs.values.toVector
@@ -294,6 +295,23 @@ trait DBCachedReadWrite extends DBReadWrite{
       }
       db.run(toObjects.transactionally)
 
+  }
+
+  /** Removes path from DB and cache. Also removes childs and parents that would
+   *  be empty
+   *
+   * @param path path to to-be-deleted sub tree.
+   */
+  override def remove( path: Path ) : Future[Seq[Int]] = {
+    super.remove(path).map{
+      case ids: Seq[Int] => 
+        val paths = ids.flatMap{
+          id: Int => hierarchyIDToPath.get(id)
+        }
+        pathToHierarchyID --= paths
+        hierarchyIDToPath --= ids
+        ids
+    }
   }
 
 

@@ -6,7 +6,7 @@ import com.typesafe.config.Config
 import akka.actor.{ActorRef, Actor, ActorSystem, Props }
 
 import agentSystem._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes.{Responses, WriteRequest}
 import http.CLICmds._
 
 
@@ -53,7 +53,7 @@ class SSAgent extends ScalaInternalAgent with StartSuccess with StopSuccess{
 }
 class WSAgent extends SSAgent with ResponsibleScalaInternalAgent{
    def handleWrite(write: WriteRequest ) :Unit = {
-     sender() ! FailedWrite( Vector.empty, Vector( new Exception("Test failure.")))
+     sender() ! Responses.InternalError( new Exception("Test failure.") )
   }
 
 }

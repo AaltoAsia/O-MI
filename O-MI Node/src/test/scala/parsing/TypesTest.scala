@@ -62,7 +62,7 @@ class TypesTest extends Specification {
   def e4 = SubscriptionRequest(1.seconds, OdfObjects(), None, None, None,  0.seconds).isInstanceOf[OmiRequest]
 
   def e5 = {
-    ResponseRequest(Seq(OmiResult(OmiReturn("200")))).isInstanceOf[OmiRequest]
+    ResponseRequest(Seq(OmiResult(Returns.Success()))).isInstanceOf[OmiRequest]
   }
 
   def e6 = CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
@@ -130,7 +130,7 @@ class TypesTest extends Specification {
   def xmlCancel: NodeSeq = xmlOmi("10", <cancel xmlns="omi.xsd" msgformat="odf"> <requestID>0</requestID> </cancel>)
   def xmlResponse: NodeSeq = xmlOmi("10", <response xmlns="omi.xsd" msgformat="odf"> {testOdfMsg} </response>)
 
-  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString)
+  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, None)
 
   def pFiniteTTL   = newRawRequestWrapper(xmlReadFinite).ttl mustEqual 10.seconds
   def pInfiniteTTL = newRawRequestWrapper(xmlReadInfinite).ttl mustEqual Duration.Inf

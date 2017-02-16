@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OmiTypes.OmiReturn
+import types.OmiTypes.{Returns,OmiReturn}
 import types._
 
 /**
@@ -126,7 +126,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
       val last = missingPaths.takeRight(1)
 
       DBIO.sequence(
-        (init map addNode(false)) ++
+        (init map addNode(isInfoItem = false)) ++
           (last map addNode(lastIsInfoItem)))
     }
 
@@ -144,7 +144,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
     val updateAction = for {
 
-      _ <- addObjectsI(path, true)
+      _ <- addObjectsI(path, lastIsInfoItem = true)
 
       nodeIdSeq <- getHierarchyNodeQ(path).map(
         node => node.id).result
@@ -208,15 +208,15 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
     //Call hooks
     pathIdRelations.map{ 
-      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => OmiReturn("200")
+      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => Returns.Success()
       case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
-        OmiReturn("500",Some("Using old database. Should use Warp 10."))
+      Returns.InternalError(Some("Using old database. Should use Warp 10."))
     }
   }
 
 
   //@deprecated("For testing only.", "Since implemented.")
-  private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Any]]] ?
+  private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Int]]] ?
     val resultAction = for{
       hNode <-  hierarchyNodes.filter(_.path === path).result.map(_.headOption)
       resOpt =  hNode.map{ node =>
@@ -237,7 +237,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
               WHERE LEFTBOUNDARY > ${removedLeft}""").map(_ => 0)
           numDel <- DBIO.fold(Seq(removeOp, updateActions), 0)((start, next) => start + next)
 
-        } yield numDel//FIX
+        } yield removedIds//FIX
 
       }
       res <- resOpt.getOrElse(DBIO.failed(new Exception))
@@ -252,7 +252,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
    */
-  def remove(path: Path): Future[Int] = {
+  def remove(path: Path): Future[Seq[Int]] = {
     if(path.length == 1){
       removeRoot(path)
     }else{
@@ -264,14 +264,14 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    * remove the root Objects from the database and add empty root  back to database
    * this is to help executing the removing and adding operation transactionally
    */
-  def removeRoot(path: Path): Future[Int] = {
+  def removeRoot(path: Path): Future[Seq[Int]] = {
     db.run(
       DBIO.sequence(Seq(removeQ(path),addRoot.map(res => 0))).transactionally
-    ).map(_.sum)
+    ).map{ case idSeqs: Seq[Seq[Int]] => idSeqs.flatten }
   }
   //add root node when removed or when first started
   protected def addRoot = {
-    hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, false)
+    hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, isInfoItem = false)
   }
   def addRootR: Future[Int] = {
     db.run(addRoot)

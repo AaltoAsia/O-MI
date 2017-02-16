@@ -74,7 +74,7 @@ object ChangeEvent {
 /**
  * Received new value with newer timestamp but value is the same as the previous
  */
-case class SameValueEvent(val infoItem: OdfInfoItem) extends InfoItemEvent
+case class SameValueEvent(infoItem: OdfInfoItem) extends InfoItemEvent
 
 /*
  * New InfoItem (is also ChangeEvent)
@@ -390,5 +390,5 @@ trait DB {
    * Used to remove given path and all its descendants from the databas.
    * @param path Parent path to be removed.
    */
-  def remove(path: Path): Future[Int]
+  def remove(path: Path): Future[Seq[Int]]
 }

@@ -18,9 +18,10 @@ import java.net.InetSocketAddress
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import scala.util.Try
+import scala.util.{Try, Success, Failure }
 
 import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.http.scaladsl.model.RemoteAddress
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.{Cancellable, Props}
@@ -31,7 +32,7 @@ import http.Authorization.ExtensibleAuthorization
 import http.{OmiConfig, IpAuthorization, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
-import types.OmiTypes.WriteRequest
+import types.OmiTypes.{WriteRequest, ResponseRequest, OmiResult, Results}
 import types._
 import agentSystem._
 import com.typesafe.config.Config
@@ -107,7 +108,7 @@ class ExternalAgentListener(override val config: Config)
       val connection = sender()
 
       // Code for ip address authorization check
-      val user = Some(remote.getAddress())
+      val user = RemoteAddress(remote)//remote.getAddress())
       val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
@@ -177,7 +178,7 @@ class ExternalAgentHandler(
       //check if the last part of the message contains closing xml tag
       if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
 
-        val parsedEntries = OdfParser.parse(storage)
+        val parsedEntries = OdfParser.parse(storage, None)
         storage = ""
         parsedEntries match {
           case Left(errors) =>
@@ -186,15 +187,21 @@ class ExternalAgentHandler(
             val ttl  = Duration(5,SECONDS)
             implicit val timeout = Timeout(ttl)
             val write = WriteRequest( odf, None,  Duration(5,SECONDS))
-            val result = (agentSystem ? ResponsibilityRequest(sourceAddress.toString, write)).mapTo[ResponsibleAgentResponse]
-            result.onSuccess{
-              case s: SuccessfulWrite =>
-                log.debug(s"$sourceAddress pushed data successfully.")
-            }
-
-            result.onFailure{
-              case e: Throwable => 
-                log.warning(s"$sourceAddress failed to write all data, error: $e")
+            val result = (agentSystem ? ResponsibilityRequest(sourceAddress.toString, write)).mapTo[ResponseRequest]
+            result.onComplete{
+              case Success( response: ResponseRequest )=>
+                response.results.foreach{ 
+                  case wr: Results.Success =>
+                    // This sends debug log message to O-MI Node logs if
+                    // debug level is enabled (in logback.xml and application.conf)
+                    log.debug(s"$sourceAddress pushed data successfully.")
+                  case ie: OmiResult => 
+                    log.warning(s"Something went wrong when $sourceAddress writed, $ie")
+                }
+                  case Failure( t: Throwable) => 
+                    // This sends debug log message to O-MI Node logs if
+                    // debug level is enabled (in logback.xml and application.conf)
+                    log.warning(s"$sourceAddress's write future failed, error: $t")
             }
             log.info(s"External agent sent data from $sender to AgentSystem")
           case _ => // not possible

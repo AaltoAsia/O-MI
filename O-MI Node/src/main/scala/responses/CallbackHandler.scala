@@ -284,7 +284,7 @@ class CallbackHandler(
         // TODO: check what happens when sending empty String
         resultMessage = ws.TextMessage(response.toString)
         queueResult <- queue offer resultMessage
-      } yield {queueResult}
+      } yield queueResult
 
       result onComplete {
         case Success(QueueOfferResult.Enqueued) => // Ok

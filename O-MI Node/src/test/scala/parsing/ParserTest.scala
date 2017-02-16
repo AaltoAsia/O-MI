@@ -329,13 +329,13 @@ class ParserTest extends Specification {
       </omi:result> 
   </omi:response>
 </omi:omiEnvelope>
-""")
+""", None)
     temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
 
   }
 
   def e205 = {
-    val temp = OmiParser.parse(omiResponseTest.replace("<omi:return returnCode=\"200\"/>", ""))
+    val temp = OmiParser.parse(omiResponseTest.replace("<omi:return returnCode=\"200\"/>", ""), None)
     temp.isLeft === true
 
     temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msg'. One of '{\"omi.xsd\":return}' is expected.")
@@ -357,14 +357,14 @@ class ParserTest extends Specification {
   </omi:response>
 </omi:omiEnvelope>
 """)
-    temp.isRight === true
-
-    temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiReturn("200"), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+    (temp.isRight) and {
+      temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+    }
 
   }
 
   def e207 = {
-    val temp = OmiParser.parse(omiResponseTest.replace("returnCode=\"200\"", ""))
+    val temp = OmiParser.parse(omiResponseTest.replace("returnCode=\"200\"", ""), None)
     temp.isLeft === true
     temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'.")
   }
@@ -374,13 +374,13 @@ class ParserTest extends Specification {
   }
 
   def e301 = {
-    val temp = OmiParser.parse(omiReadTest.replace("""omi:read msgformat="odf"""", "omi:read"))
+    val temp = OmiParser.parse(omiReadTest.replace("""omi:read msgformat="odf"""", "omi:read"), None)
     temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
 
   }
 
   def e303 = {
-    val temp = OmiParser.parse(omiReadTest.replace("omi:msg", "omi:msn"))
+    val temp = OmiParser.parse(omiReadTest.replace("omi:msg", "omi:msn"), None)
     temp.isLeft === true
     temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected.")
 
@@ -395,7 +395,7 @@ class ParserTest extends Specification {
       </omi:msg>
   </omi:read>
 </omi:omiEnvelope>
-""")
+""", None)
     temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
 
   }
@@ -411,7 +411,7 @@ class ParserTest extends Specification {
       </omi:msg>
   </omi:read>
 </omi:omiEnvelope>
-""")
+""", None)
     temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
 
   }
@@ -424,7 +424,7 @@ class ParserTest extends Specification {
   }
 
   def e401 = {
-    val temp = OdfParser.parse("incorrect xml")
+    val temp = OdfParser.parse("incorrect xml", None)
     temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
 
   }
@@ -447,7 +447,7 @@ class ParserTest extends Specification {
       <id>SmartCottage</id>
         </Object>
     </Object>
-""")
+""", None)
     temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
 
   }
@@ -632,7 +632,7 @@ class ParserTest extends Specification {
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(
-      OmiReturn("200"),
+      OmiTypes.Returns.Success(),
       odf = Some(writeOdf)
       ))
   )

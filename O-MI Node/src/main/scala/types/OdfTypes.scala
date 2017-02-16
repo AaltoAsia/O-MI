@@ -194,7 +194,7 @@ case class OdfObject(
       infoItems = infoItems map (
         i => 
           if( pathValuesPairs.keys.exists(p => i.path == p)) 
-            i.withValues( pathValuesPairs.get(i.path).getOrElse(OdfTreeCollection.empty) ) 
+            i.withValues( pathValuesPairs.getOrElse(i.path, OdfTreeCollection.empty) )
           else i) 
     )
   }
@@ -230,7 +230,7 @@ case class OdfInfoItem(
     metaData: Option[OdfMetaData] = None)
   extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   require(path.length > 2,
-    s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path(${path})")
+    s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
   def valuesRemoved: OdfInfoItem = if (values.nonEmpty) this.copy(values = OdfTreeCollection()) else this
   def descriptionsRemoved: OdfInfoItem = if (description.nonEmpty) this.copy(description = None) else this

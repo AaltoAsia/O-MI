@@ -21,7 +21,7 @@
         </triggeringPolicy>
         <append>true</append>
         <encoder>
-            <pattern>%date{yyyy-MM-dd} %X{akkaTimestamp} %-5level %logger{0} - %msg%n</pattern>
+            <pattern>%date{ISO8601} %-5level %logger{0} - %msg%n</pattern>
         </encoder>
     </appender>
 

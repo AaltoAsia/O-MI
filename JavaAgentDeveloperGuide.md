@@ -346,7 +346,7 @@ We do not want to write metadata multiple times so we call `allMetaDatasRemoved`
 before writing the second time. Then we create an O-MI Write request using `OmiFactory`. 
 
 Writing to O-MI Node happens asyncronously and need a timeout to wait for the results. `writeToNode`
-method returns `Future` that contains our results. `Future` is placeholder object for a value that 
+method returns `Future` that contains our results as ResponseRequest, O-MI Response. `Future` is placeholder object for a value that 
 may not yet exist. Its value is supplied in future by an asyncronous task. We could wait for it 
 to complete, but that could block processing. So instead we handle it's result also asyncronously. 
 To do so we need create two classes.
@@ -379,7 +379,7 @@ To do so we need create two classes.
     Timeout timeout = new Timeout(interval);
 
     // Execute the request, execution is asynchronous (will not block)
-    Future<ResponsibleAgentResponse> result = writeToNode(write, timeout);
+    Future<ResponseRequest> result = writeToNode(write, timeout);
 
     ExecutionContext ec = context().system().dispatcher();
     // Call LogResult function (below) when write was successful.
@@ -389,30 +389,24 @@ To do so we need create two classes.
   }
 ```
 
-Classes for the `Future`: LogResult and LogFailure simply logs information about the result.
+Classes for the `Future`: LogResult and LogFailure simply logs information about the results.
 Please refer to [Akka's Future documentation](http://doc.akka.io/docs/akka/2.4/java/futures.html).
 
 ```Java
   // Contains function for the asynchronous handling of write result
-  public final class LogResult extends OnSuccess<ResponsibleAgentResponse> {
-      @Override public final void onSuccess(ResponsibleAgentResponse result) {
-        if( result instanceof SuccessfulWrite ){
-          // This sends debug log message to O-MI Node logs if
-          // debug level is enabled (in logback.xml and application.conf)
-          log.debug(name + " wrote all paths successfully.");
-        } else if( result instanceof FailedWrite ) {
-          FailedWrite fw = (FailedWrite) result; 
-          log.warning(
-            name + " failed to write to paths:\n" + fw.paths().mkString("\n") +
-            " because of following reason:\n" + fw.reasons().mkString("\n")
-          );
-        }  else if( result instanceof MixedWrite ) {
-          MixedWrite mw = (MixedWrite) result; 
-          log.warning(
-            name + " successfully wrote to paths:\n" + mw.successed().mkString("\n") +
-            " and failed to write to paths:\n" + mw.failed().paths().mkString("\n") +
-            " because of following reason:\n" + mw.failed().reasons().mkString("\n")
-          );
+  public final class LogResult extends OnSuccess<ResponseRequest> {
+      @Override public final void onSuccess(ResponseRequest response) {
+        Iterable<OmiResult> results = response.resultsAsJava() ;
+        for( OmiResult result : results ){
+          if( result instanceof Results.Success ){
+            // This sends debug log message to O-MI Node logs if
+            // debug level is enabled (in logback.xml and application.conf)
+            log.debug(name + " wrote paths successfully.");
+          } else {
+            log.warning(
+                "Something went wrong when " + name + " writed, " + result.toString()
+                );
+          }
         }
       }
   }
@@ -421,7 +415,7 @@ Please refer to [Akka's Future documentation](http://doc.akka.io/docs/akka/2.4/j
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + " failed to write to all paths, reason: " + t.getMessage()
+            name + "'s write future failed, error: " + t.getMessage()
           );
       }
   }

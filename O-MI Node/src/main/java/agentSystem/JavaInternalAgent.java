@@ -12,6 +12,7 @@ import akka.util.Timeout;
 import static akka.pattern.Patterns.ask;
 import agentSystem.InternalAgent;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
 
 public abstract class JavaInternalAgent extends UntypedActor implements InternalAgent {
   /**
@@ -50,10 +51,10 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
   /**
    * Wrapper for easier request execution.
    */
-  final public Future<ResponsibleAgentResponse> writeToNode( WriteRequest write, Timeout timeout ){
+  final public Future<ResponseRequest> writeToNode( WriteRequest write, Timeout timeout ){
     ResponsibilityRequest rw = new ResponsibilityRequest(name, write);
     Future<Object> future = ask( agentSystem,rw, timeout);
-    Future<ResponsibleAgentResponse> result = types.JavaHelpers.formatWriteFuture(future);
+    Future<ResponseRequest> result = types.JavaHelpers.formatWriteFuture(future);
     return result;
   }
 

@@ -5,9 +5,7 @@ import scala.concurrent.duration._
 import akka.testkit.TestProbe
 import org.specs2.mutable._
 import testHelpers.Actors
-/**
- * Created by satsuma on 19.4.2016.
- */
+
 class SubscriptionSchedulerTest extends Specification {
   val scheduler = new SubscriptionScheduler
 
