@@ -66,13 +66,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-      "Missing" ={
-        language = "scala"
-        class = "$classname"
-        config = {}
-      }
-    }
+     internal-agents = [{
+      name = "Missing" 
+      language = "scala"
+      class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -85,16 +83,14 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val classname = "agentSystem.CompanionlessAgent"
    val exception = new java.lang.ClassNotFoundException(classname+"$")
    val configStr =
-   s"""
+     s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "Missing" ={
+     internal-agents =[{
+         name = "Missing" 
          language = "scala"
          class = "$classname"
-         config = {}
-       }
-     }
+       }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -110,13 +106,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "UnimplementedIA" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+      name = "UnimplementedIA"
+      language = "scala"
+      class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -132,13 +126,12 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "UnimplementedPC" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     starting-timeout = 2 seconds
+     internal-agents =[{
+      name = "UnimplementedIA"
+      language = "scala"
+      class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -154,13 +147,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "WrongProps" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+       name= "WrongProps"
+       language = "scala"
+       class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -181,13 +172,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "FailureProps" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+       name= "FailureProps"
+       language = "scala"
+       class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -204,13 +193,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "FailureAgent" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+       name= "FailureAgent"
+       language = "scala"
+       class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -237,43 +224,43 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 5 seconds
-     internal-agents {
-       "A1" ={
+     internal-agents =[
+       {
+         name = "A1"
          class = "$classname"
          language = "scala"
-         config = {}
-       }
-       "A2" ={
+       },
+       {
+         name = "A2"
          class = "$classname"
          language = "scala"
-         config = {}
-       }
-       "A3" ={
+       },
+       {
+         name = "A3"
          class = "$classname"
          language = "scala"
-         config = {}
-       }
-       "A4" ={
+       },
+       {
+         name = "A4"
          class = "$classname2"
          language = "scala"
-         config = {}
-       }
-       "A5" ={
+       },
+       {
+         name = "A5"
          class = "$classname3"
          language = "scala"
-         config = {}
-       }
-       "A6" ={
+       },
+       {
+         name = "A6"
          class = "$classname2"
          language = "scala"
-         config = {}
-       }
-       "A7" ={
+       },
+       {
+         name = "A7" 
          class = "$classname3"
          language = "scala"
-         config = {}
        }
-     }
+     ] 
    }
    """
    val config =new AgentSystemSettings( ConfigFactory.parseString(configStr) )

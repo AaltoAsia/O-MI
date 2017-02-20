@@ -65,6 +65,14 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
       }
 }
 
+object OmiRequestType extends Enumeration{
+  type OmiRequestType = String
+  val Read = "Read"
+  val Write = "Write"
+  val ProcedureCall = "ProcedureCall"
+
+}
+import OmiRequestType._
 
 /**
  * This means request that is writing values

@@ -14,6 +14,8 @@
 
 package agentSystem
 
+import scala.collection.JavaConversions._
+import scala.util.{Try, Failure, Success}
 import scala.collection.mutable.Map
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -25,6 +27,7 @@ import akka.actor.SupervisorStrategy
 import akka.actor.SupervisorStrategy._
 import analytics.AnalyticsStore
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException._
 
 import responses.CallbackHandler
 import database.{DB, SingleStores, DBReadWrite}
@@ -86,6 +89,28 @@ class AgentSystem()(
     ownedPaths: Seq[Path],
     language:   Option[Language]
   ) extends AgentInfoBase
+  object AgentConfigEntry{
+    
+    def apply( agentConfig: Config) : AgentConfigEntry = {
+      val classname : String= agentConfig.getString(s"class")
+      val name : String= agentConfig.getString(s"name")
+      val language : Option[Language] = Try{
+        agentConfig.getString(s"language")
+      }.toOption.map( Language(_) )
+
+      val ownedPaths : Seq[Path] = Try{
+        iterableAsScalaIterable(
+          agentConfig.getStringList(s"owns")
+        ).map{ str => Path(str)}.toVector
+      } match {
+        case Success(s) => s
+        case Failure(e: Missing) => Seq.empty
+        case Failure(e) => throw e
+      }
+      val config = agentConfig
+      AgentConfigEntry(name, classname, config, ownedPaths, language) 
+    }
+  }
   case class AgentInfo(
     name:       AgentName,
     classname:  String,

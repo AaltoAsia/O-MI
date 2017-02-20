@@ -93,13 +93,11 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-      "$name" ={
+     internal-agents =[{
+        name = "$name" 
         language = "scala"
         class = "$clazz"
-        config = {}
-      }
-    }
+      }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -146,13 +144,11 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-      "$name" ={
+     internal-agents = [{
+        name = "$name" 
         language = "scala"
         class = "$clazz"
-        config = {}
-      }
-    }
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -194,8 +190,6 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-     }
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -233,8 +227,7 @@ class ResponsibilityManagerTest(implicit ec: ExecutionEnv )extends Specification
       s"""
     agent-system{
       starting-timeout = 2 seconds
-      internal-agents {
-      }
+      internal-agents=[]
     }
     """
     val config = ConfigFactory.parseString(configStr)
