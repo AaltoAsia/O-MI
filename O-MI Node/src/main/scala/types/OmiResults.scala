@@ -84,7 +84,6 @@ object Results{
   def unionReduce(results: OdfTreeCollection[OmiResult]): OdfTreeCollection[OmiResult] ={
     results.groupBy( _.getClass ).map{ 
       case (a: Any, rs : Seq[OmiResult]) => 
-        println( s"found ${rs.length} ${a}s") 
         rs.collect{
           case res : UnionableResult => res
           }.reduce{
