@@ -157,21 +157,14 @@
       shim: {
         '$.fn.modal': ['jQuery'],
         'jQuery.jstree': ['jQuery'],
-        CodeMirror: ['jQuery'],
-        Moment: ['jQuery'],
         codeMirrorExtension: ['CodeMirror', 'jQuery'],
-        '$.fn.datetimepicker': ['jQuery', 'Moment'],
-        'CodeMirror.modes.xml': ['CodeMirror'],
+        '$.fn.datetimepicker': ['jQuery'],
         Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree'],
-        FormLogic: ['jQuery', 'CodeMirror', 'codeMirrorExtension'],
-        maybe: ['jQuery'],
-        requests: ['jQuery'],
-        omi: ['jQuery'],
-        newInfoItemForm: ['$.fn.datetimepicker','CodeMirror.modes.xml', 'Initialize','FormLogic','maybe','requests','omi']
+        FormLogic: ['jQuery', 'Initialize'],
+        newInfoItemForm: ['Initialize']
       },
     }, function(success, failed){
-        console.log('Failed to load libraries ',failed);
-        console.log('Successfully loaded libraries ', success);
+        if(Object.keys(failed).length > 0) console.log('Failed to load libraries ',failed);
       }
     );
     fallback.ready(['jQuery'], function(){
