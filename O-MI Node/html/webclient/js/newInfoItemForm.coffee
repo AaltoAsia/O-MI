@@ -39,6 +39,31 @@
         sideBySide: true
 
 
+   # 4. Resetting
+  resetInfoItemForm = ->
+    consts.infoItemForm.replaceWith consts.originalInfoItemForm.clone()
+    consts.infoItemForm = $ consts.infoItemDialog.find 'form'
+
+    # Re-bind events
+
+    # prevent any submitting fix (maybe not needed)
+    consts.infoItemForm
+      .submit (event) ->
+        event.preventDefault()
+
+    consts.infoItemForm.find '.btn-clone-above'
+      .on 'click', -> cloneAbove $(this), createTimestampPicker # creates if there is class .timestamp
+
+    # tooltips & popovers also lose some event handlers
+    consts.infoItemForm.find('[data-toggle="tooltip"]').tooltip
+      container : 'body'
+
+    # recreate complex ui widgets
+    createTimestampPicker consts.infoItemForm
+
+    return
+
+
   notifyErrorOn = (jqElement, errorMsg) ->
     jqElement
       .tooltip
@@ -195,30 +220,9 @@
       resetInfoItemForm()
       return
 
-  # 4. Resetting
-  resetInfoItemForm = ->
-    consts.infoItemForm.replaceWith consts.originalInfoItemForm.clone()
-    consts.infoItemForm = $ consts.infoItemDialog.find 'form'
+  window.newInfoItemForm = "ready"
 
-    # Re-bind events
-
-    # prevent any submitting fix (maybe not needed)
-    consts.infoItemForm
-      .submit (event) ->
-        event.preventDefault()
-
-    consts.infoItemForm.find '.btn-clone-above'
-      .on 'click', -> cloneAbove $(this), createTimestampPicker # creates if there is class .timestamp
-
-    # tooltips & popovers also lose some event handlers
-    consts.infoItemForm.find('[data-toggle="tooltip"]').tooltip
-      container : 'body'
-
-    # recreate complex ui widgets
-    createTimestampPicker consts.infoItemForm
-
-    return
-
+  return
 
 )(WebOmi.consts, WebOmi.requests, WebOmi.omi, WebOmi.util)
 
