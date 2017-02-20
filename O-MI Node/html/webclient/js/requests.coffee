@@ -591,3 +591,5 @@ requestsExt = (WebOmi) ->
 
 # extend WebOmi
 window.WebOmi = requestsExt(window.WebOmi || {})
+
+window.requests = "ready"

@@ -725,3 +725,6 @@ $ ->
         glyph.removeClass('glyphicon-menu-down')
         glyph.addClass('glyphicon-menu-right')
 
+
+window.FormLogic = "ready"
+

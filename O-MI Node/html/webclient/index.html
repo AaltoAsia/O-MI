@@ -32,21 +32,40 @@
       bootstrap_css: {
         urls: [
           '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css',
-          'lib/bootstrap.min.css'
+          'css/lib/bootstrap.min.css'
         ],
         integrity: 'sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7',
-        crossorigin:'anonymous'
+        crossorigin: 'anonymous'
       },
        datepicker_css: {
         urls: [
+          'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css',
           'css/lib/bootstrap-datetimepicker.min.css'
         ],
+        integrity: 'sha384-/XmhRcB6e51B3NO1S5VVWnNKCDM74NlX0cmxZUwCJPg2P/0ECTkBKnjnzNnF7rX5',
+         crossorigin: 'anonymous'
+      },
+      codemirror_css: {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/codemirror/5.15.2/codemirror.min.css',
+          'css/lib/codemirror.min.css'
+        ],
+        integrity: 'sha384-apqJqVRazCUaHPwrKlsdgyb+r9eui1rtGiMusIfJja/Z+1jLuKoSSafsNrVksERT',
+        crossorigin: 'anonymous'
+      },
+      jstree_css: {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css',
+          'css/lib/style.min.css'
+        ],
+        integrity: 'sha384-wd7GF/BlZaKbO07QcE6J32f+vLIVar4Qyo7n4601xPjaOS3KuhkoMARpLOOvI4XI',
+        crossorigin: 'anonymous'
       },
       jQuery: {
         urls: [
           '//code.jquery.com/jquery-1.12.4.min.js',
-          '//cdnjs.cloudflare.com/ajax/libs/jquery/1.12.41/jquery.min.js',
-          'lib/jquery.min.js'
+          'http://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js',
+          'lib/jquery-1.12.4.min'
           ],
           integrity: 'sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ',
           crossorigin: 'anonymous'
@@ -54,7 +73,7 @@
       '$.fn.modal' : {
         urls: [
           '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js',
-          'lib/jstree.min.js'
+          'lib/bootstrap.min.js'
         ],
         integrity: 'sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS',
         crossorigin:'anonymous'
@@ -104,32 +123,32 @@
         integrity: 'sha384-mI1i+5bF+TYgQF8N8dkD0SMg7GvluVQZ1o0L3hjexA3lqGr6ra40KPNp9uXNYV/m',
         crossorigin:'anonymous'
       },
-      'WebOmi.util' : {
+      Initialize : {
         urls: [
           'js/initialize.js'
         ]
       },
-      'WebOmi.formLogic' : {
+      FormLogic : {
         urls: [
                 'js/formlogic.js'
         ]
       },
-      Maybe : {
+      maybe : {
         urls: [
                 'js/Maybe.js'
         ]
       },
-      'WebOmi.requests' : {
+      requests : {
         urls: [
                 'js/requests.js'
         ]
       },
-      'WebOmi.omi' : {
+      omi : {
         urls: [
                 'js/omi.js'
         ]
       },
-      'WebOmi.consts.infoItemForm' : {
+      newInfoItemForm : {
         urls: [
                 'js/newInfoItemForm.js'
         ]
@@ -141,14 +160,14 @@
         CodeMirror: ['jQuery'],
         Moment: ['jQuery'],
         codeMirrorExtension: ['CodeMirror', 'jQuery'],
-        '$.fn.datetimepicker': ['jQuery', 'moment'],
+        '$.fn.datetimepicker': ['jQuery', 'Moment'],
         'CodeMirror.modes.xml': ['CodeMirror'],
-        'WebOmi.util': ['jQuery', 'CodeMirror', '$.fn.modal'],
-        'WebOmi.formLogic': ['jQuery', 'CodeMirror', 'codeMirrorExtension'],
-        Maybe: ['jQuery'],
-        'WebOmi.requests': ['jQuery'],
-        'WebOmi.omi': ['jQuery'],
-        'WebOmi.consts.infoItemForm': ['jQuery','Moment', 'WebOmi.omi', 'WebOmi.util', 'WebOmi.requests', 'WebOmi.formLogic', 'codeMirrorExtension'],
+        Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree'],
+        FormLogic: ['jQuery', 'CodeMirror', 'codeMirrorExtension'],
+        maybe: ['jQuery'],
+        requests: ['jQuery'],
+        omi: ['jQuery'],
+        newInfoItemForm: ['$.fn.datetimepicker','CodeMirror.modes.xml', 'Initialize','FormLogic','maybe','requests','omi']
       },
     }, function(success, failed){
         console.log('Failed to load libraries ',failed);
