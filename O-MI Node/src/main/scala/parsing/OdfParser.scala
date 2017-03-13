@@ -15,6 +15,7 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
+import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
 
 import scala.collection.JavaConversions.asJavaIterable
@@ -31,7 +32,7 @@ import types._
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
-  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream(schemaName))
+  protected[this] override def schemaPath = Array[Source](new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")), new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd")))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
   /**

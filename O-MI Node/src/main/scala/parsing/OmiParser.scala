@@ -15,6 +15,7 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
+import javax.xml.transform.{Source, stream}
 import javax.xml.transform.stream.StreamSource
 
 import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
@@ -33,7 +34,7 @@ import types._
 /** Parser for messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
-  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd"))
+  protected[this] override def schemaPath = Array[Source](new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")), new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd")))
 
   /**
    * Public method for parsing the xml file into OmiParseResults.
