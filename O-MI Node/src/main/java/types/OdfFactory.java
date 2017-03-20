@@ -3,9 +3,16 @@ package types;
 import java.lang.Object;
 import java.util.Vector;
 import types.OdfTypes.*;
+import types.OdfTypes.OdfObjects;
+import types.OdfTypes.OdfDescription;
+import types.OdfTypes.OdfMetaData;
+import types.OdfTypes.OdfObject;
+import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfValue;
+import types.OdfTypes.OdfValue$;
 import types.OdfTypes.OdfTreeCollection;
-import parsing.xmlGen.xmlTypes.QlmID;
-import parsing.xmlGen.xmlTypes.QlmID$;
+import parsing.xmlGen.xmlTypes.QlmIDType;
+import parsing.xmlGen.xmlTypes.QlmIDType$;
 import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
 
@@ -13,11 +20,11 @@ import scala.collection.immutable.HashMap;
    * Factory class for creating O-DF types used in Scala.
    */
 public class OdfFactory{
-  
+
   /**
    *
-   * @param value Value inside of O-DF value element. 
-   * @param typeValue Type of value, one of built in XML Schema data types specifed in 
+   * @param value Value inside of O-DF value element.
+   * @param typeValue Type of value, one of built in XML Schema data types specifed in
    *  <a href="https://www.w3.org/TR/xmlschema-2/#built-in-datatypes">XML Schema types</a>
    *  Parameter value is cast to type specifed by typeValue parameter. If cast fails, value's
    *  type will be String.
@@ -40,7 +47,7 @@ public class OdfFactory{
 
   /**
    *
-   * @param value Value inside of O-DF value element. 
+   * @param value Value inside of O-DF value element.
    * @param timestamp Timestamp when value was measured or received.
    */
   public static OdfValue<Object> createOdfValue(
@@ -89,7 +96,7 @@ public class OdfFactory{
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.apply(description),
-        scala.Option.empty()//Look at type of MetaData. 
+        scala.Option.empty()//Look at type of MetaData.
         );
   }
 
@@ -106,7 +113,7 @@ public class OdfFactory{
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
-        scala.Option.empty()//Look at type of MetaData. 
+        scala.Option.empty()//Look at type of MetaData.
         );
     }
 
@@ -124,7 +131,7 @@ public class OdfFactory{
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
-        scala.Option.apply(metaData)//Look at type of MetaData. 
+        scala.Option.apply(metaData)//Look at type of MetaData.
         );
   }
 
@@ -134,7 +141,7 @@ public class OdfFactory{
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
-   * @param typeValue 
+   * @param typeValue
    */
   public static OdfObject createOdfObject(
     Path path,
@@ -143,8 +150,8 @@ public class OdfFactory{
     OdfDescription description,
     String typeValue
   ){
-    Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmIDType> ids = new Vector<QlmIDType>();
+    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -152,7 +159,7 @@ public class OdfFactory{
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.apply(description),
-        scala.Option.apply(typeValue) 
+        scala.Option.apply(typeValue)
     );
   }
 
@@ -161,7 +168,7 @@ public class OdfFactory{
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
-   * @param typeValue 
+   * @param typeValue
    */
   public static OdfObject createOdfObject(
     Path path,
@@ -169,8 +176,8 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String typeValue
   ){
-    Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmIDType> ids = new Vector<QlmIDType>();
+    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -178,7 +185,7 @@ public class OdfFactory{
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.empty(),
-        scala.Option.apply(typeValue) 
+        scala.Option.apply(typeValue)
     );
   }
 
@@ -195,8 +202,8 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     OdfDescription description
   ){
-    Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmIDType> ids = new Vector<QlmIDType>();
+    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -219,8 +226,8 @@ public class OdfFactory{
     Iterable<OdfInfoItem> infoitems,
     Iterable<OdfObject> objects
   ){
-    Vector<QlmID> ids = new Vector<QlmID>();
-    QlmID id = QlmID.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmIDType> ids = new Vector<QlmIDType>();
+    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -258,7 +265,7 @@ public class OdfFactory{
         scala.Option.empty()
     );
   }
-  
+
   /**
    *
    * @param objects Child O-DF Objects of O-DF Objects.

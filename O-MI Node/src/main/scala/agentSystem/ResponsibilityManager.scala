@@ -28,7 +28,7 @@ import akka.pattern.ask
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes.MetaData
+import parsing.xmlGen.xmlTypes.MetaDataType
 import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -36,7 +36,7 @@ import types.OmiTypes.{OmiResult,Results,WriteRequest, Responses, ResponseReques
 import types.Path
 
 trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
-  import context.{system, dispatcher}
+  import context.{system}//, dispatcher}
   /*
    * TODO: Use database and Authetication for responsible agents
    */

@@ -4,9 +4,10 @@ package OmiTypes
 import java.lang.{Iterable => JIterable}
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
-import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
+import parsing.xmlGen.xmlTypes._
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -39,11 +40,12 @@ class OmiResult(
       },
       odf.map{ 
         objects =>
-          scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), defaultScope ) ) ) 
+          MsgType(Seq(DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), defaultScope)))))
+
       },
       None,
       None,
-      odf.map{ objs => "odf" }
+      Map(("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope ))))
     )
   }
   override def equals( other: Any ): Boolean ={

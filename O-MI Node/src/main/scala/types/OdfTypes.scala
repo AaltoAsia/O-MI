@@ -20,6 +20,7 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.JavaConverters._
 import scala.language.existentials
 
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 
 object OdfTreeCollection {
@@ -123,7 +124,7 @@ case class OdfObjects(
 
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
-  id: OdfTreeCollection[QlmID],
+  id: OdfTreeCollection[QlmIDType],
   path: Path,
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
@@ -262,6 +263,7 @@ case class OdfInfoItem(
 case class OdfDescription(
     value: String,
     lang: Option[String] = None) {
-  implicit def asDescription : Description= Description(value, lang, Map.empty)
+  implicit def asDescription : DescriptionType =
+    DescriptionType(value, lang.fold(Map.empty[String, DataRecord[Any]])(n=>Map(("@lang" -> DataRecord(n)))))
 }
 

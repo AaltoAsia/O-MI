@@ -18,7 +18,7 @@ import java.sql.Timestamp
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import parsing.xmlGen.xmlTypes.QlmID
+import parsing.xmlGen.xmlTypes.QlmIDType
 import slick.backend.DatabaseConfig
 //import slick.driver.H2Driver.api._
 import slick.driver.JdbcProfile
@@ -103,7 +103,7 @@ trait OmiNodeTables extends DBBase {
 
     def toOdfObject: OdfObject = toOdfObject()
     def toOdfObject(infoitems: Iterable[OdfInfoItem] = Iterable(), objects: Iterable[OdfObject] = Iterable()): OdfObject =
-      OdfObject(Seq(QlmID(path.last)),path, infoitems, objects, descriptionOdfOption, None)
+      OdfObject(Seq(QlmIDType(path.last)),path, infoitems, objects, descriptionOdfOption, None)
 
     def toOdfObjects: OdfObjects = OdfObjects()
 

@@ -110,7 +110,7 @@ class OmiServer extends OmiNode{
 
   saveSettingsOdf(system,agentSystem,settings)
 
-  implicit val httpExt = Http()
+  implicit val httpExt: HttpExt = Http()
   // create omi service actor
   val omiService = new OmiServiceImpl(
     system,
@@ -124,7 +124,7 @@ class OmiServer extends OmiNode{
   )
 
 
-  implicit val timeoutForBind = Timeout(5.seconds)
+  implicit val timeoutForBind: Timeout = Timeout(5.seconds)
 
 }
 trait OmiNode {
