@@ -3,7 +3,7 @@ package parsing
 import org.specs2._
 import scala.io.Source
 import parsing._
-import parsing.xmlGen.xmlTypes.{ValueType, InfoItemType, MetaData, QlmID}
+import parsing.xmlGen.xmlTypes._
 import types._
 import types.OmiTypes._
 import types.OdfTypes.OdfTreeCollection._
@@ -517,7 +517,7 @@ class ParserTest extends Specification {
     ))
       
     val object1 = createAncestors(OdfObject(
-      Vector( new QlmID("Heater")),
+      Vector( new QlmIDType("Heater")),
       Path("Objects/SmartCottage/Heater")
     ))
     item1.union( item2 ).union( item3 ).union( object1 ) 
@@ -620,7 +620,7 @@ class ParserTest extends Specification {
     ))
       
     val object1 = createAncestors(OdfObject(
-      Vector( new QlmID("Heater")),
+      Vector( new QlmIDType("Heater")),
       Path("Objects/SmartCottage/Heater")
     ))
     item1.union( item2 ).union( item3 ).union( object1 ) 
