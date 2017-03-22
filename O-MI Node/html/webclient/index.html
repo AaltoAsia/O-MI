@@ -21,8 +21,160 @@
 
 	<title>O-MI Node</title>
 
+  <script src="lib/fallback.min.js"></script>
+  <script>
+    fallback.load({
+      my_css: {
+        urls: [
+          'css/mystyle.css'
+        ],
+      },
+      bootstrap_css: {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css',
+          'css/lib/bootstrap.min.css'
+        ],
+        integrity: 'sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7',
+        crossorigin: 'anonymous'
+      },
+       datepicker_css: {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css',
+          'css/lib/bootstrap-datetimepicker.min.css'
+        ],
+        integrity: 'sha384-/XmhRcB6e51B3NO1S5VVWnNKCDM74NlX0cmxZUwCJPg2P/0ECTkBKnjnzNnF7rX5',
+         crossorigin: 'anonymous'
+      },
+      codemirror_css: {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/codemirror/5.15.2/codemirror.min.css',
+          'css/lib/codemirror.min.css'
+        ],
+        integrity: 'sha384-apqJqVRazCUaHPwrKlsdgyb+r9eui1rtGiMusIfJja/Z+1jLuKoSSafsNrVksERT',
+        crossorigin: 'anonymous'
+      },
+      jstree_css: {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css',
+          'css/lib/style.min.css'
+        ],
+        integrity: 'sha384-wd7GF/BlZaKbO07QcE6J32f+vLIVar4Qyo7n4601xPjaOS3KuhkoMARpLOOvI4XI',
+        crossorigin: 'anonymous'
+      },
+      jQuery: {
+        urls: [
+          '//code.jquery.com/jquery-1.12.4.min.js',
+          '//cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js',
+          'lib/jquery-1.12.4.min.js'
+          ],
+          integrity: 'sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ',
+          crossorigin: 'anonymous'
+      },
+      '$.fn.modal' : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js',
+          'lib/bootstrap.min.js'
+        ],
+        integrity: 'sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS',
+        crossorigin:'anonymous'
+      },
+      'jQuery.jstree' : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.1/jstree.min.js',
+          'lib/jstree.min.js'
+        ],
+        integrity: 'sha384-aaGg7RQWqISThqn171r92rSI8k9Md3Z+9Oj+qWcYOC8mYJwo0nos3BQ01J2+1Ie2',
+        crossorigin:'anonymous'
+      },
+      CodeMirror : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/codemirror/5.15.2/codemirror.min.js',
+          'lib/codemirror.min.js'
+        ],
+        integrity: 'sha384-+Fm4Rxi1YAk+mAiq51sYuQzU7Ct37iiHpaG4KEBm8rntUEFaK1Z3L+4rcpSPxcJk',
+        crossorigin:'anonymous'
+      },
+      codeMirrorExtension : {
+        urls: [
+                'js/CodeMirrorFormatExt.js'
+        ]
+      },
+      moment : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment-with-locales.min.js',
+          'lib/moment-with-locales.min.js'
+        ],
+        integrity: 'sha384-daLV89c+1LXRyCC/46DyRzIqY56dEwoZG16MUJdea4gumFn2960xhVkwD5t8ATij',
+        crossorigin:'anonymous'
+      },
+      '$.fn.datetimepicker' : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js',
+          'lib/bootstrap-datetimepicker.min.js'
+        ],
+        integrity: 'sha384-V936AaxnYTkq53cO2z8e42PFtCCdZhbRttfhgX8U1K9weNYVdCMbDetUKTtllFdc',
+        crossorigin:'anonymous'
+      },
+      'CodeMirror.modes.xml' : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/codemirror/5.15.2/mode/xml/xml.min.js',
+          'lib/xml.min.js'
+        ],
+        integrity: 'sha384-mI1i+5bF+TYgQF8N8dkD0SMg7GvluVQZ1o0L3hjexA3lqGr6ra40KPNp9uXNYV/m',
+        crossorigin:'anonymous'
+      },
+      Initialize : {
+        urls: [
+          'js/initialize.js'
+        ]
+      },
+      FormLogic : {
+        urls: [
+                'js/formlogic.js'
+        ]
+      },
+      maybe : {
+        urls: [
+                'js/Maybe.js'
+        ]
+      },
+      requests : {
+        urls: [
+                'js/requests.js'
+        ]
+      },
+      omi : {
+        urls: [
+                'js/omi.js'
+        ]
+      },
+      newInfoItemForm : {
+        urls: [
+                'js/newInfoItemForm.js'
+        ]
+      }
+    }, {
+      shim: {
+        '$.fn.modal': ['jQuery'],
+        'jQuery.jstree': ['jQuery'],
+        codeMirrorExtension: ['CodeMirror', 'jQuery'],
+        '$.fn.datetimepicker': ['jQuery'],
+        Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree'],
+        FormLogic: ['jQuery', 'Initialize'],
+        newInfoItemForm: ['Initialize']
+      },
+    }, function(success, failed){
+        if(Object.keys(failed).length > 0) console.log('Failed to load libraries ',failed);
+      }
+    );
+    fallback.ready(['jQuery'], function(){
+      $.get("../VERSION", function(data) {$("#versionNumber").text(data)})
+    });
+
+  </script>
+
+
   <!-- original address: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-    -->
   <link rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css"
     integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
@@ -36,10 +188,10 @@
     integrity="sha384-wd7GF/BlZaKbO07QcE6J32f+vLIVar4Qyo7n4601xPjaOS3KuhkoMARpLOOvI4XI"
     crossorigin="anonymous" />
 
-  <!-- has some fonts -->
+    -->
+  <!-- has some fonts
   <link rel="stylesheet" href="css/lib/bootstrap-datetimepicker.min.css" />
-
-	<link href="css/mystyle.css" rel="stylesheet" />
+	<link href="css/mystyle.css" rel="stylesheet" /> -->
 
 	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -52,20 +204,16 @@
     integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU="
     crossorigin="anonymous"></script>
   -->
-  <!-- (minified) production version: -->
+  <!-- (minified) production version:
   <script src="https://code.jquery.com/jquery-1.12.4.min.js"
     integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
     crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.1/jstree.min.js"
     integrity="sha384-aaGg7RQWqISThqn171r92rSI8k9Md3Z+9Oj+qWcYOC8mYJwo0nos3BQ01J2+1Ie2"
     crossorigin="anonymous"></script>
+  -->
 
   <!--
-	<link href="css/lib/bootstrap.css" rel="stylesheet" />
-  <script type="text/javascript" src="js/lib/codemirror.js"></script>
-  <script type="text/javascript" src="js/lib/xml.js"></script>
-	<link href="css/lib/codemirror.css" rel="stylesheet" />
-  -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.15.2/codemirror.js"
     integrity="sha384-yAGoeArjvskFZZyUTjJ0RMaSycKloXyLxEW/MJkwPJAWh2p8SHd3IJDCSs5nyE4P"
     crossorigin="anonymous"></script>
@@ -73,7 +221,6 @@
     integrity="sha384-mI1i+5bF+TYgQF8N8dkD0SMg7GvluVQZ1o0L3hjexA3lqGr6ra40KPNp9uXNYV/m"
     crossorigin="anonymous"></script>
 
-  <!-- Latest compiled and minified JavaScript https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"
     integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
     crossorigin="anonymous"></script>
@@ -86,14 +233,21 @@
     src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"
     integrity="sha384-V936AaxnYTkq53cO2z8e42PFtCCdZhbRttfhgX8U1K9weNYVdCMbDetUKTtllFdc"
     crossorigin="anonymous"></script>
+  -->
 
-	<script type="text/javascript" src="js/Maybe.js"></script>
-	<script type="text/javascript" src="js/CodeMirrorFormatExt.js"></script>
-	<script type="text/javascript" src="js/initialize.js"></script>
-	<script type="text/javascript" src="js/requests.js"></script>
-	<script type="text/javascript" src="js/formlogic.js"></script>
-	<script type="text/javascript" src="js/omi.js"></script>
-	<script type="text/javascript" src="js/newInfoItemForm.js"></script>
+  <!-- Temporary local libs
+  <script type="text/javascript" src="lib/jquery.min.js"></script>
+  <script type="text/javascript" src="lib/bootstrap.min.js"></script>
+  <script type="text/javascript" src="lib/codemirror.min.js"></script>
+  <script type="text/javascript" src="lib/moment-with-locales.min.js"></script>
+  <script type="text/javascript" src="lib/bootstrap-datetimepicker.min.js"></script>
+  <script type="text/javascript" src="lib/xml.min.js"></script>
+  <script type="text/javascript" src="lib/jstree.min.js"></script>
+  <link href="themes/default/style.min.css" rel="stylesheet" />
+  <link href="lib/bootstrap.min.css" rel="stylesheet" />
+  <link href="lib/codemirror.min.css" rel="stylesheet" />
+   -->
+
 
   <!-- TEST SCRIPT EXAMPLE
   <script>
@@ -134,8 +288,8 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand navbar-logo" href="#" style="margin-left: -13px"><img alt="O-DF" src="../0-DF.png" /></a>
-        <a class="navbar-brand navbar-logo" href="#" style="margin-left: -20px;"><img alt="O-MI" src="../0-MI.png" /></a>
+        <a class="navbar-brand navbar-logo" href="#" style="margin-left: -13px"><img alt="O-DF" src="../0-DF.svg" /></a>
+        <a class="navbar-brand navbar-logo" href="#" style="margin-left: -20px;"><img alt="O-MI" src="../0-MI.svg" /></a>
         <a class="navbar-brand" href="#">- Node</a>
       </div>
 
@@ -145,7 +299,6 @@
             <p class="navbar-text">
               <b id="versionNumber">Version [insert here]</b>
             </p>
-            <script type="text/javascript">$.get("../VERSION", function(data) {$("#versionNumber").text(data)})</script>
           </li>
           <li>
             <form class="navbar-form navbar-left" role="search" style="width: 400px">

@@ -14,7 +14,7 @@ val warp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.8.0-warp10",
+  version := "0.8.1-warp10",
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),

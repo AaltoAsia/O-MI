@@ -88,6 +88,9 @@ object OmiParser extends Parser[OmiParseResult] {
       Try{
         val envelope = xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelope](root)
 
+        //protocol version check
+        if(envelope.version != supportedVersion) throw new Exception(s"Unsupported protocol version: ${envelope.version} current supported Version is $supportedVersion")
+
         // Try to recognize unsupported features
         envelope.omienvelopeoption.value match {
           case request: xmlTypes.RequestBaseTypable if request.nodeList.isDefined =>

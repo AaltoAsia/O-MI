@@ -94,5 +94,6 @@
             }
         });
     });
+    window.codeMirrorExtension = "ready";
 }(CodeMirror));
 

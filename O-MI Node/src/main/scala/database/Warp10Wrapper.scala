@@ -238,7 +238,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(implicit val system: ActorSystem, val singleStores: SingleStores) extends DB {
 
  val singleStoresMaintainer = system.actorOf(SingleStoresMaintainer.props(singleStores, settings), "SingleStoreMaintainer")
- def destroy(): Unit = {}
   type Warp10Token = String
   implicit val forwatter : Warp10JsonFormat = new Warp10JsonFormat()(singleStores)
 
@@ -483,7 +482,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
    }
 
  }
-  def remove(path: Path): Future[Int] = ???
+  def remove(path: Path): Future[Seq[Int]] = ???
   private def warp10MetaData(path: Path) = Some(
     OdfMetaData(
       OdfTreeCollection(
