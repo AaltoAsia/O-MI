@@ -45,7 +45,7 @@ public class AuthAPIService implements AuthApi {
 
     //TODO Settable
     private final boolean useHTTPS = false;
-    private final int authServicePort = 8088;
+    private final int authServicePort = 80;
     private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
     private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
     private final String authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";

@@ -189,3 +189,5 @@ omiExt = (WebOmi) ->
 # extend WebOmi
 ###
 window.WebOmi = omiExt(window.WebOmi || {})
+
+window.omi = "ready"

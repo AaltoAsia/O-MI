@@ -531,3 +531,5 @@ window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 String.prototype.trim = String.prototype.trim || ->
   String(this).replace /^\s+|\s+$/g, ''
 
+window.Initialize = "ready"
+
