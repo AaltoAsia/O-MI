@@ -86,7 +86,7 @@ class OmiServiceImpl(
   } with OmiService {
 
   //example auth API service code in java directory of the project
-  //registerApi(new AuthAPIService())
+  registerApi(new AuthAPIService())
 
 
 }

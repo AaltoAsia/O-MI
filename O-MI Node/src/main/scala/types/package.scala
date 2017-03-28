@@ -25,6 +25,7 @@ import scala.xml.NodeSeq
 import scala.collection.JavaConversions
 import javax.xml.datatype.XMLGregorianCalendar
 
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen._
 import types.OdfTypes._
@@ -36,23 +37,23 @@ package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   type RequestID = Long
   def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
-  def requestToEnvelope(request: OmiEnvelopeOption, ttl : Long): xmlTypes.OmiEnvelope ={
+  def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl : Long): xmlTypes.OmiEnvelopeType ={
     val namespace = Some("omi.xsd")
     val version = "1.0"
     val datarecord = request match{
-      case read: xmlTypes.ReadRequest => 
-      scalaxb.DataRecord[xmlTypes.ReadRequest](namespace, Some("read"), read)
-      case write: xmlTypes.WriteRequest => 
-      scalaxb.DataRecord[xmlTypes.WriteRequest](namespace, Some("write"), write)
-      case cancel: xmlTypes.CancelRequest => 
-      scalaxb.DataRecord[xmlTypes.CancelRequest](namespace, Some("cancel"), cancel)
+      case read: xmlTypes.ReadRequestType =>
+      scalaxb.DataRecord[xmlTypes.ReadRequestType](namespace, Some("read"), read)
+      case write: xmlTypes.WriteRequestType =>
+      scalaxb.DataRecord[xmlTypes.WriteRequestType](namespace, Some("write"), write)
+      case cancel: xmlTypes.CancelRequestType =>
+      scalaxb.DataRecord[xmlTypes.CancelRequestType](namespace, Some("cancel"), cancel)
       case response: xmlTypes.ResponseListType => 
       scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
     }
-    xmlTypes.OmiEnvelope( datarecord, "1.0", ttl)
+    xmlTypes.OmiEnvelopeType( datarecord, Map(("@version" -> DataRecord("1.0")), ("@ttl" -> DataRecord(ttl))))
   }
- def omiEnvelopeToXML(omiEnvelope: OmiEnvelope) : NodeSeq ={ 
-    scalaxb.toXML[OmiEnvelope](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+ def omiEnvelopeToXML(omiEnvelope: OmiEnvelopeType) : NodeSeq ={
+    scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
   }
  def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={
    val cal = new GregorianCalendar()
@@ -149,14 +150,14 @@ package object OdfTypes {
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(OdfTreeCollection(QlmID(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(OdfTreeCollection(QlmIDType(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
         createAncestors(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(OdfTreeCollection(QlmID(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(OdfTreeCollection(QlmIDType(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           createAncestors(parent)
         }
 

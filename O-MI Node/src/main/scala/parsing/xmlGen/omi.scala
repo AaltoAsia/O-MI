@@ -6,127 +6,114 @@ package xmlTypes
 
 
 
-
-case class OmiEnvelope(omienvelopeoption: scalaxb.DataRecord[OmiEnvelopeOption],
-  version: String,
-  ttl: Double)
-
-trait OmiEnvelopeOption
-trait TargetType
-
-object TargetType {
-  def fromString(value: String, scope: scala.xml.NamespaceBinding): TargetType = value match {
-    case "device" => Device
-    case "node" => Node
-
-  }
+case class OmiEnvelopeType(omienvelopetypeoption: scalaxb.DataRecord[OmiEnvelopeTypeOption],
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val version = attributes("@version").as[String]
+  lazy val ttl = attributes("@ttl").as[String]
 }
 
-case object Device extends TargetType { override def toString = "device" }
-case object Node extends TargetType { override def toString = "node" }
-
-
-/** Base type for "read" and "write" requests.
-*/
-trait RequestBaseTypable {
-  val nodeList: Option[NodesType]
-  val requestID: Seq[IdType]
-  val msg: Option[scalaxb.DataRecord[Any]]
-  val callback: Option[java.net.URI]
-  val msgformat: Option[String]
-  val targetType: TargetType}
-
-
-/** Base type for "read" and "write" requests.
-*/
-case class RequestBaseType(nodeList: Option[NodesType] = None,
-  requestID: Seq[IdType] = Nil,
-  msg: Option[scalaxb.DataRecord[Any]] = None,
-  callback: Option[java.net.URI] = None,
-  msgformat: Option[String] = None,
-  targetType: TargetType) extends RequestBaseTypable
-
-
-/** Read request type.
-*/
-case class ReadRequest(nodeList: Option[NodesType] = None,
-  requestID: Seq[IdType] = Nil,
-  msg: Option[scalaxb.DataRecord[Any]] = None,
-  callback: Option[java.net.URI] = None,
-  msgformat: Option[String] = None,
-  targetType: TargetType = Node,
-  interval: Option[Double] = None,
-  oldest: Option[Int] = None,
-  begin: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
-  end: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
-  newest: Option[Int] = None) extends RequestBaseTypable with OmiEnvelopeOption
-
-
-/** Write request type.
-*/
-case class WriteRequest(nodeList: Option[NodesType] = None,
-  requestID: Seq[IdType] = Nil,
-  msg: Option[scalaxb.DataRecord[Any]] = None,
-  callback: Option[java.net.URI] = None,
-  msgformat: Option[String] = None,
-  targetType: TargetType = Node
-) extends RequestBaseTypable with OmiEnvelopeOption
-
-
-/** List of results.
-*/
-case class ResponseListType(result: RequestResultType*) extends OmiEnvelopeOption
+trait OmiEnvelopeTypeOption
 
 trait TargetTypeType
 
 object TargetTypeType {
-  def fromString(value: String, scope: scala.xml.NamespaceBinding): TargetTypeType = value match {
-    case "device" => DeviceValue
-    case "node" => NodeValue
-
+  def fromString(value: String, scope: scala.xml.NamespaceBinding)(implicit fmt: scalaxb.XMLFormat[TargetTypeType]): TargetTypeType = fmt.reads(scala.xml.Text(value), Nil) match {
+    case Right(x: TargetTypeType) => x
+    case x => throw new RuntimeException(s"fromString returned unexpected value $x for input $value")
   }
 }
 
-case object DeviceValue extends TargetTypeType { override def toString = "device" }
-case object NodeValue extends TargetTypeType { override def toString = "node" }
+case object Device extends TargetTypeType { override def toString = "device" }
+case object Node extends TargetTypeType { override def toString = "node" }
 
+
+
+/** Base type for "read" and "write" requests.
+*/
+trait RequestBaseType {
+  def nodeList: Option[NodesType]
+  def requestID: Seq[String]
+  def msg: Option[MsgType]
+  def callback: Option[java.net.URI]
+  def msgformat: Option[String]
+  def targetType: TargetTypeType
+}
+
+/** Payload for the protocol
+  */
+case class MsgType(mixed: Seq[scalaxb.DataRecord[Any]] = Nil)
+
+
+/** Read request type.
+*/
+case class ReadRequestType(nodeList: Option[NodesType] = None,
+  requestID: Seq[String] = Nil,
+  msg: Option[MsgType] = None,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) extends RequestBaseType with OmiEnvelopeTypeOption {
+  lazy val callback = attributes.get("@callback") map { _.as[java.net.URI]}
+  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+  lazy val interval = attributes.get("@interval") map { _.as[String]}
+  lazy val oldest = attributes.get("@oldest") map { _.as[BigInt]}
+  lazy val begin = attributes.get("@begin") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val end = attributes.get("@end") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val newest = attributes.get("@newest") map { _.as[BigInt]}
+}
+
+
+
+/** Write request type.
+*/
+case class WriteRequestType(nodeList: Option[NodesType] = None,
+  requestID: Seq[String] = Nil,
+  msg: Option[MsgType] = None,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) extends RequestBaseType with OmiEnvelopeTypeOption {
+  lazy val callback = attributes.get("@callback") map { _.as[java.net.URI]}
+  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+}
+
+/** List of results.
+*/
+case class ResponseListType(result: Seq[RequestResultType] = Nil) extends OmiEnvelopeTypeOption
 
 /** Result of a request.
 */
-case class RequestResultType(
-  returnValue: ReturnType,
+case class RequestResultType(returnValue: ReturnType,
   requestID: Option[IdType] = None,
-  msg: Option[scalaxb.DataRecord[Any]] = None,
+  msg: Option[MsgType] = None,
   nodeList: Option[NodesType] = None,
-  omiEnvelope: Option[OmiEnvelope] = None,
-  msgformat: Option[String] = None,
-  targetType: TargetTypeType = NodeValue
-)
-
+  omiEnvelope: Option[OmiEnvelopeType] = None,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+}
 
 /** Return status of request. Use HTTP codes / descriptions when applicable.
 */
-case class ReturnType(
-  value: String,
-  returnCode: String,
-  description: Option[String] = None,
-  attributes: Map[String, scalaxb.DataRecord[Any]])
-
+case class ReturnType(value: String,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val returnCode = attributes("@returnCode").as[String]
+  lazy val description = attributes.get("@description") map { _.as[String]}
+}
 
 /** The nodesType is used anywhere in the schema where lists of nodes can appear. 
 */
 case class NodesType(node: Seq[java.net.URI] = Nil,
-  typeValue: Option[String] = None)
-
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val typeValue = attributes.get("@type") map { _.as[String]}
+}
 
 /** Some kind of identifier with optional "format" attribute for indicating what kind of identifier is used. 
 */
 case class IdType(value: String,
-  format: Option[String] = None)
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val format = attributes.get("@format") map { _.as[String]}
+}
 
 
 /** Cancel request type.
 */
-case class CancelRequest(nodeList: Option[NodesType] = None,
-  requestID: Seq[IdType] = Nil) extends OmiEnvelopeOption
+case class CancelRequestType(nodeList: Option[NodesType] = None,
+  requestID: Seq[IdType] = Nil) extends OmiEnvelopeTypeOption
 

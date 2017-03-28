@@ -25,9 +25,10 @@ import http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import parsing.xmlGen.odf.*;
+import parsing.xmlGen.omi.MsgType;
 import parsing.xmlGen.omi.ObjectFactory;
-import parsing.xmlGen.omi.OmiEnvelope;
-import parsing.xmlGen.omi.WriteRequest;
+import parsing.xmlGen.omi.OmiEnvelopeType;
+import parsing.xmlGen.omi.WriteRequestType;
 import types.OmiTypes.OmiRequest;
 import types.Path;
 
@@ -45,7 +46,7 @@ public class AuthAPIService implements AuthApi {
 
     //TODO Settable
     private final boolean useHTTPS = false;
-    private final int authServicePort = 8088;
+    private final int authServicePort = 80;
     private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
     private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
     private final String authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
@@ -197,17 +198,17 @@ public class AuthAPIService implements AuthApi {
         ObjectFactory omiObjFactory = new ObjectFactory();
         parsing.xmlGen.odf.ObjectFactory odfObjFactory = new parsing.xmlGen.odf.ObjectFactory();
 
-        OmiEnvelope envelope = omiObjFactory.createOmiEnvelope();
-        envelope.setTtl(0);
+        OmiEnvelopeType envelope = omiObjFactory.createOmiEnvelopeType();
+        envelope.setTtl("0");
         envelope.setVersion("1.0");
 
-        WriteRequest writeReq = omiObjFactory.createWriteRequest();
+        WriteRequestType writeReq = omiObjFactory.createWriteRequestType();
         writeReq.setMsgformat("odf");
 
         ObjectsType allObjects = odfObjFactory.createObjectsType();
 
         ObjectType authObj = odfObjFactory.createObjectType();
-        QlmID authID = odfObjFactory.createQlmID();
+        QlmIDType authID = odfObjFactory.createQlmIDType();
         authID.setValue("AuthorizationRequest");
 
 
@@ -239,8 +240,11 @@ public class AuthAPIService implements AuthApi {
 
         allObjects.getObject().add(authObj);
 
+        MsgType msg = new MsgType();
+        msg.getContent().addAll(allObjects.getObject());
+
         // Write request
-        writeReq.setMsg(allObjects);
+        writeReq.setMsg(msg);
 
         // Envelope
         envelope.setWrite(writeReq);

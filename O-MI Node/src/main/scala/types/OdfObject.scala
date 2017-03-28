@@ -19,12 +19,13 @@ import javax.xml.datatype.{DatatypeConstants => XMLConst}
 
 import scala.collection.immutable.HashMap
 
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
-  id:                   OdfTreeCollection[QlmID],
+  id:                   OdfTreeCollection[QlmIDType],
   path:                 Path,
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
@@ -45,26 +46,23 @@ class  OdfObjectImpl(
     OdfObject(
       (id ++ another.id).groupBy(_.value).values.collect {
         case Seq(single) => single
-        case Seq(QlmID(valueA, idTypeA, tagTypeA, startDateA, endDateA, attrA),
-        QlmID(valueB, idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
-          QlmID(valueB, idTypeB orElse idTypeA, tagTypeB orElse tagTypeA,
-            unionOption(startDateB, startDateA) { case (b, a) =>
-              a compare b match {
-                case XMLConst.LESSER => a // a < b
-                case _ => b
-              }
-            },
-            unionOption(endDateB, endDateA) { case (b, a) =>
-              a compare b match {
-                case XMLConst.GREATER => a // a > b
-                case _ => b
+        case Seq(QlmIDType(valueA, attributesA), QlmIDType(valueB, attributesB)) => //idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
+          QlmIDType(valueB, attributesA ++ attributesB)},//,
+  //          unionOption(startDateB, startDateA) { case (b, a) =>
+  //            a compare b match {
+  //              case XMLConst.LESSER => a // a < b
+  //              case _ => b
+  //            }
+  //          },
+  //          unionOption(endDateB, endDateA) { case (b, a) =>
+  //            a compare b match {
+  //              case XMLConst.GREATER => a // a > b
+  //              case _ => b
 
-              }
-            },
-            attrA ++ attrB
-          )
-      },
-      path,
+  //            }
+  //          },
+  //          attrA ++ attrB
+            path,
       thisInfo.merged(thatInfo) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
       thisObj.merged(thatObj) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
       another.description orElse description,
@@ -232,17 +230,16 @@ class  OdfObjectImpl(
         path.last, // require checks (also in OdfObject)
         attributes = Map.empty
       )),*/id, //
-      description.map( des => des.asDescription ),
+      description.map( des => des.asDescription ).toSeq,
       infoItems.map{ 
         info: OdfInfoItem =>
         info.asInfoItemType
       }.toSeq,
-      Object = objects.map{ 
+      ObjectValue = objects.map{
         subobj: OdfObject =>
         subobj.asObjectType
       }.toSeq,
-      typeValue,
-      Map.empty
+      attributes = typeValue.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@type" -> DataRecord(n))))
     )
   }
 }

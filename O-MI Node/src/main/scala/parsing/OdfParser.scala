@@ -15,6 +15,7 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
+import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
 
 import scala.collection.JavaConversions.asJavaIterable
@@ -23,6 +24,7 @@ import scala.xml.Elem
 
 import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen._
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
@@ -31,7 +33,7 @@ import types._
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
-  protected[this] override def schemaPath = new StreamSource(getClass.getClassLoader().getResourceAsStream(schemaName))
+  protected[this] override def schemaPath = Array[Source](new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")), new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd")))
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
   /**
@@ -88,10 +90,10 @@ object OdfParser extends Parser[OdfParseResult] {
         val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
         Right(
           OdfObjects( 
-            if(objects.Object.isEmpty)
+            if(objects.ObjectValue.isEmpty)
               Iterable.empty[OdfObject]
             else
-              objects.Object.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
+              objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
             objects.version
           ))
       } match {
@@ -122,8 +124,8 @@ object OdfParser extends Parser[OdfParseResult] {
       obj.id,
       npath, 
       obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
-      obj.Object.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
-      obj.description.map{ des => OdfDescription( des.value, des.lang )},
+      obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
+      obj.description.map{ des => OdfDescription( des.value, des.lang )}.headOption,
       obj.typeValue
     ) 
   }
@@ -147,15 +149,15 @@ object OdfParser extends Parser[OdfParseResult] {
       },
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
-      },
-      item.MetaData.map{ 
+      }.headOption,
+      item.MetaData.map{
         md => 
           OdfMetaData(
             md.InfoItem.map{ 
               mItem => parseInfoItem( requestProcessTime, mItem, npath / "MetaData" ) 
             }
           )
-      }
+      }.headOption
         //.map{ meta =>
         // tests that conversion works before it is in the db and fails when in read request
         //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
@@ -169,17 +171,18 @@ object OdfParser extends Parser[OdfParseResult] {
    * @param reqTime
    * @return
    */
-  private[this] def addTimeStampToMetaDataValues(meta: Option[MetaData], reqTime: Timestamp): Option[MetaData] = {
+  private[this] def addTimeStampToMetaDataValues(meta: Option[MetaDataType], reqTime: Timestamp): Option[MetaDataType] = {
     meta.map( m =>
-      MetaData(m.InfoItem.map(ii =>
+      MetaDataType(m.InfoItem.map(ii =>
         ii.copy(
           value = ii.value.map(value =>
             value.copy(
-              dateTime = None,
-              unixTime = Some(timeSolver(value, reqTime).getTime))),
+            attributes = value.attributes.-("@dateTime").updated("@unixTime", DataRecord(timeSolver(value, reqTime).getTime)))),
+              //dateTime = None,
+              //unixTime = Some(timeSolver(value, reqTime).getTime))),
 
-          MetaData = addTimeStampToMetaDataValues(ii.MetaData,reqTime))
-      ): _*)
+          MetaData = addTimeStampToMetaDataValues(ii.MetaData.headOption,reqTime).toSeq)
+      ))
     )
   }
 

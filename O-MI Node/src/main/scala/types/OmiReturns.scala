@@ -1,5 +1,7 @@
 package types
 package OmiTypes
+
+import parsing.xmlGen.scalaxb.DataRecord
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
 import parsing.xmlGen.xmlTypes
 
@@ -39,9 +41,7 @@ class OmiReturn(
   def toReturnType: xmlTypes.ReturnType ={
     xmlTypes.ReturnType(
       "",
-      returnCode,
-      description,
-      Map.empty
+      Map(("@returnCode" -> DataRecord(returnCode)),("@description" -> DataRecord(description)))
     )
   }
 }

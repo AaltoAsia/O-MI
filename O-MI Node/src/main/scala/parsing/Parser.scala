@@ -54,7 +54,7 @@ abstract trait Parser[Result] {
   
   def parse(xml_msg: File, user: Option[RemoteAddress]) : Result
   
-  protected[this] def schemaPath : javax.xml.transform.Source
+  protected[this] def schemaPath : Array[javax.xml.transform.Source]
   
   /**
    * Method for checking does given xml confort schema of parser.

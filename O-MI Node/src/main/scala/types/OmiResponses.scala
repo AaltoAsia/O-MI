@@ -45,7 +45,7 @@ object Responses{
 
   def NoResponse() : ResponseRequest = new ResponseRequest(OdfTreeCollection.empty, 0.seconds){
     override val asXML = xml.NodeSeq.Empty
-    override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelope =
+    override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelopeType =
       throw new AssertionError("This request is not an omiEnvelope")
   }
 

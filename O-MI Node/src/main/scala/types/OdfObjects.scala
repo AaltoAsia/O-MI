@@ -18,6 +18,7 @@ package OdfTypes
 import scala.collection.immutable.HashMap
 import scala.xml.NodeSeq
 
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.{defaultScope, scalaxb}
 import types.OdfTypes.OdfTreeCollection._
@@ -108,11 +109,11 @@ class OdfObjectsImpl(
   /** Method to convert to scalaxb generated class. */
   implicit def asObjectsType : ObjectsType ={
     ObjectsType(
-      Object = objects.map{
+      ObjectValue = objects.map{
         obj: OdfObject => 
         obj.asObjectType
       }.toSeq,
-      version
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n))))
     )
   }
   implicit def asXML : NodeSeq= {

@@ -70,9 +70,9 @@ class  OdfInfoItemImpl(
   /** Method to convert to scalaxb generated class. */
   implicit def asInfoItemType: InfoItemType = {
     InfoItemType(
-      description = description.map( des => des.asDescription ),
-      MetaData = metaData.map(_.asMetaData),
-      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")),
+      description = description.map( des => des.asDescription ).toSeq,
+      MetaData = metaData.map(_.asMetaData).toSeq,
+      iname = Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
       value = values.map{ 
         value : OdfValue[Any] =>
         value.asValueType
@@ -88,7 +88,7 @@ case class OdfMetaData(
   infoItems: OdfTreeCollection[OdfInfoItem]
 ) {
   /** Method to convert to scalaxb generated class. */
-  implicit def asMetaData : MetaData = MetaData( infoItems.map(_.asInfoItemType ):_* )
+  implicit def asMetaData : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType ) )
   
   def combine(another: OdfMetaData) : OdfMetaData ={
     OdfMetaData(
@@ -124,12 +124,7 @@ sealed trait OdfValue[+T]{
   implicit def asValueType : ValueType = {
     ValueType(
       value.toString,
-      typeValue,
-      unixTime = Option(timestamp.getTime / 1000),
-      dateTime = Option{
-        timestampToXML(timestamp)
-      },
-      attributes = attributes.mapValues(DataRecord(_))
+    Map(("@type" -> DataRecord(typeValue)),("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),("@dateTime" -> DataRecord(timestampToXML(timestamp)))) ++(attributes.mapValues(DataRecord(_)))
     )
   }
   def isNumeral : Boolean = typeValue match {

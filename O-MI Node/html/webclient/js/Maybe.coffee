@@ -81,3 +81,6 @@ Maybe.all = (args...) -> (f) ->
 
 #export
 [@None, @Some, @Maybe] = [None, Some, Maybe]
+
+
+window.maybe = "ready"

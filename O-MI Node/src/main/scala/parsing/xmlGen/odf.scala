@@ -13,58 +13,66 @@ package xmlTypes
 
 import scala.collection.immutable.ListMap
 
-case class ObjectsType(
-  Object: Seq[ObjectType] = Nil,
-  version: Option[String] = None)
+case class ObjectsType(ObjectValue: Seq[ObjectType] = Nil,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val version = attributes.get("@version") map { _.as[String]}
+}
 
 
-case class ObjectType(
-  id: Seq[QlmID] = Nil,
-  description: Option[Description] = None,
+case class ObjectType(id: Seq[QlmIDType] = Nil,
+  description: Seq[DescriptionType] = Nil,
   InfoItem: Seq[InfoItemType] = Nil,
-  Object: Seq[ObjectType] = Nil,
-  typeValue: Option[String] = None,
-  attributes: Map[String, scalaxb.DataRecord[Any]])
+  ObjectValue: Seq[ObjectType] = Nil,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val typeValue = attributes.get("@type") map { _.as[String]}
+}
 
+case class MetaDataType(InfoItem: Seq[InfoItemType] = Nil)
 
-case class MetaData(InfoItem: InfoItemType*)
-
-
-case class InfoItemType(
-  otherName: Seq[QlmID] = Nil,
-  description: Option[Description] = None,
-  MetaData: Option[MetaData] = None,
+case class InfoItemType(iname: Seq[QlmIDType] = Nil,
+  description: Seq[DescriptionType] = Nil,
+  MetaData: Seq[MetaDataType] = Nil,
   value: Seq[ValueType] = Nil,
-  name: String,
-  attributes: Map[String, scalaxb.DataRecord[Any]])
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val name = attributes("@name").as[String]
+}
 
+/** String with some"human-readable" text.
+*/
+case class DescriptionType(value: String,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val lang = attributes.get("@lang") map { _.as[String]}
+}
 
-case class Description(
-  value: String,
-  lang: Option[String] = None,
-  attributes: Map[String, scalaxb.DataRecord[Any]])
 
 
 //local serialVersionUID = 7337332908618699736
 //vs stream 364191708205046814
 @SerialVersionUID(364191708205046814L)
-case class QlmID(
+case class QlmIDType(value: String,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val idType = attributes.get("@idType") map { _.as[String]}
+  lazy val tagType = attributes.get("@tagType") map { _.as[String]}
+  lazy val startDate = attributes.get("@startDate") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val endDate = attributes.get("@endDate") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+}
+
+/*case class QlmID(
   value: String,
   idType: Option[String] = None,
   tagType: Option[String] = None,
   startDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   endDate: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
   attributes: ListMap[String, scalaxb.DataRecord[Any]] = ListMap.empty)
-
-object QlmID{
-  def createFromString(value: String) : QlmID = QlmID(value)  
+*/
+object QlmIDType{
+  def createFromString(value: String) : QlmIDType = QlmIDType(value)
 }
 
-
-case class ValueType(
-  value: String,
-  typeValue: String = "xs:string",
-  dateTime: Option[javax.xml.datatype.XMLGregorianCalendar] = None,
-  unixTime: Option[Long] = None,
-  attributes: Map[String, scalaxb.DataRecord[Any]])
+case class ValueType(value: String,
+  attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
+  lazy val typeValue = attributes("@type").as[String]
+  lazy val dateTime = attributes.get("@dateTime") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val unixTime = attributes.get("@unixTime") map { _.as[Long]}
+}
 
