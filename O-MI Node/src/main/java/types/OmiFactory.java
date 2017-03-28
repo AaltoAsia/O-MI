@@ -40,6 +40,7 @@ final public class OmiFactory{
         scala.Option.apply(oldest),
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
   }
@@ -69,6 +70,7 @@ final public class OmiFactory{
         scala.Option.apply(oldest),
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -94,6 +96,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -117,6 +120,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
 
         );
@@ -141,6 +145,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
 
         );
@@ -170,6 +175,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -197,6 +203,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -223,6 +230,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -247,6 +255,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -268,6 +277,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -288,6 +298,7 @@ final public class OmiFactory{
         scala.Option.apply(cb),
         types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
 
         );
@@ -306,6 +317,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
 
         );
@@ -332,6 +344,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -354,6 +367,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
 
         );
@@ -386,6 +400,7 @@ final public class OmiFactory{
     return new CancelRequest(
         types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
 
         );
@@ -484,6 +499,7 @@ final public class OmiFactory{
         odf,
         scala.Option.apply(cb),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }
@@ -501,6 +517,7 @@ final public class OmiFactory{
         odf,
         scala.Option.empty(),
         ttl,
+            scala.Option.empty(),
             scala.Option.empty()
         );
       }

@@ -102,8 +102,12 @@ object JavaHelpers{
      */
     override def toString: String = this.mkString("/")
     
-    def isAncestor( child: Path) : Boolean ={
+    def isAncestorOf( child: Path) : Boolean ={
       child.length > this.length && child.startsWith(this.pathSeq)
+    }
+
+    def isDescendantOf( parent: Path) : Boolean ={
+      parent.isAncestorOf( this )
     }
     def ancestorsAndSelf: Seq[Path] = pathSeq.inits.map( Path(_)).toSeq
     def ancestors: Seq[Path] = ancestorsAndSelf.tail

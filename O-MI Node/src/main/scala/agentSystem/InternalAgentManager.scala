@@ -14,14 +14,19 @@
 package agentSystem
 
 import scala.concurrent.Future
+import akka.actor.{ActorRef}
 import scala.util.{Try, Success, Failure}
 import akka.pattern.ask
 import http.CLICmds._
+import AgentResponsibilities._
+import AgentEvents._
 
 
 trait InternalAgentManager extends BaseAgentSystem {
   import context.dispatcher
 
+  protected def dbHandler: ActorRef
+  protected def requestHandler: ActorRef
   def successfulCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name $cmd succesfully."
   def successfulStartMsg( name : AgentName) : String = successfulCmdMsg( name, "started" )
   def successfulStopMsg( name : AgentName ) : String = successfulCmdMsg( name, "stopped" )
@@ -67,8 +72,10 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.config,
               agentInfo.agent,
               running = true,
-              agentInfo.ownedPaths
+              agentInfo.responsibilities
             )
+            requestHandler ! AgentStarted(agentInfo.name)
+            dbHandler ! AgentStarted(agentInfo.name)
             msg
           case failure : InternalAgentFailure => 
             failure.toString
@@ -95,10 +102,12 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.config,
               agentInfo.agent,
               running = false,
-              agentInfo.ownedPaths
+              agentInfo.responsibilities
             )
             val msg = successfulStopMsg(agentName)
             log.info(msg)
+            requestHandler ! AgentStopped(agentInfo.name)
+            dbHandler ! AgentStopped(agentInfo.name)
             msg
           case failure : InternalAgentFailure => 
             failure.toString

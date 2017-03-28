@@ -28,7 +28,9 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 import com.typesafe.config.Config
+import AgentResponsibilities._
 import types.Path
+import AgentEvents._
 
 sealed trait InternalAgentLoadFailure{ def msg : String }
 abstract class InternalAgentLoadException(val msg: String)  extends  Exception(msg) with InternalAgentLoadFailure
@@ -53,6 +55,8 @@ trait InternalAgentLoader extends BaseAgentSystem {
   Thread.currentThread.setContextClassLoader( createClassLoader())
   /** Settings for getting list of internal agents and their configs from application.conf */
 
+  protected def dbHandler: ActorRef
+  protected def requestHandler: ActorRef
   def start() : Unit = {
     val classnames = settings.agentConfigurations
     classnames.foreach {
@@ -71,12 +75,12 @@ trait InternalAgentLoader extends BaseAgentSystem {
     classname : String,
     config : Config,
     language : Option[Language],
-    ownedPaths: Seq[Path]
+    responsibilities: Seq[AgentResponsibility]
   ) : Unit = {
       val classLoader           = Thread.currentThread.getContextClassLoader
       val initialization : Try[Future[ActorRef]]= language match{
-        case Some( Scala()) => scalaAgentInit(name, classname, config, ownedPaths)
-        case Some( Java()) => javaAgentInit(name, classname, config, ownedPaths)
+        case Some( Scala()) => scalaAgentInit(name, classname, config, responsibilities)
+        case Some( Java()) => javaAgentInit(name, classname, config, responsibilities)
         case Some( Unknown( lang ) ) => 
           Try{ throw new Exception( s"Agent's language is not supported: $lang ")}
         case None => //Lets try to figure it out ourselves
@@ -87,7 +91,9 @@ trait InternalAgentLoader extends BaseAgentSystem {
         startF.onSuccess{ 
           case agentRef: ActorRef =>
           log.info( s"Started agent $name successfully.")
-          agents += name -> AgentInfo(name,classname, config, agentRef, running = true, ownedPaths)
+          agents += name -> AgentInfo(name,classname, config, agentRef, running = true, responsibilities)
+          requestHandler ! NewAgent(name,agentRef,responsibilities)
+          dbHandler ! NewAgent(name,agentRef,responsibilities)
         }
         startF.onFailure{ 
           case e : Throwable =>
@@ -112,7 +118,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     name : AgentName,
     classname : String,
     config : Config,
-    ownedPaths: Seq[Path]
+    responsibilities: Seq[AgentResponsibility]
   ) = Try{
       log.info("Instantiating agent: " + name + " of class " + classname)
       val classLoader           = Thread.currentThread.getContextClassLoader
@@ -132,7 +138,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
               //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
               val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
               //Get props and create agent
-              val props = propsCreator.props(config)
+              val props = propsCreator.props(config, requestHandler, dbHandler)
               props.actorClass match {
                 case clazz if clazz == actorClazz =>
                   val agent = context.actorOf( props, name.toString )
@@ -149,7 +155,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     name : AgentName,
     classname : String,
     config : Config,
-    ownedPaths: Seq[Path]
+    responsibilities: Seq[AgentResponsibility]
   ) = Try{
     log.info("Instantiating agent: " + name + " of class " + classname)
     val classLoader           = Thread.currentThread.getContextClassLoader
@@ -160,8 +166,8 @@ trait InternalAgentLoader extends BaseAgentSystem {
         case actorClass if agentInterface.isAssignableFrom(actorClass) => //&& 
                          // creatorInterface.isAssignableFrom(actorClass)) =>
           //Get props and create agent
-          val method = actorClass.getDeclaredMethod("props",classOf[Config])
-          val props : Props = method.invoke(null,config).asInstanceOf[Props]
+          val method = actorClass.getDeclaredMethod("props",classOf[Config],classOf[ActorRef],classOf[ActorRef])
+          val props : Props = method.invoke(null,config,requestHandler,dbHandler).asInstanceOf[Props]
           props.actorClass match {
             case clazz if clazz == actorClazz =>
               val agent = context.actorOf( props, name.toString )
@@ -191,7 +197,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     resultF
   }
   protected def loadAndStart(configEntry: AgentConfigEntry) : Unit =
-    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.language, configEntry.ownedPaths)
+    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.language, configEntry.responsibilities)
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.

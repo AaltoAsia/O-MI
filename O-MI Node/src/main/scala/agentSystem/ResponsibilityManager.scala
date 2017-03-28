@@ -35,11 +35,10 @@ import types.OdfTypes._
 import types.OmiTypes.{OmiResult,Results,WriteRequest, Responses, ResponseRequest}
 import types.Path
 
-trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
-  import context.{system}//, dispatcher}
+//trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
+//  import context.{system}//, dispatcher}
   /*
    * TODO: Use database and Authetication for responsible agents
-   */
   protected[this] def pathOwners: scala.collection.mutable.Map[Path,AgentName] =
     getConfigsOwnerships()
   protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {
@@ -62,8 +61,8 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
 
   protected def getConfigsOwnerships() = {
     val pathsToOwner =agents.values.collect{ 
-      case agentInfo : AgentInfo if agentInfo.ownedPaths.nonEmpty => 
-      agentInfo.ownedPaths.map{ 
+      case agentInfo : AgentInfo if agentInfo.responsibilities.nonEmpty => 
+      agentInfo.responsibilities.map{ 
         path => (path -> agentInfo.name) 
       }
     }.flatten.toMap
@@ -138,7 +137,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
         val infoItems= allInfoItems.filter{
           infoItem  : OdfInfoItem => paths.contains(infoItem.path) 
         }
-        log.debug( s"$senderName writing to paths owned by it"/*: $pathsO"*/)
+        log.debug( s"$senderName writing to paths owned by it")//: $pathsO")
         writeValues(infoItems)
       }.getOrElse{
         Future.successful(Responses.Success())  
@@ -157,7 +156,7 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
       val infoItems = allInfoItems.filter{
         infoItem : OdfInfoItem => paths.contains(infoItem.path) 
       }
-      log.debug( s"$senderName writing to paths not owned by anyone"/*: $paths"*/)
+      log.debug( s"$senderName writing to paths not owned by anyone")//: $paths")
       writeValues(infoItems, objectsWithMetadata).recover{
         case t: Throwable =>
           Responses.InternalError(t)
@@ -205,3 +204,4 @@ trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
 
 
 }
+   */

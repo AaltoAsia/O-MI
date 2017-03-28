@@ -18,6 +18,7 @@ import scala.util.{Success, Failure, Try}
 import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 import akka.actor.{
   Actor,
+  ActorRef,
   ActorLogging,
   Props,
   ActorInitializationException
@@ -29,32 +30,27 @@ import com.typesafe.config.Config
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
-case class ResponsibilityRequest( senderName: String, request: OmiRequest)
-trait ResponsibleScalaInternalAgent extends ScalaInternalAgent with ResponsibleInternalAgent{
+abstract class ResponsibleScalaInternalAgentTemplate(
+  requestHandler: ActorRef,
+  dbHandler: ActorRef
+) extends ScalaInternalAgentTemplate( requestHandler, dbHandler ) with ResponsibleScalaInternalAgent
+
+trait ResponsibleScalaInternalAgent
+ extends ScalaInternalAgent
+  with ResponsibleInternalAgent{
   import context.dispatcher
-  protected def handleWrite( write: WriteRequest ) :Unit
+  protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = writeToDB(write)
+  protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
+  //protected def handleCall( call: CallRequest ) : Future[ResponseRequest]
 
   override def receive  = {
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart
-    case Stop() => sender() ! stop
-    case write: WriteRequest => handleWrite(write)
+    case Start() => respond(start)
+    case Restart() => respond(restart)
+    case Stop() => respond(stop)
+    case write: WriteRequest => respondFuture(handleWrite(write))
+    case read: ReadRequest => respondFuture(handleRead(read))
+    //case call: CallRequest => handleCall(call)
    }
-  final protected def passWrite(write: WriteRequest) : Unit = {
 
-    val senderRef = sender()
-    val future = writeToNode(write) 
-    future.onComplete{
-      case Success( response: ResponseRequest ) => senderRef ! response
-      case Failure( t ) => senderRef ! Responses.InternalError(t)
-    }
-
-  }
-  final protected def incorrectWrite(write: WriteRequest) : Unit = {
-    sender() ! Responses.InternalError(new Exception(s"Write incorrect. Tryed to write incorrect value."))
-  }
-  final protected def forbiddenWrite(write: WriteRequest) : Unit = {
-    sender() ! Responses.InternalError(new Exception(s"Write forbidden. Tryed to write to path that is not mean to be writen."))
-  }
 }
 

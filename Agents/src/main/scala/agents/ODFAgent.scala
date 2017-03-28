@@ -3,7 +3,7 @@ package agents
 import agentSystem._ 
 import akka.util.Timeout
 import akka.pattern.ask
-import akka.actor.{Cancellable, Props}
+import akka.actor.{Cancellable, Props, ActorRef}
 import parsing.OdfParser
 import types.Path
 import types.Path._
@@ -23,10 +23,16 @@ import java.io.File
 import com.typesafe.config.Config
 
 object ODFAgent extends PropsCreator{
-  def props(config: Config) : Props = Props( new ODFAgent(config) )
+  def props( config: Config, requestHandler: ActorRef, dbHandler: ActorRef ): Props = {
+    Props( new ODFAgent(config, requestHandler, dbHandler) )
+  }
 }
 // Scala XML contains also parsing package
-class ODFAgent( override val config: Config) extends ScalaInternalAgent {
+class ODFAgent(
+  override val config: Config,
+  requestHandler: ActorRef, 
+  dbHandler: ActorRef
+) extends ScalaInternalAgentTemplate(requestHandler,dbHandler){
    val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
    val odfQueue : MutableQueue[OdfObjects]= MutableQueue()
   
@@ -96,9 +102,8 @@ class ODFAgent( override val config: Config) extends ScalaInternalAgent {
       val allNodes = updated ++ objectsWithMetaData
       val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
       
-      implicit val timeout = Timeout(interval)
       val write = WriteRequest( newObjects, None, interval)
-      val result = (agentSystem ? ResponsibilityRequest(name, write)).mapTo[ResponseRequest]
+      val result = writeToDB( write)
       result.onComplete{
         case Success( response: ResponseRequest )=>
           response.results.foreach{ 

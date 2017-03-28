@@ -1,5 +1,6 @@
 package agentSystem;
 
+
 import akka.actor.Actor;
 public interface InternalAgent extends Actor{
   
@@ -27,4 +28,5 @@ public interface InternalAgent extends Actor{
    */
   @Deprecated
   public InternalAgentResponse stop();
+
 }

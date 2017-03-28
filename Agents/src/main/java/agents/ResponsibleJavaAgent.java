@@ -26,7 +26,6 @@ import akka.actor.Cancellable;
 import com.typesafe.config.Config;
 
 import agentSystem.JavaInternalAgent; 
-import agentSystem.ResponsibilityRequest;
 import agentSystem.*;
 import types.Path;
 import types.OmiTypes.*;
@@ -50,61 +49,61 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
    *
    *  @param _config Contains configuration for this agent, as given in application.conf.
    */
-  static public Props props(final Config _config) {
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<ResponsibleJavaAgent>() {
       private static final long serialVersionUID = 355173L;
 
       @Override
       public ResponsibleJavaAgent create() throws Exception {
-        return new ResponsibleJavaAgent(_config);
+        return new ResponsibleJavaAgent(_config, requestHandler, dbHandler);
       }
     });
   }
   
   // Constructor
-  public ResponsibleJavaAgent(Config conf) {
-    super(conf);
+  public ResponsibleJavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler) {
+    super(conf, requestHandler, dbHandler);
   }
 
   @Override
-  public void handleWrite(WriteRequest write) {
-    Timeout timeout = new Timeout( write.handleTTL() );
-    ActorRef senderRef = getSender();
-    Future<ResponseRequest> future = writeToNode(write, timeout);
+  public Future<ResponseRequest> handleWrite(WriteRequest write) {
+    
+    Future<ResponseRequest> future = writeToDB(write);
 
     ExecutionContext ec = context().system().dispatcher();
-    future.onSuccess(new ForwardResult(getSelf(),senderRef), ec);
-    future.onFailure(new FailureWrite(getSelf(),senderRef,write), ec);
+    future.onSuccess(new LogResult(), ec);
+    future.onFailure(new LogFailure(), ec);
+    return future;
   }
 
+  @Override
+  public Future<ResponseRequest> handleRead(ReadRequest read) {
+    return readFromDB(read);
+  }
   // Contains function for the asynchronous handling of write result
-  protected final class ForwardResult extends OnSuccess<ResponseRequest> {
-    private ActorRef orginalSender;
-    private ActorRef self;
-    public ForwardResult(ActorRef _self, ActorRef _orginalSender){
-      orginalSender = _orginalSender;
-      self = _self;
-    } 
-    @Override 
-    public final void onSuccess(ResponseRequest response) {
-      orginalSender.tell(response, self);
-    }
+  public final class LogResult extends OnSuccess<ResponseRequest> {
+      @Override public final void onSuccess(ResponseRequest response) {
+        Iterable<OmiResult> results = response.resultsAsJava() ;
+        for( OmiResult result : results ){
+          if( result instanceof Results.Success ){
+            // This sends debug log message to O-MI Node logs if
+            // debug level is enabled (in logback.xml and application.conf)
+            log.debug(name() + " wrote paths successfully.");
+          } else {
+            log.warning(
+                "Something went wrong when " + name() + " writed, " + result.toString()
+                );
+          }
+        }
+      }
   }
-
-  protected final class FailureWrite extends OnFailure{
-    private ActorRef orginalSender;
-    private ActorRef self;
-    private WriteRequest write;
-    public FailureWrite(ActorRef _self, ActorRef _orginalSender, WriteRequest _write){
-      orginalSender = _orginalSender;
-      self = _self;
-      write = _write;
-    } 
-    @Override 
-    public final void onFailure(Throwable t) {
-      ResponseRequest fw = Responses.InternalError(t);
-      orginalSender.tell(fw, self);
-    }
+  // Contains function for the asynchronous handling of write failure
+  public final class LogFailure extends OnFailure{
+      @Override public final void onFailure(Throwable t) {
+          log.warning(
+            name() + "'s write future failed, error: " + t.getMessage()
+          );
+      }
   }
 
   /**
@@ -113,27 +112,19 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
    */
   @Override
   public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      getSender().tell(start(),getSelf());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      getSender().tell(stop(),getSelf());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      getSender().tell(restart(),getSelf());
-
-    }  else if( message instanceof WriteRequest ){
+    if( message instanceof WriteRequest ){
       WriteRequest write = (WriteRequest) message;
-      handleWrite(write);
+      respondFuture(handleWrite(write));
+    }  else if( message instanceof ReadRequest ){
+
+      ReadRequest read = (ReadRequest) message;
+      respondFuture(handleRead(read));
+
     } else if( message instanceof String) {
       String str = (String) message;
       if( str.equals("Update"))
         update();
-
-    } else unhandled(message);
+      else super.onReceive(message);
+    } else super.onReceive(message);
   }
 }

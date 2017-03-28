@@ -30,7 +30,7 @@ import akka.actor.Cancellable;
 import com.typesafe.config.Config;
 
 import agentSystem.JavaInternalAgent; 
-import agentSystem.ResponsibilityRequest;
+import akka.actor.ActorRef;
 import agentSystem.*;
 import types.Path;
 import types.OmiTypes.*;
@@ -55,14 +55,14 @@ public class JavaRoomAgent extends JavaInternalAgent {
    *  @param _config Contains configuration for this agent, as given in application.conf.
    *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
-  static public Props props(final Config _config) {
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<JavaRoomAgent>() {
       //Random serialVersionUID, for serialization.
       private static final long serialVersionUID = 35735155L;
 
       @Override
       public JavaRoomAgent create() throws Exception {
-        return new JavaRoomAgent(_config);
+        return new JavaRoomAgent(_config, requestHandler, dbHandler);
       }
     });
   }
@@ -78,8 +78,8 @@ public class JavaRoomAgent extends JavaInternalAgent {
   protected OdfObjects odf;
 
   // Constructor
-  public JavaRoomAgent(Config conf){
-
+  public JavaRoomAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
+    super(requestHandler,dbHandler);    
     // Parse configuration for interval
     interval = new FiniteDuration(
             conf.getDuration("interval", TimeUnit.SECONDS),
@@ -493,7 +493,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
-    log.debug(name + " pushing data...");
+    log.debug(name() + " pushing data...");
 
     // Create O-MI write request
     // interval as time to live
@@ -502,11 +502,8 @@ public class JavaRoomAgent extends JavaInternalAgent {
         odf   // O-DF
     );
     
-    // timeout for the write request, which means how long this agent waits for write results
-    Timeout timeout = new Timeout(interval);
-
     // Execute the request, execution is asynchronous (will not block)
-    Future<ResponseRequest> result = writeToNode(write, timeout);
+    Future<ResponseRequest> result = writeToDB(write);
 
     ExecutionContext ec = context().system().dispatcher();
     // Call LogResult function (below) when write was successful.
@@ -523,10 +520,10 @@ public class JavaRoomAgent extends JavaInternalAgent {
           if( result instanceof Results.Success ){
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(name + " wrote paths successfully.");
+            log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name + " writed, " + result.toString()
+                "Something went wrong when " + name() + " writed, " + result.toString()
                 );
           }
         }
@@ -536,7 +533,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + "'s write future failed, error: " + t.getMessage()
+            name() + "'s write future failed, error: " + t.getMessage()
           );
       }
   }

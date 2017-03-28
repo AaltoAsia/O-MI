@@ -35,12 +35,13 @@ import types.OdfTypes.OdfTreeCollection
 import types._
 import http.{ActorSystemContext, Actors}
 
+/*
 trait ResponseHandler extends OmiRequestHandlerBase{
   protected def agentSystem : ActorRef
+  */
   /** Method for handling ResponseRequest.
     * @param response request
     * @return (xml response, HTTP status code)
-    */
   def handleResponse( response: ResponseRequest ) : Future[ResponseRequest] ={
     val ttl = response.handleTTL
     implicit val timeout = Timeout(ttl)
@@ -62,10 +63,8 @@ trait ResponseHandler extends OmiRequestHandlerBase{
           case results: OdfTreeCollection[OmiResult] => Results.unionReduce(results)
         }
           //We do not want response request loops between O-MI Nodes
-          /*
-        case omiResult : OmiResult if omiResult.odf.isEmpty =>
-          Future.successful(Results.Success())
-          */
+       // case omiResult : OmiResult if omiResult.odf.isEmpty =>
+       //   Future.successful(Results.Success())
       }.toVector
     ).map( _.flatten )
 
@@ -75,3 +74,4 @@ trait ResponseHandler extends OmiRequestHandlerBase{
 
   }
 }
+*/

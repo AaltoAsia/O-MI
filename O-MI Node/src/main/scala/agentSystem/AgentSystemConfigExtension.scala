@@ -37,6 +37,26 @@ trait AgentSystemConfigExtension  extends Extension {
     }
   }
 }
+//
+//agent-system {
+//  starting-timeout = 10 seconds
+//  internal-agents = [
+//    {
+//      name = "agent"
+//      language = "scala"
+//      class = "agents."
+//      ??? = {
+//        "path" = "rwp"
+//        ...
+//      }
+//    },
+//    ...
+//  ]
+//
+//  ]
+//}
+//
+//
 
 class AgentConfig (
   val name: AgentName,

@@ -64,8 +64,8 @@ case class SubscriptionTimeout(id: Long)
 case class PollSubscription(id: Long)
 
 object SubscriptionManager{
-  def props()(
-    implicit settings: OmiConfigExtension,
+  def props(
+   settings: OmiConfigExtension,
    singleStores: SingleStores,
    callbackHandler: CallbackHandler
   ): Props = Props(

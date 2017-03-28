@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext;
 import scala.collection.immutable.HashMap;
 import scala.util.*;
 import akka.actor.Props;
+import akka.actor.ActorRef;
 import akka.util.Timeout;
 import static akka.pattern.Patterns.ask;
 import akka.japi.Creator;
@@ -23,7 +24,6 @@ import akka.actor.Cancellable;
 import com.typesafe.config.Config;
 
 import agentSystem.JavaInternalAgent; 
-import agentSystem.ResponsibilityRequest;
 import agentSystem.*;
 import types.Path;
 import types.OmiTypes.*;
@@ -48,13 +48,13 @@ public class JavaAgent extends JavaInternalAgent {
    *
    *  @param _config Contains configuration for this agent, as given in application.conf.
    */
-  static public Props props(final Config _config) {
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<JavaAgent>() {
       private static final long serialVersionUID = 3573L;
 
       @Override
       public JavaAgent create() throws Exception {
-        return new JavaAgent(_config);
+        return new JavaAgent(_config, requestHandler, dbHandler);
       }
     });
   }
@@ -72,7 +72,8 @@ public class JavaAgent extends JavaInternalAgent {
 
 
   // Constructor
-  public JavaAgent(Config conf){
+  public JavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
+    super(requestHandler,dbHandler);
     config = conf;
 
     // Parse configuration for interval
@@ -190,7 +191,7 @@ public class JavaAgent extends JavaInternalAgent {
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
-    log.debug(name + " pushing data...");
+    log.debug(name() + " pushing data...");
 
     // Create O-MI write request
     // interval as time to live
@@ -199,11 +200,9 @@ public class JavaAgent extends JavaInternalAgent {
         objects   // O-DF
     );
     
-    // timeout for the write request, which means how long this agent waits for write results
-    Timeout timeout = new Timeout(interval);
 
     // Execute the request, execution is asynchronous (will not block)
-    Future<ResponseRequest> result = writeToNode(write, timeout);
+    Future<ResponseRequest> result = writeToDB(write);
 
     ExecutionContext ec = context().system().dispatcher();
     // Call LogResult function (below) when write was successful.
@@ -220,10 +219,10 @@ public class JavaAgent extends JavaInternalAgent {
           if( result instanceof Results.Success ){
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(name + " wrote paths successfully.");
+            log.info(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name + " writed, " + result.toString()
+                "Something went wrong when " + name() + " writed, " + result.toString()
                 );
           }
         }
@@ -233,7 +232,7 @@ public class JavaAgent extends JavaInternalAgent {
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + "'s write future failed, error: " + t.getMessage()
+            name() + "'s write future failed, error: " + t.getMessage()
           );
       }
   }

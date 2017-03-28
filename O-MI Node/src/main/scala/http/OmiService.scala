@@ -25,9 +25,10 @@ import scala.xml.{XML,NodeSeq}
 import analytics.{AddUser, AddRead, AnalyticsStore}
 import org.slf4j.LoggerFactory
 
-import akka.util.ByteString
+import akka.util.{Timeout,ByteString}
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
+import akka.pattern.ask
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshallable}
@@ -76,7 +77,7 @@ class OmiServiceImpl(
   protected val subscriptionManager : ActorRef,
   val settings : OmiConfigExtension,
   val singleStores : SingleStores,
-  protected val requestHandler : OmiRequestHandlerBase,
+  protected val requestHandler : ActorRef,
   protected val callbackHandler : CallbackHandler,
   protected val analytics: Option[ActorRef]
   )
@@ -103,7 +104,7 @@ trait OmiService
 
 
   protected def log: org.slf4j.Logger
-  protected def requestHandler : OmiRequestHandlerBase
+  protected def requestHandler : ActorRef
   protected def callbackHandler : CallbackHandler
   protected val system : ActorSystem
   protected val analytics: Option[ActorRef]
@@ -353,14 +354,15 @@ trait OmiService
   }
 
   def handleRequest(request : OmiRequest ): Future[ResponseRequest ]= {
+    implicit val to = Timeout( request.handleTTL )
     request match {
       // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
       case respRequest: ResponseRequest if respRequest.results.forall{ result => result.odf.isEmpty } =>
         Future.successful( Responses.NoResponse() ) 
-      case sub: SubscriptionRequest => requestHandler.handle(sub)
+      case sub: SubscriptionRequest => (requestHandler ? sub).mapTo[ResponseRequest]
       case other : OmiRequest => 
         request.callback match {
-          case None => requestHandler.handle(other)
+          case None => (requestHandler ? other).mapTo[ResponseRequest]
           case Some(callback: RawCallback) => 
             Future.successful(
               Responses.InvalidCallback(
@@ -369,7 +371,7 @@ trait OmiService
               )
             )
           case Some(callback: DefinedCallback) => {
-            requestHandler.handle(other)  map { response =>
+            (requestHandler ? other).mapTo[ResponseRequest]  map { response =>
               callbackHandler.sendCallback( callback, response )
             }
             Future.successful(

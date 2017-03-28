@@ -74,14 +74,14 @@ case class OdfObjects(
   //def withValues: (Path, Seq[OdfValue[Any]]) => OdfObjects = { case (p, v) => withValues(p, v) } 
   def withValues(p: Path, v: Seq[OdfValue[Any]]): OdfObjects = {
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(p)) o.withValues(p,v) else o)
+      objects = objects map (o => if (o.path.isAncestorOf(p)) o.withValues(p,v) else o)
     )
   }
   def withValues(pathValuesPairs: Map[Path,OdfTreeCollection[OdfValue[Any]]]): OdfObjects = {
     this.copy(
       objects = objects map {
         case o : OdfObject=> 
-          if (pathValuesPairs.keys.exists( p => o.path.isAncestor(p))) 
+          if (pathValuesPairs.keys.exists( p => o.path.isAncestorOf(p))) 
             o.withValues(pathValuesPairs) 
           else o
       }
@@ -95,7 +95,7 @@ case class OdfObjects(
     metaData:             Option[OdfMetaData] = None
   ): OdfObjects ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, values, description, metaData) else o)
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, values, description, metaData) else o)
     )
   }
 
@@ -104,7 +104,7 @@ case class OdfObjects(
     description: Option[OdfDescription] 
   ): OdfObjects ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, description) else o)
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, description) else o)
     )
   }
 
@@ -189,7 +189,7 @@ case class OdfObject(
     this.copy(
       objects = objects map (
         o => 
-          if( pathValuesPairs.keys.exists( p => o.path.isAncestor(p) )) 
+          if( pathValuesPairs.keys.exists( p => o.path.isAncestorOf(p) )) 
             o.withValues(pathValuesPairs) 
           else o),
       infoItems = infoItems map (
@@ -206,7 +206,7 @@ case class OdfObject(
     metaData:             Option[OdfMetaData] = None
   ): OdfObject ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, values, description, metaData) else o),
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, values, description, metaData) else o),
       infoItems = infoItems map (i => if (i.path == spath) i.update( values, description, metaData) else i) 
     ) 
   }
@@ -215,7 +215,7 @@ case class OdfObject(
     description:          Option[OdfDescription] 
   ): OdfObject ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, description) else o),
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, description) else o),
       infoItems = infoItems map (i => if (i.path == spath) i.update(  description = description) else i),
       description = if( this.path == spath ) description else this.description
     ) 

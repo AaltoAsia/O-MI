@@ -39,14 +39,17 @@ import com.typesafe.config.Config
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object  ExternalAgentListener extends PropsCreator{
-  def props( config: Config ): Props = {
-          Props(new ExternalAgentListener(config))
+  def props( config: Config, requestHandler: ActorRef, dbHandler: ActorRef ): Props = {
+          Props(new ExternalAgentListener(config,requestHandler, dbHandler))
   }
 }
 /** AgentListener handles connections from agents.
   */
-class ExternalAgentListener(override val config: Config)
-  extends ScalaInternalAgent
+class ExternalAgentListener(
+  override val config: Config, 
+  requestHandler: ActorRef, 
+  dbHandler: ActorRef
+) extends ScalaInternalAgentTemplate(requestHandler,dbHandler)
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
   class ExtAgentAuthorization extends {
@@ -148,7 +151,7 @@ object ExternalAgentHandler{
   */
 class ExternalAgentHandler(
     sourceAddress: InetSocketAddress,
-    agentSystem: ActorRef
+    requestHandler: ActorRef
   ) extends Actor with ActorLogging {
 
   import Tcp._
@@ -187,7 +190,7 @@ class ExternalAgentHandler(
             val ttl  = Duration(5,SECONDS)
             implicit val timeout = Timeout(ttl)
             val write = WriteRequest( odf, None,  Duration(5,SECONDS))
-            val result = (agentSystem ? ResponsibilityRequest(sourceAddress.toString, write)).mapTo[ResponseRequest]
+            val result = (requestHandler ? write).mapTo[ResponseRequest]
             result.onComplete{
               case Success( response: ResponseRequest )=>
                 response.results.foreach{ 

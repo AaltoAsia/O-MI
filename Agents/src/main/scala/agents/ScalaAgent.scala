@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.util.Timeout
 import akka.pattern.ask
-import akka.actor.{Cancellable, Props, Actor}
+import akka.actor.{Cancellable, Props, Actor, ActorRef}
 
 import com.typesafe.config.Config
 
@@ -32,8 +32,12 @@ object ScalaAgent extends PropsCreator {
    * Method for creating Props for ScalaAgent.
    *  @param config Contains configuration for this agent, as given in application.conf.
    */
-  def props( config: Config) : Props = { 
-    Props(new ScalaAgent(config)) 
+  def props( 
+    config: Config,
+    requestHandler: ActorRef,
+    dbHandler: ActorRef
+    ) : Props = { 
+    Props(new ScalaAgent(config,requestHandler,dbHandler)) 
   }  
 
 }
@@ -42,7 +46,11 @@ object ScalaAgent extends PropsCreator {
  * Pushes random numbers to given O-DF path at given interval.
  * Can be used in testing or as a base for other agents.
  */
-class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
+class ScalaAgent( 
+  override val config: Config,
+  requestHandler: ActorRef, 
+  dbHandler: ActorRef
+)  extends ScalaInternalAgentTemplate(requestHandler, dbHandler){
 
   //Interval for scheluding generation of new values, parsed from configuration
   val interval : FiniteDuration= config.getDuration(
@@ -120,6 +128,7 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
 
     // timestamp for the value
     val timestamp : Timestamp = currentTimestamp
+    log.info(s"$name updating values at $timestamp")
     // type metadata, default is xs:string
     val typeStr : String= "xs:integer"
     //New value as String
@@ -157,18 +166,20 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
     // Create O-MI write request
     // interval as time to live
     val write : WriteRequest = WriteRequest( objects, None, interval )
+    log.info(s"$name writing:\n $write")
 
     // Execute the request, execution is asynchronous (will not block)
-    val result : Future[ResponseRequest] = writeToNode(write) 
+    val result : Future[ResponseRequest] = writeToDB(write) 
 
     // Asynchronously handle request's execution's completion
     result.onComplete{
       case Success( response: ResponseRequest )=>
+        log.info(s"$name wrote got ${response.results.length} results.")
         response.results.foreach{ 
           case wr: Results.Success =>
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(s"$name wrote paths successfully.")
+            log.info(s"$name wrote paths successfully.")
           case ie: OmiResult => 
             log.warning(s"Something went wrong when $name writed, $ie")
         }
@@ -186,9 +197,9 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
   override  def receive : Actor.Receive = {
     //Following are inherited from ScalaInternalActor.
     //Must tell/send return value to sender, ask pattern used.
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
+    case Start() => respond(start)
+    case Restart() => respond(restart)
+    case Stop() => respond(stop)
     //ScalaAgent specific messages
     case Update() => update
   }

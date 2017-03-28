@@ -16,7 +16,7 @@ package agentSystem
 
 import scala.collection.JavaConversions._
 import scala.util.{Try, Failure, Success}
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map => MutableMap }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -36,43 +36,45 @@ import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
 import types.Path
 import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
+import AgentResponsibilities._
 
+object AgentEvents {
+  case class AgentStarted( agentName: AgentName )
+  case class AgentStopped( agentName: AgentName )
+  case class NewAgent( agentName: AgentName, actorRef: ActorRef, responsibilities: Seq[AgentResponsibility] )
+}
 object AgentSystem {
-  def props(analyticsStore: Option[ActorRef])(
-    implicit settings: AgentSystemConfigExtension,
-    dbConnection: DB,
-    singleStores: SingleStores,
-    callbackHandler: CallbackHandler
-      ): Props = Props(
+  def props(analyticsStore: Option[ActorRef],
+    dbHandler: ActorRef,
+    requestHandler: ActorRef,
+    settings: AgentSystemConfigExtension
+  ): Props = Props(
   {val as = new AgentSystem()(
-    settings, 
-    dbConnection,
-    singleStores,
-    callbackHandler,
-    analyticsStore
+    dbHandler,
+    requestHandler,
+    settings
   )
   as.start()
   as})
 }
 
 class AgentSystem()(
-    protected implicit val settings: AgentSystemConfigExtension,
-    protected implicit val dbConnection: DB,
-    protected implicit val singleStores: SingleStores,
-    protected implicit val callbackHandler: CallbackHandler,
-    protected implicit val analyticsStore: Option[ActorRef]
+    protected val dbHandler: ActorRef,
+    protected val requestHandler: ActorRef,
+    protected implicit val settings: AgentSystemConfigExtension
   )
   extends InternalAgentLoader
   with InternalAgentManager
-  with ResponsibleAgentManager
-  with DBPusher{
-  protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = Map.empty
+  //with ResponsibleAgentManager
+  //with DBPusher
+  {
+  protected[this] val agents: MutableMap[AgentName, AgentInfo] = MutableMap.empty
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
     case  restart: ReStartAgentCmd  => handleRestart( restart )
     case ListAgentsCmd() => sender() ! agents.values.toVector
-    case ResponsibilityRequest(senderName, write: WriteRequest ) => handleWrite(senderName, write)  
+  //  case ResponsibilityRequest(senderName, write: WriteRequest ) => handleWrite(senderName, write)  
   }  
 }
 
@@ -80,13 +82,13 @@ class AgentSystem()(
     def name:       AgentName
     def classname:  String
     def config:     Config
-    def ownedPaths: Seq[Path]
+    def responsibilities: Seq[AgentResponsibility]
   }
   case class AgentConfigEntry(
     name:       AgentName,
     classname:  String,
     config:     Config,
-    ownedPaths: Seq[Path],
+    responsibilities: Seq[AgentResponsibility],
     language:   Option[Language]
   ) extends AgentInfoBase
   object AgentConfigEntry{
@@ -98,17 +100,25 @@ class AgentSystem()(
         agentConfig.getString(s"language")
       }.toOption.map( Language(_) )
 
-      val ownedPaths : Seq[Path] = Try{
-        iterableAsScalaIterable(
-          agentConfig.getStringList(s"owns")
-        ).map{ str => Path(str)}.toVector
+      val responsibilities : Seq[AgentResponsibility] = Try{
+        val resposiblityObj = agentConfig.getObject(s"responsible")
+        val pathStrings : Iterable[String] = resposiblityObj.keys
+        val resposiblityConfig = resposiblityObj.toConfig()
+        pathStrings.map{
+          case pathStr: String  => 
+            AgentResponsibility(
+              name,
+              Path(pathStr),
+              RequestFilter(resposiblityConfig.getString(pathStr))
+            )
+        }.toVector
       } match {
         case Success(s) => s
         case Failure(e: Missing) => Seq.empty
         case Failure(e) => throw e
       }
       val config = agentConfig
-      AgentConfigEntry(name, classname, config, ownedPaths, language) 
+      AgentConfigEntry(name, classname, config, responsibilities, language) 
     }
   }
   case class AgentInfo(
@@ -117,9 +127,8 @@ class AgentSystem()(
     config:     Config,
     agent:      ActorRef,
     running:    Boolean,
-    ownedPaths: Seq[Path]
+    responsibilities: Seq[AgentResponsibility]
   ) extends AgentInfoBase 
-
 
   sealed trait Language{}
   final case class Unknown(lang : String ) extends Language
@@ -136,7 +145,7 @@ object Language{
 
 trait BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
-  protected def agents: scala.collection.mutable.Map[AgentName, AgentInfo]
+  protected def agents: MutableMap[AgentName, AgentInfo]
   protected implicit def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
   override val supervisorStrategy =
