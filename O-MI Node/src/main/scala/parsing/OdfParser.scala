@@ -126,7 +126,7 @@ object OdfParser extends Parser[OdfParseResult] {
       obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
       obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
       obj.description.map{ des => OdfDescription( des.value, des.lang )}.headOption,
-      obj.typeValue
+      Some(obj.typeValue)
     ) 
   }
   
@@ -140,12 +140,8 @@ object OdfParser extends Parser[OdfParseResult] {
     OdfInfoItem(
       npath,
       item.value.map{
-        value => 
-        OdfValue(
-          value.value,
-          value.typeValue,
-          timeSolver(value, requestProcessTime)
-        )
+        valueType => 
+          parseValue(requestProcessTime,valueType)
       },
       item.description.map{ des =>
         OdfDescription( des.value, des.lang ) 
@@ -163,6 +159,35 @@ object OdfParser extends Parser[OdfParseResult] {
         //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
       //}
     ) 
+  }
+
+  private[this] def parseValue(requestProcessTime: Timestamp, valueType: ValueType) = { 
+    val typeValue = valueType.typeValue
+    //XXX: USING HEAD WITHOUT CHECKING LENGHT
+    val headOption = valueType.mixed.headOption
+    val valueheadOption = headOption.map{
+      dataRecord =>
+        typeValue match {
+          case "odf" => 
+            val data= dataRecord.as[Elem]
+            val odf = (data \ "Objects")
+            odf.headOption match {
+              case Some(head) =>
+                //parse(head/*.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns", "odf.xsd",Node.NoAttributes)*/)
+                head.toString
+              case None =>
+                throw ParseError("No Objects child found in msg.")
+            }
+          case str: String  => 
+            dataRecord.as[String]
+        }
+    }
+    OdfValue(
+      valueheadOption.getOrElse(""),
+      valueType.typeValue,
+      timeSolver(valueType, requestProcessTime)
+    )
+
   }
 
   /**

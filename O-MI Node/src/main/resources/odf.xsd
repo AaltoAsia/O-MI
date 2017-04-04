@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- edited with XMLSpy v2012 rel. 2 (x64) (http://www.altova.com) by Kary Främling (Aalto University) -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/odf/1.0/" targetNamespace="http://www.opengroup.org/xsd/odf/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+<!-- edited by Kary Fr�mling (Aalto University) -->
+<!-- Root Data Model Schema -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/odf/2.0/" targetNamespace="http://www.opengroup.org/xsd/odf/2.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.0">
 	<xs:element name="Objects" type="ObjectsType">
 		<xs:annotation>
 			<xs:documentation>Data Model Root Element</xs:documentation>
@@ -23,7 +24,7 @@
 			<xs:element name="InfoItem" type="InfoItemType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="Object" type="ObjectType" minOccurs="0" maxOccurs="unbounded"/>
 		</xs:sequence>
-		<xs:attribute name="type" type="xs:string" use="optional"/>
+		<xs:attribute name="type" type="xs:string" use="required"/>
 		<xs:anyAttribute>
 			<xs:annotation>
 				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
@@ -48,6 +49,11 @@
 		<xs:attribute name="name" type="xs:string" use="required">
 			<xs:annotation>
 				<xs:documentation>Name of InfoItem, such as "PowerConsumption", "Diameter" or similar.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="type" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Type definition for the InfoItem, such as "http://schema.org/latitude". From Version 2.0 onwards.</xs:documentation>
 			</xs:annotation>
 		</xs:attribute>
 		<xs:anyAttribute>
@@ -111,18 +117,13 @@
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
-	<xs:complexType name="ValueType">
-		<xs:simpleContent>
-			<xs:extension base="xs:string">
-				<xs:attribute name="type" use="optional" default="xs:string">
-					<xs:simpleType>
-						<xs:restriction base="xs:string"/>
-					</xs:simpleType>
-				</xs:attribute>
-				<xs:attribute name="dateTime" type="xs:dateTime" use="optional"/>
-				<xs:attribute name="unixTime" type="xs:long" use="optional"/>
-				<xs:anyAttribute/>
-			</xs:extension>
-		</xs:simpleContent>
+	<xs:complexType name="ValueType" mixed="true">
+		<xs:sequence>
+			<xs:element ref="Objects" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>
+		<xs:attribute name="type" type="xs:string" use="optional" default="xs:string"/>
+		<xs:attribute name="dateTime" type="xs:dateTime" use="optional"/>
+		<xs:attribute name="unixTime" type="xs:long" use="optional"/>
+		<xs:anyAttribute/>
 	</xs:complexType>
 </xs:schema>

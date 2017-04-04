@@ -35,7 +35,7 @@ class OmiResult(
   implicit def asRequestResultType : xmlTypes.RequestResultType ={
     xmlTypes.RequestResultType(
       returnValue.toReturnType,
-      requestIDs.headOption.map{
+      requestIDs.map{
         id => xmlTypes.IdType(id.toString)
       },
       odf.map{ 

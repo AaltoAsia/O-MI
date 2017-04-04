@@ -53,8 +53,11 @@ trait DBReadHandler extends DBHandlerBase{
            default.newest.map{ t => s"newest: $t," }.getOrElse("") + 
            default.oldest.map{ t => s"oldest: $t," }.getOrElse("") + 
            s"ttl: ${default.ttl} )"
-        )
+          )
+
          val leafs = getLeafs(read.odf)
+
+
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
          val metadataTree = (singleStores.hierarchyStore execute GetTree())

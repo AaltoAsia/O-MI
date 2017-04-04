@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2012 rel. 2 (x64) (http://www.altova.com) by Kary Främling (Aalto University) -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/omi/1.0/" targetNamespace="http://www.opengroup.org/xsd/omi/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
-	<xs:element name="omiEnvelope" type="OmiEnvelopeType">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/omi/2.0/" targetNamespace="http://www.opengroup.org/xsd/omi/2.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.0">
+	<xs:element name="omiEnvelope" type="OmiEnvelopeType"/>
+	<xs:complexType name="OmiEnvelopeType">
 		<xs:annotation>
 			<xs:documentation>Root element of Open Messaging Interface.</xs:documentation>
 		</xs:annotation>
-	</xs:element>
-	<xs:complexType name="OmiEnvelopeType">
 		<xs:sequence>
 			<xs:choice>
 				<xs:element name="read" type="ReadRequestType"/>
 				<xs:element name="write" type="WriteRequestType"/>
 				<xs:element name="response" type="ResponseListType"/>
 				<xs:element name="cancel" type="CancelRequestType"/>
+				<xs:element name="call" type="CallRequestType"/>
+				<xs:element name="delete" type="DeleteRequestType"/>
 			</xs:choice>
 		</xs:sequence>
 		<xs:attribute name="version" type="xs:string" use="required">
@@ -56,7 +57,7 @@
 	</xs:complexType>
 	<xs:complexType name="RequestBaseType" abstract="true">
 		<xs:annotation>
-			<xs:documentation>Base type for "read" and "write" requests.</xs:documentation>
+			<xs:documentation>Base type for "read", "write", "call" and "delete" requests.</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
 			<xs:element name="nodeList" type="NodesType" minOccurs="0"/>
@@ -90,11 +91,12 @@
 				<xs:attribute name="interval" use="optional">
 					<xs:annotation>
 						<xs:documentation>
-              If an "interval" attibute is included, it indicates that this is a subscription request that uses the given interval.
+              If an "interval" attribute is included, it indicates that this is a subscription request that uses the given interval.
               Values 0 (as often as data can be read from the target),
               -1 (very time the subscribed target publishes/pushes a new value)
               and -2 (every time the subscribed target (typically a PEID or device) connects to an O-MI node)
-              have special significations.</xs:documentation>
+              have special significations.
+            </xs:documentation>
 					</xs:annotation>
 					<xs:simpleType>
 						<xs:union memberTypes="PositiveDouble DoubleMinusOne DoubleMinusTwo"/>
@@ -120,6 +122,11 @@
 						<xs:documentation>Retrieve the newest available number of historical data available</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
+				<xs:attribute name="all" type="xs:boolean" use="optional">
+					<xs:annotation>
+						<xs:documentation>Retrieve all available values. all="true" overrides other begin/end/oldest/newest attributes. From Version 2.0 onwards.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
@@ -142,21 +149,37 @@
 			<xs:element name="result" type="RequestResultType" maxOccurs="unbounded"/>
 		</xs:sequence>
 	</xs:complexType>
+	<xs:complexType name="CallRequestType">
+		<xs:annotation>
+			<xs:documentation>Call request type.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="RequestBaseType"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="DeleteRequestType">
+		<xs:annotation>
+			<xs:documentation>Delete request type.</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="RequestBaseType"/>
+		</xs:complexContent>
+	</xs:complexType>
 	<xs:complexType name="RequestResultType">
 		<xs:annotation>
 			<xs:documentation>Result of a request.</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:element name="return" type="ReturnType" minOccurs="1">
-				<xs:annotation>
-					<xs:documentation>Indicates success/failure of request.</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="requestID" type="IdType" minOccurs="0">
-				<xs:annotation>
-					<xs:documentation>not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or reponse with "value"..</xs:documentation>
-				</xs:annotation>
-			</xs:element>
+				<xs:element name="return" type="ReturnType" minOccurs="1">
+					<xs:annotation>
+						<xs:documentation>Indicates success/failure of request.</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="requestID" type="IdType" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or response with "value".</xs:documentation>
+					</xs:annotation>
+				</xs:element>
 			<xs:element name="msg" type="MsgType" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>response value. Completely free-format. Present if successful.</xs:documentation>

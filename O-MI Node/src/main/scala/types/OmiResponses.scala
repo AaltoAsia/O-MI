@@ -49,6 +49,13 @@ object Responses{
       throw new AssertionError("This request is not an omiEnvelope")
   }
 
+  def NotFound( description: String ) : ResponseRequest = NotFound( Some( description) )
+  def NotFound( description: String, ttl: Duration ) : ResponseRequest = NotFound( Some( description),ttl )
+  def NotFound( description: Option[String], ttl: Duration = 10.seconds ) : ResponseRequest = ResponseRequest(
+    OdfTreeCollection(Results.NotFound(description)),
+    ttl
+  )
+
   def NotFoundRequestIDs( requestIDs: Vector[RequestID], ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
     OdfTreeCollection(Results.NotFoundRequestIDs(requestIDs)),
     ttl

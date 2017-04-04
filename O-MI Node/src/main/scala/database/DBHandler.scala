@@ -32,6 +32,7 @@ trait DBHandlerBase extends Actor
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
   protected implicit def analyticsStore: Option[ActorRef]
+  protected def agentResponsibilities: AgentResponsibilities 
 }
 
 object DBHandler{
@@ -73,29 +74,24 @@ class DBHandler(
         }
       )
     case read: ReadRequest => 
+      log.debug(s"DBHandler received read.")
       respond( 
-        permissionCheckFuture(read).flatMap{
-          case false => Future.successful( permissionFailureResponse )
-          case true =>  
-            val f = handleRead( read ) 
-            f.onSuccess{
-              case response: ResponseRequest => 
-                val msg = response.results.mkString("\n")
-                log.info( s"Read's result are:\n$msg")
-            
-            }
-            f
-
-        }
+        handleRead( read )
       )
   }
 
-  private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
+  protected val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
   case class AgentInformation( agentName: AgentName, running: Boolean, actorRef: ActorRef)
   private val agents: MutableMap[AgentName,AgentInformation] = MutableMap.empty
 
   private def respond( futureResponse: Future[ResponseRequest] ) = {
     val senderRef = sender()
+    futureResponse.onComplete{
+      case Failure(t) =>
+        log.debug(s"RBHandler failed to process read/write: $t")
+      case Success(response) =>
+        log.debug(s"DBHandler successfully processed read/write.")
+    }
     futureResponse.recover{
       case e: Exception =>
         Responses.InternalError(e)
@@ -106,8 +102,8 @@ class DBHandler(
   }
 
   def permissionCheck( request: OdfRequest)={
-    if( request.senderInformation.isEmpty){
-      agentResponsibilities.checkResponsibilityFor( None, request)
+    if( request.senderInformation.isEmpty ){
+      true
     } else {
       request.senderInformation.forall{
         case ActorSenderInformation( actorName, actorRef ) =>

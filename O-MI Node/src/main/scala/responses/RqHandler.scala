@@ -15,6 +15,7 @@
 
 package responses
 
+import scala.util.{Success, Failure }
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
@@ -69,8 +70,10 @@ case class AgentInformation( agentName: AgentName, running: Boolean, actorRef: A
 private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
 private val agents: MutableMap[AgentName,AgentInformation] = MutableMap.empty
 def receive = {
+  case read: ReadRequest => respond( handleReadRequest( read ))
+  case write: WriteRequest => respond( handleWriteRequest( write ))
+  case call: CallRequest => respond( handleCallRequest( call ))
   case response: ResponseRequest => respond(handleResponse(response)) 
-  case odfRequest: OdfRequest => respond(handleOdfRequest( odfRequest))
   case omiRequest: OmiRequest => respond(handleNonOdfRequest( omiRequest ))
   case na: NewAgent => addAgent(na)
   case na: AgentStopped => agentStopped(na.agentName)
@@ -78,15 +81,60 @@ def receive = {
 
 }
 
-def handleOdfRequest( odfRequest: OdfRequest) : Future[ResponseRequest] = {
+def handleReadRequest( read: ReadRequest) : Future[ResponseRequest] = {
+  implicit val to = Timeout(read.handleTTL)
+  log.debug("ReqeustHandler sending read to DBHandler.")
+  val responseFuture = (dbHandler ? read).mapTo[ResponseRequest] 
+  responseFuture.onComplete{
+    case Failure(t) =>
+    log.debug(s"ReqeustHandler failed to receive response from DBHandler: $t")
+    case Success(response) =>
+    log.debug(s"ReqeustHandler received successfully response from DBHandler.")
+  }
+  responseFuture
+}
+def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
   log.info(s"ReqeustHandler handling OdfRequest...")
-    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( odfRequest )
+    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
     val fSeq = Future.sequence(
       responsibleToRequest.map{
         case (None, subrequest) =>  
           implicit val to = Timeout(subrequest.handleTTL)
           log.info(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
             (dbHandler ? subrequest).mapTo[ResponseRequest]
+          case (Some(agentName), subrequest) => 
+            log.info(s"Asking responsible Agent $agentName to handle part of request.")
+            askAgent(agentName,subrequest)
+          }.map{
+            case future: Future[ResponseRequest] =>
+              future.recover{
+                case e: Exception =>
+                  Responses.InternalError(e)
+              }
+          }
+        )
+      fSeq.map{
+          case responses =>
+            val results = responses.flatMap{
+                case response => response.results
+              }
+              ResponseRequest(
+                Results.unionReduce(results.toVector)
+              )
+          }
+  
+  }
+def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
+  log.info(s"ReqeustHandler handling OdfRequest...")
+    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
+    val fSeq = Future.sequence(
+      responsibleToRequest.map{
+        case (None, subrequest) =>  
+          Future.successful{
+              Responses.NotFound(
+                "Call request for path that do not have responsible agent for service.")
+              
+          }
           case (Some(agentName), subrequest) => 
             log.info(s"Asking responsible Agent $agentName to handle part of request.")
             askAgent(agentName,subrequest)

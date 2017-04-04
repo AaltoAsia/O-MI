@@ -22,8 +22,10 @@ import javax.xml.datatype.DatatypeFactory
 import scala.util.Try
 import scala.xml.XML
 
+import parsing.OdfParser
 import parsing.xmlGen._
-import parsing.xmlGen.scalaxb.{CanWriteXML, DataRecord}
+import parsing.xmlGen.scalaxb._
+import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
 
@@ -122,8 +124,35 @@ sealed trait OdfValue[+T]{
   def attributes:           Map[String, String]
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
+    val valueAsDataRecord = (typeValue, value) match  {
+      case ("odf", xmlStr: String)  =>   
+        val parsed = OdfParser.parse(xmlStr)
+        parsed match {
+          case Right( odf: OdfObjects ) =>
+          DataRecord( 
+            Some("odf.xsd"),
+            Some("objects"),
+            odf.asXML
+          )
+          case Left( errors: Seq[ParseError] ) =>
+            DataRecord(errors.map(_.msg).mkString("\n"))
+        }
+        case (otheType, otherValue) =>
+          otherValue match {
+            case s: Short   => DataRecord(s) 
+            case i: Int     => DataRecord(i) 
+            case l: Long    => DataRecord(l) 
+            case f: Float   => DataRecord(f) 
+            case d: Double  => DataRecord(d)
+            case b: Boolean => DataRecord(b)
+            case s: String  => DataRecord(s)
+            case a: Any     => DataRecord(a.toString)
+          }
+    }
     ValueType(
-      value.toString,
+      Seq(
+       valueAsDataRecord 
+      ),
     Map(("@type" -> DataRecord(typeValue)),("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),("@dateTime" -> DataRecord(timestampToXML(timestamp)))) ++(attributes.mapValues(DataRecord(_)))
     )
   }

@@ -66,13 +66,24 @@ class AgentResponsibilities(){
     def filter: RequestFilter => Boolean = createFilter(read)
     val odf = read.odf
     val leafPathes = getLeafs(odf).map(_.path)
-    val pathsThatHaveResponsible= pathsToResponsible.keys.filter{
+    val pathsWithResponsible= pathsToResponsible.keys.filter{
       case path: Path => 
         leafPathes.exists{
           case readLeafPath => readLeafPath.isAncestorOf(path) 
         }
     }
-    val neededResponsible = pathsThatHaveResponsible.flatMap{
+    val pathsWithoutResponsible = leafPathes.filterNot{
+      case path: Path => 
+        pathsWithResponsible.exists{
+          pwr => 
+            pwr.isAncestorOf(path)
+//What if Object has one object that has responsible and one that doesn't?
+//1. need to know whole o-df?
+//2. Send request to DBHandler and speficied request to Agents?
+//   Moves problem to DBHandler? Path with responsible, could get two values.
+        }
+    }
+    val neededResponsible = pathsWithResponsible.flatMap{
       case path: Path => 
         pathsToResponsible.get(path)
     }.map{
@@ -94,7 +105,7 @@ class AgentResponsibilities(){
     }
 
     //TODO: Get objects that do not have responsible
-    pathsThatHaveResponsible
+    pathsWithResponsible
     ???
   }
   

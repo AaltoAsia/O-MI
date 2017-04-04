@@ -217,6 +217,23 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
+  private[this] def parseCall(write: xmlTypes.CallRequestType, ttl: Duration, user: Option[RemoteAddress]): OmiParseResult = {
+    val odfParseResult = parseMsg(write.msg.flatMap(_.mixed.headOption), write.msgformat)
+    val callback = write.callback.map{ addr => RawCallback( addr.toString ) }
+    odfParseResult match {
+      case Left(errors)  => Left(errors)
+      case Right(odf) =>
+        Right(Iterable(
+          CallRequest(
+            odf,
+            callback,
+            ttl,
+            user
+          )
+        ))
+    }
+  }
+
   private[this] def parseCancel(cancel: xmlTypes.CancelRequestType, ttl: Duration): OmiParseResult = {
     Right(Iterable(
       CancelRequest(
