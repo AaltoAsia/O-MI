@@ -1,4 +1,4 @@
-package parsing
+package parsing 
 package xmlGen
 package scalaxb
 

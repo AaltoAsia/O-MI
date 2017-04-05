@@ -62,17 +62,21 @@ abstract trait Parser[Result] {
    * @return ParseErrors found while checking, if empty, successful
    */
   def schemaValidation(xml: Node): Seq[ParseError] = {
+    Try {
     val factory : SchemaFactory =
       SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
 
     val schema: Schema = factory.newSchema(schemaPath)
     val validator: Validator = schema.newValidator()
-    Try {
       validator.validate(new StreamSource(new StringReader(xml.toString)))
     } match {
       case Success(a) =>
         Seq.empty;
-      case Failure(e) => e match {
+      case Failure(e) => 
+        
+        println( s"Schema paths:\n" + schemaPath.map(_.toString ).mkString("\n") )
+        println( s"Schema error with ${schemaPath.toString}\nException: $e\nStackTrace: ${e.getStackTrace}.")
+        e match {
         case e: IOException =>
           Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
         case e: SAXException =>

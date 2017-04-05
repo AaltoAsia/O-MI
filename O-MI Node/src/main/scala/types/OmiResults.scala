@@ -40,7 +40,19 @@ class OmiResult(
       },
       odf.map{ 
         objects =>
-          MsgType(Seq(DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), defaultScope)))))
+          MsgType(
+            Seq(
+              DataRecord(Some("odf"),Some("Objects") ,objects.asObjectsType
+                /*
+                Some("omi.xsd"),
+                Some("msg"),
+                odfMsg( 
+                  scalaxb.toXML[ObjectsType]( objects.asObjectsType, None, Some("Objects"), 
+                    defaultScope))
+                */
+            )
+          )
+        )
 
       },
       None,

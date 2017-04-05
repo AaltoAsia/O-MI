@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2012 rel. 2 (x64) (http://www.altova.com) by Kary Främling (Aalto University) -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/omi/2.0/" targetNamespace="http://www.opengroup.org/xsd/omi/2.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.0">
-	<xs:element name="omiEnvelope" type="OmiEnvelopeType"/>
-	<xs:complexType name="OmiEnvelopeType">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/omi/1.0/" targetNamespace="http://www.opengroup.org/xsd/omi/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:element name="omiEnvelope" type="OmiEnvelopeType">
 		<xs:annotation>
 			<xs:documentation>Root element of Open Messaging Interface.</xs:documentation>
 		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="OmiEnvelopeType">
 		<xs:sequence>
 			<xs:choice>
 				<xs:element name="read" type="ReadRequestType"/>
@@ -52,12 +53,12 @@
 			<xs:documentation>Payload for the protocol</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="RequestBaseType" abstract="true">
 		<xs:annotation>
-			<xs:documentation>Base type for "read", "write", "call" and "delete" requests.</xs:documentation>
+			<xs:documentation>Base type for "read" and "write" requests.</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
 			<xs:element name="nodeList" type="NodesType" minOccurs="0"/>
@@ -170,16 +171,16 @@
 			<xs:documentation>Result of a request.</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-				<xs:element name="return" type="ReturnType" minOccurs="1">
-					<xs:annotation>
-						<xs:documentation>Indicates success/failure of request.</xs:documentation>
-					</xs:annotation>
-				</xs:element>
-				<xs:element name="requestID" type="IdType" minOccurs="0" maxOccurs="unbounded">
-					<xs:annotation>
-						<xs:documentation>not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or response with "value".</xs:documentation>
-					</xs:annotation>
-				</xs:element>
+			<xs:element name="return" type="ReturnType" minOccurs="1">
+				<xs:annotation>
+					<xs:documentation>Indicates success/failure of request.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="requestID" type="IdType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or reponse with "value".</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 			<xs:element name="msg" type="MsgType" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>response value. Completely free-format. Present if successful.</xs:documentation>

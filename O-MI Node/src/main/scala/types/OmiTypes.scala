@@ -204,13 +204,17 @@ object RawRequestWrapper {
     case object Read extends MessageType
     case object Cancel extends MessageType
     case object Response extends MessageType
+    case object Delete extends MessageType
+    case object Call extends MessageType
     def apply(xmlTagLabel: String): MessageType =
       xmlTagLabel match {
         case "write"  => Write
         case "read"   => Read
         case "cancel" => Cancel
         case "response" => Response
-        case _ => parseError("read, write or cancel element not found!")
+        case "delete" => Delete
+        case "call" => Call
+        case _ => parseError("read, write, cancel, call or delete  element not found!")
       }
   }
 }
@@ -260,11 +264,12 @@ case class ReadRequest(
       None,
       Nil,
       Some(
-        MsgType(Seq(scalaxb.DataRecord(
-          Some("omi.xsd"),
-          Some("msg"),
-          odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope))
-        )))
+          MsgType(
+            Seq(
+              DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType
+                )
+              )
+            )
       ),
       List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
@@ -330,7 +335,13 @@ case class SubscriptionRequest(
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
     Nil,
-    Some( MsgType(Seq(scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ))),
+    Some( 
+      MsgType(
+        Seq(
+          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          )
+        )
+      ),
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
@@ -359,7 +370,13 @@ case class WriteRequest(
   implicit def asWriteRequest : xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
     None,
     Nil,
-      Some( MsgType(Seq(scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ))),
+      Some( 
+      MsgType(
+        Seq(
+          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          )
+        )
+      ),
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
@@ -381,17 +398,54 @@ case class CallRequest(
 
   def withCallback = cb => this.copy(callback = cb)
 
-  implicit def asWriteRequest : xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
+  implicit def asCallRequest : xmlTypes.CallRequestType = xmlTypes.CallRequestType(
     None,
     Nil,
-      Some( MsgType(Seq(scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( odf.asObjectsType , None, Some("Objects"), defaultScope ) ) ) ))),
+      Some( 
+      MsgType(
+        Seq(
+          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          )
+        )
+      ),
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
       Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope )))
       ).flatten.toMap
   )
-  implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asWriteRequest, ttlAsSeconds)
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCallRequest, ttlAsSeconds)
+  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
+  def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+}
+
+case class DeleteRequest(
+  odf: OdfObjects,
+  callback: Option[Callback] = None,
+  ttl: Duration = 10.seconds,
+  user: Option[RemoteAddress] = None,
+  senderInformation: Option[SenderInformation] = None
+) extends OmiRequest with OdfRequest with PermissiveRequest{
+
+  def withCallback = cb => this.copy(callback = cb)
+
+  implicit def asDeleteRequest : xmlTypes.DeleteRequestType = xmlTypes.DeleteRequestType(
+    None,
+    Nil,
+    Some( 
+      MsgType(
+        Seq(
+          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          )
+        )
+      ),
+    List(
+        callbackAsUri.map(c => "@callback" -> DataRecord(c)),
+        Some("@msgformat" -> DataRecord("odf")),
+      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope )))
+      ).flatten.toMap
+  )
+  implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asDeleteRequest, ttlAsSeconds)
   def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 }
