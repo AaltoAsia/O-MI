@@ -16,11 +16,14 @@ object `package` extends XMLProtocol { }
 trait XMLProtocol extends scalaxb.XMLStandardTypes {
   implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  val defaultScope = scalaxb.toScope(None -> "http://www.opengroup.org/xsd/odf/1.0/",
-    Some("tns0") -> "http://www.opengroup.org/xsd/omi/1.0/",
-    Some("tns") -> "http://www.opengroup.org/xsd/odf/1.0/",
+  val defaultScope = scalaxb.toScope(
+    None -> "http://www.opengroup.org/xsd/odf/1.0/",
+    None -> "http://www.opengroup.org/xsd/omi/1.0/",
+    Some("omi") -> "http://www.opengroup.org/xsd/omi/1.0/",
+    Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/",
     Some("xs") -> "http://www.w3.org/2001/XMLSchema",
-    Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance")
+    Some("xsi") -> "http://www.w3.org/2001/XMLSchema-instance"
+  )
   implicit lazy val XmlTypes_ObjectsTypeFormat: scalaxb.XMLFormat[xmlTypes.ObjectsType] = new DefaultXmlTypes_ObjectsTypeFormat {}
   implicit lazy val XmlTypes_ObjectTypeFormat: scalaxb.XMLFormat[xmlTypes.ObjectType] = new DefaultXmlTypes_ObjectTypeFormat {}
   implicit lazy val XmlTypes_InfoItemTypeFormat: scalaxb.XMLFormat[xmlTypes.InfoItemType] = new DefaultXmlTypes_InfoItemTypeFormat {}
