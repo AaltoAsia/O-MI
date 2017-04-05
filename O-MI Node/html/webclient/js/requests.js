@@ -304,7 +304,7 @@
             return my.forceLoadParams(my.defaults[reqName]());
           } else if (reqName !== oldReqName) {
             doc = currentParams.requestDoc;
-            currentReq = WebOmi.omi.evaluateXPath(doc, "omiEnvelope/*")[0];
+            currentReq = WebOmi.omi.evaluateXPath(doc, "omi:omiEnvelope/*")[0];
             newReq = WebOmi.omi.createOmi(reqName, doc);
             ref = currentReq.attributes;
             for (i = 0, len = ref.length; i < len; i++) {
@@ -328,20 +328,20 @@
           }
         }
       },
-      ttl: updateSetterForAttr("ttl", "omiEnvelope"),
-      callback: updateSetterForAttr("callback", "omiEnvelope/*"),
+      ttl: updateSetterForAttr("ttl", "omi:omiEnvelope"),
+      callback: updateSetterForAttr("callback", "omi:omiEnvelope/*"),
       requestID: {
         update: function(newVal) {
           var doc, existingIDs, i, id, idTxt, j, k, len, len1, len2, newId, o, parent, parentXPath, parents;
           o = WebOmi.omi;
           doc = currentParams.requestDoc;
-          parentXPath = "omiEnvelope/*";
+          parentXPath = "omi:omiEnvelope/*";
           if (currentParams.requestID !== newVal) {
             parents = o.evaluateXPath(doc, parentXPath);
             if (parents == null) {
               WebOmi.error("Tried to update requestID, but " + parentXPath + " not found in", doc);
             } else {
-              existingIDs = o.evaluateXPath(doc, "//requestID");
+              existingIDs = o.evaluateXPath(doc, "//omi:requestID");
               if (newVal != null) {
                 if (existingIDs.some(function(elem) {
                   return elem.textContent.trim() === newVal.toString();
@@ -385,7 +385,7 @@
               my.addPathToOdf(odfTreeNode, obs);
             }
             if (currentParams.msg) {
-              msg = o.evaluateXPath(currentParams.requestDoc, "//msg")[0];
+              msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0];
               if (msg == null) {
                 my.params.msg.update(currentParams.msg);
                 return;
@@ -417,7 +417,7 @@
             } else if (currentParams.msg) {
               objects = o.createOdfObjects(req);
               my.addPathToOdf(odfTreeNode, objects);
-              msg = o.evaluateXPath(req, "//msg")[0];
+              msg = o.evaluateXPath(req, "//omi:msg")[0];
               if (msg != null) {
                 msg.appendChild(objects);
               } else {
@@ -453,11 +453,11 @@
           return path;
         }
       },
-      interval: updateSetterForAttr("interval", "omiEnvelope/*"),
-      newest: updateSetterForAttr("newest", "omiEnvelope/*"),
-      oldest: updateSetterForAttr("oldest", "omiEnvelope/*"),
-      begin: updateSetterForAttr("begin", "omiEnvelope/*"),
-      end: updateSetterForAttr("end", "omiEnvelope/*"),
+      interval: updateSetterForAttr("interval", "omi:omiEnvelope/*"),
+      newest: updateSetterForAttr("newest", "omi:omiEnvelope/*"),
+      oldest: updateSetterForAttr("oldest", "omi:omiEnvelope/*"),
+      begin: updateSetterForAttr("begin", "omi:omiEnvelope/*"),
+      end: updateSetterForAttr("end", "omi:omiEnvelope/*"),
       msg: {
         update: function(hasMsg) {
           var doc, i, len, m, msg, o, requestElem;
@@ -468,7 +468,7 @@
           }
           if (hasMsg) {
             msg = o.createOmi("msg", doc);
-            requestElem = o.evaluateXPath(doc, "/omiEnvelope/*")[0];
+            requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
             if (requestElem != null) {
               requestElem.appendChild(msg);
               requestElem.setAttribute("msgformat", "odf");
@@ -479,12 +479,12 @@
               return;
             }
           } else {
-            msg = o.evaluateXPath(doc, "/omiEnvelope/*/msg");
+            msg = o.evaluateXPath(doc, "/omi:omiEnvelope/*/omi:msg");
             for (i = 0, len = msg.length; i < len; i++) {
               m = msg[i];
               m.parentNode.removeChild(m);
             }
-            requestElem = o.evaluateXPath(doc, "/omiEnvelope/*")[0];
+            requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0];
             if (requestElem != null) {
               requestElem.removeAttribute("msgformat");
             }

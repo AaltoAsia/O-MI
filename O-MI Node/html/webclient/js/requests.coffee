@@ -334,7 +334,7 @@ requestsExt = (WebOmi) ->
         else if reqName != oldReqName
           doc = currentParams.requestDoc
           currentReq = WebOmi.omi.evaluateXPath(
-            doc, "omiEnvelope/*")[0] # FIXME: head
+            doc, "omi:omiEnvelope/*")[0] # FIXME: head
 
           newReq = WebOmi.omi.createOmi reqName, doc
 
@@ -368,20 +368,20 @@ requestsExt = (WebOmi) ->
 
 
     ttl      : # double
-      updateSetterForAttr "ttl", "omiEnvelope"
+      updateSetterForAttr "ttl", "omi:omiEnvelope"
     callback : # Maybe String
-      updateSetterForAttr "callback", "omiEnvelope/*"
+      updateSetterForAttr "callback", "omi:omiEnvelope/*"
     requestID: # Maybe Int
       update : (newVal) ->
         o = WebOmi.omi
         doc = currentParams.requestDoc
-        parentXPath = "omiEnvelope/*"
+        parentXPath = "omi:omiEnvelope/*"
         if currentParams.requestID != newVal
           parents = o.evaluateXPath doc, parentXPath
           if not parents?
             WebOmi.error "Tried to update requestID, but #{parentXPath} not found in", doc
           else
-            existingIDs = o.evaluateXPath doc, "//requestID"
+            existingIDs = o.evaluateXPath doc, "//omi:requestID"
             if newVal?
               if existingIDs.some((elem) -> elem.textContent.trim() == newVal.toString())
                 return # exists
@@ -412,7 +412,7 @@ requestsExt = (WebOmi) ->
             my.addPathToOdf odfTreeNode, obs
 
           if currentParams.msg
-            msg = o.evaluateXPath(currentParams.requestDoc, "//msg")[0]
+            msg = o.evaluateXPath(currentParams.requestDoc, "//omi:msg")[0]
             if not msg?
               my.params.msg.update currentParams.msg # calls odf update again
               # NOTE: dependency?, msg.update calls odf update
@@ -447,7 +447,7 @@ requestsExt = (WebOmi) ->
           else if currentParams.msg
             objects = o.createOdfObjects req
             my.addPathToOdf odfTreeNode, objects
-            msg = o.evaluateXPath(req, "//msg")[0]
+            msg = o.evaluateXPath(req, "//omi:msg")[0]
             if msg?
               msg.appendChild objects
             else
@@ -481,15 +481,15 @@ requestsExt = (WebOmi) ->
         path
 
     interval : # Maybe Number
-      updateSetterForAttr "interval", "omiEnvelope/*"
+      updateSetterForAttr "interval", "omi:omiEnvelope/*"
     newest   : # Maybe Int
-      updateSetterForAttr "newest", "omiEnvelope/*"
+      updateSetterForAttr "newest", "omi:omiEnvelope/*"
     oldest   : # Maybe Int
-      updateSetterForAttr "oldest", "omiEnvelope/*"
+      updateSetterForAttr "oldest", "omi:omiEnvelope/*"
     begin    : # Maybe Date
-      updateSetterForAttr "begin", "omiEnvelope/*"
+      updateSetterForAttr "begin", "omi:omiEnvelope/*"
     end      : # Maybe Date
-      updateSetterForAttr "end", "omiEnvelope/*"
+      updateSetterForAttr "end", "omi:omiEnvelope/*"
     msg      : # Boolean whether message is included
       update : (hasMsg) ->
         o = WebOmi.omi
@@ -504,7 +504,7 @@ requestsExt = (WebOmi) ->
           # namespaces already set by createOmi and createOdf
           # msg.setAttribute "xmlns", "odf.xsd"
 
-          requestElem = o.evaluateXPath(doc, "/omiEnvelope/*")[0]
+          requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.appendChild msg
             requestElem.setAttribute "msgformat", "odf"
@@ -516,11 +516,11 @@ requestsExt = (WebOmi) ->
             return # TODO: what
 
         else  # remove
-          msg = o.evaluateXPath(doc, "/omiEnvelope/*/msg")
+          msg = o.evaluateXPath(doc, "/omi:omiEnvelope/*/omi:msg")
           # extra safe: remove all msgs
           m.parentNode.removeChild m for m in msg
 
-          requestElem = o.evaluateXPath(doc, "/omiEnvelope/*")[0]
+          requestElem = o.evaluateXPath(doc, "/omi:omiEnvelope/*")[0]
           if requestElem?
             requestElem.removeAttribute "msgformat"
 
