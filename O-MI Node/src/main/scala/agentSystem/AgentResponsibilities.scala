@@ -58,10 +58,11 @@ class AgentResponsibilities(){
     }
   } */
   def splitRequestToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] = request match{
-    case read: ReadRequest => splitReadToResponsible(read)
+   // case read: ReadRequest => splitReadToResponsible(read)
     case write: WriteRequest => splitWriteToResponsible(write)
-    //case call: CallRequest => splitCallToResponsible(call)
+    case call: CallRequest => splitCallToResponsible(call)
   }
+  /*
   def splitReadToResponsible( read: ReadRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
     def filter: RequestFilter => Boolean = createFilter(read)
     val odf = read.odf
@@ -107,6 +108,55 @@ class AgentResponsibilities(){
     //TODO: Get objects that do not have responsible
     pathsWithResponsible
     ???
+  }
+  */
+  def splitCallToResponsible( request: CallRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
+    def filter: RequestFilter => Boolean = createFilter(request)
+      
+    val odf = request.odf
+    val leafPathes = getLeafs(odf).map(_.path)
+    //println( s"InfoItems:\n$leafPathes")
+    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
+      case path: Path =>
+        val allPaths : Seq[Path] = path.getParentsAndSelf.sortBy(_.length).reverse
+        val responsibility : Option[AgentResponsibility] = allPaths.find{
+          case _path => pathsToResponsible.get(_path).nonEmpty
+        }.flatMap{ case _path => pathsToResponsible.get(_path) }
+        
+        val filteredResponsibility:Option[AgentResponsibility] = responsibility.filter{
+          case AgentResponsibility( 
+            agentName: AgentName, 
+            path: Path, 
+            requestFilter: RequestFilter 
+          ) =>
+            filter(requestFilter)
+        }
+        val responsible = filteredResponsibility.map(_.agentName)
+        (path, responsible)
+    }
+    //println( s"pToR:\n$pathToResponsible")
+
+    val responsibleToPairSeq: ImmutableMap[Option[AgentName], Seq[(Path, Option[AgentName])]]= pathToResponsible.groupBy{
+      case ( path: Path, responsible: Option[AgentName]) =>
+        responsible
+    }
+    //println( s"rTps:\n$responsibleToPairSeq")
+    val responsibleToRequest: ImmutableMap[Option[AgentName], OdfRequest] = responsibleToPairSeq.map{
+      case (
+        optionAgentName: Option[AgentName],
+        pathToAgentName: Seq[(Path,Option[AgentName])]
+      ) =>
+        val objects = pathToAgentName.flatMap{
+          case (path: Path,aname: Option[AgentName]) =>
+            odf.get(path).map(_.createAncestors)
+        }.foldLeft(OdfObjects()){
+          case (res, objs) => res.union(objs)
+        }
+        (optionAgentName,request.replaceOdf(objects))
+    }
+    //println( s"$responsibleToRequest")
+    responsibleToRequest
+
   }
   
   def splitWriteToResponsible( request: WriteRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={

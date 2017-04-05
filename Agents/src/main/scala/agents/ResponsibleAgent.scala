@@ -37,6 +37,19 @@ class ResponsibleScalaAgent(
   with ResponsibleScalaInternalAgent{
   //Execution context
   import context.dispatcher
+  override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
+    //All paths in write.odf is owned by this agent.
+    //There is nothing to check or do for data so it is just writen. 
+
+    // This sends debug log message to O-MI Node logs if
+    // debug level is enabled (in logback.xml and application.conf)
+
+    // Asynchronous execution of request 
+    log.warning(s"$name received call: $call")
+    Future{
+      Responses.Success()
+    }
+  }
 
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     //All paths in write.odf is owned by this agent.
@@ -112,6 +125,7 @@ class ResponsibleScalaAgent(
     //Following are inherited from ResponsibleScalaInternalActor.
     case write: WriteRequest => respondFuture(handleWrite(write))
     case read: ReadRequest => respondFuture(handleRead(read))
+    case call: CallRequest => respondFuture(handleCall(call))
     //ScalaAgent specific messages
     case Update() => update
   }

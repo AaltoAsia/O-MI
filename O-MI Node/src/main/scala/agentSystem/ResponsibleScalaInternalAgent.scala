@@ -41,7 +41,7 @@ trait ResponsibleScalaInternalAgent
   import context.dispatcher
   protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = writeToDB(write)
   protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
-  //protected def handleCall( call: CallRequest ) : Future[ResponseRequest]
+  protected def handleCall( call: CallRequest ) : Future[ResponseRequest]
 
   override def receive  = {
     case Start() => respond(start)
@@ -49,7 +49,7 @@ trait ResponsibleScalaInternalAgent
     case Stop() => respond(stop)
     case write: WriteRequest => respondFuture(handleWrite(write))
     case read: ReadRequest => respondFuture(handleRead(read))
-    //case call: CallRequest => handleCall(call)
+    case call: CallRequest => handleCall(call)
    }
 
 }
