@@ -7,7 +7,7 @@
     var addValueToAll, addValueWhenWrite, currentParams, maybeInsertBefore, my, removeValueFromAll, updateSetterForAttr;
     my = WebOmi.requests = {};
     my.xmls = {
-      readAll: "<?xml version=\"1.0\"?>\n<omiEnvelope xmlns=\"http://www.opengroup.org/xsd/omi/1.0/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.opengroup.org/xsd/omi/1.0/ omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <read msgformat=\"odf\">\n    <msg>\n      <Objects xmlns=\"odf.xsd\"></Objects>\n    </msg>\n  </read>\n</omiEnvelope>",
+      readAll: "<?xml version=\"1.0\"?>\n<omiEnvelope xmlns=\"http://www.opengroup.org/xsd/omi/1.0/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.opengroup.org/xsd/omi/1.0/ omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <read msgformat=\"odf\">\n    <msg>\n      <Objects xmlns=\"http://www.opengroup.org/xsd/odf/1.0/\"></Objects>\n    </msg>\n  </read>\n</omiEnvelope>",
       template: "<?xml version=\"1.0\"?>\n<omiEnvelope xmlns=\"http://www.opengroup.org/xsd/omi/1.0/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.opengroup.org/xsd/omi/1.0/ omi.xsd\"\n    version=\"1.0\" ttl=\"0\">\n  <read msgformat=\"odf\">\n    <msg>\n    </msg>\n  </read>\n</omiEnvelope>\n"
     };
     my.defaults = {};

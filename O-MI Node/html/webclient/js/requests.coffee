@@ -29,7 +29,7 @@ requestsExt = (WebOmi) ->
           version="1.0" ttl="0">
         <read msgformat="odf">
           <msg>
-            <Objects xmlns="odf.xsd"></Objects>
+            <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"></Objects>
           </msg>
         </read>
       </omiEnvelope>
