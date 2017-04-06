@@ -62,6 +62,7 @@ trait OmiServiceAuthorization
      with LogPermissiveRequestBeginning // Log Permissive requests
      with IpAuthorization         // Write and Response requests for configured server IPs
      with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
+     with AuthChargingPole // temporary, for charging pole special auth system
      with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
      with AuthApiProvider         // Easier java api for authorization
      with LogUnauthorized         // Log everything else

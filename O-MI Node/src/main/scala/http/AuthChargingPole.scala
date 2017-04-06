@@ -12,13 +12,21 @@ trait AuthChargingPole extends AuthorizationExtension {
     provide{(wrap: RequestWrapper) =>
       wrap.unwrapped flatMap {
         case r: WriteRequest =>
-          val targetOdf = r.odf.get(Path("Objects/ChargingPole/Users/Register"))
+          //val targetOdf = r.odf.get(Path("Objects/ChargingPole/Users/Register"))
+          val targetOdf = r.odf.get(Path("Objects/ChargingPole"))
           targetOdf match {
-            case Some(i) =>
-              Success(r.copy(odf=i.createAncestors)) // disable any other simultaneus write
+            case Some(o) =>
+              Success(r.copy(odf=o.createAncestors)) // disable any other simultaneus write
             case None =>
               Failure(UnauthorizedEx())
           }
+          //val targetOdf2 = r.odf.get(Path("Objects/ChargingPole/Reservations/AddReservation"))
+          //targetOdf2 match {
+          //  case Some(i) =>
+          //    Success(r.copy(odf=i.createAncestors)) // disable any other simultaneus write
+          //  case None =>
+          //    Failure(UnauthorizedEx())
+          //}
         case _ => Failure(UnauthorizedEx())
       }
     }
