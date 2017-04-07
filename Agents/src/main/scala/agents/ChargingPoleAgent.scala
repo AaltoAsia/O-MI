@@ -141,13 +141,16 @@ class ChargingPoleAgent(override val config: Config )
         val userReservation = userReservationStr.split(':')
         val user = userReservation(0)
         val time = userReservation(1).toInt
-        val starts = currentTimestamp.getTime() - time // FIXME?
-        val ends = starts + 10
+        val starts = time
 
-        val opath = Path("Objects/ChargingPole/Reservations/" + (user.hashCode.toHexString))
+        val ends =
+          if (userReservation.length == 3) userReservation(2)
+          else starts + 15
+
+        val opath = Path("Objects/ChargingPole/Reservations/")
         val userid = OdfInfoItem(opath / scheduleID.toString / "UserID", OdfTreeCollection(OdfValue(user, currentTimestamp)))
         val startsAfter = OdfInfoItem(opath / scheduleID.toString / "StartsAfter", OdfTreeCollection(OdfValue(starts.toString, currentTimestamp)))
-        val endsAfter = OdfInfoItem(opath / scheduleID.toString / "EndsAfter", OdfTreeCollection(OdfValue(starts.toString, currentTimestamp)))
+        val endsAfter = OdfInfoItem(opath / scheduleID.toString / "EndsAfter", OdfTreeCollection(OdfValue(ends.toString, currentTimestamp)))
         val userObjects = userid.createAncestors union startsAfter.createAncestors union endsAfter.createAncestors
 
         scheduleID = (scheduleID +1)%3
