@@ -47,7 +47,7 @@ class ResponsibleScalaAgent(
     // Asynchronous execution of request 
     log.warning(s"$name received call: $call")
     Future{
-      Responses.Success()
+      Responses.Success(objects = Some(call.odf))
     }
   }
 
