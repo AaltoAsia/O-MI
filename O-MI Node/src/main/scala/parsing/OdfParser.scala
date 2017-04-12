@@ -20,12 +20,12 @@ import javax.xml.transform.stream.StreamSource
 import scala.collection.JavaConversions.asJavaIterable
 import scala.util.{Failure, Success, Try}
 import scala.xml.Elem
-
 import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen._
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.OmiTypes.UserInfo
 import types._
 
 /** Parser for data in O-DF format*/
@@ -40,7 +40,7 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @param file XML formatted file to be parsed. Should be in O-DF format.
    *  @return OdfParseResults
    */
-  def parse(file: File, user: Option[RemoteAddress]): OdfParseResult = {
+  def parse(file: File, user: Option[UserInfo]): OdfParseResult = {
     val parsed = Try(
       XMLParser.loadFile(file)
     )
@@ -54,7 +54,7 @@ object OdfParser extends Parser[OdfParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-DF format.
    *  @return OdfParseResults
    */
-  def parse(xml_msg: String, user: Option[RemoteAddress] = None): OdfParseResult = {
+  def parse(xml_msg: String, user: Option[UserInfo] = None): OdfParseResult = {
     val parsed = Try(
       XMLParser.loadString(xml_msg)
     )
@@ -62,7 +62,7 @@ object OdfParser extends Parser[OdfParseResult] {
     parseTry(parsed, None)
   }
 
-  private def parseTry(parsed: Try[Elem], user: Option[RemoteAddress] = None): OdfParseResult = {
+  private def parseTry(parsed: Try[Elem], user: Option[UserInfo] = None): OdfParseResult = {
     parsed match {
       case Success(root) => parse(root)
       case Failure(f) => Left(Iterable(ParseError(s"Invalid XML: ${f.getMessage}")))

@@ -15,31 +15,30 @@
 package analytics
 
 import java.sql.Timestamp
-import java.util.{TimeZone, Calendar}
+import java.util.{Calendar, TimeZone}
 
-import scala.concurrent.{Future, Await}
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Try
-
-import agentSystem.{ResponsibilityRequest, AgentSystem}
-import akka.actor.{Props, ActorSystem}
+import agentSystem.{AgentSystem, ResponsibilityRequest}
+import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
-import akka.testkit.{TestKit, TestActorRef, TestProbe}
+import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import database.{TestDB, OdfTree, SingleStores}
+import database.{OdfTree, SingleStores, TestDB}
 import http.OmiConfigExtension
 import org.prevayler.Transaction
 import org.specs2.mutable.Specification
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mock.Mockito
 import org.specs2.specification.AfterAll
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
-import types.{Path, OdfTypes}
+import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
+import types.{OdfTypes, Path}
 import types.OdfTypes._
-import types.OmiTypes.{ReadRequest, WriteRequest}
+import types.OmiTypes.{ReadRequest, UserInfo, WriteRequest}
 
 //Very basic test for testing that the analytics results are consistent every patch
 class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
@@ -130,7 +129,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
         else OdfTypes.createAncestors(OdfInfoItem(p, metaData = Some(OdfMetaData(OdfTreeCollection.empty))))
       ReadRequest(
         odf = _odf,
-        user = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))
+        user = Some(UserInfo(remoteAddress = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))))
       )
     }
       requestHandler.handleRead(readReq)

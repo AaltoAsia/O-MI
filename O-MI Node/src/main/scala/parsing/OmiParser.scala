@@ -41,7 +41,7 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param file XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(file: File, user: Option[RemoteAddress]): OmiParseResult = {
+  def parse(file: File, user: Option[UserInfo]): OmiParseResult = {
     val parsed = Try(
       XMLParser.loadFile(file)
     )
@@ -56,7 +56,7 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(xml_msg: String, user: Option[RemoteAddress] = None): OmiParseResult = {
+  def parse(xml_msg: String, user: Option[UserInfo] = None): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
    val parsed = Try(
      XMLParser.loadString(xml_msg)
@@ -65,7 +65,7 @@ object OmiParser extends Parser[OmiParseResult] {
 
   }
 
-  private def parseTry(parsed: Try[Elem], user: Option[RemoteAddress]): OmiParseResult = {
+  private def parseTry(parsed: Try[Elem], user: Option[UserInfo]): OmiParseResult = {
     parsed match {
       case Success(root) => parseOmi(root, user)
       case Failure(f) => Left( Iterable( ParseError(s"OmiParser: Invalid XML: ${f.getMessage}")))
@@ -79,9 +79,9 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @return OmiParseResults
    */
   @deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
-  def parse(root: xml.Node, user: Option[RemoteAddress]): OmiParseResult = parseOmi(root, user)
+  def parse(root: xml.Node, user: Option[UserInfo]): OmiParseResult = parseOmi(root, user)
 
-  private def parseOmi(root: xml.Node, user: Option[RemoteAddress]): OmiParseResult = schemaValidation(root) match {
+  private def parseOmi(root: xml.Node, user: Option[UserInfo]): OmiParseResult = schemaValidation(root) match {
     case errors : Seq[ParseError] if errors.nonEmpty=>
       Left(errors.map { pe: ParseError => ParseError("OmiParser: " + pe.msg) })
     case empty : Seq[ParseError] if empty.isEmpty =>
@@ -129,7 +129,7 @@ object OmiParser extends Parser[OmiParseResult] {
 
   def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
 
-  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration, user: Option[RemoteAddress]): OmiParseResult = {
+  private[this] def parseRead(read: xmlTypes.ReadRequest, ttl: Duration, user: Option[UserInfo]): OmiParseResult = {
     val callback = read.callback.map{ addr => RawCallback( addr.toString ) }
     if(read.requestID.nonEmpty) {
       Right(Iterable(
@@ -186,7 +186,7 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
-  private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration, user: Option[RemoteAddress]): OmiParseResult = {
+  private[this] def parseWrite(write: xmlTypes.WriteRequest, ttl: Duration, user: Option[UserInfo]): OmiParseResult = {
     val odfParseResult = parseMsg(write.msg, write.msgformat)
     val callback = write.callback.map{ addr => RawCallback( addr.toString ) }
     odfParseResult match {

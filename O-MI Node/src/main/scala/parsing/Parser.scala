@@ -24,9 +24,9 @@ import javax.xml.validation.{Schema, SchemaFactory, Validator}
 import scala.util.{Failure, Success, Try}
 import scala.xml.factory.XMLLoader
 import scala.xml.{Elem, Node, XML}
-
 import akka.http.scaladsl.model.RemoteAddress
 import org.xml.sax.SAXException
+import types.OmiTypes.UserInfo
 import types.ParseError
 
 /**
@@ -47,12 +47,12 @@ abstract trait Parser[Result] {
     XML.withSAXParser(saxParser)
   }
 
-  def parse(xml_msg: String, user: Option[RemoteAddress]) : Result
+  def parse(xml_msg: String, user: Option[UserInfo]) : Result
 
   //@deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
   //def parse(xml_msg: xml.Node) : Result
   
-  def parse(xml_msg: File, user: Option[RemoteAddress]) : Result
+  def parse(xml_msg: File, user: Option[UserInfo]) : Result
   
   protected[this] def schemaPath : javax.xml.transform.Source
   

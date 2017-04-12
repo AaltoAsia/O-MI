@@ -177,7 +177,7 @@ trait OmiService
               case path => path
             }
 
-            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user = Some(user)))
+            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user = Some(UserInfo(remoteAddress = Some(user)))))
               asReadRequest match {
                 case Some(readReq) =>
                   hasPermissionTest(readReq) match {
@@ -186,7 +186,7 @@ trait OmiService
                     analytics.foreach{ ref =>
                       val tt= new Date().getTime()
                       ref ! AddRead(path, tt)
-                      ref ! AddUser(path, readReq.user.map(_.hashCode()), tt)
+                      ref ! AddUser(path, readReq.user.flatMap(_.remoteAddress.map(_.hashCode())), tt)
                     }
                     RESTHandler.handle(origPath)(singleStores) match {
                       case Some(Left(value)) =>
@@ -271,7 +271,7 @@ trait OmiService
       //val eitherOmi = OmiParser.parse(requestString)
 
 
-      val originalReq = RawRequestWrapper(requestString, Some(remote))
+      val originalReq = RawRequestWrapper(requestString, Some(UserInfo(remoteAddress=Some(remote))))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
