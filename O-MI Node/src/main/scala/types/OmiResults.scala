@@ -5,7 +5,7 @@ import java.lang.{Iterable => JIterable}
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
 import parsing.xmlGen.xmlTypes._
 import scala.reflect.ClassTag
@@ -42,13 +42,13 @@ class OmiResult(
         objects =>
           MsgType(
             Seq(
-              DataRecord(Some("odf"),Some("Objects") ,objects.asObjectsType
+              DataRecord(None, Some("Objects"), objects.asXML
                 /*
                 Some("omi.xsd"),
                 Some("msg"),
                 odfMsg( 
                   scalaxb.toXML[ObjectsType]( objects.asObjectsType, None, Some("Objects"), 
-                    defaultScope))
+                    omiDefaultScope))
                 */
             )
           )
@@ -57,7 +57,13 @@ class OmiResult(
       },
       None,
       None,
-      Map(("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope ))))
+      Map(
+        ("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
+      ) ++ odf.map{
+        objects =>
+        ("@msgformat" -> DataRecord("odf"))
+
+      }
     )
   }
   override def equals( other: Any ): Boolean ={

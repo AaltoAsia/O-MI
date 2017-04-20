@@ -33,7 +33,7 @@ import akka.actor.ActorRef
 
 import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
 import parsing.xmlGen.xmlTypes._
 import responses.CallbackHandler
 import types.OdfTypes._
@@ -102,6 +102,7 @@ sealed trait PermissiveRequest
 sealed trait OdfRequest extends OmiRequest{
   def odf : OdfObjects
   def replaceOdf( nOdf: OdfObjects ) : OdfRequest
+  def odfAsDataRecord = DataRecord(None, Some("Objects"), odf.asXML)
 }
 
 sealed trait JavaRequestIDRequest{
@@ -266,15 +267,14 @@ case class ReadRequest(
       Some(
           MsgType(
             Seq(
-              DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType
-                )
+              odfAsDataRecord
               )
             )
       ),
       List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-        Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope ))),
+        Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope ))),
         oldest.map(t => "@oldest" -> DataRecord(t)),
         begin.map(t => "@begin" -> DataRecord(timestampToXML(t))),
         end.map(t => "@end" -> DataRecord(timestampToXML(t))),
@@ -310,7 +310,7 @@ case class PollRequest(
     None,
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope )))
+      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
     ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
@@ -329,7 +329,7 @@ case class SubscriptionRequest(
   ttl: Duration = 10.seconds,
   user: Option[RemoteAddress] = None,
   senderInformation: Option[SenderInformation] = None
-) extends OmiRequest with SubLike { 
+) extends OmiRequest with SubLike with OdfRequest{ 
   def withCallback = cb => this.copy(callback = cb)
 
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
@@ -338,19 +338,20 @@ case class SubscriptionRequest(
     Some( 
       MsgType(
         Seq(
-          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          odfAsDataRecord
           )
         )
       ),
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope ))),
+      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope ))),
         Some("@interval" -> DataRecord(interval.toSeconds.toString()))
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
 }
 
 
@@ -373,14 +374,14 @@ case class WriteRequest(
       Some( 
       MsgType(
         Seq(
-          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          odfAsDataRecord
           )
         )
       ),
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope )))
+      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asWriteRequest, ttlAsSeconds)
@@ -404,14 +405,14 @@ case class CallRequest(
       Some( 
       MsgType(
         Seq(
-          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
+          odfAsDataRecord
           )
         )
       ),
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope )))
+      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCallRequest, ttlAsSeconds)
@@ -435,14 +436,14 @@ case class DeleteRequest(
     Some( 
       MsgType(
         Seq(
-          DataRecord(Some("odf"),Some("Objects") ,odf.asObjectsType)
-          )
+          odfAsDataRecord
         )
-      ),
-    List(
-        callbackAsUri.map(c => "@callback" -> DataRecord(c)),
+      )
+    ),
+  List(
+    callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", defaultScope )))
+      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asDeleteRequest, ttlAsSeconds)

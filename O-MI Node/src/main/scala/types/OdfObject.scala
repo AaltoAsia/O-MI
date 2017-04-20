@@ -239,7 +239,7 @@ class  OdfObjectImpl(
         subobj: OdfObject =>
         subobj.asObjectType
       }.toSeq,
-      attributes = typeValue.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@type" -> DataRecord(n))))
+      attributes = Map.empty[String, DataRecord[Any]] ++  typeValue.map{ n => ("@type" -> DataRecord(n))}
     )
   }
 }

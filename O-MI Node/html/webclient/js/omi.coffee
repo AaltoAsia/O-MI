@@ -46,8 +46,8 @@ omiExt = (WebOmi) ->
   my.ns =
     omi : "http://www.opengroup.org/xsd/omi/1.0/"
     odf : "http://www.opengroup.org/xsd/odf/1.0/"
-    xsi : "http://www.w3.org/2001/XMLSchema-instance"
-    xs  : "http://www.w3.org/2001/XMLSchema-instance"
+  #  xsi : "http://www.w3.org/2001/XMLSchema-instance"
+  #  xs  : "http://www.w3.org/2001/XMLSchema-instance"
 
   # XML Namespace resolver, (defaults to odf)
   my.nsResolver = (name) ->

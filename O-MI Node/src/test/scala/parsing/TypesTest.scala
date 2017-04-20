@@ -53,7 +53,7 @@ class TypesTest extends Specification {
       parse message type response $pResponse
     """
 
-  def e1 = !ParseError("test error").isInstanceOf[OmiRequest]
+  def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
 
   def e2 = ReadRequest(OdfObjects(), None, None, None, None, None, 0.seconds).isInstanceOf[OmiRequest]
 

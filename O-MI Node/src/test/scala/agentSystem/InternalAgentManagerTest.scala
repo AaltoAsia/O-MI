@@ -37,6 +37,8 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    }
  }  
  def AS = ActorSystem() 
+ val requestHandler = ActorRef.noSender
+ val dbHandler = ActorRef.noSender
  def emptyConfig = ConfigFactory.empty()
  def timeoutDuration= 10.seconds
  implicit val timeout = Timeout( timeoutDuration )
@@ -85,7 +87,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
  def startingStoppedTest = new Actorstest(AS){
    import system.dispatcher
    val name = "StartSuccess"
-   val ref = system.actorOf( Props( new SSAgent), name)
+   val ref = system.actorOf( SSAgent.props( emptyConfig, requestHandler, dbHandler), name)
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
@@ -100,7 +102,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
  def stopingRunningTest = new Actorstest(AS){
    import system.dispatcher
    val name = "StopSuccess"
-   val ref = system.actorOf( Props( new SSAgent), name)
+   val ref = system.actorOf( SSAgent.props( emptyConfig, requestHandler, dbHandler), name)
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
@@ -115,7 +117,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
  def agentStopFailTest = new Actorstest(AS){
    import system.dispatcher
    val name = "Stopfail"
-   val ref = system.actorOf( Props( new FFAgent), name)
+   val ref = system.actorOf( FFAgent.props( emptyConfig, requestHandler, dbHandler), name)
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
@@ -130,7 +132,7 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
  def agentStartFailTest = new Actorstest(AS){
    import system.dispatcher
    val name = "Startfail"
-   val ref = system.actorOf( Props( new FFAgent), name)
+   val ref = system.actorOf( FFAgent.props( emptyConfig, requestHandler, dbHandler), name)
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)

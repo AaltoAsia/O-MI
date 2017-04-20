@@ -74,12 +74,19 @@ class  OdfInfoItemImpl(
     InfoItemType(
       description = description.map( des => des.asDescription ).toSeq,
       MetaData = metaData.map(_.asMetaData).toSeq,
-      iname = Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
+      iname = Vector.empty,
+      //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
       value = values.map{ 
         value : OdfValue[Any] =>
         value.asValueType
       }.toSeq,
-      attributes = Map.empty
+      attributes = Map{
+        "name" -> DataRecord[String](
+          None,
+          key = Some("name"),
+          path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))
+        )
+      }
     )
   }
 
@@ -135,7 +142,7 @@ sealed trait OdfValue[+T]{
             odf.asXML
           )
           case Left( errors: Seq[ParseError] ) =>
-            DataRecord(errors.map(_.msg).mkString("\n"))
+            DataRecord(errors.map(_.getMessage).mkString("\n"))
         }
         case (otheType, otherValue) =>
           otherValue match {

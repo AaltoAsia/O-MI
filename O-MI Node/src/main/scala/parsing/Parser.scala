@@ -27,7 +27,7 @@ import scala.xml.{Elem, Node, XML}
 
 import akka.http.scaladsl.model.RemoteAddress
 import org.xml.sax.SAXException
-import types.ParseError
+import types.{SchemaError,ParseError}
 
 /**
  * Parser trait that parsers inherit,
@@ -74,15 +74,13 @@ abstract trait Parser[Result] {
         Seq.empty;
       case Failure(e) => 
         
-        println( s"Schema paths:\n" + schemaPath.map(_.toString ).mkString("\n") )
-        println( s"Schema error with ${schemaPath.toString}\nException: $e\nStackTrace: ${e.getStackTrace}.")
         e match {
         case e: IOException =>
-          Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
+          Seq(SchemaError("IO failure: " + e.getMessage))
         case e: SAXException =>
-          Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
+          Seq(SchemaError(e.getMessage))
         case e: Exception=>
-          Seq(ParseError("Unknown exception: " + e.getMessage))
+          Seq(SchemaError("Unknown exception: " + e.getMessage))
         case _ => throw e
       }
     }

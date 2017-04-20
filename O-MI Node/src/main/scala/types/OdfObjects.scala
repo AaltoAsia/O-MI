@@ -20,7 +20,7 @@ import scala.xml.NodeSeq
 
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{defaultScope, scalaxb}
+import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
@@ -113,11 +113,11 @@ class OdfObjectsImpl(
         obj: OdfObject => 
         obj.asObjectType
       }.toSeq,
-      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n))))
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(None,Some("version"),n))))
     )
   }
   implicit def asXML : NodeSeq= {
-    val xml  = scalaxb.toXML[ObjectsType](asObjectsType, Some("odf.xsd"), Some("Objects"), defaultScope)
+    val xml  = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)
     xml//.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 }    

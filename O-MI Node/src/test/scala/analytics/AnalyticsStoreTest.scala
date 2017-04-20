@@ -21,15 +21,15 @@ import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 import scala.util.Try
 
-import agentSystem.{ResponsibilityRequest, AgentSystem}
-import akka.actor.{Props, ActorSystem}
+import agentSystem.{AgentSystem}
+import akka.actor.{Props, ActorSystem, ActorRef}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
 import akka.testkit.{TestKit, TestActorRef, TestProbe}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import database.{TestDB, OdfTree, SingleStores}
+import database.{DBHandler, TestDB, OdfTree, SingleStores}
 import http.OmiConfigExtension
 import org.prevayler.Transaction
 import org.specs2.mutable.Specification
@@ -39,7 +39,7 @@ import org.specs2.specification.AfterAll
 import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
 import types.{Path, OdfTypes}
 import types.OdfTypes._
-import types.OmiTypes.{ReadRequest, WriteRequest}
+import types.OmiTypes.{ReadRequest, WriteRequest, ResponseRequest}
 
 //Very basic test for testing that the analytics results are consistent every patch
 class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
@@ -96,25 +96,45 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
     singleStores,
     settings
   )
-
-  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
-
   val analyticsStore = system.actorOf(AnalyticsStore.props(singleStores, settings))
+  val dbHandler = system.actorOf(
+   DBHandler.props(
+     dbConnection,
+     singleStores,
+     callbackHandler,
+     Some(analyticsStore)
+   ),
+   "database-handler"
+  )
+
+  val subscriptionManager = system.actorOf(
+    SubscriptionManager.props(
+      settings,
+      singleStores,
+      callbackHandler
+    ),
+    "subscription-handler"
+  )
+  val requestHandler : ActorRef = system.actorOf(
+    RequestHandler.props(
+      subscriptionManager,
+      dbHandler,
+      settings,
+      Some(analyticsStore)
+    ),
+    "request-handler"
+  )
 
   val agentSystem = system.actorOf(
-    AgentSystem.props(Some(analyticsStore)),
-    "agent-system-test"
+   AgentSystem.props(
+     Some(analyticsStore),
+     dbHandler,
+     requestHandler,
+     settings
+   ),
+   "agent-system"
   )
 
-  val requestHandler : RequestHandler = new RequestHandler(
-  )(system,
-    agentSystem,
-    subscriptionManager,
-    settings,
-    dbConnection,
-    singleStores,
-    Some(analyticsStore)
-  )
 
   val calendar = Calendar.getInstance()
   // try to fix bug with travis
@@ -133,7 +153,8 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
         user = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))
       )
     }
-      requestHandler.handleRead(readReq)
+    implicit val timeout: Timeout = readReq.handleTTL
+  (requestHandler ? readReq).mapTo[ResponseRequest]
 
   }
   addValue("first", Vector(OdfValue("1", new Timestamp(testtime.getTime-4000))))
@@ -155,7 +176,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)
     implicit val timeout = Timeout( 10 seconds )
-    val future = requestHandler.handleWrite(writeReq)
+    val future = (requestHandler ? writeReq).mapTo[ResponseRequest]
     Await.ready(future, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
   sequential

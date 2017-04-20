@@ -45,6 +45,8 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     "store successfully started agents to agents " >> skipped("random failures") //successfulAgents 
   }
  class TestLoader( testConfig : AgentSystemConfigExtension) extends BaseAgentSystem with InternalAgentLoader{
+  protected val dbHandler: ActorRef = ActorRef.noSender
+  protected val requestHandler: ActorRef = ActorRef.noSender
    protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
    override protected[this] val settings = testConfig
    def receive : Actor.Receive = {

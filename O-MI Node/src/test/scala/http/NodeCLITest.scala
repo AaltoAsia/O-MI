@@ -51,6 +51,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       "nonexistent subscription" >> showSubTestNonexistent
     }
   }
+  val requestHandler = ActorRef.noSender
+  val dbHandler = ActorRef.noSender
   implicit val timeout = Timeout( 1.minutes )
   def timeoutDuration= 10.seconds
   def emptyConfig = ConfigFactory.empty()
@@ -73,7 +75,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   class RemoveTester( path: Path)extends RemoveHandlerT{
 
     override def handlePathRemove(parentPath: Path): Boolean = { 
-      path == parentPath || path.isAncestor(parentPath)
+      path == parentPath || path.isAncestorOf(parentPath)
     }
   }
   def helpTest = new Actorstest(AS){
@@ -122,7 +124,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   def startAgentTest=  new Actorstest(AS){
 
     val name = "StartSuccess"
-    val ref = system.actorOf( Props( new SSAgent), name)
+    val ref = system.actorOf( SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
     val testAgents = MutableMap( name -> agentInfo)
@@ -145,7 +147,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   }
   def stopAgentTest= new Actorstest(AS){
     val name = "StartSuccess"
-    val ref = system.actorOf( Props( new SSAgent), name)
+    val ref = system.actorOf( SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
     val testAgents = MutableMap( name -> agentInfo)

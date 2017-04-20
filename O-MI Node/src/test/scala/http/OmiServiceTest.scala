@@ -52,22 +52,41 @@ class OmiServiceTest
   )
   val analytics = None
 
-  val subscriptionManager = TestActorRef(SubscriptionManager.props())
+  val subscriptionManager = TestActorRef(SubscriptionManager.props(
+    settings,
+    singleStores,
+    callbackHandler
+    ))
 
+  val dbHandler = system.actorOf(
+   DBHandler.props(
+     dbConnection,
+     singleStores,
+     callbackHandler,
+     analytics
+   ),
+   "database-handler"
+  )
    val agentSystem = system.actorOf(
-    AgentSystem.props(None),
+    AgentSystem.props(
+      analytics,
+      dbHandler,
+      requestHandler,
+      settings
+    ),
     "agent-system"
   )
 
-  implicit val requestHandler : RequestHandler = new RequestHandler(
-    )(system,
-    agentSystem,
-    subscriptionManager,
-    settings,
-    dbConnection,
-    singleStores,
-    None
-    )
+   val requestHandler = system.actorOf(
+    RequestHandler.props(
+      subscriptionManager,
+      dbHandler,
+      settings,
+      analytics
+    ),
+    "RequestHandler"
+  )
+
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
   val localHost = RemoteAddress(InetAddress.getLoopbackAddress)

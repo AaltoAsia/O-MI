@@ -53,7 +53,7 @@ package object OmiTypes  {
     xmlTypes.OmiEnvelopeType( datarecord, Map(("@version" -> DataRecord("1.0")), ("@ttl" -> DataRecord(ttl))))
   }
  def omiEnvelopeToXML(omiEnvelope: OmiEnvelopeType) : NodeSeq ={
-    scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi.xsd"), Some("omiEnvelope"), defaultScope)
+    scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi"), Some("omiEnvelope"), omiDefaultScope)
   }
  def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={
    val cal = new GregorianCalendar()

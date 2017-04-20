@@ -5,7 +5,7 @@
 	<article>
 	    <textarea rows=47 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
   <Object type="TypeOne">
     <id idType="TypeTwo">Object1</id>
     <description>Human readable description.</description>
@@ -73,10 +73,10 @@
 		<h3>Request:</h3>
 		    <textarea class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:write msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <write msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
         <Object type="TypeOne">
           <id idType="TypeTwo">Object1</id>
           <description>Human readable description.</description>
@@ -128,22 +128,22 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:write>
-</omi:omiEnvelope>
+    </msg>
+  </write>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea  class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	</article>
@@ -158,10 +158,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -170,21 +170,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -198,10 +198,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	</article>
@@ -215,29 +215,29 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -257,15 +257,15 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	</article>
 	<article class="request-response single test"> 
-	    <h2> Objects </h2>
+	    <h2> Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" </h2>
 	    <div><p class="description">
 		This is normal read request without any extra arguments, but now whole tree is wanted.
 		</p>
@@ -274,25 +274,25 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects></Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" ></Objects>
+    </msg>
+  </read>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -312,10 +312,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	</article>
@@ -329,10 +329,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -345,21 +345,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" ttl="10.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   version="1.0" ttl="10">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -373,12 +373,12 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-    <omi:result msgformat="odf">
-      <omi:return description="Some parts of O-DF not found. msg element contains missing O-DF structure." returnCode="404"/>
-      <omi:msg>
-        <Objects>
+      </msg>
+    </result>
+    <result msgformat="odf">
+      <return description="Some parts of O-DF not found. msg element contains missing O-DF structure." returnCode="404"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
           <Object>
             <id>Object1</id>
             <InfoItem name="NotExistsSensor"/>
@@ -387,10 +387,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		</textarea>
 	    </div>
 	</article>
@@ -398,17 +398,17 @@
 	<article class="request-response single test"> 
 	    <h2> Getting MetaData </h2>
 	    <div><p class="description">
-		This is normal read request without any extra arguments, now MetaData is wanted from Objects/Object1/Sensor1
+		This is normal read request without any extra arguments, now MetaData is wanted from Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"/Object1/Sensor1
 		</p>
 	    </div>
 	    <div>
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1">
@@ -419,21 +419,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -452,10 +452,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -463,17 +463,17 @@
 	<article class="request-response single test"> 
 	    <h2> Getting descriptions </h2>
 	    <div><p class="description">
-		This is normal read request without any extra arguments, now description is wanted from Objects/Object1/Sensor1
+		This is normal read request without any extra arguments, now description is wanted from Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"/Object1/Sensor1
 		</p>
 	    </div>
 	    <div>
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1">
@@ -485,21 +485,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -515,10 +515,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -537,10 +537,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" newest="3">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" newest="3">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"></InfoItem>
@@ -549,21 +549,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -581,10 +581,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -602,10 +602,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" oldest="3">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" oldest="3">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -614,21 +614,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -646,10 +646,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -668,10 +668,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -680,21 +680,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -714,10 +714,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -735,10 +735,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03.000">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -747,21 +747,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -787,10 +787,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -808,10 +808,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" end="1970-01-01T00:00:06.000">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" end="1970-01-01T00:00:06.000">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -820,21 +820,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response"  class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -860,10 +860,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -883,10 +883,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000" newest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000" newest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -895,21 +895,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -925,10 +925,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -948,10 +948,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000" oldest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000" oldest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -960,21 +960,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -990,10 +990,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -1012,10 +1012,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03.000" oldest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" oldest="2">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1024,21 +1024,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1054,10 +1054,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -1076,10 +1076,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" begin="1970-01-01T00:00:03.000" newest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" newest="2">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1088,21 +1088,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1118,10 +1118,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -1140,10 +1140,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" end="1970-01-01T00:00:06.000" oldest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" end="1970-01-01T00:00:06.000" oldest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1152,21 +1152,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1182,10 +1182,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -1204,10 +1204,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" end="1970-01-01T00:00:06.000" newest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" end="1970-01-01T00:00:06.000" newest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1216,21 +1216,21 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1246,10 +1246,10 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -1267,11 +1267,11 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="5">
-<omi:read msgformat="odf" callback="http://localhost:5432">
-  <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-    <Objects>
-      <Object>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="5">
+<read msgformat="odf" callback="http://localhost:5432">
+  <msg >
+    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+      <Object xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <id>Object1</id>
         <InfoItem name="Sensor1"/>
         <Object>
@@ -1279,22 +1279,22 @@
         </Object>
       </Object>
     </Objects>
-  </omi:msg>
-</omi:read>
-</omi:omiEnvelope>
+  </msg>
+</read>
+</omiEnvelope>
       </textarea>
     </div>
     <div>
   <h3>Response:</h3>
       <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return description="OK, callback job started" returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="OK, callback job started" returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>
@@ -1313,10 +1313,10 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" newest="2" oldest="2">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" newest="2" oldest="2">
+    <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
         <Object>
           <id idType="TypeTwo">Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1325,22 +1325,22 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	    <div>
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return description="Bad request: requirement failed: Both newest and oldest at the same time not supported!" returnCode="400"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Bad request: requirement failed: Both newest and oldest at the same time not supported!" returnCode="400"/>
+    </result>
+  </response>
+</omiEnvelope>
 		    </textarea>
 	    </div>
 	</article>-->
@@ -1359,10 +1359,10 @@
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf" interval="1">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="1">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1371,47 +1371,47 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return description="Successfully started subscription" returnCode="200"/>
-      <omi:requestID>1</omi:requestID>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>1</requestID>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf">
-    <omi:requestID>1</omi:requestID>
-  </omi:read>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf">
+    <requestID>1</requestID>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>1</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>1</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1427,34 +1427,34 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf">
-    <omi:requestID>1</omi:requestID>
-  </omi:read>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf">
+    <requestID>1</requestID>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>1</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>1</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1"/>
@@ -1464,34 +1464,34 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:cancel>
-    <omi:requestID>1</omi:requestID>
-  </omi:cancel>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>1</requestID>
+  </cancel>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 	    </div>
@@ -1508,10 +1508,10 @@
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf" interval="-1">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="-1">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1520,47 +1520,47 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return description="Successfully started subscription" returnCode="200"/>
-      <omi:requestID>2</omi:requestID>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>2</requestID>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf">
-    <omi:requestID>2</omi:requestID>
-  </omi:read>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf">
+    <requestID>2</requestID>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>2</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>2</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1"/>
@@ -1570,20 +1570,20 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:write msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1">
@@ -1597,46 +1597,46 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:write>
-</omi:omiEnvelope>
+    </msg>
+  </write>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf">
-    <omi:requestID>2</omi:requestID>
-  </omi:read>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf">
+    <requestID>2</requestID>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>2</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>2</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1650,34 +1650,34 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:cancel>
-    <omi:requestID>2</omi:requestID>
-  </omi:cancel>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>2</requestID>
+  </cancel>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 	</div>
@@ -1694,10 +1694,10 @@
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf" interval="1" callback="http://callbackAddress.com:5432">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="1" callback="http://callbackAddress.com:5432">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1706,36 +1706,36 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return description="Successfully started subscription" returnCode="200"/>
-      <omi:requestID>3</omi:requestID>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>3</requestID>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response to callback:</h3>
 			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>3</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1.0" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>3</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1749,23 +1749,23 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response to callback:</h3>
 			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="1.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>3</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1.0" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>3</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1779,34 +1779,34 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:cancel>
-    <omi:requestID>3</omi:requestID>
-  </omi:cancel>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>3</requestID>
+  </cancel>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 	    </div>
@@ -1823,10 +1823,10 @@
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:read msgformat="odf" interval="-1" callback="http://callbackAddress.com:5432">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="-1" callback="http://callbackAddress.com:5432">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1"/>
@@ -1835,33 +1835,33 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
+    </msg>
+  </read>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return description="Successfully started subscription" returnCode="200"/>
-      <omi:requestID>4</omi:requestID>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>4</requestID>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10000">
-  <omi:write msgformat="odf">
-    <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      <Objects>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
           <id>Object1</id>
           <InfoItem name="Sensor1">
@@ -1875,35 +1875,35 @@
           </Object>
         </Object>
       </Objects>
-    </omi:msg>
-  </omi:write>
-</omi:omiEnvelope>
+    </msg>
+  </write>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response to callback:</h3>
 			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=4>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="9997.0" version="1.0">
-  <omi:response>
-    <omi:result msgformat="odf">
-      <omi:return returnCode="200"/>
-      <omi:requestID>4</omi:requestID>
-      <omi:msg>
-        <Objects>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="9997.0" version="1.0">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200"/>
+      <requestID>4</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
           <Object type="TypeOne">
             <id idType="TypeTwo">Object1</id>
             <InfoItem name="Sensor1">
@@ -1917,34 +1917,34 @@
             </Object>
           </Object>
         </Objects>
-      </omi:msg>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Request:</h3>
 			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-  <omi:cancel>
-    <omi:requestID>4</omi:requestID>
-  </omi:cancel>
-</omi:omiEnvelope>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>4</requestID>
+  </cancel>
+</omiEnvelope>
 			</textarea>
 		</div>
 		<div>
 		    <h3>Response:</h3>
 			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ttl="10.0" version="1.0">
-  <omi:response>
-    <omi:result>
-      <omi:return returnCode="200"/>
-    </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
 			</textarea>
 		</div>
 	</div>

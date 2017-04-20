@@ -30,7 +30,7 @@ import org.specs2.matcher.XmlMatchers._
  * tests e400 - e499 are for testing OdfParser class
  */
 
-class ParserTest extends Specification {
+class ParserTest extends Specification with MatcherMacros{
   val write_response_odf: OdfObjects = {
     /*Right(
       Iterable(
@@ -176,7 +176,7 @@ class ParserTest extends Specification {
     write request with
       correct message     $e100
       missing msgformat   $e101
-      missing omi:msg     $e103
+      missing msg     $e103
       missing Objects     $e104 
       no objects to parse $e105
     response message with
@@ -188,185 +188,192 @@ class ParserTest extends Specification {
     read request with
       correct message     $e300
       missing msgformat   $e301
-      missing omi:msg     $e303
+      missing msg     $e303
       missing Objects     $e304
       no objects to parse $e305
-      correct subscription $e306
+    correct subscription $e306
     cancel request with
       correct request     $e500 
-  OdfParser should give certain result for
-    message with
+    OdfParser should give certain result for message with
       correct format      $e400
       incorrect XML       $e401
       incorrect label     $e402
-
-      
     """
 
-  def e1 = {
-    invalidOmiTest(
-      "incorrect xml",
-      Set(
-        ParseError("OmiParser: Invalid XML: Content is not allowed in prolog.")
+    def e1 = {
+      invalidOmiTest(
+        "incorrect xml", "ScalaXMLError"
+        // ,
+        // Set(
+        //   ParseError("OmiParser: Invalid XML: Content is not allowed in prolog.")
+        // )
       )
-    )
-  }
+    }
 
-  /*
-   * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
-   */
-  def e2 = {
-    invalidOmiTest(
-      omiReadTest.replace("omi:omiEnvelope", "pmi:omiEnvelope"),
+    /*
+     * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
+     */
+    def e2 = {
+      invalidOmiTest(
+        omiReadTest.replace("omiEnvelope", "pmi:omiEnvelope"), "SchemaError"
+        /*,
+        Set(
+          ParseError("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for element \"pmi:omiEnvelope\" is not bound.")
+        )*/
+     )
+
+    }
+
+    def e3 = {
+      invalidOmiTest(
+        omiReadTest.replace("omiEnvelope", "Envelope"), "SchemaError"
+        /*,
+        Set(
+          ParseError("OmiParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element \'Envelope\'.")
+        )*/
+     )
+
+    }
+
+    def e4 = {
+      invalidOmiTest(
+        """<omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      </omiEnvelope>""", "SchemaError" /*,
       Set(
-        ParseError("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for element \"pmi:omiEnvelope\" is not bound.")
-      )
-    )
+        ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.b: The content of element 'omiEnvelope' is not complete. One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+      )*/
+   )
+    }
 
-  }
+    def e5 = {
+      invalidOmiTest(
+        omiReadTest.replace(""" ttl="10" """, """ ttl="" """ ), "SchemaError" /*,
+        Set(
+          ParseError("OmiParser: Invalid XML, schema failure: cvc-datatype-valid.1.2.1: '' is not a valid value for 'double'.")
+        )*/
+     )
+    }
 
-  def e3 = {
-    invalidOmiTest(
-      omiReadTest.replace("omi:omiEnvelope", "omi:Envelope"),
-      Set(
-        ParseError("OmiParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element \'omi:Envelope\'.")
-      )
-    )
+    def e6 = {
+      val temp = "daer" 
+      invalidOmiTest(
+        omiReadTest.replace("read", s"$temp"), "SchemaError"/*,
+        Set(
+          ParseError(s"OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element '$temp'." + " One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
+        )*/
+     )
+    }
 
-  }
+    def e100 = {
+      validOmiTest(writeRequestTest) 
+    }
 
-  def e4 = {
-    invalidOmiTest(
-      "<omi:omiEnvelope ttl=\"10\" version=\"1.0\" xsi:schemaLocation=\"omi.xsd omi.xsd\" xmlns:omi=\"omi.xsd\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"></omi:omiEnvelope>",
-      Set(
-        ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.b: The content of element 'omi:omiEnvelope' is not complete. One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-      )
-    )
-  }
+    def e101 = {
+      invalidOmiTest(
+        omiWriteTest.toString.replace("write msgformat=\"odf\"", "write"), "SchemaError"/*,
+        Set(ParseError("OmiParser: Missing msgformat attribute."))*/
+       ) 
+    }
 
-  def e5 = {
-    invalidOmiTest(
-      omiReadTest.replace("ttl=\"10\"", "ttl=\"\""),
-      Set(
-        ParseError("OmiParser: Invalid XML, schema failure: cvc-datatype-valid.1.2.1: '' is not a valid value for 'double'.")
-      )
-    )
-  }
+    //  def e102 = {
+    //    val temp = OmiParser.parse(omiWriteTest.toString.replace("""msgformat="odf"""", """msgformat="pdf""""))
+    //    temp.head should be equalTo (ParseError("Unknown message format."))
+    //  }
 
-  def e6 = {
-    val temp = "daer" 
-    invalidOmiTest(
-      omiReadTest.replace("omi:read", s"omi:$temp"),
-      Set(
-        ParseError(s"OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:$temp'." + " One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-      )
-    )
-  }
+    def e103 = {
+      invalidOmiTest(
+        omiWriteTest.toString.replace("msg", "msn"), "SchemaError" 
+        //Set(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
+      ) 
+    }
 
-  def e100 = {
-    validOmiTest(writeRequestTest) 
-  }
-
-  def e101 = {
-    invalidOmiTest(
-      omiWriteTest.toString.replace("omi:write msgformat=\"odf\"", "omi:write"),
-      Set(ParseError("OmiParser: Missing msgformat attribute."))
-    ) 
-  }
-
-  //  def e102 = {
-  //    val temp = OmiParser.parse(omiWriteTest.toString.replace("""msgformat="odf"""", """msgformat="pdf""""))
-  //    temp.head should be equalTo (ParseError("Unknown message format."))
-  //  }
-
-  def e103 = {
-    invalidOmiTest(
-      omiWriteTest.toString.replace("omi:msg", "omi:msn"),
-      Set(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
-    ) 
-  }
-
-  def e104 = {
-    val temp = <omi:omiEnvelope ttl="10.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><omi:write msgformat="odf">
-      <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      </omi:msg>
-  </omi:write>
-</omi:omiEnvelope>
-    invalidOmiTest(
-      temp, 
-      Set(ParseError("No Objects child found in msg."))
-    )
+    def e104 = {
+      val temp = <omiEnvelope ttl="10.0" version="1.0"  xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><write msgformat="odf">
+      <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xsi:schemaLocation="odf.xsd odf.xsd">
+    </msg>
+  </write>
+</omiEnvelope>
+invalidOmiTest(
+  temp, "SchemaError" 
+  //Set(ParseError("No Objects child found in msg."))
+)
 
 
-  }
+    }
 
-  def e105 = {
-    val temp = <omi:omiEnvelope ttl="10.0" version="1.0" xmlns="odf.xsd" xmlns:omi="omi.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><omi:write msgformat="odf">
-          <omi:msg>
+    def e105 = {
+      val temp = <omiEnvelope ttl="10.0" version="1.0"  xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><write msgformat="odf">
+      <msg>
         <Objects/>
-          </omi:msg>
-      </omi:write>
-    </omi:omiEnvelope>
-    validOmiTest( temp )
+      </msg>
+    </write>
+  </omiEnvelope>
+  invalidOmiTest( temp, "SchemaError" )
 
-  }
+    }
 
 
-  def e200 = {
-    validOmiTest(responseRequestTest)
-  }
+    def e200 = {
+      validOmiTest(responseRequestTest)
+    }
 
 
   def e204 = {
-    val temp = OmiParser.parse(
+    val temp = //OmiParser.parse(
       """
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-  <omi:response>
-      <omi:result msgformat="odf" > 
-      <omi:return returnCode="200" /> 
-      <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      </omi:msg>
-      </omi:result> 
-  </omi:response>
-</omi:omiEnvelope>
-""", None)
-    temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+<omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+  <response>
+      <result msgformat="odf" > 
+      <return returnCode="200" /> 
+      <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xsi:schemaLocation="odf.xsd odf.xsd">
+      </msg>
+      </result> 
+  </response>
+</omiEnvelope>
+""" //, None)
+    //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+    invalidOmiTest(temp, "SchemaError")
 
   }
 
   def e205 = {
-    val temp = OmiParser.parse(omiResponseTest.replace("<omi:return returnCode=\"200\"/>", ""), None)
-    temp.isLeft === true
+    val temp = //OmiParser.parse(
+      omiResponseTest.replace("<return returnCode=\"200\"/>", "")//, None)
+    //temp.isLeft === true
 
-    temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msg'. One of '{\"omi.xsd\":return}' is expected.")
+    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msg'. One of '{\"omi.xsd\":return}' is expected.")
 
+    invalidOmiTest(temp, "SchemaError")
   }
 
   def e206 = {
-    val temp = OmiParser.parse(
+    val temp =// OmiParser.parse(
       """<?xml version="1.0" encoding="UTF-8"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-  <omi:response>
-      <omi:result msgformat="odf" >
-      <omi:return returnCode="200" />
-      <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+<omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+  <response>
+      <result msgformat="odf" >
+      <return returnCode="200" />
+      <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xsi:schemaLocation="odf.xsd odf.xsd">
     <Objects>
     </Objects>
-      </omi:msg>
-      </omi:result>
-  </omi:response>
-</omi:omiEnvelope>
-""")
-    (temp.isRight) and {
-      temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
-    }
+      </msg>
+      </result>
+  </response>
+</omiEnvelope>
+""" //)
+   // (temp.isRight) and {
+   //   temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+   // }
+    invalidOmiTest(temp, "SchemaError")
 
   }
 
   def e207 = {
-    val temp = OmiParser.parse(omiResponseTest.replace("returnCode=\"200\"", ""), None)
-    temp.isLeft === true
-    temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'omi:return'.")
+    val temp = //OmiParser.parse(
+      omiResponseTest.replace("returnCode=\"200\"", "")//, None)
+    //temp.isLeft === true
+    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'return'.")
+    invalidOmiTest(temp, "SchemaError")
   }
 
   def e300 = {
@@ -374,44 +381,49 @@ class ParserTest extends Specification {
   }
 
   def e301 = {
-    val temp = OmiParser.parse(omiReadTest.replace("""omi:read msgformat="odf"""", "omi:read"), None)
-    temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
+    val temp = //OmiParser.parse(
+      omiReadTest.replace("""read msgformat="odf"""", "read")
+    //, None)
+    //temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
 
+    invalidOmiTest(temp, "SchemaError")
   }
 
   def e303 = {
-    val temp = OmiParser.parse(omiReadTest.replace("omi:msg", "omi:msn"), None)
-    temp.isLeft === true
-    temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'omi:msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected.")
+    val temp = //OmiParser.parse(
+      omiReadTest.replace("msg", "msn")//, None)
+    //temp.isLeft === true
+    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected.")
 
+    invalidOmiTest(temp, "SchemaError")
   }
 
   def e304 = {
-    val temp = OmiParser.parse(
+    val temp =// OmiParser.parse(
       """
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-  <omi:read msgformat="odf" >
-      <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-      </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
-""", None)
-    temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+  <read msgformat="odf" >
+      <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+      </msg>
+  </read>
+</omiEnvelope>
+""" //, None)
+    //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+    invalidOmiTest(temp, "SchemaError")
 
   }
 
   def e305 = {
     val temp = OmiParser.parse(
-      """<?xml version="1.0" encoding="UTF-8"?>
-<omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-  <omi:read msgformat="odf" >
-      <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-    <Objects>
+    """<?xml version="1.0" encoding="UTF-8"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+  <read msgformat="odf">
+      <msg >
+    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
     </Objects>
-      </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>
-""", None)
+      </msg>
+  </read>
+</omiEnvelope>""", None)
     temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
 
   }
@@ -424,12 +436,13 @@ class ParserTest extends Specification {
   }
 
   def e401 = {
-    val temp = OdfParser.parse("incorrect xml", None)
-    temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
-
+    invalidOdfTest( "incorrect xml","ScalaXMLError")
+    //val temp = OdfParser.parse("incorrect xml", None)
+    //temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
   }
   def e402 = {
-    val temp = OdfParser.parse("""
+    val temp = //OdfParser.parse(
+      """
       <Object>
         <Object>
       <id>SmartHouse</id>
@@ -447,20 +460,21 @@ class ParserTest extends Specification {
       <id>SmartCottage</id>
         </Object>
     </Object>
-""", None)
-    temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
+""" //, None)
+    invalidOdfTest( temp,"SchemaError")
+    //temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
 
   }
 
   def e500 = {
     val omiCancelTest =
       """<?xml version="1.0" encoding="UTF-8"?>
-    <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-      <omi:cancel>
-        <omi:requestID>123</omi:requestID>
-        <omi:requestID>456</omi:requestID>
-      </omi:cancel>
-    </omi:omiEnvelope>"""
+    <omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+      <cancel>
+        <requestID>123</requestID>
+        <requestID>456</requestID>
+      </cancel>
+    </omiEnvelope>"""
     val temp = OmiParser.parse(omiCancelTest)
     temp.isRight === true
     val temp2 = temp.right.get.head.asInstanceOf[CancelRequest]
@@ -470,9 +484,9 @@ class ParserTest extends Specification {
 
   lazy val omiReadTest =
     """<?xml version="1.0" encoding="UTF-8"?>
-    <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-      <omi:read msgformat="odf">
-        <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+    <omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
+      <read msgformat="odf">
+        <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xsi:schemaLocation="odf.xsd odf.xsd">
           <Objects>
             <Object>
               <id>SmartHouse</id>
@@ -500,9 +514,9 @@ class ParserTest extends Specification {
               <id>SmartCottage</id>
             </Object>
           </Objects>
-        </omi:msg>
-      </omi:read>
-    </omi:omiEnvelope>"""
+        </msg>
+      </read>
+    </omiEnvelope>"""
   lazy val readOdf2 : OdfObjects = {
     val item1 = createAncestors(OdfInfoItem( 
       Path( "Objects/SmartHouse/PowerConsumption")
@@ -535,9 +549,9 @@ class ParserTest extends Specification {
 
   lazy val omiWriteTest =
    // <?xml version="1.0" encoding="UTF-8"?>
-    <omi:omiEnvelope xmlns="odf.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="10.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-      <omi:write msgformat="odf" callback="http://testing.test">
-        <omi:msg>
+    <omiEnvelope  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <write msgformat="odf" callback="http://testing.test">
+        <msg>
           <Objects>
             <Object>
               <id>SmartHouse</id>
@@ -572,9 +586,9 @@ class ParserTest extends Specification {
               </Object>
             </Object>
           </Objects>
-        </omi:msg>
-      </omi:write>
-    </omi:omiEnvelope>
+        </msg>
+      </write>
+    </omiEnvelope>
   lazy val testTimestamp = new Timestamp( 1418909692 )
   lazy val writeOdf : OdfObjects = {
     val item1 = createAncestors(OdfInfoItem( 
@@ -602,7 +616,7 @@ class ParserTest extends Specification {
             testTimestamp
           ))))))
       //Some( OdfMetaData(
-      //  "<MetaData xmlns=\"odf.xsd\" xmlns:omi=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
+      //  "<MetaData xmlns=\"odf.xsd\" xmlns=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
       //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
       //  "Litre</value></InfoItem></MetaData>"
       //        )
@@ -637,15 +651,15 @@ class ParserTest extends Specification {
       ))
   )
 
-  println( responseRequestTest.asXML.toString )
+  println( "\n\n\n" + responseRequestTest.asXML.toString )
   lazy val omiResponseTest =
     """<?xml version="1.0" encoding="UTF-8"?>
-    <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
-      <omi:response>
-        <omi:result msgformat="odf">
-          <omi:return returnCode="200"/>
-          <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-            <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+    <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
+      <response>
+        <result msgformat="odf">
+          <return returnCode="200"/>
+          <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xsi:schemaLocation="odf.xsd odf.xsd">
+            <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/odf/1.0/" xs:schemaLocation="odf.xsd odf.xsd">
               <Object>
                 <id>SmartHouse</id>
                 <InfoItem name="PowerConsumption">
@@ -685,10 +699,10 @@ class ParserTest extends Specification {
                 </Object>
               </Object>
             </Objects>
-          </omi:msg>
-        </omi:result>
-      </omi:response>
-    </omi:omiEnvelope>"""
+          </msg>
+        </result>
+      </response>
+    </omiEnvelope>"""
 
     def validOmiTest( request: OmiRequest ) : MatchResult[OmiParseResult] = {
       val xml = request.asXML
@@ -747,21 +761,57 @@ class ParserTest extends Specification {
           parseErrors.toSet should be equalTo errors
       }
     }
+    def invalidOmiTest( xml: NodeSeq , errorType: String) : MatchResult[OmiParseResult] = {
+      val text = xml.toString
+      val result = OmiParser.parse( text )
+      result should beLeft{
+        parseErrors : Iterable[ParseError] => 
+          parseErrors.map( parseErrorTypeToString ) must contain( errorType)
+      }
+    }
+
+    def invalidOmiTest( text: String, errorType: String ) : MatchResult[OmiParseResult]= {
+      val result = OmiParser.parse( text )
+  
+      result should beLeft{
+        parseErrors : Iterable[ParseError] => 
+          parseErrors.map( parseErrorTypeToString ) must contain( errorType)
+      }
+    }
     def validOdfTest( node: OdfNode ) : MatchResult[OdfParseResult] = {
       val correct = createAncestors(node)
-      val xml = correct.asXML
+      val xml = correct.asXML// May not be correct?
       val text = xml.toString
       val result = OdfParser.parse( text )
   
       result should beRight( correct )
     }
 
+    /*
     def invalidOdfTest( text: String, errors : Set[ParseError] ) : MatchResult[OdfParseResult] = {
       val result = OdfParser.parse( text )
   
       result should beLeft{
         parseErrors : Iterable[ParseError] => 
           parseErrors.toSet should be equalTo errors
+      }
+    }*/
+    def invalidOdfTest( text: String, errorType: String) : MatchResult[OdfParseResult] = {
+      val result = OdfParser.parse( text )
+  
+      result should beLeft{
+        parseErrors : Iterable[ParseError] => 
+          parseErrors.map( parseErrorTypeToString ) must contain( errorType )
+      }
+    }
+    def parseErrorTypeToString( pe: ParseError ): String ={
+      pe match {
+        case s: SchemaError => "SchemaError"
+        case s: ScalaXMLError => "ScalaXMLError"
+        case s: ScalaxbError => "ScalaxbError"
+        case s: ODFParserError => "ODFParserError"
+        case s: OMIParserError => "OMIParserError"
+        case s: ParseErrorList => "ParserErrorList"
       }
     }
 }

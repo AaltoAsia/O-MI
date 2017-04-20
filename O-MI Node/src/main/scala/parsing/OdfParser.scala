@@ -33,7 +33,9 @@ import types._
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
-  protected[this] override def schemaPath = Array[Source](new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")), new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd")))
+  protected[this] override def schemaPath = Array[Source](
+    new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+  )
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
   /**
@@ -67,7 +69,7 @@ object OdfParser extends Parser[OdfParseResult] {
   private def parseTry(parsed: Try[Elem], user: Option[RemoteAddress] = None): OdfParseResult = {
     parsed match {
       case Success(root) => parse(root)
-      case Failure(f) => Left(Iterable(ParseError(s"Invalid XML: ${f.getMessage}")))
+      case Failure(f) => Left(Iterable(ScalaXMLError(f.getMessage)))
     }
   }
 
@@ -79,29 +81,34 @@ object OdfParser extends Parser[OdfParseResult] {
    */
   def parse(root: xml.Node): OdfParseResult = { 
     schemaValidation(root) match {
-      case errors : Seq[ParseError] if errors.nonEmpty => Left(
-        errors.map{pe : ParseError => ParseError("OdfParser: "+ pe.msg)}
-      ) 
+      case errors : Seq[ParseError] if errors.nonEmpty => 
+
+        Left(errors) 
       case empty : Seq[ParseError] if empty.isEmpty =>
 
       val requestProcessTime = currentTime
 
       Try{
-        val objects = xmlGen.scalaxb.fromXML[ObjectsType](root)
-        Right(
-          OdfObjects( 
-            if(objects.ObjectValue.isEmpty)
-              Iterable.empty[OdfObject]
-            else
-              objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
-            objects.version
-          ))
+        xmlGen.scalaxb.fromXML[ObjectsType](root)
       } match {
-        case Success(res) => res
         case Failure(e) => 
             println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
-            Left( Iterable( ParseError(e + " thrown when parsed.") ) )
+            Left( Iterable( ScalaxbError( e.getMessage ) ) )
+      
+        case Success(objects) => 
+          Try{
+            OdfObjects( 
+              if(objects.ObjectValue.isEmpty)
+                Iterable.empty[OdfObject]
+              else
+                objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
+                objects.version
+            )
+          } match {
+            case Success(odf) => Right(odf)
+            case Failure(e) => Left( Iterable( ODFParserError( e.getMessage ) ) )
+          }
       }
     }
   }
@@ -157,10 +164,6 @@ object OdfParser extends Parser[OdfParseResult] {
             }
           )
       }.headOption
-        //.map{ meta =>
-        // tests that conversion works before it is in the db and fails when in read request
-        //OdfMetaData( scalaxb.toXML[MetaData](meta, Some(schemaName),Some("MetaData"), xmlGen.defaultScope).toString)
-      //}
     ) 
   }
 
@@ -178,48 +181,18 @@ object OdfParser extends Parser[OdfParseResult] {
           }.map( _.as[xmlTypes.ObjectsType] )
         objectsTypes.map{
           case odf: xmlTypes.ObjectsType => 
-            val odfXml = xmlGen.scalaxb.toXML[xmlTypes.ObjectsType](odf,None,Some("Objects"),xmlGen.defaultScope)
+            val odfXml = xmlGen.scalaxb.toXML[xmlTypes.ObjectsType](odf,None,Some("Objects"),xmlGen.odfDefaultScope)
             odfXml.toString
             }.foldLeft("")( _ + _)
       case str: String  => 
         val xmlValue = valueType.mixed.map{
           case dr: xmlGen.scalaxb.DataRecord[_] => 
-            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.defaultScope,false)
+            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
             }.foldLeft(NodeSeq.Empty){
               case (res: NodeSeq, ns: NodeSeq) => res ++ ns
             }
           xmlValue.toString
-          /*
-        valueType.mixed.filter{
-          case dr: scalaxb.DataRecord[Any] =>
-            dr.value match {
-              case str: String => 
-                str.nonEmpty
-              case _ => _.toString.nonEmpty
-              false
-            }
-        }*/
     }
-    //XXX: USING HEAD WITHOUT CHECKING LENGHT
-    /*
-    val headOption = valueType.mixed.headOption
-    val valueheadOption = headOption.map{
-      dataRecord =>
-        typeValue match {
-          case "odf" => 
-            val data= dataRecord.as[Elem]
-            val odf = (data \ "Objects")
-            odf.headOption match {
-              case Some(head) =>
-                //parse(head)//.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns", "odf.xsd",Node.NoAttributes)
-                head.toString
-              case None =>
-                throw ParseError("No Objects child found in msg.")
-            }
-          case str: String  => 
-            dataRecord.as[String]
-        }
-    }*/
     OdfValue(
       value,
       typeValue,
@@ -241,8 +214,6 @@ object OdfParser extends Parser[OdfParseResult] {
           value = ii.value.map(value =>
             value.copy(
             attributes = value.attributes.-("@dateTime").updated("@unixTime", DataRecord(timeSolver(value, reqTime).getTime)))),
-              //dateTime = None,
-              //unixTime = Some(timeSolver(value, reqTime).getTime))),
 
           MetaData = addTimeStampToMetaDataValues(ii.MetaData.headOption,reqTime).toSeq)
       ))

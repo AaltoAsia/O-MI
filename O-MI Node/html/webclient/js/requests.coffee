@@ -24,9 +24,7 @@ requestsExt = (WebOmi) ->
   my.xmls =
     readAll :
       """
-      <?xml version="1.0"?>
-      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengroup.org/xsd/omi/1.0/ omi.xsd"
-          version="1.0" ttl="0">
+      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
         <read msgformat="odf">
           <msg>
             <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"></Objects>
@@ -36,8 +34,7 @@ requestsExt = (WebOmi) ->
       """
     template :
       """
-      <?xml version="1.0"?>
-      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengroup.org/xsd/omi/1.0/ omi.xsd"
+      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" 
           version="1.0" ttl="0">
         <read msgformat="odf">
           <msg>

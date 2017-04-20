@@ -27,9 +27,7 @@
     };
     my.ns = {
       omi: "http://www.opengroup.org/xsd/omi/1.0/",
-      odf: "http://www.opengroup.org/xsd/odf/1.0/",
-      xsi: "http://www.w3.org/2001/XMLSchema-instance",
-      xs: "http://www.w3.org/2001/XMLSchema-instance"
+      odf: "http://www.opengroup.org/xsd/odf/1.0/"
     };
     my.nsResolver = function(name) {
       return my.ns[name] || my.ns.odf;

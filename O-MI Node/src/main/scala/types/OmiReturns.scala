@@ -137,7 +137,10 @@ object Returns{
   case class ParseErrors(
     val errors: Vector[ParseError]
   ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
-    override val description: Option[String] = Some(errors.mkString(",\n"))
+    override val description: Option[String] = Some(
+      errors.map{
+        error => error.getMessage
+      }.mkString(",\n"))
   }
 
   case class InternalError(
