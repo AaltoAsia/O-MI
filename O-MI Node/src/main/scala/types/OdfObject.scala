@@ -14,6 +14,7 @@
 package types
 package OdfTypes
 
+import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import javax.xml.datatype.{DatatypeConstants => XMLConst}
 
@@ -25,7 +26,7 @@ import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
-  id:                   OdfTreeCollection[QlmIDType],
+  id:                   OdfTreeCollection[QlmID],
   path:                 Path,
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
@@ -43,11 +44,23 @@ class  OdfObjectImpl(
     val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii => (ii.path, ii)): _*)
     val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)): _*)
     val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
+    val tmp: OdfTreeCollection[QlmID] = id
+    val tmp2: OdfTreeCollection[QlmID] = another.id
+    val idsWithDuplicate: Vector[QlmID] = (this.id.toVector ++ another.id.toVector)
+    val ids: Seq[QlmID]  = idsWithDuplicate.groupBy{ 
+      case qlmId: QlmID => qlmId.value 
+    }.values.collect{
+        case Seq(single: QlmID) => Seq(single)
+        case Seq( id: QlmID, otherId: QlmID) => 
+          if( id.unionable(otherId) ){
+            Seq(id.union(otherId))
+          } else Seq[QlmID](id, otherId )
+    }.toSeq.flatten
+
     OdfObject(
-      (id ++ another.id).groupBy(_.value).values.collect {
-        case Seq(single) => single
-        case Seq(QlmIDType(valueA, attributesA), QlmIDType(valueB, attributesB)) => //idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
-          QlmIDType(valueB, attributesA ++ attributesB)},//,
+      ids,
+        //case Seq(QlmIDType(valueA, attributesA), QlmIDType(valueB, attributesB)) => //idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
+          //QlmIDType(valueB, attributesA ++ attributesB)},//,
   //          unionOption(startDateB, startDateA) { case (b, a) =>
   //            a compare b match {
   //              case XMLConst.LESSER => a // a < b
@@ -229,7 +242,8 @@ class  OdfObjectImpl(
       /*Seq( QlmID(
         path.last, // require checks (also in OdfObject)
         attributes = Map.empty
-      )),*/id, //
+      )),*/
+      id.map(_.asQlmIDType), //
       description.map( des => des.asDescription ).toSeq,
       infoItems.map{ 
         info: OdfInfoItem =>

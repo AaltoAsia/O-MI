@@ -67,6 +67,15 @@ class OmiServiceTest
    ),
    "database-handler"
   )
+   val requestHandler = system.actorOf(
+    RequestHandler.props(
+      subscriptionManager,
+      dbHandler,
+      settings,
+      analytics
+    ),
+    "RequestHandler"
+  )
    val agentSystem = system.actorOf(
     AgentSystem.props(
       analytics,
@@ -77,15 +86,6 @@ class OmiServiceTest
     "agent-system"
   )
 
-   val requestHandler = system.actorOf(
-    RequestHandler.props(
-      subscriptionManager,
-      dbHandler,
-      settings,
-      analytics
-    ),
-    "RequestHandler"
-  )
 
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
@@ -95,7 +95,7 @@ class OmiServiceTest
 
 
   def beforeAll() = {
-    OmiServer.saveSettingsOdf(system,agentSystem, settings)//Boot.init(dbConnection)
+    OmiServer.saveSettingsOdf(system,requestHandler, settings)//Boot.init(dbConnection)
   }
   def afterAll = {
     dbConnection.destroy()
@@ -169,18 +169,18 @@ class OmiServiceTest
     "respond correctly to read request with invalid omi" >> {
       val request: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
-        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-          <omi:read msgformat="odf">
-            <omi:msgsssssssssssssssssssssssssss xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+          <read msgformat="odf">
+            <msgsssssssssssssssssssssssssss xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
               <Objects>
                 <Object>
                   <id>SmartFridge22334411</id>
                   <InfoItem name="PowerConsumption"/>
                 </Object>
               </Objects>
-            </omi:msgsssssssssssssssssssssssssss>
-          </omi:read>
-        </omi:omiEnvelope>
+            </msgsssssssssssssssssssssssssss>
+          </read>
+        </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
@@ -191,25 +191,25 @@ class OmiServiceTest
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("types.ParseError: OmiParser: Invalid XML, schema failure:")
+        description must startWith("Schema error:")
       }
     }
 
     "respond correctly to read request with invalid odf" >> {
       val request: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
-        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-          <omi:read msgformat="odf">
-            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-              <Objects>
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+          <read msgformat="odf">
+            <msg>
+              <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                 <Objects>
                   <id>SmartFridge22334411</id>
                   <InfoItem name="PowerConsumption"/>
                 </Objects>
               </Objects>
-            </omi:msg>
-          </omi:read>
-        </omi:omiEnvelope>
+            </msg>
+          </read>
+        </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
@@ -221,25 +221,25 @@ class OmiServiceTest
 
         response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("types.ParseError: OdfParser: Invalid XML, schema failure:")
+        description must startWith("Schema error:")
       }
     }
 
     "respond correctly to read request with non-existing path" >> {
       val request: NodeSeq =
         // NOTE: The type needed for compiler to recognize the right Marhshaller later
-        <omi:omiEnvelope xmlns:omi="omi.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-          <omi:read msgformat="odf">
-            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-              <Objects>
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10">
+          <read msgformat="odf">
+            <msg>
+              <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                 <Object>
                   <id>non-existing</id>
                   <InfoItem name="PowerConsumption"/>
                 </Object>
               </Objects>
-            </omi:msg>
-          </omi:read>
-        </omi:omiEnvelope>
+            </msg>
+          </read>
+        </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
@@ -261,11 +261,11 @@ class OmiServiceTest
 
     "respond correctly to subscription poll with non existing requestId" >> {
       val request: NodeSeq =
-        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="10">
-          <omi:read msgformat="odf">
-            <omi:requestID>9999</omi:requestID>
-          </omi:read>
-        </omi:omiEnvelope>
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10">
+          <read >
+            <requestID>9999</requestID>
+          </read>
+        </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
@@ -283,10 +283,10 @@ class OmiServiceTest
 
     "respond to permissive requests" >> {
       val request: String = """
-        <omi:omiEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="0">
-          <omi:write msgformat="odf">
-            <omi:msg xmlns="odf.xsd" xsi:schemaLocation="odf.xsd odf.xsd">
-              <Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+          <write msgformat="odf">
+            <msg >
+              <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
                 <Object>
                   <id>testObject</id>
                   <InfoItem name="testSensor">
@@ -294,9 +294,9 @@ class OmiServiceTest
                   </InfoItem>
                 </Object>
               </Objects>
-            </omi:msg>
-          </omi:write>
-        </omi:omiEnvelope>"""
+            </msg>
+          </write>
+        </omiEnvelope>"""
 
       "respond correctly to write request with whitelisted IPv4-addresses" >> {
         Post("/", XML.loadString(request)).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
@@ -417,14 +417,14 @@ class OmiServiceTest
       }
       "respond correctly to normal read with non-whitelisted address and user" >> {
         val request: String = """
-          <omi:omiEnvelope xmlns:omi="omi.xsd" version="1.0" ttl="0">
-            <omi:read msgformat="odf">
-              <omi:msg xmlns="odf.xsd">
-                <Objects xmlns="odf.xsd">
+          <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+            <read msgformat="odf">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                 </Objects>
-              </omi:msg>
-            </omi:read>
-          </omi:omiEnvelope>"""
+              </msg>
+            </read>
+          </omiEnvelope>"""
         Post("/", XML.loadString(request))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80")))) ~> myRoute ~> check {
 

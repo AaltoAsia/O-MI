@@ -335,7 +335,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)
     implicit val timeout = Timeout( 10 seconds )
-    val future = agentSystem ? writeReq
+    val future = requestHandler ? writeReq
     Await.ready(future, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
 

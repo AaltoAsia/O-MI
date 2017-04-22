@@ -13,7 +13,7 @@
       <description>Human readable description.</description>
       <MetaData>
         <InfoItem name="MetaData1">
-          <value unixTime="0" type="xs:string">value0</value>
+          <value unixTime="0" type="xs:integer">420</value>
         </InfoItem>
       </MetaData>
       <value unixTime="0" type="xs:integer">0</value>
@@ -34,7 +34,7 @@
         <description>Human readable description.</description>
         <MetaData>
           <InfoItem name="MetaData1">
-            <value unixTime="0" type="xs:string">value0</value>
+            <value unixTime="0" type="xs:integer">420</value>
           </InfoItem>
         </MetaData>
         <value unixTime="0" type="xs:integer">0</value>
@@ -84,7 +84,7 @@
             <description>Human readable description.</description>
             <MetaData>
               <InfoItem name="MetaData1">
-                <value unixTime="0" type="xs:string">value0</value>
+                <value unixTime="0" type="xs:integer">420</value>
               </InfoItem>
             </MetaData>
             <value unixTime="0" type="xs:integer">0</value>
@@ -105,7 +105,7 @@
               <description>Human readable description.</description>
               <MetaData>
                 <InfoItem name="MetaData1">
-                  <value unixTime="0" type="xs:string">value0</value>
+                  <value unixTime="0" type="xs:string">420</value>
                 </InfoItem>
               </MetaData>
               <value unixTime="0" type="xs:integer">0</value>
@@ -398,7 +398,7 @@
 	<article class="request-response single test"> 
 	    <h2> Getting MetaData </h2>
 	    <div><p class="description">
-		This is normal read request without any extra arguments, now MetaData is wanted from Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"/Object1/Sensor1
+		This is normal read request without any extra arguments, now MetaData is wanted from Objects/Object1/Sensor1
 		</p>
 	    </div>
 	    <div>
@@ -439,7 +439,7 @@
             <InfoItem name="Sensor1">
               <MetaData>
                 <InfoItem name="MetaData1">
-                  <value unixTime="0" type="xs:string">value0</value>
+                  <value unixTime="0" type="xs:integer">420</value>
                 </InfoItem>
               </MetaData>
               <value unixTime="9" type="xs:integer">9</value>
@@ -463,7 +463,8 @@
 	<article class="request-response single test"> 
 	    <h2> Getting descriptions </h2>
 	    <div><p class="description">
-		This is normal read request without any extra arguments, now description is wanted from Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"/Object1/Sensor1
+		This is normal read request without any extra arguments, now description is
+    wanted from Objects/Object1/Sensor1
 		</p>
 	    </div>
 	    <div>
@@ -1729,7 +1730,7 @@
 		    <h3>Response to callback:</h3>
 			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1.0" version="1.0">
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1" version="1.0">
   <response>
     <result msgformat="odf">
       <return returnCode="200"/>
@@ -1759,7 +1760,7 @@
 		    <h3>Response to callback:</h3>
 			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=2>
 <?xml version="1.0"?>
-<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1.0" version="1.0">
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1" version="1.0">
   <response>
     <result msgformat="odf">
       <return returnCode="200"/>
@@ -1897,7 +1898,7 @@
 		    <h3>Response to callback:</h3>
 			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=4>
 <?xml version="1.0"?>
-<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="9997.0" version="1.0">
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="9997" version="1.0">
   <response>
     <result msgformat="odf">
       <return returnCode="200"/>

@@ -94,6 +94,7 @@ class DBHandler(
     }
     futureResponse.recover{
       case e: Exception =>
+        log.error(e, "DBHandler caught exception.")
         Responses.InternalError(e)
     }.map{
       response => 

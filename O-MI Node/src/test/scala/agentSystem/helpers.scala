@@ -8,6 +8,7 @@ import akka.actor.{ActorRef, Actor, ActorSystem, Props }
 import agentSystem._
 import types.OmiTypes.{Responses, WriteRequest, ReadRequest, CallRequest, ResponseRequest}
 import http.CLICmds._
+import AgentEvents._
 
 
 trait StartFailure{
@@ -124,10 +125,10 @@ object WrongPropsAgent extends PropsCreator{
     Props( new FFAgent(requestHandler,dbHandler) )
   }
 }
-class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo])
-extends BaseAgentSystem with InternalAgentManager{
-  protected val dbHandler: ActorRef = ActorRef.noSender
+class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo],
+  protected val dbHandler: ActorRef = ActorRef.noSender,
   protected val requestHandler: ActorRef = ActorRef.noSender
+  ) extends BaseAgentSystem with InternalAgentManager{
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
   protected def settings : AgentSystemConfigExtension = ???
   def receive : Actor.Receive = {
@@ -140,3 +141,16 @@ extends BaseAgentSystem with InternalAgentManager{
 }
 
  class AgentSystemSettings( val config : Config ) extends AgentSystemConfigExtension
+
+ class TestDummyRequestHandler() extends Actor {
+    def receive: Actor.Receive = {
+      case AgentStopped(name) => 
+      case AgentStarted(name) => 
+    }
+ }
+ class TestDummyDBHandler() extends Actor {
+    def receive: Actor.Receive = {
+      case AgentStopped(name) => 
+      case AgentStarted(name) => 
+    }
+ }

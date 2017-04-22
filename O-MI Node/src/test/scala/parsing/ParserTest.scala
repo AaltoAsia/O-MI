@@ -531,7 +531,7 @@ invalidOmiTest(
     ))
       
     val object1 = createAncestors(OdfObject(
-      Vector( new QlmIDType("Heater")),
+      Vector( new QlmID("Heater")),
       Path("Objects/SmartCottage/Heater")
     ))
     item1.union( item2 ).union( item3 ).union( object1 ) 
@@ -634,7 +634,7 @@ invalidOmiTest(
     ))
       
     val object1 = createAncestors(OdfObject(
-      Vector( new QlmIDType("Heater")),
+      Vector( new QlmID("Heater")),
       Path("Objects/SmartCottage/Heater")
     ))
     item1.union( item2 ).union( item3 ).union( object1 ) 
@@ -801,7 +801,9 @@ invalidOmiTest(
   
       result should beLeft{
         parseErrors : Iterable[ParseError] => 
-          parseErrors.map( parseErrorTypeToString ) must contain( errorType )
+          val tmp = parseErrors.map{ case pe: ParseError => parseErrorTypeToString(pe) } 
+          tmp foreach{ case str: String => println("Error's type:" + str) }
+          tmp must contain{ et: String => et == errorType }
       }
     }
     def parseErrorTypeToString( pe: ParseError ): String ={

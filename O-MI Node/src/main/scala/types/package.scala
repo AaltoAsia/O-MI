@@ -150,14 +150,14 @@ package object OdfTypes {
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(OdfTreeCollection(QlmIDType(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(OdfTreeCollection(QlmID(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
         createAncestors(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(OdfTreeCollection(QlmIDType(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(OdfTreeCollection(QlmID(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           createAncestors(parent)
         }
 

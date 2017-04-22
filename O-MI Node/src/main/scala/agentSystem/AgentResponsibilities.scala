@@ -114,6 +114,15 @@ class AgentResponsibilities(){
     def filter: RequestFilter => Boolean = createFilter(request)
       
     val odf = request.odf
+    val objectsWithMetadata = odf.objectsWithMetadata.map{
+      case obj: OdfObject =>
+        //Remove descendants
+        obj.copy(
+          infoItems = OdfTreeCollection.empty,
+          objects = OdfTreeCollection.empty
+        )
+    }
+          
     val leafPathes = getLeafs(odf).map(_.path)
     //println( s"InfoItems:\n$leafPathes")
     val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
@@ -148,7 +157,19 @@ class AgentResponsibilities(){
       ) =>
         val objects = pathToAgentName.flatMap{
           case (path: Path,aname: Option[AgentName]) =>
-            odf.get(path).map(_.createAncestors)
+            val leafOption = odf.get(path).map(_.createAncestors)
+            leafOption.map{
+              case leafOdf: OdfObjects => 
+              val lostMetaData = objectsWithMetadata.filter{
+                //Get MetaData for Object s in leaf's path 
+                case obj: OdfObject => obj.path.isAncestorOf(path)
+              }
+              lostMetaData.foldLeft(leafOdf){
+                case (resultWithMetaData: OdfObjects, objectWithMetaData: OdfObject) =>
+                  //Add MetaData
+                  resultWithMetaData.union( objectWithMetaData.createAncestors)
+              }
+            }
         }.foldLeft(OdfObjects()){
           case (res, objs) => res.union(objs)
         }
@@ -163,6 +184,13 @@ class AgentResponsibilities(){
     def filter: RequestFilter => Boolean = createFilter(request)
       
     val odf = request.odf
+    val objectsWithMetadata = odf.objectsWithMetadata.map{
+      case obj: OdfObject =>
+        obj.copy(
+          infoItems = OdfTreeCollection.empty,
+          objects = OdfTreeCollection.empty
+        )
+    }
     val leafPathes = getLeafs(odf).map(_.path)
     //println( s"InfoItems:\n$leafPathes")
     val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
@@ -197,7 +225,17 @@ class AgentResponsibilities(){
       ) =>
         val objects = pathToAgentName.flatMap{
           case (path: Path,aname: Option[AgentName]) =>
-            odf.get(path).map(_.createAncestors)
+            val leafOption = odf.get(path).map(_.createAncestors)
+            leafOption.map{
+              case leafOdf: OdfObjects => 
+              val lostMetaData = objectsWithMetadata.filter{
+                case obj: OdfObject => obj.path.isAncestorOf(path)
+              }
+              lostMetaData.foldLeft(leafOdf){
+                case (resultWithMetaData: OdfObjects, objectWithMetaData: OdfObject) =>
+                  resultWithMetaData.union( objectWithMetaData.createAncestors)
+              }
+            }
         }.foldLeft(OdfObjects()){
           case (res, objs) => res.union(objs)
         }

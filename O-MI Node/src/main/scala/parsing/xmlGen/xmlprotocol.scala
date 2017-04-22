@@ -2,6 +2,7 @@
 package parsing 
 package xmlGen
 
+import scala.collection.immutable.HashMap
 import scala.concurrent.Future
 import xmlTypes._
 

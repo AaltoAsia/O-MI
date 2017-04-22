@@ -3,6 +3,7 @@ package parsing
 package xmlGen
 package xmlTypes
 
+import scala.collection.immutable.HashMap
 
 case class OmiEnvelopeType(omienvelopetypeoption: scalaxb.DataRecord[xmlTypes.OmiEnvelopeTypeOption],
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {

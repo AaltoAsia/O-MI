@@ -131,7 +131,7 @@ object OdfParser extends Parser[OdfParseResult] {
     )
 
     OdfObject(
-      obj.id,
+      obj.id.map{ qlmIdType => parseQlmID(qlmIdType)},
       npath, 
       obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
       obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
@@ -227,6 +227,21 @@ object OdfParser extends Parser[OdfParseResult] {
       case None => requestProcessTime
       case Some(seconds) => new Timestamp(seconds.toLong * 1000)
     }
-    case Some(cal) => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+    case Some(cal) => 
+      new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+  }
+  private[this] def parseQlmID( qlmIdType: QlmIDType): QlmID ={
+    QlmID(
+      qlmIdType.value,
+      qlmIdType.idType,
+      qlmIdType.tagType,
+      qlmIdType.startDate.map{
+        cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+      },
+      qlmIdType.endDate.map{
+        cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+      },
+      (qlmIdType.attributes -( "@idType" ,"@tagType","@startDate","@endDate")).mapValues(_.value.toString)
+    )
   }
 }

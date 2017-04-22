@@ -105,16 +105,18 @@ trait InternalAgentManager extends BaseAgentSystem {
               agentInfo.responsibilities
             )
             val msg = successfulStopMsg(agentName)
-            log.info(msg)
             requestHandler ! AgentStopped(agentInfo.name)
             dbHandler ! AgentStopped(agentInfo.name)
             msg
           case failure : InternalAgentFailure => 
+            log.warning(failure.toString)
             failure.toString
         }.recover{
-          case t : Throwable => 
+              case t : Exception=> 
+
+                log.error(t, "Exception when handling agent stop command")
           t.toString
-        }
+          }
       } else {
         val msg = wasAlreadyStoppedMsg(agentName)
         log.info(msg)

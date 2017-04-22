@@ -21,7 +21,7 @@ import testHelpers.Actorstest
 import types.Path
 import types.OmiTypes._
 import responses.{RemoveHandlerT,RemoveSubscription}
-import agentSystem.{AgentName, AgentInfo, TestManager, SSAgent}
+import agentSystem.{AgentName, AgentInfo, TestManager, SSAgent, TestDummyDBHandler, TestDummyRequestHandler}
 import akka.util.{ByteString, Timeout}
 import akka.http.scaladsl.model.Uri
 import akka.io.Tcp.{Write, Received}
@@ -51,8 +51,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       "nonexistent subscription" >> showSubTestNonexistent
     }
   }
-  val requestHandler = ActorRef.noSender
-  val dbHandler = ActorRef.noSender
   implicit val timeout = Timeout( 1.minutes )
   def timeoutDuration= 10.seconds
   def emptyConfig = ConfigFactory.empty()
@@ -104,7 +102,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       AgentInfo( "test4", "testClass2", emptyConfig, ActorRef.noSender, running = false, Nil )
     ).sortBy{info => info.name }
     val agentsMap : MutableMap[AgentName,AgentInfo] = MutableMap(agents.map{ info => info.name -> info }:_*)
-    val agentSystemRef = TestActorRef(new TestManager( agentsMap ))
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val agentSystemRef = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
     val agentSystem = agentSystemRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
@@ -128,7 +128,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
     val testAgents = MutableMap( name -> agentInfo)
-    val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
@@ -151,7 +153,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
     val testAgents = MutableMap( name -> agentInfo)
-    val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )

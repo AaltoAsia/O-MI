@@ -109,6 +109,7 @@ def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
             case future: Future[ResponseRequest] =>
               future.recover{
                 case e: Exception =>
+                  log.error( e,"DBHandler returned exception")
                   Responses.InternalError(e)
               }
           }

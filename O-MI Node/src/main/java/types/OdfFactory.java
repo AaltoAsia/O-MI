@@ -11,8 +11,8 @@ import types.OdfTypes.OdfInfoItem;
 import types.OdfTypes.OdfValue;
 import types.OdfTypes.OdfValue$;
 import types.OdfTypes.OdfTreeCollection;
-import parsing.xmlGen.xmlTypes.QlmIDType;
-import parsing.xmlGen.xmlTypes.QlmIDType$;
+import types.OdfTypes.QlmID;
+import types.OdfTypes.QlmID$;
 import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
 
@@ -137,6 +137,7 @@ public class OdfFactory{
 
   /**
    *
+   * @param ids QlmIDs of O-DF Object
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
@@ -144,15 +145,13 @@ public class OdfFactory{
    * @param typeValue
    */
   public static OdfObject createOdfObject(
+    Iterable<QlmID> ids,
     Path path,
     Iterable<OdfInfoItem> infoitems,
     Iterable<OdfObject> objects,
     OdfDescription description,
     String typeValue
   ){
-    Vector<QlmIDType> ids = new Vector<QlmIDType>();
-    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
-    ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
@@ -168,6 +167,112 @@ public class OdfFactory{
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
+   * @param description Description of O-DF Object.
+   * @param typeValue
+   */
+  public static OdfObject createOdfObject(
+    Path path,
+    Iterable<OdfInfoItem> infoitems,
+    Iterable<OdfObject> objects,
+    OdfDescription description,
+    String typeValue
+  ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = OdfFactory.createQlmID(
+        path.toArray()[path.length()-1],
+        null,
+        null,
+        null,
+        null
+    );
+    ids.add(id);
+    return new OdfObject(
+        OdfTreeCollection.fromJava(ids),
+        path,
+        OdfTreeCollection.fromJava(infoitems),
+        OdfTreeCollection.fromJava(objects),
+        scala.Option.apply(description),
+        scala.Option.apply(typeValue)
+    );
+  }
+
+  /**
+   *
+   * @param qlmId QlmIDs of O-DF Object
+   * @param path Path of O-DF Object.
+   * @param infoitems Child O-DF InfoItems of created O-DF Object.
+   * @param objects Child O-DF Objects of created O-DF Object.
+   * @param typeValue
+   */
+  public static OdfObject createOdfObject(
+    Iterable<QlmID> ids,
+    Path path,
+    Iterable<OdfInfoItem> infoitems,
+    Iterable<OdfObject> objects,
+    String typeValue
+  ){
+    return new OdfObject(
+        OdfTreeCollection.fromJava(ids),
+        path,
+        OdfTreeCollection.fromJava(infoitems),
+        OdfTreeCollection.fromJava(objects),
+        scala.Option.empty(),
+        scala.Option.apply(typeValue)
+    );
+  }
+
+  /**
+   *
+   * @param qlmId QlmIDs of O-DF Object
+   * @param path Path of O-DF Object.
+   * @param infoitems Child O-DF InfoItems of created O-DF Object.
+   * @param objects Child O-DF Objects of created O-DF Object.
+   * @param description Description of O-DF Object.
+   */
+  public static OdfObject createOdfObject(
+    Iterable<QlmID> ids,
+    Path path,
+    Iterable<OdfInfoItem> infoitems,
+    Iterable<OdfObject> objects,
+    OdfDescription description
+  ){
+    return new OdfObject(
+        OdfTreeCollection.fromJava(ids),
+        path,
+        OdfTreeCollection.fromJava(infoitems),
+        OdfTreeCollection.fromJava(objects),
+        scala.Option.apply(description),
+        scala.Option.empty()
+    );
+  }
+
+  /**
+   *
+   * @param qlmId QlmIDs of O-DF Object
+   * @param path Path of O-DF Object.
+   * @param infoitems Child O-DF InfoItems of created O-DF Object.
+   * @param objects Child O-DF Objects of created O-DF Object.
+   */
+  public static OdfObject createOdfObject(
+    Iterable<QlmID> ids,
+    Path path,
+    Iterable<OdfInfoItem> infoitems,
+    Iterable<OdfObject> objects
+  ){
+    return new OdfObject(
+        OdfTreeCollection.fromJava(ids),
+        path,
+        OdfTreeCollection.fromJava(infoitems),
+        OdfTreeCollection.fromJava(objects),
+        scala.Option.empty(),
+        scala.Option.empty()
+    );
+  }
+  /**
+   *
+   * @param path Path of O-DF Object.
+   * @param infoitems Child O-DF InfoItems of created O-DF Object.
+   * @param objects Child O-DF Objects of created O-DF Object.
    * @param typeValue
    */
   public static OdfObject createOdfObject(
@@ -176,8 +281,14 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String typeValue
   ){
-    Vector<QlmIDType> ids = new Vector<QlmIDType>();
-    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = OdfFactory.createQlmID(
+        path.toArray()[path.length()-1],
+        null,
+        null,
+        null,
+        null
+    );
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -202,8 +313,14 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     OdfDescription description
   ){
-    Vector<QlmIDType> ids = new Vector<QlmIDType>();
-    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = OdfFactory.createQlmID(
+        path.toArray()[path.length()-1],
+        null,
+        null,
+        null,
+        null
+    );
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -226,8 +343,14 @@ public class OdfFactory{
     Iterable<OdfInfoItem> infoitems,
     Iterable<OdfObject> objects
   ){
-    Vector<QlmIDType> ids = new Vector<QlmIDType>();
-    QlmIDType id = QlmIDType.createFromString(path.toArray()[path.length()-1]);
+    Vector<QlmID> ids = new Vector<QlmID>();
+    QlmID id = OdfFactory.createQlmID(
+        path.toArray()[path.length()-1],
+        null,
+        null,
+        null,
+        null
+    );
     ids.add(id);
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
@@ -302,4 +425,21 @@ public class OdfFactory{
     );
   }
 
+  public static QlmID createQlmID(
+      String id,
+      String idType,
+      String tagType,
+      Timestamp startDate,
+      Timestamp endDate
+  ){
+    HashMap<String,String> attr = new HashMap<String,String>();
+    return new QlmID(
+        id,
+        scala.Option.apply(idType),
+        scala.Option.apply(tagType),
+        scala.Option.apply(startDate),
+        scala.Option.apply(endDate),
+        attr
+    );
+  }
 }

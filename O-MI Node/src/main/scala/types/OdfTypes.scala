@@ -14,9 +14,11 @@
 package types
 package OdfTypes
 
+import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 
 import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.immutable.HashMap
 import scala.collection.JavaConverters._
 import scala.language.existentials
 
@@ -33,6 +35,157 @@ object OdfTreeCollection {
   import scala.language.implicitConversions
   implicit def seqToOdfTreeCollection[E](s: Iterable[E]): OdfTreeCollection[E] = OdfTreeCollection.fromIterable(s)
 }
+object QlmID{
+
+  case class TimeWindow(
+    val start: Option[Timestamp] = None, 
+    val end: Option[Timestamp] = None
+  ){
+    def intersect(that: TimeWindow): Boolean = {
+      val l:Boolean = (this.start, that.end) match {
+        case (Some(startTime), Some(endTime)) =>
+          startTime.getTime <= endTime.getTime
+        case (None, Some(endTime)) => true
+        case (Some(startTime), None) => true
+        case (None , None) => true
+      } 
+      val r: Boolean = (this.end, that.start) match {
+        case (Some(endTime), Some(startTime)) =>
+          endTime.getTime  >= startTime.getTime
+        case (None, Some(endTime)) => true
+        case (Some(startTime), None) => true
+        case (None , None) => true
+      }
+      l && r
+    }
+
+    def union( that: TimeWindow ): TimeWindow = {
+      assert( this.intersect(that) ) 
+        TimeWindow(
+          if( this.start.isEmpty || that.start.isEmpty ){
+            None  
+          } else {
+            this.start.flatMap{
+              st => 
+                that.start.map{
+                  ost => 
+                    if( st.before( ost ) ) st
+                    else ost
+                }
+            }
+          },
+          if( this.end.isEmpty || that.end.isEmpty ){
+            None 
+          } else {
+            this.end.flatMap{
+              et =>
+                that.end.map{
+                  oet => 
+                    if( et.after(oet) ) et 
+                    else oet
+                }
+            }
+          }
+        )
+    }
+  }
+}
+case class QlmID(
+  val value:String,
+  val idType: Option[String] = None,
+  val tagType: Option[String] = None,
+  val startDate: Option[Timestamp] = None,
+  val endDate: Option[Timestamp] = None,
+  val attributes: Map[String, String] = HashMap()
+){
+  import QlmID._
+  lazy val validityTimeWindow: Option[TimeWindow] ={
+  if( startDate.nonEmpty || endDate.nonEmpty ) Some(TimeWindow( startDate, endDate))
+    else None
+  }
+
+  def unionableIdType( that: QlmID ) ={
+      (idType, that.idType) match {
+        case (Some(id), Some(otherId)) =>  
+          id == otherId
+        case (None, Some(_)) => true
+        case (Some(_), None ) => true
+        case (None, None) => true
+      }
+  }
+  def unionableTagType( that: QlmID ) ={
+      (tagType, that.tagType) match {
+        case (Some(tag), Some(otherTag)) =>  
+          tag == otherTag
+        case (None, Some(_)) => true
+        case (Some(_), None ) => true
+        case (None, None) => true
+      }
+  }
+  def unionableValidityTimeWindow( that: QlmID ) ={
+      (validityTimeWindow, that.validityTimeWindow) match {
+        case (Some(tw), Some(ovtw)) =>  
+          tw.intersect(ovtw)
+        case (None, Some(_)) => true
+        case (Some(_), None ) => true
+        case (None, None) => true
+      }
+  }
+  def unionable( that: QlmID ) = {
+    value == that.value && 
+    unionableIdType(that) && 
+    unionableTagType(that) && 
+    unionableValidityTimeWindow(that)
+  }
+  def union( that: QlmID ): QlmID ={
+    assert( unionable( that) )
+    val tw: Option[TimeWindow] = (validityTimeWindow, that.validityTimeWindow) match {
+      case (Some(tw), Some(ovtw)) => Some(tw.union(ovtw))
+      case (None, Some(tw)) =>Some(tw )
+      case (Some(tw), None ) => Some(tw)
+      case (None, None) => None
+    }
+    QlmID(
+      value,
+      idType.orElse(that.idType),
+      tagType.orElse(that.tagType),
+      tw.flatMap( _.start),
+      tw.flatMap( _.end),
+      attributes ++ that.attributes
+    )
+  }
+  def asQlmIDType: QlmIDType = {
+    val idTypeAttr: Seq[(String,DataRecord[Any])] = idType.map{
+          typ =>
+            ("@idType" -> DataRecord(typ))
+        }.toSeq 
+    val tagTypeAttr: Seq[(String,DataRecord[Any])]  = tagType.map{
+          typ =>
+            ("@tagType" -> DataRecord(typ))
+        }.toSeq  
+  
+    val startDateAttr = startDate.map{
+              startDate =>
+                ("@startDate" -> DataRecord(timestampToXML(startDate)))
+            }.toSeq
+    val endDateAttr = endDate.map{
+              endDate =>
+                ("@endDate" -> DataRecord(timestampToXML(endDate)))
+        }.toSeq
+    QlmIDType(
+      value,
+      (
+        idTypeAttr ++ 
+        tagTypeAttr ++ 
+        startDateAttr ++
+        endDateAttr
+      ).toMap ++ attributes.mapValues(DataRecord(_))
+      
+    )
+  }
+
+}
+
 
 /** Sealed base trait defining all shared members of OdfNodes*/
 sealed trait OdfNode {
@@ -124,7 +277,7 @@ case class OdfObjects(
 
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
-  id: OdfTreeCollection[QlmIDType],
+  id: OdfTreeCollection[QlmID],
   path: Path,
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),

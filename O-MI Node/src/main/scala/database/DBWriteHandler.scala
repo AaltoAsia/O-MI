@@ -40,7 +40,11 @@ trait DBWriteHandler extends DBHandlerBase {
     // Collect metadata 
     val objectsWithMetadata = odfObjects.objectsWithMetadata
     writeValues(infoItems, objectsWithMetadata).recover{
+      case t: Exception =>
+        log.error(t, "Error while handling write.")
+        Responses.InternalError(t)
       case t: Throwable =>
+        log.error(t, "Error while handling write.")
         Responses.InternalError(t)
     }
   }
@@ -229,8 +233,9 @@ trait DBWriteHandler extends DBHandlerBase {
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    val writeFuture = dbWriteFuture.map{ n =>
-            // Update our hierarchy data structures if needed
+    val writeFuture = dbWriteFuture.map{ 
+      n =>
+        // Update our hierarchy data structures if needed
 
         if (updatedStaticItems.nonEmpty) {
           // aggregate all updates to single odf tree
@@ -239,16 +244,20 @@ trait DBWriteHandler extends DBHandlerBase {
 
           singleStores.hierarchyStore execute Union(updateTree)
         }
-        
-        triggeringEvents.foreach(iie =>
-          iie.infoItem.values.headOption.map(newValue=>
-            singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
-          )
+        triggeringEvents.foreach(
+          iie =>
+            iie.infoItem.values.headOption.map(
+              newValue=>
+                singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
+            )
         )
-      }
-    dbWriteFuture.onFailure{
+    }
+
+    writeFuture.onFailure{
+      case t: Exception => log.error(t, "Error when trying to update hierarchy.")
       case t: Throwable => log.error(t, "Error when trying to update hierarchy.")
     }
+
 
 
 

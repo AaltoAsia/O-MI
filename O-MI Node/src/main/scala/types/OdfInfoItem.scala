@@ -77,8 +77,7 @@ class  OdfInfoItemImpl(
       iname = Vector.empty,
       //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
       value = values.map{ 
-        value : OdfValue[Any] =>
-        value.asValueType
+        value : OdfValue[Any] => value.asValueType
       }.toSeq,
       attributes = Map{
         "name" -> DataRecord[String](
@@ -86,7 +85,7 @@ class  OdfInfoItemImpl(
           key = Some("name"),
           path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))
         )
-      }
+      }// ++  typeValue.map{ n => ("@type" -> DataRecord(n))}
     )
   }
 
@@ -160,7 +159,11 @@ sealed trait OdfValue[+T]{
       Seq(
        valueAsDataRecord 
       ),
-    Map(("@type" -> DataRecord(typeValue)),("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),("@dateTime" -> DataRecord(timestampToXML(timestamp)))) ++(attributes.mapValues(DataRecord(_)))
+    Map(
+      ("@type" -> DataRecord(typeValue)),
+      ("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),
+      ("@dateTime" -> DataRecord(timestampToXML(timestamp)))
+    ) ++(attributes.mapValues(DataRecord(_)))
     )
   }
   def isNumeral : Boolean = typeValue match {

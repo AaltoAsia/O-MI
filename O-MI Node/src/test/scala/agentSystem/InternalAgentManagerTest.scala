@@ -37,8 +37,6 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    }
  }  
  def AS = ActorSystem() 
- val requestHandler = ActorRef.noSender
- val dbHandler = ActorRef.noSender
  def emptyConfig = ConfigFactory.empty()
  def timeoutDuration= 10.seconds
  implicit val timeout = Timeout( timeoutDuration )
@@ -46,7 +44,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    import system.dispatcher
    val name = "Nonexisting"
    val testAgents : Map[AgentName, AgentInfo] = Map.empty
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StartAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
@@ -61,7 +61,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val clazz = "agentSystem.SSAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StartAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
@@ -75,7 +77,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val clazz = "agentSystem.SSAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StopAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
@@ -91,7 +95,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StartAgentCmd(name)
    val resF: Future[String ] = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
@@ -106,7 +112,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StopAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
@@ -121,7 +129,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = true, Nil)
    val testAgents = Map( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StopAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
@@ -136,7 +146,9 @@ class InternalAgentManagerTest(implicit ee: ExecutionEnv) extends Specification 
    val clazz = "agentSystem.FFAgent"
    val agentInfo = AgentInfo( name, clazz, emptyConfig, ref, running = false, Nil)
    val testAgents = Map( name -> agentInfo)
-   val managerRef = TestActorRef( new TestManager(testAgents)) 
+   val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+   val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
    val managerActor = managerRef.underlyingActor
    val msg = StartAgentCmd(name)
    val resF = (managerRef ? msg).mapTo[Future[String]].flatMap(f => f)
