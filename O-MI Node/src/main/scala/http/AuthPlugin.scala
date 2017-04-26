@@ -117,10 +117,17 @@ trait AuthApiProvider extends AuthorizationExtension {
       // helper function
       def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
         case Success(Unauthorized(_)) => Failure(UnauthorizedEx())
-        case Success(Authorized(_)) => Success(orgOmiRequest)
-        case Success(Changed(reqWrapper,_)) => Success(reqWrapper)
-        case Success(Partial(maybePaths,_)) => {
-
+        case Success(Authorized(user0)) => {
+          orgOmiRequest.user = user0 //TODO TEST THAT THIS WORKS!!
+          Success(orgOmiRequest)
+        }
+        case Success(Changed(reqWrapper,user0)) => {
+          reqWrapper.user = user0
+          orgOmiRequest.user = user0
+          Success(reqWrapper)
+        }
+        case Success(Partial(maybePaths,user0)) => {
+          orgOmiRequest.user = user0
           val newOdfOpt = for {
             paths <- Option(maybePaths) // paths might be null
 
