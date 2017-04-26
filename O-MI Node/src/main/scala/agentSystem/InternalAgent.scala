@@ -110,5 +110,9 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
     msgFuture.map{
       any => senderRef ! any
     }
+    msgFuture.onFailure{
+      case e: Exception =>
+        log.error( e, s"RespondFuture caught: ") 
+    }
   }
 }

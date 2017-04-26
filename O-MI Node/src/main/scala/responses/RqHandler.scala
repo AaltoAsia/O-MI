@@ -131,6 +131,7 @@ def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
     val fSeq = Future.sequence(
       responsibleToRequest.map{
         case (None, subrequest) =>  
+          log.debug( "Call for serviceless path", subrequest.odf.asXML.toString)
           Future.successful{
               Responses.NotFound(
                 "Call request for path that do not have responsible agent for service.")

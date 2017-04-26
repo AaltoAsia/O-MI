@@ -98,19 +98,25 @@ object OdfParser extends Parser[OdfParseResult] {
       
         case Success(objects) => 
           Try{
-            OdfObjects( 
-              if(objects.ObjectValue.isEmpty)
-                Iterable.empty[OdfObject]
-              else
-                objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
-                objects.version
-            )
+            parseObjects(objects,requestProcessTime)
           } match {
             case Success(odf) => Right(odf)
-            case Failure(e) => Left( Iterable( ODFParserError( e.getMessage ) ) )
+            case Failure(e) => 
+            println( s"Exception: $e\nStackTrace:\n")
+            e.printStackTrace
+              Left( Iterable( ODFParserError( e.getMessage ) ) )
           }
       }
     }
+  }
+  private[this] def parseObjects(objects: ObjectsType,requestProcessTime: Timestamp): OdfObjects = {
+    OdfObjects( 
+      if(objects.ObjectValue.isEmpty)
+        Iterable.empty[OdfObject]
+      else
+        objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
+        objects.version
+      )
   }
 
   private[this] def validateId(stringId: String): Option[String] = {
@@ -169,7 +175,7 @@ object OdfParser extends Parser[OdfParseResult] {
 
   private[this] def parseValue(requestProcessTime: Timestamp, valueType: ValueType) = { 
     val typeValue = valueType.typeValue
-    val value: String = typeValue match {
+    typeValue match {
       case "odf" => 
         val objectsTypes = valueType.mixed.filter{
             case dr: scalaxb.DataRecord[Any] =>
@@ -178,26 +184,31 @@ object OdfParser extends Parser[OdfParseResult] {
                   true
                 case _ => false
               }
-          }.map( _.as[xmlTypes.ObjectsType] )
+          }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
+            OdfObjectsValue(
+              parseObjects(objectsTypes,requestProcessTime).asXML.toString,
+              timeSolver(valueType, requestProcessTime)
+            )
+        /*
         objectsTypes.map{
           case odf: xmlTypes.ObjectsType => 
             val odfXml = xmlGen.scalaxb.toXML[xmlTypes.ObjectsType](odf,None,Some("Objects"),xmlGen.odfDefaultScope)
             odfXml.toString
             }.foldLeft("")( _ + _)
+            */
       case str: String  => 
         val xmlValue = valueType.mixed.map{
           case dr: xmlGen.scalaxb.DataRecord[_] => 
-            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
+            xmlGen.scalaxb.DataRecord.toXML(dr,Some("odf.xsd"),Some("Objects"),xmlGen.odfDefaultScope,false)
             }.foldLeft(NodeSeq.Empty){
               case (res: NodeSeq, ns: NodeSeq) => res ++ ns
             }
-          xmlValue.toString
+        OdfValue(
+          xmlValue.toString,
+          typeValue,
+          timeSolver(valueType, requestProcessTime)
+        )
     }
-    OdfValue(
-      value,
-      typeValue,
-      timeSolver(valueType, requestProcessTime)
-    )
 
   }
 

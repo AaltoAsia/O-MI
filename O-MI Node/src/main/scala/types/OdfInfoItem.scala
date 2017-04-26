@@ -131,18 +131,16 @@ sealed trait OdfValue[+T]{
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
     val valueAsDataRecord = (typeValue, value) match  {
-      case ("odf", xmlStr: String)  =>   
-        val parsed = OdfParser.parse(xmlStr)
-        parsed match {
-          case Right( odf: OdfObjects ) =>
+      case ("odf", objects: OdfObjects)  =>   
+        //val parsed = OdfParser.parse(xmlStr)
+        //parsed match {
+         // case Right( odf: OdfObjects ) =>
           DataRecord( 
-            Some("odf.xsd"),
-            Some("objects"),
-            odf.asXML
+            objects.asObjectsType
           )
-          case Left( errors: Seq[ParseError] ) =>
-            DataRecord(errors.map(_.getMessage).mkString("\n"))
-        }
+         // case Left( errors: Seq[ParseError] ) =>
+         //   DataRecord(errors.map(_.getMessage).mkString("\n"))
+        //}
         case (otheType, otherValue) =>
           otherValue match {
             case s: Short   => DataRecord(s) 
@@ -177,6 +175,8 @@ sealed trait OdfValue[+T]{
        true
      case "xs:long" =>
        true
+     case "odf" =>
+       false
      case _ =>
        false
    }
@@ -191,10 +191,23 @@ sealed trait OdfValue[+T]{
        false
      case "xs:long" =>
        false
+     case "odf" =>
+       false
      case _ =>
        true
    }
 }
+  final case class OdfObjectsValue(
+    value: String, 
+    timestamp: Timestamp, 
+    attributes: Map[String, String] = Map.empty
+  ) extends OdfValue[String]{
+    override def typeValue: String = "odf"
+    lazy val objects: OdfObjects = OdfParser.parse(value) match {
+      case Right(odf: OdfObjects ) => odf
+      case Left( spe: Seq[ParseError] ) => throw spe.head
+    }
+  } 
   final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Int]{
     def typeValue:            String = "xs:int"
   } 
@@ -222,6 +235,7 @@ object OdfValue{
     attributes: Map[String, String]
   ) : OdfValue[Any] = {
     value match {
+      case odf: OdfObjects => OdfObjectsValue(odf.asXML.toString, timestamp, attributes)
       case s: Short => OdfShortValue(s, timestamp, attributes)
       case i: Int   => OdfIntValue(i, timestamp, attributes)
       case l: Long  => OdfLongValue(l, timestamp, attributes)
@@ -245,6 +259,14 @@ object OdfValue{
   ) : OdfValue[Any] = {
     Try{
       typeValue match {
+        case "odf" =>
+          val result = OdfParser.parse(value)
+          result match {
+            case Left( pes: Seq[ParseError]) =>
+              throw pes.head
+            case Right( odf: OdfObjects) =>
+              OdfObjectsValue(odf.asXML.toString,timestamp, attributes)
+          }
         case "xs:float" =>
           OdfFloatValue(value.toFloat, timestamp, attributes)
         case "xs:double" =>

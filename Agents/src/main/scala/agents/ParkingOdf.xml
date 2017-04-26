@@ -1,0 +1,127 @@
+<Objects>
+  <Object>
+    <id>ParkingService</id>
+    <InfoItem name="FindParking">
+      <MetaData>
+        <InfoItem name="InfoItemType">
+          <value>odf:Method</value>
+        </InfoItem>
+        <InfoItem name="odf:Parameter">
+          <value type="odf">
+            <Objects>
+              <Object type="FindParkingRequest">
+                <id>Parameters</id>
+                <InfoItem name="ArrivalTime">
+                  <value>test</value>
+                </InfoItem>
+                <Object>
+                  <id>Position</id>
+                  <InfoItem name="Address">
+                    <value>test</value>
+                  </InfoItem>
+                </Object>
+              </Object>
+            </Objects>
+          </value>
+        </InfoItem>
+        <InfoItem name="odf:ReturnType">
+          <value type="odf">
+            <Objects>
+              <Object type="list">
+                <id>ParkingLots</id>
+                <Object type="ParkingLot">
+                  <id>ParkingLot</id>
+                  <InfoItem name="OpeningTime">
+                    <value>test</value>
+                  </InfoItem>
+                  <InfoItem name="Owner">
+                    <value>test</value>
+                  </InfoItem>
+                  <Object>
+                    <id>Position</id>
+                    <InfoItem name="Address">
+                      <value>test</value>
+                    </InfoItem>
+                  </Object>
+                  <Object type="list">
+                    <id>SpotTypes</id>
+                    <Object>
+                      <id>ElectronicVechile</id>
+                      <InfoItem name="Spots">
+                        <value>7</value>
+                      </InfoItem>
+                      <InfoItem name="Price">
+                        <value>2€</value>
+                      </InfoItem>
+                      <InfoItem name="MaxHeight">
+                        <value>2.5m</value>
+                      </InfoItem>
+                      <InfoItem name="MaxWidht">
+                        <value>2.5m</value>
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                  <Object type="list">
+                    <id>Spots</id>
+                    <Object type="ElectronicVechile">
+                      <id>Spot1</id>
+                      <InfoItem name="AvailAble">
+                        <value>YES</value>
+                      </InfoItem>
+                    </Object>
+                  </Object>
+                </Object>
+              </Object>
+            </Objects>
+          </value>
+        </InfoItem>
+      </MetaData>
+      <value>odf:Method</value>
+    </InfoItem>
+    <Object type="list">
+      <id>ParkingLots</id>
+      <Object type="ParkingLot">
+        <id>SouthParkingLot</id>
+        <InfoItem name="OpeningTime">
+          <value>06.00</value>
+        </InfoItem>
+        <InfoItem name="Owner">
+          <value>test</value>
+        </InfoItem>
+        <Object>
+          <id>Position</id>
+          <InfoItem name="Address">
+            <value>test</value>
+          </InfoItem>
+        </Object>
+        <Object type="list">
+          <id>SpotTypes</id>
+          <Object>
+            <id>ElectronicVechile</id>
+            <InfoItem name="Spots">
+              <value>7</value>
+            </InfoItem>
+            <InfoItem name="Price">
+              <value>2€</value>
+            </InfoItem>
+            <InfoItem name="MaxHeight">
+              <value>2.5m</value>
+            </InfoItem>
+            <InfoItem name="MaxWidht">
+              <value>2.5m</value>
+            </InfoItem>
+          </Object>
+        </Object>
+        <Object type="list">
+          <id>Spots</id>
+          <Object type="ElectronicVechile">
+              <id>Spot1</id>
+              <InfoItem name="AvailAble">
+                <value>YES</value>
+              </InfoItem>
+          </Object>
+        </Object>
+      </Object>
+    </Object>
+  </Object>
+</Objects>
