@@ -129,7 +129,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
         else OdfTypes.createAncestors(OdfInfoItem(p, metaData = Some(OdfMetaData(OdfTreeCollection.empty))))
       ReadRequest(
         odf = _odf,
-        user = Some(UserInfo(remoteAddress = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))))
+        user0 = Some(UserInfo(remoteAddress = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))))
       )
     }
       requestHandler.handleRead(readReq)

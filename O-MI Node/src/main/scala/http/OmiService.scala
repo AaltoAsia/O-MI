@@ -177,7 +177,7 @@ trait OmiService
               case path => path
             }
 
-            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user = Some(UserInfo(remoteAddress = Some(user)))))
+            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user0 = Some(UserInfo(remoteAddress = Some(user)))))
               asReadRequest match {
                 case Some(readReq) =>
                   hasPermissionTest(readReq) match {
