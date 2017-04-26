@@ -113,7 +113,7 @@ class OdfObjectsImpl(
         obj: OdfObject => 
         obj.asObjectType
       }.toSeq,
-      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(None,Some("version"),n))))
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n))))
     )
   }
   implicit def asXML : NodeSeq= {

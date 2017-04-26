@@ -96,7 +96,7 @@ case class QlmID(
   val tagType: Option[String] = None,
   val startDate: Option[Timestamp] = None,
   val endDate: Option[Timestamp] = None,
-  val attributes: Map[String, String] = HashMap()
+  val attributes: HashMap[String, String] = HashMap()
 ){
   import QlmID._
   lazy val validityTimeWindow: Option[TimeWindow] ={
@@ -174,12 +174,16 @@ case class QlmID(
         }.toSeq
     QlmIDType(
       value,
-      (
-        idTypeAttr ++ 
-        tagTypeAttr ++ 
-        startDateAttr ++
-        endDateAttr
-      ).toMap ++ attributes.mapValues(DataRecord(_))
+      HashMap(
+        (
+        (
+          idTypeAttr ++ 
+          tagTypeAttr ++ 
+          startDateAttr ++
+          endDateAttr
+        ).toMap ++ attributes.mapValues(DataRecord(_))
+        ).toSeq:_*
+      )
       
     )
   }

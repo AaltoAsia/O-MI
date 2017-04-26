@@ -19,6 +19,7 @@ import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
 
 import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NodeSeq, Elem}
 
@@ -252,7 +253,11 @@ object OdfParser extends Parser[OdfParseResult] {
       qlmIdType.endDate.map{
         cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
       },
-      (qlmIdType.attributes -( "@idType" ,"@tagType","@startDate","@endDate")).mapValues(_.value.toString)
+      HashMap(
+        (
+          qlmIdType.attributes -( "@idType" ,"@tagType","@startDate","@endDate")
+        ).mapValues(_.value.toString).toSeq:_*
+      )
     )
   }
 }
