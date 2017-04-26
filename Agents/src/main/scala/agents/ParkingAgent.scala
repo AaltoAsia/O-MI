@@ -71,17 +71,17 @@ class ParkingAgent(
               case value: OdfObjectsValue =>
                 value.typeValue match {
                   case "odf" =>
-                    val result = OdfParser.parse(value.value)
-                    val f = result match{
-                      case Right(odf) =>
-                          val pp = getfindParkingParams(odf)
+                  //  val result = OdfParser.parse(value.value)
+                  //  val f = result match{
+                  //    case Right(odf) =>
+                          val pp = getfindParkingParams(value.value)
                           findParking( pp)
-                      case Left( spe: Seq[ParseError] ) =>
-                        Future{
-                          Responses.ParseErrors(spe.toVector)
-                        }
-                    }
-                    f                  
+                  //    case Left( spe: Seq[ParseError] ) =>
+                  //      Future{
+                   //       Responses.ParseErrors(spe.toVector)
+                   //     }
+                   // }
+                   // f                  
                   case other =>
                     log.debug(s"Unknown type: $other for parameters")
                     Future{
@@ -104,7 +104,7 @@ class ParkingAgent(
                       ResponseRequest(response.results ++ resp.results)
                   }
               }
-              log.debug(s"${responses.size} to response:\n" + response.asXML.toString)
+              //log.debug(s"${responses.size} to response:\n" + response.asXML.toString)
               response
           }.recover{
             case e: Exception => 

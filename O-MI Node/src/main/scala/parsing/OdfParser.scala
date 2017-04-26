@@ -186,7 +186,7 @@ object OdfParser extends Parser[OdfParseResult] {
               }
           }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
             OdfObjectsValue(
-              parseObjects(objectsTypes,requestProcessTime).asXML.toString,
+              parseObjects(objectsTypes,requestProcessTime),//.asXML.toString,
               timeSolver(valueType, requestProcessTime)
             )
         /*
@@ -199,7 +199,7 @@ object OdfParser extends Parser[OdfParseResult] {
       case str: String  => 
         val xmlValue = valueType.mixed.map{
           case dr: xmlGen.scalaxb.DataRecord[_] => 
-            xmlGen.scalaxb.DataRecord.toXML(dr,Some("odf.xsd"),Some("Objects"),xmlGen.odfDefaultScope,false)
+            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
             }.foldLeft(NodeSeq.Empty){
               case (res: NodeSeq, ns: NodeSeq) => res ++ ns
             }
