@@ -90,7 +90,9 @@ sealed trait RequestIDRequest extends JavaRequestIDRequest{
 }
 
 case class UserInfo(
-                   remoteAddress: Option[RemoteAddress]
+                   remoteAddress: Option[RemoteAddress],
+                   name: Option[String] = None,
+                   email: Option[String] = None
                    )
 
 sealed trait RequestWrapper {
