@@ -19,6 +19,12 @@
                   <InfoItem name="Address">
                     <value>test</value>
                   </InfoItem>
+                  <InfoItem name="Latitude">
+                    <value>test</value>
+                  </InfoItem>
+                  <InfoItem name="Longitude">
+                    <value>test</value>
+                  </InfoItem>
                 </Object>
               </Object>
             </Objects>
@@ -27,6 +33,7 @@
         <InfoItem name="odf:ReturnType">
           <value type="odf">
             <Objects>
+              <!-- How to define a list of Type A in O-DF? -->
               <Object type="list">
                 <id>ParkingLots</id>
                 <Object type="ParkingLot">
@@ -42,12 +49,22 @@
                     <InfoItem name="Address">
                       <value>test</value>
                     </InfoItem>
+                    <InfoItem name="Latitude">
+                      <value>test</value>
+                    </InfoItem>
+                    <InfoItem name="Longitude">
+                      <value>test</value>
+                    </InfoItem>
                   </Object>
+                  <!-- How to define a list of Type A in O-DF? -->
                   <Object type="list">
                     <id>SpotTypes</id>
                     <Object>
                       <id>ElectronicVechile</id>
                       <InfoItem name="Spots">
+                        <value>7</value>
+                      </InfoItem>
+                      <InfoItem name="SpotsAvailable">
                         <value>7</value>
                       </InfoItem>
                       <InfoItem name="Price">
@@ -59,14 +76,18 @@
                       <InfoItem name="MaxWidht">
                         <value>2.5m</value>
                       </InfoItem>
+                      <Object type="Charger">
+                        <id>Charger</id>
+                      </Object>
                     </Object>
                   </Object>
+                  <!-- How to define a list of Type A in O-DF? -->
                   <Object type="list">
                     <id>Spots</id>
                     <Object type="ElectronicVechile">
                       <id>Spot1</id>
-                      <InfoItem name="AvailAble">
-                        <value>YES</value>
+                      <InfoItem name="Available">
+                        <value>TRUE</value>
                       </InfoItem>
                     </Object>
                   </Object>
@@ -78,6 +99,7 @@
       </MetaData>
       <value>odf:Method</value>
     </InfoItem>
+    <!-- How to define a list of Type A in O-DF? -->
     <Object type="list">
       <id>ParkingLots</id>
       <Object type="ParkingLot">
@@ -93,12 +115,22 @@
           <InfoItem name="Address">
             <value>test</value>
           </InfoItem>
+          <InfoItem name="Latitude">
+            <value>test</value>
+          </InfoItem>
+          <InfoItem name="Longitude">
+            <value>test</value>
+          </InfoItem>
         </Object>
+        <!-- How to define a list of Type A in O-DF? -->
         <Object type="list">
           <id>SpotTypes</id>
           <Object>
             <id>ElectronicVechile</id>
             <InfoItem name="Spots">
+              <value>7</value>
+            </InfoItem>
+            <InfoItem name="SpotsAvailable">
               <value>7</value>
             </InfoItem>
             <InfoItem name="Price">
@@ -110,15 +142,19 @@
             <InfoItem name="MaxWidht">
               <value>2.5m</value>
             </InfoItem>
+            <Object type="Charger">
+              <id>Charger</id>
+            </Object>
           </Object>
         </Object>
+        <!-- How to define a list of Type A in O-DF? -->
         <Object type="list">
           <id>Spots</id>
           <Object type="ElectronicVechile">
-              <id>Spot1</id>
-              <InfoItem name="AvailAble">
-                <value>YES</value>
-              </InfoItem>
+            <id>Spot1</id>
+            <InfoItem name="Available">
+              <value>TRUE</value>
+            </InfoItem>
           </Object>
         </Object>
       </Object>
