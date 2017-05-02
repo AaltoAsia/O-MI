@@ -15,9 +15,9 @@
 package analytics
 
 import java.sql.Timestamp
-import java.util.{TimeZone, Calendar}
+import java.util.{Calendar, TimeZone}
 
-import scala.concurrent.{Future, Await}
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -26,7 +26,7 @@ import akka.actor.{Props, ActorSystem, ActorRef}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
-import akka.testkit.{TestKit, TestActorRef, TestProbe}
+import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import database.{DBHandler, TestDB, OdfTree, SingleStores}
@@ -36,10 +36,10 @@ import org.specs2.mutable.Specification
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mock.Mockito
 import org.specs2.specification.AfterAll
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
-import types.{Path, OdfTypes}
+import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
+import types.{OdfTypes, Path}
 import types.OdfTypes._
-import types.OmiTypes.{ReadRequest, WriteRequest, ResponseRequest}
+import types.OmiTypes.{ReadRequest, WriteRequest, ResponseRequest, UserInfo}
 
 //Very basic test for testing that the analytics results are consistent every patch
 class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
@@ -150,7 +150,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
         else OdfTypes.createAncestors(OdfInfoItem(p, metaData = Some(OdfMetaData(OdfTreeCollection.empty))))
       ReadRequest(
         odf = _odf,
-        user = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))
+        user0 = Some(UserInfo(remoteAddress = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte)))))
       )
     }
     implicit val timeout: Timeout = readReq.handleTTL

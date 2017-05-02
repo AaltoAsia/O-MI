@@ -51,7 +51,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
   def callbackAsUri: Option[URI] = callback map {cb => new URI(cb.address)}
   def withCallback: Option[Callback] => OmiRequest
   def hasCallback: Boolean = callback.nonEmpty
-  def user: Option[RemoteAddress]
+  //def user(): Option[UserInfo]
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType
 
   implicit def asXML : NodeSeq= omiEnvelopeToXML(asOmiEnvelope)
@@ -116,10 +116,15 @@ sealed trait RequestIDRequest extends JavaRequestIDRequest{
   def requestIDsAsJava : JIterable[RequestID] = asJavaIterable(requestIDs)
 }
 
-
+case class UserInfo(
+                   remoteAddress: Option[RemoteAddress],
+                   name: Option[String] = None,
+                   email: Option[String] = None
+                   )
 
 sealed trait RequestWrapper {
-  def user: Option[RemoteAddress]
+  //def user(): Option[UserInfo]
+  var user: Option[UserInfo] = _
   def rawRequest: String
   def ttl: Duration
   def parsed: OmiParseResult
@@ -134,10 +139,10 @@ sealed trait RequestWrapper {
  * Defines values from the beginning of O-MI message like ttl and message type
  * without parsing the whole request.
  */
-class RawRequestWrapper(val rawRequest: String, val user: Option[RemoteAddress]) extends RequestWrapper {
+class RawRequestWrapper(val rawRequest: String, private val user0: Option[UserInfo]) extends RequestWrapper {
   import RawRequestWrapper._
   import scala.xml.pull._
-
+  user = user0
 
 
   private val parseSingle: () => EvElemStart = {
@@ -194,7 +199,7 @@ class RawRequestWrapper(val rawRequest: String, val user: Option[RemoteAddress])
 }
 
 object RawRequestWrapper {
-  def apply(rawRequest: String, user: Option[RemoteAddress]): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
+  def apply(rawRequest: String, user: Option[UserInfo]): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
 
@@ -247,9 +252,11 @@ case class ReadRequest(
   oldest: Option[Int ] = None,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
-) extends OmiRequest with OdfRequest{
+
+) extends OmiRequest  with OdfRequest{
+  user = user0
  // def this(
  // odf: OdfObjects ,
  // begin: Option[Timestamp ] = None,
@@ -295,10 +302,11 @@ case class PollRequest(
   callback: Option[Callback] = None,
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
-) extends OmiRequest{
+) extends OmiRequest {
 
+  user = user0
   def withCallback = cb => this.copy(callback = cb)
   
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
@@ -327,9 +335,10 @@ case class SubscriptionRequest(
   oldest: Option[Int ] = None,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
-) extends OmiRequest with SubLike with OdfRequest{ 
+) extends OmiRequest with SubLike with OdfRequest{
+  user = user0
   def withCallback = cb => this.copy(callback = cb)
 
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
@@ -362,10 +371,11 @@ case class WriteRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
 
+  user = user0
   def withCallback = cb => this.copy(callback = cb)
 
   implicit def asWriteRequest : xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
@@ -393,9 +403,10 @@ case class CallRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
-) extends OmiRequest with OdfRequest with PermissiveRequest{
+) extends OmiRequest with OdfRequest with PermissiveRequest {
+  user = user0
 
   def withCallback = cb => this.copy(callback = cb)
 
@@ -424,9 +435,10 @@ case class DeleteRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
+  user = user0
 
   def withCallback = cb => this.copy(callback = cb)
 
@@ -456,9 +468,10 @@ case class DeleteRequest(
 case class CancelRequest(
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   ttl: Duration = 10.seconds,
-  user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest {
+  user = user0
   implicit def asCancelRequest : xmlTypes.CancelRequestType = xmlTypes.CancelRequestType(
     None,
     requestIDs.map{ 
@@ -484,9 +497,11 @@ class ResponseRequest(
   val results: OdfTreeCollection[OmiResult],
   val ttl: Duration,
   val callback : Option[Callback] = None,
-  val user: Option[RemoteAddress] = None,
+  private val user0: Option[UserInfo] = None,
   val senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest  with PermissiveRequest with JavaResponseRequest{
+  user = user0
+
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
   def copy(
     results: OdfTreeCollection[OmiResult] = this.results,
