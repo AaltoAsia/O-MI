@@ -651,7 +651,6 @@ invalidOmiTest(
       ))
   )
 
-  println( "\n\n\n" + responseRequestTest.asXML.toString )
   lazy val omiResponseTest =
     """<?xml version="1.0" encoding="UTF-8"?>
     <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="omi.xsd omi.xsd" version="1.0" ttl="-1">
@@ -778,6 +777,7 @@ invalidOmiTest(
           parseErrors.map( parseErrorTypeToString ) must contain( errorType)
       }
     }
+
     def validOdfTest( node: OdfNode ) : MatchResult[OdfParseResult] = {
       val correct = createAncestors(node)
       val xml = correct.asXML// May not be correct?
@@ -787,23 +787,17 @@ invalidOmiTest(
       result should beRight( correct )
     }
 
-    /*
-    def invalidOdfTest( text: String, errors : Set[ParseError] ) : MatchResult[OdfParseResult] = {
-      val result = OdfParser.parse( text )
-  
-      result should beLeft{
-        parseErrors : Iterable[ParseError] => 
-          parseErrors.toSet should be equalTo errors
-      }
-    }*/
     def invalidOdfTest( text: String, errorType: String) : MatchResult[OdfParseResult] = {
       val result = OdfParser.parse( text )
   
       result should beLeft{
         parseErrors : Iterable[ParseError] => 
-          val tmp = parseErrors.map{ case pe: ParseError => parseErrorTypeToString(pe) } 
-          tmp foreach{ case str: String => println("Error's type:" + str) }
-          tmp must contain{ et: String => et == errorType }
+          parseErrors.map( parseErrorTypeToString ) must contain( errorType )
+          /*
+        case asdf => 
+          println("TYPE MISSMATCH" )
+          throw new Exception("TYPE MISSMATCH")
+          */
       }
     }
     def parseErrorTypeToString( pe: ParseError ): String ={
@@ -814,6 +808,7 @@ invalidOmiTest(
         case s: ODFParserError => "ODFParserError"
         case s: OMIParserError => "OMIParserError"
         case s: ParseErrorList => "ParserErrorList"
+        case s => throw pe
       }
     }
 }

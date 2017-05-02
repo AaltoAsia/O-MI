@@ -349,8 +349,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       )
       def writeMessage(value: String) = {
         s"""<?xml version="1.0" encoding="UTF-8"?>
-            <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  " version="1.0" ttl="0">
-              <write msgformat="odf">
+            <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+              <write msgformat="odf" >
                 <msg>
                   <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
