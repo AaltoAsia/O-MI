@@ -19,12 +19,12 @@ import javax.xml.bind.annotation.XmlType;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="WriteRequestType">
- *   &lt;complexContent>
- *     &lt;extension base="{http://www.opengroup.org/xsd/omi/1.0/}RequestBaseType">
- *     &lt;/extension>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="WriteRequestType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;extension base="{http://www.opengroup.org/xsd/omi/1.0/}RequestBaseType"&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

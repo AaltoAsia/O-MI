@@ -21,6 +21,7 @@ final public class OmiFactory{
    * @param newest Number of newest values to be read.
    * @param oldest Number of oldest values to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -53,6 +54,7 @@ final public class OmiFactory{
    * @param end Timestamp defining end of time frame to be read.
    * @param newest Number of newest values to be read.
    * @param oldest Number of oldest values to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -81,6 +83,7 @@ final public class OmiFactory{
    * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -106,6 +109,7 @@ final public class OmiFactory{
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -131,6 +135,7 @@ final public class OmiFactory{
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be read.
    * @param newest Number of newest values to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -158,6 +163,7 @@ final public class OmiFactory{
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -186,6 +192,7 @@ final public class OmiFactory{
    * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -214,6 +221,7 @@ final public class OmiFactory{
    * @param odf O-DF structure to be read.
    * @param newest Number of newest values to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -240,6 +248,7 @@ final public class OmiFactory{
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -264,6 +273,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -287,6 +297,7 @@ final public class OmiFactory{
    * @param ttl Time to live of request.
    * @param requestIDs Iterable of requestIDs to be polled.
    * @param callback Callback address were results of this request should be sent.
+   * @return PollRequest
    */
   public static PollRequest createPollRequest(
       Duration ttl,
@@ -308,6 +319,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param requestIDs Iterable of requestIDs to be polled.
+   * @return PollRequest
    */
   public static PollRequest createPollRequest(
       Duration ttl,
@@ -329,6 +341,7 @@ final public class OmiFactory{
    * @param interval Interval of sending of subscriped data.
    * @param odf O-DF structure to be subscriped.
    * @param callback Callback address were subscriped data is to be sent.
+   * @return SubscriptionRequest
    */
   public static SubscriptionRequest createSubscriptionRequest(
       Duration ttl,
@@ -354,6 +367,7 @@ final public class OmiFactory{
    * @param ttl Time to live of subscription.
    * @param interval Interval of sending of subscriped data.
    * @param odf O-DF structure to be subscriped.
+   * @return SubscriptionRequest
    */
   public static SubscriptionRequest createSubscriptionRequest(
       Duration ttl,
@@ -377,6 +391,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param results Iterable of O-MI result contained in O-MI response.
+   * @return ResponseRequest
    */
   public static ResponseRequest createResponseRequest(
       Duration ttl,
@@ -392,6 +407,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param requestIDs Iterable of requestIDs to be cancelled.
+   * @return CancelRequest
    */
   public static CancelRequest createCancelRequest(
       Duration ttl,
@@ -411,6 +427,7 @@ final public class OmiFactory{
    * @param returnValue Return element of O-MI result element.
    * @param requestIDs Iterable of requestIDs associated with request associated to this result.
    * @param odf O-DF structure that was subscriped.
+   * @return OmiResult
    */
   public static OmiResult createOmiResult(
       OmiReturn returnValue,
@@ -428,6 +445,7 @@ final public class OmiFactory{
    * O-MI result of subscription or cancel request.
    * @param returnValue Return element of O-MI result element.
    * @param requestIDs Iterable of requestIDs associated with request associated to this result.
+   * @return OmiResult
    */
   public static OmiResult createOmiResult(
       OmiReturn returnValue,
@@ -443,6 +461,7 @@ final public class OmiFactory{
   /**
    * O-MI result of subscription or cancel request.
    * @param returnValue Return element of O-MI result element.
+   * @return OmiResult
    */
   public static OmiResult createOmiResult(
       OmiReturn returnValue
@@ -459,6 +478,7 @@ final public class OmiFactory{
    *
    * @param returnCode HTTP return code associated with O-MI request. Different from HTTP return code of actual HTTP request.
    * @param description Textual description of return value.
+   * @return OmiReturn
    */
   public static OmiReturn createOmiReturn(
       String returnCode,
@@ -473,6 +493,7 @@ final public class OmiFactory{
   /**
    *
    * @param returnCode HTTP return code associated with O-MI request. Different from HTTP return code of actual HTTP request.
+   * @return OmiReturn
    */
   public static OmiReturn createOmiReturn(
       String returnCode
@@ -488,6 +509,7 @@ final public class OmiFactory{
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be written to O-MI Node.
    * @param callback Callback address were results of this request should be sent.
+   * @return WriteRequest
    */
   public static WriteRequest createWriteRequest(
       Duration ttl,
@@ -508,6 +530,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be written to O-MI Node.
+   * @return WriteRequest
    */
   public static WriteRequest createWriteRequest(
       Duration ttl,

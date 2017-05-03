@@ -20,27 +20,27 @@ import javax.xml.bind.annotation.XmlType;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="OmiEnvelopeType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;choice>
- *           &lt;element name="read" type="{http://www.opengroup.org/xsd/omi/1.0/}ReadRequestType"/>
- *           &lt;element name="write" type="{http://www.opengroup.org/xsd/omi/1.0/}WriteRequestType"/>
- *           &lt;element name="response" type="{http://www.opengroup.org/xsd/omi/1.0/}ResponseListType"/>
- *           &lt;element name="cancel" type="{http://www.opengroup.org/xsd/omi/1.0/}CancelRequestType"/>
- *         &lt;/choice>
- *       &lt;/sequence>
- *       &lt;attribute name="version" use="required" type="{http://www.w3.org/2001/XMLSchema}string" />
- *       &lt;attribute name="ttl" use="required">
- *         &lt;simpleType>
- *           &lt;union memberTypes=" {http://www.opengroup.org/xsd/omi/1.0/}PositiveDouble {http://www.opengroup.org/xsd/omi/1.0/}DoubleMinusOne">
- *           &lt;/union>
- *         &lt;/simpleType>
- *       &lt;/attribute>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="OmiEnvelopeType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;choice&gt;
+ *           &lt;element name="read" type="{http://www.opengroup.org/xsd/omi/1.0/}ReadRequestType"/&gt;
+ *           &lt;element name="write" type="{http://www.opengroup.org/xsd/omi/1.0/}WriteRequestType"/&gt;
+ *           &lt;element name="response" type="{http://www.opengroup.org/xsd/omi/1.0/}ResponseListType"/&gt;
+ *           &lt;element name="cancel" type="{http://www.opengroup.org/xsd/omi/1.0/}CancelRequestType"/&gt;
+ *         &lt;/choice&gt;
+ *       &lt;/sequence&gt;
+ *       &lt;attribute name="version" use="required" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
+ *       &lt;attribute name="ttl" use="required"&gt;
+ *         &lt;simpleType&gt;
+ *           &lt;union memberTypes=" {http://www.opengroup.org/xsd/omi/1.0/}PositiveDouble {http://www.opengroup.org/xsd/omi/1.0/}DoubleMinusOne"&gt;
+ *           &lt;/union&gt;
+ *         &lt;/simpleType&gt;
+ *       &lt;/attribute&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

@@ -26,20 +26,20 @@ import javax.xml.bind.annotation.XmlType;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="RequestBaseType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="nodeList" type="{http://www.opengroup.org/xsd/omi/1.0/}NodesType" minOccurs="0"/>
- *         &lt;element name="requestID" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="msg" type="{http://www.opengroup.org/xsd/omi/1.0/}MsgType" minOccurs="0"/>
- *       &lt;/sequence>
- *       &lt;attribute name="callback" type="{http://www.w3.org/2001/XMLSchema}anyURI" />
- *       &lt;attribute name="msgformat" type="{http://www.opengroup.org/xsd/omi/1.0/}SchemaIDType" />
- *       &lt;attribute name="targetType" type="{http://www.opengroup.org/xsd/omi/1.0/}TargetTypeType" default="node" />
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="RequestBaseType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="nodeList" type="{http://www.opengroup.org/xsd/omi/1.0/}NodesType" minOccurs="0"/&gt;
+ *         &lt;element name="requestID" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="msg" type="{http://www.opengroup.org/xsd/omi/1.0/}MsgType" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *       &lt;attribute name="callback" type="{http://www.w3.org/2001/XMLSchema}anyURI" /&gt;
+ *       &lt;attribute name="msgformat" type="{http://www.opengroup.org/xsd/omi/1.0/}SchemaIDType" /&gt;
+ *       &lt;attribute name="targetType" type="{http://www.opengroup.org/xsd/omi/1.0/}TargetTypeType" default="node" /&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

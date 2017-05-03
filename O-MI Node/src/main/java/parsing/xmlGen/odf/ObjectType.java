@@ -26,20 +26,20 @@ import javax.xml.namespace.QName;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="ObjectType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="id" type="{http://www.opengroup.org/xsd/odf/1.0/}QlmIDType" maxOccurs="unbounded"/>
- *         &lt;element name="description" type="{http://www.opengroup.org/xsd/odf/1.0/}DescriptionType" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="InfoItem" type="{http://www.opengroup.org/xsd/odf/1.0/}InfoItemType" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="Object" type="{http://www.opengroup.org/xsd/odf/1.0/}ObjectType" maxOccurs="unbounded" minOccurs="0"/>
- *       &lt;/sequence>
- *       &lt;attribute name="type" type="{http://www.w3.org/2001/XMLSchema}string" />
- *       &lt;anyAttribute/>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="ObjectType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="id" type="{http://www.opengroup.org/xsd/odf/1.0/}QlmIDType" maxOccurs="unbounded"/&gt;
+ *         &lt;element name="description" type="{http://www.opengroup.org/xsd/odf/1.0/}DescriptionType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="InfoItem" type="{http://www.opengroup.org/xsd/odf/1.0/}InfoItemType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="Object" type="{http://www.opengroup.org/xsd/odf/1.0/}ObjectType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *       &lt;attribute name="type" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
+ *       &lt;anyAttribute/&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 
@@ -85,6 +85,7 @@ public class ObjectType {
      * Objects of the following type(s) are allowed in the list
      * {@link QlmIDType }
      * 
+     * @return List of QlmIDType
      * 
      */
     public List<QlmIDType> getId() {
@@ -114,6 +115,7 @@ public class ObjectType {
      * Objects of the following type(s) are allowed in the list
      * {@link DescriptionType }
      * 
+     * @return list of DescriptionType
      * 
      */
     public List<DescriptionType> getDescription() {
@@ -143,6 +145,7 @@ public class ObjectType {
      * Objects of the following type(s) are allowed in the list
      * {@link InfoItemType }
      * 
+     * @return list of InfoItemType
      * 
      */
     public List<InfoItemType> getInfoItem() {
@@ -172,6 +175,7 @@ public class ObjectType {
      * Objects of the following type(s) are allowed in the list
      * {@link ObjectType }
      * 
+     * @return list of ObjectType
      * 
      */
     public List<ObjectType> getObject() {

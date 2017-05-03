@@ -23,22 +23,22 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="ReadRequestType">
- *   &lt;complexContent>
- *     &lt;extension base="{http://www.opengroup.org/xsd/omi/1.0/}RequestBaseType">
- *       &lt;attribute name="interval">
- *         &lt;simpleType>
- *           &lt;union memberTypes=" {http://www.opengroup.org/xsd/omi/1.0/}PositiveDouble {http://www.opengroup.org/xsd/omi/1.0/}DoubleMinusOne {http://www.opengroup.org/xsd/omi/1.0/}DoubleMinusTwo">
- *           &lt;/union>
- *         &lt;/simpleType>
- *       &lt;/attribute>
- *       &lt;attribute name="oldest" type="{http://www.w3.org/2001/XMLSchema}positiveInteger" />
- *       &lt;attribute name="begin" type="{http://www.w3.org/2001/XMLSchema}dateTime" />
- *       &lt;attribute name="end" type="{http://www.w3.org/2001/XMLSchema}dateTime" />
- *       &lt;attribute name="newest" type="{http://www.w3.org/2001/XMLSchema}positiveInteger" />
- *     &lt;/extension>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="ReadRequestType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;extension base="{http://www.opengroup.org/xsd/omi/1.0/}RequestBaseType"&gt;
+ *       &lt;attribute name="interval"&gt;
+ *         &lt;simpleType&gt;
+ *           &lt;union memberTypes=" {http://www.opengroup.org/xsd/omi/1.0/}PositiveDouble {http://www.opengroup.org/xsd/omi/1.0/}DoubleMinusOne {http://www.opengroup.org/xsd/omi/1.0/}DoubleMinusTwo"&gt;
+ *           &lt;/union&gt;
+ *         &lt;/simpleType&gt;
+ *       &lt;/attribute&gt;
+ *       &lt;attribute name="oldest" type="{http://www.w3.org/2001/XMLSchema}positiveInteger" /&gt;
+ *       &lt;attribute name="begin" type="{http://www.w3.org/2001/XMLSchema}dateTime" /&gt;
+ *       &lt;attribute name="end" type="{http://www.w3.org/2001/XMLSchema}dateTime" /&gt;
+ *       &lt;attribute name="newest" type="{http://www.w3.org/2001/XMLSchema}positiveInteger" /&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

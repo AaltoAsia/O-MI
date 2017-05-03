@@ -29,6 +29,7 @@ public class OdfFactory{
    *  Parameter value is cast to type specifed by typeValue parameter. If cast fails, value's
    *  type will be String.
    * @param timestamp Timestamp when value was measured or received.
+   * @return OdfValue
    */
   public static OdfValue<Object> createOdfValue(
     String value,
@@ -49,6 +50,7 @@ public class OdfFactory{
    *
    * @param value Value inside of O-DF value element.
    * @param timestamp Timestamp when value was measured or received.
+   * @return OdfValue
    */
   public static OdfValue<Object> createOdfValue(
     Object value,
@@ -66,6 +68,7 @@ public class OdfFactory{
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItew.
    * @param description Description of InfoItem.
+   * @return OdfInfoItem
    */
   public static OdfInfoItem createOdfInfoItem(
     Path path,
@@ -86,6 +89,7 @@ public class OdfFactory{
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItew.
    * @param description Description of InfoItem.
+   * @return OdfInfoItem
    */
   public static OdfInfoItem createOdfInfoItem(
     Path path,
@@ -104,6 +108,7 @@ public class OdfFactory{
    *
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItew.
+   * @return OdfInfoItem
    */
   public static OdfInfoItem createOdfInfoItem(
     Path path,
@@ -121,6 +126,7 @@ public class OdfFactory{
    *
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItew.
+   * @return OdfInfoItem
    */
   public static OdfInfoItem createOdfInfoItem(
       Path path,
@@ -143,6 +149,7 @@ public class OdfFactory{
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
    * @param typeValue
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Iterable<QlmID> ids,
@@ -169,6 +176,7 @@ public class OdfFactory{
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
    * @param typeValue
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Path path,
@@ -198,11 +206,12 @@ public class OdfFactory{
 
   /**
    *
-   * @param qlmId QlmIDs of O-DF Object
+   * @param ids QlmIDs of O-DF Object
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param typeValue
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Iterable<QlmID> ids,
@@ -223,11 +232,12 @@ public class OdfFactory{
 
   /**
    *
-   * @param qlmId QlmIDs of O-DF Object
+   * @param ids QlmIDs of O-DF Object
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Iterable<QlmID> ids,
@@ -248,10 +258,11 @@ public class OdfFactory{
 
   /**
    *
-   * @param qlmId QlmIDs of O-DF Object
+   * @param ids QlmIDs of O-DF Object
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Iterable<QlmID> ids,
@@ -274,6 +285,7 @@ public class OdfFactory{
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param typeValue
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Path path,
@@ -306,6 +318,7 @@ public class OdfFactory{
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Path path,
@@ -337,6 +350,7 @@ public class OdfFactory{
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
+   * @return OdfObject
    */
   public static OdfObject createOdfObject(
     Path path,
@@ -366,6 +380,7 @@ public class OdfFactory{
    *
    * @param value Text of description.
    * @param language Language of description.
+   * @return OdfDescription
    */
   public static OdfDescription createOdfDescprition(
     String value,
@@ -379,6 +394,7 @@ public class OdfFactory{
   /**
    *
    * @param value Text of description.
+   * @return OdfDescription
    */
   public static OdfDescription createOdfDescription(
     String value
@@ -393,6 +409,7 @@ public class OdfFactory{
    *
    * @param objects Child O-DF Objects of O-DF Objects.
    * @param version Version of O-DF standart used.
+   * @return OdfObjects
    */
   public static OdfObjects createOdfObjects(
     Iterable<OdfObject> objects,
@@ -407,6 +424,7 @@ public class OdfFactory{
   /**
    *
    * @param objects Child O-DF Objects of O-DF Objects.
+   * @return OdfObjects
    */
   public static OdfObjects createOdfObjects(
     Iterable<OdfObject> objects

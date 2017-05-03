@@ -27,17 +27,17 @@ import javax.xml.namespace.QName;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="QlmIDType">
- *   &lt;simpleContent>
- *     &lt;extension base="&lt;http://www.w3.org/2001/XMLSchema>string">
- *       &lt;attribute name="idType" type="{http://www.w3.org/2001/XMLSchema}string" />
- *       &lt;attribute name="tagType" type="{http://www.w3.org/2001/XMLSchema}string" />
- *       &lt;attribute name="startDate" type="{http://www.w3.org/2001/XMLSchema}dateTime" />
- *       &lt;attribute name="endDate" type="{http://www.w3.org/2001/XMLSchema}dateTime" />
- *       &lt;anyAttribute/>
- *     &lt;/extension>
- *   &lt;/simpleContent>
- * &lt;/complexType>
+ * &lt;complexType name="QlmIDType"&gt;
+ *   &lt;simpleContent&gt;
+ *     &lt;extension base="&lt;http://www.w3.org/2001/XMLSchema&gt;string"&gt;
+ *       &lt;attribute name="idType" type="{http://www.w3.org/2001/XMLSchema}string" &gt;
+ *       &lt;attribute name="tagType" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
+ *       &lt;attribute name="startDate" type="{http://www.w3.org/2001/XMLSchema}dateTime" /&gt;
+ *       &lt;attribute name="endDate" type="{http://www.w3.org/2001/XMLSchema}dateTime" /&gt;
+ *       &lt;anyAttribute/&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/simpleContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

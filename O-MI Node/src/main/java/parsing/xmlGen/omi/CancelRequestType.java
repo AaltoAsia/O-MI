@@ -22,16 +22,16 @@ import javax.xml.bind.annotation.XmlType;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="CancelRequestType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="nodeList" type="{http://www.opengroup.org/xsd/omi/1.0/}NodesType" minOccurs="0"/>
- *         &lt;element name="requestID" type="{http://www.opengroup.org/xsd/omi/1.0/}IdType" maxOccurs="unbounded"/>
- *       &lt;/sequence>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="CancelRequestType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="nodeList" type="{http://www.opengroup.org/xsd/omi/1.0/}NodesType" minOccurs="0"/&gt;
+ *         &lt;element name="requestID" type="{http://www.opengroup.org/xsd/omi/1.0/}IdType" maxOccurs="unbounded"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

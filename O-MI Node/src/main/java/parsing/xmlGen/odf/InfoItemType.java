@@ -27,20 +27,20 @@ import javax.xml.namespace.QName;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="InfoItemType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.opengroup.org/xsd/odf/1.0/}QlmIDType" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="description" type="{http://www.opengroup.org/xsd/odf/1.0/}DescriptionType" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="MetaData" type="{http://www.opengroup.org/xsd/odf/1.0/}MetaDataType" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="value" type="{http://www.opengroup.org/xsd/odf/1.0/}ValueType" maxOccurs="unbounded" minOccurs="0"/>
- *       &lt;/sequence>
- *       &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" />
- *       &lt;anyAttribute/>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="InfoItemType"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="name" type="{http://www.opengroup.org/xsd/odf/1.0/}QlmIDType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="description" type="{http://www.opengroup.org/xsd/odf/1.0/}DescriptionType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="MetaData" type="{http://www.opengroup.org/xsd/odf/1.0/}MetaDataType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="value" type="{http://www.opengroup.org/xsd/odf/1.0/}ValueType" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *       &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" /&gt;
+ *       &lt;anyAttribute/&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 
@@ -84,6 +84,7 @@ public class InfoItemType {
      * Objects of the following type(s) are allowed in the list
      * {@link QlmIDType }
      * 
+     * @return  list of QlmIDTypes
      * 
      */
     public List<QlmIDType> getName() {
@@ -113,6 +114,7 @@ public class InfoItemType {
      * Objects of the following type(s) are allowed in the list
      * {@link DescriptionType }
      * 
+     * @return  list of DescriptionTypes
      * 
      */
     public List<DescriptionType> getDescription() {
@@ -142,6 +144,7 @@ public class InfoItemType {
      * Objects of the following type(s) are allowed in the list
      * {@link MetaDataType }
      * 
+     * @return  list of MetaDataType
      * 
      */
     public List<MetaDataType> getMetaData() {
@@ -171,6 +174,7 @@ public class InfoItemType {
      * Objects of the following type(s) are allowed in the list
      * {@link ValueType }
      * 
+     * @return  list of ValueTypse
      * 
      */
     public List<ValueType> getValue() {
