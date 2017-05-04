@@ -14,18 +14,17 @@
 
 package http
 
+import java.net.{InetAddress, URL}
 import java.nio.file.{Files, Paths}
 import java.util.Date
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
+import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success, Try}
-import scala.xml.{XML,NodeSeq}
-
-import analytics.{AddUser, AddRead, AnalyticsStore}
+import scala.xml.{NodeSeq, XML}
+import analytics.{AddRead, AddUser, AnalyticsStore}
 import org.slf4j.LoggerFactory
-
-import akka.util.{Timeout,ByteString}
+import akka.util.{ByteString, Timeout}
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
@@ -40,23 +39,16 @@ import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.ws
-
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.{
-  RequestHandler,
-  RemoveSubscription,
-  CallbackHandler,
-  RESTHandler,
-  RESTRequest,
-  OmiRequestHandlerBase
-}
+import responses.{CallbackHandler, OmiRequestHandlerBase, RESTHandler, RESTRequest, RemoveSubscription, RequestHandler}
 import responses.CallbackHandler._
 import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
 import database.{GetTree, SingleStores}
+import scala.compat.java8.OptionConverters._
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -387,21 +379,38 @@ trait OmiService
     currentConnectionCallback: Option[Callback] 
   ): Future[OmiRequest] = request.callback match {
     case None  => Future.successful( request )
-    case Some(definedCallback : DefinedCallback ) => Future.successful( request )
+    case Some(definedCallback : DefinedCallback ) =>
+      Future.successful( request )
     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
       Future.successful( request.withCallback(  currentConnectionCallback ) )
     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
       Future.failed( InvalidCallback(RawCallback("0"), "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
-    case Some( RawCallback(address))  =>
-      val cbTry = callbackHandler.createCallbackAddress(address)
-      val result = cbTry.map{ 
-        case callback =>
-          request.withCallback( Some( callback ) )
-      }.recoverWith{ 
-        case throwable : Throwable =>
-          Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
+    case Some( cba @ RawCallback(address))  =>
+      // Check that the RemoteAddress Is the same as the callback address if user is not Admin
+      lazy val userAddr = for {
+        user          <- request.user
+        remoteAddr    <- user.remoteAddress
+        hostAddr      <- remoteAddr.getAddress.asScala
+        callbackAddr  <- Try(InetAddress.getByName(new URL(address).getHost()).getHostAddress).toOption
+        userAddress = hostAddr.getHostAddress
+      } yield (userAddress, callbackAddr)
+
+      //TODO Check if admin
+      val admin = false //TODO
+      if(admin || userAddr.exists(asd => asd._1 == asd._2)) {
+
+        val cbTry = callbackHandler.createCallbackAddress(address)
+        val result = cbTry.map{
+          case callback =>
+            request.withCallback( Some( callback ) )
+        }.recoverWith{
+          case throwable : Throwable =>
+            Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
+        }
+        Future.fromTry(result )
+      } else {
+        Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
       }
-      Future.fromTry(result ) 
   }
 
   /** 
