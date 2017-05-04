@@ -389,12 +389,6 @@ trait OmiService
     case Some( cba @ RawCallback(address))  =>
       // Check that the RemoteAddress Is the same as the callback address if user is not Admin
 
-      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
-      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
-      println(request.user)
-      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
-      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
-
       lazy val userAddr = for {
         user          <- request.user
         remoteAddr    <- user.remoteAddress
