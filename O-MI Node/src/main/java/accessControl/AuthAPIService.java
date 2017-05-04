@@ -21,7 +21,10 @@ import akka.http.scaladsl.model.headers.HttpCookiePair;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
+
 import http.*;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import parsing.xmlGen.odf.*;
@@ -148,7 +151,7 @@ public class AuthAPIService implements AuthApi {
                     logger.debug("Root tree requested. forwarding to Partial API.");
 
                     //Getting paths according to the policies
-                    ArrayList<Path> res_paths = getAvailablePaths(subjectInfo, success);
+                    ArrayList<Path> res_paths = getAvailablePaths(subjectInfo, success); //////////////////////////////
 
                     if (res_paths == null)
                         return new Unauthorized(scala.Option.apply(null)); // UserInfo as scala Option
@@ -188,7 +191,7 @@ public class AuthAPIService implements AuthApi {
             logger.debug("isWrite:" + isWrite);
             logger.debug("Paths:" + requestBody);
 
-            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
+            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success); ////////////////////////////////
         } else {
             return new Unauthorized(scala.Option.apply(null));
         }
@@ -471,7 +474,18 @@ public class AuthAPIService implements AuthApi {
 
             logger.debug("RESPONSE:"+response.toString());
 
-            return response.toString().equalsIgnoreCase("true") ? new Authorized(scala.Option.apply(null)) : new Unauthorized(scala.Option.apply(null));
+            JsonObject responseObject = new JsonParser().parse(response.toString()).getAsJsonObject();//response.toString(); //reuse variable
+            String isAuthenticated = responseObject.get("result").getAsString();
+            String userName = responseObject.get("userID").getAsString();
+            return isAuthenticated.equalsIgnoreCase("true") ?
+                    new Authorized(
+                            scala.Option.apply(
+                                    new types.OmiTypes.UserInfo(
+                                            scala.Option.apply(null),
+                                            scala.Option.apply(userName),
+                                            scala.Option.apply(subjectInfo))))
+                    :
+                    new Unauthorized(scala.Option.apply(null)); //TODO add userInfo here also
         } catch (Exception e) {
             logger.error("During http request", e);
             return new Unauthorized(scala.Option.apply(null));
