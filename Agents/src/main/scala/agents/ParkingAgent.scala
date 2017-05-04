@@ -1,8 +1,13 @@
 package agents
 
+import java.io.File
+
 import scala.util.{Success, Failure}
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
+
+import com.typesafe.config.Config
 
 import akka.actor.{Cancellable, Props, Actor, ActorRef}
 import akka.util.Timeout
@@ -10,12 +15,13 @@ import akka.pattern.ask
 
 import agentSystem._ 
 import parsing.OdfParser
-import com.typesafe.config.Config
 import types.OmiTypes._
 import types.OdfTypes._
 import types._
 import types.Path._
 import types.Path
+import parsing.OdfParser
+import scala.xml.XML
 
 /**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
@@ -48,10 +54,53 @@ class ParkingAgent(
     CommandSuccessful()
   }
   import context.dispatcher
-  val findParkingPath = Path("Objects/ParkingService/FindParking")
+  //Base path for service, contains at least all method
+  val servicePath = Path( config.getString("servicePath"))
+
+  //Path to object containing all parking lots.
+  val parkingLotsPath = Path( config.getString("parkingLotsPath"))
+
+  //File used to populate node with initial state
+  val startStateFile =  new File(config.getString("initialStateFile"))
+  val initialODF: OdfObjects = if( startStateFile.exists() && startStateFile.canRead() ){
+    val xml = XML.loadFile(startStateFile)
+    OdfParser.parse( xml) match {
+      case Left( errors : Seq[ParseError]) =>
+        val msg = errors.mkString("\n")
+        log.warning(s"Odf has errors, $name could not be configured.")
+        log.debug(msg)
+        throw new Exception(s"Could not get initial state for $name. State O-DF had following errors: ${errors.mkString("\n")}.")
+      case Right(odf) => odf
+    }
+  } else if( !startStateFile.exists() ){
+    throw new Exception(s"Could not get initial state for $name. File $startStateFile do not exists.")
+  } else {
+    throw new Exception(s"Could not get initial state for $name. Could not read file $startStateFile.")
+  }
+
+  val initialWrite = writeToDB( WriteRequest(initialODF) )
+  val initialisationWriteTO = 10.seconds
+  val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
+  initializationResponse.value match{
+    case None => 
+      throw new Exception(s"Could not set initial state for $name. Initial write to DB timedout after $initialisationWriteTO.")
+    case Some( Failure( e )) => 
+      throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
+    case Some( Success( response )) => 
+      response.results.foreach{
+        case result: OmiResult =>
+          result.returnValue match {
+            case succ: Returns.ReturnTypes.Successful =>
+              log.info( s"Successfully initialized state for $name" )
+            case other =>
+              log.warning( s"Could not set initial state for $name. Got result:$result.")
+              throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
+          }
+      }
+  }
+  val findParkingPath = servicePath / "FindParking"
   val positionParameterPath = Path("Objects/Parameters/Position")
   val arrivalTimeParameterPath = Path("Objects/Parameters/ArrivalTime")
-  val parkingLotsPath = Path("Objects/ParkingService/ParkingLots")
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
       val methodInfoItemO = call.odf.get(findParkingPath)
@@ -162,36 +211,37 @@ class ParkingAgent(
   }
 
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
-    //All paths in write.odf is owned by this agent.
-    //There is nothing to check or do for data so it is just writen. 
-
-    // This sends debug log message to O-MI Node logs if
-    // debug level is enabled (in logback.xml and application.conf)
-    log.info(s"$name pushing data received through AgentSystem.")
-
-    // Asynchronous execution of request 
-    val result : Future[ResponseRequest] = writeToDB(write)
-
-    // Asynchronously handle request's execution's completion
-    result.onComplete{
-      case Success( response: ResponseRequest )=>
-        response.results.foreach{ 
-          case wr: Results.Success =>
-            // This sends debug log message to O-MI Node logs if
-            // debug level is enabled (in logback.xml and application.conf)
-            log.debug(s"$name wrote paths successfully.")
-          case ie: OmiResult => 
-            log.warning(s"Something went wrong when $name writed, $ie")
+    if(write.odf.get(findParkingPath).nonEmpty ){
+        Future{
+          Responses.InvalidRequest(
+            Some("Trying to write to path containing a service method.")
+          )
         }
-      case Failure( t: Exception) => 
-        // This sends debug log message to O-MI Node logs if
-        // debug level is enabled (in logback.xml and application.conf)
-        log.warning(s"$name's write future failed, error: $t")
-        Responses.InternalError(t)
-    }
-    result.recover{
-      case t: Exception => 
-      Responses.InternalError(t)
+    } else {
+      // Asynchronous execution of request 
+      val result : Future[ResponseRequest] = writeToDB(write)
+
+      // Asynchronously handle request's execution's completion
+      result.onComplete{
+        case Success( response: ResponseRequest )=>
+          response.results.foreach{ 
+            case wr: Results.Success =>
+              // This sends debug log message to O-MI Node logs if
+              // debug level is enabled (in logback.xml and application.conf)
+              log.debug(s"$name wrote paths successfully.")
+            case ie: OmiResult => 
+              log.warning(s"Something went wrong when $name writed, $ie")
+          }
+            case Failure( t: Exception) => 
+              // This sends debug log message to O-MI Node logs if
+              // debug level is enabled (in logback.xml and application.conf)
+              log.warning(s"$name's write future failed, error: $t")
+              Responses.InternalError(t)
+      }
+      result.recover{
+        case t: Exception => 
+          Responses.InternalError(t)
+      }
     }
   }
   override protected def handleRead(read: ReadRequest) : Future[ResponseRequest] = {
@@ -222,6 +272,7 @@ class ParkingAgent(
       Responses.InternalError(t)
     }
   }
+
   /**
    * Method that is inherited from akka.actor.Actor and handles incoming messages
    * from other Actors.
@@ -237,4 +288,83 @@ class ParkingAgent(
     case read: ReadRequest => respondFuture(handleRead(read))
     case call: CallRequest => respondFuture(handleCall(call))
   }
+
+
+  /*
+    case class Position( 
+      address: Option[String], 
+      longitude: String,
+      latitude: String
+    )
+    case class ParkingSpot(
+      name: String,
+      available: Option[String],
+      user: Option[String],
+      spotType: Option[String]
+    )
+    case class ParkingSpotType(
+      spots: Int,
+      spotsAvailable: Int,
+      hourlyPrice: String,
+      maxHeight: String,
+      maxWitdh: String
+    )
+    case class ParkingLot(
+      name: String,
+      owner: String,
+      position: Position,
+      openingTime: String,
+      closingTime: String,
+      spotTypes: Seq[ParkingSpot]
+    )
+    def extractValueFromInfoItem( iio: Option[OdfInfoItem] ): Option[String] = {
+      iio.flatMap{ 
+        case ii: OdfInfoItem =>
+          ii.value.headOption{
+            value => value.value.toString
+          }
+      }
+
+    }
+    def createPosition( obj: OdfObject ) : Position = {
+
+      val iiMap = obj.infoItems.map{ ii => ii.path.last -> ii }.toMap
+
+      val long = extractValueFromInfoItem(iiMap.get("Longitude")) 
+      val lati = extractValueFromInfoItem(iiMap.get("Latitude"))
+      val addr = extractValueFromInfoItem(iiMap.get("Address"))
+      if( long.isEmpty ){
+        throw new Exception("No longitude found for Position")
+      } else if( lati.isEmpty ){
+        throw new Exception("No latitude found for Position")
+      } else {
+        Position( 
+          addr,
+          long,
+          lati
+        )
+      }
+    }
+
+    def createParkingSpot( obj: OdfObject ) : ParkingSpot = {
+
+      val iiMap = obj.infoItems.map{ ii => ii.path.last -> ii }.toMap
+
+      val available = extractValueFromInfoItem(iiMap.get("Available"))
+      val user = extractValueFromInfoItem(iiMap.get("User"))
+      val spotType = extractValueFromInfoItem(iiMap.get("SpotType"))
+      if( long.isEmpty ){
+        throw new Exception("No longitude found for Position")
+      } else if( lati.isEmpty ){
+        throw new Exception("No latitude found for Position")
+      } else {
+        Position( 
+          addr,
+          long,
+          lati
+        )
+      }
+      */
 }
+
+

@@ -1,4 +1,4 @@
-<Objects>
+<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
   <Object>
     <id>ParkingService</id>
     <InfoItem name="FindParking">
@@ -37,9 +37,12 @@
               <Object type="list">
                 <id>ParkingLots</id>
                 <Object type="ParkingLot">
-                  <id>ParkingLot</id>
+                  <id>SouthParkingLot</id>
                   <InfoItem name="OpeningTime">
-                    <value>test</value>
+                    <value>06.00</value>
+                  </InfoItem>
+                  <InfoItem name="ClosingTime">
+                    <value>24.00</value>
                   </InfoItem>
                   <InfoItem name="Owner">
                     <value>test</value>
@@ -59,7 +62,7 @@
                   <!-- How to define a list of Type A in O-DF? -->
                   <Object type="list">
                     <id>SpotTypes</id>
-                    <Object>
+                    <Object type="ParkingSpotType">
                       <id>ElectronicVechile</id>
                       <InfoItem name="Spots">
                         <value>7</value>
@@ -68,26 +71,29 @@
                         <value>7</value>
                       </InfoItem>
                       <InfoItem name="Price">
-                        <value>2€</value>
+                        <value>2</value>
                       </InfoItem>
                       <InfoItem name="MaxHeight">
                         <value>2.5m</value>
                       </InfoItem>
-                      <InfoItem name="MaxWidht">
+                      <InfoItem name="MaxWidth">
                         <value>2.5m</value>
                       </InfoItem>
-                      <Object type="Charger">
-                        <id>Charger</id>
-                      </Object>
                     </Object>
                   </Object>
                   <!-- How to define a list of Type A in O-DF? -->
                   <Object type="list">
                     <id>Spots</id>
-                    <Object type="ElectronicVechile">
+                    <Object type="ParkingSpot">
                       <id>Spot1</id>
                       <InfoItem name="Available">
                         <value>TRUE</value>
+                      </InfoItem>
+                      <InfoItem name="User">
+                        <value>NONE</value>
+                      </InfoItem>
+                      <InfoItem name="SpotType">
+                        <value>ElectronicVechile</value>
                       </InfoItem>
                     </Object>
                   </Object>
@@ -107,6 +113,9 @@
         <InfoItem name="OpeningTime">
           <value>06.00</value>
         </InfoItem>
+        <InfoItem name="ClosingTime">
+          <value>24.00</value>
+        </InfoItem>
         <InfoItem name="Owner">
           <value>test</value>
         </InfoItem>
@@ -125,7 +134,7 @@
         <!-- How to define a list of Type A in O-DF? -->
         <Object type="list">
           <id>SpotTypes</id>
-          <Object>
+          <Object type="ParkingSpotType">
             <id>ElectronicVechile</id>
             <InfoItem name="Spots">
               <value>7</value>
@@ -134,26 +143,29 @@
               <value>7</value>
             </InfoItem>
             <InfoItem name="Price">
-              <value>2€</value>
+              <value>2</value>
             </InfoItem>
             <InfoItem name="MaxHeight">
               <value>2.5m</value>
             </InfoItem>
-            <InfoItem name="MaxWidht">
+            <InfoItem name="MaxWidth">
               <value>2.5m</value>
             </InfoItem>
-            <Object type="Charger">
-              <id>Charger</id>
-            </Object>
           </Object>
         </Object>
         <!-- How to define a list of Type A in O-DF? -->
         <Object type="list">
           <id>Spots</id>
-          <Object type="ElectronicVechile">
+          <Object type="ParkingSpot">
             <id>Spot1</id>
             <InfoItem name="Available">
               <value>TRUE</value>
+            </InfoItem>
+            <InfoItem name="User">
+              <value>NONE</value>
+            </InfoItem>
+            <InfoItem name="SpotType">
+              <value>ElectronicVechile</value>
             </InfoItem>
           </Object>
         </Object>
