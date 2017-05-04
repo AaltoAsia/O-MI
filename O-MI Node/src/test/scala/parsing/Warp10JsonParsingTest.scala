@@ -42,7 +42,7 @@ class Warp10JsonParsingTest extends Specification {
   def twoParams = {
     val testJson =
       """
-        |[{"c":"class.test.test2",
+        |[{"c":"class/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -67,7 +67,7 @@ class Warp10JsonParsingTest extends Specification {
   def threeParams = {
     val testJson =
       """
-        |[{"c":"class.test.test2",
+        |[{"c":"class/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -104,7 +104,7 @@ class Warp10JsonParsingTest extends Specification {
   def fourParams = {
     val testJson =
       """
-        |[[{"c":"class.test.test2",
+        |[[{"c":"class/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -140,7 +140,7 @@ class Warp10JsonParsingTest extends Specification {
   def fiveParams = {
     val testJson =
       """
-        |[{"c":"class.test.test2",
+        |[{"c":"class/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -173,7 +173,7 @@ class Warp10JsonParsingTest extends Specification {
   def fiveParamsLongerArray = {
     val testJson =
       """
-        |[{"c":"class.test.test2",
+        |[{"c":"class/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -217,7 +217,7 @@ class Warp10JsonParsingTest extends Specification {
     def hybridRequest = {
     val testJson =
       """
-        |[{"c":"class.test.test2",
+        |[{"c":"class/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"1",
@@ -226,14 +226,14 @@ class Warp10JsonParsingTest extends Specification {
         |       [1380475082000000,10000000,3.0]]},
         | {"i":"1",
         |  "v":[[1380475083000000,48.1,-4.5,11000000,42.0]]},
-        | {"c":"test1.test.test2",
+        | {"c":"test1/test/test2",
         |  "l":{"label0":"value0","label1":"value1"},
         |  "a":{"attr0":"value0"},
         |  "i":"2",
         |  "v":[[1380475081000000,3.14],
         |       [1380475081500000,48.0,-4.5,2.5],
         |       [1380475082000000,10000000,3.0]]},
-        | {"c":"test2.test.test2",
+        | {"c":"test2/test/test2",
         |  "v":[[1380475081000000,3.14],
         |       [1380475081500000,48.0,-4.5,2.5],
         |       [1380475082000000,10000000,3.0]]}]

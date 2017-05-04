@@ -190,7 +190,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
         val infoIs = idPathValuesTuple.groupBy(_._1).collect {
           case (None , ii) => ii.map{
             case (_, Some(_path), _infoItems ) => {
-              val path = Path(_path.replaceAll("\\.", "/"))
+              val path = Path(_path)
               val parentObj = getObject(path) //TODO what happens if not in hierarchystore
               val (infoItems, locations) = createInfoItems(path, _infoItems.unzip)
 
@@ -202,8 +202,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
           case (Some(id), ii) => {
 
             val path = Path(ii.collectFirst{ case (_, Some(p),_) => p}
-              .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing"))
-              .replaceAll("\\.", "/"))
+              .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing")))
 
             val parentObj = getObject(path) //TODO what happens if not in hierarchystore
             //val infoItems = createInfoItems(path, infoItems)
@@ -506,7 +505,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
     }
 
     val unixEpochTime = odfValue.timestamp.getTime * 1000
-    val pathJS = path.mkString(".")
+    val pathJS = path.toString//
     val typeValue = odfValue.typeValue
     val labels = s"{ type=$typeValue }"
 
