@@ -14,7 +14,7 @@
 
 package http
 
-import java.net.{InetAddress, URL}
+import java.net.{InetAddress, URI, URL}
 import java.nio.file.{Files, Paths}
 import java.util.Date
 
@@ -48,6 +48,7 @@ import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
 import database.{GetTree, SingleStores}
+
 import scala.compat.java8.OptionConverters._
 
 trait OmiServiceAuthorization
@@ -387,11 +388,18 @@ trait OmiService
       Future.failed( InvalidCallback(RawCallback("0"), "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
     case Some( cba @ RawCallback(address))  =>
       // Check that the RemoteAddress Is the same as the callback address if user is not Admin
+
+      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
+      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
+      println(request.user)
+      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
+      println("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
+
       lazy val userAddr = for {
         user          <- request.user
         remoteAddr    <- user.remoteAddress
         hostAddr      <- remoteAddr.getAddress.asScala
-        callbackAddr  <- Try(InetAddress.getByName(new URL(address).getHost()).getHostAddress).toOption
+        callbackAddr  <- Try(InetAddress.getByName(new URI(address).getHost).getHostAddress()).toOption
         userAddress = hostAddr.getHostAddress
       } yield (userAddress, callbackAddr)
 
@@ -409,6 +417,7 @@ trait OmiService
         }
         Future.fromTry(result )
       } else {
+        println(s"\n\n ADRESSES $userAddr \n\n")
         Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
       }
   }
