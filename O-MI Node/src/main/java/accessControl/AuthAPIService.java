@@ -474,18 +474,25 @@ public class AuthAPIService implements AuthApi {
 
             logger.debug("RESPONSE:"+response.toString());
 
+            if (response.toString().equals("false")) {
+                return new Unauthorized(scala.Option.apply(null));
+            }
+
             JsonObject responseObject = new JsonParser().parse(response.toString()).getAsJsonObject();//response.toString(); //reuse variable
             String isAuthenticated = responseObject.get("result").getAsString();
             String userName = responseObject.get("userID").getAsString();
-            return isAuthenticated.equalsIgnoreCase("true") ?
+            return isAuthenticated.equalsIgnoreCase("ok") ?
                     new Authorized(
                             scala.Option.apply(
                                     new types.OmiTypes.UserInfo(
                                             scala.Option.apply(null),
-                                            scala.Option.apply(userName),
-                                            scala.Option.apply(subjectInfo))))
+                                            scala.Option.apply(userName))))
                     :
-                    new Unauthorized(scala.Option.apply(null)); //TODO add userInfo here also
+                    new Unauthorized(
+                            scala.Option.apply(
+                                    new types.OmiTypes.UserInfo(
+                                            scala.Option.apply(null),
+                                            scala.Option.apply(userName))));
         } catch (Exception e) {
             logger.error("During http request", e);
             return new Unauthorized(scala.Option.apply(null));

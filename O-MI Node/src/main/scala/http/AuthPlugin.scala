@@ -116,9 +116,10 @@ trait AuthApiProvider extends AuthorizationExtension {
 
       // helper function
       def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
-        case Success(Unauthorized(_)) => Failure(UnauthorizedEx())
+        case Success(Unauthorized(user0)) => Failure(UnauthorizedEx())
         case Success(Authorized(user0)) => {
-          orgOmiRequest.user = user0 //TODO TEST THAT THIS WORKS!!
+          orgOmiRequest.user = user0.map(_.copy(remoteAddress = orgOmiRequest.user.flatMap(_.remoteAddress)))
+          log.debug(s"GOT USER:\nRemote: ${orgOmiRequest.user.flatMap(_.remoteAddress).getOrElse("Empty")}\nName: ${orgOmiRequest.user.flatMap(_.name).getOrElse("Empty")}")
           Success(orgOmiRequest)
         }
         case Success(Changed(reqWrapper,user0)) => {
