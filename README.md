@@ -91,7 +91,7 @@ Native SBT commands
 
 - `sbt compile`: just compile the project
 - `sbt clean`: remove compiled and temporary files
-- `sbt run`: run the project; We don't use this so sometimes it's broken. We use `re-start` from Revolver which allows us to recompile and restart the node without exiting sbt, because restarting sbt takes unnecessary extra time.
+- `sbt run`: run the project; We don't use this much, so sometimes it's broken and we don't even notice. We use `re-start` from Revolver which allows us to recompile and restart the node without exiting sbt, because restarting sbt takes unnecessary extra time.
 - `sbt doc`: compile api documentation
 - `sbt test`: run all tests
 
