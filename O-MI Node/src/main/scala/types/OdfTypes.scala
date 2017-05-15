@@ -205,8 +205,23 @@ sealed trait OdfNode {
 /** Class presenting O-DF Objects structure*/
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode {
+  version: Option[String] = None,
+  scope: Set[(Option[String], String)] = Set(
+      None -> "http://www.opengroup.org/xsd/odf/1.0/",
+      Some("xs") -> "http://www.w3.org/2001/XMLSchema",
+      Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
+    )
+) extends OdfObjectsImpl(objects, version, scope.toSet) with OdfNode {
 
+  def this(
+    objects: OdfTreeCollection[OdfObject],
+    version: Option[String],
+    scope: Seq[(Option[String], String)] 
+  ) = this(
+    objects,
+    version,
+    scope.toSet
+  )
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)

@@ -225,7 +225,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
         def getFromDB(): Seq[Future[Option[OdfObjects]]] = requestsSeq map { // par
 
-          case obj @ OdfObjects(objects, _) =>
+          case obj @ OdfObjects(objects, _, _) =>
             require(objects.isEmpty,
               s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
@@ -268,7 +268,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           lazy val hTree = singleStores.hierarchyStore execute GetTree()
           val objectData: Seq[Option[OdfObjects]] = requestsSeq collect {
 
-            case obj@OdfObjects(objects, _) => {
+            case obj@OdfObjects(objects, _, _) => {
               require(objects.isEmpty,
                 s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
@@ -332,7 +332,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     })
 
     results.map{
-      case Some(OdfObjects(x,_)) if x.isEmpty => None
+      case Some(OdfObjects(x, _, _)) if x.isEmpty => None
       case default : Option[OdfObjects ]  => default//default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
     }
     

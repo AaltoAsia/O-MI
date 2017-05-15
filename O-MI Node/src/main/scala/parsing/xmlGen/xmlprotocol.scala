@@ -74,13 +74,22 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     
     override def typeName: Option[String] = Some("ObjectsType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ObjectsType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ObjectsType] ={
+
+      val scope = scalaxb.fromScope( node.scope ).filter{
+        case ( Some("omi"), uri ) => false
+        case ( Some("xsi"), uri ) => false
+        case ( key, "http://www.opengroup.org/xsd/omi/1.0/" ) => false
+        case (key, uri ) => true
+      }.toVector
+        
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "Object")) ^^
       { case p1 =>
       xmlTypes.ObjectsType(p1 map { scalaxb.fromXML[xmlTypes.ObjectType](_, scalaxb.ElemName(node) :: stack) },
-        scala.collection.immutable.ListMap(List(
+        scala.collection.immutable.ListMap(List( 
         (node \ "@version").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@version" -> _ }
-        ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
+        ).flatten[(String, scalaxb.DataRecord[Any])]: _*), scope) })
+    }
     
     override def writesAttribute(__obj: xmlTypes.ObjectsType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null

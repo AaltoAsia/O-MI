@@ -5,7 +5,9 @@ package xmlTypes
 import scala.collection.immutable.HashMap
 
 case class ObjectsType(ObjectValue: Seq[xmlTypes.ObjectType] = Vector.empty,
-  attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
+  attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap(),
+  scope: Seq[(Option[String], String)] = Vector.empty
+) {
   lazy val version = attributes.get("@version") map { _.as[String]}
 }
 

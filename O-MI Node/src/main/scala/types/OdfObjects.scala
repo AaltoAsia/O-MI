@@ -26,7 +26,12 @@ import types.OdfTypes.OdfTreeCollection._
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
   objects:              OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version:              Option[String] = None
+  version:              Option[String] = None,
+  scope: Set[(Option[String], String)] = Set(
+      None -> "http://www.opengroup.org/xsd/odf/1.0/",
+      Some("xs") -> "http://www.w3.org/2001/XMLSchema",
+      Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
+    )
 ) extends Serializable {
 
   val path = Path("Objects")
@@ -105,6 +110,14 @@ class OdfObjectsImpl(
     constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
   }
 
+  def odfDefaultScope = scalaxb.toScope(
+    (Set(
+      None -> "http://www.opengroup.org/xsd/odf/1.0/",
+      Some("xs") -> "http://www.w3.org/2001/XMLSchema",
+      Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
+      
+      ) ++ scope).toSet:_*
+  )
 
   /** Method to convert to scalaxb generated class. */
   implicit def asObjectsType : ObjectsType ={

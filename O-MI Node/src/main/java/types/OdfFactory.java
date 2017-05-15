@@ -415,9 +415,11 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String version
   ){
+    Vector<scala.Tuple2<scala.Option<String>,String>> scope = new Vector<scala.Tuple2<scala.Option<String>,String>>();
     return new OdfObjects(
         OdfTreeCollection.fromJava(objects),
-        scala.Option.apply(version)
+        scala.Option.apply(version),
+        OdfTreeCollection.fromJava(scope)
     );
   }
 
@@ -429,9 +431,11 @@ public class OdfFactory{
   public static OdfObjects createOdfObjects(
     Iterable<OdfObject> objects
   ){
+    Vector<scala.Tuple2<scala.Option<String>,String>> scope = new Vector<scala.Tuple2<scala.Option<String>,String>>();
     return new OdfObjects(
         OdfTreeCollection.fromJava(objects),
-        scala.Option.empty()
+        scala.Option.empty(),
+        OdfTreeCollection.fromJava(scope)
     );
   }
 
