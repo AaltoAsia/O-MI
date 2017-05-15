@@ -81,7 +81,7 @@ class ODFAgent(
 
       // Collect metadata 
       val objectsWithMetaData = getOdfNodes(objects) collect {
-        case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+        case o @ OdfObject(_, _, _, _, desc, typeVal, attr) if desc.isDefined || typeVal.isDefined || attr.nonEmpty=> o
       }   
       val updated = infoItems.map{ infoItem => 
           val newVal = infoItem.path.lastOption match {

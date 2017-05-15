@@ -1,5 +1,5 @@
-<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:schema="http://www.schema.org/">
-  <Object >
+<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+  <Object type="ParkingService" prefix="schema http://www.schema.org/">
     <id>ParkingService</id>
     <InfoItem name="FindParking">
       <MetaData>
@@ -12,16 +12,19 @@
               <Object type="FindParkingRequest">
                 <id>Parameters</id>
                 <description lang="English">List of possible parameters to request.</description>
+                <InfoItem name="WantedSpotType">
+                  <value>One of Car, Motorbike or ElectricVehicle.</value>
+                </InfoItem>
                 <InfoItem name="ArrivalTime">
-                  <value>test</value>
+                  <value type="dateTime">yyyy-mm-ddThh:mm:ss.sss+-hh:mm</value>
                 </InfoItem>
                 <Object type="schema:GeoCoordinates">
                   <id>Destination</id>
                   <InfoItem name="latitude">
-                    <value>60.187556</value>
+                    <value type="xs:double">60.187556</value>
                   </InfoItem>
                   <InfoItem name="longitude">
-                    <value>24.8213216</value>
+                    <value type="xs:double">24.8213216</value>
                   </InfoItem>
                 </Object>
               </Object>
@@ -39,6 +42,37 @@
                   <Object type="ParkingLot schema:ParkingFacility">
                     <id>name of parking lot</id>
                     <description lang="English">A parkig lot.</description>
+                    <InfoItem name="Owner"/><!-- Maybe use something from www.schema.org -->
+                    <InfoItem name="MaxParkingHours"/>
+                    <Object type="schema:OpeningHoursSpecification">
+                      <id>openingHoursSpecification</id>
+                      <InfoItem name="closes"/>
+                      <InfoItem name="opens"/>
+                    </Object>
+                    <Object type="schema:GeoCoordinates">
+                      <id>geo</id>
+                      <InfoItem name="latitude"/>
+                      <InfoItem name="longitude"/>
+                    </Object>
+                    <Object type="list">
+                      <id>ParkingSpotTypes</id>
+                      <Object type="ParkingSpotType">
+                        <id>ParkingSpotType</id>
+                        <InfoItem name="NumberOfSpots"/>
+                        <InfoItem name="NumberOfSpotsAvailable"/>
+                        <InfoItem name="HourlyPrice"/>
+                        <InfoItem name="MaxHeight"/>
+                        <InfoItem name="MaxWidth"/>
+                        <Object type="list">
+                          <id>Spots</id>
+                          <Object type="ParkingSpot">
+                            <id>Spot</id>
+                            <InfoItem name="Available"/>
+                            <InfoItem name="User"/>
+                          </Object>
+                        </Object>
+                      </Object>
+                    </Object>
                     <!-- For more specific presentation of this look at following
                      ParkingLots Object.  -->
                   </Object>
@@ -65,7 +99,7 @@
           <value>20</value>
         </InfoItem>
         <Object type="schema:OpeningHoursSpecification">
-          <id>openinpHoursSpecification</id>
+          <id>openingHoursSpecification</id>
           <InfoItem name="closes">
             <value type="schema:Time">24:00</value>
           </InfoItem>
@@ -87,7 +121,7 @@
           <id>SpotTypes</id>
           <description lang="English">List of different kind of parking spot types in the parking lot.</description>
           <Object type="ParkingSpotType">
-            <id>ElectronicVehicle</id>
+            <id>ElectricVehicle</id>
             <InfoItem name="NumberOfSpots">
               <value type="xs:int">2</value>
             </InfoItem>

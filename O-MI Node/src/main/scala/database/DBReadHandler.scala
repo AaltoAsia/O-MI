@@ -64,11 +64,11 @@ trait DBReadHandler extends DBHandlerBase{
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
-           case oii@OdfInfoItem(_, _, desc, mData)
-            if desc.isDefined || mData.isDefined => 
+           case oii@OdfInfoItem(_, _, desc, mData,attr)
+            if desc.isDefined || mData.isDefined || attr.nonEmpty=> 
               createAncestors(oii.copy(values = OdfTreeCollection()))
-           case obj@OdfObject(pat, _, _, _, des, _)
-             if des.isDefined  => 
+           case obj@OdfObject(pat, _, _, _, des, _,attr)
+             if des.isDefined  || attr.nonEmpty => 
                createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
          }.reduceOption(_.union(_))
 

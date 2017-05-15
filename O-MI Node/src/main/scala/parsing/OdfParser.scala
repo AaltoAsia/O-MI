@@ -119,7 +119,7 @@ object OdfParser extends Parser[OdfParseResult] {
       else
         objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
         objects.version,
-      objects.scope.toSet
+        parseAttributes( objects.attributes - "@version" )
     )
 }
 
@@ -146,7 +146,8 @@ private[this] def parseObject(requestProcessTime: Timestamp, obj: ObjectType, pa
     obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
     obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
     obj.description.map{ des => OdfDescription( des.value, des.lang )}.headOption,
-    obj.typeValue
+    obj.typeValue,
+    parseAttributes( obj.attributes - "@type" )
   ) 
 }
 
@@ -173,7 +174,8 @@ private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemTyp
             mItem => parseInfoItem( requestProcessTime, mItem, npath / "MetaData" ) 
           }
         )
-    }.headOption
+    }.headOption,
+    parseAttributes( item.attributes - "@name" )
   ) 
 }
 
@@ -267,5 +269,13 @@ private[this] def parseQlmID( qlmIdType: QlmIDType): QlmID ={
         ).mapValues(_.value.toString).toSeq:_*
       )
     )
+  }
+  private def parseAttributes( attributes: Map[String,DataRecord[Any]]) : Map[String,String] ={
+    attributes.map{
+      case (key: String, dr: DataRecord[Any] ) => 
+        if( key.startsWith("@") ) key.tail -> dr.value.toString
+        else key -> dr.value.toString
+    }
+  
   }
 }

@@ -232,13 +232,13 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
             db.run(processObjectI(obj.path, attachObjectDescription = false))
 
-          case obj @ OdfObject(id, path, items, objects, description, typeVal) =>
+          case obj @ OdfObject(id, path, items, objects, description, typeVal,attr) =>
             require(items.isEmpty && objects.isEmpty,
               s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
             db.run(processObjectI(path, description.nonEmpty))
 
-          case qry @ OdfInfoItem(path, rvalues, _, _) =>
+          case qry @ OdfInfoItem(path, rvalues, _, _,attr) =>
 
             val odfInfoItemI = getHierarchyNodeI(path) flatMap { nodeO =>
 
@@ -276,7 +276,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
                 singleStores.latestStore execute LookupAllDatas()))
             }
 
-            case obj @ OdfObject(_, path, items, objects, _, _) => {
+            case obj @ OdfObject(_, path, items, objects, _, _, _) => {
               require(items.isEmpty && objects.isEmpty,
                 s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
               val resultsO = for {
@@ -307,7 +307,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           objectData :+ Some(
             reqInfoItems.foldLeft(resultOdf){(result, info) =>
               info match {
-                case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
+                case qry @ OdfInfoItem(path, _, _, _,attr) if foundPaths contains path =>
                   result union createAncestors(qry)
                 case _ => result // else discard
               }

@@ -16,6 +16,11 @@
 				<xs:documentation>Schema version used.</xs:documentation>
 			</xs:annotation>
 		</xs:attribute>
+		<xs:anyAttribute processContents="lax">
+			<xs:annotation>
+				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
+			</xs:annotation>
+		</xs:anyAttribute>
 	</xs:complexType>
 	<xs:complexType name="ObjectType">
 		<xs:sequence>
@@ -25,7 +30,7 @@
 			<xs:element name="Object" type="ObjectType" minOccurs="0" maxOccurs="unbounded"/>
 		</xs:sequence>
 		<xs:attribute name="type" type="xs:string" use="optional"/>
-		<xs:anyAttribute>
+		<xs:anyAttribute processContents="lax">
 			<xs:annotation>
 				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
 			</xs:annotation>
@@ -78,7 +83,7 @@
 						<xs:documentation>Language of "description" text.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
-				<xs:anyAttribute>
+				<xs:anyAttribute processContents="lax">
 					<xs:annotation>
 						<xs:documentation>Proprietary or extended attributes.</xs:documentation>
 					</xs:annotation>
@@ -109,7 +114,7 @@
 						<xs:documentation>End of validity for the ID</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
-				<xs:anyAttribute>
+				<xs:anyAttribute processContents="lax">
 					<xs:annotation>
 						<xs:documentation>Proprietary attributes.</xs:documentation>
 					</xs:annotation>
@@ -124,6 +129,10 @@
 		<xs:attribute name="type" type="xs:string" use="optional" default="xs:string"/>
 		<xs:attribute name="dateTime" type="xs:dateTime" use="optional"/>
 		<xs:attribute name="unixTime" type="xs:long" use="optional"/>
-		<xs:anyAttribute/>
+    <xs:anyAttribute processContents="lax">
+      <xs:annotation>
+        <xs:documentation>Proprietary attributes.</xs:documentation>
+      </xs:annotation>
+    </xs:anyAttribute>
 	</xs:complexType>
 </xs:schema>

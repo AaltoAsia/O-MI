@@ -206,22 +206,9 @@ sealed trait OdfNode {
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   version: Option[String] = None,
-  scope: Set[(Option[String], String)] = Set(
-      None -> "http://www.opengroup.org/xsd/odf/1.0/",
-      Some("xs") -> "http://www.w3.org/2001/XMLSchema",
-      Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
-    )
-) extends OdfObjectsImpl(objects, version, scope.toSet) with OdfNode {
+  attributes:           Map[String,String] = HashMap.empty
+) extends OdfObjectsImpl(objects, version, attributes) with OdfNode {
 
-  def this(
-    objects: OdfTreeCollection[OdfObject],
-    version: Option[String],
-    scope: Seq[(Option[String], String)] 
-  ) = this(
-    objects,
-    version,
-    scope.toSet
-  )
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)
@@ -289,7 +276,7 @@ case class OdfObjects(
    * Includes nodes that have type or description
    */
   lazy val objectsWithMetadata = getOdfNodes(this) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+      case o @ OdfObject(_, _, _, _, desc, typeVal, attr) if desc.isDefined || typeVal.isDefined || attr.nonEmpty => o
     } 
 
 }
@@ -301,7 +288,8 @@ case class OdfObject(
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   description: Option[OdfDescription] = None,
-  typeValue: Option[String] = None
+  typeValue: Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
 
 
@@ -400,8 +388,9 @@ case class OdfInfoItem(
     path: Path,
     values: OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
     description: Option[OdfDescription] = None,
-    metaData: Option[OdfMetaData] = None)
-  extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+    metaData: Option[OdfMetaData] = None,
+    attributes:           Map[String,String] = HashMap.empty
+) extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
