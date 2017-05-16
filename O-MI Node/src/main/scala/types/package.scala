@@ -195,4 +195,13 @@ package object OdfTypes {
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
 
+  def attributesToDataRecord( attributes: Map[String,String] ) : Map[String,DataRecord[Any]] ={
+    attributes.map{
+      case (key: String, value: String) =>
+        val dr = DataRecord(None, Some(key), value)
+        if( key.startsWith("@") )
+          key -> dr
+        else s"@$key" -> dr
+    }
+  }
 }

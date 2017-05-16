@@ -26,7 +26,8 @@ import types.OdfTypes.OdfTreeCollection._
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
   objects:              OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version:              Option[String] = None
+  version:              Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
 ) extends Serializable {
 
   val path = Path("Objects")
@@ -41,7 +42,8 @@ class OdfObjectsImpl(
     unionOption(version,another.version){
       case (a, b) if a > b =>a
       case (a, b) => b
-    }
+    },
+      this.attributes ++ another.attributes
     )
 
   }
@@ -105,6 +107,14 @@ class OdfObjectsImpl(
     constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
   }
 
+  def odfDefaultScope = scalaxb.toScope(
+    (Set(
+      None -> "http://www.opengroup.org/xsd/odf/1.0/",
+      Some("xs") -> "http://www.w3.org/2001/XMLSchema",
+      Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
+      
+      )).toSet:_*
+  )
 
   /** Method to convert to scalaxb generated class. */
   implicit def asObjectsType : ObjectsType ={
@@ -113,7 +123,7 @@ class OdfObjectsImpl(
         obj: OdfObject => 
         obj.asObjectType
       }.toSeq,
-      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n))))
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n)))) ++ attributesToDataRecord( this.attributes )
     )
   }
   implicit def asXML : NodeSeq= {

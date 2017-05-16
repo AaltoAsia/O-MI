@@ -1,5 +1,5 @@
-<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
-  <Object>
+<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+  <Object type="ParkingService" prefix="schema http://www.schema.org/">
     <id>ParkingService</id>
     <InfoItem name="FindParking">
       <MetaData>
@@ -7,23 +7,24 @@
           <value>odf:Method</value>
         </InfoItem>
         <InfoItem name="odf:Parameter">
-          <value type="odf">
+          <value type="odf:Objects">
             <Objects>
               <Object type="FindParkingRequest">
                 <id>Parameters</id>
-                <InfoItem name="ArrivalTime">
-                  <value>test</value>
+                <description lang="English">List of possible parameters to request.</description>
+                <InfoItem name="WantedSpotType">
+                  <value>One of Car, Motorbike or ElectricVehicle.</value>
                 </InfoItem>
-                <Object>
-                  <id>Position</id>
-                  <InfoItem name="Address">
-                    <value>test</value>
+                <InfoItem name="ArrivalTime">
+                  <value type="dateTime">yyyy-mm-ddThh:mm:ss.sss+-hh:mm</value>
+                </InfoItem>
+                <Object type="schema:GeoCoordinates">
+                  <id>Destination</id>
+                  <InfoItem name="latitude">
+                    <value type="xs:double">60.187556</value>
                   </InfoItem>
-                  <InfoItem name="Latitude">
-                    <value>test</value>
-                  </InfoItem>
-                  <InfoItem name="Longitude">
-                    <value>test</value>
+                  <InfoItem name="longitude">
+                    <value type="xs:double">24.8213216</value>
                   </InfoItem>
                 </Object>
               </Object>
@@ -31,75 +32,53 @@
           </value>
         </InfoItem>
         <InfoItem name="odf:ReturnType">
-          <value type="odf">
+          <value type="odf:Objects">
             <Objects>
-              <!-- How to define a list of Type A in O-DF? -->
-              <Object type="list">
-                <id>ParkingLots</id>
-                <Object type="ParkingLot">
-                  <id>SouthParkingLot</id>
-                  <InfoItem name="OpeningTime">
-                    <value>06.00</value>
-                  </InfoItem>
-                  <InfoItem name="ClosingTime">
-                    <value>24.00</value>
-                  </InfoItem>
-                  <InfoItem name="Owner">
-                    <value>test</value>
-                  </InfoItem>
-                  <Object>
-                    <id>Position</id>
-                    <InfoItem name="Address">
-                      <value>test</value>
-                    </InfoItem>
-                    <InfoItem name="Latitude">
-                      <value>test</value>
-                    </InfoItem>
-                    <InfoItem name="Longitude">
-                      <value>test</value>
-                    </InfoItem>
-                  </Object>
-                  <!-- How to define a list of Type A in O-DF? -->
-                  <Object type="list">
-                    <id>SpotTypes</id>
-                    <Object type="ParkingSpotType">
-                      <id>ElectronicVechile</id>
-                      <InfoItem name="Spots">
-                        <value>7</value>
-                      </InfoItem>
-                      <InfoItem name="SpotsAvailable">
-                        <value>7</value>
-                      </InfoItem>
-                      <InfoItem name="Price">
-                        <value>2</value>
-                      </InfoItem>
-                      <InfoItem name="MaxHeight">
-                        <value>2.5m</value>
-                      </InfoItem>
-                      <InfoItem name="MaxWidth">
-                        <value>2.5m</value>
-                      </InfoItem>
+              <Object>
+                <id>ParkingService</id>
+                <Object type="list">
+                  <id>ParkingLots</id>
+                  <description lang="English">List of nearby parking lots.</description>
+                  <Object type="ParkingLot schema:ParkingFacility">
+                    <id>name of parking lot</id>
+                    <description lang="English">A parkig lot.</description>
+                    <InfoItem name="Owner"/><!-- Maybe use something from www.schema.org -->
+                    <InfoItem name="MaxParkingHours"/>
+                    <Object type="schema:OpeningHoursSpecification">
+                      <id>openingHoursSpecification</id>
+                      <InfoItem name="closes"/>
+                      <InfoItem name="opens"/>
                     </Object>
-                  </Object>
-                  <!-- How to define a list of Type A in O-DF? -->
-                  <Object type="list">
-                    <id>Spots</id>
-                    <Object type="ParkingSpot">
-                      <id>Spot1</id>
-                      <InfoItem name="Available">
-                        <value>TRUE</value>
-                      </InfoItem>
-                      <InfoItem name="User">
-                        <value>NONE</value>
-                      </InfoItem>
-                      <InfoItem name="SpotType">
-                        <value>ElectronicVechile</value>
-                      </InfoItem>
+                    <Object type="schema:GeoCoordinates">
+                      <id>geo</id>
+                      <InfoItem name="latitude"/>
+                      <InfoItem name="longitude"/>
                     </Object>
+                    <Object type="list">
+                      <id>ParkingSpotTypes</id>
+                      <Object type="ParkingSpotType">
+                        <id>ParkingSpotType</id>
+                        <InfoItem name="NumberOfSpots"/>
+                        <InfoItem name="NumberOfSpotsAvailable"/>
+                        <InfoItem name="HourlyPrice"/>
+                        <InfoItem name="MaxHeight"/>
+                        <InfoItem name="MaxWidth"/>
+                        <Object type="list">
+                          <id>Spots</id>
+                          <Object type="ParkingSpot">
+                            <id>Spot</id>
+                            <InfoItem name="Available"/>
+                            <InfoItem name="User"/>
+                          </Object>
+                        </Object>
+                      </Object>
+                    </Object>
+                    <!-- For more specific presentation of this look at following
+                     ParkingLots Object.  -->
                   </Object>
                 </Object>
               </Object>
-            </Objects>
+              </Objects>
           </value>
         </InfoItem>
       </MetaData>
@@ -108,65 +87,194 @@
     <!-- How to define a list of Type A in O-DF? -->
     <Object type="list">
       <id>ParkingLots</id>
-      <Object type="ParkingLot">
-        <id>SouthParkingLot</id>
-        <InfoItem name="OpeningTime">
-          <value>06.00</value>
+      <description lang="English">List of parking lots.</description>
+      <!-- Multiple types seperated with space?-->
+      <Object type="schema:ParkingFacility">
+        <id>NorthernParkingLot</id>
+        <description lang="English">Parking lot on northern side of Computer Science building.</description>
+        <InfoItem name="Owner"><!-- Maybe use something from www.schema.org -->
+          <value>Aalto University</value>
         </InfoItem>
-        <InfoItem name="ClosingTime">
-          <value>24.00</value>
+        <InfoItem name="MaxParkingHours">
+          <value>20</value>
         </InfoItem>
-        <InfoItem name="Owner">
-          <value>test</value>
-        </InfoItem>
-        <Object>
-          <id>Position</id>
-          <InfoItem name="Address">
-            <value>test</value>
+        <Object type="schema:OpeningHoursSpecification">
+          <id>openingHoursSpecification</id>
+          <InfoItem name="closes">
+            <value type="schema:Time">24:00</value>
           </InfoItem>
-          <InfoItem name="Latitude">
-            <value>test</value>
+          <InfoItem name="opens">
+            <value type="schema:Time">00:00</value>
           </InfoItem>
-          <InfoItem name="Longitude">
-            <value>test</value>
+        </Object>
+        <Object type="schema:GeoCoordinates">
+          <id>geo</id>
+          <InfoItem name="latitude">
+            <value type="xs:double">60.187556</value>
+          </InfoItem>
+          <InfoItem name="longitude">
+            <value type="xs:double">24.8213216</value>
           </InfoItem>
         </Object>
         <!-- How to define a list of Type A in O-DF? -->
         <Object type="list">
           <id>SpotTypes</id>
+          <description lang="English">List of different kind of parking spot types in the parking lot.</description>
           <Object type="ParkingSpotType">
-            <id>ElectronicVechile</id>
-            <InfoItem name="Spots">
-              <value>7</value>
+            <id>ElectricVehicle</id>
+            <InfoItem name="NumberOfSpots">
+              <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="SpotsAvailable">
-              <value>7</value>
+            <InfoItem name="NumberOfSpotsAvailable">
+              <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="Price">
-              <value>2</value>
+            <InfoItem name="HourlyPrice">
+              <value type="xs:int">2</value>
             </InfoItem>
             <InfoItem name="MaxHeight">
-              <value>2.5m</value>
+              <value type="xs:float">2.5</value>
             </InfoItem>
             <InfoItem name="MaxWidth">
-              <value>2.5m</value>
+              <value type="xs:float">2.5</value>
             </InfoItem>
+            <Object type="list">
+              <id>Spots</id>
+              <description lang="English">List of parking spot of previous type.</description>
+              <Object type="ParkingSpot">
+                <id>EVSpot1</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>EVSpot2</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+            </Object>
           </Object>
-        </Object>
-        <!-- How to define a list of Type A in O-DF? -->
-        <Object type="list">
-          <id>Spots</id>
-          <Object type="ParkingSpot">
-            <id>Spot1</id>
-            <InfoItem name="Available">
-              <value>TRUE</value>
+          <Object type="ParkingSpotType">
+            <id>Car</id>
+            <InfoItem name="NumberOfSpots">
+              <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="User">
-              <value>NONE</value>
+            <InfoItem name="NumberOfSpotsAvailable">
+              <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="SpotType">
-              <value>ElectronicVechile</value>
+            <InfoItem name="HourlyPrice">
+              <value type="xs:int">2</value>
             </InfoItem>
+            <InfoItem name="MaxHeight">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <InfoItem name="MaxWidth">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <Object type="list">
+              <id>Spots</id>
+              <description lang="English">List of parking spot of previous type.</description>
+              <Object type="ParkingSpot">
+                <id>Spot1</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>Spot2</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>Spot3</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>Spot4</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>Spot5</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>Spot6</id>
+                <InfoItem name="Available">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+            </Object>
+          </Object>
+          <Object type="ParkingSpotType">
+            <id>Motorbike</id>
+            <InfoItem name="NumberOfSpots">
+              <value type="xs:int">2</value>
+            </InfoItem>
+            <InfoItem name="NumberOfSpotsAvailable">
+              <value type="xs:int">2</value>
+            </InfoItem>
+            <InfoItem name="HourlyPrice">
+              <value type="xs:int">2</value>
+            </InfoItem>
+            <InfoItem name="MaxHeight">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <InfoItem name="MaxWidth">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <Object type="list">
+              <id>Spots</id>
+              <description lang="English">List of parking spot of previous type.</description>
+              <Object type="ParkingSpot">
+                <id>BikeSpot1</id>
+                <InfoItem name="Available">
+                  <value type="xs:boolean">TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+              <Object type="ParkingSpot">
+                <id>BikeSpot2</id>
+                <InfoItem name="Available">
+                  <value type="xs:boolean">TRUE</value>
+                </InfoItem>
+                <InfoItem name="User">
+                  <value>NONE</value>
+                </InfoItem>
+              </Object>
+            </Object>
           </Object>
         </Object>
       </Object>

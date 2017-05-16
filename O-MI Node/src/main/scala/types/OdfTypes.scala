@@ -205,7 +205,9 @@ sealed trait OdfNode {
 /** Class presenting O-DF Objects structure*/
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode {
+  version: Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
+) extends OdfObjectsImpl(objects, version, attributes) with OdfNode {
 
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
@@ -274,7 +276,7 @@ case class OdfObjects(
    * Includes nodes that have type or description
    */
   lazy val objectsWithMetadata = getOdfNodes(this) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+      case o @ OdfObject(_, _, _, _, desc, typeVal, attr) if desc.isDefined || typeVal.isDefined || attr.nonEmpty => o
     } 
 
 }
@@ -286,7 +288,8 @@ case class OdfObject(
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   description: Option[OdfDescription] = None,
-  typeValue: Option[String] = None
+  typeValue: Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
 
 
@@ -385,8 +388,9 @@ case class OdfInfoItem(
     path: Path,
     values: OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
     description: Option[OdfDescription] = None,
-    metaData: Option[OdfMetaData] = None)
-  extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+    metaData: Option[OdfMetaData] = None,
+    attributes:           Map[String,String] = HashMap.empty
+) extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None

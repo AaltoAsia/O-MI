@@ -76,11 +76,13 @@ public class OdfFactory{
     OdfDescription description,
     OdfMetaData metaData
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfInfoItem(
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.apply(description),
-        scala.Option.apply(metaData)
+        scala.Option.apply(metaData),
+        attr
         );
   }
 
@@ -96,11 +98,13 @@ public class OdfFactory{
     Iterable<OdfValue<Object>> values,
     OdfDescription description
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfInfoItem(
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.apply(description),
-        scala.Option.empty()//Look at type of MetaData.
+        scala.Option.empty(),//Look at type of MetaData.
+        attr
         );
   }
 
@@ -114,11 +118,13 @@ public class OdfFactory{
     Path path,
     Iterable<OdfValue<Object>> values
     ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfInfoItem(
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
-        scala.Option.empty()//Look at type of MetaData.
+        scala.Option.empty(),//Look at type of MetaData.
+        attr
         );
     }
 
@@ -133,11 +139,13 @@ public class OdfFactory{
       Iterable<OdfValue<Object>> values,
     OdfMetaData metaData
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfInfoItem(
         path,
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
-        scala.Option.apply(metaData)//Look at type of MetaData.
+        scala.Option.apply(metaData),//Look at type of MetaData.
+        attr
         );
   }
 
@@ -159,13 +167,15 @@ public class OdfFactory{
     OdfDescription description,
     String typeValue
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.apply(description),
-        scala.Option.apply(typeValue)
+        scala.Option.apply(typeValue),
+        attr
     );
   }
 
@@ -194,13 +204,15 @@ public class OdfFactory{
         null
     );
     ids.add(id);
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.apply(description),
-        scala.Option.apply(typeValue)
+        scala.Option.apply(typeValue),
+        attr
     );
   }
 
@@ -220,13 +232,15 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String typeValue
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.empty(),
-        scala.Option.apply(typeValue)
+        scala.Option.apply(typeValue),
+        attr
     );
   }
 
@@ -246,13 +260,15 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     OdfDescription description
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.apply(description),
-        scala.Option.empty()
+        scala.Option.empty(),
+        attr
     );
   }
 
@@ -270,13 +286,15 @@ public class OdfFactory{
     Iterable<OdfInfoItem> infoitems,
     Iterable<OdfObject> objects
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.empty(),
-        scala.Option.empty()
+        scala.Option.empty(),
+        attr
     );
   }
   /**
@@ -302,13 +320,15 @@ public class OdfFactory{
         null
     );
     ids.add(id);
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.empty(),
-        scala.Option.apply(typeValue)
+        scala.Option.apply(typeValue),
+        attr
     );
   }
 
@@ -335,13 +355,15 @@ public class OdfFactory{
         null
     );
     ids.add(id);
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.apply(description),
-        scala.Option.empty()
+        scala.Option.empty(),
+        attr
     );
   }
 
@@ -366,13 +388,15 @@ public class OdfFactory{
         null
     );
     ids.add(id);
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObject(
         OdfTreeCollection.fromJava(ids),
         path,
         OdfTreeCollection.fromJava(infoitems),
         OdfTreeCollection.fromJava(objects),
         scala.Option.empty(),
-        scala.Option.empty()
+        scala.Option.empty(),
+        attr
     );
   }
 
@@ -415,9 +439,11 @@ public class OdfFactory{
     Iterable<OdfObject> objects,
     String version
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObjects(
         OdfTreeCollection.fromJava(objects),
-        scala.Option.apply(version)
+        scala.Option.apply(version),
+        attr
     );
   }
 
@@ -429,9 +455,11 @@ public class OdfFactory{
   public static OdfObjects createOdfObjects(
     Iterable<OdfObject> objects
   ){
+    HashMap<String,String> attr = new HashMap<String,String>();
     return new OdfObjects(
         OdfTreeCollection.fromJava(objects),
-        scala.Option.empty()
+        scala.Option.empty(),
+        attr
     );
   }
 

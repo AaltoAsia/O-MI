@@ -84,6 +84,7 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(root: xml.Node): OdfParseResult = { 
     schemaValidation(root) match {
       case errors : Seq[ParseError] if errors.nonEmpty => 
+        println( root.toString )
 
         Left(errors) 
       case empty : Seq[ParseError] if empty.isEmpty =>
@@ -117,137 +118,145 @@ object OdfParser extends Parser[OdfParseResult] {
         Iterable.empty[OdfObject]
       else
         objects.ObjectValue.map{ obj => parseObject( requestProcessTime, obj ) }.toIterable,
-        objects.version
+        objects.version,
+        parseAttributes( objects.attributes - "@version" )
+    )
+}
+
+private[this] def validateId(stringId: String): Option[String] = {
+  stringId.trim match{ 
+    case "" => None 
+    case trimmedName: String => Some(trimmedName)
+  }
+}
+private[this] def validateId(optionId: Option[String]): Option[String] = for {
+  head <- optionId
+  validated <- validateId(head)
+} yield validated
+
+private[this] def parseObject(requestProcessTime: Timestamp, obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
+
+  val npath = path / validateId(obj.id.headOption.map(_.value)).getOrElse(
+    throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
+  )
+
+  OdfObject(
+    obj.id.map{ qlmIdType => parseQlmID(qlmIdType)},
+    npath, 
+    obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
+    obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
+    obj.description.map{ des => OdfDescription( des.value, des.lang )}.headOption,
+    obj.typeValue,
+    parseAttributes( obj.attributes - "@type" )
+  ) 
+}
+
+private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemType, path: Path) : OdfInfoItem  = { 
+
+  // TODO: support many names from item.otherName
+  val npath = path / validateId(item.name).getOrElse(
+    throw new IllegalArgumentException("No name on infoItem")
+  )
+
+  OdfInfoItem(
+    npath,
+    item.value.map{
+      valueType => 
+        parseValue(requestProcessTime,valueType)
+    },
+    item.description.map{ des =>
+      OdfDescription( des.value, des.lang ) 
+    }.headOption,
+    item.MetaData.map{
+      md => 
+        OdfMetaData(
+          md.InfoItem.map{ 
+            mItem => parseInfoItem( requestProcessTime, mItem, npath / "MetaData" ) 
+          }
+        )
+    }.headOption,
+    parseAttributes( item.attributes - "@name" )
+  ) 
+}
+
+private[this] def parseValue(requestProcessTime: Timestamp, valueType: ValueType) = { 
+  val typeValue = valueType.typeValue
+  def handleObjectsValue ={
+      val objectsTypes = valueType.mixed.filter{
+          case dr: scalaxb.DataRecord[Any] =>
+            dr.value match {
+              case objectsType: xmlTypes.ObjectsType =>
+                true
+              case _ => false
+            }
+        }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
+          OdfObjectsValue(
+            parseObjects(objectsTypes,requestProcessTime),//.asXML.toString,
+            timeSolver(valueType, requestProcessTime)
+          )
+  } 
+    
+  typeValue match {
+    case "odf" =>  handleObjectsValue
+    case "odf:Objects" =>  handleObjectsValue
+    case "Objects" =>  handleObjectsValue
+      /*
+      objectsTypes.map{
+        case odf: xmlTypes.ObjectsType => 
+          val odfXml = xmlGen.scalaxb.toXML[xmlTypes.ObjectsType](odf,None,Some("Objects"),xmlGen.odfDefaultScope)
+          odfXml.toString
+          }.foldLeft("")( _ + _)
+          */
+    case str: String  => 
+      val xmlValue = valueType.mixed.map{
+        case dr: xmlGen.scalaxb.DataRecord[_] => 
+          xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
+          }.foldLeft(NodeSeq.Empty){
+            case (res: NodeSeq, ns: NodeSeq) => res ++ ns
+          }
+      OdfValue(
+        xmlValue.toString,
+        typeValue,
+        timeSolver(valueType, requestProcessTime)
       )
   }
 
-  private[this] def validateId(stringId: String): Option[String] = {
-    stringId.trim match{ 
-      case "" => None 
-      case trimmedName: String => Some(trimmedName)
-    }
+}
+
+/**
+ * Add timestamp values to metadata values as the name suggests.
+ * @param meta
+ * @param reqTime
+ * @return
+ */
+private[this] def addTimeStampToMetaDataValues(meta: Option[MetaDataType], reqTime: Timestamp): Option[MetaDataType] = {
+  meta.map( m =>
+    MetaDataType(m.InfoItem.map(ii =>
+      ii.copy(
+        value = ii.value.map(value =>
+          value.copy(
+          attributes = value.attributes.-("@dateTime").updated("@unixTime", DataRecord(timeSolver(value, reqTime).getTime)))),
+
+        MetaData = addTimeStampToMetaDataValues(ii.MetaData.headOption,reqTime).toSeq)
+    ))
+  )
+}
+
+/** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
+ */
+private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = value.dateTime match {
+  case None => value.unixTime match {
+    case None => requestProcessTime
+    case Some(seconds) => new Timestamp(seconds.toLong * 1000)
   }
-  private[this] def validateId(optionId: Option[String]): Option[String] = for {
-    head <- optionId
-    validated <- validateId(head)
-  } yield validated
-
-  private[this] def parseObject(requestProcessTime: Timestamp, obj: ObjectType, path: Path = Path("Objects")) :  OdfObject = { 
-
-    val npath = path / validateId(obj.id.headOption.map(_.value)).getOrElse(
-      throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
-    )
-
-    OdfObject(
-      obj.id.map{ qlmIdType => parseQlmID(qlmIdType)},
-      npath, 
-      obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
-      obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
-      obj.description.map{ des => OdfDescription( des.value, des.lang )}.headOption,
-      obj.typeValue
-    ) 
-  }
-  
-  private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemType, path: Path) : OdfInfoItem  = { 
-
-    // TODO: support many names from item.otherName
-    val npath = path / validateId(item.name).getOrElse(
-      throw new IllegalArgumentException("No name on infoItem")
-    )
-
-    OdfInfoItem(
-      npath,
-      item.value.map{
-        valueType => 
-          parseValue(requestProcessTime,valueType)
-      },
-      item.description.map{ des =>
-        OdfDescription( des.value, des.lang ) 
-      }.headOption,
-      item.MetaData.map{
-        md => 
-          OdfMetaData(
-            md.InfoItem.map{ 
-              mItem => parseInfoItem( requestProcessTime, mItem, npath / "MetaData" ) 
-            }
-          )
-      }.headOption
-    ) 
-  }
-
-  private[this] def parseValue(requestProcessTime: Timestamp, valueType: ValueType) = { 
-    val typeValue = valueType.typeValue
-    typeValue match {
-      case "odf" => 
-        val objectsTypes = valueType.mixed.filter{
-            case dr: scalaxb.DataRecord[Any] =>
-              dr.value match {
-                case objectsType: xmlTypes.ObjectsType =>
-                  true
-                case _ => false
-              }
-          }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
-            OdfObjectsValue(
-              parseObjects(objectsTypes,requestProcessTime),//.asXML.toString,
-              timeSolver(valueType, requestProcessTime)
-            )
-        /*
-        objectsTypes.map{
-          case odf: xmlTypes.ObjectsType => 
-            val odfXml = xmlGen.scalaxb.toXML[xmlTypes.ObjectsType](odf,None,Some("Objects"),xmlGen.odfDefaultScope)
-            odfXml.toString
-            }.foldLeft("")( _ + _)
-            */
-      case str: String  => 
-        val xmlValue = valueType.mixed.map{
-          case dr: xmlGen.scalaxb.DataRecord[_] => 
-            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
-            }.foldLeft(NodeSeq.Empty){
-              case (res: NodeSeq, ns: NodeSeq) => res ++ ns
-            }
-        OdfValue(
-          xmlValue.toString,
-          typeValue,
-          timeSolver(valueType, requestProcessTime)
-        )
-    }
-
-  }
-
-  /**
-   * Add timestamp values to metadata values as the name suggests.
-   * @param meta
-   * @param reqTime
-   * @return
-   */
-  private[this] def addTimeStampToMetaDataValues(meta: Option[MetaDataType], reqTime: Timestamp): Option[MetaDataType] = {
-    meta.map( m =>
-      MetaDataType(m.InfoItem.map(ii =>
-        ii.copy(
-          value = ii.value.map(value =>
-            value.copy(
-            attributes = value.attributes.-("@dateTime").updated("@unixTime", DataRecord(timeSolver(value, reqTime).getTime)))),
-
-          MetaData = addTimeStampToMetaDataValues(ii.MetaData.headOption,reqTime).toSeq)
-      ))
-    )
-  }
-
-  /** Resolves time used in the value (unixtime in seconds or datetime): prefers datetime if both present
-   */
-  private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = value.dateTime match {
-    case None => value.unixTime match {
-      case None => requestProcessTime
-      case Some(seconds) => new Timestamp(seconds.toLong * 1000)
-    }
-    case Some(cal) => 
-      new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
-  }
-  private[this] def parseQlmID( qlmIdType: QlmIDType): QlmID ={
-    QlmID(
-      qlmIdType.value,
-      qlmIdType.idType,
-      qlmIdType.tagType,
+  case Some(cal) => 
+    new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+}
+private[this] def parseQlmID( qlmIdType: QlmIDType): QlmID ={
+  QlmID(
+    qlmIdType.value,
+    qlmIdType.idType,
+    qlmIdType.tagType,
       qlmIdType.startDate.map{
         cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
       },
@@ -260,5 +269,13 @@ object OdfParser extends Parser[OdfParseResult] {
         ).mapValues(_.value.toString).toSeq:_*
       )
     )
+  }
+  private def parseAttributes( attributes: Map[String,DataRecord[Any]]) : Map[String,String] ={
+    attributes.map{
+      case (key: String, dr: DataRecord[Any] ) => 
+        if( key.startsWith("@") ) key.tail -> dr.value.toString
+        else key -> dr.value.toString
+    }
+  
   }
 }

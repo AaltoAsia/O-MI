@@ -9,13 +9,14 @@ import xmlTypes._
 
 /**
 usage:
-val obj = scalaxb.fromXML[xmlTypes.Foo](node)
-val document = scalaxb.toXML[xmlTypes.Foo](obj, "foo", xmlTypes.defaultScope)
+val obj = scalaxb.fromXML[Foo](node)
+val document = scalaxb.toXML[Foo](obj, "foo", defaultScope)
 **/
 object `package` extends XMLProtocol { }
 
 trait XMLProtocol extends scalaxb.XMLStandardTypes {
   implicit lazy val executionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   val defaultScope = scalaxb.toScope(
     None -> "http://www.opengroup.org/xsd/odf/1.0/",
     None -> "http://www.opengroup.org/xsd/omi/1.0/",
@@ -31,27 +32,27 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
   val omiDefaultScope = scalaxb.toScope(
     None -> "http://www.opengroup.org/xsd/omi/1.0/"
   )
-  implicit lazy val XmlTypes_ObjectsTypeFormat: scalaxb.XMLFormat[xmlTypes.ObjectsType] = new DefaultXmlTypes_ObjectsTypeFormat {}
-  implicit lazy val XmlTypes_ObjectTypeFormat: scalaxb.XMLFormat[xmlTypes.ObjectType] = new DefaultXmlTypes_ObjectTypeFormat {}
-  implicit lazy val XmlTypes_InfoItemTypeFormat: scalaxb.XMLFormat[xmlTypes.InfoItemType] = new DefaultXmlTypes_InfoItemTypeFormat {}
-  implicit lazy val XmlTypes_MetaDataTypeFormat: scalaxb.XMLFormat[xmlTypes.MetaDataType] = new DefaultXmlTypes_MetaDataTypeFormat {}
-  implicit lazy val XmlTypes_DescriptionTypeFormat: scalaxb.XMLFormat[xmlTypes.DescriptionType] = new DefaultXmlTypes_DescriptionTypeFormat {}
-  implicit lazy val XmlTypes_QlmIDTypeFormat: scalaxb.XMLFormat[xmlTypes.QlmIDType] = new DefaultXmlTypes_QlmIDTypeFormat {}
-  implicit lazy val XmlTypes_ValueTypeFormat: scalaxb.XMLFormat[xmlTypes.ValueType] = new DefaultXmlTypes_ValueTypeFormat {}
-  implicit lazy val XmlTypes_OmiEnvelopeTypeFormat: scalaxb.XMLFormat[xmlTypes.OmiEnvelopeType] = new DefaultXmlTypes_OmiEnvelopeTypeFormat {}
-  implicit lazy val XmlTypes_MsgTypeFormat: scalaxb.XMLFormat[xmlTypes.MsgType] = new DefaultXmlTypes_MsgTypeFormat {}
-  implicit lazy val XmlTypes_RequestBaseTypeFormat: scalaxb.XMLFormat[xmlTypes.RequestBaseType] = new DefaultXmlTypes_RequestBaseTypeFormat {}
-  implicit lazy val XmlTypes_TargetTypeTypeFormat: scalaxb.XMLFormat[xmlTypes.TargetTypeType] = new DefaultXmlTypes_TargetTypeTypeFormat {}
-  implicit lazy val XmlTypes_ReadRequestTypeFormat: scalaxb.XMLFormat[xmlTypes.ReadRequestType] = new DefaultXmlTypes_ReadRequestTypeFormat {}
-  implicit lazy val XmlTypes_WriteRequestTypeFormat: scalaxb.XMLFormat[xmlTypes.WriteRequestType] = new DefaultXmlTypes_WriteRequestTypeFormat {}
-  implicit lazy val XmlTypes_ResponseListTypeFormat: scalaxb.XMLFormat[xmlTypes.ResponseListType] = new DefaultXmlTypes_ResponseListTypeFormat {}
-  implicit lazy val XmlTypes_CallRequestTypeFormat: scalaxb.XMLFormat[xmlTypes.CallRequestType] = new DefaultXmlTypes_CallRequestTypeFormat {}
-  implicit lazy val XmlTypes_DeleteRequestTypeFormat: scalaxb.XMLFormat[xmlTypes.DeleteRequestType] = new DefaultXmlTypes_DeleteRequestTypeFormat {}
-  implicit lazy val XmlTypes_RequestResultTypeFormat: scalaxb.XMLFormat[xmlTypes.RequestResultType] = new DefaultXmlTypes_RequestResultTypeFormat {}
-  implicit lazy val XmlTypes_ReturnTypeFormat: scalaxb.XMLFormat[xmlTypes.ReturnType] = new DefaultXmlTypes_ReturnTypeFormat {}
-  implicit lazy val XmlTypes_NodesTypeFormat: scalaxb.XMLFormat[xmlTypes.NodesType] = new DefaultXmlTypes_NodesTypeFormat {}
-  implicit lazy val XmlTypes_IdTypeFormat: scalaxb.XMLFormat[xmlTypes.IdType] = new DefaultXmlTypes_IdTypeFormat {}
-  implicit lazy val XmlTypes_CancelRequestTypeFormat: scalaxb.XMLFormat[xmlTypes.CancelRequestType] = new DefaultXmlTypes_CancelRequestTypeFormat {}
+  implicit lazy val Generated_ObjectsTypeFormat: scalaxb.XMLFormat[ObjectsType] = new DefaultGenerated_ObjectsTypeFormat {}
+  implicit lazy val Generated_ObjectTypeFormat: scalaxb.XMLFormat[ObjectType] = new DefaultGenerated_ObjectTypeFormat {}
+  implicit lazy val Generated_InfoItemTypeFormat: scalaxb.XMLFormat[InfoItemType] = new DefaultGenerated_InfoItemTypeFormat {}
+  implicit lazy val Generated_MetaDataTypeFormat: scalaxb.XMLFormat[MetaDataType] = new DefaultGenerated_MetaDataTypeFormat {}
+  implicit lazy val Generated_DescriptionTypeFormat: scalaxb.XMLFormat[DescriptionType] = new DefaultGenerated_DescriptionTypeFormat {}
+  implicit lazy val Generated_QlmIDTypeFormat: scalaxb.XMLFormat[QlmIDType] = new DefaultGenerated_QlmIDTypeFormat {}
+  implicit lazy val Generated_ValueTypeFormat: scalaxb.XMLFormat[ValueType] = new DefaultGenerated_ValueTypeFormat {}
+  implicit lazy val Generated_OmiEnvelopeTypeFormat: scalaxb.XMLFormat[OmiEnvelopeType] = new DefaultGenerated_OmiEnvelopeTypeFormat {}
+  implicit lazy val Generated_MsgTypeFormat: scalaxb.XMLFormat[MsgType] = new DefaultGenerated_MsgTypeFormat {}
+  implicit lazy val Generated_RequestBaseTypeFormat: scalaxb.XMLFormat[RequestBaseType] = new DefaultGenerated_RequestBaseTypeFormat {}
+  implicit lazy val Generated_TargetTypeTypeFormat: scalaxb.XMLFormat[TargetTypeType] = new DefaultGenerated_TargetTypeTypeFormat {}
+  implicit lazy val Generated_ReadRequestTypeFormat: scalaxb.XMLFormat[ReadRequestType] = new DefaultGenerated_ReadRequestTypeFormat {}
+  implicit lazy val Generated_WriteRequestTypeFormat: scalaxb.XMLFormat[WriteRequestType] = new DefaultGenerated_WriteRequestTypeFormat {}
+  implicit lazy val Generated_ResponseListTypeFormat: scalaxb.XMLFormat[ResponseListType] = new DefaultGenerated_ResponseListTypeFormat {}
+  implicit lazy val Generated_CallRequestTypeFormat: scalaxb.XMLFormat[CallRequestType] = new DefaultGenerated_CallRequestTypeFormat {}
+  implicit lazy val Generated_DeleteRequestTypeFormat: scalaxb.XMLFormat[DeleteRequestType] = new DefaultGenerated_DeleteRequestTypeFormat {}
+  implicit lazy val Generated_RequestResultTypeFormat: scalaxb.XMLFormat[RequestResultType] = new DefaultGenerated_RequestResultTypeFormat {}
+  implicit lazy val Generated_ReturnTypeFormat: scalaxb.XMLFormat[ReturnType] = new DefaultGenerated_ReturnTypeFormat {}
+  implicit lazy val Generated_NodesTypeFormat: scalaxb.XMLFormat[NodesType] = new DefaultGenerated_NodesTypeFormat {}
+  implicit lazy val Generated_IdTypeFormat: scalaxb.XMLFormat[IdType] = new DefaultGenerated_IdTypeFormat {}
+  implicit lazy val Generated_CancelRequestTypeFormat: scalaxb.XMLFormat[CancelRequestType] = new DefaultGenerated_CancelRequestTypeFormat {}
 
 
   implicit val fromAnySchemaType: scala.xml.Elem => Option[scalaxb.DataRecord[Any]] = {elem =>
@@ -62,27 +63,39 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     val (xsns, xstype) = Helper.instanceType(elem)
 
     (key, ns) match {
-      case (Some("Objects"), Some("http://www.opengroup.org/xsd/odf/1.0/") | None) => Some(DataRecord(ns, key, xsns, xstype, fromXML[xmlTypes.ObjectsType](elem)))
-      case (Some("omiEnvelope"), Some("http://www.opengroup.org/xsd/omi/1.0/") | None) => Some(DataRecord(ns, key, xsns, xstype, fromXML[xmlTypes.OmiEnvelopeType](elem)))
+      case (Some("Objects"), Some("http://www.opengroup.org/xsd/odf/1.0/") | None) => Some(DataRecord(ns, key, xsns, xstype, fromXML[ObjectsType](elem)))
+      case (Some("omiEnvelope"), Some("http://www.opengroup.org/xsd/omi/1.0/") | None) => Some(DataRecord(ns, key, xsns, xstype, fromXML[OmiEnvelopeType](elem)))
 
       case _ => None
     }
   }
 
-  trait DefaultXmlTypes_ObjectsTypeFormat extends scalaxb.ElemNameParser[xmlTypes.ObjectsType] {
+  trait DefaultGenerated_ObjectsTypeFormat extends scalaxb.ElemNameParser[ObjectsType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     
     override def typeName: Option[String] = Some("ObjectsType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ObjectsType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[ObjectsType] =
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "Object")) ^^
       { case p1 =>
-      xmlTypes.ObjectsType(p1 map { scalaxb.fromXML[xmlTypes.ObjectType](_, scalaxb.ElemName(node) :: stack) },
+      ObjectsType(p1 map { scalaxb.fromXML[ObjectType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@version").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@version" -> _ }
-        ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
+        ).flatten[(String, scalaxb.DataRecord[Any])] ::: (node match {
+          case elem: scala.xml.Elem =>
+            elem.attributes.toList flatMap {
+              case scala.xml.UnprefixedAttribute(key, value, _) if key == "version" => Nil
+              case scala.xml.UnprefixedAttribute(key, value, _) =>
+                List(("@" + key, scalaxb.DataRecord(None, Some(key), value.text)))
+              case scala.xml.PrefixedAttribute(pre, key, value, _) =>
+                val ns = elem.scope.getURI(pre)
+                List(("@{" + ns + "}" + key, scalaxb.DataRecord(Option[String](ns), Some(key), value.text)))
+              case _ => Nil
+            }
+          case _ => Nil
+        }): _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.ObjectsType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: ObjectsType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@version", _) => __obj.version foreach { x => attr = scala.xml.Attribute(null, "version", x.toString, attr) }
@@ -91,26 +104,26 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.ObjectsType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      (__obj.ObjectValue flatMap { scalaxb.toXML[xmlTypes.ObjectType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("Object"), __scope, false) })
+    def writesChildNodes(__obj: ObjectsType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      (__obj.ObjectValue flatMap { scalaxb.toXML[ObjectType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("Object"), __scope, false) })
 
   }
 
-  trait DefaultXmlTypes_ObjectTypeFormat extends scalaxb.ElemNameParser[xmlTypes.ObjectType] {
+  trait DefaultGenerated_ObjectTypeFormat extends scalaxb.ElemNameParser[ObjectType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     
     override def typeName: Option[String] = Some("ObjectType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ObjectType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[ObjectType] =
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "id")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "description")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "InfoItem")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "Object")) ^^
       { case p1 ~ p2 ~ p3 ~ p4 =>
-      xmlTypes.ObjectType(p1 map { scalaxb.fromXML[xmlTypes.QlmIDType](_, scalaxb.ElemName(node) :: stack) },
-        p2 map { scalaxb.fromXML[xmlTypes.DescriptionType](_, scalaxb.ElemName(node) :: stack) },
-        p3 map { scalaxb.fromXML[xmlTypes.InfoItemType](_, scalaxb.ElemName(node) :: stack) },
-        p4 map { scalaxb.fromXML[xmlTypes.ObjectType](_, scalaxb.ElemName(node) :: stack) },
+      ObjectType(p1 map { scalaxb.fromXML[QlmIDType](_, scalaxb.ElemName(node) :: stack) },
+        p2 map { scalaxb.fromXML[DescriptionType](_, scalaxb.ElemName(node) :: stack) },
+        p3 map { scalaxb.fromXML[InfoItemType](_, scalaxb.ElemName(node) :: stack) },
+        p4 map { scalaxb.fromXML[ObjectType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@type").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@type" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])] ::: (node match {
@@ -127,7 +140,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
           case _ => Nil
         }): _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.ObjectType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: ObjectType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@type", _) => __obj.typeValue foreach { x => attr = scala.xml.Attribute(null, "type", x.toString, attr) }
@@ -136,29 +149,29 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.ObjectType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.id flatMap { scalaxb.toXML[xmlTypes.QlmIDType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("id"), __scope, false) },
-        __obj.description flatMap { scalaxb.toXML[xmlTypes.DescriptionType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("description"), __scope, false) },
-        __obj.InfoItem flatMap { scalaxb.toXML[xmlTypes.InfoItemType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("InfoItem"), __scope, false) },
-        __obj.ObjectValue flatMap { scalaxb.toXML[xmlTypes.ObjectType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("Object"), __scope, false) })
+    def writesChildNodes(__obj: ObjectType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.id flatMap { scalaxb.toXML[QlmIDType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("id"), __scope, false) },
+        __obj.description flatMap { scalaxb.toXML[DescriptionType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("description"), __scope, false) },
+        __obj.InfoItem flatMap { scalaxb.toXML[InfoItemType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("InfoItem"), __scope, false) },
+        __obj.ObjectValue flatMap { scalaxb.toXML[ObjectType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("Object"), __scope, false) })
 
   }
 
-  trait DefaultXmlTypes_InfoItemTypeFormat extends scalaxb.ElemNameParser[xmlTypes.InfoItemType] {
+  trait DefaultGenerated_InfoItemTypeFormat extends scalaxb.ElemNameParser[InfoItemType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     
     override def typeName: Option[String] = Some("InfoItemType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.InfoItemType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[InfoItemType] =
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "name")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "description")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "MetaData")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "value")) ^^
       { case p1 ~ p2 ~ p3 ~ p4 =>
-      xmlTypes.InfoItemType(p1 map { scalaxb.fromXML[xmlTypes.QlmIDType](_, scalaxb.ElemName(node) :: stack) },
-        p2 map { scalaxb.fromXML[xmlTypes.DescriptionType](_, scalaxb.ElemName(node) :: stack) },
-        p3 map { scalaxb.fromXML[xmlTypes.MetaDataType](_, scalaxb.ElemName(node) :: stack) },
-        p4 map { scalaxb.fromXML[xmlTypes.ValueType](_, scalaxb.ElemName(node) :: stack) },
+      InfoItemType(p1 map { scalaxb.fromXML[QlmIDType](_, scalaxb.ElemName(node) :: stack) },
+        p2 map { scalaxb.fromXML[DescriptionType](_, scalaxb.ElemName(node) :: stack) },
+        p3 map { scalaxb.fromXML[MetaDataType](_, scalaxb.ElemName(node) :: stack) },
+        p4 map { scalaxb.fromXML[ValueType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@name").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@name" -> _ },
         (node \ "@type").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@type" -> _ }
@@ -177,7 +190,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
           case _ => Nil
         }): _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.InfoItemType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: InfoItemType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@name", _) => attr = scala.xml.Attribute(null, "name", __obj.name.toString, attr)
@@ -187,35 +200,35 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.InfoItemType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.iname flatMap { scalaxb.toXML[xmlTypes.QlmIDType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("name"), __scope, false) },
-        __obj.description flatMap { scalaxb.toXML[xmlTypes.DescriptionType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("description"), __scope, false) },
-        __obj.MetaData flatMap { scalaxb.toXML[xmlTypes.MetaDataType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("MetaData"), __scope, false) },
-        __obj.value flatMap { scalaxb.toXML[xmlTypes.ValueType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("value"), __scope, false) })
+    def writesChildNodes(__obj: InfoItemType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.iname flatMap { scalaxb.toXML[QlmIDType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("name"), __scope, false) },
+        __obj.description flatMap { scalaxb.toXML[DescriptionType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("description"), __scope, false) },
+        __obj.MetaData flatMap { scalaxb.toXML[MetaDataType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("MetaData"), __scope, false) },
+        __obj.value flatMap { scalaxb.toXML[ValueType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("value"), __scope, false) })
 
   }
 
-  trait DefaultXmlTypes_MetaDataTypeFormat extends scalaxb.ElemNameParser[xmlTypes.MetaDataType] {
+  trait DefaultGenerated_MetaDataTypeFormat extends scalaxb.ElemNameParser[MetaDataType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     
     override def typeName: Option[String] = Some("MetaDataType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.MetaDataType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[MetaDataType] =
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "InfoItem")) ^^
       { case p1 =>
-      xmlTypes.MetaDataType(p1 map { scalaxb.fromXML[xmlTypes.InfoItemType](_, scalaxb.ElemName(node) :: stack) }) })
+      MetaDataType(p1 map { scalaxb.fromXML[InfoItemType](_, scalaxb.ElemName(node) :: stack) }) })
     
-    def writesChildNodes(__obj: xmlTypes.MetaDataType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      (__obj.InfoItem flatMap { scalaxb.toXML[xmlTypes.InfoItemType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("InfoItem"), __scope, false) })
+    def writesChildNodes(__obj: MetaDataType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      (__obj.InfoItem flatMap { scalaxb.toXML[InfoItemType](_, Some("http://www.opengroup.org/xsd/odf/1.0/"), Some("InfoItem"), __scope, false) })
 
   }
 
-  trait DefaultXmlTypes_DescriptionTypeFormat extends scalaxb.XMLFormat[xmlTypes.DescriptionType] with scalaxb.CanWriteChildNodes[xmlTypes.DescriptionType] {
+  trait DefaultGenerated_DescriptionTypeFormat extends scalaxb.XMLFormat[DescriptionType] with scalaxb.CanWriteChildNodes[DescriptionType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     import scalaxb.ElemName._
     
-    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, xmlTypes.DescriptionType] = seq match {
-      case node: scala.xml.Node => Right(xmlTypes.DescriptionType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
+    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, DescriptionType] = seq match {
+      case node: scala.xml.Node => Right(DescriptionType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
         scala.collection.immutable.ListMap(List(
         (node \ "@lang").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@lang" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])] ::: (node match {
@@ -234,7 +247,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       case _ => Left("reads failed: seq must be scala.xml.Node")
     }
     
-    override def writesAttribute(__obj: xmlTypes.DescriptionType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: DescriptionType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@lang", _) => __obj.lang foreach { x => attr = scala.xml.Attribute(null, "lang", x.toString, attr) }
@@ -243,18 +256,18 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.DescriptionType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: DescriptionType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       Seq(scala.xml.Text(__obj.value.toString))
 
 
   }
 
-  trait DefaultXmlTypes_QlmIDTypeFormat extends scalaxb.XMLFormat[xmlTypes.QlmIDType] with scalaxb.CanWriteChildNodes[xmlTypes.QlmIDType] {
+  trait DefaultGenerated_QlmIDTypeFormat extends scalaxb.XMLFormat[QlmIDType] with scalaxb.CanWriteChildNodes[QlmIDType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     import scalaxb.ElemName._
     
-    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, xmlTypes.QlmIDType] = seq match {
-      case node: scala.xml.Node => Right(xmlTypes.QlmIDType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
+    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, QlmIDType] = seq match {
+      case node: scala.xml.Node => Right(QlmIDType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
         scala.collection.immutable.ListMap(List(
         (node \ "@idType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@idType" -> _ },
         (node \ "@tagType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@tagType" -> _ },
@@ -279,7 +292,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       case _ => Left("reads failed: seq must be scala.xml.Node")
     }
     
-    override def writesAttribute(__obj: xmlTypes.QlmIDType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: QlmIDType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@idType", _) => __obj.idType foreach { x => attr = scala.xml.Attribute(null, "idType", x.toString, attr) }
@@ -291,26 +304,26 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.QlmIDType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: QlmIDType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       Seq(scala.xml.Text(__obj.value.toString))
 
 
   }
 
-  trait DefaultXmlTypes_ValueTypeFormat extends scalaxb.ElemNameParser[xmlTypes.ValueType] {
+  trait DefaultGenerated_ValueTypeFormat extends scalaxb.ElemNameParser[ValueType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/odf/1.0/")
     
     override def typeName: Option[String] = Some("ValueType")
 
     override def isMixed: Boolean = true
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ValueType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[ValueType] =
       phrase(optTextRecord ~ 
       (opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/odf/1.0/"), "Objects")) ^^ 
-      (_ map { x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.ObjectsType](x, scalaxb.ElemName(node) :: stack)) })) ~ 
+      (_ map { x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[ObjectsType](x, scalaxb.ElemName(node) :: stack)) })) ~ 
       optTextRecord ^^
       { case p1 ~ p2 ~ p3 =>
-      xmlTypes.ValueType(Seq.concat(p1.toList,
+      ValueType(Seq.concat(p1.toList,
         p2.toList,
         p3.toList),
         scala.collection.immutable.ListMap(List(
@@ -333,7 +346,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
           case _ => Nil
         }): _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.ValueType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: ValueType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@type", _) => if (__obj.typeValue.toString != "xs:string") attr = scala.xml.Attribute(null, "type", __obj.typeValue.toString, attr)
@@ -344,37 +357,37 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.ValueType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: ValueType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       __obj.mixed.toSeq flatMap { x => scalaxb.toXML[scalaxb.DataRecord[Any]](x, x.namespace, x.key, __scope, false) }
 
   }
 
-  trait DefaultXmlTypes_OmiEnvelopeTypeFormat extends scalaxb.ElemNameParser[xmlTypes.OmiEnvelopeType] {
+  trait DefaultGenerated_OmiEnvelopeTypeFormat extends scalaxb.ElemNameParser[OmiEnvelopeType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("OmiEnvelopeType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.OmiEnvelopeType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[OmiEnvelopeType] =
       phrase((((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "read")) ^^ 
-      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.ReadRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
+      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[ReadRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
       ((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "write")) ^^ 
-      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.WriteRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
+      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[WriteRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
       ((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "response")) ^^ 
-      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.ResponseListType](x, scalaxb.ElemName(node) :: stack)))) | 
+      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[ResponseListType](x, scalaxb.ElemName(node) :: stack)))) | 
       ((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "cancel")) ^^ 
-      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.CancelRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
+      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[CancelRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
       ((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "call")) ^^ 
-      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.CallRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
+      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[CallRequestType](x, scalaxb.ElemName(node) :: stack)))) | 
       ((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "delete")) ^^ 
-      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[xmlTypes.DeleteRequestType](x, scalaxb.ElemName(node) :: stack))))) ^^
+      (x => scalaxb.DataRecord(x.namespace, Some(x.name), scalaxb.fromXML[DeleteRequestType](x, scalaxb.ElemName(node) :: stack))))) ^^
       { case p1 =>
-      xmlTypes.OmiEnvelopeType(p1,
+      OmiEnvelopeType(p1,
         scala.collection.immutable.ListMap(List(
         (node \ "@version").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@version" -> _ },
         (node \ "@ttl").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@ttl" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.OmiEnvelopeType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: OmiEnvelopeType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@version", _) => attr = scala.xml.Attribute(null, "version", __obj.version.toString, attr)
@@ -384,96 +397,96 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.OmiEnvelopeType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      ((Some(__obj.omienvelopetypeoption) map {x => scalaxb.toXML[scalaxb.DataRecord[xmlTypes.OmiEnvelopeTypeOption]](x, x.namespace, x.key, __scope, false)}).get)
+    def writesChildNodes(__obj: OmiEnvelopeType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      ((Some(__obj.omienvelopetypeoption) map {x => scalaxb.toXML[scalaxb.DataRecord[OmiEnvelopeTypeOption]](x, x.namespace, x.key, __scope, false)}).get)
 
   }
 
-  trait DefaultXmlTypes_MsgTypeFormat extends scalaxb.ElemNameParser[xmlTypes.MsgType] {
+  trait DefaultGenerated_MsgTypeFormat extends scalaxb.ElemNameParser[MsgType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("MsgType")
 
     override def isMixed: Boolean = true
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.MsgType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[MsgType] =
       phrase(optTextRecord ~ 
       safeRep(((any(_.namespace != Some("http://www.opengroup.org/xsd/omi/1.0/")) ^^ (scalaxb.fromXML[scalaxb.DataRecord[Any]](_, scalaxb.ElemName(node) :: stack))) ~
       optTextRecord) ^^ 
       { case p1 ~ p2 => Seq.concat(Seq(p1), p2.toList) }) ~ 
       optTextRecord ^^
       { case p1 ~ p2 ~ p3 =>
-      xmlTypes.MsgType(Seq.concat(p1.toList,
+      MsgType(Seq.concat(p1.toList,
         p2.flatten,
         p3.toList)) })
     
-    def writesChildNodes(__obj: xmlTypes.MsgType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: MsgType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       __obj.mixed.toSeq flatMap { x => scalaxb.toXML[scalaxb.DataRecord[Any]](x, x.namespace, x.key, __scope, false) }
 
   }
 
-  trait DefaultXmlTypes_RequestBaseTypeFormat extends scalaxb.XMLFormat[xmlTypes.RequestBaseType] {
-    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, xmlTypes.RequestBaseType] = seq match {
+  trait DefaultGenerated_RequestBaseTypeFormat extends scalaxb.XMLFormat[RequestBaseType] {
+    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, RequestBaseType] = seq match {
       case node: scala.xml.Node =>     
         scalaxb.Helper.instanceType(node) match {
-          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("DeleteRequestType")) => Right(scalaxb.fromXML[xmlTypes.DeleteRequestType](node, stack))
-          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("ReadRequestType")) => Right(scalaxb.fromXML[xmlTypes.ReadRequestType](node, stack))
-          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("WriteRequestType")) => Right(scalaxb.fromXML[xmlTypes.WriteRequestType](node, stack))
-          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("CallRequestType")) => Right(scalaxb.fromXML[xmlTypes.CallRequestType](node, stack))
+          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("DeleteRequestType")) => Right(scalaxb.fromXML[DeleteRequestType](node, stack))
+          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("ReadRequestType")) => Right(scalaxb.fromXML[ReadRequestType](node, stack))
+          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("WriteRequestType")) => Right(scalaxb.fromXML[WriteRequestType](node, stack))
+          case (Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("CallRequestType")) => Right(scalaxb.fromXML[CallRequestType](node, stack))
           case x => Left("Unknown type: " + x)
         }
       case _ => Left("reads failed: seq must be scala.xml.Node")  
     }
     
-    def writes(__obj: xmlTypes.RequestBaseType, __namespace: Option[String], __elementLabel: Option[String],
+    def writes(__obj: RequestBaseType, __namespace: Option[String], __elementLabel: Option[String],
         __scope: scala.xml.NamespaceBinding, __typeAttribute: Boolean): scala.xml.NodeSeq = __obj match {
-      case x: xmlTypes.DeleteRequestType => scalaxb.toXML[xmlTypes.DeleteRequestType](x, __namespace, __elementLabel, __scope, true)
-      case x: xmlTypes.ReadRequestType => scalaxb.toXML[xmlTypes.ReadRequestType](x, __namespace, __elementLabel, __scope, true)
-      case x: xmlTypes.WriteRequestType => scalaxb.toXML[xmlTypes.WriteRequestType](x, __namespace, __elementLabel, __scope, true)
-      case x: xmlTypes.CallRequestType => scalaxb.toXML[xmlTypes.CallRequestType](x, __namespace, __elementLabel, __scope, true)
+      case x: DeleteRequestType => scalaxb.toXML[DeleteRequestType](x, __namespace, __elementLabel, __scope, true)
+      case x: ReadRequestType => scalaxb.toXML[ReadRequestType](x, __namespace, __elementLabel, __scope, true)
+      case x: WriteRequestType => scalaxb.toXML[WriteRequestType](x, __namespace, __elementLabel, __scope, true)
+      case x: CallRequestType => scalaxb.toXML[CallRequestType](x, __namespace, __elementLabel, __scope, true)
       case _ => sys.error("Unknown type: " + __obj)
     }
   }
 
-  def buildXmlTypes_TargetTypeTypeFormat = new DefaultXmlTypes_TargetTypeTypeFormat {}
-  trait DefaultXmlTypes_TargetTypeTypeFormat extends scalaxb.XMLFormat[xmlTypes.TargetTypeType] {
+  def buildGenerated_TargetTypeTypeFormat = new DefaultGenerated_TargetTypeTypeFormat {}
+  trait DefaultGenerated_TargetTypeTypeFormat extends scalaxb.XMLFormat[TargetTypeType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
-    def fromString(value: String, scope: scala.xml.NamespaceBinding): xmlTypes.TargetTypeType = scalaxb.fromXML[String](scala.xml.Text(value)) match {
-      case x: String if x == scalaxb.fromXML[String](scala.xml.Text("device")) => xmlTypes.Device
-      case x: String if x == scalaxb.fromXML[String](scala.xml.Text("node")) => xmlTypes.Node
+    def fromString(value: String, scope: scala.xml.NamespaceBinding): TargetTypeType = scalaxb.fromXML[String](scala.xml.Text(value)) match {
+      case x: String if x == scalaxb.fromXML[String](scala.xml.Text("device")) => Device
+      case x: String if x == scalaxb.fromXML[String](scala.xml.Text("node")) => Node
 
     }
 
-    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, xmlTypes.TargetTypeType] = seq match {
+    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, TargetTypeType] = seq match {
       case elem: scala.xml.Elem => Right(fromString(elem.text, elem.scope))
       case _ => Right(fromString(seq.text, scala.xml.TopScope))
     }
     
-    def writes(__obj: xmlTypes.TargetTypeType, __namespace: Option[String], __elementLabel: Option[String],
+    def writes(__obj: TargetTypeType, __namespace: Option[String], __elementLabel: Option[String],
         __scope: scala.xml.NamespaceBinding, __typeAttribute: Boolean): scala.xml.NodeSeq =
       scala.xml.Elem(scalaxb.Helper.getPrefix(__namespace, __scope).orNull, 
         __elementLabel getOrElse { sys.error("missing element label.") },
         scala.xml.Null, __scope, true, scala.xml.Text(__obj.toString))
   }
 
-  trait DefaultXmlTypes_ReadRequestTypeFormat extends scalaxb.ElemNameParser[xmlTypes.ReadRequestType] {
+  trait DefaultGenerated_ReadRequestTypeFormat extends scalaxb.ElemNameParser[ReadRequestType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("ReadRequestType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ReadRequestType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[ReadRequestType] =
       phrase(opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "nodeList")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "requestID")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "msg")) ^^
       { case p1 ~ p2 ~ p3 =>
-      xmlTypes.ReadRequestType(p1.headOption map { scalaxb.fromXML[xmlTypes.NodesType](_, scalaxb.ElemName(node) :: stack) },
+      ReadRequestType(p1.headOption map { scalaxb.fromXML[NodesType](_, scalaxb.ElemName(node) :: stack) },
         p2 map { scalaxb.fromXML[String](_, scalaxb.ElemName(node) :: stack) },
-        p3.headOption map { scalaxb.fromXML[xmlTypes.MsgType](_, scalaxb.ElemName(node) :: stack) },
+        p3.headOption map { scalaxb.fromXML[MsgType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@callback").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[java.net.URI](x, scalaxb.ElemName(node) :: stack)) } map { "@callback" -> _ },
         (node \ "@msgformat").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@msgformat" -> _ },
-        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[xmlTypes.TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[xmlTypes.TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ },
+        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ },
         (node \ "@interval").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@interval" -> _ },
         (node \ "@oldest").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[BigInt](x, scalaxb.ElemName(node) :: stack)) } map { "@oldest" -> _ },
         (node \ "@begin").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[javax.xml.datatype.XMLGregorianCalendar](x, scalaxb.ElemName(node) :: stack)) } map { "@begin" -> _ },
@@ -482,7 +495,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
         (node \ "@all").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[Boolean](x, scalaxb.ElemName(node) :: stack)) } map { "@all" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.ReadRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: ReadRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@callback", _) => __obj.callback foreach { x => attr = scala.xml.Attribute(null, "callback", x.toString, attr) }
@@ -499,33 +512,33 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.ReadRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[xmlTypes.NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+    def writesChildNodes(__obj: ReadRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[xmlTypes.MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
 
   }
 
-  trait DefaultXmlTypes_WriteRequestTypeFormat extends scalaxb.ElemNameParser[xmlTypes.WriteRequestType] {
+  trait DefaultGenerated_WriteRequestTypeFormat extends scalaxb.ElemNameParser[WriteRequestType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("WriteRequestType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.WriteRequestType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[WriteRequestType] =
       phrase(opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "nodeList")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "requestID")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "msg")) ^^
       { case p1 ~ p2 ~ p3 =>
-      xmlTypes.WriteRequestType(p1.headOption map { scalaxb.fromXML[xmlTypes.NodesType](_, scalaxb.ElemName(node) :: stack) },
+      WriteRequestType(p1.headOption map { scalaxb.fromXML[NodesType](_, scalaxb.ElemName(node) :: stack) },
         p2 map { scalaxb.fromXML[String](_, scalaxb.ElemName(node) :: stack) },
-        p3.headOption map { scalaxb.fromXML[xmlTypes.MsgType](_, scalaxb.ElemName(node) :: stack) },
+        p3.headOption map { scalaxb.fromXML[MsgType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@callback").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[java.net.URI](x, scalaxb.ElemName(node) :: stack)) } map { "@callback" -> _ },
         (node \ "@msgformat").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@msgformat" -> _ },
-        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[xmlTypes.TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[xmlTypes.TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
+        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.WriteRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: WriteRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@callback", _) => __obj.callback foreach { x => attr = scala.xml.Attribute(null, "callback", x.toString, attr) }
@@ -536,48 +549,48 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.WriteRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[xmlTypes.NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+    def writesChildNodes(__obj: WriteRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[xmlTypes.MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
 
   }
 
-  trait DefaultXmlTypes_ResponseListTypeFormat extends scalaxb.ElemNameParser[xmlTypes.ResponseListType] {
+  trait DefaultGenerated_ResponseListTypeFormat extends scalaxb.ElemNameParser[ResponseListType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("ResponseListType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.ResponseListType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[ResponseListType] =
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "result")) ^^
       { case p1 =>
-      xmlTypes.ResponseListType(p1 map { scalaxb.fromXML[xmlTypes.RequestResultType](_, scalaxb.ElemName(node) :: stack) }) })
+      ResponseListType(p1 map { scalaxb.fromXML[RequestResultType](_, scalaxb.ElemName(node) :: stack) }) })
     
-    def writesChildNodes(__obj: xmlTypes.ResponseListType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      (__obj.result flatMap { scalaxb.toXML[xmlTypes.RequestResultType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("result"), __scope, false) })
+    def writesChildNodes(__obj: ResponseListType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      (__obj.result flatMap { scalaxb.toXML[RequestResultType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("result"), __scope, false) })
 
   }
 
-  trait DefaultXmlTypes_CallRequestTypeFormat extends scalaxb.ElemNameParser[xmlTypes.CallRequestType] {
+  trait DefaultGenerated_CallRequestTypeFormat extends scalaxb.ElemNameParser[CallRequestType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("CallRequestType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.CallRequestType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[CallRequestType] =
       phrase(opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "nodeList")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "requestID")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "msg")) ^^
       { case p1 ~ p2 ~ p3 =>
-      xmlTypes.CallRequestType(p1.headOption map { scalaxb.fromXML[xmlTypes.NodesType](_, scalaxb.ElemName(node) :: stack) },
+      CallRequestType(p1.headOption map { scalaxb.fromXML[NodesType](_, scalaxb.ElemName(node) :: stack) },
         p2 map { scalaxb.fromXML[String](_, scalaxb.ElemName(node) :: stack) },
-        p3.headOption map { scalaxb.fromXML[xmlTypes.MsgType](_, scalaxb.ElemName(node) :: stack) },
+        p3.headOption map { scalaxb.fromXML[MsgType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@callback").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[java.net.URI](x, scalaxb.ElemName(node) :: stack)) } map { "@callback" -> _ },
         (node \ "@msgformat").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@msgformat" -> _ },
-        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[xmlTypes.TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[xmlTypes.TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
+        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.CallRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: CallRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@callback", _) => __obj.callback foreach { x => attr = scala.xml.Attribute(null, "callback", x.toString, attr) }
@@ -588,33 +601,33 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.CallRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[xmlTypes.NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+    def writesChildNodes(__obj: CallRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[xmlTypes.MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
 
   }
 
-  trait DefaultXmlTypes_DeleteRequestTypeFormat extends scalaxb.ElemNameParser[xmlTypes.DeleteRequestType] {
+  trait DefaultGenerated_DeleteRequestTypeFormat extends scalaxb.ElemNameParser[DeleteRequestType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("DeleteRequestType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.DeleteRequestType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[DeleteRequestType] =
       phrase(opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "nodeList")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "requestID")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "msg")) ^^
       { case p1 ~ p2 ~ p3 =>
-      xmlTypes.DeleteRequestType(p1.headOption map { scalaxb.fromXML[xmlTypes.NodesType](_, scalaxb.ElemName(node) :: stack) },
+      DeleteRequestType(p1.headOption map { scalaxb.fromXML[NodesType](_, scalaxb.ElemName(node) :: stack) },
         p2 map { scalaxb.fromXML[String](_, scalaxb.ElemName(node) :: stack) },
-        p3.headOption map { scalaxb.fromXML[xmlTypes.MsgType](_, scalaxb.ElemName(node) :: stack) },
+        p3.headOption map { scalaxb.fromXML[MsgType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@callback").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[java.net.URI](x, scalaxb.ElemName(node) :: stack)) } map { "@callback" -> _ },
         (node \ "@msgformat").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@msgformat" -> _ },
-        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[xmlTypes.TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[xmlTypes.TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
+        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.DeleteRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: DeleteRequestType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@callback", _) => __obj.callback foreach { x => attr = scala.xml.Attribute(null, "callback", x.toString, attr) }
@@ -625,36 +638,36 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.DeleteRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[xmlTypes.NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+    def writesChildNodes(__obj: DeleteRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[xmlTypes.MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
 
   }
 
-  trait DefaultXmlTypes_RequestResultTypeFormat extends scalaxb.ElemNameParser[xmlTypes.RequestResultType] {
+  trait DefaultGenerated_RequestResultTypeFormat extends scalaxb.ElemNameParser[RequestResultType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("RequestResultType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.RequestResultType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[RequestResultType] =
       phrase((scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "return")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "requestID")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "msg")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "nodeList")) ~ 
       opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "omiEnvelope")) ^^
       { case p1 ~ p2 ~ p3 ~ p4 ~ p5 =>
-      xmlTypes.RequestResultType(scalaxb.fromXML[xmlTypes.ReturnType](p1, scalaxb.ElemName(node) :: stack),
-        p2 map { scalaxb.fromXML[xmlTypes.IdType](_, scalaxb.ElemName(node) :: stack) },
-        p3.headOption map { scalaxb.fromXML[xmlTypes.MsgType](_, scalaxb.ElemName(node) :: stack) },
-        p4.headOption map { scalaxb.fromXML[xmlTypes.NodesType](_, scalaxb.ElemName(node) :: stack) },
-        p5.headOption map { scalaxb.fromXML[xmlTypes.OmiEnvelopeType](_, scalaxb.ElemName(node) :: stack) },
+      RequestResultType(scalaxb.fromXML[ReturnType](p1, scalaxb.ElemName(node) :: stack),
+        p2 map { scalaxb.fromXML[IdType](_, scalaxb.ElemName(node) :: stack) },
+        p3.headOption map { scalaxb.fromXML[MsgType](_, scalaxb.ElemName(node) :: stack) },
+        p4.headOption map { scalaxb.fromXML[NodesType](_, scalaxb.ElemName(node) :: stack) },
+        p5.headOption map { scalaxb.fromXML[OmiEnvelopeType](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@msgformat").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@msgformat" -> _ },
-        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[xmlTypes.TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[xmlTypes.TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
+        (node \ "@targetType").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[TargetTypeType](x, scalaxb.ElemName(node) :: stack)) } orElse Some(scalaxb.DataRecord(None, None, scalaxb.fromXML[TargetTypeType](scala.xml.Text("node"), scalaxb.ElemName(node) :: stack))) map { "@targetType" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.RequestResultType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: RequestResultType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@msgformat", _) => __obj.msgformat foreach { x => attr = scala.xml.Attribute(null, "msgformat", x.toString, attr) }
@@ -664,21 +677,21 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.RequestResultType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(scalaxb.toXML[xmlTypes.ReturnType](__obj.returnValue, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("return"), __scope, false),
-        __obj.requestID flatMap { scalaxb.toXML[xmlTypes.IdType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[xmlTypes.MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil},
-        __obj.nodeList map { scalaxb.toXML[xmlTypes.NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
-        __obj.omiEnvelope map { scalaxb.toXML[xmlTypes.OmiEnvelopeType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("omiEnvelope"), __scope, false) } getOrElse {Nil})
+    def writesChildNodes(__obj: RequestResultType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(scalaxb.toXML[ReturnType](__obj.returnValue, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("return"), __scope, false),
+        __obj.requestID flatMap { scalaxb.toXML[IdType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil},
+        __obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+        __obj.omiEnvelope map { scalaxb.toXML[OmiEnvelopeType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("omiEnvelope"), __scope, false) } getOrElse {Nil})
 
   }
 
-  trait DefaultXmlTypes_ReturnTypeFormat extends scalaxb.XMLFormat[xmlTypes.ReturnType] with scalaxb.CanWriteChildNodes[xmlTypes.ReturnType] {
+  trait DefaultGenerated_ReturnTypeFormat extends scalaxb.XMLFormat[ReturnType] with scalaxb.CanWriteChildNodes[ReturnType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     import scalaxb.ElemName._
     
-    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, xmlTypes.ReturnType] = seq match {
-      case node: scala.xml.Node => Right(xmlTypes.ReturnType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
+    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, ReturnType] = seq match {
+      case node: scala.xml.Node => Right(ReturnType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
         scala.collection.immutable.ListMap(List(
         (node \ "@returnCode").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@returnCode" -> _ },
         (node \ "@description").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@description" -> _ }
@@ -699,7 +712,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       case _ => Left("reads failed: seq must be scala.xml.Node")
     }
     
-    override def writesAttribute(__obj: xmlTypes.ReturnType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: ReturnType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@returnCode", _) => attr = scala.xml.Attribute(null, "returnCode", __obj.returnCode.toString, attr)
@@ -709,26 +722,26 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.ReturnType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: ReturnType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       Seq(scala.xml.Text(__obj.value.toString))
 
 
   }
 
-  trait DefaultXmlTypes_NodesTypeFormat extends scalaxb.ElemNameParser[xmlTypes.NodesType] {
+  trait DefaultGenerated_NodesTypeFormat extends scalaxb.ElemNameParser[NodesType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("NodesType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.NodesType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[NodesType] =
       phrase(safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "node")) ^^
       { case p1 =>
-      xmlTypes.NodesType(p1 map { scalaxb.fromXML[java.net.URI](_, scalaxb.ElemName(node) :: stack) },
+      NodesType(p1 map { scalaxb.fromXML[java.net.URI](_, scalaxb.ElemName(node) :: stack) },
         scala.collection.immutable.ListMap(List(
         (node \ "@type").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@type" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)) })
     
-    override def writesAttribute(__obj: xmlTypes.NodesType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: NodesType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@type", _) => __obj.typeValue foreach { x => attr = scala.xml.Attribute(null, "type", x.toString, attr) }
@@ -737,24 +750,24 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.NodesType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: NodesType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       (__obj.node flatMap { scalaxb.toXML[java.net.URI](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("node"), __scope, false) })
 
   }
 
-  trait DefaultXmlTypes_IdTypeFormat extends scalaxb.XMLFormat[xmlTypes.IdType] with scalaxb.CanWriteChildNodes[xmlTypes.IdType] {
+  trait DefaultGenerated_IdTypeFormat extends scalaxb.XMLFormat[IdType] with scalaxb.CanWriteChildNodes[IdType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     import scalaxb.ElemName._
     
-    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, xmlTypes.IdType] = seq match {
-      case node: scala.xml.Node => Right(xmlTypes.IdType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
+    def reads(seq: scala.xml.NodeSeq, stack: List[scalaxb.ElemName]): Either[String, IdType] = seq match {
+      case node: scala.xml.Node => Right(IdType(scalaxb.fromXML[String](node, scalaxb.ElemName(node) :: stack),
         scala.collection.immutable.ListMap(List(
         (node \ "@format").headOption map { x => scalaxb.DataRecord(x, node, scalaxb.fromXML[String](x, scalaxb.ElemName(node) :: stack)) } map { "@format" -> _ }
         ).flatten[(String, scalaxb.DataRecord[Any])]: _*)))
       case _ => Left("reads failed: seq must be scala.xml.Node")
     }
     
-    override def writesAttribute(__obj: xmlTypes.IdType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
+    override def writesAttribute(__obj: IdType, __scope: scala.xml.NamespaceBinding): scala.xml.MetaData = {
       var attr: scala.xml.MetaData  = scala.xml.Null
       __obj.attributes.toList map {
         case ("@format", _) => __obj.format foreach { x => attr = scala.xml.Attribute(null, "format", x.toString, attr) }
@@ -763,27 +776,27 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
       attr
     }
 
-    def writesChildNodes(__obj: xmlTypes.IdType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+    def writesChildNodes(__obj: IdType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       Seq(scala.xml.Text(__obj.value.toString))
 
 
   }
 
-  trait DefaultXmlTypes_CancelRequestTypeFormat extends scalaxb.ElemNameParser[xmlTypes.CancelRequestType] {
+  trait DefaultGenerated_CancelRequestTypeFormat extends scalaxb.ElemNameParser[CancelRequestType] {
     val targetNamespace: Option[String] = Some("http://www.opengroup.org/xsd/omi/1.0/")
     
     override def typeName: Option[String] = Some("CancelRequestType")
 
-    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[xmlTypes.CancelRequestType] =
+    def parser(node: scala.xml.Node, stack: List[scalaxb.ElemName]): Parser[CancelRequestType] =
       phrase(opt(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "nodeList")) ~ 
       safeRep(scalaxb.ElemName(Some("http://www.opengroup.org/xsd/omi/1.0/"), "requestID")) ^^
       { case p1 ~ p2 =>
-      xmlTypes.CancelRequestType(p1.headOption map { scalaxb.fromXML[xmlTypes.NodesType](_, scalaxb.ElemName(node) :: stack) },
-        p2 map { scalaxb.fromXML[xmlTypes.IdType](_, scalaxb.ElemName(node) :: stack) }) })
+      CancelRequestType(p1.headOption map { scalaxb.fromXML[NodesType](_, scalaxb.ElemName(node) :: stack) },
+        p2 map { scalaxb.fromXML[IdType](_, scalaxb.ElemName(node) :: stack) }) })
     
-    def writesChildNodes(__obj: xmlTypes.CancelRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[xmlTypes.NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
-        __obj.requestID flatMap { scalaxb.toXML[xmlTypes.IdType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) })
+    def writesChildNodes(__obj: CancelRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+        __obj.requestID flatMap { scalaxb.toXML[IdType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) })
 
   }
 

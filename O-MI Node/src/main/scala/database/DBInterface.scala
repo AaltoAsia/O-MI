@@ -174,7 +174,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
 
   def getMetaData(path: Path) : Option[OdfMetaData] = {
     (hierarchyStore execute GetTree()).get(path).collect{
-      case OdfInfoItem(_,_,_,Some(mData)) => mData
+      case OdfInfoItem(_,_,_,Some(mData),_) => mData
     }
   }
 
