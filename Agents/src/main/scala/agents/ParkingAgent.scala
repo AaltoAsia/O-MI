@@ -99,8 +99,9 @@ class ParkingAgent(
       }
   }
   val findParkingPath = servicePath / "FindParking"
-  val positionParameterPath = Path("Objects/Parameters/Position")
+  val positionParameterPath = Path("Objects/Parameters/Destination")
   val arrivalTimeParameterPath = Path("Objects/Parameters/ArrivalTime")
+  val spotTypeParameterPath = Path("Objects/Parameters/WantedSpotType")
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
       val methodInfoItemO = call.odf.get(findParkingPath)
@@ -123,8 +124,15 @@ class ParkingAgent(
                   //  val result = OdfParser.parse(value.value)
                   //  val f = result match{
                   //    case Right(odf) =>
-                          val pp = getfindParkingParams(value.value)
-                          findParking( pp)
+                          val ppO : Option[ParkingParameters]= getfindParkingParams(value.value)
+                          ppO match{
+                            case Some( pp ) =>
+                              findParking( pp)
+                            case None =>
+                              Future{
+                                Responses.InvalidRequest(Some(s"Invalid parameters for find parking."))
+                              }
+                          }
                   //    case Left( spe: Seq[ParseError] ) =>
                   //      Future{
                    //       Responses.ParseErrors(spe.toVector)
@@ -162,13 +170,63 @@ class ParkingAgent(
           }
       }
   }
-  def getfindParkingParams(objects: OdfObjects):ParkingParameters ={
-    val positionParam = objects.get(positionParameterPath)
-    val arrivalTimeParma = objects.get(arrivalTimeParameterPath)
-    ParkingParameters()
+
+  def getStringFromInfoItem( iI: OdfInfoItem): Option[String] ={
+        iI.values.headOption.map{ value => value.value.toString} 
+  }
+  def getDoubleFromInfoItem( iI: OdfInfoItem): Option[Double] ={
+            iI.values.headOption.map{
+              value => 
+                value.value match {
+                  case d: Double => d
+                  case f: Float => f.toDouble
+                  case s: String => s.toDouble
+                  case a: Any => a.toString.toDouble
+              }
+            } 
+  }
+  def parseGPSCoordinates( obj: OdfObject ) : Option[GPSCoordinates] ={
+        val map = obj.infoItems.map{
+          case ii: OdfInfoItem => ii.path.last -> ii
+        }.toMap
+
+        val latitudeO: Option[Double] = map.get("latitude").collect{
+          case iI: OdfInfoItem => getDoubleFromInfoItem(iI)
+        }.flatten 
+        val longitudeO: Option[Double] = map.get("longitude").collect{
+          case iI: OdfInfoItem => getDoubleFromInfoItem(iI)
+        }.flatten
+        val gpsO: Option[GPSCoordinates] = for{
+          latitude <- latitudeO
+          longitude <- longitudeO
+        } yield GPSCoordinates( latitude, longitude )
+        gpsO
+  }
+  case class GPSCoordinates( latitude: Double, longitude: Double )
+  case class ParkingParameters(
+    destination: GPSCoordinates,
+    spotType: String,
+    arrivalTime: Option[String]
+  )
+  def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
+      val positionParamO: Option[GPSCoordinates] = objects.get(positionParameterPath).collect{
+        case obj: OdfObject => parseGPSCoordinates( obj )
+      }.flatten
+    val arrivalTimeParamO: Option[String]  = 
+      objects.get(arrivalTimeParameterPath).collect{
+        case iI: OdfInfoItem => getStringFromInfoItem(iI)
+      }.flatten
+    val spotTypeParamO: Option[String] =
+      objects.get(spotTypeParameterPath ).collect{
+        case iI: OdfInfoItem => getStringFromInfoItem(iI)
+      }.flatten
+    for{
+      destination <- positionParamO
+      spotType <- spotTypeParamO
+      
+    } yield ParkingParameters(destination, spotType, arrivalTimeParamO)
   }
 
-  case class ParkingParameters()
   def findParking( params: ParkingParameters ):Future[ResponseRequest]={
     log.debug("FindParking called")
     val request = ReadRequest(
@@ -193,7 +251,11 @@ class ParkingAgent(
                     odf = objects.get(parkingLotsPath).map{
                       case obj: OdfObject => 
                         obj.copy(
-                          objects = obj.objects.headOption.toVector
+                          objects = 
+                        obj.objects.flatMap{
+                          case o: OdfObject => 
+                            handleParkingLotForCall(o,params)
+                        }
                         ).createAncestors
                     } 
                   )
@@ -201,7 +263,7 @@ class ParkingAgent(
               }
           }
         )
-        log.debug( "Modified result:\n " + modifiedResponse.asXML.toString)
+        //log.debug( "Modified result:\n " + modifiedResponse.asXML.toString)
         modifiedResponse
     }.recover{
       case e: Exception => 
@@ -289,21 +351,47 @@ class ParkingAgent(
     case call: CallRequest => respondFuture(handleCall(call))
   }
 
+  def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean = true 
+  def handleParkingLotForCall( obj: OdfObject, param: ParkingParameters ): Option[OdfObject] ={
+    val positionO: Option[GPSCoordinates] = obj.get( obj.path / "geo" ).collect{
+      case o: OdfObject => parseGPSCoordinates(o )
+    }.flatten
+    positionO.flatMap{
+      case position: GPSCoordinates => 
+        if( positionCheck( param.destination, position) ){
+          val newSTs: Option[OdfObject] = obj.get(obj.path / "SpotTypes" ).flatMap{
+            case spotTypesList : OdfObject =>
+              val rightTypes = spotTypesList.get( spotTypesList.path / param.spotType ).collect{
+                case o: OdfObject => o 
+              }.toVector
+              if( rightTypes.nonEmpty ){
+                Some(
+                  spotTypesList.copy(
+                    objects = rightTypes
+                  )
+                )
+              } else None
+          }
+          newSTs.map{
+            case nSTs: OdfObject =>
+            obj.copy(
+              objects = obj.objects.filter{
+                case o: OdfObject => o.path.last != "SpotTypes"
+              } ++ Vector(nSTs)
+            )
+          }
+        } else None
+    }
+  }
 
   /*
-    case class Position( 
-      address: Option[String], 
-      longitude: String,
-      latitude: String
-    )
     case class ParkingSpot(
       name: String,
       available: Option[String],
       user: Option[String],
-      spotType: Option[String]
     )
     case class ParkingSpotType(
-      spots: Int,
+      spotsTotal: Int,
       spotsAvailable: Int,
       hourlyPrice: String,
       maxHeight: String,
@@ -312,10 +400,10 @@ class ParkingAgent(
     case class ParkingLot(
       name: String,
       owner: String,
-      position: Position,
+      geo: GPSCoordinates,
       openingTime: String,
       closingTime: String,
-      spotTypes: Seq[ParkingSpot]
+      spotTypes: Seq[ParkingSpotType]
     )
     def extractValueFromInfoItem( iio: Option[OdfInfoItem] ): Option[String] = {
       iio.flatMap{ 
