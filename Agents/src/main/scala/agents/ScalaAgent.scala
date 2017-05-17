@@ -25,7 +25,6 @@ import agentSystem._
  * Companion object for ScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
- *  @param _config Contains configuration for this agent, as given in application.conf.
  */
 object ScalaAgent extends PropsCreator {
   /**
@@ -45,6 +44,12 @@ object ScalaAgent extends PropsCreator {
 /**
  * Pushes random numbers to given O-DF path at given interval.
  * Can be used in testing or as a base for other agents.
+ * Extends ScalaInternalAgentTemplate that implements some basic functionality.
+ *
+ * @param config Contains configuration for this agent, as given in application.conf.
+ * @param requestHandler ActorRef to RequestHandler Actor, that sends request
+ * for this agent to handle.
+ * @param dbHandler ActorRef to DBHandler Actor that handles all request to DB.
  */
 class ScalaAgent( 
   override val config: Config,
@@ -68,7 +73,7 @@ class ScalaAgent(
   val rnd: Random = new Random()
   def newValueStr : String = rnd.nextInt().toString 
 
-  //Helper function for current timestamps
+  //Helper method for getting current timestamps
   def currentTimestamp : Timestamp = new Timestamp(  new java.util.Date().getTime() )
 
   //Cancellable update of values, "mutable Option"
@@ -76,10 +81,9 @@ class ScalaAgent(
   private val updateSchedule = UpdateSchedule( None )
 
   /**
-   * Method to be called when a Start() message is received.
+   * Method called before message is received.
    */
-  def start : InternalAgentResponse  ={
-
+  def preStart : Unit ={
     // Schelude update and save job, for stopping
     // Will send Update() message to self every interval
     updateSchedule.option = Some(
@@ -90,8 +94,6 @@ class ScalaAgent(
         Update()//Message
       )
     )
-
-    CommandSuccessful()
   }
 
   /**

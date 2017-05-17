@@ -64,42 +64,31 @@ trait InternalAgentLoader extends BaseAgentSystem {
       agents.get( configEntry.name ) match{
         case None =>
           loadAndStart(configEntry)
-        case Some( agentInfo ) =>
+        case Some( agentInf ) =>
           log.warning("Agent already running: " + configEntry.name)
       }
     }
   }
 
   protected[agentSystem] def loadAndStart(
-    name : AgentName,
-    classname : String,
-    config : Config,
-    language : Option[Language],
-    responsibilities: Seq[AgentResponsibility]
+    agentConfigEntry: AgentConfigEntry
   ) : Unit = {
-      val classLoader           = Thread.currentThread.getContextClassLoader
-      val initialization : Try[Future[ActorRef]]= language match{
-        case Some( Scala()) => scalaAgentInit(name, classname, config, responsibilities)
-        case Some( Java()) => javaAgentInit(name, classname, config, responsibilities)
+      val classLoader = Thread.currentThread.getContextClassLoader
+      val initialization : Try[AgentInfo]= agentConfigEntry.language match{
+        case Some( Scala()) => scalaAgentInit(agentConfigEntry)
+        case Some( Java()) => javaAgentInit(agentConfigEntry)
         case Some( Unknown( lang ) ) => 
           Try{ throw new Exception( s"Agent's language is not supported: $lang ")}
         case None => //Lets try to figure it out ourselves
           Try{ throw new Exception( s"Agent's language not provided")} 
       }
     initialization match {
-      case Success(startF: Future[ActorRef]) => 
-        startF.onSuccess{ 
-          case agentRef: ActorRef =>
+      case Success(agentInfo:AgentInfo) => 
           log.info( s"Started agent $name successfully.")
-          agents += name -> AgentInfo(name,classname, config, agentRef, running = true, responsibilities)
-          requestHandler ! NewAgent(name,agentRef,responsibilities)
-          dbHandler ! NewAgent(name,agentRef,responsibilities)
-        }
-        startF.onFailure{ 
-          case e : Throwable =>
-          log.warning(s"Class $classname could not be started. Received $e")
-          log.warning(e.getStackTrace.mkString("\n"))
-        }
+          context.watch( agentInfo.agent )
+          agents += agentInfo.name -> agentInfo
+          requestHandler ! NewAgent(agentInfo.name,agentInfo.agent,agentInfo..responsibilities)
+          dbHandler ! NewAgent(agentInfo.name,agentInfo.agent,agentInfo.responsibilities)
       case Failure( e : InternalAgentLoadFailure ) =>
         log.warning( e.msg ) 
       case Failure(e:NoClassDefFoundError) => 
@@ -115,15 +104,12 @@ trait InternalAgentLoader extends BaseAgentSystem {
   }
     
   private def scalaAgentInit(
-    name : AgentName,
-    classname : String,
-    config : Config,
-    responsibilities: Seq[AgentResponsibility]
-  ) = Try{
-      log.info("Instantiating agent: " + name + " of class " + classname)
+    agentConfigEntry: AgentConfigEntry
+  ): Try[AgentInfo] = Try{
+      log.info("Instantiating agent: " + agentConfigEntry.name + " of class " + agentConfigEntry.classname)
       val classLoader           = Thread.currentThread.getContextClassLoader
-      val actorClazz            = classLoader.loadClass(classname)
-      val objectClazz           = classLoader.loadClass(classname + "$")
+      val actorClazz            = classLoader.loadClass(agentConfigEntry.classname)
+      val objectClazz           = classLoader.loadClass(agentConfigEntry.classname + "$")
       val objectInterface       = classOf[PropsCreator]
       val agentInterface        = classOf[ScalaInternalAgent]
       val responsibleInterface  = classOf[ResponsibleScalaInternalAgent]
@@ -138,11 +124,11 @@ trait InternalAgentLoader extends BaseAgentSystem {
               //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
               val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
               //Get props and create agent
-              val props = propsCreator.props(config, requestHandler, dbHandler)
+              val props = propsCreator.props(agentConfigEntry.config, requestHandler, dbHandler)
               props.actorClass match {
                 case clazz if clazz == actorClazz =>
-                  val agent = context.actorOf( props, name.toString )
-                  startAgent(agent)
+                  val agentRef = context.actorOf( props, agentConfigEntry.name.toString )
+                  agentConfigEntry.toInfo(agentRef)
                 case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
               }
             case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
@@ -152,14 +138,11 @@ trait InternalAgentLoader extends BaseAgentSystem {
   
   }
   private def javaAgentInit(
-    name : AgentName,
-    classname : String,
-    config : Config,
-    responsibilities: Seq[AgentResponsibility]
-  ) = Try{
-    log.info("Instantiating agent: " + name + " of class " + classname)
+    agentConfigEntry: AgentConfigEntry
+  ): Try[AgentInfo] = Try{
+    log.info("Instantiating agent: " + agentConfigEntry.name + " of class " + agentConfigEntry.classname)
     val classLoader           = Thread.currentThread.getContextClassLoader
-    val actorClazz            = classLoader.loadClass(classname)
+    val actorClazz            = classLoader.loadClass(agentConfigEntry.classname)
     val creatorInterface       = classOf[PropsCreator]
     val agentInterface        = classOf[JavaInternalAgent]
     actorClazz match {
@@ -167,11 +150,11 @@ trait InternalAgentLoader extends BaseAgentSystem {
                          // creatorInterface.isAssignableFrom(actorClass)) =>
           //Get props and create agent
           val method = actorClass.getDeclaredMethod("props",classOf[Config],classOf[ActorRef],classOf[ActorRef])
-          val props : Props = method.invoke(null,config,requestHandler,dbHandler).asInstanceOf[Props]
+          val props : Props = method.invoke(null,agentConfigEntry.config,requestHandler,dbHandler).asInstanceOf[Props]
           props.actorClass match {
             case clazz if clazz == actorClazz =>
-              val agent = context.actorOf( props, name.toString )
-              startAgent(agent)
+              val agentRef = context.actorOf( props, agentConfigEntry.name.toString )
+              agentConfigEntry.toInfo(agentRef)
             case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
           }
         case clazz: Class[_] if !creatorInterface.isAssignableFrom(clazz) =>

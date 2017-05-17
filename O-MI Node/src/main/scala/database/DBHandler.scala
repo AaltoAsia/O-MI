@@ -65,7 +65,6 @@ class DBHandler(
   def receive = {
     case na: NewAgent => addAgent(na)
     case na: AgentStopped => agentStopped(na.agentName)
-    case na: AgentStarted => agentStarted(na.agentName)
     case write: WriteRequest => 
       respond( 
         permissionCheckFuture(write).flatMap{
@@ -133,15 +132,7 @@ class DBHandler(
     agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, true, newAgent.actorRef))
   }
   private def agentStopped( agentName: AgentName ) ={
-    agents.get(agentName).foreach{
-      case ai: AgentInformation =>
-        agents.update(agentName, ai.copy(running = false) )
-    }
-  }
-  private def agentStarted( agentName: AgentName ) ={
-    agents.get(agentName).foreach{
-      case ai: AgentInformation =>
-        agents.update(agentName, ai.copy(running = true) )
-    }
+    agents -= agentName
+    agentResponsibilities.removeAgent( agentName )
   }
 }

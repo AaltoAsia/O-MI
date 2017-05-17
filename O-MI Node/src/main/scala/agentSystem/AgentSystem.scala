@@ -72,9 +72,13 @@ class AgentSystem()(
   def receive : Actor.Receive = {
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
-    case  restart: ReStartAgentCmd  => handleRestart( restart )
     case ListAgentsCmd() => sender() ! agents.values.toVector
-  //  case ResponsibilityRequest(senderName, write: WriteRequest ) => handleWrite(senderName, write)  
+    case Terminated(agentName : String ) if stoppedAgents.contains(agentName) =>
+      stoppedAgents.get(agentName).foreach{
+        case agentRef: ActorRef =>
+          context.unwatch(agentRef)
+      }
+      stoppedAgent -= agentName
   }  
 }
 
@@ -90,7 +94,18 @@ class AgentSystem()(
     config:     Config,
     responsibilities: Seq[AgentResponsibility],
     language:   Option[Language]
-  ) extends AgentInfoBase
+  ) extends AgentInfoBase {
+    def toInfo( agentRef: ActorRef ): AgentInfo={
+      AgentInfo( 
+        name,
+        classname,
+        config,
+        true,
+        responsibilities,
+        language.get
+      )
+    }
+  }
   object AgentConfigEntry{
     
     def apply( agentConfig: Config) : AgentConfigEntry = {
@@ -125,10 +140,22 @@ class AgentSystem()(
     name:       AgentName,
     classname:  String,
     config:     Config,
-    agent:      ActorRef,
+    agent:      Option[ActorRef],
     running:    Boolean,
-    responsibilities: Seq[AgentResponsibility]
-  ) extends AgentInfoBase 
+    responsibilities: Seq[AgentResponsibility],
+    language:   Language
+  ) extends AgentInfoBase {
+    def toConfigEntry: AgentConfigEntry ={
+      AgentConfigEntry(
+        name,
+        classname,
+        config,
+        responsibilities,
+        Some( language )
+      )
+    }
+  
+  }
 
   sealed trait Language{}
   final case class Unknown(lang : String ) extends Language
