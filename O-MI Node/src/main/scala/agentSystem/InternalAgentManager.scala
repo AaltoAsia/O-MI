@@ -14,7 +14,8 @@
 package agentSystem
 
 import scala.concurrent.Future
-import akka.actor.{ActorRef}
+import scala.collection.mutable.{Map => MutableMap}
+import akka.actor.{ActorRef, Props, Terminated}
 import scala.util.{Try, Success, Failure}
 import akka.pattern.ask
 import http.CLICmds._
@@ -27,7 +28,6 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
 
   protected def dbHandler: ActorRef
   protected def requestHandler: ActorRef
-  protected val stoppedAgents: scala.collection.mutable.Map[AgentName,ActorRef] = new scala.collection.mutable.HashMap()
   def notTerminatedYet( name : AgentName ) : String = s"Agent $name is not terminated yet. Can not be started"
   def successfulCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name $cmd succesfully."
   def successfulStartMsg( name : AgentName) : String = successfulCmdMsg( name, "started" )
@@ -38,6 +38,10 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
   def commandForNonexistingMsg( name : AgentName ) : String = s"Command for nonexistent agent: $name."
   def couldNotFindMsg( name : AgentName ) : String = s"Could not find agent: $name."
 
+  protected def connectCLI( ip: String, cliRef: ActorRef ) ={
+    connectedCLIs += ip -> cliRef
+    true
+  }
   /** Helper method for checking is agent even stored. If was handle will be processed.
     *
     */
@@ -49,6 +53,7 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
       case Some(agentInfo) =>
         handle(agentInfo)
     }
+    log.info( sender().path.name )
     sender() ! msg
     msg
   }
@@ -61,26 +66,13 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
         val msg = wasAlreadyStartedMsg(agentName)
         log.info(msg)
         Future.successful(msg)
-      }else if( stoppedAgents.contains(agentName) ){
-        val msg = notTerminatedYet(agentName)
-        log.info(msg)
-        Future.successful(msg)
       } else {
         log.info(s"Starting: " + agentInfo.name)
-            val msg = successfulStartMsg(agentName)
-            log.info(msg)
-            agents += agentInfo.name -> AgentInfo(
-              agentInfo.name,
-              agentInfo.classname,
-              agentInfo.config,
-              agentInfo.agent,
-              running = true,
-              agentInfo.responsibilities
-            )
-            requestHandler ! AgentStarted(agentInfo.name)
-            dbHandler ! AgentStarted(agentInfo.name)
-            msg
+        val msg = successfulStartMsg(agentName)
+        loadAndStart( agentInfo.toConfigEntry )
+        log.info(msg)
 
+        Future.successful(msg)
       }
     }
   }
@@ -89,21 +81,9 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
     handleAgentCmd(agentName){
       agentInfo: AgentInfo =>
       if (agentInfo.running || agentInfo.agent.nonEmpty) {
-        log.warning(s"Stopping: " + agentInfo.name)
-        context.stop( agentInfo.agent.get ) 
-        stoppedAgents += agentInfo.name -> agentInfo.agent.get
-        agents += agentInfo.name -> AgentInfo(
-          agentInfo.name,
-          agentInfo.classname,
-          agentInfo.config,
-          None,
-          running = false,
-          agentInfo.responsibilities
-        )
+        stopAgent( agentName )
         val msg = successfulStopMsg(agentName)
-        requestHandler ! AgentStopped(agentInfo.name)
-        dbHandler ! AgentStopped(agentInfo.name)
-        msg
+        Future.successful(msg)
       } else {
         val msg = wasAlreadyStoppedMsg(agentName)
         log.info(msg)

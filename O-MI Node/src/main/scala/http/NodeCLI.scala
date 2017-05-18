@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-import agentSystem.{AgentInfo, AgentName}
+import agentSystem.{AgentInfo, AgentName, NewCLI}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, ActorSystem}
 import akka.io.Tcp
 import akka.io.Tcp._
@@ -47,6 +47,7 @@ object CLICmds
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
+    connection: ActorRef,
     sourceAddress: InetSocketAddress,   
     removeHandler: RemoveHandlerT,
     agentSystem: ActorRef,
@@ -54,6 +55,7 @@ object OmiNodeCLI{
     )(
       ) : Props = Props(
         new OmiNodeCLI(
+          connection,
           sourceAddress,
           removeHandler,
           agentSystem,
@@ -65,6 +67,7 @@ object OmiNodeCLI{
  *
  */
 class OmiNodeCLI(
+  protected val connection: ActorRef,
   protected val sourceAddress: InetSocketAddress,   
   protected val removeHandler: RemoveHandlerT,
   protected val agentSystem: ActorRef,
@@ -80,11 +83,29 @@ class OmiNodeCLI(
   remove <subsription id>
   remove <path>
   """
-  val ip = sourceAddress.toString.tail
+  val ip = sourceAddress.toString
   implicit val timeout : Timeout = 1.minute
 
   val commandTimeout = 1.minute
 
+  override def preStart: Unit ={
+    val connectToManager = (agentSystem ? NewCLI(ip,self)).mapTo[Boolean]
+    connectToManager.onSuccess{
+      case u: Boolean =>
+     send(connection)(s"CLI connected to AgentManager.\n")
+     log.info(s"$ip connected to AgentManager. Connection: $connection")
+    }
+    connectToManager.onFailure{
+      case t: Throwable => 
+        send(connection)(s"CLI failed connected to AgentManager. Caught: $t.\n")
+     log.info(s"$ip failed to connect to AgentManager. Caught: $t. Connection: $connection")
+    }
+  }
+  override def postStop: Unit ={
+  
+    send(connection)(s"CLI stopped by O-MI Node.\n")
+  
+  }
   private def help(): String = {
     log.info(s"Got help command from $ip")
     commands
@@ -95,7 +116,7 @@ class OmiNodeCLI(
     val msg =
       f"${colums(0)}%-20s | ${colums(1)}%-40s | ${colums(2)} | ${colums(3)}%-11s | ${colums(4)}\n" +
     agents.map{
-      case AgentInfo(name, classname, config, ref, running, ownedPaths) => 
+      case AgentInfo(name, classname, config, ref, running, ownedPaths, lang) => 
         f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config" 
     }.mkString("\n")
     msg +"\n"
@@ -290,7 +311,10 @@ class OmiNodeCLI(
       log.info(s"CLI disconnected from $ip")
       context stop self
     }
+    case str: String if sender() == agentSystem =>
+      send(connection)(str + "\n")
   }
+
 }
 
 class OmiNodeCLIListener(
@@ -311,7 +335,7 @@ class OmiNodeCLIListener(
 
     case CommandFailed(b: Bind) =>
       log.warning(s"CLI connection failed: $b")
-      context stop self
+      //context stop self
 
     case Connected(remote, local) =>
       val connection = sender()
@@ -319,7 +343,7 @@ class OmiNodeCLIListener(
       val remover = new RemoveHandler(singleStores, dbConnection )(system)
 
       val cli = context.system.actorOf(
-        OmiNodeCLI.props(remote,remover,agentSystem, subscriptionManager),
+        OmiNodeCLI.props(connection, remote,remover,agentSystem, subscriptionManager),
       "cli-" + remote.toString.tail)
       connection ! Register(cli)
     case _ => //noop?

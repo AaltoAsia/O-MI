@@ -47,13 +47,8 @@ class ParkingAgent(
   val dbHandler: ActorRef
 ) extends ResponsibleScalaInternalAgent{
   //Execution context
-  def start() ={
-    CommandSuccessful()
-  }
-  def stop() ={
-    CommandSuccessful()
-  }
   import context.dispatcher
+
   //Base path for service, contains at least all method
   val servicePath = Path( config.getString("servicePath"))
 
@@ -69,13 +64,13 @@ class ParkingAgent(
         val msg = errors.mkString("\n")
         log.warning(s"Odf has errors, $name could not be configured.")
         log.debug(msg)
-        throw new Exception(s"Could not get initial state for $name. State O-DF had following errors: ${errors.mkString("\n")}.")
+        throw ParseError.combineErrors( errors )
       case Right(odf) => odf
     }
   } else if( !startStateFile.exists() ){
-    throw new Exception(s"Could not get initial state for $name. File $startStateFile do not exists.")
+    throw AgentConfigurationException(s"Could not get initial state for $name. File $startStateFile do not exists.")
   } else {
-    throw new Exception(s"Could not get initial state for $name. Could not read file $startStateFile.")
+    throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
   val initialWrite = writeToDB( WriteRequest(initialODF) )
@@ -333,22 +328,6 @@ class ParkingAgent(
       case t: Exception => 
       Responses.InternalError(t)
     }
-  }
-
-  /**
-   * Method that is inherited from akka.actor.Actor and handles incoming messages
-   * from other Actors.
-   */
-  override  def receive : Actor.Receive = {
-    //Following are inherited from ScalaInternalActor.
-    //Must tell/send return value to sender, ask pattern used.
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
-    //Following are inherited from ResponsibleScalaInternalActor.
-    case write: WriteRequest => respondFuture(handleWrite(write))
-    case read: ReadRequest => respondFuture(handleRead(read))
-    case call: CallRequest => respondFuture(handleCall(call))
   }
 
   def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean = true 

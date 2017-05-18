@@ -64,41 +64,20 @@ class ExternalAgentListener(
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
 
-  def start : InternalAgentResponse = {
+  override def preStart: Unit = {
     val binding = (IO(Tcp)  ? Tcp.Bind(self,
       new InetSocketAddress(interface, port)))(timeout)
-    Await.result(
-      binding.map{
-        case Bound(localAddress: InetSocketAddress) =>
-          CommandSuccessful()
-      }.recover{
-        case t : Throwable =>
-          StartFailed(t.getMessage, Some(t))
-      }, timeout
-    )
-
+    Await.result(binding, timeout )
   }
 
-  def stop : InternalAgentResponse = {
+  override def postStop : Unit = {
     val unbinding = (IO(Tcp)  ? Tcp.Unbind)(timeout)
-    Await.result(
-      unbinding.map{
-        case Tcp.Unbound =>
-          CommandSuccessful()
-      }.recover{
-        case t : Throwable =>
-          StopFailed(t.getMessage, Some(t))
-      }, timeout
-      )
-
+    Await.result( unbinding, timeout )
   }
   
   /** Partial function for handling received messages.
     */
   override  def receive  = {
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?

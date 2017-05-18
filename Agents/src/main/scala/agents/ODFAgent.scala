@@ -5,7 +5,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import akka.actor.{Cancellable, Props, ActorRef}
 import parsing.OdfParser
-import types.Path
+import types.{Path, ParseError, ParseErrorList}
 import types.Path._
 import types.OdfTypes._
 import types.OmiTypes.{WriteRequest, ResponseRequest, OmiResult, Results}
@@ -40,37 +40,39 @@ class ODFAgent(
   case class Update()
 	
   val rnd: Random = new Random()
-  def date = new java.util.Date();
+  def date = new java.util.Date()
 
-  private val  updateSchelude : MutableQueue[Cancellable] = MutableQueue.empty
-  def start = {
+  override def preStart: Unit ={
     val file =  new File(config.getString("file"))
     if( file.exists() && file.canRead() ){
       val xml = XML.loadFile(file)
-      OdfParser.parse( xml) match {
+      OdfParser.parse( xml ) match {
         case Left( errors ) =>
           val msg = errors.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
           log.debug(msg)
-          StartFailed(msg, None)
-        case Right(odfObjects) =>
-        odfQueue.enqueue(odfObjects)
-        // Schelude update and save job, for stopping
-        // Will send Update message to self every interval
-        updateSchelude.enqueue(context.system.scheduler.schedule(
-          Duration(0, SECONDS),
-          interval,
-          self,
-          Update()
-        ))
-        CommandSuccessful()
+          throw ParseError.combineErrors( errors )
+        case Right(odfObjects) => odfQueue.enqueue(odfObjects)
       }
-    } else {
-      val msg = s"File $config did not exists or could not read it. $name could not be configured."
+    } else if( file.exists() ){
+      val msg = s"File $config could not be read. $name could not be configured."
       log.warning(msg)
-      StartFailed(msg, None)
+      throw AgentConfigurationException( msg )
+    } else {
+      val msg = s"File $config did not exists. $name could not be configured."
+      log.warning(msg)
+      throw AgentConfigurationException( msg )
     }
   }
+
+  // Schelude update and save job, for stopping
+  // Will send Update message to self every interval
+  private val  updateSchelude : Cancellable = context.system.scheduler.schedule(
+    Duration(0, SECONDS),
+    interval,
+    self,
+    Update()
+  )
 
    def update() : Unit = {
     log.debug(s"$name pushing data.")
@@ -124,26 +126,11 @@ class ODFAgent(
   }
 
   override  def receive  = {
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
     case Update() => update()
   }
-   def stop = {
-    updateSchelude.dequeueFirst{ j => true } match{
-      //If agent has scheluded update, cancel job
-      case Some(job) =>
-      job.cancel() 
-      //Check if job was cancelled
-      job.isCancelled  match {
-      case true =>
-        CommandSuccessful()
-      case false =>
-        StopFailed("Failed to stop agent.", None)
-    }
-    case None => 
-        CommandSuccessful()
-  }}
+   override def postStop: Unit = {
+    updateSchelude.cancel()
+   }
   
   private def genValue(sensorType: String, oldval: Double ) : String = {
     val newval = (sensorType match {

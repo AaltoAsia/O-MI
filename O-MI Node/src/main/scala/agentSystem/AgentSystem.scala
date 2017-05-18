@@ -20,7 +20,14 @@ import scala.collection.mutable.{Map => MutableMap }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{
+  Actor,
+  ActorLogging,
+  ActorRef,
+  Props,
+  Terminated,
+  ActorInitializationException  
+}
 import akka.util.Timeout
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
@@ -38,6 +45,7 @@ import types.Path
 import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
 import AgentResponsibilities._
 
+  case class NewCLI(ip: String, cliRef: ActorRef )
 object AgentEvents {
   case class AgentStarted( agentName: AgentName )
   case class AgentStopped( agentName: AgentName )
@@ -70,15 +78,11 @@ class AgentSystem()(
   {
   protected[this] val agents: MutableMap[AgentName, AgentInfo] = MutableMap.empty
   def receive : Actor.Receive = {
+    case nC: NewCLI => sender ! connectCLI( nC.ip, nC.cliRef )
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
     case ListAgentsCmd() => sender() ! agents.values.toVector
-    case Terminated(agentName : String ) if stoppedAgents.contains(agentName) =>
-      stoppedAgents.get(agentName).foreach{
-        case agentRef: ActorRef =>
-          context.unwatch(agentRef)
-      }
-      stoppedAgent -= agentName
+    case Terminated(agent: ActorRef) => agentStopped(agent)
   }  
 }
 
@@ -100,6 +104,7 @@ class AgentSystem()(
         name,
         classname,
         config,
+        Some(agentRef),
         true,
         responsibilities,
         language.get
@@ -175,15 +180,19 @@ trait BaseAgentSystem extends Actor with ActorLogging{
   protected def agents: MutableMap[AgentName, AgentInfo]
   protected implicit def settings: AgentSystemConfigExtension 
   implicit val timeout = Timeout(5 seconds) 
+  protected val connectedCLIs: MutableMap[String,ActorRef] = MutableMap.empty
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      case fail: ActorInitializationException =>
+        log.warning(  s"Agent ${sender().path.name} encountered exception during creation.") 
+        SupervisorStrategy.Stop
       case fail: StartFailed => 
         SupervisorStrategy.Stop
       case fail: InternalAgentFailure => 
         log.warning( "InternalAgent failure: " + sender().path.name )
         SupervisorStrategy.Restart
-      case t =>
-        log.warning( "Child: " + sender().path.name )
+      case t : Throwable =>
+        log.warning( s"Agent ${sender().path.name} encountered exception $t")
         super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
     }
 }

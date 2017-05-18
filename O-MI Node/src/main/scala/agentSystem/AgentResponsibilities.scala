@@ -17,6 +17,13 @@ import AgentResponsibilities._
 class AgentResponsibilities(){
 
   val pathsToResponsible: MutableMap[Path, AgentResponsibility] = MutableMap.empty
+  def splitRequestToResponsible( request: OmiRequest ) :ImmutableMap[Option[AgentName], OmiRequest] ={
+    request match {
+      case write: WriteRequest => splitWriteToResponsible(write)
+      case call: CallRequest => splitCallToResponsible(call)
+      case other: OmiRequest =>ImmutableMap( None -> other)
+    }
+  }
   def splitCallToResponsible( request: CallRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
     def filter: RequestFilter => Boolean = createFilter(request)
       

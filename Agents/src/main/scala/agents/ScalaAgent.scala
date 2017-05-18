@@ -76,46 +76,23 @@ class ScalaAgent(
   //Helper method for getting current timestamps
   def currentTimestamp : Timestamp = new Timestamp(  new java.util.Date().getTime() )
 
-  //Cancellable update of values, "mutable Option"
-  case class UpdateSchedule( var option: Option[Cancellable]  = None)
-  private val updateSchedule = UpdateSchedule( None )
+  // Schelude update and save job, for stopping
+  // Will send Update() message to self every interval
+  private val updateSchedule: Cancellable= context.system.scheduler.schedule(
+    Duration.Zero,//Delay start
+    interval,//Interval between messages
+    self,//To
+    Update()//Message
+  )
+
+
 
   /**
-   * Method called before message is received.
-   */
-  def preStart : Unit ={
-    // Schelude update and save job, for stopping
-    // Will send Update() message to self every interval
-    updateSchedule.option = Some(
-      context.system.scheduler.schedule(
-        Duration.Zero,//Delay start
-        interval,//Interval between messages
-        self,//To
-        Update()//Message
-      )
-    )
-  }
-
-  /**
-   * Method to be called when a Stop() message is received.
+   * Method to be called when Agent is stopped.
    * This should gracefully stop all activities that the agent is doing.
    */
-  def stop : InternalAgentResponse = {
-    updateSchedule.option match{
-      //If agent has scheluded update, cancel job
-      case Some(job: Cancellable) =>
-
-        job.cancel() 
-
-        //Check if job was cancelled
-        if(job.isCancelled){
-          updateSchedule.option = None
-          CommandSuccessful()
-        } else StopFailed("Failed to stop agent.", None)
-
-      case None => 
-        CommandSuccessful()
-    }
+  override def postStop : Unit = {
+    updateSchedule.cancel()
   }
 
 
@@ -197,11 +174,6 @@ class ScalaAgent(
    * from other Actors.
    */
   override  def receive : Actor.Receive = {
-    //Following are inherited from ScalaInternalActor.
-    //Must tell/send return value to sender, ask pattern used.
-    case Start() => respond(start)
-    case Restart() => respond(restart)
-    case Stop() => respond(stop)
     //ScalaAgent specific messages
     case Update() => update
   }

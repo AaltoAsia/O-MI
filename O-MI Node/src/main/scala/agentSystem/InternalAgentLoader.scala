@@ -84,22 +84,28 @@ trait InternalAgentLoader extends BaseAgentSystem {
       }
     initialization match {
       case Success(agentInfo:AgentInfo) => 
-          log.info( s"Started agent $name successfully.")
-          context.watch( agentInfo.agent )
+          log.info( s"Created agent ${agentInfo.name} successfully.")
           agents += agentInfo.name -> agentInfo
-          requestHandler ! NewAgent(agentInfo.name,agentInfo.agent,agentInfo..responsibilities)
-          dbHandler ! NewAgent(agentInfo.name,agentInfo.agent,agentInfo.responsibilities)
+          notifyAboutNewAgent( agentInfo )
       case Failure( e : InternalAgentLoadFailure ) =>
         log.warning( e.msg ) 
       case Failure(e:NoClassDefFoundError) => 
-        log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+        log.warning(s"Classloading failed. Could not load: ${agentConfigEntry.classname}. Received $e")
       case Failure(e:ClassNotFoundException ) =>
-        log.warning(s"Classloading failed. Could not load: $classname. Received $e")
+        log.warning(s"Classloading failed. Could not load: ${agentConfigEntry.classname}. Received $e")
       case Failure( e:NoSuchMethodException ) => 
-        log.warning(s"Class $classname did not have method props. Received $e")
+        log.warning(s"Class ${agentConfigEntry.classname} did not have method props. Received $e")
       case Failure(e: Throwable) =>
-        log.warning(s"Class $classname could not be loaded or created. Received $e")
+        log.warning(s"Class ${agentConfigEntry.classname} could not be loaded or created. Received $e")
         log.warning(e.getStackTrace.mkString("\n"))
+    }
+  }
+  def notifyAboutNewAgent( agentInfo: AgentInfo ) ={
+    agentInfo.agent.foreach{
+      agentRef: ActorRef =>
+        def msg = NewAgent(agentInfo.name,agentRef,agentInfo.responsibilities)
+        requestHandler ! msg
+        dbHandler ! msg
     }
   }
     
@@ -128,8 +134,9 @@ trait InternalAgentLoader extends BaseAgentSystem {
               props.actorClass match {
                 case clazz if clazz == actorClazz =>
                   val agentRef = context.actorOf( props, agentConfigEntry.name.toString )
+                  context.watch( agentRef )
                   agentConfigEntry.toInfo(agentRef)
-                case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
+                case clazz: Class[_] => throw new WrongPropsCreated(props, agentConfigEntry.classname)
               }
             case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
           }
@@ -154,8 +161,9 @@ trait InternalAgentLoader extends BaseAgentSystem {
           props.actorClass match {
             case clazz if clazz == actorClazz =>
               val agentRef = context.actorOf( props, agentConfigEntry.name.toString )
+              context.watch( agentRef )
               agentConfigEntry.toInfo(agentRef)
-            case clazz: Class[_] => throw new WrongPropsCreated(props, classname)
+            case clazz: Class[_] => throw new WrongPropsCreated(props, agentConfigEntry.classname)
           }
         case clazz: Class[_] if !creatorInterface.isAssignableFrom(clazz) =>
           throw new PropsCreatorNotImplemented(clazz)
@@ -164,23 +172,36 @@ trait InternalAgentLoader extends BaseAgentSystem {
     }
   }
   
+  protected def stopAgent(agentName:AgentName): Unit ={
+    log.warning( s"Stopping Agent $agentName...")
 
-  protected def startAgent(agent: ActorRef) = { 
-    implicit val timeout = settings.internalAgentsStartTimout
-    val startF = (agent ? Start())(timeout).mapTo[InternalAgentResponse]
-    val resultF = startF.map{
-      case success : InternalAgentSuccess => agent
-      case failure : InternalAgentFailure => context.stop(agent)
-      throw failure
+    agents.get( agentName  ).foreach{
+      case agentInfo: AgentInfo =>
+      
+        agentInfo.agent.foreach{
+          case agentRef : ActorRef =>
+            context.stop( agentRef )
+        }
+        requestHandler ! AgentStopped(agentInfo.name)
+        dbHandler ! AgentStopped(agentInfo.name)
+        agents.update(agentName, agentInfo.copy( running = false, agent = None ) )
     }
-    resultF.onFailure{ 
-      case e: Throwable => 
-      context.stop(agent)
-    }
-    resultF
   }
-  protected def loadAndStart(configEntry: AgentConfigEntry) : Unit =
-    loadAndStart( configEntry.name,configEntry.classname, configEntry.config, configEntry.language, configEntry.responsibilities)
+  protected def agentStopped(agentRef: ActorRef): Unit ={
+    val agentName = agentRef.path.name 
+    log.warning( s"Agent $agentName has been stopped/terminated" )
+    context.unwatch( agentRef )
+    agents.get( agentName  ).foreach{
+      case agentInfo: AgentInfo =>
+        requestHandler ! AgentStopped(agentInfo.name)
+        dbHandler ! AgentStopped(agentInfo.name)
+        agents.update(agentName, agentInfo.copy( running = false, agent = None ) )
+        connectedCLIs.foreach{
+          case (ip, ref) => ref ! s"Agent $agentName stopped successfully"
+        }
+    }
+  }
+
 
   /**
    * Creates classloader for loading classes from jars in deploy directory.
