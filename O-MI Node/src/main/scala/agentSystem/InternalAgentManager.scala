@@ -53,8 +53,7 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
       case Some(agentInfo) =>
         handle(agentInfo)
     }
-    log.info( sender().path.name )
-    sender() ! msg
+    //log.info( sender().path.name )
     msg
   }
 

@@ -92,13 +92,13 @@ class OmiNodeCLI(
     val connectToManager = (agentSystem ? NewCLI(ip,self)).mapTo[Boolean]
     connectToManager.onSuccess{
       case u: Boolean =>
-     send(connection)(s"CLI connected to AgentManager.\n")
+        send(connection)(s"CLI connected to AgentManager.\n>")
      log.info(s"$ip connected to AgentManager. Connection: $connection")
     }
     connectToManager.onFailure{
       case t: Throwable => 
-        send(connection)(s"CLI failed connected to AgentManager. Caught: $t.\n")
-     log.info(s"$ip failed to connect to AgentManager. Caught: $t. Connection: $connection")
+        send(connection)(s"CLI failed connected to AgentManager. Caught: $t.\n>")
+        log.info(s"$ip failed to connect to AgentManager. Caught: $t. Connection: $connection")
     }
   }
   override def postStop: Unit ={
@@ -133,7 +133,7 @@ class OmiNodeCLI(
         .recover[String]{
           case a : Throwable =>
             log.warning(s"Failed to get list of Agents. Sending error message. " + a.toString)
-            "Something went wrong. Could not get list of Agents.\n"
+            "Something went wrong. Could not get list of Agents.\n>"
         }
         Await.result(result, commandTimeout)
   }
@@ -160,7 +160,7 @@ class OmiNodeCLI(
         f"${sub.id}%-10s | ${sub.startTime}%-30s | ${sub.endTime}%-30s | ${ sub.lastPolled }"
       }.mkString("\n")
 
-      s"$intMsg\n$eventMsg\n$pollMsg\n"
+      s"$intMsg\n$eventMsg\n$pollMsg\n>"
   } 
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
@@ -175,7 +175,7 @@ class OmiNodeCLI(
       }.recover{
           case a: Throwable  =>
             log.info("Failed to get list of Subscriptions.\n Sending ...")
-            "Failed to get list of subscriptions.\n"
+            "Failed to get list of subscriptions.\n>"
       }
     Await.result(result, commandTimeout)
   }
@@ -188,36 +188,37 @@ class OmiNodeCLI(
           s"Ends: ${intervalSub.endTime}\n" +
           s"Interval: ${intervalSub.interval}\n" +
           s"Callback: ${intervalSub.callback.address}\n" +
-          s"Paths:\n${intervalSub.paths.mkString("\n")}\n"
+          s"Paths:\n${intervalSub.paths.mkString("\n")}\n>"
         case Some(eventSub: EventSub) =>
           s"Ends: ${eventSub.endTime}\n" +
           s"Callback: ${eventSub.callback.address}\n" +
-          s"Paths:\n${eventSub.paths.mkString("\n")}\n"
+          s"Paths:\n${eventSub.paths.mkString("\n")}\n>"
         case Some(pollSub: PollIntervalSub) =>
           s"Started: ${pollSub.startTime}\n" +
           s"Ends: ${pollSub.endTime}\n" +
           s"Interval: ${pollSub.interval}\n" +
           s"Last polled: ${pollSub.lastPolled}\n" +
-          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n>"
         case Some(pollSub: PollEventSub) =>
           s"Started: ${pollSub.startTime}\n" +
           s"Ends: ${pollSub.endTime}\n" +
           s"Last polled: ${pollSub.lastPolled}\n" +
-          s"Paths:\n${pollSub.paths.mkString("\n")}\n"
+          s"Paths:\n${pollSub.paths.mkString("\n")}\n>"
         case None => 
           log.info(s"Subscription with id $id not found.\n Sending ...")
-          s"Subscription with id $id not found.\n"
+          s"Subscription with id $id not found.\n>"
       }.recover{
         case a: Throwable  =>
           log.info(s"Failed to get subscription with $id.\n Sending ...")
-          s"Failed to get subscription with $id.\n"
+          s"Failed to get subscription with $id.\n>"
       }
     Await.result(result, commandTimeout)
   }
 
   private def startAgent(agent: AgentName): String = {
     log.info(s"Got start command from $ip for $agent")
-    val result = (agentSystem ? StartAgentCmd(agent)).mapTo[Future[String]]
+    /*
+    val result = (agentSystem ! StartAgentCmd(agent)).mapTo[Future[String]]
       .flatMap{ case future : Future[String] => future }
       .map{
         case msg: String =>
@@ -226,21 +227,17 @@ class OmiNodeCLI(
         case a : Throwable =>
           "Command failure unknown.\n"
       }
+
     Await.result(result, commandTimeout)
+    */
+    agentSystem ! StartAgentCmd(agent)
+    ">"
   }
 
   private def stopAgent(agent: AgentName): String = {
     log.info(s"Got stop command from $ip for $agent")
-    val result = (agentSystem ? StopAgentCmd(agent)).mapTo[Future[String]]
-      .flatMap{ case future : Future[String] => future }
-      .map{
-        case msg:String => 
-          msg +"\n"
-      }.recover{
-        case a : Throwable =>
-          "Command failure unknown.\n"
-      }
-    Await.result(result, commandTimeout)
+    agentSystem ! StopAgentCmd(agent)
+    ">"
   }
 
   private def remove(pathOrId: String): String = {
@@ -253,22 +250,22 @@ class OmiNodeCLI(
       val result = (subscriptionManager ? RemoveSubscription(id))
         .map{
           case true =>
-            s"Removed subscription with $id successfully.\n"
+            s"Removed subscription with $id successfully.\n>"
           case false =>
-            s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
+            s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n>"
         }.recover{
           case a : Throwable =>
-            "Command failure unknown.\n"
+            "Command failure unknown.\n>"
         }
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
       if (removeHandler.handlePathRemove(Path(pathOrId))) {
         log.info(s"Successfully removed path")
-        s"Successfully removed path $pathOrId\n"
+        s"Successfully removed path $pathOrId\n>"
       } else {
         log.info(s"Given path does not exist")
-        s"Given path does not exist\n"
+        s"Given path does not exist\n>"
       }
     } //requestHandler isn't actor
 
@@ -304,7 +301,7 @@ class OmiNodeCLI(
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
         case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
-          send(sender)("Unknown command. Use help to get information of current commands.\n") 
+          send(sender)("Unknown command. Use help to get information of current commands.\n>") 
       }
     }
     case PeerClosed =>{
@@ -312,7 +309,7 @@ class OmiNodeCLI(
       context stop self
     }
     case str: String if sender() == agentSystem =>
-      send(connection)(str + "\n")
+      send(connection)(str + "\n>")
   }
 
 }

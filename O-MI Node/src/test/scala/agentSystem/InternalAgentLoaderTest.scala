@@ -188,7 +188,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    """
    val config = ConfigFactory.parseString(configStr)
    val warnings = Vector(
-     s"Class $classname could not be started. Received $exception"
+ s"Agent FailureAgent encountered exception during creation."
    )
    logWarningTest(new AgentSystemSettings(config), warnings )
  }

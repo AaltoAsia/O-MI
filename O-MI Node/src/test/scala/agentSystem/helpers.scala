@@ -4,7 +4,7 @@ import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
 import scala.collection.mutable.{Map => MutableMap}
 
 import com.typesafe.config.Config
-import akka.actor.{ActorRef, Actor, ActorSystem, Props }
+import akka.actor.{ActorRef, Actor, ActorSystem, Props , Terminated}
 import akka.testkit.{TestActorRef}
 
 import agentSystem._
@@ -143,12 +143,22 @@ class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo
   protected val requestHandler: ActorRef
   )(implicit system: ActorSystem) extends BaseAgentSystem with InternalAgentManager{
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
+  agents.values.foreach{
+    case ai: AgentInfo => 
+      ai.agent.foreach{
+        ref =>
+         if( ref != ActorRef.noSender ) context.watch( ref)
+      }
+  
+  }
   protected def settings : AgentSystemConfigExtension = ???
   def receive : Actor.Receive = {
     case nC: NewCLI => sender() ! connectCLI(nC.ip,nC.cliRef )
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
     case ListAgentsCmd() => sender() ! agents.values.toVector
+    case Terminated(agentRef: ActorRef) => 
+      agentStopped(agentRef)
   }
   def getAgents = agents
 }
@@ -175,6 +185,7 @@ class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo
    override protected[this] val settings = testConfig
    def receive : Actor.Receive = {
      case ListAgentsCmd() => sender() ! agents.values.toVector
+     case Terminated(agentRef) => agentStopped(agentRef)
    }
  }
  object TestLoader{

@@ -107,6 +107,9 @@ trait InternalAgentLoader extends BaseAgentSystem {
         requestHandler ! msg
         dbHandler ! msg
     }
+        connectedCLIs.foreach{
+          case (ip, ref) => ref ! s"Agent ${agentInfo.name} started."
+        }
   }
     
   private def scalaAgentInit(
@@ -197,7 +200,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
         dbHandler ! AgentStopped(agentInfo.name)
         agents.update(agentName, agentInfo.copy( running = false, agent = None ) )
         connectedCLIs.foreach{
-          case (ip, ref) => ref ! s"Agent $agentName stopped successfully"
+          case (ip, ref) => ref ! s"Agent $agentName stopped."
         }
     }
   }

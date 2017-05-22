@@ -1,7 +1,7 @@
 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
   <Object type="ParkingService" prefix="schema http://www.schema.org/">
     <id>ParkingService</id>
-    <InfoItem name="FindParking">
+    <InfoItem name="FindParking" method="odf" >
       <MetaData>
         <InfoItem name="InfoItemType">
           <value>odf:Method</value>

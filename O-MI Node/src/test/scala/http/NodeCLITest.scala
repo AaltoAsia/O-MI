@@ -41,6 +41,7 @@ import http.CLICmds._
 
 
 class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
+  sequential
   "NodeCLI should " >> {
     "return list of available commands when help command is received" >> helpTest
     "return table of agents when list agents command is received" >> listAgentsTest
@@ -151,19 +152,22 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
-    val connection = TestActorRef( new DummyRemote(remote.toString()))
+    val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
     val listenerRef = TestActorRef(new OmiNodeCLI(
-      connection,
+      connection.ref,
       remote,
       removeHandler,
       managerRef,
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    
-    val correct : String =  s"Agent $name started succesfully.\n" 
-    resF should beEqualTo( correct ).await( 0, timeoutDuration)
-
+   // val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    
+   // val correct : String =  s"Agent $name started succesfully.\n" 
+   /// resF should beEqualTo( correct ).await( 0, timeoutDuration)
+    connection.send(listenerRef,strToMsg(s"start $name"))
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name started.\n>") )
   }
   def stopAgentTest= new Actorstest(AS){
     val name = "StartSuccess"
@@ -178,19 +182,21 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
-    val connection = TestActorRef( new DummyRemote(remote.toString()))
+    val connection = TestProbe()
     val listenerRef = TestActorRef(new OmiNodeCLI(
-      connection,
+      connection.testActor,
       remote,
       removeHandler,
       managerRef,
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    
-    val correct : String =  s"Agent $name stopped succesfully.\n" 
-    resF should beEqualTo( correct ).await( 0, timeoutDuration)
+    //val resF :Future[String ]= decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    
 
+    connection.send(listenerRef,strToMsg(s"stop $name"))
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name stopped.\n>") )
   }
   def unknownCmdTest = new Actorstest(AS){
     import system.dispatcher
@@ -201,18 +207,20 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
-    val connection = TestActorRef( new DummyRemote(remote.toString()))
+    val connection = TestProbe() //ActorRef( new DummyRemote(remote.toString()))
     val listenerRef = TestActorRef(new OmiNodeCLI(
-      connection,
+      connection.ref,
       remote,
       removeHandler,
       agentSystem,
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg("aueo"))    
-    val correct: String  = "Unknown command. Use help to get information of current commands.\n" 
-    resF should beEqualTo(correct ).await( 0, timeoutDuration)
+    val correct: String  = "Unknown command. Use help to get information of current commands.\n>" 
+    connection.send(listenerRef,strToMsg(s"aueo"))
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) )
+
   }
   def removePathTest= new Actorstest(AS){
     import system.dispatcher
@@ -224,18 +232,20 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val path = "Objects/object/sensor"
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
-    val connection = TestActorRef( new DummyRemote(remote.toString()))
+    val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
     val listenerRef = TestActorRef(new OmiNodeCLI(
-      connection,
+      connection.ref,
       remote,
       removeHandler,
       agentSystem,
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
-    val correct: String  = s"Successfully removed path $path\n" 
-    resF should beEqualTo(correct ).await( 0, timeoutDuration)
+    // val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
+    val correct: String  = s"Successfully removed path $path\n>" 
+    connection.send(listenerRef,strToMsg(s"remove $path"))
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) )
   }
   def removeUnexistingPathTest= new Actorstest(AS){
     import system.dispatcher
@@ -247,18 +257,19 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val path = "Objects/object/sensor"
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
-    val connection = TestActorRef( new DummyRemote(remote.toString()))
+    val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
     val listenerRef = TestActorRef(new OmiNodeCLI(
-      connection,
+      connection.ref,
       remote,
       removeHandler,
       agentSystem,
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove " + path +"ueaueo" ))    
-    val correct: String  = s"Given path does not exist\n" 
-    resF should beEqualTo(correct ).await( 0, timeoutDuration)
+    val correct: String  = s"Given path does not exist\n>" 
+    connection.send(listenerRef,strToMsg(s"remove $path" +"ueaueo"))
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) )
   }
 
   def listSubsTest= new Actorstest(AS){
@@ -338,7 +349,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
-    val correct: String  =s"Removed subscription with $id successfully.\n" 
+    val correct: String  =s"Removed subscription with $id successfully.\n>" 
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 
@@ -367,7 +378,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
-    val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n"
+    val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n>"
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
   def showSubTestInterval = {
@@ -393,7 +404,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       s"Ends: ${endTime}\n" +
       s"Interval: ${interval}\n" +
       s"Callback: ${callback}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n"
+      s"Paths:\n${paths.mkString("\n")}\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -416,7 +427,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       ))
       val correct: String  =s"Ends: ${endTime}\n" +
       s"Callback: ${callback}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n"
+      s"Paths:\n${paths.mkString("\n")}\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -443,7 +454,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       s"Ends: ${endTime}\n" +
       s"Interval: ${interval}\n" +
       s"Last polled: ${nextRunTime}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n"
+      s"Paths:\n${paths.mkString("\n")}\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -468,7 +479,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       val correct: String  = s"Started: ${startTime}\n" +
       s"Ends: ${endTime}\n" +
       s"Last polled: ${nextRunTime}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n"
+      s"Paths:\n${paths.mkString("\n")}\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -483,7 +494,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
 
       val remote = new InetSocketAddress("Tester",22)
       val removeHandler = new RemoveTester( Path("objects/aue" ) )
-      val correct: String  = s"Subscription with id $id not found.\n" 
+      val correct: String  = s"Subscription with id $id not found.\n>" 
       showSubTestBase(None,correct)
   }
   def showSubTestBase( sub: Option[SavedSub], correctOut: String ) = new Actorstest(AS){
@@ -511,6 +522,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"showSub ${sub.map{s => s.id}.getOrElse(57171)}"))    
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
+  def strToWrite( str: String ) = Write( ByteString( str ))
   class DummyRemote(val ip: String) extends Actor with ActorLogging {
     def receive = {
       case Write( byteStr: ByteString, _ ) => 

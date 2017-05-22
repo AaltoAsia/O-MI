@@ -290,7 +290,7 @@ case class OdfObject(
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None,
   attributes:           Map[String,String] = HashMap.empty
-  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue, attributes) with OdfNode with Serializable{
 
 
   def get(path: Path) : Option[OdfNode] = path match{
@@ -390,7 +390,7 @@ case class OdfInfoItem(
     description: Option[OdfDescription] = None,
     metaData: Option[OdfMetaData] = None,
     attributes:           Map[String,String] = HashMap.empty
-) extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+) extends OdfInfoItemImpl(path, values, description, metaData, attributes) with OdfNode {
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
